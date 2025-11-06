@@ -5,6 +5,10 @@ import rateLimit from 'express-rate-limit';
 import { env, isDevelopment } from './config/env';
 import { connectRedis } from './config/redis';
 import prisma from './config/database';
+import { AppError } from './utils/errors';
+
+// Import routes
+import authRoutes from './routes/auth.routes';
 
 // Initialize Express app
 const app: Application = express();
@@ -61,8 +65,10 @@ app.get('/api/v1', (_req: Request, res: Response) => {
   });
 });
 
-// TODO: Import and use route modules
-// app.use('/api/v1/auth', authRoutes);
+// Auth routes
+app.use('/api/v1/auth', authRoutes);
+
+// TODO: Add more route modules
 // app.use('/api/v1/users', userRoutes);
 // app.use('/api/v1/items', itemRoutes);
 // app.use('/api/v1/listings', listingRoutes);
@@ -81,16 +87,32 @@ app.use((_req: Request, res: Response) => {
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error('Error:', err);
 
+  // Handle AppError (custom errors)
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      error: {
+        message: err.message,
+        ...(isDevelopment && { stack: err.stack }),
+      },
+    });
+  }
+
+  // Handle other errors
   if (isDevelopment) {
     res.status(500).json({
-      error: 'Internal Server Error',
-      message: err.message,
-      stack: err.stack,
+      success: false,
+      error: {
+        message: err.message,
+        stack: err.stack,
+      },
     });
   } else {
     res.status(500).json({
-      error: 'Internal Server Error',
-      message: 'An unexpected error occurred',
+      success: false,
+      error: {
+        message: 'An unexpected error occurred',
+      },
     });
   }
 });
