@@ -12,6 +12,7 @@ import { AppError } from './utils/errors';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import categoryRoutes from './routes/category.routes';
+import itemRoutes from './routes/item.routes';
 
 // Initialize Express app
 const app: Application = express();
@@ -80,8 +81,10 @@ app.use('/api/v1/users', userRoutes);
 // Category routes
 app.use('/api/v1/categories', categoryRoutes);
 
+// Item routes
+app.use('/api/v1/items', itemRoutes);
+
 // TODO: Add more route modules
-// app.use('/api/v1/items', itemRoutes);
 // app.use('/api/v1/listings', listingRoutes);
 // app.use('/api/v1/barter', barterRoutes);
 // app.use('/api/v1/auctions', auctionRoutes);
