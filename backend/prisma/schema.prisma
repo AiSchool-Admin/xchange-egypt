@@ -232,6 +232,7 @@ model Listing {
   // Relations
   item        Item            @relation(fields: [itemId], references: [id])
   user        User            @relation("UserListings", fields: [userId], references: [id])
+  auction     Auction?
   barterOffers BarterOffer[]
   auctionBids  AuctionBid[]
   reverseAuctionOffers ReverseAuctionOffer[]
@@ -299,29 +300,109 @@ model BarterOffer {
 // Auction System
 // ============================================
 
+enum AuctionStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  ENDED
+  CANCELLED
+  COMPLETED
+}
+
 enum BidStatus {
   ACTIVE
   OUTBID
+  WINNING
   WON
   LOST
+  CANCELLED
+}
+
+model Auction {
+  id                String        @id @default(uuid())
+  listingId         String        @unique @map("listing_id")
+
+  // Pricing
+  startingPrice     Float         @map("starting_price")
+  currentPrice      Float         @map("current_price")
+  buyNowPrice       Float?        @map("buy_now_price")
+  reservePrice      Float?        @map("reserve_price")
+  minBidIncrement   Float         @default(1.0) @map("min_bid_increment")
+
+  // Timing
+  startTime         DateTime      @map("start_time")
+  endTime           DateTime      @map("end_time")
+  actualEndTime     DateTime?     @map("actual_end_time")
+
+  // Auto-extension settings
+  autoExtend        Boolean       @default(true) @map("auto_extend")
+  extensionMinutes  Int           @default(5) @map("extension_minutes")
+  extensionThreshold Int          @default(5) @map("extension_threshold") // Minutes before end
+  timesExtended     Int           @default(0) @map("times_extended")
+  maxExtensions     Int           @default(3) @map("max_extensions")
+
+  // Status and stats
+  status            AuctionStatus @default(DRAFT)
+  totalBids         Int           @default(0) @map("total_bids")
+  uniqueBidders     Int           @default(0) @map("unique_bidders")
+  views             Int           @default(0)
+
+  // Winner
+  winnerId          String?       @map("winner_id")
+  winningBidId      String?       @unique @map("winning_bid_id")
+
+  // Timestamps
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  listing           Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  bids              AuctionBid[]
+  winningBid        AuctionBid?   @relation("WinningBid", fields: [winningBidId], references: [id])
+
+  @@map("auctions")
+  @@index([status])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([winnerId])
 }
 
 model AuctionBid {
-  id          String     @id @default(uuid())
-  listingId   String     @map("listing_id")
-  bidderId    String     @map("bidder_id")
-  bidAmount   Float      @map("bid_amount")
-  status      BidStatus  @default(ACTIVE)
-  bidTime     DateTime   @default(now()) @map("bid_time")
+  id              String     @id @default(uuid())
+  auctionId       String     @map("auction_id")
+  listingId       String     @map("listing_id")
+  bidderId        String     @map("bidder_id")
+
+  // Bid details
+  bidAmount       Float      @map("bid_amount")
+  previousBid     Float?     @map("previous_bid") // Previous bid by this user
+
+  // Auto-bid (proxy bidding)
+  isAutoBid       Boolean    @default(false) @map("is_auto_bid")
+  maxAutoBid      Float?     @map("max_auto_bid") // Maximum they're willing to bid
+
+  // Status
+  status          BidStatus  @default(ACTIVE)
+
+  // Metadata
+  ipAddress       String?    @map("ip_address")
+  userAgent       String?    @map("user_agent")
+
+  // Timestamps
+  createdAt       DateTime   @default(now()) @map("created_at")
 
   // Relations
-  listing     Listing    @relation(fields: [listingId], references: [id])
-  bidder      User       @relation(fields: [bidderId], references: [id])
+  auction         Auction    @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  listing         Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  bidder          User       @relation(fields: [bidderId], references: [id])
+  wonAuction      Auction?   @relation("WinningBid")
 
   @@map("auction_bids")
+  @@index([auctionId])
   @@index([listingId])
   @@index([bidderId])
-  @@index([bidTime])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ============================================

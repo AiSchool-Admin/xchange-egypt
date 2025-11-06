@@ -16,6 +16,7 @@ import itemRoutes from './routes/item.routes';
 import listingRoutes from './routes/listing.routes';
 import transactionRoutes from './routes/transaction.routes';
 import barterRoutes from './routes/barter.routes';
+import auctionRoutes from './routes/auction.routes';
 
 // Initialize Express app
 const app: Application = express();
@@ -96,8 +97,10 @@ app.use('/api/v1/transactions', transactionRoutes);
 // Barter routes
 app.use('/api/v1/barter', barterRoutes);
 
+// Auction routes
+app.use('/api/v1/auctions', auctionRoutes);
+
 // TODO: Add more route modules
-// app.use('/api/v1/auctions', auctionRoutes);
 // app.use('/api/v1/reverse-auctions', reverseAuctionRoutes);
 
 // 404 handler
