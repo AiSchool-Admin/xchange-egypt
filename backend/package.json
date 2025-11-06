@@ -16,6 +16,11 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
+    "seed": "tsx prisma/seed.ts",
+    "seed:categories": "tsx prisma/seed-categories.ts",
+    "seed:users": "tsx prisma/seed-users.ts",
+    "seed:items": "tsx prisma/seed-items.ts",
+    "seed:demo": "tsx prisma/seed-demo-data.ts",
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset"
   },
