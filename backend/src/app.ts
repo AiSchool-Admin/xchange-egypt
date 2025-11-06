@@ -11,6 +11,7 @@ import { AppError } from './utils/errors';
 // Import routes
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
+import categoryRoutes from './routes/category.routes';
 
 // Initialize Express app
 const app: Application = express();
@@ -75,6 +76,9 @@ app.use('/api/v1/auth', authRoutes);
 
 // User routes
 app.use('/api/v1/users', userRoutes);
+
+// Category routes
+app.use('/api/v1/categories', categoryRoutes);
 
 // TODO: Add more route modules
 // app.use('/api/v1/items', itemRoutes);
