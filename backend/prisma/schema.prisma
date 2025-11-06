@@ -1,0 +1,464 @@
+// Xchange Database Schema
+// This schema defines the core data models for the Xchange e-commerce platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Core Models
+// ============================================
+
+enum UserType {
+  INDIVIDUAL
+  BUSINESS
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id                String      @id @default(uuid())
+  email             String      @unique
+  passwordHash      String      @map("password_hash")
+  fullName          String      @map("full_name")
+  phone             String?     @unique
+  userType          UserType    @default(INDIVIDUAL) @map("user_type")
+  status            UserStatus  @default(ACTIVE)
+  emailVerified     Boolean     @default(false) @map("email_verified")
+  phoneVerified     Boolean     @default(false) @map("phone_verified")
+
+  // Profile info
+  avatar            String?
+  bio               String?
+  address           String?
+  city              String?
+  governorate       String?
+  postalCode        String?     @map("postal_code")
+
+  // Business info (if userType = BUSINESS)
+  businessName      String?     @map("business_name")
+  taxId             String?     @map("tax_id")
+  commercialRegNo   String?     @map("commercial_reg_no")
+
+  // Ratings
+  rating            Float       @default(0.0)
+  totalReviews      Int         @default(0) @map("total_reviews")
+
+  // Timestamps
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+  lastLoginAt       DateTime?   @map("last_login_at")
+
+  // Relations
+  items             Item[]      @relation("UserItems")
+  listings          Listing[]   @relation("UserListings")
+  barterOffersGiven BarterOffer[] @relation("OfferingUser")
+  auctionBids       AuctionBid[]
+  reverseAuctionOffers ReverseAuctionOffer[]
+  transactionsAsBuyer  Transaction[] @relation("Buyer")
+  transactionsAsSeller Transaction[] @relation("Seller")
+  reviewsGiven      Review[]    @relation("Reviewer")
+  reviewsReceived   Review[]    @relation("Reviewed")
+  wishListItems     WishListItem[]
+  refreshTokens     RefreshToken[]
+
+  @@map("users")
+  @@index([email])
+  @@index([phone])
+  @@index([userType])
+  @@index([status])
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  token       String    @unique
+  userId      String    @map("user_id")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ============================================
+// Categories
+// ============================================
+
+model Category {
+  id          String      @id @default(uuid())
+  nameAr      String      @map("name_ar")
+  nameEn      String      @map("name_en")
+  slug        String      @unique
+  description String?
+  icon        String?
+  image       String?
+  parentId    String?     @map("parent_id")
+  order       Int         @default(0)
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  // Self-referencing for subcategories
+  parent      Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[]  @relation("CategoryHierarchy")
+
+  // Relations
+  items       Item[]
+  wishListItems WishListItem[]
+
+  @@map("categories")
+  @@index([slug])
+  @@index([parentId])
+  @@index([isActive])
+}
+
+// ============================================
+// Items (Products/Services)
+// ============================================
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ItemStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  TRADED
+  ARCHIVED
+  DELETED
+}
+
+model Item {
+  id              String        @id @default(uuid())
+  sellerId        String        @map("seller_id")
+  title           String
+  description     String
+  categoryId      String        @map("category_id")
+  condition       ItemCondition
+  estimatedValue  Float         @map("estimated_value") // In EGP
+  images          String[]      // Array of image URLs
+
+  // Location
+  location        String?
+  latitude        Float?
+  longitude       Float?
+
+  // Specs (flexible JSON)
+  specifications  Json?         @map("specifications")
+
+  // Status
+  status          ItemStatus    @default(ACTIVE)
+  views           Int           @default(0)
+
+  // Timestamps
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  seller          User          @relation("UserItems", fields: [sellerId], references: [id])
+  category        Category      @relation(fields: [categoryId], references: [id])
+  listings        Listing[]
+
+  @@map("items")
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// Trading Listings
+// ============================================
+
+enum ListingType {
+  DIRECT_SALE
+  AUCTION
+  REVERSE_AUCTION
+  BARTER
+}
+
+enum ListingStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+model Listing {
+  id          String          @id @default(uuid())
+  itemId      String          @map("item_id")
+  userId      String          @map("user_id")
+  listingType ListingType     @map("listing_type")
+
+  // Pricing (nullable for barter)
+  price       Float?
+  currency    String          @default("EGP")
+
+  // Auction specific
+  startingBid Float?          @map("starting_bid")
+  currentBid  Float?          @map("current_bid")
+  bidIncrement Float?         @map("bid_increment")
+  reservePrice Float?         @map("reserve_price")
+
+  // Timing
+  startDate   DateTime        @default(now()) @map("start_date")
+  endDate     DateTime?       @map("end_date")
+
+  // Status
+  status      ListingStatus   @default(ACTIVE)
+  views       Int             @default(0)
+
+  // Timestamps
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  item        Item            @relation(fields: [itemId], references: [id])
+  user        User            @relation("UserListings", fields: [userId], references: [id])
+  barterOffers BarterOffer[]
+  auctionBids  AuctionBid[]
+  reverseAuctionOffers ReverseAuctionOffer[]
+  transactions Transaction[]
+
+  @@map("listings")
+  @@index([itemId])
+  @@index([userId])
+  @@index([listingType])
+  @@index([status])
+  @@index([endDate])
+}
+
+// ============================================
+// Barter System
+// ============================================
+
+enum BarterOfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+model BarterOffer {
+  id                String             @id @default(uuid())
+  listingId         String             @map("listing_id")
+  offeringUserId    String             @map("offering_user_id")
+
+  // Offered items (JSON array of item IDs)
+  offeredItemIds    String[]           @map("offered_item_ids")
+
+  // Additional cash offer (if partial barter)
+  cashOffer         Float?             @map("cash_offer")
+
+  // Message from offerer
+  message           String?
+
+  // Match score from algorithm
+  matchScore        Float?             @map("match_score")
+
+  // Status
+  status            BarterOfferStatus  @default(PENDING)
+
+  // Response from listing owner
+  responseMessage   String?            @map("response_message")
+  respondedAt       DateTime?          @map("responded_at")
+
+  // Timestamps
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  listing           Listing            @relation(fields: [listingId], references: [id])
+  offeringUser      User               @relation("OfferingUser", fields: [offeringUserId], references: [id])
+
+  @@map("barter_offers")
+  @@index([listingId])
+  @@index([offeringUserId])
+  @@index([status])
+}
+
+// ============================================
+// Auction System
+// ============================================
+
+enum BidStatus {
+  ACTIVE
+  OUTBID
+  WON
+  LOST
+}
+
+model AuctionBid {
+  id          String     @id @default(uuid())
+  listingId   String     @map("listing_id")
+  bidderId    String     @map("bidder_id")
+  bidAmount   Float      @map("bid_amount")
+  status      BidStatus  @default(ACTIVE)
+  bidTime     DateTime   @default(now()) @map("bid_time")
+
+  // Relations
+  listing     Listing    @relation(fields: [listingId], references: [id])
+  bidder      User       @relation(fields: [bidderId], references: [id])
+
+  @@map("auction_bids")
+  @@index([listingId])
+  @@index([bidderId])
+  @@index([bidTime])
+}
+
+// ============================================
+// Reverse Auction (Tender) System
+// ============================================
+
+enum ReverseAuctionOfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model ReverseAuctionOffer {
+  id              String                    @id @default(uuid())
+  listingId       String                    @map("listing_id")
+  sellerId        String                    @map("seller_id")
+  offerAmount     Float                     @map("offer_amount")
+  offerDetails    String?                   @map("offer_details")
+  status          ReverseAuctionOfferStatus @default(PENDING)
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  listing         Listing                   @relation(fields: [listingId], references: [id])
+  seller          User                      @relation(fields: [sellerId], references: [id])
+
+  @@map("reverse_auction_offers")
+  @@index([listingId])
+  @@index([sellerId])
+}
+
+// ============================================
+// Transactions
+// ============================================
+
+enum TransactionType {
+  DIRECT_SALE
+  AUCTION
+  REVERSE_AUCTION
+  BARTER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum DeliveryStatus {
+  PENDING
+  SHIPPED
+  DELIVERED
+  RETURNED
+}
+
+model Transaction {
+  id              String          @id @default(uuid())
+  listingId       String          @map("listing_id")
+  buyerId         String          @map("buyer_id")
+  sellerId        String          @map("seller_id")
+  transactionType TransactionType @map("transaction_type")
+
+  // Payment
+  amount          Float?
+  currency        String          @default("EGP")
+  paymentMethod   String?         @map("payment_method")
+  paymentStatus   PaymentStatus   @default(PENDING) @map("payment_status")
+
+  // Delivery
+  deliveryStatus  DeliveryStatus  @default(PENDING) @map("delivery_status")
+  trackingNumber  String?         @map("tracking_number")
+
+  // Timestamps
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  completedAt     DateTime?       @map("completed_at")
+
+  // Relations
+  listing         Listing         @relation(fields: [listingId], references: [id])
+  buyer           User            @relation("Buyer", fields: [buyerId], references: [id])
+  seller          User            @relation("Seller", fields: [sellerId], references: [id])
+  reviews         Review[]
+
+  @@map("transactions")
+  @@index([listingId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([paymentStatus])
+  @@index([deliveryStatus])
+}
+
+// ============================================
+// Reviews & Ratings
+// ============================================
+
+model Review {
+  id              String      @id @default(uuid())
+  transactionId   String      @map("transaction_id")
+  reviewerId      String      @map("reviewer_id")
+  reviewedId      String      @map("reviewed_id")
+  rating          Int         // 1-5
+  comment         String?
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  transaction     Transaction @relation(fields: [transactionId], references: [id])
+  reviewer        User        @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewed        User        @relation("Reviewed", fields: [reviewedId], references: [id])
+
+  @@map("reviews")
+  @@index([transactionId])
+  @@index([reviewerId])
+  @@index([reviewedId])
+  @@index([rating])
+}
+
+// ============================================
+// Wish List (for matching)
+// ============================================
+
+model WishListItem {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  categoryId  String?   @map("category_id")
+  description String
+  keywords    String[]  // For matching
+  maxPrice    Float?    @map("max_price")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  user        User      @relation(fields: [userId], references: [id])
+  category    Category? @relation(fields: [categoryId], references: [id])
+
+  @@map("wish_list_items")
+  @@index([userId])
+  @@index([categoryId])
+}
