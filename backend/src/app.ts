@@ -2,6 +2,7 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { env, isDevelopment } from './config/env';
 import { connectRedis } from './config/redis';
 import prisma from './config/database';
@@ -9,6 +10,7 @@ import { AppError } from './utils/errors';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
 
 // Initialize Express app
 const app: Application = express();
@@ -31,6 +33,9 @@ app.use(
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve static files (uploaded images)
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -68,8 +73,10 @@ app.get('/api/v1', (_req: Request, res: Response) => {
 // Auth routes
 app.use('/api/v1/auth', authRoutes);
 
+// User routes
+app.use('/api/v1/users', userRoutes);
+
 // TODO: Add more route modules
-// app.use('/api/v1/users', userRoutes);
 // app.use('/api/v1/items', itemRoutes);
 // app.use('/api/v1/listings', listingRoutes);
 // app.use('/api/v1/barter', barterRoutes);
