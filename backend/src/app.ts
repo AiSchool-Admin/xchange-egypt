@@ -13,6 +13,8 @@ import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
 import categoryRoutes from './routes/category.routes';
 import itemRoutes from './routes/item.routes';
+import listingRoutes from './routes/listing.routes';
+import transactionRoutes from './routes/transaction.routes';
 
 // Initialize Express app
 const app: Application = express();
@@ -84,8 +86,13 @@ app.use('/api/v1/categories', categoryRoutes);
 // Item routes
 app.use('/api/v1/items', itemRoutes);
 
+// Listing routes
+app.use('/api/v1/listings', listingRoutes);
+
+// Transaction routes
+app.use('/api/v1/transactions', transactionRoutes);
+
 // TODO: Add more route modules
-// app.use('/api/v1/listings', listingRoutes);
 // app.use('/api/v1/barter', barterRoutes);
 // app.use('/api/v1/auctions', auctionRoutes);
 
