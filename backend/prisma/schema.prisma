@@ -59,17 +59,19 @@ model User {
   lastLoginAt       DateTime?   @map("last_login_at")
 
   // Relations
-  items             Item[]      @relation("UserItems")
-  listings          Listing[]   @relation("UserListings")
-  barterOffersGiven BarterOffer[] @relation("OfferingUser")
-  auctionBids       AuctionBid[]
-  reverseAuctionOffers ReverseAuctionOffer[]
-  transactionsAsBuyer  Transaction[] @relation("Buyer")
-  transactionsAsSeller Transaction[] @relation("Seller")
-  reviewsGiven      Review[]    @relation("Reviewer")
-  reviewsReceived   Review[]    @relation("Reviewed")
-  wishListItems     WishListItem[]
-  refreshTokens     RefreshToken[]
+  items                   Item[]                @relation("UserItems")
+  listings                Listing[]             @relation("UserListings")
+  barterOffersInitiated   BarterOffer[]         @relation("BarterInitiator")
+  barterOffersReceived    BarterOffer[]         @relation("BarterRecipient")
+  barterChainParticipations BarterParticipant[]
+  auctionBids             AuctionBid[]
+  reverseAuctionOffers    ReverseAuctionOffer[]
+  transactionsAsBuyer     Transaction[]         @relation("Buyer")
+  transactionsAsSeller    Transaction[]         @relation("Seller")
+  reviewsGiven            Review[]              @relation("Reviewer")
+  reviewsReceived         Review[]              @relation("Reviewed")
+  wishListItems           WishListItem[]
+  refreshTokens           RefreshToken[]
 
   @@map("users")
   @@index([email])
@@ -172,9 +174,15 @@ model Item {
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  seller          User          @relation("UserItems", fields: [sellerId], references: [id])
-  category        Category      @relation(fields: [categoryId], references: [id])
-  listings        Listing[]
+  seller                  User              @relation("UserItems", fields: [sellerId], references: [id])
+  category                Category          @relation(fields: [categoryId], references: [id])
+  listings                Listing[]
+  barterOffersOffered     BarterOffer[]     @relation("BarterOfferedItem")
+  barterOffersRequested   BarterOffer[]     @relation("BarterRequestedItem")
+  barterOffersCounter     BarterOffer[]     @relation("BarterCounterItem")
+  participantsGiving      BarterParticipant[] @relation("ParticipantGivingItem")
+  participantsReceiving   BarterParticipant[] @relation("ParticipantReceivingItem")
+  auctionBids             AuctionBid[]
 
   @@map("items")
   @@index([sellerId])
@@ -233,7 +241,6 @@ model Listing {
   item        Item            @relation(fields: [itemId], references: [id])
   user        User            @relation("UserListings", fields: [userId], references: [id])
   auction     Auction?
-  barterOffers BarterOffer[]
   auctionBids  AuctionBid[]
   reverseAuctionOffers ReverseAuctionOffer[]
   transactions Transaction[]
@@ -247,52 +254,147 @@ model Listing {
 }
 
 // ============================================
-// Barter System
+// Barter System - Advanced Multi-Party Support
 // ============================================
 
 enum BarterOfferStatus {
   PENDING
+  COUNTER_OFFERED    // For counter offers
   ACCEPTED
   REJECTED
+  EXPIRED            // For expired offers
   COMPLETED
   CANCELLED
 }
 
+// Simple 2-party barter offer
 model BarterOffer {
   id                String             @id @default(uuid())
-  listingId         String             @map("listing_id")
-  offeringUserId    String             @map("offering_user_id")
 
-  // Offered items (JSON array of item IDs)
-  offeredItemIds    String[]           @map("offered_item_ids")
+  // Parties involved
+  initiatorId       String             @map("initiator_id")
+  recipientId       String             @map("recipient_id")
 
-  // Additional cash offer (if partial barter)
-  cashOffer         Float?             @map("cash_offer")
+  // Items being traded
+  offeredItemId     String             @map("offered_item_id")
+  requestedItemId   String             @map("requested_item_id")
 
-  // Message from offerer
-  message           String?
+  // Counter offer support
+  counterOfferItemId String?           @map("counter_offer_item_id")
 
-  // Match score from algorithm
-  matchScore        Float?             @map("match_score")
+  // Additional info
+  notes             String?
+  expiresAt         DateTime?          @map("expires_at")
 
   // Status
   status            BarterOfferStatus  @default(PENDING)
 
-  // Response from listing owner
-  responseMessage   String?            @map("response_message")
-  respondedAt       DateTime?          @map("responded_at")
-
   // Timestamps
   createdAt         DateTime           @default(now()) @map("created_at")
   updatedAt         DateTime           @updatedAt @map("updated_at")
+  respondedAt       DateTime?          @map("responded_at")
 
   // Relations
-  listing           Listing            @relation(fields: [listingId], references: [id])
-  offeringUser      User               @relation("OfferingUser", fields: [offeringUserId], references: [id])
+  initiator         User               @relation("BarterInitiator", fields: [initiatorId], references: [id])
+  recipient         User               @relation("BarterRecipient", fields: [recipientId], references: [id])
+  offeredItem       Item               @relation("BarterOfferedItem", fields: [offeredItemId], references: [id])
+  requestedItem     Item               @relation("BarterRequestedItem", fields: [requestedItemId], references: [id])
+  counterOfferItem  Item?              @relation("BarterCounterItem", fields: [counterOfferItemId], references: [id])
 
   @@map("barter_offers")
-  @@index([listingId])
-  @@index([offeringUserId])
+  @@index([initiatorId])
+  @@index([recipientId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+// Multi-party barter chain (3+ users) - SMART BARTER
+enum BarterChainStatus {
+  PROPOSED        // Algorithm proposed this chain
+  PENDING         // Waiting for all parties to accept
+  ACCEPTED        // All parties accepted
+  REJECTED        // One or more rejected
+  COMPLETED       // Exchange completed
+  EXPIRED         // Offer expired
+  CANCELLED       // Cancelled by initiator
+}
+
+model BarterChain {
+  id              String             @id @default(uuid())
+
+  // Chain metadata
+  chainType       String             @map("chain_type") // "CYCLE" or "CHAIN"
+  participantCount Int               @map("participant_count")
+
+  // Matching info
+  matchScore      Float              @map("match_score")
+  algorithmVersion String            @default("1.0") @map("algorithm_version")
+
+  // Description
+  description     String?            // Human-readable description of the chain
+
+  // Status
+  status          BarterChainStatus  @default(PROPOSED)
+
+  // Expiry
+  expiresAt       DateTime           @map("expires_at")
+
+  // Timestamps
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  completedAt     DateTime?          @map("completed_at")
+
+  // Relations
+  participants    BarterParticipant[]
+
+  @@map("barter_chains")
+  @@index([status])
+  @@index([chainType])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+// Individual participant in a barter chain
+enum ParticipantStatus {
+  PENDING       // Hasn't responded yet
+  ACCEPTED      // Accepted the proposal
+  REJECTED      // Rejected the proposal
+  COMPLETED     // Completed their part
+}
+
+model BarterParticipant {
+  id              String             @id @default(uuid())
+  chainId         String             @map("chain_id")
+
+  // User and items
+  userId          String             @map("user_id")
+  givingItemId    String             @map("giving_item_id")
+  receivingItemId String             @map("receiving_item_id")
+
+  // Position in chain (0, 1, 2, ...)
+  position        Int
+
+  // Status
+  status          ParticipantStatus  @default(PENDING)
+
+  // Response
+  responseMessage String?            @map("response_message")
+  respondedAt     DateTime?          @map("responded_at")
+
+  // Timestamps
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  chain           BarterChain        @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  user            User               @relation(fields: [userId], references: [id])
+  givingItem      Item               @relation("ParticipantGivingItem", fields: [givingItemId], references: [id])
+  receivingItem   Item               @relation("ParticipantReceivingItem", fields: [receivingItemId], references: [id])
+
+  @@map("barter_participants")
+  @@unique([chainId, userId])
+  @@index([chainId])
+  @@index([userId])
   @@index([status])
 }
 

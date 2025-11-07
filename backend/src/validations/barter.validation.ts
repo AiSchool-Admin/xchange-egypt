@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BarterOfferStatus } from '@prisma/client';
+import { BarterOfferStatus, BarterChainStatus } from '@prisma/client';
 
 // Barter Offer Status validation
 const barterOfferStatusEnum = z.nativeEnum(BarterOfferStatus, {
@@ -152,4 +152,91 @@ export const completeBarterExchangeSchema = z.object({
       .max(500, 'Confirmation notes must not exceed 500 characters')
       .optional(),
   }),
+});
+
+// ============================================
+// Multi-Party Barter Chain Validation
+// ============================================
+
+// Barter Chain Status validation
+const barterChainStatusEnum = z.nativeEnum(BarterChainStatus, {
+  errorMap: () => ({ message: 'Invalid barter chain status' }),
+});
+
+// Discover Barter Opportunities Schema
+export const discoverOpportunitiesSchema = z.object({
+  params: z.object({
+    itemId: z.string().uuid('Invalid item ID'),
+  }),
+});
+
+// Create Smart Proposal Schema
+export const createSmartProposalSchema = z.object({
+  body: z.object({
+    itemId: z.string().uuid('Invalid item ID'),
+    maxParticipants: z
+      .number()
+      .int()
+      .min(3, 'Minimum 3 participants for multi-party barter')
+      .max(10, 'Maximum 10 participants allowed')
+      .default(5)
+      .optional(),
+    preferCycles: z.boolean().default(true).optional(),
+  }),
+});
+
+// Get Barter Chain Schema
+export const getBarterChainSchema = z.object({
+  params: z.object({
+    chainId: z.string().uuid('Invalid chain ID'),
+  }),
+});
+
+// Respond to Chain Proposal Schema
+export const respondToChainSchema = z.object({
+  params: z.object({
+    chainId: z.string().uuid('Invalid chain ID'),
+  }),
+  body: z.object({
+    accept: z.boolean(),
+    message: z.string().max(500, 'Message must not exceed 500 characters').optional(),
+  }),
+});
+
+// Cancel Barter Chain Schema
+export const cancelBarterChainSchema = z.object({
+  params: z.object({
+    chainId: z.string().uuid('Invalid chain ID'),
+  }),
+});
+
+// Execute Barter Chain Schema
+export const executeBarterChainSchema = z.object({
+  params: z.object({
+    chainId: z.string().uuid('Invalid chain ID'),
+  }),
+});
+
+// Get My Barter Chains Schema
+export const getMyBarterChainsSchema = z.object({
+  query: z.object({
+    status: barterChainStatusEnum.optional(),
+    page: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1))
+      .default('1')
+      .optional(),
+    limit: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1).max(100))
+      .default('20')
+      .optional(),
+  }),
+});
+
+// Get Pending Proposals Schema
+export const getPendingProposalsSchema = z.object({
+  query: z.object({}),
 });

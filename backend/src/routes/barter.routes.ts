@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as barterController from '../controllers/barter.controller';
+import * as barterChainController from '../controllers/barter-chain.controller';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import {
@@ -13,6 +14,14 @@ import {
   searchBarterableItemsSchema,
   findBarterMatchesSchema,
   completeBarterExchangeSchema,
+  discoverOpportunitiesSchema,
+  createSmartProposalSchema,
+  getBarterChainSchema,
+  respondToChainSchema,
+  cancelBarterChainSchema,
+  executeBarterChainSchema,
+  getMyBarterChainsSchema,
+  getPendingProposalsSchema,
 } from '../validations/barter.validation';
 
 const router = Router();
@@ -128,6 +137,108 @@ router.get(
   authenticate,
   validate(findBarterMatchesSchema),
   barterController.findBarterMatches
+);
+
+// ============================================
+// Multi-Party Smart Barter Chains
+// ============================================
+
+/**
+ * Discover smart barter opportunities
+ * GET /api/v1/barter/opportunities/:itemId
+ */
+router.get(
+  '/opportunities/:itemId',
+  authenticate,
+  validate(discoverOpportunitiesSchema),
+  barterChainController.discoverOpportunities
+);
+
+/**
+ * Get my barter chains (must come before /:chainId)
+ * GET /api/v1/barter/chains/my
+ */
+router.get(
+  '/chains/my',
+  authenticate,
+  validate(getMyBarterChainsSchema),
+  barterChainController.getMyBarterChains
+);
+
+/**
+ * Get pending barter chain proposals
+ * GET /api/v1/barter/chains/pending
+ */
+router.get(
+  '/chains/pending',
+  authenticate,
+  validate(getPendingProposalsSchema),
+  barterChainController.getPendingProposals
+);
+
+/**
+ * Get barter chain statistics
+ * GET /api/v1/barter/chains/stats
+ */
+router.get(
+  '/chains/stats',
+  authenticate,
+  barterChainController.getBarterChainStats
+);
+
+/**
+ * Create smart barter proposal
+ * POST /api/v1/barter/chains
+ */
+router.post(
+  '/chains',
+  authenticate,
+  validate(createSmartProposalSchema),
+  barterChainController.createSmartProposal
+);
+
+/**
+ * Get barter chain by ID
+ * GET /api/v1/barter/chains/:chainId
+ */
+router.get(
+  '/chains/:chainId',
+  authenticate,
+  validate(getBarterChainSchema),
+  barterChainController.getBarterChain
+);
+
+/**
+ * Respond to barter chain proposal (accept/reject)
+ * POST /api/v1/barter/chains/:chainId/respond
+ */
+router.post(
+  '/chains/:chainId/respond',
+  authenticate,
+  validate(respondToChainSchema),
+  barterChainController.respondToProposal
+);
+
+/**
+ * Execute/complete barter chain
+ * POST /api/v1/barter/chains/:chainId/execute
+ */
+router.post(
+  '/chains/:chainId/execute',
+  authenticate,
+  validate(executeBarterChainSchema),
+  barterChainController.executeBarterChain
+);
+
+/**
+ * Cancel barter chain
+ * DELETE /api/v1/barter/chains/:chainId
+ */
+router.delete(
+  '/chains/:chainId',
+  authenticate,
+  validate(cancelBarterChainSchema),
+  barterChainController.cancelBarterChain
 );
 
 export default router;
