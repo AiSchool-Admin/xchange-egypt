@@ -59,19 +59,20 @@ model User {
   lastLoginAt       DateTime?   @map("last_login_at")
 
   // Relations
-  items                   Item[]                @relation("UserItems")
-  listings                Listing[]             @relation("UserListings")
-  barterOffersInitiated   BarterOffer[]         @relation("BarterInitiator")
-  barterOffersReceived    BarterOffer[]         @relation("BarterRecipient")
+  items                     Item[]                @relation("UserItems")
+  listings                  Listing[]             @relation("UserListings")
+  barterOffersInitiated     BarterOffer[]         @relation("BarterInitiator")
+  barterOffersReceived      BarterOffer[]         @relation("BarterRecipient")
   barterChainParticipations BarterParticipant[]
-  auctionBids             AuctionBid[]
-  reverseAuctionOffers    ReverseAuctionOffer[]
-  transactionsAsBuyer     Transaction[]         @relation("Buyer")
-  transactionsAsSeller    Transaction[]         @relation("Seller")
-  reviewsGiven            Review[]              @relation("Reviewer")
-  reviewsReceived         Review[]              @relation("Reviewed")
-  wishListItems           WishListItem[]
-  refreshTokens           RefreshToken[]
+  auctionBids               AuctionBid[]
+  reverseAuctionsCreated    ReverseAuction[]      @relation("ReverseAuctionBuyer")
+  reverseAuctionBids        ReverseAuctionBid[]   @relation("ReverseAuctionSeller")
+  transactionsAsBuyer       Transaction[]         @relation("Buyer")
+  transactionsAsSeller      Transaction[]         @relation("Seller")
+  reviewsGiven              Review[]              @relation("Reviewer")
+  reviewsReceived           Review[]              @relation("Reviewed")
+  wishListItems             WishListItem[]
+  refreshTokens             RefreshToken[]
 
   @@map("users")
   @@index([email])
@@ -117,8 +118,9 @@ model Category {
   children    Category[]  @relation("CategoryHierarchy")
 
   // Relations
-  items       Item[]
-  wishListItems WishListItem[]
+  items            Item[]
+  reverseAuctions  ReverseAuction[]
+  wishListItems    WishListItem[]
 
   @@map("categories")
   @@index([slug])
@@ -181,6 +183,7 @@ model Item {
   participantsGiving      BarterParticipant[]     @relation("ParticipantGivingItem")
   participantsReceiving   BarterParticipant[]     @relation("ParticipantReceivingItem")
   auctionBids             AuctionBid[]
+  reverseAuctionBids      ReverseAuctionBid[]     @relation("ReverseAuctionBidItem")
 
   @@map("items")
   @@index([sellerId])
@@ -240,7 +243,6 @@ model Listing {
   user        User            @relation("UserListings", fields: [userId], references: [id])
   auction     Auction?
   auctionBids  AuctionBid[]
-  reverseAuctionOffers ReverseAuctionOffer[]
   transactions Transaction[]
 
   @@map("listings")
@@ -568,32 +570,143 @@ model AuctionBid {
 }
 
 // ============================================
-// Reverse Auction (Tender) System
+// Reverse Auction System - Complete Professional Implementation
 // ============================================
+// Reverse auctions: Buyer requests item → Sellers compete by bidding DOWN
+// Winner = lowest price (or best value if considering other factors)
 
-enum ReverseAuctionOfferStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
+enum ReverseAuctionStatus {
+  DRAFT           // Being created, not published yet
+  ACTIVE          // Published and accepting bids
+  ENDED           // Auction time expired
+  AWARDED         // Winner selected by buyer
+  COMPLETED       // Transaction completed
+  CANCELLED       // Cancelled by buyer
+  EXPIRED         // Ended without any bids
 }
 
-model ReverseAuctionOffer {
-  id              String                    @id @default(uuid())
-  listingId       String                    @map("listing_id")
-  sellerId        String                    @map("seller_id")
-  offerAmount     Float                     @map("offer_amount")
-  offerDetails    String?                   @map("offer_details")
-  status          ReverseAuctionOfferStatus @default(PENDING)
-  createdAt       DateTime                  @default(now()) @map("created_at")
-  updatedAt       DateTime                  @updatedAt @map("updated_at")
+enum ReverseAuctionBidStatus {
+  ACTIVE          // Currently valid bid
+  OUTBID          // Another seller bid lower
+  WINNING         // Currently the lowest bid
+  WON             // Selected as winner
+  LOST            // Not selected as winner
+  WITHDRAWN       // Seller withdrew their bid
+  REJECTED        // Buyer rejected this bid
+}
+
+// Main reverse auction - Buyer's request for an item
+model ReverseAuction {
+  id                String              @id @default(uuid())
+  buyerId           String              @map("buyer_id")
+
+  // Item Request Details
+  title             String              // e.g., "iPhone 14 Pro Max 256GB"
+  description       String              // Detailed requirements
+  categoryId        String              @map("category_id")
+
+  // Item specifications
+  condition         ItemCondition       // Required condition (NEW, LIKE_NEW, etc.)
+  specifications    Json?               // Flexible specs (color, model, etc.)
+  quantity          Int                 @default(1)
+
+  // Location preferences
+  location          String?             // Preferred location
+  deliveryPreference String?           @map("delivery_preference") // "PICKUP", "DELIVERY", "BOTH"
+
+  // Budget & Pricing
+  maxBudget         Float?              @map("max_budget")    // Maximum willing to pay (optional)
+  targetPrice       Float?              @map("target_price")  // Target/desired price (optional)
+
+  // Timing
+  startDate         DateTime            @default(now()) @map("start_date")
+  endDate           DateTime            @map("end_date")      // Bidding deadline
+
+  // Status & Stats
+  status            ReverseAuctionStatus @default(DRAFT)
+  totalBids         Int                 @default(0) @map("total_bids")
+  uniqueBidders     Int                 @default(0) @map("unique_bidders")
+  lowestBid         Float?              @map("lowest_bid")    // Current lowest bid
+  views             Int                 @default(0)
+
+  // Winner
+  winnerId          String?             @map("winner_id")
+  winningBidId      String?             @unique @map("winning_bid_id")
+
+  // Notes
+  buyerNotes        String?             @map("buyer_notes")   // Private notes
+  publicNotes       String?             @map("public_notes")  // Visible to sellers
+
+  // Timestamps
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  awardedAt         DateTime?           @map("awarded_at")
+  completedAt       DateTime?           @map("completed_at")
 
   // Relations
-  listing         Listing                   @relation(fields: [listingId], references: [id])
-  seller          User                      @relation(fields: [sellerId], references: [id])
+  buyer             User                @relation("ReverseAuctionBuyer", fields: [buyerId], references: [id])
+  category          Category            @relation(fields: [categoryId], references: [id])
+  bids              ReverseAuctionBid[]
+  winningBid        ReverseAuctionBid?  @relation("WinningBid", fields: [winningBidId], references: [id])
 
-  @@map("reverse_auction_offers")
-  @@index([listingId])
+  @@map("reverse_auctions")
+  @@index([buyerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+  @@index([winnerId])
+  @@index([lowestBid])
+}
+
+// Seller's bid on a reverse auction
+model ReverseAuctionBid {
+  id                String                  @id @default(uuid())
+  reverseAuctionId  String                  @map("reverse_auction_id")
+  sellerId          String                  @map("seller_id")
+
+  // Bid details
+  bidAmount         Float                   @map("bid_amount")      // Offered price
+  previousBid       Float?                  @map("previous_bid")    // Their previous bid (if rebidding)
+
+  // Item offered
+  itemId            String?                 @map("item_id")         // If seller has existing item
+  itemCondition     ItemCondition           @map("item_condition")  // Actual condition of item
+  itemDescription   String?                 @map("item_description") // Description of item offered
+  itemImages        String[]                @map("item_images")     // Images URLs
+
+  // Delivery & Terms
+  deliveryOption    String                  @map("delivery_option") // "PICKUP", "DELIVERY", "BOTH"
+  deliveryDays      Int?                    @map("delivery_days")   // Estimated delivery time
+  deliveryCost      Float                   @default(0) @map("delivery_cost") // Delivery fee
+
+  // Seller notes
+  notes             String?                 // Additional information
+
+  // Status
+  status            ReverseAuctionBidStatus @default(ACTIVE)
+
+  // Metadata
+  ipAddress         String?                 @map("ip_address")
+  userAgent         String?                 @map("user_agent")
+
+  // Timestamps
+  createdAt         DateTime                @default(now()) @map("created_at")
+  updatedAt         DateTime                @updatedAt @map("updated_at")
+
+  // Relations
+  reverseAuction    ReverseAuction          @relation(fields: [reverseAuctionId], references: [id], onDelete: Cascade)
+  seller            User                    @relation("ReverseAuctionSeller", fields: [sellerId], references: [id])
+  item              Item?                   @relation("ReverseAuctionBidItem", fields: [itemId], references: [id])
+  wonAuction        ReverseAuction?         @relation("WinningBid")
+
+  @@map("reverse_auction_bids")
+  @@index([reverseAuctionId])
   @@index([sellerId])
+  @@index([itemId])
+  @@index([status])
+  @@index([bidAmount])
+  @@index([createdAt])
 }
 
 // ============================================
