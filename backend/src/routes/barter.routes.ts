@@ -22,6 +22,8 @@ import {
   executeBarterChainSchema,
   getMyBarterChainsSchema,
   getPendingProposalsSchema,
+  getMatchingOffersSchema,
+  getBestMatchSchema,
 } from '../validations/barter.validation';
 
 const router = Router();
@@ -52,7 +54,18 @@ router.get(
 );
 
 /**
- * Create a barter offer
+ * Get matching offers for my items (Bundle feature)
+ * GET /api/v1/barter/offers/matching
+ */
+router.get(
+  '/offers/matching',
+  authenticate,
+  validate(getMatchingOffersSchema),
+  barterController.getMatchingOffers
+);
+
+/**
+ * Create a barter offer (with bundles & preferences)
  * POST /api/v1/barter/offers
  */
 router.post(
@@ -74,7 +87,18 @@ router.get(
 );
 
 /**
- * Accept a barter offer
+ * Get best matching preference set for this offer (Bundle feature)
+ * GET /api/v1/barter/offers/:offerId/best-match
+ */
+router.get(
+  '/offers/:offerId/best-match',
+  authenticate,
+  validate(getBestMatchSchema),
+  barterController.getBestMatch
+);
+
+/**
+ * Accept a barter offer (with preference set selection)
  * POST /api/v1/barter/offers/:offerId/accept
  */
 router.post(

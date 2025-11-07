@@ -6,11 +6,28 @@ const barterOfferStatusEnum = z.nativeEnum(BarterOfferStatus, {
   errorMap: () => ({ message: 'Invalid barter offer status' }),
 });
 
-// Create Barter Offer Schema
+// Preference Set Schema
+const preferenceSetSchema = z.object({
+  priority: z.number().int().min(1).max(10, 'Priority must be between 1 and 10'),
+  itemIds: z
+    .array(z.string().uuid('Invalid item ID'))
+    .min(1, 'Must specify at least one item')
+    .max(10, 'Maximum 10 items per preference set'),
+  description: z.string().max(200, 'Description must not exceed 200 characters').optional(),
+});
+
+// Create Barter Offer Schema (with Bundle & Preferences support)
 export const createBarterOfferSchema = z.object({
   body: z.object({
-    offeredItemId: z.string().uuid('Invalid offered item ID'),
-    requestedItemId: z.string().uuid('Invalid requested item ID'),
+    offeredItemIds: z
+      .array(z.string().uuid('Invalid offered item ID'))
+      .min(1, 'Must offer at least one item')
+      .max(20, 'Maximum 20 items per bundle'),
+    preferenceSets: z
+      .array(preferenceSetSchema)
+      .min(1, 'Must specify at least one preference set')
+      .max(10, 'Maximum 10 preference sets'),
+    recipientId: z.string().uuid('Invalid recipient ID').optional(),
     notes: z
       .string()
       .max(1000, 'Notes must not exceed 1000 characters')
@@ -20,33 +37,43 @@ export const createBarterOfferSchema = z.object({
       .datetime('Invalid expiration date')
       .optional()
       .transform((val) => (val ? new Date(val) : undefined)),
+    isOpenOffer: z.boolean().default(false).optional(),
   }).refine(
-    (data) => data.offeredItemId !== data.requestedItemId,
+    (data) => {
+      // Ensure priorities are unique
+      const priorities = data.preferenceSets.map((ps) => ps.priority);
+      const uniquePriorities = new Set(priorities);
+      return priorities.length === uniquePriorities.size;
+    },
     {
-      message: 'Cannot offer and request the same item',
-      path: ['requestedItemId'],
+      message: 'Preference set priorities must be unique',
+      path: ['preferenceSets'],
+    }
+  ).refine(
+    (data) => {
+      // Check no overlap between offered and requested items
+      const offeredSet = new Set(data.offeredItemIds);
+      const allRequestedIds = data.preferenceSets.flatMap((ps) => ps.itemIds);
+      return !allRequestedIds.some((id) => offeredSet.has(id));
+    },
+    {
+      message: 'Cannot request items you are offering',
+      path: ['preferenceSets'],
     }
   ),
 });
 
-// Create Counter Offer Schema
-export const createCounterOfferSchema = z.object({
+// Accept Barter Offer Schema (with preference set selection)
+export const acceptBarterOfferSchema = z.object({
   params: z.object({
     offerId: z.string().uuid('Invalid offer ID'),
   }),
   body: z.object({
-    counterOfferItemId: z.string().uuid('Invalid counter offer item ID'),
-    notes: z
-      .string()
-      .max(1000, 'Notes must not exceed 1000 characters')
+    preferenceSetId: z.string().uuid('Invalid preference set ID').optional(),
+    offeredItemIds: z
+      .array(z.string().uuid('Invalid offered item ID'))
+      .min(1, 'Must offer at least one item')
       .optional(),
-  }),
-});
-
-// Accept Barter Offer Schema
-export const acceptBarterOfferSchema = z.object({
-  params: z.object({
-    offerId: z.string().uuid('Invalid offer ID'),
   }),
 });
 
@@ -239,4 +266,33 @@ export const getMyBarterChainsSchema = z.object({
 // Get Pending Proposals Schema
 export const getPendingProposalsSchema = z.object({
   query: z.object({}),
+});
+
+// ============================================
+// Bundle & Preference-specific Schemas
+// ============================================
+
+// Get Matching Offers Schema
+export const getMatchingOffersSchema = z.object({
+  query: z.object({
+    page: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1))
+      .default('1')
+      .optional(),
+    limit: z
+      .string()
+      .transform((val) => parseInt(val, 10))
+      .pipe(z.number().int().min(1).max(100))
+      .default('20')
+      .optional(),
+  }),
+});
+
+// Get Best Match For Offer Schema
+export const getBestMatchSchema = z.object({
+  params: z.object({
+    offerId: z.string().uuid('Invalid offer ID'),
+  }),
 });

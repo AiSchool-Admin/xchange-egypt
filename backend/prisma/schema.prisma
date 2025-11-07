@@ -174,14 +174,12 @@ model Item {
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  seller                  User              @relation("UserItems", fields: [sellerId], references: [id])
-  category                Category          @relation(fields: [categoryId], references: [id])
+  seller                  User                    @relation("UserItems", fields: [sellerId], references: [id])
+  category                Category                @relation(fields: [categoryId], references: [id])
   listings                Listing[]
-  barterOffersOffered     BarterOffer[]     @relation("BarterOfferedItem")
-  barterOffersRequested   BarterOffer[]     @relation("BarterRequestedItem")
-  barterOffersCounter     BarterOffer[]     @relation("BarterCounterItem")
-  participantsGiving      BarterParticipant[] @relation("ParticipantGivingItem")
-  participantsReceiving   BarterParticipant[] @relation("ParticipantReceivingItem")
+  barterPreferenceItems   BarterPreferenceItem[]  @relation("BarterPreferenceItems")
+  participantsGiving      BarterParticipant[]     @relation("ParticipantGivingItem")
+  participantsReceiving   BarterParticipant[]     @relation("ParticipantReceivingItem")
   auctionBids             AuctionBid[]
 
   @@map("items")
@@ -254,7 +252,7 @@ model Listing {
 }
 
 // ============================================
-// Barter System - Advanced Multi-Party Support
+// Barter System - Advanced Multi-Party Support with Bundles & Preferences
 // ============================================
 
 enum BarterOfferStatus {
@@ -267,24 +265,29 @@ enum BarterOfferStatus {
   CANCELLED
 }
 
-// Simple 2-party barter offer
+// Advanced 2-party barter offer with bundles and preferences
 model BarterOffer {
   id                String             @id @default(uuid())
 
   // Parties involved
   initiatorId       String             @map("initiator_id")
-  recipientId       String             @map("recipient_id")
+  recipientId       String?            @map("recipient_id")  // Nullable for open offers
 
-  // Items being traded
-  offeredItemId     String             @map("offered_item_id")
-  requestedItemId   String             @map("requested_item_id")
+  // Offered items (BUNDLE SUPPORT - can be multiple items)
+  offeredItemIds    String[]           @map("offered_item_ids")
+  offeredBundleValue Float             @map("offered_bundle_value")  // Auto-calculated
 
-  // Counter offer support
-  counterOfferItemId String?           @map("counter_offer_item_id")
+  // Preference sets (alternative bundles user wants)
+  // User can specify multiple preference sets with priorities
+  preferenceSets    BarterPreferenceSet[]
+
+  // Matched preference (when offer is accepted)
+  matchedPreferenceSetId String?       @map("matched_preference_set_id")
 
   // Additional info
   notes             String?
   expiresAt         DateTime?          @map("expires_at")
+  isOpenOffer       Boolean            @default(false) @map("is_open_offer")  // Open to anyone
 
   // Status
   status            BarterOfferStatus  @default(PENDING)
@@ -296,16 +299,73 @@ model BarterOffer {
 
   // Relations
   initiator         User               @relation("BarterInitiator", fields: [initiatorId], references: [id])
-  recipient         User               @relation("BarterRecipient", fields: [recipientId], references: [id])
-  offeredItem       Item               @relation("BarterOfferedItem", fields: [offeredItemId], references: [id])
-  requestedItem     Item               @relation("BarterRequestedItem", fields: [requestedItemId], references: [id])
-  counterOfferItem  Item?              @relation("BarterCounterItem", fields: [counterOfferItemId], references: [id])
+  recipient         User?              @relation("BarterRecipient", fields: [recipientId], references: [id])
 
   @@map("barter_offers")
   @@index([initiatorId])
   @@index([recipientId])
   @@index([status])
   @@index([expiresAt])
+  @@index([isOpenOffer])
+}
+
+// Preference set - represents one alternative bundle the user wants
+// User can have multiple preference sets ranked by priority
+model BarterPreferenceSet {
+  id                String             @id @default(uuid())
+  barterOfferId     String             @map("barter_offer_id")
+
+  // Priority (1 = highest, 2 = second, etc.)
+  priority          Int
+
+  // Items in this preference set (can be multiple)
+  items             BarterPreferenceItem[]
+
+  // Auto-calculated total value
+  totalValue        Float              @map("total_value")
+
+  // Value difference from offered bundle
+  valueDifference   Float              @map("value_difference")
+
+  // Is this preference set balanced? (within acceptable range)
+  isBalanced        Boolean            @default(true) @map("is_balanced")
+
+  // Description
+  description       String?            // e.g., "MacBook Air" or "iPad Pro + Apple Pencil"
+
+  // Timestamps
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  barterOffer       BarterOffer        @relation(fields: [barterOfferId], references: [id], onDelete: Cascade)
+
+  @@map("barter_preference_sets")
+  @@unique([barterOfferId, priority])
+  @@index([barterOfferId])
+  @@index([priority])
+}
+
+// Individual item in a preference set
+model BarterPreferenceItem {
+  id                String             @id @default(uuid())
+  preferenceSetId   String             @map("preference_set_id")
+  itemId            String             @map("item_id")
+
+  // Item details (denormalized for performance)
+  itemValue         Float              @map("item_value")
+
+  // Timestamps
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  // Relations
+  preferenceSet     BarterPreferenceSet @relation(fields: [preferenceSetId], references: [id], onDelete: Cascade)
+  item              Item               @relation("BarterPreferenceItems", fields: [itemId], references: [id])
+
+  @@map("barter_preference_items")
+  @@unique([preferenceSetId, itemId])  // Can't have duplicate items in same set
+  @@index([preferenceSetId])
+  @@index([itemId])
 }
 
 // Multi-party barter chain (3+ users) - SMART BARTER

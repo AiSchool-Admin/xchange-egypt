@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import * as barterService from '../services/barter.service';
+import * as bundleService from '../services/barter-bundle.service';
 import { successResponse } from '../utils/response';
 
 /**
- * Create a barter offer
+ * Create a barter offer (with bundle & preferences support)
  * POST /api/v1/barter/offers
  */
 export const createBarterOffer = async (
@@ -15,7 +16,8 @@ export const createBarterOffer = async (
     const initiatorId = req.user!.id;
     const offerData = req.body;
 
-    const offer = await barterService.createBarterOffer(initiatorId, offerData);
+    // Use new bundle service
+    const offer = await bundleService.createBundleOffer(initiatorId, offerData);
 
     res.status(201).json(successResponse(offer, 'Barter offer created successfully'));
   } catch (error) {
@@ -228,6 +230,65 @@ export const completeBarterExchange = async (
     );
 
     res.json(successResponse(offer, 'Barter exchange completed successfully'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ============================================
+// Bundle & Preference-specific Controllers
+// ============================================
+
+/**
+ * Get matching offers for user's items
+ * GET /api/v1/barter/offers/matching
+ */
+export const getMatchingOffers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const { page, limit } = req.query;
+
+    const matches = await bundleService.findMatchingOffersForUser(
+      userId,
+      page ? parseInt(page as string) : 1,
+      limit ? parseInt(limit as string) : 20
+    );
+
+    res.json(successResponse(matches, 'Matching offers found successfully'));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get best match for a specific offer
+ * GET /api/v1/barter/offers/:offerId/best-match
+ */
+export const getBestMatch = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { offerId } = req.params;
+    const userId = req.user!.id;
+
+    const bestMatch = await bundleService.getBestMatchingPreferenceSet(offerId, userId);
+
+    if (!bestMatch) {
+      res.json(
+        successResponse(
+          null,
+          'No matching preference set found. You do not own the required items.'
+        )
+      );
+    } else {
+      res.json(successResponse(bestMatch, 'Best match found successfully'));
+    }
   } catch (error) {
     next(error);
   }
