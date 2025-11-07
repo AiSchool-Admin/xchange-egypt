@@ -406,4 +406,34 @@ export const notifyUserWelcome = async (
   });
 };
 
-import prisma from '../lib/prisma';
+/**
+ * Send review received notification
+ */
+export const notifyUserReviewReceived = async (
+  userId: string,
+  reviewId: string,
+  transactionId: string,
+  reviewerName: string,
+  rating: number
+): Promise<void> => {
+  const stars = '⭐'.repeat(rating);
+  await dispatch({
+    userId,
+    type: 'USER_REVIEW_RECEIVED',
+    title: 'New Review Received',
+    message: `${reviewerName} left you a ${rating}-star review: ${stars}`,
+    priority: 'MEDIUM',
+    entityType: 'review',
+    entityId: reviewId,
+    actionUrl: `/reviews/${reviewId}`,
+    actionText: 'View Review',
+    emailSubject: 'New Review Received - Xchange',
+    emailData: {
+      reviewerName,
+      rating,
+      stars,
+      reviewId,
+      transactionId,
+    },
+  });
+};

@@ -20,6 +20,7 @@ import auctionRoutes from './routes/auction.routes';
 import reverseAuctionRoutes from './routes/reverse-auction.routes';
 import imageRoutes from './routes/image.routes';
 import notificationRoutes from './routes/notification.routes';
+import reviewRoutes from './routes/review.routes';
 
 // Initialize Express app
 const app: Application = express();
@@ -111,6 +112,9 @@ app.use('/api/v1/images', imageRoutes);
 
 // Notification routes
 app.use('/api/v1/notifications', notificationRoutes);
+
+// Review routes
+app.use('/api/v1/reviews', reviewRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

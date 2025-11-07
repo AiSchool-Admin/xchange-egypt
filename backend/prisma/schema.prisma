@@ -773,29 +773,168 @@ model Transaction {
 }
 
 // ============================================
-// Reviews & Ratings
+// Reviews & Ratings - Professional System
 // ============================================
 
+enum ReviewStatus {
+  PENDING         // Awaiting moderation (optional)
+  APPROVED        // Approved and visible
+  REJECTED        // Rejected by moderator
+  FLAGGED         // Flagged for review
+  HIDDEN          // Hidden by admin
+}
+
+enum ReviewType {
+  SELLER_REVIEW   // Review of seller/vendor
+  BUYER_REVIEW    // Review of buyer
+  ITEM_REVIEW     // Review of item/product
+}
+
+// Main review model
 model Review {
+  id              String        @id @default(uuid())
+  transactionId   String        @map("transaction_id")
+  reviewerId      String        @map("reviewer_id")
+  reviewedId      String        @map("reviewed_id")
+  reviewType      ReviewType    @default(SELLER_REVIEW) @map("review_type")
+
+  // Ratings
+  overallRating   Int           @map("overall_rating")      // 1-5 stars
+
+  // Detailed ratings (optional, for sellers)
+  itemAsDescribed Int?          @map("item_as_described")   // 1-5
+  communication   Int?                                      // 1-5
+  shippingSpeed   Int?          @map("shipping_speed")      // 1-5
+  packaging       Int?                                      // 1-5
+
+  // Review content
+  title           String?                                    // Review title/headline
+  comment         String?                                    // Review text
+  images          String[]      @default([])                // Review images
+
+  // Verification
+  isVerifiedPurchase Boolean    @default(false) @map("is_verified_purchase")
+
+  // Status
+  status          ReviewStatus  @default(APPROVED)
+
+  // Engagement
+  helpfulCount    Int           @default(0) @map("helpful_count")
+  notHelpfulCount Int           @default(0) @map("not_helpful_count")
+  reportCount     Int           @default(0) @map("report_count")
+
+  // Edit tracking
+  isEdited        Boolean       @default(false) @map("is_edited")
+  editedAt        DateTime?     @map("edited_at")
+
+  // Timestamps
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  transaction     Transaction   @relation(fields: [transactionId], references: [id])
+  reviewer        User          @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewed        User          @relation("Reviewed", fields: [reviewedId], references: [id])
+  response        ReviewResponse?
+  votes           ReviewVote[]
+  reports         ReviewReport[]
+
+  @@map("reviews")
+  @@unique([transactionId, reviewerId]) // One review per transaction per reviewer
+  @@index([transactionId])
+  @@index([reviewerId])
+  @@index([reviewedId])
+  @@index([overallRating])
+  @@index([status])
+  @@index([isVerifiedPurchase])
+  @@index([createdAt])
+  @@index([helpfulCount])
+}
+
+// Seller/vendor response to reviews
+model ReviewResponse {
   id              String      @id @default(uuid())
-  transactionId   String      @map("transaction_id")
-  reviewerId      String      @map("reviewer_id")
-  reviewedId      String      @map("reviewed_id")
-  rating          Int         // 1-5
-  comment         String?
+  reviewId        String      @unique @map("review_id")
+  responderId     String      @map("responder_id")  // Usually the reviewed user
+
+  // Response content
+  message         String
+
+  // Edit tracking
+  isEdited        Boolean     @default(false) @map("is_edited")
+  editedAt        DateTime?   @map("edited_at")
+
+  // Timestamps
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
   // Relations
-  transaction     Transaction @relation(fields: [transactionId], references: [id])
-  reviewer        User        @relation("Reviewer", fields: [reviewerId], references: [id])
-  reviewed        User        @relation("Reviewed", fields: [reviewedId], references: [id])
+  review          Review      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
-  @@map("reviews")
-  @@index([transactionId])
-  @@index([reviewerId])
-  @@index([reviewedId])
-  @@index([rating])
+  @@map("review_responses")
+  @@index([reviewId])
+  @@index([responderId])
+  @@index([createdAt])
+}
+
+// User votes on review helpfulness
+model ReviewVote {
+  id              String      @id @default(uuid())
+  reviewId        String      @map("review_id")
+  userId          String      @map("user_id")
+
+  // Vote value
+  isHelpful       Boolean     @map("is_helpful")  // true = helpful, false = not helpful
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  review          Review      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_votes")
+  @@unique([reviewId, userId])  // One vote per user per review
+  @@index([reviewId])
+  @@index([userId])
+}
+
+// Report inappropriate reviews
+enum ReportReason {
+  SPAM
+  OFFENSIVE_LANGUAGE
+  FAKE_REVIEW
+  IRRELEVANT
+  PERSONAL_INFORMATION
+  OTHER
+}
+
+model ReviewReport {
+  id              String        @id @default(uuid())
+  reviewId        String        @map("review_id")
+  reporterId      String        @map("reporter_id")
+
+  // Report details
+  reason          ReportReason
+  description     String?                          // Additional context
+
+  // Status
+  isResolved      Boolean       @default(false) @map("is_resolved")
+  resolvedAt      DateTime?     @map("resolved_at")
+  resolvedBy      String?       @map("resolved_by")  // Admin user ID
+  resolution      String?                          // Resolution notes
+
+  // Timestamps
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  review          Review        @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_reports")
+  @@unique([reviewId, reporterId])  // One report per user per review
+  @@index([reviewId])
+  @@index([reporterId])
+  @@index([isResolved])
+  @@index([createdAt])
 }
 
 // ============================================
