@@ -59,20 +59,22 @@ model User {
   lastLoginAt       DateTime?   @map("last_login_at")
 
   // Relations
-  items                     Item[]                @relation("UserItems")
-  listings                  Listing[]             @relation("UserListings")
-  barterOffersInitiated     BarterOffer[]         @relation("BarterInitiator")
-  barterOffersReceived      BarterOffer[]         @relation("BarterRecipient")
+  items                     Item[]                    @relation("UserItems")
+  listings                  Listing[]                 @relation("UserListings")
+  barterOffersInitiated     BarterOffer[]             @relation("BarterInitiator")
+  barterOffersReceived      BarterOffer[]             @relation("BarterRecipient")
   barterChainParticipations BarterParticipant[]
   auctionBids               AuctionBid[]
-  reverseAuctionsCreated    ReverseAuction[]      @relation("ReverseAuctionBuyer")
-  reverseAuctionBids        ReverseAuctionBid[]   @relation("ReverseAuctionSeller")
-  transactionsAsBuyer       Transaction[]         @relation("Buyer")
-  transactionsAsSeller      Transaction[]         @relation("Seller")
-  reviewsGiven              Review[]              @relation("Reviewer")
-  reviewsReceived           Review[]              @relation("Reviewed")
+  reverseAuctionsCreated    ReverseAuction[]          @relation("ReverseAuctionBuyer")
+  reverseAuctionBids        ReverseAuctionBid[]       @relation("ReverseAuctionSeller")
+  transactionsAsBuyer       Transaction[]             @relation("Buyer")
+  transactionsAsSeller      Transaction[]             @relation("Seller")
+  reviewsGiven              Review[]                  @relation("Reviewer")
+  reviewsReceived           Review[]                  @relation("Reviewed")
   wishListItems             WishListItem[]
   refreshTokens             RefreshToken[]
+  notifications             Notification[]            @relation("UserNotifications")
+  notificationPreferences   NotificationPreference?   @relation("UserPreferences")
 
   @@map("users")
   @@index([email])
@@ -818,3 +820,196 @@ model WishListItem {
   @@index([userId])
   @@index([categoryId])
 }
+
+// ============================================
+// Notifications System
+// ============================================
+
+enum NotificationType {
+  // Auction notifications
+  AUCTION_NEW_BID              // Someone bid on your auction
+  AUCTION_OUTBID               // You were outbid
+  AUCTION_WINNING              // You're currently winning
+  AUCTION_WON                  // You won the auction
+  AUCTION_LOST                 // You lost the auction
+  AUCTION_ENDING_SOON          // Auction ending in 1 hour
+  AUCTION_ENDED                // Auction has ended
+
+  // Reverse Auction notifications
+  REVERSE_AUCTION_NEW_REQUEST  // New reverse auction request (for sellers)
+  REVERSE_AUCTION_NEW_BID      // Someone bid on your request
+  REVERSE_AUCTION_OUTBID       // Your bid was beaten
+  REVERSE_AUCTION_WINNING      // Your bid is winning
+  REVERSE_AUCTION_WON          // Your bid won
+  REVERSE_AUCTION_AWARDED      // You were awarded
+  REVERSE_AUCTION_ENDING_SOON  // Request ending soon
+
+  // Barter notifications
+  BARTER_OFFER_RECEIVED        // New barter offer
+  BARTER_OFFER_ACCEPTED        // Your offer was accepted
+  BARTER_OFFER_REJECTED        // Your offer was rejected
+  BARTER_OFFER_COUNTERED       // Counter offer received
+  BARTER_OFFER_EXPIRED         // Offer expired
+
+  // Item notifications
+  ITEM_SOLD                    // Your item sold
+  ITEM_PRICE_DROP              // Wishlist item price dropped
+  ITEM_AVAILABLE               // Wishlist item now available
+
+  // Transaction notifications
+  TRANSACTION_PAYMENT_RECEIVED // Payment received
+  TRANSACTION_SHIPPED          // Item shipped
+  TRANSACTION_DELIVERED        // Item delivered
+
+  // User notifications
+  USER_WELCOME                 // Welcome email
+  USER_EMAIL_VERIFICATION      // Verify email
+  USER_PASSWORD_RESET          // Password reset
+  USER_REVIEW_RECEIVED         // New review received
+
+  // System notifications
+  SYSTEM_MAINTENANCE           // Scheduled maintenance
+  SYSTEM_ANNOUNCEMENT          // Important announcement
+}
+
+enum NotificationChannel {
+  IN_APP      // In-app notification
+  EMAIL       // Email notification
+  SMS         // SMS notification (future)
+  PUSH        // Push notification (future)
+}
+
+enum NotificationPriority {
+  LOW         // Can wait
+  MEDIUM      // Normal priority
+  HIGH        // Important
+  URGENT      // Immediate attention
+}
+
+// In-app notifications
+model Notification {
+  id              String              @id @default(uuid())
+  userId          String              @map("user_id")
+
+  // Notification details
+  type            NotificationType
+  priority        NotificationPriority @default(MEDIUM)
+  title           String
+  message         String
+
+  // Related entity (optional)
+  entityType      String?             @map("entity_type")  // 'auction', 'item', 'barter', etc.
+  entityId        String?             @map("entity_id")    // ID of related entity
+
+  // Action link
+  actionUrl       String?             @map("action_url")
+  actionText      String?             @map("action_text")
+
+  // Metadata (JSON for extra data)
+  metadata        Json?
+
+  // Status
+  isRead          Boolean             @default(false) @map("is_read")
+  readAt          DateTime?           @map("read_at")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  expiresAt       DateTime?           @map("expires_at")  // Auto-delete after this date
+
+  // Relations
+  user            User                @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+// User notification preferences
+model NotificationPreference {
+  id              String              @id @default(uuid())
+  userId          String              @unique @map("user_id")
+
+  // Channel preferences
+  emailEnabled    Boolean             @default(true) @map("email_enabled")
+  smsEnabled      Boolean             @default(false) @map("sms_enabled")
+  pushEnabled     Boolean             @default(true) @map("push_enabled")
+
+  // Type preferences (JSON for flexibility)
+  preferences     Json                @default("{}")  // { "AUCTION_NEW_BID": { "email": true, "inApp": true }, ... }
+
+  // Quiet hours
+  quietHoursStart Int?                @map("quiet_hours_start")  // Hour 0-23
+  quietHoursEnd   Int?                @map("quiet_hours_end")    // Hour 0-23
+
+  // Frequency settings
+  emailDigest     Boolean             @default(false) @map("email_digest")  // Daily digest instead of individual
+  digestTime      Int?                @map("digest_time")  // Hour for daily digest (0-23)
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  user            User                @relation("UserPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+  @@index([userId])
+}
+
+// Email queue for async sending
+model EmailQueue {
+  id              String              @id @default(uuid())
+
+  // Recipient
+  to              String              // Email address
+  userId          String?             @map("user_id")  // Optional user reference
+
+  // Email details
+  subject         String
+  htmlBody        String              @map("html_body")
+  textBody        String?             @map("text_body")
+
+  // Template info (optional)
+  templateName    String?             @map("template_name")
+  templateData    Json?               @map("template_data")
+
+  // Related notification
+  notificationType NotificationType?  @map("notification_type")
+  entityType      String?             @map("entity_type")
+  entityId        String?             @map("entity_id")
+
+  // Status
+  status          EmailStatus         @default(PENDING)
+  attempts        Int                 @default(0)
+  lastAttemptAt   DateTime?           @map("last_attempt_at")
+  sentAt          DateTime?           @map("sent_at")
+  error           String?
+
+  // Priority
+  priority        NotificationPriority @default(MEDIUM)
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  scheduledFor    DateTime?           @map("scheduled_for")  // Delayed sending
+  expiresAt       DateTime?           @map("expires_at")  // Don't send after this
+
+  @@map("email_queue")
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([scheduledFor])
+  @@index([userId])
+}
+
+enum EmailStatus {
+  PENDING         // Waiting to be sent
+  SENDING         // Currently being sent
+  SENT            // Successfully sent
+  FAILED          // Failed to send
+  CANCELLED       // Cancelled before sending
+}
+
