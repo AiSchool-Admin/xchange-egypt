@@ -1152,3 +1152,102 @@ enum EmailStatus {
   CANCELLED       // Cancelled before sending
 }
 
+// ============================================
+// Advanced Search System
+// ============================================
+
+// User search history
+model SearchHistory {
+  id              String      @id @default(uuid())
+  userId          String?     @map("user_id")  // Nullable for anonymous users
+
+  // Search query
+  query           String
+  filters         Json?       // Search filters applied
+  resultsCount    Int         @default(0) @map("results_count")
+
+  // Search metadata
+  category        String?     // Category searched
+  location        String?     // Location searched
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("search_history")
+  @@index([userId])
+  @@index([query])
+  @@index([createdAt])
+}
+
+// Popular/trending searches
+model PopularSearch {
+  id              String      @id @default(uuid())
+
+  // Search data
+  query           String      @unique
+  searchCount     Int         @default(1) @map("search_count")
+
+  // Trending data
+  trend           Float       @default(0) // Trend score
+  lastSearchedAt  DateTime    @map("last_searched_at")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("popular_searches")
+  @@index([searchCount])
+  @@index([trend])
+  @@index([lastSearchedAt])
+}
+
+// User's saved searches
+model SavedSearch {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+
+  // Search details
+  name            String      // User-given name for the search
+  query           String?     // Text query
+  filters         Json        // All search filters/criteria
+
+  // Notifications
+  notifyOnNew     Boolean     @default(false) @map("notify_on_new") // Alert on new matches
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  lastUsedAt      DateTime?   @map("last_used_at")
+
+  @@map("saved_searches")
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// AI-powered search suggestions
+model SearchSuggestion {
+  id              String      @id @default(uuid())
+
+  // Suggestion data
+  keyword         String      @unique
+  displayText     String      @map("display_text")
+  category        String?
+
+  // Stats
+  clickCount      Int         @default(0) @map("click_count")
+
+  // Admin control
+  isActive        Boolean     @default(true) @map("is_active")
+  priority        Int         @default(0)  // Higher priority shows first
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("search_suggestions")
+  @@index([keyword])
+  @@index([category])
+  @@index([isActive])
+  @@index([priority])
+}
+
