@@ -21,6 +21,7 @@
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": false,
     "noImplicitAny": false,
+    "noEmitOnError": false,
     "types": ["node", "jest"],
     "baseUrl": ".",
     "paths": {

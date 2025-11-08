@@ -5,7 +5,6 @@ import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import {
   createBarterOfferSchema,
-  createCounterOfferSchema,
   acceptBarterOfferSchema,
   rejectBarterOfferSchema,
   cancelBarterOfferSchema,
@@ -126,7 +125,7 @@ router.post(
 router.post(
   '/offers/:offerId/counter',
   authenticate,
-  validate(createCounterOfferSchema),
+  validate(createBarterOfferSchema),
   barterController.createCounterOffer
 );
 

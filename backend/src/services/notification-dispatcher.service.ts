@@ -8,6 +8,7 @@
 import * as notificationService from './notification.service';
 import * as emailService from './email.service';
 import { generateEmailTemplate } from '../utils/email-templates';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types

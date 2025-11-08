@@ -4,6 +4,12 @@ import { verifyAccessToken } from '../utils/jwt';
 import prisma from '../config/database';
 import { UserType } from '@prisma/client';
 
+// Extended Request type with user
+export interface AuthRequest extends Request {
+  user?: any;
+  userId?: string;
+}
+
 /**
  * Middleware to authenticate user using JWT
  * Attaches user object to request
