@@ -69,7 +69,7 @@ app.get('/', (_req: Request, res: Response) => {
   res.json({
     message: 'مرحباً بك في منصة Xchange للتجارة الإلكترونية',
     welcomeMessage: 'Welcome to Xchange E-commerce Platform',
-    version: '0.1.0',
+    version: '0.1.1',
     status: 'running',
     endpoints: {
       health: '/health',
@@ -92,7 +92,7 @@ app.get('/health', (_req: Request, res: Response) => {
 app.get('/api/v1', (_req: Request, res: Response) => {
   res.json({
     message: 'Xchange API v1',
-    version: '0.1.0',
+    version: '0.1.1',
     documentation: '/api/v1/docs',
   });
 });
