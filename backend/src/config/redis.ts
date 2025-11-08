@@ -1,24 +1,34 @@
 import { createClient } from 'redis';
 import { env } from './env';
 
-// Redis Client
-export const redis = createClient({
-  url: env.redis.url,
-});
+// Only create Redis client if URL is provided and valid
+let redis: ReturnType<typeof createClient> | null = null;
 
-redis.on('error', (err) => {
-  console.error('Redis Client Error:', err);
-});
+if (env.redis.url && env.redis.url.startsWith('redis://')) {
+  redis = createClient({
+    url: env.redis.url,
+  });
 
-redis.on('connect', () => {
-  console.log('✅ Redis connected');
-});
+  redis.on('error', (err) => {
+    console.error('Redis Client Error:', err);
+  });
+
+  redis.on('connect', () => {
+    console.log('✅ Redis connected');
+  });
+} else {
+  console.warn('⚠️ Redis URL not configured or invalid, Redis features will be disabled');
+}
 
 // Connect to Redis
 export const connectRedis = async () => {
   try {
-    if (!env.redis.url) {
-      console.warn('⚠️ Redis URL not configured, skipping Redis connection');
+    if (!redis) {
+      console.warn('⚠️ Redis client not initialized, skipping connection');
+      return;
+    }
+    if (!env.redis.url || !env.redis.url.startsWith('redis://')) {
+      console.warn('⚠️ Redis URL not configured or invalid, skipping Redis connection');
       return;
     }
     await redis.connect();
@@ -32,7 +42,7 @@ export const connectRedis = async () => {
 // Graceful shutdown
 process.on('beforeExit', async () => {
   try {
-    if (redis.isOpen) {
+    if (redis && redis.isOpen) {
       await redis.quit();
     }
   } catch (error) {
@@ -40,4 +50,5 @@ process.on('beforeExit', async () => {
   }
 });
 
+export { redis };
 export default redis;
