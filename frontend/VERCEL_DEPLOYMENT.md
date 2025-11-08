@@ -29,14 +29,14 @@ On the project configuration page:
 **Framework Preset:** Next.js (should be auto-detected)
 
 **Root Directory:**
-- Click "Edit" next to Root Directory
-- Enter: `frontend`
-- This tells Vercel to build from the frontend subdirectory
+- Leave as `xchange-egypt` (repository root)
+- The `vercel.json` file is configured to handle the monorepo structure automatically
 
 **Build and Output Settings:**
-- Build Command: `npm run build` (auto-detected)
-- Output Directory: `.next` (auto-detected)
-- Install Command: `npm install` (auto-detected)
+- These are configured in `vercel.json` at the repository root
+- Build Command: `cd frontend && npm run build` (auto-configured)
+- Output Directory: `frontend/.next` (auto-configured)
+- Install Command: `cd frontend && npm install` (auto-configured)
 
 ### 4. Add Environment Variables
 
