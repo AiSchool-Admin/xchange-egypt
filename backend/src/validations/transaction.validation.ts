@@ -1,15 +1,7 @@
 import { z } from 'zod';
-import { TransactionStatus, PaymentMethod } from '@prisma/client';
 
-// Transaction Status validation
-const transactionStatusEnum = z.nativeEnum(TransactionStatus, {
-  errorMap: () => ({ message: 'Invalid transaction status' }),
-});
-
-// Payment Method validation
-const paymentMethodEnum = z.nativeEnum(PaymentMethod, {
-  errorMap: () => ({ message: 'Invalid payment method' }),
-});
+// Payment Method validation (as string since it's stored as string in DB)
+const paymentMethodEnum = z.string().min(1, 'Payment method is required');
 
 // Create Purchase Transaction Schema
 export const createPurchaseSchema = z.object({

@@ -1,4 +1,4 @@
-import { PrismaClient, TransactionStatus, PaymentMethod } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 
 const prisma = new PrismaClient();
@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 interface CreatePurchaseData {
   listingId: string;
   quantity: number;
-  paymentMethod: PaymentMethod;
+  paymentMethod: string;
   shippingAddress: string;
   notes?: string;
 }
