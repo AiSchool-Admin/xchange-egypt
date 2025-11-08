@@ -34,7 +34,7 @@ dist/
 .DS_Store
 
 # Next.js
-/.next/
+.next/
 /out/
 next-env.d.ts
 
