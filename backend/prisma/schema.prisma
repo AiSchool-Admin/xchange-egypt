@@ -184,7 +184,6 @@ model Item {
   barterPreferenceItems   BarterPreferenceItem[]  @relation("BarterPreferenceItems")
   participantsGiving      BarterParticipant[]     @relation("ParticipantGivingItem")
   participantsReceiving   BarterParticipant[]     @relation("ParticipantReceivingItem")
-  auctionBids             AuctionBid[]
   reverseAuctionBids      ReverseAuctionBid[]     @relation("ReverseAuctionBidItem")
 
   @@map("items")
