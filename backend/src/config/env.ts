@@ -8,7 +8,7 @@ dotenv.config();
 const envSchema = z.object({
   // Server
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().default('3001'),
+  PORT: z.string().default('3000'),
   API_URL: z.string().url(),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
 

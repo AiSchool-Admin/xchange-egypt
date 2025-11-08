@@ -194,8 +194,8 @@ const startServer = async () => {
     await prisma.$connect();
     console.log('✅ Database connected');
 
-    // Start Express server
-    app.listen(env.server.port, () => {
+    // Start Express server - listen on 0.0.0.0 for Railway compatibility
+    app.listen(env.server.port, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${env.server.port}`);
       console.log(`🌍 Environment: ${env.server.nodeEnv}`);
       console.log(`📍 API URL: ${env.server.apiUrl}`);
