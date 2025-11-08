@@ -62,3 +62,8 @@ export const sendCreated = <T>(res: Response, data: T, message = 'Created'): Res
 export const sendNoContent = (res: Response): Response => {
   return res.status(204).send();
 };
+
+/**
+ * Alias for sendSuccess (for backward compatibility)
+ */
+export const successResponse = sendSuccess;
