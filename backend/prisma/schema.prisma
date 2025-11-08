@@ -1251,3 +1251,163 @@ model SearchSuggestion {
   @@index([priority])
 }
 
+// ============================================
+// Real-time Chat & Messaging System
+// ============================================
+
+// Chat conversation between two users
+model Conversation {
+  id              String      @id @default(uuid())
+
+  // Participants (always 2 users for direct messaging)
+  participant1Id  String      @map("participant1_id")
+  participant2Id  String      @map("participant2_id")
+
+  // Related transaction/item (optional context)
+  itemId          String?     @map("item_id")
+  transactionId   String?     @map("transaction_id")
+
+  // Last message info (denormalized for performance)
+  lastMessageAt   DateTime?   @map("last_message_at")
+  lastMessageText String?     @map("last_message_text")
+
+  // Unread counts per user
+  unreadCount1    Int         @default(0) @map("unread_count_1") // For participant1
+  unreadCount2    Int         @default(0) @map("unread_count_2") // For participant2
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  messages        Message[]
+
+  @@map("conversations")
+  @@unique([participant1Id, participant2Id])
+  @@index([participant1Id])
+  @@index([participant2Id])
+  @@index([itemId])
+  @@index([transactionId])
+  @@index([lastMessageAt])
+}
+
+// Individual chat message
+enum MessageType {
+  TEXT            // Regular text message
+  IMAGE           // Image message
+  FILE            // File attachment
+  ITEM            // Shared item/product
+  OFFER           // Offer/deal
+  SYSTEM          // System message (e.g., "User joined")
+}
+
+enum MessageStatus {
+  SENT            // Message sent
+  DELIVERED       // Message delivered to recipient
+  READ            // Message read by recipient
+  FAILED          // Message failed to send
+}
+
+model Message {
+  id              String        @id @default(uuid())
+  conversationId  String        @map("conversation_id")
+  senderId        String        @map("sender_id")
+  recipientId     String        @map("recipient_id")
+
+  // Message content
+  type            MessageType   @default(TEXT)
+  content         String        // Text content or JSON for special types
+  attachments     String[]      @default([]) // URLs for images/files
+
+  // Related entities (optional)
+  itemId          String?       @map("item_id")    // Shared item
+  offerId         String?       @map("offer_id")   // Related offer
+
+  // Status
+  status          MessageStatus @default(SENT)
+
+  // Read tracking
+  isRead          Boolean       @default(false) @map("is_read")
+  readAt          DateTime?     @map("read_at")
+  deliveredAt     DateTime?     @map("delivered_at")
+
+  // Message metadata
+  isEdited        Boolean       @default(false) @map("is_edited")
+  editedAt        DateTime?     @map("edited_at")
+  isDeleted       Boolean       @default(false) @map("is_deleted")
+  deletedAt       DateTime?     @map("deleted_at")
+
+  // Timestamps
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([createdAt])
+  @@index([status])
+  @@index([isRead])
+}
+
+// User typing indicator (in-memory, but can be stored for offline)
+model TypingIndicator {
+  id              String      @id @default(uuid())
+  conversationId  String      @map("conversation_id")
+  userId          String      @map("user_id")
+
+  // Auto-expires after 5 seconds
+  expiresAt       DateTime    @map("expires_at")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("typing_indicators")
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([expiresAt])
+}
+
+// User online/offline status
+model UserPresence {
+  id              String      @id @default(uuid())
+  userId          String      @unique @map("user_id")
+
+  // Status
+  isOnline        Boolean     @default(false) @map("is_online")
+  lastSeenAt      DateTime?   @map("last_seen_at")
+
+  // Current socket connection (for real-time)
+  socketId        String?     @map("socket_id")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("user_presence")
+  @@index([userId])
+  @@index([isOnline])
+}
+
+// Blocked users (prevent messaging)
+model BlockedUser {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")        // User who blocked
+  blockedUserId   String      @map("blocked_user_id") // User who was blocked
+
+  // Reason (optional)
+  reason          String?
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("blocked_users")
+  @@unique([userId, blockedUserId])
+  @@index([userId])
+  @@index([blockedUserId])
+}
+
+

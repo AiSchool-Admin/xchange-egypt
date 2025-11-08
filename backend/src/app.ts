@@ -22,6 +22,7 @@ import imageRoutes from './routes/image.routes';
 import notificationRoutes from './routes/notification.routes';
 import reviewRoutes from './routes/review.routes';
 import searchRoutes from './routes/search.routes';
+import chatRoutes from './routes/chat.routes';
 
 // Initialize Express app
 const app: Application = express();
@@ -119,6 +120,9 @@ app.use('/api/v1/reviews', reviewRoutes);
 
 // Search routes
 app.use('/api/v1/search', searchRoutes);
+
+// Chat routes
+app.use('/api/v1/chat', chatRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
