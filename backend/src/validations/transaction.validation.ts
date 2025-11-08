@@ -3,6 +3,9 @@ import { z } from 'zod';
 // Payment Method validation (as string since it's stored as string in DB)
 const paymentMethodEnum = z.string().min(1, 'Payment method is required');
 
+// Transaction status validation (as string)
+const transactionStatusEnum = z.string().min(1, 'Transaction status is required');
+
 // Create Purchase Transaction Schema
 export const createPurchaseSchema = z.object({
   body: z.object({
