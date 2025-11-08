@@ -10,17 +10,17 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.string().default('3001'),
   API_URL: z.string().url(),
-  FRONTEND_URL: z.string().url(),
+  FRONTEND_URL: z.string().default('http://localhost:3000'),
 
   // Database
   DATABASE_URL: z.string().url(),
 
-  // Redis
-  REDIS_URL: z.string().url(),
+  // Redis (optional)
+  REDIS_URL: z.string().optional(),
 
   // JWT
-  JWT_SECRET: z.string().min(32),
-  JWT_REFRESH_SECRET: z.string().min(32),
+  JWT_SECRET: z.string().min(10),
+  JWT_REFRESH_SECRET: z.string().min(10),
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),
 
@@ -58,7 +58,7 @@ const parseEnv = () => {
         url: env.DATABASE_URL,
       },
       redis: {
-        url: env.REDIS_URL,
+        url: env.REDIS_URL || '',
       },
       jwt: {
         secret: env.JWT_SECRET,
