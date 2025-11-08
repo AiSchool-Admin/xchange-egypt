@@ -64,6 +64,21 @@ app.use('/api/', limiter);
 // Routes
 // ============================================
 
+// Root route - Welcome message
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    message: 'مرحباً بك في منصة Xchange للتجارة الإلكترونية',
+    welcomeMessage: 'Welcome to Xchange E-commerce Platform',
+    version: '0.1.0',
+    status: 'running',
+    endpoints: {
+      health: '/health',
+      api: '/api/v1',
+      docs: '/api/v1/docs'
+    }
+  });
+});
+
 // Health check
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
