@@ -13,31 +13,34 @@ by CORS policy: No 'Access-Control-Allow-Origin' header is present on the reques
 
 ### Step 1: Get Your Vercel Deployment URLs
 
-You need to add your Vercel deployment URL(s) to the CORS configuration. You typically have:
+You need to add your Vercel deployment URL(s) to the CORS configuration. Vercel creates unique URLs for each deployment:
 
-1. **Preview/Development URL**: `https://xchange-egypt-8i366ibkz-mamdouh-ragabs-projects.vercel.app`
-2. **Production URL**: (if you have a custom domain or production deployment)
+**Current deployment URLs:**
+- `https://xchange-egypt-8i366ibkz-mamdouh-ragabs-projects.vercel.app`
+- `https://xchange-egypt-ff43xojqo-mamdouh-ragabs-projects.vercel.app`
+
+**Note:** Vercel generates a new unique URL for each deployment. You have three options:
+
+1. **Add each URL individually** (most secure, but tedious)
+2. **Use a wildcard for your Vercel subdomain** (recommended)
+3. **Use a custom domain** (best for production)
 
 ### Step 2: Update Railway Environment Variable
 
 1. Go to your Railway project dashboard: https://railway.app
-2. Select your backend service
+2. Select your backend service (`xchange-egypt-production`)
 3. Navigate to the **Variables** tab
 4. Find the `CORS_ORIGIN` variable (or create it if it doesn't exist)
-5. Update its value to include your Vercel URLs (comma-separated):
+5. Update its value to include your Vercel URLs (comma-separated)
 
+**RECOMMENDED - Allow all your Vercel deployments:**
 ```env
-CORS_ORIGIN=http://localhost:3000,https://xchange-egypt-8i366ibkz-mamdouh-ragabs-projects.vercel.app
+CORS_ORIGIN=http://localhost:3000,https://xchange-egypt-production.up.railway.app,https://xchange-egypt-8i366ibkz-mamdouh-ragabs-projects.vercel.app,https://xchange-egypt-ff43xojqo-mamdouh-ragabs-projects.vercel.app
 ```
 
-**For production with multiple deployment URLs:**
+**OR use wildcard pattern (easier for multiple deployments):**
 ```env
-CORS_ORIGIN=http://localhost:3000,https://xchange-egypt-8i366ibkz-mamdouh-ragabs-projects.vercel.app,https://your-production-url.vercel.app
-```
-
-**To allow all Vercel preview deployments (less secure, use with caution):**
-```env
-CORS_ORIGIN=http://localhost:3000,https://*.vercel.app
+CORS_ORIGIN=http://localhost:3000,https://xchange-egypt-production.up.railway.app,https://*-mamdouh-ragabs-projects.vercel.app
 ```
 
 ### Step 3: Redeploy Backend
