@@ -1,0 +1,67 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop, claude/*]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies (Backend)
+        run: |
+          cd backend
+          pnpm install --frozen-lockfile
+
+      - name: Lint Backend
+        run: |
+          cd backend
+          pnpm run lint
+
+      - name: Build Backend
+        run: |
+          cd backend
+          pnpm run build
+
+      # TODO: Add tests when ready
+      # - name: Test Backend
+      #   run: |
+      #     cd backend
+      #     pnpm run test
+
+  build-status:
+    name: Build Status Check
+    runs-on: ubuntu-latest
+    needs: [lint-and-test]
+    if: always()
+
+    steps:
+      - name: Check build status
+        run: |
+          if [ "${{ needs.lint-and-test.result }}" != "success" ]; then
+            echo "❌ Build failed"
+            exit 1
+          fi
+          echo "✅ Build passed"
