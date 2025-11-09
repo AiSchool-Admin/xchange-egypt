@@ -32,8 +32,8 @@ export interface User {
   phone?: string;
   role: string;
   avatar?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
