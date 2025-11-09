@@ -37,10 +37,10 @@ export interface User {
 }
 
 /**
- * Register a new user
+ * Register a new user (individual)
  */
 export const register = async (data: RegisterData): Promise<AuthResponse> => {
-  const response = await apiClient.post('/auth/register', data);
+  const response = await apiClient.post('/auth/register/individual', data);
   return response.data;
 };
 
