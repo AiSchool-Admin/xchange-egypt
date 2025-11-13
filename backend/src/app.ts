@@ -34,10 +34,33 @@ const app: Application = express();
 // Security headers
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration with dynamic origin validation
 app.use(
   cors({
-    origin: env.cors.origin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, Postman, curl)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Check if origin is in the allowed list
+      if (env.cors.origin.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Check for wildcard patterns (e.g., https://*-mamdouh-ragabs-projects.vercel.app)
+      const allowedPatterns = env.cors.origin.filter(o => o.includes('*'));
+      for (const pattern of allowedPatterns) {
+        const regexPattern = pattern.replace(/\*/g, '.*').replace(/\./g, '\\.');
+        const regex = new RegExp(`^${regexPattern}$`);
+        if (regex.test(origin)) {
+          return callback(null, true);
+        }
+      }
+
+      // Origin not allowed
+      callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
