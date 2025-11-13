@@ -3,7 +3,7 @@ import apiClient from './client';
 export interface RegisterData {
   email: string;
   password: string;
-  name: string;
+  fullName: string;
   phone?: string;
 }
 
@@ -16,7 +16,7 @@ export interface AuthResponse {
   user: {
     id: string;
     email: string;
-    name: string;
+    fullName: string;
     phone?: string;
     role: string;
     avatar?: string;
@@ -28,7 +28,7 @@ export interface AuthResponse {
 export interface User {
   id: string;
   email: string;
-  name: string;
+  fullName: string;
   phone?: string;
   role: string;
   avatar?: string;

@@ -33,9 +33,21 @@ export default function RegisterPage() {
       return;
     }
 
-    // Validate password length
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    // Validate password requirements (must match backend validation)
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      setError('Password must contain at least one uppercase letter');
+      return;
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      setError('Password must contain at least one lowercase letter');
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      setError('Password must contain at least one number');
       return;
     }
 
@@ -43,7 +55,7 @@ export default function RegisterPage() {
 
     try {
       await register({
-        name: formData.name,
+        fullName: formData.name,
         email: formData.email,
         password: formData.password,
         phone: formData.phone || undefined,
@@ -132,6 +144,9 @@ export default function RegisterPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 placeholder="••••••••"
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Must be 8+ characters with uppercase, lowercase, and number
+              </p>
             </div>
 
             <div>
