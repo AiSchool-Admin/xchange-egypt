@@ -80,7 +80,7 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-2">Welcome, {user.name}! 👋</h2>
+          <h2 className="text-2xl font-bold mb-2">Welcome, {user.fullName}! 👋</h2>
           <p className="text-gray-600 mb-4">{user.email}</p>
 
           <div className="flex gap-4 items-center">
