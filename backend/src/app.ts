@@ -224,6 +224,9 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 const startServer = async () => {
   try {
+    console.log('🔄 Starting Xchange Backend Server...');
+    console.log('📦 Version: 0.1.1 (Build: 20251115)');
+
     // Connect to Redis
     await connectRedis();
 
