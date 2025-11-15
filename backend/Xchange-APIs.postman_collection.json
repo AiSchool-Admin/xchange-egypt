@@ -1,0 +1,577 @@
+{
+  "info": {
+    "name": "Xchange Egypt APIs",
+    "_postman_id": "xchange-egypt-apis-v1",
+    "description": "Complete API collection for Xchange Egypt E-commerce Platform\n\n**Features:**\n- Authentication & Users\n- Categories & Items\n- Direct Sales (Listings)\n- Barter System\n- Auction System (Forward Auctions)\n- Reverse Auction System (Coming Soon)\n- Reviews & Ratings (Coming Soon)\n\n**Base URL:** http://localhost:3001\n\n**Test Accounts:**\n- admin@xchange.eg / Admin123!\n- john@example.com / Test123!\n- sarah@example.com / Test123!",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "ACCESS_TOKEN",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ITEM_ID",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "AUCTION_ID",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@test.com\",\n  \"password\": \"Test123!\",\n  \"fullName\": \"Test User\",\n  \"phone\": \"+201234567890\",\n  \"userType\": \"INDIVIDUAL\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auth/register",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auth", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set(\"ACCESS_TOKEN\", response.data.accessToken);",
+                  "    console.log(\"✅ Access token saved!\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"Test123!\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auth/login",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/users/me",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"YOUR_REFRESH_TOKEN\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auth/refresh",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Categories",
+      "item": [
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/categories",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/categories/:id",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "categories", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CATEGORY_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Items",
+      "item": [
+        {
+          "name": "Get All Items",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/items",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "items"]
+            }
+          }
+        },
+        {
+          "name": "Get Item by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/items/:id",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "items", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{ITEM_ID}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set(\"ITEM_ID\", response.data.id);",
+                  "    console.log(\"✅ Item ID saved!\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"iPhone 13 Pro - Test\",\n  \"description\": \"Used iPhone in excellent condition\",\n  \"categoryId\": \"CATEGORY_ID_HERE\",\n  \"condition\": \"LIKE_NEW\",\n  \"estimatedValue\": 15000,\n  \"location\": \"Cairo\",\n  \"images\": [\"https://example.com/image1.jpg\"]\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/items",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "items"]
+            }
+          }
+        },
+        {
+          "name": "Update Item",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"iPhone 13 Pro - Updated\",\n  \"estimatedValue\": 14000\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/items/:id",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "items", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{ITEM_ID}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Listings (Direct Sales)",
+      "item": [
+        {
+          "name": "Get All Listings",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/listings",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "listings"]
+            }
+          }
+        },
+        {
+          "name": "Create Listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{ITEM_ID}}\",\n  \"listingType\": \"DIRECT_SALE\",\n  \"price\": 15000\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/listings",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "listings"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Barter System",
+      "item": [
+        {
+          "name": "Get My Barter Offers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/barter/offers",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "barter", "offers"]
+            }
+          }
+        },
+        {
+          "name": "Create Barter Offer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offeredItemIds\": [\"ITEM_ID_1\"],\n  \"preferenceSets\": [\n    {\n      \"priority\": 1,\n      \"items\": [\n        {\n          \"itemId\": \"ITEM_ID_2\"\n        }\n      ]\n    }\n  ],\n  \"notes\": \"I want to exchange my laptop for a MacBook\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/barter/offers",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "barter", "offers"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Auctions",
+      "item": [
+        {
+          "name": "Get All Auctions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auctions",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auctions"]
+            }
+          }
+        },
+        {
+          "name": "Get Auction by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auctions/:id",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auctions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{AUCTION_ID}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Auction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set(\"AUCTION_ID\", response.data.id);",
+                  "    console.log(\"✅ Auction ID saved!\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{ITEM_ID}}\",\n  \"startingPrice\": 1000,\n  \"buyNowPrice\": 5000,\n  \"reservePrice\": 800,\n  \"startTime\": \"2025-11-16T10:00:00Z\",\n  \"endTime\": \"2025-11-20T10:00:00Z\",\n  \"minBidIncrement\": 50,\n  \"autoExtend\": true,\n  \"extensionMinutes\": 5\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auctions",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auctions"]
+            }
+          }
+        },
+        {
+          "name": "Place Bid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bidAmount\": 1100,\n  \"isAutoBid\": false\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auctions/:id/bids",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auctions", ":id", "bids"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{AUCTION_ID}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Place Auto Bid (Proxy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bidAmount\": 1100,\n  \"maxAutoBid\": 3000,\n  \"isAutoBid\": true\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auctions/:id/bids",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auctions", ":id", "bids"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{AUCTION_ID}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Buy Now",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auctions/:id/buy-now",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auctions", ":id", "buy-now"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{AUCTION_ID}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Auction Bids",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auctions/:id/bids",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auctions", ":id", "bids"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{AUCTION_ID}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Auctions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auctions/my/auctions",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auctions", "my", "auctions"]
+            }
+          }
+        },
+        {
+          "name": "Get My Bids",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/auctions/my/bids",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "auctions", "my", "bids"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/health",
+          "host": ["{{BASE_URL}}"],
+          "path": ["health"]
+        }
+      }
+    }
+  ]
+}
