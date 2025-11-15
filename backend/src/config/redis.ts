@@ -20,6 +20,16 @@ if (env.redis.url && env.redis.url.startsWith('redis://')) {
   console.warn('⚠️ Redis URL not configured or invalid, Redis features will be disabled');
 }
 
+// Helper function to add timeout to promises
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Operation timed out')), timeoutMs)
+    ),
+  ]);
+};
+
 // Connect to Redis
 export const connectRedis = async () => {
   try {
@@ -31,7 +41,8 @@ export const connectRedis = async () => {
       console.warn('⚠️ Redis URL not configured or invalid, skipping Redis connection');
       return;
     }
-    await redis.connect();
+    // Add 5-second timeout to Redis connection
+    await withTimeout(redis.connect(), 5000);
   } catch (error) {
     console.error('⚠️ Failed to connect to Redis:', error);
     console.warn('⚠️ Continuing without Redis - some features may be limited');
