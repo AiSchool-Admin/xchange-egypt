@@ -51,13 +51,19 @@ app.use(helmet());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, Postman, curl)
+      // Log the origin for debugging
+      console.log('🔍 CORS Check - Origin:', origin || 'no-origin');
+      console.log('🔍 Allowed origins:', env.cors.origin);
+
+      // Allow requests with no origin (like mobile apps, Postman, curl, Railway health checks)
       if (!origin) {
+        console.log('✅ CORS: Allowed (no origin)');
         return callback(null, true);
       }
 
       // Check if origin is in the allowed list
       if (env.cors.origin.includes(origin)) {
+        console.log('✅ CORS: Allowed (exact match)');
         return callback(null, true);
       }
 
@@ -67,14 +73,18 @@ app.use(
         const regexPattern = pattern.replace(/\*/g, '.*').replace(/\./g, '\\.');
         const regex = new RegExp(`^${regexPattern}$`);
         if (regex.test(origin)) {
+          console.log(`✅ CORS: Allowed (wildcard match: ${pattern})`);
           return callback(null, true);
         }
       }
 
       // Origin not allowed
+      console.log('❌ CORS: Rejected -', origin);
       callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
@@ -221,12 +231,19 @@ const startServer = async () => {
     await prisma.$connect();
     console.log('✅ Database connected');
 
+    // Log CORS configuration
+    console.log('================================');
+    console.log('🔒 CORS Configuration:');
+    console.log('   Allowed origins:', env.cors.origin);
+    console.log('================================');
+
     // Start Express server - listen on 0.0.0.0 for Railway compatibility
     app.listen(env.server.port, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${env.server.port}`);
       console.log(`🌍 Environment: ${env.server.nodeEnv}`);
       console.log(`📍 API URL: ${env.server.apiUrl}`);
       console.log(`🔗 Health check: ${env.server.apiUrl}/health`);
+      console.log('================================');
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
@@ -236,14 +253,42 @@ const startServer = async () => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  process.exit(1);
+  console.error('❌ Uncaught Exception:', error);
+  console.error('Stack:', error.stack);
+  // Don't exit immediately in production to allow Railway to collect logs
+  if (isDevelopment) {
+    process.exit(1);
+  } else {
+    console.error('⚠️ Continuing despite uncaught exception (production mode)');
+  }
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
+  console.error('❌ Unhandled Rejection at:', promise);
+  console.error('Reason:', reason);
+  // Don't exit immediately in production to allow Railway to collect logs
+  if (isDevelopment) {
+    process.exit(1);
+  } else {
+    console.error('⚠️ Continuing despite unhandled rejection (production mode)');
+  }
+});
+
+// Handle SIGTERM gracefully
+process.on('SIGTERM', () => {
+  console.log('⚠️ SIGTERM signal received: closing HTTP server');
+  // Give the server time to finish current requests
+  setTimeout(() => {
+    console.log('✅ HTTP server closed');
+    process.exit(0);
+  }, 1000);
+});
+
+// Handle SIGINT gracefully
+process.on('SIGINT', () => {
+  console.log('⚠️ SIGINT signal received: closing HTTP server');
+  process.exit(0);
 });
 
 // Start the server
