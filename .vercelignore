@@ -1,0 +1,32 @@
+# Ignore backend during Vercel deployment
+backend/
+backend/**
+
+# Ignore documentation
+docs/
+*.md
+!frontend/README.md
+
+# Ignore git
+.git/
+.github/
+
+# Ignore node modules (will be installed fresh)
+node_modules/
+**/node_modules/
+
+# Ignore logs
+*.log
+logs/
+
+# Ignore test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Ignore env files (use Vercel environment variables)
+.env
+.env.*
+!.env.example
+!.env.*.example
