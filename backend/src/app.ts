@@ -28,6 +28,19 @@ import chatRoutes from './routes/chat.routes';
 const app: Application = express();
 
 // ============================================
+// Health Check (BEFORE middleware for Railway)
+// ============================================
+
+// Health check - Must be before ANY middleware to ensure Railway can always access it
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: env.server.nodeEnv,
+  });
+});
+
+// ============================================
 // Middleware
 // ============================================
 
@@ -99,15 +112,6 @@ app.get('/', (_req: Request, res: Response) => {
       api: '/api/v1',
       docs: '/api/v1/docs'
     }
-  });
-});
-
-// Health check
-app.get('/health', (_req: Request, res: Response) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: env.server.nodeEnv,
   });
 });
 
