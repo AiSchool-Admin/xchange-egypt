@@ -30,7 +30,8 @@ const app: Application = express();
 // ============================================
 // Middleware
 // ============================================
-
+// Trust proxy - Required for Railway/production deployment
+app.set('trust proxy', 1);
 // Security headers
 app.use(helmet());
 
