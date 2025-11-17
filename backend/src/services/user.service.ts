@@ -32,6 +32,7 @@ export const getUserById = async (userId: string) => {
       rating: true,
       totalReviews: true,
       createdAt: true,
+      status: true,
       // Exclude sensitive information
       email: false,
       phone: false,
