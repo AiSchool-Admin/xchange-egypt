@@ -321,7 +321,6 @@ export const createBundleOffer = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       recipient: {
@@ -329,7 +328,6 @@ export const createBundleOffer = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       preferenceSets: {

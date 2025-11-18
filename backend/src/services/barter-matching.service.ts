@@ -493,7 +493,7 @@ export const createBarterChainProposal = async (match: BarterMatch): Promise<any
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7); // Expire in 7 days
 
-  const chainType = 'cycleType' in match ? match.cycleType : match.chainType;
+  const chainType = 'cycleType' in match ? 'CYCLE' : 'CHAIN';
 
   const chain = await prisma.barterChain.create({
     data: {

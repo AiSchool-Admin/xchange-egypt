@@ -10,14 +10,14 @@ export const createSaleListing = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const listingData = req.body;
 
     const listing = await listingService.createSaleListing(userId, listingData);
 
-    res.status(201).json(successResponse(listing, 'Listing created successfully'));
+    return successResponse(res, listing, 'Listing created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -31,13 +31,13 @@ export const getListingById = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
 
     const listing = await listingService.getListingById(id);
 
-    res.json(successResponse(listing, 'Listing retrieved successfully'));
+    return successResponse(res, listing, 'Listing retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -51,7 +51,7 @@ export const updateListing = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -59,7 +59,7 @@ export const updateListing = async (
 
     const listing = await listingService.updateListing(id, userId, updateData);
 
-    res.json(successResponse(listing, 'Listing updated successfully'));
+    return successResponse(res, listing, 'Listing updated successfully');
   } catch (error) {
     next(error);
   }
@@ -73,18 +73,17 @@ export const deleteListing = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     await listingService.deleteListing(id, userId);
 
-    res.json(
-      successResponse(
-        { message: 'Listing deleted successfully' },
-        'Listing deleted successfully'
-      )
+    return successResponse(
+      res,
+      { message: 'Listing deleted successfully' },
+      'Listing deleted successfully'
     );
   } catch (error) {
     next(error);
@@ -99,14 +98,14 @@ export const activateListing = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     const listing = await listingService.activateListing(id, userId);
 
-    res.json(successResponse(listing, 'Listing activated successfully'));
+    return successResponse(res, listing, 'Listing activated successfully');
   } catch (error) {
     next(error);
   }
@@ -120,35 +119,35 @@ export const cancelListing = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     const listing = await listingService.cancelListing(id, userId);
 
-    res.json(successResponse(listing, 'Listing cancelled successfully'));
+    return successResponse(res, listing, 'Listing cancelled successfully');
   } catch (error) {
     next(error);
   }
 };
 
 /**
- * Mark listing as sold
- * POST /api/v1/listings/:id/sold
+ * Mark listing as completed
+ * POST /api/v1/listings/:id/completed
  */
-export const markListingAsSold = async (
+export const markListingAsCompleted = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
-    const listing = await listingService.markListingAsSold(id, userId);
+    const listing = await listingService.markListingAsCompleted(id, userId);
 
-    res.json(successResponse(listing, 'Listing marked as sold successfully'));
+    return successResponse(res, listing, 'Listing marked as completed successfully');
   } catch (error) {
     next(error);
   }
@@ -162,13 +161,13 @@ export const searchListings = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const params = req.query;
 
     const result = await listingService.searchListings(params);
 
-    res.json(successResponse(result, 'Listings retrieved successfully'));
+    return successResponse(res, result, 'Listings retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -182,7 +181,7 @@ export const getUserListings = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { userId } = req.params;
     const { type, status, page, limit } = req.query;
@@ -195,7 +194,7 @@ export const getUserListings = async (
       limit ? parseInt(limit as string) : undefined
     );
 
-    res.json(successResponse(result, 'User listings retrieved successfully'));
+    return successResponse(res, result, 'User listings retrieved successfully');
   } catch (error) {
     next(error);
   }

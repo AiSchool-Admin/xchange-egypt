@@ -22,7 +22,7 @@ export const uploadSingleImage = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     if (!req.file) {
       throw new BadRequestError('No image file provided');
@@ -33,9 +33,7 @@ export const uploadSingleImage = async (
 
     const result = await imageService.uploadImage(req.file, category, processMultipleSizes);
 
-    res.status(201).json(
-      successResponse(result, 'Image uploaded successfully')
-    );
+    return successResponse(res, result, 'Image uploaded successfully', 201);
   } catch (error) {
     if (error instanceof Error && error.name === 'MulterError') {
       handleMulterError(error);
@@ -52,7 +50,7 @@ export const uploadMultipleImages = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
       throw new BadRequestError('No image files provided');
@@ -63,14 +61,14 @@ export const uploadMultipleImages = async (
 
     const results = await imageService.uploadImages(req.files, category, maxCount);
 
-    res.status(201).json(
-      successResponse(
-        {
-          count: results.length,
-          images: results,
-        },
-        `${results.length} images uploaded successfully`
-      )
+    return successResponse(
+      res,
+      {
+        count: results.length,
+        images: results,
+      },
+      `${results.length} images uploaded successfully`,
+      201
     );
   } catch (error) {
     if (error instanceof Error && error.name === 'MulterError') {
@@ -88,7 +86,7 @@ export const uploadAvatar = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     if (!req.file) {
       throw new BadRequestError('No avatar file provided');
@@ -96,9 +94,7 @@ export const uploadAvatar = async (
 
     const result = await imageService.uploadImage(req.file, 'avatar', true);
 
-    res.status(201).json(
-      successResponse(result, 'Avatar uploaded successfully')
-    );
+    return successResponse(res, result, 'Avatar uploaded successfully', 201);
   } catch (error) {
     if (error instanceof Error && error.name === 'MulterError') {
       handleMulterError(error);
@@ -115,7 +111,7 @@ export const uploadItemImages = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
       throw new BadRequestError('No image files provided');
@@ -123,14 +119,14 @@ export const uploadItemImages = async (
 
     const results = await imageService.uploadImages(req.files, 'item', 20);
 
-    res.status(201).json(
-      successResponse(
-        {
-          count: results.length,
-          images: results,
-        },
-        `${results.length} item images uploaded successfully`
-      )
+    return successResponse(
+      res,
+      {
+        count: results.length,
+        images: results,
+      },
+      `${results.length} item images uploaded successfully`,
+      201
     );
   } catch (error) {
     if (error instanceof Error && error.name === 'MulterError') {
@@ -148,7 +144,7 @@ export const uploadBidImages = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
       throw new BadRequestError('No image files provided');
@@ -156,14 +152,14 @@ export const uploadBidImages = async (
 
     const results = await imageService.uploadImages(req.files, 'bid', 10);
 
-    res.status(201).json(
-      successResponse(
-        {
-          count: results.length,
-          images: results,
-        },
-        `${results.length} bid images uploaded successfully`
-      )
+    return successResponse(
+      res,
+      {
+        count: results.length,
+        images: results,
+      },
+      `${results.length} bid images uploaded successfully`,
+      201
     );
   } catch (error) {
     if (error instanceof Error && error.name === 'MulterError') {
@@ -185,16 +181,14 @@ export const deleteImage = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { filename } = req.params;
     const category = (req.query.category || 'item') as imageService.ImageCategory;
 
     await imageService.deleteImage(filename, category);
 
-    res.json(
-      successResponse(null, 'Image deleted successfully')
-    );
+    return successResponse(res, null, 'Image deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -208,7 +202,7 @@ export const deleteMultipleImages = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { filenames, category = 'item' } = req.body;
 
@@ -218,11 +212,10 @@ export const deleteMultipleImages = async (
 
     await imageService.deleteImages(filenames, category as imageService.ImageCategory);
 
-    res.json(
-      successResponse(
-        { count: filenames.length },
-        `${filenames.length} images deleted successfully`
-      )
+    return successResponse(
+      res,
+      { count: filenames.length },
+      `${filenames.length} images deleted successfully`
     );
   } catch (error) {
     next(error);
@@ -241,16 +234,14 @@ export const getImageUrls = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { filename } = req.params;
     const category = (req.query.category || 'item') as imageService.ImageCategory;
 
     const urls = imageService.getImageUrls(filename, category);
 
-    res.json(
-      successResponse(urls, 'Image URLs retrieved successfully')
-    );
+    return successResponse(res, urls, 'Image URLs retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -264,13 +255,11 @@ export const getStorageStats = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const stats = await imageService.getStorageStats();
 
-    res.json(
-      successResponse(stats, 'Storage statistics retrieved successfully')
-    );
+    return successResponse(res, stats, 'Storage statistics retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -284,16 +273,15 @@ export const cleanupTempFiles = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const olderThanHours = parseInt(req.body.olderThanHours || '24', 10);
     const deletedCount = await imageService.cleanupTempFiles(olderThanHours);
 
-    res.json(
-      successResponse(
-        { deletedCount },
-        `${deletedCount} temp files cleaned up successfully`
-      )
+    return successResponse(
+      res,
+      { deletedCount },
+      `${deletedCount} temp files cleaned up successfully`
     );
   } catch (error) {
     next(error);

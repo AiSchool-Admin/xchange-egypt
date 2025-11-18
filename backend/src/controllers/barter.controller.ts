@@ -11,7 +11,7 @@ export const createBarterOffer = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const initiatorId = req.user!.id;
     const offerData = req.body;
@@ -19,7 +19,7 @@ export const createBarterOffer = async (
     // Use new bundle service
     const offer = await bundleService.createBundleOffer(initiatorId, offerData);
 
-    res.status(201).json(successResponse(offer, 'Barter offer created successfully'));
+    return successResponse(res, offer, 'Barter offer created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -33,14 +33,14 @@ export const getBarterOfferById = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { offerId } = req.params;
     const userId = req.user!.id;
 
     const offer = await barterService.getBarterOfferById(offerId, userId);
 
-    res.json(successResponse(offer, 'Barter offer retrieved successfully'));
+    return successResponse(res, offer, 'Barter offer retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -54,14 +54,14 @@ export const acceptBarterOffer = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { offerId } = req.params;
     const userId = req.user!.id;
 
     const offer = await barterService.acceptBarterOffer(offerId, userId);
 
-    res.json(successResponse(offer, 'Barter offer accepted successfully'));
+    return successResponse(res, offer, 'Barter offer accepted successfully');
   } catch (error) {
     next(error);
   }
@@ -75,7 +75,7 @@ export const rejectBarterOffer = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { offerId } = req.params;
     const userId = req.user!.id;
@@ -83,7 +83,7 @@ export const rejectBarterOffer = async (
 
     const offer = await barterService.rejectBarterOffer(offerId, userId, reason);
 
-    res.json(successResponse(offer, 'Barter offer rejected successfully'));
+    return successResponse(res, offer, 'Barter offer rejected successfully');
   } catch (error) {
     next(error);
   }
@@ -97,7 +97,7 @@ export const createCounterOffer = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { offerId } = req.params;
     const userId = req.user!.id;
@@ -105,7 +105,7 @@ export const createCounterOffer = async (
 
     const offer = await barterService.createCounterOffer(offerId, userId, counterOfferData);
 
-    res.json(successResponse(offer, 'Counter offer created successfully'));
+    return successResponse(res, offer, 'Counter offer created successfully');
   } catch (error) {
     next(error);
   }
@@ -119,14 +119,14 @@ export const cancelBarterOffer = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { offerId } = req.params;
     const userId = req.user!.id;
 
     const offer = await barterService.cancelBarterOffer(offerId, userId);
 
-    res.json(successResponse(offer, 'Barter offer cancelled successfully'));
+    return successResponse(res, offer, 'Barter offer cancelled successfully');
   } catch (error) {
     next(error);
   }
@@ -140,7 +140,7 @@ export const getMyBarterOffers = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const { type, status, page, limit } = req.query;
@@ -153,7 +153,7 @@ export const getMyBarterOffers = async (
       limit ? parseInt(limit as string) : undefined
     );
 
-    res.json(successResponse(result, 'Barter offers retrieved successfully'));
+    return successResponse(res, result, 'Barter offers retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -167,7 +167,7 @@ export const searchBarterableItems = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user?.id;
     const params = {
@@ -177,7 +177,7 @@ export const searchBarterableItems = async (
 
     const result = await barterService.searchBarterableItems(params);
 
-    res.json(successResponse(result, 'Barterable items retrieved successfully'));
+    return successResponse(res, result, 'Barterable items retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -191,7 +191,7 @@ export const findBarterMatches = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { itemId } = req.params;
     const userId = req.user!.id;
@@ -203,7 +203,7 @@ export const findBarterMatches = async (
       categoryId as string
     );
 
-    res.json(successResponse(matches, 'Barter matches found successfully'));
+    return successResponse(res, matches, 'Barter matches found successfully');
   } catch (error) {
     next(error);
   }
@@ -217,7 +217,7 @@ export const completeBarterExchange = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { offerId } = req.params;
     const userId = req.user!.id;
@@ -229,7 +229,7 @@ export const completeBarterExchange = async (
       confirmationNotes
     );
 
-    res.json(successResponse(offer, 'Barter exchange completed successfully'));
+    return successResponse(res, offer, 'Barter exchange completed successfully');
   } catch (error) {
     next(error);
   }
@@ -247,7 +247,7 @@ export const getMatchingOffers = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const { page, limit } = req.query;
@@ -258,7 +258,7 @@ export const getMatchingOffers = async (
       limit ? parseInt(limit as string) : 20
     );
 
-    res.json(successResponse(matches, 'Matching offers found successfully'));
+    return successResponse(res, matches, 'Matching offers found successfully');
   } catch (error) {
     next(error);
   }
@@ -272,7 +272,7 @@ export const getBestMatch = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { offerId } = req.params;
     const userId = req.user!.id;
@@ -280,14 +280,13 @@ export const getBestMatch = async (
     const bestMatch = await bundleService.getBestMatchingPreferenceSet(offerId, userId);
 
     if (!bestMatch) {
-      res.json(
-        successResponse(
-          null,
-          'No matching preference set found. You do not own the required items.'
-        )
+      return successResponse(
+        res,
+        null,
+        'No matching preference set found. You do not own the required items.'
       );
     } else {
-      res.json(successResponse(bestMatch, 'Best match found successfully'));
+      return successResponse(res, bestMatch, 'Best match found successfully');
     }
   } catch (error) {
     next(error);

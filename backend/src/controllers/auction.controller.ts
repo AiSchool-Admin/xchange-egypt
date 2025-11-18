@@ -11,9 +11,7 @@ export const createAuction = async (req: Request, res: Response, next: NextFunct
     const userId = req.user!.id;
     const auction = await auctionService.createAuction(userId, req.body);
 
-    res.status(201).json(
-      successResponse(auction, 'Auction created successfully')
-    );
+    return successResponse(res, auction, 'Auction created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -29,7 +27,7 @@ export const getAuction = async (req: Request, res: Response, next: NextFunction
     const userId = req.user?.id;
     const auction = await auctionService.getAuctionById(id, userId);
 
-    res.json(successResponse(auction, 'Auction retrieved successfully'));
+    return successResponse(res, auction, 'Auction retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -43,7 +41,7 @@ export const listAuctions = async (req: Request, res: Response, next: NextFuncti
   try {
     const result = await auctionService.listAuctions(req.query as any);
 
-    res.json(successResponse(result, 'Auctions retrieved successfully'));
+    return successResponse(res, result, 'Auctions retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -59,9 +57,7 @@ export const placeBid = async (req: Request, res: Response, next: NextFunction) 
     const userId = req.user!.id;
     const bid = await auctionService.placeBid(id, userId, req.body);
 
-    res.status(201).json(
-      successResponse(bid, 'Bid placed successfully')
-    );
+    return successResponse(res, bid, 'Bid placed successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -77,9 +73,7 @@ export const buyNow = async (req: Request, res: Response, next: NextFunction) =>
     const userId = req.user!.id;
     const result = await auctionService.buyNow(id, userId);
 
-    res.json(
-      successResponse(result, 'Item purchased successfully via buy now')
-    );
+    return successResponse(res, result, 'Item purchased successfully via buy now');
   } catch (error) {
     next(error);
   }
@@ -99,7 +93,7 @@ export const getAuctionBids = async (req: Request, res: Response, next: NextFunc
       Number(limit)
     );
 
-    res.json(successResponse(result, 'Auction bids retrieved successfully'));
+    return successResponse(res, result, 'Auction bids retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -116,7 +110,7 @@ export const cancelAuction = async (req: Request, res: Response, next: NextFunct
     const { reason } = req.body;
     const result = await auctionService.cancelAuction(id, userId, reason);
 
-    res.json(successResponse(result, 'Auction cancelled successfully'));
+    return successResponse(res, result, 'Auction cancelled successfully');
   } catch (error) {
     next(error);
   }
@@ -132,7 +126,7 @@ export const updateAuction = async (req: Request, res: Response, next: NextFunct
     const userId = req.user!.id;
     const auction = await auctionService.updateAuction(id, userId, req.body);
 
-    res.json(successResponse(auction, 'Auction updated successfully'));
+    return successResponse(res, auction, 'Auction updated successfully');
   } catch (error) {
     next(error);
   }
@@ -147,7 +141,7 @@ export const endAuction = async (req: Request, res: Response, next: NextFunction
     const { id } = req.params;
     const result = await auctionService.endAuction(id);
 
-    res.json(successResponse(result, 'Auction ended successfully'));
+    return successResponse(res, result, 'Auction ended successfully');
   } catch (error) {
     next(error);
   }
@@ -163,7 +157,7 @@ export const getMyAuctions = async (req: Request, res: Response, next: NextFunct
     const { status } = req.query;
     const auctions = await auctionService.getMyAuctions(userId, status as any);
 
-    res.json(successResponse(auctions, 'My auctions retrieved successfully'));
+    return successResponse(res, auctions, 'My auctions retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -178,7 +172,7 @@ export const getMyBids = async (req: Request, res: Response, next: NextFunction)
     const userId = req.user!.id;
     const bids = await auctionService.getMyBids(userId);
 
-    res.json(successResponse(bids, 'My bids retrieved successfully'));
+    return successResponse(res, bids, 'My bids retrieved successfully');
   } catch (error) {
     next(error);
   }

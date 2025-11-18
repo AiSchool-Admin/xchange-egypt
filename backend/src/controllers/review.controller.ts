@@ -21,14 +21,12 @@ export const createReview = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const review = await reviewService.createReview(userId, req.body);
 
-    res.status(201).json(
-      successResponse(review, 'Review created successfully')
-    );
+    return successResponse(res, review, 'Review created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -42,13 +40,11 @@ export const getReviews = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const result = await reviewService.getReviews(req.query);
 
-    res.json(
-      successResponse(result, 'Reviews retrieved successfully')
-    );
+    return successResponse(res, result, 'Reviews retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -62,13 +58,11 @@ export const getReviewById = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const review = await reviewService.getReviewById(req.params.id);
 
-    res.json(
-      successResponse(review, 'Review retrieved successfully')
-    );
+    return successResponse(res, review, 'Review retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -82,7 +76,7 @@ export const updateReview = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const review = await reviewService.updateReview(
@@ -91,9 +85,7 @@ export const updateReview = async (
       req.body
     );
 
-    res.json(
-      successResponse(review, 'Review updated successfully')
-    );
+    return successResponse(res, review, 'Review updated successfully');
   } catch (error) {
     next(error);
   }
@@ -107,14 +99,12 @@ export const deleteReview = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     await reviewService.deleteReview(req.params.id, userId);
 
-    res.json(
-      successResponse(null, 'Review deleted successfully')
-    );
+    return successResponse(res, null, 'Review deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -132,7 +122,7 @@ export const addReviewResponse = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const response = await reviewService.addReviewResponse(
@@ -141,9 +131,7 @@ export const addReviewResponse = async (
       req.body.message
     );
 
-    res.status(201).json(
-      successResponse(response, 'Response added successfully')
-    );
+    return successResponse(res, response, 'Response added successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -157,7 +145,7 @@ export const updateReviewResponse = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const response = await reviewService.updateReviewResponse(
@@ -166,9 +154,7 @@ export const updateReviewResponse = async (
       req.body.message
     );
 
-    res.json(
-      successResponse(response, 'Response updated successfully')
-    );
+    return successResponse(res, response, 'Response updated successfully');
   } catch (error) {
     next(error);
   }
@@ -182,14 +168,12 @@ export const deleteReviewResponse = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     await reviewService.deleteReviewResponse(req.params.id, userId);
 
-    res.json(
-      successResponse(null, 'Response deleted successfully')
-    );
+    return successResponse(res, null, 'Response deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -207,7 +191,7 @@ export const voteReview = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const vote = await reviewService.voteReview(
@@ -216,9 +200,7 @@ export const voteReview = async (
       req.body.isHelpful
     );
 
-    res.json(
-      successResponse(vote, 'Vote recorded successfully')
-    );
+    return successResponse(res, vote, 'Vote recorded successfully');
   } catch (error) {
     next(error);
   }
@@ -232,14 +214,12 @@ export const removeVote = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     await reviewService.removeVote(req.params.id, userId);
 
-    res.json(
-      successResponse(null, 'Vote removed successfully')
-    );
+    return successResponse(res, null, 'Vote removed successfully');
   } catch (error) {
     next(error);
   }
@@ -257,7 +237,7 @@ export const reportReview = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const report = await reviewService.reportReview(
@@ -267,9 +247,7 @@ export const reportReview = async (
       req.body.description
     );
 
-    res.status(201).json(
-      successResponse(report, 'Review reported successfully')
-    );
+    return successResponse(res, report, 'Review reported successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -283,13 +261,11 @@ export const getReviewReports = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const reports = await reviewService.getReviewReports(req.params.id);
 
-    res.json(
-      successResponse(reports, 'Reports retrieved successfully')
-    );
+    return successResponse(res, reports, 'Reports retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -307,13 +283,11 @@ export const getUserReviewStats = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const stats = await reviewService.getUserReviewStats(req.params.userId);
 
-    res.json(
-      successResponse(stats, 'Statistics retrieved successfully')
-    );
+    return successResponse(res, stats, 'Statistics retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -327,7 +301,7 @@ export const canReviewTransaction = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const result = await reviewService.canReviewTransaction(
@@ -335,9 +309,7 @@ export const canReviewTransaction = async (
       userId
     );
 
-    res.json(
-      successResponse(result, 'Check completed successfully')
-    );
+    return successResponse(res, result, 'Check completed successfully');
   } catch (error) {
     next(error);
   }

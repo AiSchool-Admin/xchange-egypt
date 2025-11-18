@@ -20,7 +20,7 @@ export const getOrCreateConversation = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const { participant2Id, itemId, transactionId } = req.body;
@@ -32,9 +32,7 @@ export const getOrCreateConversation = async (
       transactionId
     );
 
-    res.json(
-      successResponse(conversation, 'Conversation retrieved successfully')
-    );
+    return successResponse(res, conversation, 'Conversation retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -48,7 +46,7 @@ export const getUserConversations = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const page = Number(req.query.page) || 1;
@@ -56,9 +54,7 @@ export const getUserConversations = async (
 
     const result = await chatService.getUserConversations(userId, page, limit);
 
-    res.json(
-      successResponse(result, 'Conversations retrieved successfully')
-    );
+    return successResponse(res, result, 'Conversations retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -72,14 +68,12 @@ export const getConversationById = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const conversation = await chatService.getConversationById(req.params.id, userId);
 
-    res.json(
-      successResponse(conversation, 'Conversation retrieved successfully')
-    );
+    return successResponse(res, conversation, 'Conversation retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -93,14 +87,12 @@ export const deleteConversation = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     await chatService.deleteConversation(req.params.id, userId);
 
-    res.json(
-      successResponse(null, 'Conversation deleted successfully')
-    );
+    return successResponse(res, null, 'Conversation deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -118,14 +110,12 @@ export const sendMessage = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const message = await chatService.sendMessage(userId, req.body);
 
-    res.status(201).json(
-      successResponse(message, 'Message sent successfully')
-    );
+    return successResponse(res, message, 'Message sent successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -139,7 +129,7 @@ export const getMessages = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const { conversationId } = req.params;
@@ -153,9 +143,7 @@ export const getMessages = async (
       after: after ? new Date(after as string) : undefined,
     });
 
-    res.json(
-      successResponse(result, 'Messages retrieved successfully')
-    );
+    return successResponse(res, result, 'Messages retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -169,16 +157,14 @@ export const markMessagesAsRead = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const { conversationId } = req.params;
 
     const count = await chatService.markMessagesAsRead(conversationId, userId);
 
-    res.json(
-      successResponse({ count }, 'Messages marked as read')
-    );
+    return successResponse(res, { count }, 'Messages marked as read');
   } catch (error) {
     next(error);
   }
@@ -192,7 +178,7 @@ export const editMessage = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const { id } = req.params;
@@ -200,9 +186,7 @@ export const editMessage = async (
 
     const message = await chatService.editMessage(id, userId, content);
 
-    res.json(
-      successResponse(message, 'Message edited successfully')
-    );
+    return successResponse(res, message, 'Message edited successfully');
   } catch (error) {
     next(error);
   }
@@ -216,14 +200,12 @@ export const deleteMessage = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     await chatService.deleteMessage(req.params.id, userId);
 
-    res.json(
-      successResponse(null, 'Message deleted successfully')
-    );
+    return successResponse(res, null, 'Message deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -241,13 +223,11 @@ export const getUserPresence = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const presence = await chatService.getUserPresence(req.params.userId);
 
-    res.json(
-      successResponse(presence, 'Presence retrieved successfully')
-    );
+    return successResponse(res, presence, 'Presence retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -261,14 +241,12 @@ export const getMultipleUserPresence = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { userIds } = req.body;
     const presence = await chatService.getMultipleUserPresence(userIds);
 
-    res.json(
-      successResponse(presence, 'Presence retrieved successfully')
-    );
+    return successResponse(res, presence, 'Presence retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -286,16 +264,14 @@ export const blockUser = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const { blockedUserId, reason } = req.body;
 
     const blocked = await chatService.blockUser(userId, blockedUserId, reason);
 
-    res.status(201).json(
-      successResponse(blocked, 'User blocked successfully')
-    );
+    return successResponse(res, blocked, 'User blocked successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -309,14 +285,12 @@ export const unblockUser = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     await chatService.unblockUser(userId, req.params.userId);
 
-    res.json(
-      successResponse(null, 'User unblocked successfully')
-    );
+    return successResponse(res, null, 'User unblocked successfully');
   } catch (error) {
     next(error);
   }
@@ -330,14 +304,12 @@ export const getBlockedUsers = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const blocked = await chatService.getBlockedUsers(userId);
 
-    res.json(
-      successResponse(blocked, 'Blocked users retrieved successfully')
-    );
+    return successResponse(res, blocked, 'Blocked users retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -355,14 +327,12 @@ export const getUnreadCount = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const count = await chatService.getUnreadCount(userId);
 
-    res.json(
-      successResponse({ count }, 'Unread count retrieved successfully')
-    );
+    return successResponse(res, { count }, 'Unread count retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -376,13 +346,11 @@ export const getConversationStats = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const stats = await chatService.getConversationStats(req.params.conversationId);
 
-    res.json(
-      successResponse(stats, 'Statistics retrieved successfully')
-    );
+    return successResponse(res, stats, 'Statistics retrieved successfully');
   } catch (error) {
     next(error);
   }
