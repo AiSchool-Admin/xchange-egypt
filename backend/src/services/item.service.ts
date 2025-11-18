@@ -98,7 +98,6 @@ export const createItem = async (
       condition: itemData.condition,
       estimatedValue: itemData.estimatedValue,
       location: itemData.location,
-      governorate: itemData.governorate,
       images: processedImages,
     },
     include: {

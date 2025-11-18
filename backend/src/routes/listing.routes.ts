@@ -107,14 +107,14 @@ router.post(
 );
 
 /**
- * Mark listing as sold
- * POST /api/v1/listings/:id/sold
+ * Mark listing as completed
+ * POST /api/v1/listings/:id/completed
  */
 router.post(
-  '/:id/sold',
+  '/:id/completed',
   authenticate,
   validate(markListingAsSoldSchema),
-  listingController.markListingAsSold
+  listingController.markListingAsCompleted
 );
 
 export default router;

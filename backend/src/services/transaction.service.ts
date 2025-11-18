@@ -95,22 +95,24 @@ export const createPurchase = async (
           businessName: true,
         },
       },
-      item: {
-        include: {
-          category: {
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
-            },
-          },
-        },
-      },
       listing: {
         select: {
           id: true,
           listingType: true,
           status: true,
+        },
+        include: {
+          item: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  nameAr: true,
+                  nameEn: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -151,22 +153,24 @@ export const getTransactionById = async (
           businessName: true,
         },
       },
-      item: {
-        include: {
-          category: {
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
-            },
-          },
-        },
-      },
       listing: {
         select: {
           id: true,
           listingType: true,
           status: true,
+        },
+        include: {
+          item: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  nameAr: true,
+                  nameEn: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -244,22 +248,24 @@ export const updateDeliveryStatus = async (
           businessName: true,
         },
       },
-      item: {
-        include: {
-          category: {
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
-            },
-          },
-        },
-      },
       listing: {
         select: {
           id: true,
           listingType: true,
           status: true,
+        },
+        include: {
+          item: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  nameAr: true,
+                  nameEn: true,
+                },
+              },
+            },
+          },
         },
       },
     },
