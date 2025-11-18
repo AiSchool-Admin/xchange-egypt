@@ -34,13 +34,16 @@ jobs:
       - name: Install dependencies (Backend)
         run: |
           cd backend
-          pnpm config set enable-pre-post-scripts true
-          pnpm install --frozen-lockfile
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm rebuild @prisma/client prisma
 
       - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING: 1
         run: |
           cd backend
-          pnpm prisma generate
+          npx prisma generate
 
       # Temporarily disabled to unblock deployment - TODO: Fix linting errors
       # - name: Lint Backend
@@ -49,6 +52,9 @@ jobs:
       #     pnpm run lint
 
       - name: Build Backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+          PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING: 1
         run: |
           cd backend
           pnpm run build
