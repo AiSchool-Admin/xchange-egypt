@@ -476,8 +476,8 @@ export const findMatchesForUser = async (
   const topMatches = allMatches.slice(0, maxResults);
 
   return {
-    cycles: topMatches.filter((m) => m.cycleType === 'CYCLE') as BarterCycle[],
-    chains: topMatches.filter((m) => m.chainType === 'CHAIN') as BarterChain[],
+    cycles: topMatches.filter((m) => 'cycleType' in m) as BarterCycle[],
+    chains: topMatches.filter((m) => 'chainType' in m) as BarterChain[],
     totalMatches: allMatches.length,
   };
 };

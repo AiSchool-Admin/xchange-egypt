@@ -63,14 +63,14 @@ router.get(
 );
 
 /**
- * Update transaction status
- * PUT /api/v1/transactions/:id/status
+ * Update delivery status
+ * PUT /api/v1/transactions/:id/delivery-status
  */
 router.put(
-  '/:id/status',
+  '/:id/delivery-status',
   authenticate,
   validate(updateTransactionStatusSchema),
-  transactionController.updateTransactionStatus
+  transactionController.updateDeliveryStatus
 );
 
 /**
