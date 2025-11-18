@@ -1,10 +1,35 @@
 import apiClient from './client';
 
-export interface RegisterData {
+// Backend response wrapper
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  error?: {
+    message: string;
+    details?: unknown;
+  };
+}
+
+export interface RegisterIndividualData {
   email: string;
   password: string;
-  name: string;
+  fullName: string;
   phone?: string;
+  city?: string;
+  governorate?: string;
+}
+
+export interface RegisterBusinessData {
+  email: string;
+  password: string;
+  fullName: string;
+  phone?: string;
+  businessName: string;
+  taxId?: string;
+  commercialRegNo?: string;
+  city?: string;
+  governorate?: string;
 }
 
 export interface LoginData {
@@ -13,14 +38,7 @@ export interface LoginData {
 }
 
 export interface AuthResponse {
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    phone?: string;
-    role: string;
-    avatar?: string;
-  };
+  user: User;
   accessToken: string;
   refreshToken: string;
 }
@@ -28,28 +46,43 @@ export interface AuthResponse {
 export interface User {
   id: string;
   email: string;
-  name: string;
+  fullName: string;
   phone?: string;
-  role: string;
+  userType: 'INDIVIDUAL' | 'BUSINESS';
+  status?: string;
   avatar?: string;
+  rating?: number;
+  city?: string;
+  governorate?: string;
+  businessName?: string;
+  taxId?: string;
+  commercialRegNo?: string;
   createdAt?: string;
   updatedAt?: string;
 }
 
 /**
- * Register a new user
+ * Register a new individual user
  */
-export const register = async (data: RegisterData): Promise<AuthResponse> => {
-  const response = await apiClient.post('/auth/register', data);
-  return response.data;
+export const registerIndividual = async (data: RegisterIndividualData): Promise<AuthResponse> => {
+  const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/register/individual', data);
+  return response.data.data!;
+};
+
+/**
+ * Register a new business user
+ */
+export const registerBusiness = async (data: RegisterBusinessData): Promise<AuthResponse> => {
+  const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/register/business', data);
+  return response.data.data!;
 };
 
 /**
  * Login user
  */
 export const login = async (data: LoginData): Promise<AuthResponse> => {
-  const response = await apiClient.post('/auth/login', data);
-  return response.data;
+  const response = await apiClient.post<ApiResponse<AuthResponse>>('/auth/login', data);
+  return response.data.data!;
 };
 
 /**
@@ -75,22 +108,22 @@ export const logout = async (): Promise<void> => {
  * Get current user profile
  */
 export const getCurrentUser = async (): Promise<User> => {
-  const response = await apiClient.get('/auth/me');
-  return response.data;
+  const response = await apiClient.get<ApiResponse<User>>('/auth/me');
+  return response.data.data!;
 };
 
 /**
  * Refresh access token
  */
 export const refreshToken = async (refreshToken: string): Promise<{ accessToken: string }> => {
-  const response = await apiClient.post('/auth/refresh', { refreshToken });
-  return response.data;
+  const response = await apiClient.post<ApiResponse<{ accessToken: string }>>('/auth/refresh', { refreshToken });
+  return response.data.data!;
 };
 
 /**
  * Update user profile
  */
 export const updateProfile = async (data: Partial<User>): Promise<User> => {
-  const response = await apiClient.put('/auth/me', data);
-  return response.data;
+  const response = await apiClient.put<ApiResponse<User>>('/auth/me', data);
+  return response.data.data!;
 };

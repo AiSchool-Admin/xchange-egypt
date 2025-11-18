@@ -19,7 +19,8 @@ export default function LoginPage() {
     try {
       await login({ email, password });
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to login. Please try again.');
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to login. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
