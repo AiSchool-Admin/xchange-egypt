@@ -38,9 +38,11 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
         run: |
           cd backend
-          pnpm prisma generate
+          pnpm exec prisma generate
 
       # Temporarily disabled to unblock deployment - TODO: Fix linting errors
       # - name: Lint Backend
@@ -49,6 +51,8 @@ jobs:
       #     pnpm run lint
 
       - name: Build Backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
         run: |
           cd backend
           pnpm run build
