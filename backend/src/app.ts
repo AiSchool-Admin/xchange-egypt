@@ -35,11 +35,45 @@ app.set('trust proxy', 1);
 // Security headers
 app.use(helmet());
 
-// CORS configuration
+// CORS configuration - Allow Vercel domains dynamically
 app.use(
   cors({
-    origin: env.cors.origin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or Postman)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      // Check if origin matches allowed patterns
+      const allowedOrigins = env.cors.origin;
+      const isAllowed = allowedOrigins.some((allowed) => {
+        // Exact match
+        if (allowed === origin) return true;
+
+        // Wildcard pattern matching for Vercel domains
+        if (allowed.includes('*')) {
+          const pattern = allowed.replace(/\*/g, '.*');
+          const regex = new RegExp(`^${pattern}$`);
+          return regex.test(origin);
+        }
+
+        return false;
+      });
+
+      // Also allow all vercel.app domains for development
+      const isVercel = origin.endsWith('.vercel.app');
+      const isLocalhost = origin.includes('localhost');
+
+      if (isAllowed || isVercel || isLocalhost) {
+        callback(null, true);
+      } else {
+        console.log(`⚠️  CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
