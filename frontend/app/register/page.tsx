@@ -5,16 +5,23 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function RegisterPage() {
+  const [userType, setUserType] = useState<'INDIVIDUAL' | 'BUSINESS'>('INDIVIDUAL');
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
     phone: '',
+    city: '',
+    governorate: '',
+    // Business fields
+    businessName: '',
+    taxId: '',
+    commercialRegNo: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { registerIndividual, registerBusiness } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -34,22 +41,39 @@ export default function RegisterPage() {
     }
 
     // Validate password length
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
     setLoading(true);
 
     try {
-      await register({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        phone: formData.phone || undefined,
-      });
+      if (userType === 'INDIVIDUAL') {
+        await registerIndividual({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone || undefined,
+          city: formData.city || undefined,
+          governorate: formData.governorate || undefined,
+        });
+      } else {
+        await registerBusiness({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone || undefined,
+          businessName: formData.businessName,
+          taxId: formData.taxId || undefined,
+          commercialRegNo: formData.commercialRegNo || undefined,
+          city: formData.city || undefined,
+          governorate: formData.governorate || undefined,
+        });
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to register. Please try again.');
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to register. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -71,15 +95,46 @@ export default function RegisterPage() {
               </div>
             )}
 
+            {/* User Type Toggle */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Account Type *
+              </label>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setUserType('INDIVIDUAL')}
+                  className={`flex-1 px-4 py-2 rounded-lg border-2 transition-colors ${
+                    userType === 'INDIVIDUAL'
+                      ? 'border-primary-600 bg-primary-50 text-primary-700'
+                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  Individual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserType('BUSINESS')}
+                  className={`flex-1 px-4 py-2 rounded-lg border-2 transition-colors ${
+                    userType === 'BUSINESS'
+                      ? 'border-primary-600 bg-primary-50 text-primary-700'
+                      : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  Business
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
                 Full Name *
               </label>
               <input
-                id="name"
-                name="name"
+                id="fullName"
+                name="fullName"
                 type="text"
-                value={formData.name}
+                value={formData.fullName}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
@@ -114,8 +169,91 @@ export default function RegisterPage() {
                 value={formData.phone}
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                placeholder="+1234567890"
+                placeholder="+201234567890"
               />
+            </div>
+
+            {/* Business-specific fields */}
+            {userType === 'BUSINESS' && (
+              <>
+                <div>
+                  <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Business Name *
+                  </label>
+                  <input
+                    id="businessName"
+                    name="businessName"
+                    type="text"
+                    value={formData.businessName}
+                    onChange={handleChange}
+                    required={userType === 'BUSINESS'}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                    placeholder="My Business LLC"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="taxId" className="block text-sm font-medium text-gray-700 mb-2">
+                    Tax ID (optional)
+                  </label>
+                  <input
+                    id="taxId"
+                    name="taxId"
+                    type="text"
+                    value={formData.taxId}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                    placeholder="123456789"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="commercialRegNo" className="block text-sm font-medium text-gray-700 mb-2">
+                    Commercial Registration No. (optional)
+                  </label>
+                  <input
+                    id="commercialRegNo"
+                    name="commercialRegNo"
+                    type="text"
+                    value={formData.commercialRegNo}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                    placeholder="CR123456"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                  City (optional)
+                </label>
+                <input
+                  id="city"
+                  name="city"
+                  type="text"
+                  value={formData.city}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  placeholder="Cairo"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="governorate" className="block text-sm font-medium text-gray-700 mb-2">
+                  Governorate (optional)
+                </label>
+                <input
+                  id="governorate"
+                  name="governorate"
+                  type="text"
+                  value={formData.governorate}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                  placeholder="Cairo"
+                />
+              </div>
             </div>
 
             <div>

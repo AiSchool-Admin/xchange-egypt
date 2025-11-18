@@ -3,13 +3,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import * as authApi from '../api/auth';
-import type { User, LoginData, RegisterData } from '../api/auth';
+import type { User, LoginData, RegisterIndividualData, RegisterBusinessData } from '../api/auth';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (data: LoginData) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  registerIndividual: (data: RegisterIndividualData) => Promise<void>;
+  registerBusiness: (data: RegisterBusinessData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => Promise<void>;
 }
@@ -64,9 +65,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (data: RegisterData) => {
+  const registerIndividual = async (data: RegisterIndividualData) => {
     try {
-      const response = await authApi.register(data);
+      const response = await authApi.registerIndividual(data);
 
       // Store tokens
       localStorage.setItem('accessToken', response.accessToken);
@@ -78,7 +79,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (error) {
-      console.error('Registration failed:', error);
+      console.error('Individual registration failed:', error);
+      throw error;
+    }
+  };
+
+  const registerBusiness = async (data: RegisterBusinessData) => {
+    try {
+      const response = await authApi.registerBusiness(data);
+
+      // Store tokens
+      localStorage.setItem('accessToken', response.accessToken);
+      localStorage.setItem('refreshToken', response.refreshToken);
+
+      // Set user
+      setUser(response.user);
+
+      // Redirect to dashboard
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('Business registration failed:', error);
       throw error;
     }
   };
@@ -115,7 +135,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         loading,
         login,
-        register,
+        registerIndividual,
+        registerBusiness,
         logout,
         updateUser,
       }}
