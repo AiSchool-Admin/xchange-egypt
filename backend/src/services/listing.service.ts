@@ -7,18 +7,14 @@ const prisma = new PrismaClient();
 interface CreateSaleListingData {
   itemId: string;
   price: number;
-  quantity?: number;
   startDate?: Date;
   endDate?: Date | null;
-  notes?: string;
 }
 
 interface UpdateListingData {
   price?: number;
-  quantity?: number;
   status?: ListingStatus;
   endDate?: Date | null;
-  notes?: string;
 }
 
 interface SearchListingsParams {
@@ -91,25 +87,16 @@ export const createSaleListing = async (
     );
   }
 
-  // Validate quantity doesn't exceed item quantity
-  const listingQuantity = listingData.quantity || 1;
-  if (listingQuantity > item.quantity) {
-    throw new BadRequestError(
-      `Listing quantity (${listingQuantity}) cannot exceed item quantity (${item.quantity})`
-    );
-  }
-
   // Create the listing
   const listing = await prisma.listing.create({
     data: {
       itemId: listingData.itemId,
-      type: ListingType.SALE,
+      userId,
+      listingType: ListingType.DIRECT_SALE,
       status: ListingStatus.ACTIVE,
       price: listingData.price,
-      quantity: listingQuantity,
       startDate: listingData.startDate || new Date(),
       endDate: listingData.endDate,
-      notes: listingData.notes,
     },
     include: {
       item: {
@@ -119,7 +106,6 @@ export const createSaleListing = async (
               id: true,
               fullName: true,
               avatar: true,
-              accountType: true,
               businessName: true,
             },
           },
@@ -153,7 +139,6 @@ export const getListingById = async (listingId: string): Promise<any> => {
               id: true,
               fullName: true,
               avatar: true,
-              accountType: true,
               businessName: true,
               phone: true,
             },
@@ -193,7 +178,6 @@ export const updateListing = async (
       item: {
         select: {
           sellerId: true,
-          quantity: true,
         },
       },
     },
@@ -207,16 +191,9 @@ export const updateListing = async (
     throw new ForbiddenError('You can only update your own listings');
   }
 
-  // Validate quantity if being updated
-  if (updateData.quantity && updateData.quantity > existingListing.item.quantity) {
-    throw new BadRequestError(
-      `Listing quantity (${updateData.quantity}) cannot exceed item quantity (${existingListing.item.quantity})`
-    );
-  }
-
-  // Don't allow updating sold listings
-  if (existingListing.status === 'SOLD') {
-    throw new BadRequestError('Cannot update a sold listing');
+  // Don't allow updating completed listings
+  if (existingListing.status === 'COMPLETED') {
+    throw new BadRequestError('Cannot update a completed listing');
   }
 
   // Update the listing
@@ -231,7 +208,6 @@ export const updateListing = async (
               id: true,
               fullName: true,
               avatar: true,
-              accountType: true,
             },
           },
           category: {
@@ -268,9 +244,7 @@ export const deleteListing = async (
       },
       transactions: {
         where: {
-          status: {
-            in: ['PENDING', 'CONFIRMED', 'PAYMENT_PENDING', 'PAID', 'SHIPPED'],
-          },
+          paymentStatus: 'PENDING',
         },
       },
     },
@@ -291,9 +265,9 @@ export const deleteListing = async (
     );
   }
 
-  // If listing is sold, don't allow deletion
-  if (listing.status === 'SOLD') {
-    throw new BadRequestError('Cannot delete a sold listing');
+  // If listing is completed, don't allow deletion
+  if (listing.status === 'COMPLETED') {
+    throw new BadRequestError('Cannot delete a completed listing');
   }
 
   // Delete the listing
@@ -333,8 +307,8 @@ export const activateListing = async (
     throw new BadRequestError('Listing is already active');
   }
 
-  if (listing.status === 'SOLD') {
-    throw new BadRequestError('Cannot activate a sold listing');
+  if (listing.status === 'COMPLETED') {
+    throw new BadRequestError('Cannot activate a completed listing');
   }
 
   // Check if item already has another active listing
@@ -364,7 +338,6 @@ export const activateListing = async (
               id: true,
               fullName: true,
               avatar: true,
-              accountType: true,
             },
           },
           category: {
@@ -413,8 +386,8 @@ export const cancelListing = async (
     throw new BadRequestError('Listing is already cancelled');
   }
 
-  if (listing.status === 'SOLD') {
-    throw new BadRequestError('Cannot cancel a sold listing');
+  if (listing.status === 'COMPLETED') {
+    throw new BadRequestError('Cannot cancel a completed listing');
   }
 
   // Cancel the listing
@@ -429,7 +402,6 @@ export const cancelListing = async (
               id: true,
               fullName: true,
               avatar: true,
-              accountType: true,
             },
           },
           category: {
@@ -449,9 +421,9 @@ export const cancelListing = async (
 };
 
 /**
- * Mark listing as sold
+ * Mark listing as completed
  */
-export const markListingAsSold = async (
+export const markListingAsCompleted = async (
   listingId: string,
   userId: string
 ): Promise<any> => {
@@ -471,17 +443,17 @@ export const markListingAsSold = async (
   }
 
   if (listing.item.sellerId !== userId) {
-    throw new ForbiddenError('You can only mark your own listings as sold');
+    throw new ForbiddenError('You can only mark your own listings as completed');
   }
 
-  if (listing.status === 'SOLD') {
-    throw new BadRequestError('Listing is already marked as sold');
+  if (listing.status === 'COMPLETED') {
+    throw new BadRequestError('Listing is already marked as completed');
   }
 
-  // Mark as sold
+  // Mark as completed
   const updatedListing = await prisma.listing.update({
     where: { id: listingId },
-    data: { status: 'SOLD' },
+    data: { status: 'COMPLETED' },
     include: {
       item: {
         include: {
@@ -490,7 +462,6 @@ export const markListingAsSold = async (
               id: true,
               fullName: true,
               avatar: true,
-              accountType: true,
             },
           },
           category: {
@@ -519,7 +490,7 @@ export const searchListings = async (
     search,
     categoryId,
     sellerId,
-    type = ListingType.SALE,
+    type = ListingType.DIRECT_SALE,
     status = ListingStatus.ACTIVE,
     minPrice,
     maxPrice,
@@ -532,7 +503,7 @@ export const searchListings = async (
 
   // Build where clause
   const where: any = {
-    type,
+    listingType: type,
     status,
   };
 
@@ -548,10 +519,8 @@ export const searchListings = async (
 
   if (search) {
     itemWhere.OR = [
-      { titleAr: { contains: search, mode: 'insensitive' } },
-      { titleEn: { contains: search, mode: 'insensitive' } },
-      { descriptionAr: { contains: search, mode: 'insensitive' } },
-      { descriptionEn: { contains: search, mode: 'insensitive' } },
+      { title: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
     ];
   }
 
@@ -591,7 +560,6 @@ export const searchListings = async (
               id: true,
               fullName: true,
               avatar: true,
-              accountType: true,
             },
           },
           category: {
@@ -638,7 +606,7 @@ export const getUserListings = async (
   };
 
   if (type) {
-    where.type = type;
+    where.listingType = type;
   }
 
   if (status) {

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as itemService from '../services/item.service';
 import { successResponse } from '../utils/response';
+import { BadRequestError } from '../utils/errors';
 
 /**
  * Create a new item
@@ -10,7 +11,7 @@ export const createItem = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const itemData = req.body;
@@ -18,7 +19,7 @@ export const createItem = async (
 
     const item = await itemService.createItem(userId, itemData, imageFiles);
 
-    res.status(201).json(successResponse(item, 'Item created successfully'));
+    return successResponse(res, item, 'Item created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -32,13 +33,13 @@ export const getItemById = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
 
     const item = await itemService.getItemById(id);
 
-    res.json(successResponse(item, 'Item retrieved successfully'));
+    return successResponse(res, item, 'Item retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -52,7 +53,7 @@ export const updateItem = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -60,7 +61,7 @@ export const updateItem = async (
 
     const item = await itemService.updateItem(id, userId, updateData);
 
-    res.json(successResponse(item, 'Item updated successfully'));
+    return successResponse(res, item, 'Item updated successfully');
   } catch (error) {
     next(error);
   }
@@ -74,16 +75,14 @@ export const deleteItem = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     await itemService.deleteItem(id, userId);
 
-    res.json(
-      successResponse({ message: 'Item deleted successfully' }, 'Item deleted successfully')
-    );
+    return successResponse(res, { message: 'Item deleted successfully' }, 'Item deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -97,13 +96,13 @@ export const searchItems = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const params = req.query;
 
     const result = await itemService.searchItems(params);
 
-    res.json(successResponse(result, 'Items retrieved successfully'));
+    return successResponse(res, result, 'Items retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -117,7 +116,7 @@ export const getUserItems = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { userId } = req.params;
     const { page, limit } = req.query;
@@ -128,7 +127,7 @@ export const getUserItems = async (
       limit ? parseInt(limit as string) : undefined
     );
 
-    res.json(successResponse(result, 'User items retrieved successfully'));
+    return successResponse(res, result, 'User items retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -142,7 +141,7 @@ export const getCategoryItems = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { categoryId } = req.params;
     const { includeSubcategories, condition, governorate, page, limit, sortBy, sortOrder } =
@@ -161,7 +160,7 @@ export const getCategoryItems = async (
       }
     );
 
-    res.json(successResponse(result, 'Category items retrieved successfully'));
+    return successResponse(res, result, 'Category items retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -175,23 +174,19 @@ export const addItemImages = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
     const imageFiles = req.files as Express.Multer.File[];
 
     if (!imageFiles || imageFiles.length === 0) {
-      res.status(400).json({
-        success: false,
-        error: { message: 'No images provided' },
-      });
-      return;
+      throw new BadRequestError('No images provided');
     }
 
     const item = await itemService.addItemImages(id, userId, imageFiles);
 
-    res.json(successResponse(item, 'Images added successfully'));
+    return successResponse(res, item, 'Images added successfully');
   } catch (error) {
     next(error);
   }
@@ -205,7 +200,7 @@ export const removeItemImages = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -213,7 +208,7 @@ export const removeItemImages = async (
 
     const item = await itemService.removeItemImages(id, userId, imagesToRemove);
 
-    res.json(successResponse(item, 'Images removed successfully'));
+    return successResponse(res, item, 'Images removed successfully');
   } catch (error) {
     next(error);
   }

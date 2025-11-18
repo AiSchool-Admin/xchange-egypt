@@ -20,14 +20,12 @@ export const search = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user?.id;
     const result = await searchService.search(req.query, userId);
 
-    res.json(
-      successResponse(result, 'Search completed successfully')
-    );
+    return successResponse(res, result, 'Search completed successfully');
   } catch (error) {
     next(error);
   }
@@ -41,14 +39,12 @@ export const aiSearch = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { query, limit } = req.query;
     const results = await searchService.aiSearch(query as string, Number(limit) || 20);
 
-    res.json(
-      successResponse(results, 'AI search completed successfully')
-    );
+    return successResponse(res, results, 'AI search completed successfully');
   } catch (error) {
     next(error);
   }
@@ -62,7 +58,7 @@ export const autocomplete = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { query, limit } = req.query;
     const result = await searchService.getAutocomplete(
@@ -70,9 +66,7 @@ export const autocomplete = async (
       Number(limit) || 10
     );
 
-    res.json(
-      successResponse(result, 'Autocomplete suggestions retrieved')
-    );
+    return successResponse(res, result, 'Autocomplete suggestions retrieved');
   } catch (error) {
     next(error);
   }
@@ -86,7 +80,7 @@ export const multiCategorySearch = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { categoryIds, ...filters } = req.query;
     const userId = req.user?.id;
@@ -97,9 +91,7 @@ export const multiCategorySearch = async (
       userId
     );
 
-    res.json(
-      successResponse(result, 'Multi-category search completed')
-    );
+    return successResponse(res, result, 'Multi-category search completed');
   } catch (error) {
     next(error);
   }
@@ -117,16 +109,14 @@ export const getSearchHistory = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const limit = Number(req.query.limit) || 20;
 
     const history = await searchService.getUserSearchHistory(userId, limit);
 
-    res.json(
-      successResponse(history, 'Search history retrieved successfully')
-    );
+    return successResponse(res, history, 'Search history retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -140,14 +130,12 @@ export const clearSearchHistory = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     await searchService.clearSearchHistory(userId);
 
-    res.json(
-      successResponse(null, 'Search history cleared successfully')
-    );
+    return successResponse(res, null, 'Search history cleared successfully');
   } catch (error) {
     next(error);
   }
@@ -165,14 +153,12 @@ export const getPopularSearches = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const searches = await searchService.getPopularSearches(limit);
 
-    res.json(
-      successResponse(searches, 'Popular searches retrieved successfully')
-    );
+    return successResponse(res, searches, 'Popular searches retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -186,14 +172,12 @@ export const getTrendingSearches = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const limit = Number(req.query.limit) || 10;
     const searches = await searchService.getTrendingSearches(limit);
 
-    res.json(
-      successResponse(searches, 'Trending searches retrieved successfully')
-    );
+    return successResponse(res, searches, 'Trending searches retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -211,14 +195,12 @@ export const saveSearch = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const savedSearch = await searchService.saveSearch(userId, req.body);
 
-    res.status(201).json(
-      successResponse(savedSearch, 'Search saved successfully')
-    );
+    return successResponse(res, savedSearch, 'Search saved successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -232,14 +214,12 @@ export const getSavedSearches = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const searches = await searchService.getSavedSearches(userId);
 
-    res.json(
-      successResponse(searches, 'Saved searches retrieved successfully')
-    );
+    return successResponse(res, searches, 'Saved searches retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -253,7 +233,7 @@ export const getSavedSearchById = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const savedSearch = await searchService.getSavedSearchById(
@@ -261,9 +241,7 @@ export const getSavedSearchById = async (
       userId
     );
 
-    res.json(
-      successResponse(savedSearch, 'Saved search retrieved successfully')
-    );
+    return successResponse(res, savedSearch, 'Saved search retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -277,7 +255,7 @@ export const updateSavedSearch = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const updated = await searchService.updateSavedSearch(
@@ -286,9 +264,7 @@ export const updateSavedSearch = async (
       req.body
     );
 
-    res.json(
-      successResponse(updated, 'Saved search updated successfully')
-    );
+    return successResponse(res, updated, 'Saved search updated successfully');
   } catch (error) {
     next(error);
   }
@@ -302,14 +278,12 @@ export const deleteSavedSearch = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     await searchService.deleteSavedSearch(req.params.id, userId);
 
-    res.json(
-      successResponse(null, 'Saved search deleted successfully')
-    );
+    return successResponse(res, null, 'Saved search deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -323,14 +297,12 @@ export const executeSavedSearch = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const result = await searchService.executeSavedSearch(req.params.id, userId);
 
-    res.json(
-      successResponse(result, 'Saved search executed successfully')
-    );
+    return successResponse(res, result, 'Saved search executed successfully');
   } catch (error) {
     next(error);
   }
@@ -348,7 +320,7 @@ export const getSearchSuggestions = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { query, limit } = req.query;
     const suggestions = await searchService.getSearchSuggestions(
@@ -356,9 +328,7 @@ export const getSearchSuggestions = async (
       Number(limit) || 10
     );
 
-    res.json(
-      successResponse(suggestions, 'Suggestions retrieved successfully')
-    );
+    return successResponse(res, suggestions, 'Suggestions retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -372,13 +342,11 @@ export const trackSuggestionClick = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     await searchService.trackSuggestionClick(req.body.keyword);
 
-    res.json(
-      successResponse(null, 'Click tracked successfully')
-    );
+    return successResponse(res, null, 'Click tracked successfully');
   } catch (error) {
     next(error);
   }
@@ -392,7 +360,7 @@ export const createSuggestion = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { keyword, displayText, category, priority } = req.body;
     const suggestion = await searchService.createSuggestion(
@@ -402,9 +370,7 @@ export const createSuggestion = async (
       priority
     );
 
-    res.status(201).json(
-      successResponse(suggestion, 'Suggestion created successfully')
-    );
+    return successResponse(res, suggestion, 'Suggestion created successfully', 201);
   } catch (error) {
     next(error);
   }

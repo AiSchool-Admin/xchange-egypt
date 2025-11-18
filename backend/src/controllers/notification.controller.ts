@@ -21,7 +21,7 @@ export const getNotifications = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const {
@@ -40,7 +40,7 @@ export const getNotifications = async (
       limit: limit ? parseInt(limit as string) : 20,
     });
 
-    res.json(successResponse(result, 'Notifications retrieved successfully'));
+    return successResponse(res, result, 'Notifications retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -54,12 +54,12 @@ export const getUnreadCount = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const count = await notificationService.getUnreadCount(userId);
 
-    res.json(successResponse({ count }, 'Unread count retrieved successfully'));
+    return successResponse(res, { count }, 'Unread count retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -73,14 +73,14 @@ export const markAsRead = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     const notification = await notificationService.markAsRead(id, userId);
 
-    res.json(successResponse(notification, 'Notification marked as read'));
+    return successResponse(res, notification, 'Notification marked as read');
   } catch (error) {
     next(error);
   }
@@ -94,16 +94,15 @@ export const markAllAsRead = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const count = await notificationService.markAllAsRead(userId);
 
-    res.json(
-      successResponse(
-        { count },
-        `${count} notifications marked as read`
-      )
+    return successResponse(
+      res,
+      { count },
+      `${count} notifications marked as read`
     );
   } catch (error) {
     next(error);
@@ -118,14 +117,14 @@ export const deleteNotification = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     await notificationService.deleteNotification(id, userId);
 
-    res.json(successResponse(null, 'Notification deleted successfully'));
+    return successResponse(res, null, 'Notification deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -139,16 +138,15 @@ export const deleteAllRead = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const count = await notificationService.deleteAllRead(userId);
 
-    res.json(
-      successResponse(
-        { count },
-        `${count} notifications deleted`
-      )
+    return successResponse(
+      res,
+      { count },
+      `${count} notifications deleted`
     );
   } catch (error) {
     next(error);
@@ -167,12 +165,12 @@ export const getPreferences = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const preferences = await notificationService.getUserPreferences(userId);
 
-    res.json(successResponse(preferences, 'Preferences retrieved successfully'));
+    return successResponse(res, preferences, 'Preferences retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -186,14 +184,14 @@ export const updatePreferences = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const updates = req.body;
 
     const preferences = await notificationService.updatePreferences(userId, updates);
 
-    res.json(successResponse(preferences, 'Preferences updated successfully'));
+    return successResponse(res, preferences, 'Preferences updated successfully');
   } catch (error) {
     next(error);
   }
@@ -211,11 +209,11 @@ export const getEmailStats = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const stats = await emailService.getEmailQueueStats();
 
-    res.json(successResponse(stats, 'Email statistics retrieved successfully'));
+    return successResponse(res, stats, 'Email statistics retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -229,16 +227,15 @@ export const processEmailQueue = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { batchSize = 10 } = req.body;
     const sentCount = await emailService.processEmailQueue(batchSize);
 
-    res.json(
-      successResponse(
-        { sentCount },
-        `Processed ${sentCount} emails`
-      )
+    return successResponse(
+      res,
+      { sentCount },
+      `Processed ${sentCount} emails`
     );
   } catch (error) {
     next(error);
@@ -253,15 +250,14 @@ export const retryFailedEmails = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const count = await emailService.retryFailedEmails();
 
-    res.json(
-      successResponse(
-        { count },
-        `${count} failed emails queued for retry`
-      )
+    return successResponse(
+      res,
+      { count },
+      `${count} failed emails queued for retry`
     );
   } catch (error) {
     next(error);
@@ -276,16 +272,15 @@ export const cleanupEmails = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { olderThanDays = 30 } = req.body;
     const count = await emailService.cleanupEmailQueue(olderThanDays);
 
-    res.json(
-      successResponse(
-        { count },
-        `${count} old emails cleaned up`
-      )
+    return successResponse(
+      res,
+      { count },
+      `${count} old emails cleaned up`
     );
   } catch (error) {
     next(error);

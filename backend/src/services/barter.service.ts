@@ -5,14 +5,13 @@ const prisma = new PrismaClient();
 
 // Types
 interface CreateBarterOfferData {
-  offeredItemId: string;
-  requestedItemId: string;
+  offeredItemIds: string[];
+  recipientId?: string;
   notes?: string;
   expiresAt?: Date;
 }
 
 interface CreateCounterOfferData {
-  counterOfferItemId: string;
   notes?: string;
 }
 
@@ -39,17 +38,22 @@ interface PaginatedResult<T> {
 }
 
 /**
- * Create a barter offer
+ * Create a barter offer (Simple 2-party barter)
+ * NOTE: This is a simplified version. For bundle offers, use barter-bundle.service.ts
  */
 export const createBarterOffer = async (
   initiatorId: string,
   offerData: CreateBarterOfferData
 ): Promise<any> => {
-  const { offeredItemId, requestedItemId, notes, expiresAt } = offerData;
+  const { offeredItemIds, recipientId, notes, expiresAt } = offerData;
 
-  // Verify offered item exists and belongs to initiator
-  const offeredItem = await prisma.item.findUnique({
-    where: { id: offeredItemId },
+  if (!offeredItemIds || offeredItemIds.length === 0) {
+    throw new BadRequestError('Must offer at least one item');
+  }
+
+  // Verify offered items exist and belong to initiator
+  const offeredItems = await prisma.item.findMany({
+    where: { id: { in: offeredItemIds } },
     include: {
       listings: {
         where: { status: 'ACTIVE' },
@@ -57,88 +61,37 @@ export const createBarterOffer = async (
     },
   });
 
-  if (!offeredItem) {
-    throw new NotFoundError('Offered item not found');
+  if (offeredItems.length !== offeredItemIds.length) {
+    throw new NotFoundError('One or more offered items not found');
   }
 
-  if (offeredItem.sellerId !== initiatorId) {
+  const notOwned = offeredItems.filter((item) => item.sellerId !== initiatorId);
+  if (notOwned.length > 0) {
     throw new ForbiddenError('You can only offer your own items');
   }
 
-  // Check if offered item has active listings
-  if (offeredItem.listings.length > 0) {
+  // Check if offered items have active listings
+  const hasActiveListings = offeredItems.some((item) => item.listings.length > 0);
+  if (hasActiveListings) {
     throw new BadRequestError(
       'Cannot barter items that have active sale listings. Please close the listing first.'
     );
   }
 
-  // Verify requested item exists
-  const requestedItem = await prisma.item.findUnique({
-    where: { id: requestedItemId },
-    include: {
-      seller: {
-        select: {
-          id: true,
-          fullName: true,
-          avatar: true,
-        },
-      },
-      listings: {
-        where: { status: 'ACTIVE' },
-      },
-    },
-  });
+  // Calculate offered bundle value
+  const offeredBundleValue = offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0);
 
-  if (!requestedItem) {
-    throw new NotFoundError('Requested item not found');
-  }
-
-  // Prevent self-barter
-  if (requestedItem.sellerId === initiatorId) {
-    throw new BadRequestError('You cannot barter with yourself');
-  }
-
-  // Check if requested item has active listings
-  if (requestedItem.listings.length > 0) {
-    throw new BadRequestError(
-      'The requested item has active sale listings. The owner must close the listing first.'
-    );
-  }
-
-  // Check for existing pending offers between same items
-  const existingOffer = await prisma.barterOffer.findFirst({
-    where: {
-      OR: [
-        {
-          offeredItemId,
-          requestedItemId,
-          status: { in: ['PENDING', 'COUNTER_OFFERED'] },
-        },
-        {
-          offeredItemId: requestedItemId,
-          requestedItemId: offeredItemId,
-          status: { in: ['PENDING', 'COUNTER_OFFERED'] },
-        },
-      ],
-    },
-  });
-
-  if (existingOffer) {
-    throw new BadRequestError(
-      'There is already a pending barter offer between these items'
-    );
-  }
-
-  // Create the barter offer
+  // Create the barter offer (open offer without preference sets)
   const barterOffer = await prisma.barterOffer.create({
     data: {
       initiatorId,
-      recipientId: requestedItem.sellerId,
-      offeredItemId,
-      requestedItemId,
+      recipientId,
+      offeredItemIds,
+      offeredBundleValue,
       status: BarterOfferStatus.PENDING,
       notes,
       expiresAt: expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
+      isOpenOffer: !recipientId,
     },
     include: {
       initiator: {
@@ -146,7 +99,6 @@ export const createBarterOffer = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       recipient: {
@@ -154,27 +106,13 @@ export const createBarterOffer = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
-      offeredItem: {
+      preferenceSets: {
         include: {
-          category: {
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
-            },
-          },
-        },
-      },
-      requestedItem: {
-        include: {
-          category: {
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
+          items: {
+            include: {
+              item: true,
             },
           },
         },
@@ -200,7 +138,6 @@ export const getBarterOfferById = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
           phone: true,
         },
       },
@@ -209,39 +146,24 @@ export const getBarterOfferById = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
           phone: true,
         },
       },
-      offeredItem: {
+      preferenceSets: {
         include: {
-          category: {
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
-            },
-          },
-        },
-      },
-      requestedItem: {
-        include: {
-          category: {
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
-            },
-          },
-        },
-      },
-      counterOfferItem: {
-        include: {
-          category: {
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
+          items: {
+            include: {
+              item: {
+                include: {
+                  category: {
+                    select: {
+                      id: true,
+                      nameAr: true,
+                      nameEn: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
@@ -270,11 +192,6 @@ export const acceptBarterOffer = async (
 ): Promise<any> => {
   const offer = await prisma.barterOffer.findUnique({
     where: { id: offerId },
-    include: {
-      offeredItem: true,
-      requestedItem: true,
-      counterOfferItem: true,
-    },
   });
 
   if (!offer) {
@@ -302,7 +219,10 @@ export const acceptBarterOffer = async (
   // Update offer status to accepted
   const acceptedOffer = await prisma.barterOffer.update({
     where: { id: offerId },
-    data: { status: BarterOfferStatus.ACCEPTED },
+    data: {
+      status: BarterOfferStatus.ACCEPTED,
+      respondedAt: new Date(),
+    },
     include: {
       initiator: {
         select: {
@@ -318,9 +238,15 @@ export const acceptBarterOffer = async (
           avatar: true,
         },
       },
-      offeredItem: true,
-      requestedItem: true,
-      counterOfferItem: true,
+      preferenceSets: {
+        include: {
+          items: {
+            include: {
+              item: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -360,6 +286,7 @@ export const rejectBarterOffer = async (
     where: { id: offerId },
     data: {
       status: BarterOfferStatus.REJECTED,
+      respondedAt: new Date(),
       notes: reason ? `${offer.notes ? offer.notes + '\n' : ''}Rejection reason: ${reason}` : offer.notes,
     },
     include: {
@@ -377,8 +304,6 @@ export const rejectBarterOffer = async (
           avatar: true,
         },
       },
-      offeredItem: true,
-      requestedItem: true,
     },
   });
 
@@ -387,13 +312,15 @@ export const rejectBarterOffer = async (
 
 /**
  * Create a counter offer
+ * NOTE: Counter offers are now handled via preference sets
+ * This function is deprecated - use barter-bundle.service.ts instead
  */
 export const createCounterOffer = async (
   offerId: string,
   userId: string,
   counterOfferData: CreateCounterOfferData
 ): Promise<any> => {
-  const { counterOfferItemId, notes } = counterOfferData;
+  const { notes } = counterOfferData;
 
   const originalOffer = await prisma.barterOffer.findUnique({
     where: { id: offerId },
@@ -412,30 +339,12 @@ export const createCounterOffer = async (
     throw new BadRequestError('Can only counter pending offers');
   }
 
-  // Verify counter offer item exists and belongs to recipient
-  const counterItem = await prisma.item.findUnique({
-    where: { id: counterOfferItemId },
-  });
-
-  if (!counterItem) {
-    throw new NotFoundError('Counter offer item not found');
-  }
-
-  if (counterItem.sellerId !== userId) {
-    throw new ForbiddenError('You can only counter with your own items');
-  }
-
-  // Cannot counter with the same item that was requested
-  if (counterOfferItemId === originalOffer.requestedItemId) {
-    throw new BadRequestError('Counter offer item cannot be the same as requested item');
-  }
-
-  // Update original offer with counter offer
+  // Update original offer with counter offer status
   const counterOffer = await prisma.barterOffer.update({
     where: { id: offerId },
     data: {
       status: BarterOfferStatus.COUNTER_OFFERED,
-      counterOfferItemId,
+      respondedAt: new Date(),
       notes: notes ? `${originalOffer.notes ? originalOffer.notes + '\n' : ''}Counter offer notes: ${notes}` : originalOffer.notes,
     },
     include: {
@@ -453,15 +362,11 @@ export const createCounterOffer = async (
           avatar: true,
         },
       },
-      offeredItem: true,
-      requestedItem: true,
-      counterOfferItem: {
+      preferenceSets: {
         include: {
-          category: {
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
+          items: {
+            include: {
+              item: true,
             },
           },
         },
@@ -515,8 +420,6 @@ export const cancelBarterOffer = async (
           avatar: true,
         },
       },
-      offeredItem: true,
-      requestedItem: true,
     },
   });
 
@@ -573,31 +476,20 @@ export const getMyBarterOffers = async (
           avatar: true,
         },
       },
-      offeredItem: {
-        select: {
-          id: true,
-          titleAr: true,
-          titleEn: true,
-          images: true,
-          condition: true,
-        },
-      },
-      requestedItem: {
-        select: {
-          id: true,
-          titleAr: true,
-          titleEn: true,
-          images: true,
-          condition: true,
-        },
-      },
-      counterOfferItem: {
-        select: {
-          id: true,
-          titleAr: true,
-          titleEn: true,
-          images: true,
-          condition: true,
+      preferenceSets: {
+        include: {
+          items: {
+            include: {
+              item: {
+                select: {
+                  id: true,
+                  title: true,
+                  images: true,
+                  condition: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -644,10 +536,7 @@ export const searchBarterableItems = async (
   };
 
   if (search) {
-    where.OR = [
-      { titleAr: { contains: search, mode: 'insensitive' } },
-      { titleEn: { contains: search, mode: 'insensitive' } },
-    ];
+    where.title = { contains: search, mode: 'insensitive' };
   }
 
   if (categoryId) {
@@ -681,7 +570,6 @@ export const searchBarterableItems = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       category: {
@@ -825,15 +713,12 @@ export const completeBarterExchange = async (
           avatar: true,
         },
       },
-      offeredItem: true,
-      requestedItem: true,
-      counterOfferItem: true,
     },
   });
 
   // TODO: Transfer item ownership or mark items as exchanged
   // TODO: Create transaction records
-  // TODO: Update item quantities
+  // TODO: Update item status to TRADED
 
   return completedOffer;
 };

@@ -143,12 +143,14 @@ export const processEmailQueue = async (batchSize: number = 10): Promise<number>
         { scheduledFor: null },
         { scheduledFor: { lte: now } },
       ],
-      expiresAt: {
-        OR: [
-          { equals: null },
-          { gt: now },
-        ],
-      },
+      AND: [
+        {
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: now } },
+          ],
+        },
+      ],
     },
     take: batchSize,
     orderBy: [
