@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xchange Frontend Integration Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #0284c7; }
+        h2 { color: #334155; margin-top: 0; }
+        button {
+            background: #0284c7;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover { background: #0369a1; }
+        button:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+        }
+        .success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            color: #1e40af;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .status { font-weight: 600; }
+        .status.pending { color: #f59e0b; }
+        .status.success { color: #10b981; }
+        .status.failed { color: #ef4444; }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #475569;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Xchange Frontend Integration Test</h1>
+
+    <div class="container">
+        <h2>Configuration</h2>
+        <div class="info">
+            <strong>Backend API:</strong> https://xchange-egypt-production.up.railway.app/api/v1<br>
+            <strong>Frontend:</strong> http://localhost:3000<br>
+            <strong>Test User Email:</strong> <span id="testEmail"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>1. Test Individual Registration</h2>
+        <div>
+            <label>Full Name:</label>
+            <input type="text" id="indivName" value="Test User Individual" />
+
+            <label>Email:</label>
+            <input type="email" id="indivEmail" value="" />
+
+            <label>Password:</label>
+            <input type="password" id="indivPassword" value="TestPassword123!" />
+
+            <label>Phone:</label>
+            <input type="tel" id="indivPhone" value="+201234567890" />
+
+            <button onclick="testIndividualRegistration()">Register Individual User</button>
+        </div>
+        <div id="indivResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>2. Test Business Registration</h2>
+        <div>
+            <label>Full Name:</label>
+            <input type="text" id="bizName" value="Test User Business" />
+
+            <label>Email:</label>
+            <input type="email" id="bizEmail" value="" />
+
+            <label>Password:</label>
+            <input type="password" id="bizPassword" value="TestPassword123!" />
+
+            <label>Business Name:</label>
+            <input type="text" id="bizBusinessName" value="Test Corp LLC" />
+
+            <label>Tax ID:</label>
+            <input type="text" id="bizTaxId" value="TAX123456" />
+
+            <button onclick="testBusinessRegistration()">Register Business User</button>
+        </div>
+        <div id="bizResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>3. Test Login</h2>
+        <div>
+            <label>Email:</label>
+            <input type="email" id="loginEmail" value="" />
+
+            <label>Password:</label>
+            <input type="password" id="loginPassword" value="TestPassword123!" />
+
+            <button onclick="testLogin()">Login</button>
+        </div>
+        <div id="loginResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>4. Test Get Current User</h2>
+        <button onclick="testGetMe()">Get Current User Profile</button>
+        <div id="meResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>5. Test Logout</h2>
+        <button onclick="testLogout()">Logout</button>
+        <div id="logoutResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>Test Summary</h2>
+        <div id="summary" class="info">
+            Run the tests above in order to verify the full authentication flow.
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://xchange-egypt-production.up.railway.app/api/v1';
+
+        // Generate unique test emails
+        const timestamp = Date.now();
+        document.getElementById('indivEmail').value = `test-indiv-${timestamp}@example.com`;
+        document.getElementById('bizEmail').value = `test-biz-${timestamp}@example.com`;
+        document.getElementById('loginEmail').value = `test-indiv-${timestamp}@example.com`;
+        document.getElementById('testEmail').textContent = `test-indiv-${timestamp}@example.com`;
+
+        function showResult(elementId, success, data, error = null) {
+            const el = document.getElementById(elementId);
+            if (success) {
+                el.innerHTML = `
+                    <div class="success">
+                        ✅ <strong>Success!</strong>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                el.innerHTML = `
+                    <div class="error">
+                        ❌ <strong>Failed!</strong>
+                        <pre>${error || JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testIndividualRegistration() {
+            const fullName = document.getElementById('indivName').value;
+            const email = document.getElementById('indivEmail').value;
+            const password = document.getElementById('indivPassword').value;
+            const phone = document.getElementById('indivPhone').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/register/individual`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fullName,
+                        email,
+                        password,
+                        phone,
+                        city: 'Cairo',
+                        governorate: 'Cairo'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Store tokens for next tests
+                    localStorage.setItem('accessToken', data.data.accessToken);
+                    localStorage.setItem('refreshToken', data.data.refreshToken);
+                    showResult('indivResult', true, data);
+                } else {
+                    showResult('indivResult', false, data);
+                }
+            } catch (error) {
+                showResult('indivResult', false, null, error.message);
+            }
+        }
+
+        async function testBusinessRegistration() {
+            const fullName = document.getElementById('bizName').value;
+            const email = document.getElementById('bizEmail').value;
+            const password = document.getElementById('bizPassword').value;
+            const businessName = document.getElementById('bizBusinessName').value;
+            const taxId = document.getElementById('bizTaxId').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/register/business`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        fullName,
+                        email,
+                        password,
+                        businessName,
+                        taxId,
+                        commercialRegNo: 'CR987654',
+                        city: 'Alexandria',
+                        governorate: 'Alexandria'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showResult('bizResult', true, data);
+                } else {
+                    showResult('bizResult', false, data);
+                }
+            } catch (error) {
+                showResult('bizResult', false, null, error.message);
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Store tokens
+                    localStorage.setItem('accessToken', data.data.accessToken);
+                    localStorage.setItem('refreshToken', data.data.refreshToken);
+                    showResult('loginResult', true, data);
+                } else {
+                    showResult('loginResult', false, data);
+                }
+            } catch (error) {
+                showResult('loginResult', false, null, error.message);
+            }
+        }
+
+        async function testGetMe() {
+            const token = localStorage.getItem('accessToken');
+
+            if (!token) {
+                showResult('meResult', false, null, 'No access token found. Please login first.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/auth/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showResult('meResult', true, data);
+                } else {
+                    showResult('meResult', false, data);
+                }
+            } catch (error) {
+                showResult('meResult', false, null, error.message);
+            }
+        }
+
+        async function testLogout() {
+            const refreshToken = localStorage.getItem('refreshToken');
+
+            if (!refreshToken) {
+                showResult('logoutResult', false, null, 'No refresh token found.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ refreshToken })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    showResult('logoutResult', true, data);
+                } else {
+                    showResult('logoutResult', false, data);
+                }
+            } catch (error) {
+                showResult('logoutResult', false, null, error.message);
+            }
+        }
+    </script>
+</body>
+</html>
