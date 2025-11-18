@@ -20,14 +20,14 @@ export const createReverseAuction = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const buyerId = req.user!.id;
     const auctionData = req.body;
 
     const auction = await reverseAuctionService.createReverseAuction(buyerId, auctionData);
 
-    res.status(201).json(successResponse(auction, 'Reverse auction created successfully'));
+    return successResponse(res, auction, 'Reverse auction created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -41,7 +41,7 @@ export const getReverseAuctions = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const filters = {
       status: req.query.status as string | undefined,
@@ -56,7 +56,7 @@ export const getReverseAuctions = async (
 
     const result = await reverseAuctionService.getReverseAuctions(filters);
 
-    res.json(successResponse(result, 'Reverse auctions retrieved successfully'));
+    return successResponse(res, result, 'Reverse auctions retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -70,14 +70,14 @@ export const getReverseAuctionById = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user?.id;
 
     const auction = await reverseAuctionService.getReverseAuctionById(id, userId);
 
-    res.json(successResponse(auction, 'Reverse auction retrieved successfully'));
+    return successResponse(res, auction, 'Reverse auction retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -91,7 +91,7 @@ export const updateReverseAuction = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const buyerId = req.user!.id;
@@ -99,7 +99,7 @@ export const updateReverseAuction = async (
 
     const auction = await reverseAuctionService.updateReverseAuction(id, buyerId, updateData);
 
-    res.json(successResponse(auction, 'Reverse auction updated successfully'));
+    return successResponse(res, auction, 'Reverse auction updated successfully');
   } catch (error) {
     next(error);
   }
@@ -113,14 +113,14 @@ export const cancelReverseAuction = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const buyerId = req.user!.id;
 
     const auction = await reverseAuctionService.cancelReverseAuction(id, buyerId);
 
-    res.json(successResponse(auction, 'Reverse auction cancelled successfully'));
+    return successResponse(res, auction, 'Reverse auction cancelled successfully');
   } catch (error) {
     next(error);
   }
@@ -134,14 +134,14 @@ export const deleteReverseAuction = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const buyerId = req.user!.id;
 
     await reverseAuctionService.deleteReverseAuction(id, buyerId);
 
-    res.json(successResponse(null, 'Reverse auction deleted successfully'));
+    return successResponse(res, null, 'Reverse auction deleted successfully');
   } catch (error) {
     next(error);
   }
@@ -159,7 +159,7 @@ export const submitBid = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id: reverseAuctionId } = req.params;
     const sellerId = req.user!.id;
@@ -175,7 +175,7 @@ export const submitBid = async (
 
     const bid = await reverseAuctionService.submitBid(sellerId, bidData, metadata);
 
-    res.status(201).json(successResponse(bid, 'Bid submitted successfully'));
+    return successResponse(res, bid, 'Bid submitted successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -189,13 +189,13 @@ export const getBidsForAuction = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
 
     const bids = await reverseAuctionService.getBidsForAuction(id);
 
-    res.json(successResponse(bids, 'Bids retrieved successfully'));
+    return successResponse(res, bids, 'Bids retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -209,7 +209,7 @@ export const updateBid = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { bidId } = req.params;
     const sellerId = req.user!.id;
@@ -217,7 +217,7 @@ export const updateBid = async (
 
     const bid = await reverseAuctionService.updateBid(bidId, sellerId, updateData);
 
-    res.json(successResponse(bid, 'Bid updated successfully'));
+    return successResponse(res, bid, 'Bid updated successfully');
   } catch (error) {
     next(error);
   }
@@ -231,14 +231,14 @@ export const withdrawBid = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { bidId } = req.params;
     const sellerId = req.user!.id;
 
     const bid = await reverseAuctionService.withdrawBid(bidId, sellerId);
 
-    res.json(successResponse(bid, 'Bid withdrawn successfully'));
+    return successResponse(res, bid, 'Bid withdrawn successfully');
   } catch (error) {
     next(error);
   }
@@ -252,7 +252,7 @@ export const getMyBids = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const sellerId = req.user!.id;
     const filters = {
@@ -263,7 +263,7 @@ export const getMyBids = async (
 
     const result = await reverseAuctionService.getMyBids(sellerId, filters);
 
-    res.json(successResponse(result, 'Bids retrieved successfully'));
+    return successResponse(res, result, 'Bids retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -281,7 +281,7 @@ export const awardAuction = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const { bidId } = req.body;
@@ -289,7 +289,7 @@ export const awardAuction = async (
 
     const auction = await reverseAuctionService.awardAuction(id, bidId, buyerId);
 
-    res.json(successResponse(auction, 'Auction awarded successfully'));
+    return successResponse(res, auction, 'Auction awarded successfully');
   } catch (error) {
     next(error);
   }
@@ -303,14 +303,14 @@ export const completeAuction = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     const auction = await reverseAuctionService.completeAuction(id, userId);
 
-    res.json(successResponse(auction, 'Auction marked as completed'));
+    return successResponse(res, auction, 'Auction marked as completed');
   } catch (error) {
     next(error);
   }
@@ -328,13 +328,13 @@ export const getStatistics = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
 
     const stats = await reverseAuctionService.getAuctionStatistics(userId);
 
-    res.json(successResponse(stats, 'Statistics retrieved successfully'));
+    return successResponse(res, stats, 'Statistics retrieved successfully');
   } catch (error) {
     next(error);
   }

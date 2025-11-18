@@ -8,25 +8,21 @@ const prisma = new PrismaClient();
 
 // Types
 interface CreateItemData {
-  titleAr: string;
-  titleEn?: string;
-  descriptionAr: string;
-  descriptionEn?: string;
+  title: string;
+  description: string;
   categoryId: string;
   condition: ItemCondition;
-  quantity: number;
-  location: string;
-  governorate: string;
+  estimatedValue: number;
+  location?: string;
+  governorate?: string;
 }
 
 interface UpdateItemData {
-  titleAr?: string;
-  titleEn?: string | null;
-  descriptionAr?: string;
-  descriptionEn?: string | null;
+  title?: string;
+  description?: string;
   categoryId?: string;
   condition?: ItemCondition;
-  quantity?: number;
+  estimatedValue?: number;
   location?: string;
   governorate?: string;
 }
@@ -39,7 +35,7 @@ interface SearchItemsParams {
   governorate?: string;
   page?: number;
   limit?: number;
-  sortBy?: 'createdAt' | 'updatedAt' | 'titleAr' | 'titleEn';
+  sortBy?: 'createdAt' | 'updatedAt' | 'title';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -97,12 +93,10 @@ export const createItem = async (
     data: {
       sellerId: userId,
       categoryId: itemData.categoryId,
-      titleAr: itemData.titleAr,
-      titleEn: itemData.titleEn,
-      descriptionAr: itemData.descriptionAr,
-      descriptionEn: itemData.descriptionEn,
+      title: itemData.title,
+      description: itemData.description,
       condition: itemData.condition,
-      quantity: itemData.quantity,
+      estimatedValue: itemData.estimatedValue,
       location: itemData.location,
       governorate: itemData.governorate,
       images: processedImages,
@@ -113,7 +107,6 @@ export const createItem = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       category: {
@@ -142,7 +135,6 @@ export const getItemById = async (itemId: string): Promise<any> => {
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
           businessName: true,
         },
       },
@@ -218,7 +210,6 @@ export const updateItem = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       category: {
@@ -301,10 +292,8 @@ export const searchItems = async (
 
   if (search) {
     where.OR = [
-      { titleAr: { contains: search, mode: 'insensitive' } },
-      { titleEn: { contains: search, mode: 'insensitive' } },
-      { descriptionAr: { contains: search, mode: 'insensitive' } },
-      { descriptionEn: { contains: search, mode: 'insensitive' } },
+      { title: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
     ];
   }
 
@@ -342,7 +331,6 @@ export const searchItems = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       category: {
@@ -426,7 +414,7 @@ export const getCategoryItems = async (
     governorate?: string;
     page?: number;
     limit?: number;
-    sortBy?: 'createdAt' | 'updatedAt' | 'titleAr' | 'titleEn';
+    sortBy?: 'createdAt' | 'updatedAt' | 'title';
     sortOrder?: 'asc' | 'desc';
   } = {}
 ): Promise<PaginatedResult<any>> => {
@@ -497,7 +485,6 @@ export const getCategoryItems = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       category: {
@@ -582,7 +569,6 @@ export const addItemImages = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       category: {
@@ -646,7 +632,6 @@ export const removeItemImages = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
         },
       },
       category: {

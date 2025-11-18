@@ -6,15 +6,7 @@ const prisma = new PrismaClient();
 // Types
 interface CreatePurchaseData {
   listingId: string;
-  quantity: number;
-  paymentMethod: string;
-  shippingAddress: string;
-  notes?: string;
-}
-
-interface UpdateTransactionStatusData {
-  status: TransactionStatus;
-  notes?: string;
+  paymentMethod?: string;
 }
 
 interface PaginatedResult<T> {
@@ -62,7 +54,7 @@ export const createPurchase = async (
     throw new BadRequestError('Listing is not active');
   }
 
-  if (listing.type !== 'SALE') {
+  if (listing.listingType !== 'DIRECT_SALE') {
     throw new BadRequestError('Listing is not for direct sale');
   }
 
@@ -71,30 +63,17 @@ export const createPurchase = async (
     throw new BadRequestError('You cannot purchase your own items');
   }
 
-  // Validate quantity
-  if (purchaseData.quantity > listing.quantity) {
-    throw new BadRequestError(
-      `Requested quantity (${purchaseData.quantity}) exceeds available quantity (${listing.quantity})`
-    );
-  }
-
-  // Calculate total amount
-  const totalAmount = listing.price * purchaseData.quantity;
-
   // Create transaction
   const transaction = await prisma.transaction.create({
     data: {
       listingId: listing.id,
       buyerId,
       sellerId: listing.item.sellerId,
-      itemId: listing.itemId,
-      quantity: purchaseData.quantity,
-      unitPrice: listing.price,
-      totalAmount,
+      transactionType: 'DIRECT_SALE',
+      amount: listing.price,
       paymentMethod: purchaseData.paymentMethod,
-      shippingAddress: purchaseData.shippingAddress,
-      status: TransactionStatus.PENDING,
-      notes: purchaseData.notes,
+      paymentStatus: 'PENDING',
+      deliveryStatus: 'PENDING',
     },
     include: {
       buyer: {
@@ -113,7 +92,6 @@ export const createPurchase = async (
           email: true,
           phone: true,
           avatar: true,
-          accountType: true,
           businessName: true,
         },
       },
@@ -131,7 +109,7 @@ export const createPurchase = async (
       listing: {
         select: {
           id: true,
-          type: true,
+          listingType: true,
           status: true,
         },
       },
@@ -170,7 +148,6 @@ export const getTransactionById = async (
           email: true,
           phone: true,
           avatar: true,
-          accountType: true,
           businessName: true,
         },
       },
@@ -188,7 +165,7 @@ export const getTransactionById = async (
       listing: {
         select: {
           id: true,
-          type: true,
+          listingType: true,
           status: true,
         },
       },
@@ -208,18 +185,17 @@ export const getTransactionById = async (
 };
 
 /**
- * Update transaction status
+ * Update transaction delivery status
  */
-export const updateTransactionStatus = async (
+export const updateDeliveryStatus = async (
   transactionId: string,
   userId: string,
-  updateData: UpdateTransactionStatusData
+  deliveryStatus: 'PENDING' | 'SHIPPED' | 'DELIVERED' | 'RETURNED'
 ): Promise<any> => {
   const transaction = await prisma.transaction.findUnique({
     where: { id: transactionId },
     include: {
       listing: true,
-      item: true,
     },
   });
 
@@ -227,55 +203,26 @@ export const updateTransactionStatus = async (
     throw new NotFoundError('Transaction not found');
   }
 
-  // Only buyer or seller can update the transaction
-  if (transaction.buyerId !== userId && transaction.sellerId !== userId) {
-    throw new ForbiddenError('You do not have permission to update this transaction');
+  // Only seller can update delivery status (except DELIVERED which buyer can also confirm)
+  if (transaction.sellerId !== userId && deliveryStatus !== 'DELIVERED') {
+    throw new ForbiddenError('Only the seller can update delivery status');
   }
 
-  // Validate status transitions
-  const { status } = updateData;
-
-  // Validate status transition logic
-  if (status === 'CANCELLED') {
-    if (!['PENDING', 'CONFIRMED', 'PAYMENT_PENDING'].includes(transaction.status)) {
-      throw new BadRequestError(
-        'Can only cancel transactions in PENDING, CONFIRMED, or PAYMENT_PENDING status'
-      );
-    }
+  // Validate delivery status transitions
+  if (deliveryStatus === 'SHIPPED' && transaction.deliveryStatus !== 'PENDING') {
+    throw new BadRequestError('Can only ship from PENDING status');
   }
 
-  if (status === 'CONFIRMED') {
-    if (transaction.status !== 'PENDING') {
-      throw new BadRequestError('Can only confirm transactions in PENDING status');
-    }
-    // Only seller can confirm
-    if (transaction.sellerId !== userId) {
-      throw new ForbiddenError('Only the seller can confirm the transaction');
-    }
-  }
-
-  if (status === 'SHIPPED') {
-    if (transaction.status !== 'PAID') {
-      throw new BadRequestError('Can only ship transactions in PAID status');
-    }
-    // Only seller can mark as shipped
-    if (transaction.sellerId !== userId) {
-      throw new ForbiddenError('Only the seller can mark the transaction as shipped');
-    }
-  }
-
-  if (status === 'DELIVERED') {
-    if (transaction.status !== 'SHIPPED') {
-      throw new BadRequestError('Can only deliver transactions in SHIPPED status');
-    }
+  if (deliveryStatus === 'DELIVERED' && transaction.deliveryStatus !== 'SHIPPED') {
+    throw new BadRequestError('Can only deliver from SHIPPED status');
   }
 
   // Update transaction
   const updatedTransaction = await prisma.transaction.update({
     where: { id: transactionId },
     data: {
-      status: updateData.status,
-      notes: updateData.notes,
+      deliveryStatus,
+      ...(deliveryStatus === 'DELIVERED' && { completedAt: new Date() }),
     },
     include: {
       buyer: {
@@ -294,7 +241,6 @@ export const updateTransactionStatus = async (
           email: true,
           phone: true,
           avatar: true,
-          accountType: true,
           businessName: true,
         },
       },
@@ -312,42 +258,21 @@ export const updateTransactionStatus = async (
       listing: {
         select: {
           id: true,
-          type: true,
+          listingType: true,
           status: true,
         },
       },
     },
   });
 
-  // If transaction is completed or delivered, update listing quantity
-  if (status === 'DELIVERED') {
-    const listing = await prisma.listing.findUnique({
+  // If transaction is delivered, update listing status
+  if (deliveryStatus === 'DELIVERED') {
+    await prisma.listing.update({
       where: { id: transaction.listingId },
+      data: {
+        status: 'COMPLETED',
+      },
     });
-
-    if (listing) {
-      const newQuantity = listing.quantity - transaction.quantity;
-
-      // Update listing quantity
-      await prisma.listing.update({
-        where: { id: listing.id },
-        data: {
-          quantity: newQuantity,
-          // Mark as sold if quantity reaches 0
-          ...(newQuantity === 0 && { status: 'SOLD' }),
-        },
-      });
-
-      // Update item quantity
-      await prisma.item.update({
-        where: { id: transaction.itemId },
-        data: {
-          quantity: {
-            decrement: transaction.quantity,
-          },
-        },
-      });
-    }
   }
 
   return updatedTransaction;
@@ -358,8 +283,7 @@ export const updateTransactionStatus = async (
  */
 export const confirmPayment = async (
   transactionId: string,
-  userId: string,
-  paymentReference?: string
+  userId: string
 ): Promise<any> => {
   const transaction = await prisma.transaction.findUnique({
     where: { id: transactionId },
@@ -369,24 +293,20 @@ export const confirmPayment = async (
     throw new NotFoundError('Transaction not found');
   }
 
-  // Only buyer can confirm payment
-  if (transaction.buyerId !== userId) {
-    throw new ForbiddenError('Only the buyer can confirm payment');
+  // Only buyer or seller can confirm payment
+  if (transaction.buyerId !== userId && transaction.sellerId !== userId) {
+    throw new ForbiddenError('Only buyer or seller can confirm payment');
   }
 
-  if (transaction.status !== 'CONFIRMED' && transaction.status !== 'PAYMENT_PENDING') {
-    throw new BadRequestError(
-      'Can only confirm payment for transactions in CONFIRMED or PAYMENT_PENDING status'
-    );
+  if (transaction.paymentStatus !== 'PENDING') {
+    throw new BadRequestError('Payment already processed');
   }
 
   // Update transaction
   const updatedTransaction = await prisma.transaction.update({
     where: { id: transactionId },
     data: {
-      status: TransactionStatus.PAID,
-      paymentReference,
-      paidAt: new Date(),
+      paymentStatus: 'COMPLETED',
     },
     include: {
       buyer: {
@@ -405,7 +325,7 @@ export const confirmPayment = async (
           avatar: true,
         },
       },
-      item: true,
+      listing: true,
     },
   });
 
@@ -435,17 +355,20 @@ export const markAsShipped = async (
     throw new ForbiddenError('Only the seller can mark the transaction as shipped');
   }
 
-  if (transaction.status !== 'PAID') {
-    throw new BadRequestError('Can only ship transactions in PAID status');
+  if (transaction.paymentStatus !== 'COMPLETED') {
+    throw new BadRequestError('Can only ship transactions with completed payment');
+  }
+
+  if (transaction.deliveryStatus !== 'PENDING') {
+    throw new BadRequestError('Transaction already shipped');
   }
 
   // Update transaction
   const updatedTransaction = await prisma.transaction.update({
     where: { id: transactionId },
     data: {
-      status: TransactionStatus.SHIPPED,
+      deliveryStatus: 'SHIPPED',
       trackingNumber,
-      shippedAt: new Date(),
     },
     include: {
       buyer: {
@@ -464,7 +387,7 @@ export const markAsShipped = async (
           avatar: true,
         },
       },
-      item: true,
+      listing: true,
     },
   });
 
@@ -493,18 +416,16 @@ export const markAsDelivered = async (
     throw new ForbiddenError('You do not have permission to update this transaction');
   }
 
-  if (transaction.status !== 'SHIPPED') {
+  if (transaction.deliveryStatus !== 'SHIPPED') {
     throw new BadRequestError('Can only mark transactions as delivered in SHIPPED status');
   }
 
-  // Update transaction and listing/item quantities
-  return await updateTransactionStatus(transactionId, userId, {
-    status: TransactionStatus.DELIVERED,
-  });
+  // Update transaction delivery status
+  return await updateDeliveryStatus(transactionId, userId, 'DELIVERED');
 };
 
 /**
- * Cancel transaction
+ * Cancel transaction (refund)
  */
 export const cancelTransaction = async (
   transactionId: string,
@@ -524,18 +445,15 @@ export const cancelTransaction = async (
     throw new ForbiddenError('You do not have permission to cancel this transaction');
   }
 
-  if (!['PENDING', 'CONFIRMED', 'PAYMENT_PENDING'].includes(transaction.status)) {
-    throw new BadRequestError(
-      'Can only cancel transactions in PENDING, CONFIRMED, or PAYMENT_PENDING status'
-    );
+  if (transaction.paymentStatus === 'COMPLETED' && transaction.deliveryStatus !== 'PENDING') {
+    throw new BadRequestError('Cannot cancel transaction after shipment');
   }
 
   // Update transaction
   const updatedTransaction = await prisma.transaction.update({
     where: { id: transactionId },
     data: {
-      status: TransactionStatus.CANCELLED,
-      notes: reason,
+      paymentStatus: 'REFUNDED',
     },
     include: {
       buyer: {
@@ -554,7 +472,7 @@ export const cancelTransaction = async (
           avatar: true,
         },
       },
-      item: true,
+      listing: true,
     },
   });
 
@@ -570,7 +488,7 @@ export const cancelTransaction = async (
 export const getUserTransactions = async (
   userId: string,
   role?: 'buyer' | 'seller',
-  status?: TransactionStatus,
+  paymentStatus?: 'PENDING' | 'COMPLETED' | 'FAILED' | 'REFUNDED',
   page: number = 1,
   limit: number = 20
 ): Promise<PaginatedResult<any>> => {
@@ -586,9 +504,9 @@ export const getUserTransactions = async (
     where.OR = [{ buyerId: userId }, { sellerId: userId }];
   }
 
-  // Filter by status
-  if (status) {
-    where.status = status;
+  // Filter by payment status
+  if (paymentStatus) {
+    where.paymentStatus = paymentStatus;
   }
 
   const skip = (page - 1) * limit;
@@ -613,24 +531,19 @@ export const getUserTransactions = async (
           id: true,
           fullName: true,
           avatar: true,
-          accountType: true,
           businessName: true,
         },
       },
-      item: {
-        select: {
-          id: true,
-          titleAr: true,
-          titleEn: true,
-          images: true,
-          condition: true,
-        },
-      },
       listing: {
-        select: {
-          id: true,
-          type: true,
-          status: true,
+        include: {
+          item: {
+            select: {
+              id: true,
+              title: true,
+              images: true,
+              condition: true,
+            },
+          },
         },
       },
     },

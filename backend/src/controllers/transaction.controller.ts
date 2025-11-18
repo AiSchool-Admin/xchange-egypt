@@ -10,14 +10,14 @@ export const createPurchase = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const buyerId = req.user!.id;
     const purchaseData = req.body;
 
     const transaction = await transactionService.createPurchase(buyerId, purchaseData);
 
-    res.status(201).json(successResponse(transaction, 'Purchase created successfully'));
+    return successResponse(res, transaction, 'Purchase created successfully', 201);
   } catch (error) {
     next(error);
   }
@@ -31,40 +31,40 @@ export const getTransactionById = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     const transaction = await transactionService.getTransactionById(id, userId);
 
-    res.json(successResponse(transaction, 'Transaction retrieved successfully'));
+    return successResponse(res, transaction, 'Transaction retrieved successfully');
   } catch (error) {
     next(error);
   }
 };
 
 /**
- * Update transaction status
- * PUT /api/v1/transactions/:id/status
+ * Update delivery status
+ * PUT /api/v1/transactions/:id/delivery-status
  */
-export const updateTransactionStatus = async (
+export const updateDeliveryStatus = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
-    const updateData = req.body;
+    const { deliveryStatus } = req.body;
 
-    const transaction = await transactionService.updateTransactionStatus(
+    const transaction = await transactionService.updateDeliveryStatus(
       id,
       userId,
-      updateData
+      deliveryStatus
     );
 
-    res.json(successResponse(transaction, 'Transaction status updated successfully'));
+    return successResponse(res, transaction, 'Delivery status updated successfully');
   } catch (error) {
     next(error);
   }
@@ -78,19 +78,14 @@ export const confirmPayment = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
-    const { paymentReference } = req.body;
 
-    const transaction = await transactionService.confirmPayment(
-      id,
-      userId,
-      paymentReference
-    );
+    const transaction = await transactionService.confirmPayment(id, userId);
 
-    res.json(successResponse(transaction, 'Payment confirmed successfully'));
+    return successResponse(res, transaction, 'Payment confirmed successfully');
   } catch (error) {
     next(error);
   }
@@ -104,7 +99,7 @@ export const markAsShipped = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -112,7 +107,7 @@ export const markAsShipped = async (
 
     const transaction = await transactionService.markAsShipped(id, userId, trackingNumber);
 
-    res.json(successResponse(transaction, 'Transaction marked as shipped successfully'));
+    return successResponse(res, transaction, 'Transaction marked as shipped successfully');
   } catch (error) {
     next(error);
   }
@@ -126,14 +121,14 @@ export const markAsDelivered = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
 
     const transaction = await transactionService.markAsDelivered(id, userId);
 
-    res.json(successResponse(transaction, 'Transaction marked as delivered successfully'));
+    return successResponse(res, transaction, 'Transaction marked as delivered successfully');
   } catch (error) {
     next(error);
   }
@@ -147,7 +142,7 @@ export const cancelTransaction = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { id } = req.params;
     const userId = req.user!.id;
@@ -155,7 +150,7 @@ export const cancelTransaction = async (
 
     const transaction = await transactionService.cancelTransaction(id, userId, reason);
 
-    res.json(successResponse(transaction, 'Transaction cancelled successfully'));
+    return successResponse(res, transaction, 'Transaction cancelled successfully');
   } catch (error) {
     next(error);
   }
@@ -169,7 +164,7 @@ export const getUserTransactions = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const { userId } = req.params;
     const { role, status, page, limit } = req.query;
@@ -182,7 +177,7 @@ export const getUserTransactions = async (
       limit ? parseInt(limit as string) : undefined
     );
 
-    res.json(successResponse(result, 'User transactions retrieved successfully'));
+    return successResponse(res, result, 'User transactions retrieved successfully');
   } catch (error) {
     next(error);
   }
@@ -196,7 +191,7 @@ export const getMyTransactions = async (
   req: Request,
   res: Response,
   next: NextFunction
-): Promise<void> => {
+) => {
   try {
     const userId = req.user!.id;
     const { role, status, page, limit } = req.query;
@@ -209,7 +204,7 @@ export const getMyTransactions = async (
       limit ? parseInt(limit as string) : undefined
     );
 
-    res.json(successResponse(result, 'Your transactions retrieved successfully'));
+    return successResponse(res, result, 'Your transactions retrieved successfully');
   } catch (error) {
     next(error);
   }
