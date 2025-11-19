@@ -25,12 +25,15 @@ export interface Item {
 }
 
 export interface CreateItemData {
-  title: string;
-  description: string;
+  titleAr: string;
+  titleEn?: string;
+  descriptionAr: string;
+  descriptionEn?: string;
   condition: string;
-  price?: number;
   categoryId: string;
-  location?: string;
+  location: string;
+  governorate: string;
+  quantity?: number;
   imageUrls?: string[];
 }
 

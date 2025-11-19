@@ -22,6 +22,7 @@ export default function NewItemPage() {
     condition: 'GOOD',
     price: '',
     location: '',
+    governorate: '',
   });
 
   useEffect(() => {
@@ -65,7 +66,7 @@ export default function NewItemPage() {
     e.preventDefault();
     setError('');
 
-    if (!formData.title || !formData.description || !formData.categoryId) {
+    if (!formData.title || !formData.description || !formData.categoryId || !formData.location || !formData.governorate) {
       setError('Please fill in all required fields');
       return;
     }
@@ -73,12 +74,14 @@ export default function NewItemPage() {
     try {
       setLoading(true);
       await createItem({
-        title: formData.title,
-        description: formData.description,
+        titleAr: formData.title,
+        titleEn: formData.title,
+        descriptionAr: formData.description,
+        descriptionEn: formData.description,
         categoryId: formData.categoryId,
         condition: formData.condition,
-        price: formData.price ? parseFloat(formData.price) : undefined,
-        location: formData.location || undefined,
+        location: formData.location,
+        governorate: formData.governorate,
         imageUrls: uploadedImages.length > 0 ? uploadedImages : undefined,
       });
 
@@ -187,33 +190,64 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            {/* Price and Location */}
+            {/* Location and Governorate */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Price (EGP)</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Governorate <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="governorate"
+                  value={formData.governorate}
                   onChange={handleChange}
-                  min="0"
-                  step="0.01"
-                  placeholder="Leave empty for contact only"
+                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                />
-                <p className="text-sm text-gray-500 mt-1">Optional - leave blank for negotiable</p>
+                >
+                  <option value="">Select governorate</option>
+                  <option value="Cairo">Cairo</option>
+                  <option value="Giza">Giza</option>
+                  <option value="Alexandria">Alexandria</option>
+                  <option value="Dakahlia">Dakahlia</option>
+                  <option value="Red Sea">Red Sea</option>
+                  <option value="Beheira">Beheira</option>
+                  <option value="Fayoum">Fayoum</option>
+                  <option value="Gharbiya">Gharbiya</option>
+                  <option value="Ismailia">Ismailia</option>
+                  <option value="Menofia">Menofia</option>
+                  <option value="Minya">Minya</option>
+                  <option value="Qaliubiya">Qaliubiya</option>
+                  <option value="New Valley">New Valley</option>
+                  <option value="Suez">Suez</option>
+                  <option value="Aswan">Aswan</option>
+                  <option value="Assiut">Assiut</option>
+                  <option value="Beni Suef">Beni Suef</option>
+                  <option value="Port Said">Port Said</option>
+                  <option value="Damietta">Damietta</option>
+                  <option value="Sharkia">Sharkia</option>
+                  <option value="South Sinai">South Sinai</option>
+                  <option value="Kafr El Sheikh">Kafr El Sheikh</option>
+                  <option value="Matrouh">Matrouh</option>
+                  <option value="Luxor">Luxor</option>
+                  <option value="Qena">Qena</option>
+                  <option value="North Sinai">North Sinai</option>
+                  <option value="Sohag">Sohag</option>
+                </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Location <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  placeholder="e.g., Cairo, Nasr City"
+                  required
+                  placeholder="e.g., Nasr City, Downtown"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
+                <p className="text-sm text-gray-500 mt-1">Area or neighborhood</p>
               </div>
             </div>
 
