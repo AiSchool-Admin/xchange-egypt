@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getBarterItems, BarterItem } from '@/lib/api/barter';
 import { getCategories, Category } from '@/lib/api/categories';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function BarterPage() {
   const { user } = useAuth();

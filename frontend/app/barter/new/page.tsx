@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { createBarterOffer } from '@/lib/api/barter';
 import { getMyItems } from '@/lib/api/items';
 import { getBarterItems } from '@/lib/api/barter';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface SelectableItem {
   id: string;

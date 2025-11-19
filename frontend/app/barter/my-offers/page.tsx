@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getMyBarterOffers, BarterOffer } from '@/lib/api/barter';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function MyBarterOffersPage() {
   const router = useRouter();

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getAuction, placeBid, buyNow, Auction } from '@/lib/api/auctions';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 // Countdown Timer Component
 const CountdownTimer: React.FC<{ endTime: string }> = ({ endTime }) => {

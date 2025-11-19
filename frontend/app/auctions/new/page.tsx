@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createAuction } from '@/lib/api/auctions';
 import { getMyItems } from '@/lib/api/items';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface MyItem {
   id: string;
