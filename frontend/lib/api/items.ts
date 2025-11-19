@@ -78,7 +78,7 @@ export const getItems = async (params?: {
   if (params?.search) queryParams.append('search', params.search);
   if (params?.status) queryParams.append('status', params.status);
 
-  const response = await apiClient.get(`/items?${queryParams.toString()}`);
+  const response = await apiClient.get(`/items/search?${queryParams.toString()}`);
   return response.data;
 };
 

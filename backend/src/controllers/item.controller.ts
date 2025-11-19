@@ -126,6 +126,31 @@ export const searchItems = async (
 };
 
 /**
+ * Get authenticated user's items
+ * GET /api/v1/items/my
+ */
+export const getMyItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { page, limit } = req.query;
+
+    const result = await itemService.getUserItems(
+      userId,
+      page ? parseInt(page as string) : undefined,
+      limit ? parseInt(limit as string) : undefined
+    );
+
+    return successResponse(res, result, 'Your items retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get user's items
  * GET /api/v1/items/user/:userId
  */

@@ -61,6 +61,16 @@ router.get(
 // Protected routes (require authentication)
 
 /**
+ * Get authenticated user's items
+ * GET /api/v1/items/my
+ */
+router.get(
+  '/my',
+  authenticate,
+  itemController.getMyItems
+);
+
+/**
  * Create a new item with images
  * POST /api/v1/items
  */
