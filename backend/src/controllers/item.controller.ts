@@ -98,7 +98,14 @@ export const searchItems = async (
   next: NextFunction
 ) => {
   try {
-    const params = req.query;
+    // Parse query parameters to correct types
+    const params = {
+      ...req.query,
+      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+      limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+      minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
+      maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
+    };
 
     const result = await itemService.searchItems(params);
 
