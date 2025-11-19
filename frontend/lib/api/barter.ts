@@ -49,6 +49,19 @@ export interface CreateBarterOfferData {
   message?: string;
 }
 
+export interface BackendBarterOfferData {
+  offeredItemIds: string[];
+  preferenceSets: Array<{
+    priority: number;
+    itemIds: string[];
+    description?: string;
+  }>;
+  recipientId?: string;
+  notes?: string;
+  expiresAt?: string;
+  isOpenOffer?: boolean;
+}
+
 export interface BarterItemsResponse {
   success: boolean;
   data: {
@@ -118,7 +131,21 @@ export const getBarterOffer = async (id: string): Promise<BarterOfferResponse> =
 export const createBarterOffer = async (
   data: CreateBarterOfferData
 ): Promise<BarterOfferResponse> => {
-  const response = await apiClient.post('/barter/offers', data);
+  // Transform frontend data to backend format
+  const backendData: BackendBarterOfferData = {
+    offeredItemIds: data.offeredItemIds,
+    preferenceSets: [
+      {
+        priority: 1,
+        itemIds: data.requestedItemIds,
+        description: data.message,
+      },
+    ],
+    notes: data.message,
+    isOpenOffer: true, // Open offer means anyone with the requested items can accept
+  };
+
+  const response = await apiClient.post('/barter/offers', backendData);
   return response.data;
 };
 
