@@ -101,6 +101,7 @@ export default function NewItemPage() {
         descriptionEn: formData.description,
         categoryId: formData.categoryId,
         condition: formData.condition,
+        estimatedValue: formData.price ? parseFloat(formData.price) : 0,
         location: formData.location,
         governorate: formData.governorate,
         imageUrls: uploadedImages.length > 0 ? uploadedImages : undefined,
@@ -141,6 +142,7 @@ export default function NewItemPage() {
               <li>• Description: Minimum 10 characters (be detailed!)</li>
               <li>• Category: Select from dropdown</li>
               <li>• Condition: Choose item condition</li>
+              <li>• Estimated Value: Optional (helps with barter matching)</li>
               <li>• Governorate: Select your governorate</li>
               <li>• Location: Area/neighborhood (minimum 3 characters)</li>
               <li>• Photos: Optional but recommended</li>
@@ -238,6 +240,24 @@ export default function NewItemPage() {
                   <option value="POOR">Poor</option>
                 </select>
               </div>
+            </div>
+
+            {/* Price/Estimated Value */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estimated Value (EGP)
+              </label>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                placeholder="e.g., 15000"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+              <p className="text-xs text-gray-500 mt-1">Optional - estimated value of the item</p>
             </div>
 
             {/* Location and Governorate */}

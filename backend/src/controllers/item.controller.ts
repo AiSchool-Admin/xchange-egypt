@@ -14,8 +14,18 @@ export const createItem = async (
 ) => {
   try {
     const userId = req.user!.id;
-    const itemData = req.body;
     const imageFiles = req.files as Express.Multer.File[] | undefined;
+
+    // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
+    const itemData = {
+      title: req.body.titleAr || req.body.titleEn || req.body.title,
+      description: req.body.descriptionAr || req.body.descriptionEn || req.body.description,
+      categoryId: req.body.categoryId,
+      condition: req.body.condition,
+      estimatedValue: req.body.estimatedValue || 0,
+      location: req.body.location,
+      governorate: req.body.governorate,
+    };
 
     const item = await itemService.createItem(userId, itemData, imageFiles);
 

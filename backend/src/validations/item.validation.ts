@@ -60,6 +60,11 @@ export const createItemSchema = z.object({
       .optional(),
     categoryId: z.string().uuid('Invalid category ID'),
     condition: itemConditionEnum,
+    estimatedValue: z
+      .number()
+      .positive('Estimated value must be positive')
+      .optional()
+      .default(0),
     quantity: z
       .number()
       .int('Quantity must be an integer')
