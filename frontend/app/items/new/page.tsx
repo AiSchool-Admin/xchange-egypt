@@ -66,8 +66,29 @@ export default function NewItemPage() {
     e.preventDefault();
     setError('');
 
-    if (!formData.title || !formData.description || !formData.categoryId || !formData.location || !formData.governorate) {
-      setError('Please fill in all required fields');
+    // Detailed validation with specific error messages
+    if (!formData.title || formData.title.length < 3) {
+      setError('Title must be at least 3 characters long');
+      return;
+    }
+
+    if (!formData.description || formData.description.length < 10) {
+      setError('Description must be at least 10 characters long');
+      return;
+    }
+
+    if (!formData.categoryId) {
+      setError('Please select a category');
+      return;
+    }
+
+    if (!formData.governorate) {
+      setError('Please select a governorate');
+      return;
+    }
+
+    if (!formData.location || formData.location.length < 3) {
+      setError('Location must be at least 3 characters long');
       return;
     }
 
@@ -87,7 +108,7 @@ export default function NewItemPage() {
 
       router.push('/items?success=true');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create item');
+      setError(err.response?.data?.message || 'Failed to create item. Please check all fields.');
     } finally {
       setLoading(false);
     }
@@ -112,6 +133,20 @@ export default function NewItemPage() {
             </div>
           )}
 
+          {/* Requirements Info Box */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="font-semibold text-blue-900 text-sm mb-2">📋 Required Information</h3>
+            <ul className="text-xs text-blue-800 space-y-1">
+              <li>• Title: Minimum 3 characters, maximum 200</li>
+              <li>• Description: Minimum 10 characters (be detailed!)</li>
+              <li>• Category: Select from dropdown</li>
+              <li>• Condition: Choose item condition</li>
+              <li>• Governorate: Select your governorate</li>
+              <li>• Location: Area/neighborhood (minimum 3 characters)</li>
+              <li>• Photos: Optional but recommended</li>
+            </ul>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
             <div>
@@ -124,10 +159,17 @@ export default function NewItemPage() {
                 value={formData.title}
                 onChange={handleChange}
                 required
-                maxLength={100}
+                minLength={3}
+                maxLength={200}
                 placeholder="e.g., iPhone 12 Pro Max 256GB"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
+              <div className="flex justify-between text-xs mt-1">
+                <span className={formData.title.length < 3 ? 'text-red-500' : 'text-gray-500'}>
+                  Minimum 3 characters
+                </span>
+                <span className="text-gray-500">{formData.title.length}/200 characters</span>
+              </div>
             </div>
 
             {/* Description */}
@@ -140,12 +182,20 @@ export default function NewItemPage() {
                 value={formData.description}
                 onChange={handleChange}
                 required
+                minLength={10}
+                maxLength={5000}
                 rows={5}
-                maxLength={2000}
-                placeholder="Describe your item in detail..."
+                placeholder="Describe your item in detail (minimum 10 characters)..."
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
-              <p className="text-sm text-gray-500 mt-1">{formData.description.length}/2000 characters</p>
+              <div className="flex justify-between text-xs mt-1">
+                <span className={formData.description.length < 10 ? 'text-red-500 font-medium' : 'text-gray-500'}>
+                  {formData.description.length < 10
+                    ? `Need ${10 - formData.description.length} more characters (minimum 10)`
+                    : 'Minimum requirement met ✓'}
+                </span>
+                <span className="text-gray-500">{formData.description.length}/5000 characters</span>
+              </div>
             </div>
 
             {/* Category and Condition */}
@@ -244,10 +294,16 @@ export default function NewItemPage() {
                   value={formData.location}
                   onChange={handleChange}
                   required
+                  minLength={3}
+                  maxLength={200}
                   placeholder="e.g., Nasr City, Downtown"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
-                <p className="text-sm text-gray-500 mt-1">Area or neighborhood</p>
+                <p className={`text-xs mt-1 ${formData.location.length > 0 && formData.location.length < 3 ? 'text-red-500' : 'text-gray-500'}`}>
+                  {formData.location.length > 0 && formData.location.length < 3
+                    ? `Need ${3 - formData.location.length} more characters (minimum 3)`
+                    : 'Area or neighborhood (minimum 3 characters)'}
+                </p>
               </div>
             </div>
 
