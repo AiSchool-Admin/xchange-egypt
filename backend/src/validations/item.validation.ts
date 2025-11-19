@@ -107,6 +107,10 @@ export const updateItemSchema = z.object({
       .nullable(),
     categoryId: z.string().uuid('Invalid category ID').optional(),
     condition: itemConditionEnum.optional(),
+    estimatedValue: z
+      .number()
+      .positive('Estimated value must be positive')
+      .optional(),
     quantity: z
       .number()
       .int('Quantity must be an integer')
@@ -122,6 +126,7 @@ export const updateItemSchema = z.object({
         errorMap: () => ({ message: 'Invalid governorate' }),
       })
       .optional(),
+    imageUrls: z.array(z.string().url('Invalid image URL')).optional(),
   }),
 });
 

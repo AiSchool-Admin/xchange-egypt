@@ -67,7 +67,25 @@ export const updateItem = async (
   try {
     const { id } = req.params;
     const userId = req.user!.id;
-    const updateData = req.body;
+
+    // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
+    const updateData: any = {};
+
+    if (req.body.titleAr || req.body.titleEn) {
+      updateData.title = req.body.titleAr || req.body.titleEn;
+    }
+
+    if (req.body.descriptionAr || req.body.descriptionEn) {
+      updateData.description = req.body.descriptionAr || req.body.descriptionEn;
+    }
+
+    if (req.body.categoryId) updateData.categoryId = req.body.categoryId;
+    if (req.body.condition) updateData.condition = req.body.condition;
+    if (req.body.estimatedValue !== undefined) updateData.estimatedValue = req.body.estimatedValue;
+    if (req.body.quantity) updateData.quantity = req.body.quantity;
+    if (req.body.location) updateData.location = req.body.location;
+    if (req.body.governorate) updateData.governorate = req.body.governorate;
+    if (req.body.imageUrls) updateData.imageUrls = req.body.imageUrls;
 
     const item = await itemService.updateItem(id, userId, updateData);
 
