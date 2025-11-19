@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useSocket } from '@/lib/contexts/SocketContext';
 import { ImageUpload } from '@/components/ui/ImageUpload';
@@ -221,16 +222,22 @@ export default function DashboardPage() {
               <div className="text-2xl mb-2">📚</div>
               <div className="font-semibold text-primary-700">API Docs</div>
             </a>
-            <div className="p-4 bg-gray-50 rounded-lg text-center opacity-50 cursor-not-allowed">
+            <Link
+              href="/items"
+              className="p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors text-center"
+            >
               <div className="text-2xl mb-2">📦</div>
-              <div className="font-semibold text-gray-700">Items</div>
-              <div className="text-xs text-gray-500">Coming soon</div>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-lg text-center opacity-50 cursor-not-allowed">
+              <div className="font-semibold text-purple-700">Items Marketplace</div>
+              <div className="text-xs text-purple-600">Browse & sell items</div>
+            </Link>
+            <Link
+              href="/auctions"
+              className="p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors text-center"
+            >
               <div className="text-2xl mb-2">🔨</div>
-              <div className="font-semibold text-gray-700">Auctions</div>
-              <div className="text-xs text-gray-500">Coming soon</div>
-            </div>
+              <div className="font-semibold text-indigo-700">Live Auctions</div>
+              <div className="text-xs text-indigo-600">Bid on items now!</div>
+            </Link>
           </div>
         </div>
       </main>
