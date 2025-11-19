@@ -39,7 +39,16 @@ export const getAuction = async (req: Request, res: Response, next: NextFunction
  */
 export const listAuctions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await auctionService.listAuctions(req.query as any);
+    // Parse query parameters to correct types
+    const query = {
+      ...req.query,
+      page: req.query.page ? parseInt(req.query.page as string, 10) : undefined,
+      limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
+      minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
+      maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
+    };
+
+    const result = await auctionService.listAuctions(query as any);
 
     return successResponse(res, result, 'Auctions retrieved successfully');
   } catch (error) {
