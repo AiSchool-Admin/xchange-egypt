@@ -15,7 +15,7 @@ interface SelectableItem {
   price?: number;
   estimatedValue?: number;
   images: Array<{ url: string; isPrimary: boolean }>;
-  category: { name: string };
+  category: { nameEn: string };
   seller?: { id: string; fullName: string };
 }
 

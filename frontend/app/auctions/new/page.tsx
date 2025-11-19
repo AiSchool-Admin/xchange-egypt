@@ -13,7 +13,7 @@ interface MyItem {
   description: string;
   price?: number;
   images: Array<{ url: string; isPrimary: boolean }>;
-  category: { name: string };
+  category: { nameEn: string };
 }
 
 export default function CreateAuctionPage() {
