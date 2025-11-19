@@ -6,7 +6,9 @@ export interface Item {
   description: string;
   condition: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
   price?: number;
+  estimatedValue?: number;
   location?: string;
+  governorate?: string;
   status: 'AVAILABLE' | 'RESERVED' | 'SOLD';
   images: Array<{ id: string; url: string; isPrimary: boolean }>;
   category: {

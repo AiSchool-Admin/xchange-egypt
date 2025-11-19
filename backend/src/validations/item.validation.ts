@@ -76,7 +76,7 @@ export const createItemSchema = z.object({
       .max(200, 'Location must not exceed 200 characters'),
     governorate: z.enum(EGYPTIAN_GOVERNORATES, {
       errorMap: () => ({ message: 'Invalid governorate' }),
-    }),
+    }).optional(), // Made optional since Item model doesn't have this field
   }),
 });
 

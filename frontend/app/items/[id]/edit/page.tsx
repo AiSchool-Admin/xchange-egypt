@@ -64,9 +64,9 @@ export default function EditItemPage() {
         description: item.description,
         categoryId: item.category.id,
         condition: item.condition,
-        price: item.price?.toString() || '',
+        price: item.estimatedValue?.toString() || '',
         location: item.location || '',
-        governorate: '', // TODO: Add governorate to item response
+        governorate: item.governorate || '',
       });
 
       // Set existing images
