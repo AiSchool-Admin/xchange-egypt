@@ -2,18 +2,18 @@ import apiClient from './client';
 
 export interface Category {
   id: string;
-  name: string;
-  nameAr: string;
+  nameEn: string;  // English name (primary)
+  nameAr: string;  // Arabic name
+  slug: string;
   description?: string;
-  descriptionAr?: string;
   icon?: string;
+  image?: string;
   parentId?: string;
-  level: number;
-  path: string;
-  itemCount?: number;
+  order: number;
+  isActive: boolean;
   children?: Category[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CategoriesResponse {

@@ -214,7 +214,7 @@ export default function CreateBarterOfferPage() {
                               {item.title}
                             </h3>
                             <p className="text-sm text-gray-600 truncate">
-                              {item.category.name}
+                              {item.category.nameEn}
                             </p>
                             {item.price && (
                               <p className="text-sm font-medium text-green-600">
@@ -279,7 +279,7 @@ export default function CreateBarterOfferPage() {
                               {item.title}
                             </h3>
                             <p className="text-sm text-gray-600 truncate">
-                              {item.category.name} • {item.seller?.fullName}
+                              {item.category.nameEn} • {item.seller?.fullName}
                             </p>
                             {item.estimatedValue && (
                               <p className="text-sm font-medium text-green-600">

@@ -159,7 +159,7 @@ export default function MyBarterOffersPage() {
                                 {item.title}
                               </p>
                               <p className="text-xs text-gray-600">
-                                {item.category.name}
+                                {item.category.nameEn}
                               </p>
                             </div>
                           </div>
@@ -193,7 +193,7 @@ export default function MyBarterOffersPage() {
                                 {item.title}
                               </p>
                               <p className="text-xs text-gray-600">
-                                {item.category.name}
+                                {item.category.nameEn}
                               </p>
                             </div>
                           </div>

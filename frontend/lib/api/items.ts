@@ -11,7 +11,7 @@ export interface Item {
   images: Array<{ id: string; url: string; isPrimary: boolean }>;
   category: {
     id: string;
-    name: string;
+    nameEn: string;
     nameAr: string;
   };
   seller: {

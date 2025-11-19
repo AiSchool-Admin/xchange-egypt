@@ -150,7 +150,7 @@ export default function ItemsPage() {
                   <option value="">All Categories</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.name}
+                      {cat.nameEn}
                     </option>
                   ))}
                 </select>
@@ -271,7 +271,7 @@ export default function ItemsPage() {
                               <p className="text-sm text-gray-500">Contact for price</p>
                             )}
                           </div>
-                          <span className="text-xs text-gray-500">{item.category.name}</span>
+                          <span className="text-xs text-gray-500">{item.category.nameEn}</span>
                         </div>
 
                         <div className="mt-3 pt-3 border-t flex items-center text-sm text-gray-600">

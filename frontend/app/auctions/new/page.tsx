@@ -184,7 +184,7 @@ export default function CreateAuctionPage() {
                   <option value="">Choose an item...</option>
                   {myItems.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.title} ({item.category.name})
+                      {item.title} ({item.category.nameEn})
                     </option>
                   ))}
                 </select>
