@@ -31,6 +31,7 @@ export interface CreateItemData {
   descriptionEn?: string;
   condition: string;
   categoryId: string;
+  estimatedValue?: number;
   location: string;
   governorate: string;
   quantity?: number;
