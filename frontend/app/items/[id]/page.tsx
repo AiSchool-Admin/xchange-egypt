@@ -142,12 +142,16 @@ export default function ItemDetailsPage() {
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
                   <p className="font-semibold">
-                    {item.status === 'AVAILABLE' ? (
+                    {item.status === 'ACTIVE' ? (
                       <span className="text-green-600">Available</span>
-                    ) : item.status === 'RESERVED' ? (
-                      <span className="text-yellow-600">Reserved</span>
-                    ) : (
+                    ) : item.status === 'SOLD' ? (
                       <span className="text-gray-600">Sold</span>
+                    ) : item.status === 'TRADED' ? (
+                      <span className="text-blue-600">Traded</span>
+                    ) : item.status === 'ARCHIVED' ? (
+                      <span className="text-gray-500">Archived</span>
+                    ) : (
+                      <span className="text-yellow-600">Draft</span>
                     )}
                   </p>
                 </div>
@@ -181,7 +185,7 @@ export default function ItemDetailsPage() {
               </div>
 
               {/* Action Buttons */}
-              {!isOwner && item.status === 'AVAILABLE' && (
+              {!isOwner && item.status === 'ACTIVE' && (
                 <div className="space-y-3">
                   <button className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition">
                     💬 Contact Seller

@@ -9,7 +9,7 @@ export interface Item {
   estimatedValue?: number;
   location?: string;
   governorate?: string;
-  status: 'AVAILABLE' | 'RESERVED' | 'SOLD';
+  status: 'DRAFT' | 'ACTIVE' | 'SOLD' | 'TRADED' | 'ARCHIVED'; // Updated to match database ItemStatus enum
   images: Array<{ id: string; url: string; isPrimary: boolean }>;
   category: {
     id: string;

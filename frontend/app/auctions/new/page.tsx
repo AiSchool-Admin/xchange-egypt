@@ -45,9 +45,9 @@ export default function CreateAuctionPage() {
     try {
       setLoadingItems(true);
       const response = await getMyItems();
-      // Filter to only show available items (not already in auction)
+      // Filter to only show active items (not already in auction)
       const availableItems = response.data.items.filter(
-        (item: any) => item.status === 'AVAILABLE'
+        (item: any) => item.status === 'ACTIVE' // Changed from 'AVAILABLE' to 'ACTIVE' to match database enum
       );
       setMyItems(availableItems);
     } catch (err: any) {

@@ -50,7 +50,7 @@ export default function ItemsPage() {
         minPrice: minPrice ? parseFloat(minPrice) : undefined,
         maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
         search: search || undefined,
-        status: 'AVAILABLE',
+        status: 'ACTIVE', // Changed from 'AVAILABLE' to 'ACTIVE' to match database enum
       });
 
       setItems(response.data.items);

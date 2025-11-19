@@ -50,11 +50,12 @@ export default function CreateBarterOfferPage() {
       setLoadingMyItems(true);
       const response = await getMyItems();
       const availableItems = response.data.items.filter(
-        (item: any) => item.status === 'AVAILABLE'
+        (item: any) => item.status === 'ACTIVE' // Changed from 'AVAILABLE' to 'ACTIVE' to match database enum
       );
       setMyItems(availableItems);
     } catch (err: any) {
       console.error('Failed to load my items:', err);
+      setError('Failed to load your items. Please try again.');
     } finally {
       setLoadingMyItems(false);
     }
