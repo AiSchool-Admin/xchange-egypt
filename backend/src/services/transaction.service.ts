@@ -96,11 +96,6 @@ export const createPurchase = async (
         },
       },
       listing: {
-        select: {
-          id: true,
-          listingType: true,
-          status: true,
-        },
         include: {
           item: {
             include: {
@@ -272,11 +267,6 @@ export const getTransactionById = async (
         },
       },
       listing: {
-        select: {
-          id: true,
-          listingType: true,
-          status: true,
-        },
         include: {
           item: {
             include: {
@@ -367,11 +357,6 @@ export const updateDeliveryStatus = async (
         },
       },
       listing: {
-        select: {
-          id: true,
-          listingType: true,
-          status: true,
-        },
         include: {
           item: {
             include: {
