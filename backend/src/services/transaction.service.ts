@@ -198,6 +198,9 @@ export const buyItemDirectly = async (
       paymentMethod: purchaseData.paymentMethod,
       paymentStatus: 'PENDING',
       deliveryStatus: 'PENDING',
+      shippingAddress: purchaseData.shippingAddress,
+      phoneNumber: purchaseData.phoneNumber,
+      notes: purchaseData.notes,
     },
     include: {
       buyer: {

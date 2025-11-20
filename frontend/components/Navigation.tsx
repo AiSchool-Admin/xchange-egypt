@@ -78,6 +78,16 @@ export default function Navigation() {
                 >
                   Dashboard
                 </Link>
+                <Link
+                  href="/transactions"
+                  className={`px-4 py-2 rounded-lg font-medium transition ${
+                    pathname === '/transactions'
+                      ? 'bg-purple-50 text-purple-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  My Orders
+                </Link>
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg">
                   <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
                     {user.fullName?.charAt(0).toUpperCase() || 'U'}
@@ -173,6 +183,17 @@ export default function Navigation() {
                     }`}
                   >
                     Dashboard
+                  </Link>
+                  <Link
+                    href="/transactions"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-4 py-2 rounded-lg font-medium transition ${
+                      pathname === '/transactions'
+                        ? 'bg-purple-50 text-purple-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    My Orders
                   </Link>
                   <div className="px-4 py-2 text-sm text-gray-600">
                     Signed in as <span className="font-medium">{user.fullName}</span>

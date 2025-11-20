@@ -751,6 +751,9 @@ model Transaction {
   // Delivery
   deliveryStatus  DeliveryStatus  @default(PENDING) @map("delivery_status")
   trackingNumber  String?         @map("tracking_number")
+  shippingAddress String?         @map("shipping_address")
+  phoneNumber     String?         @map("phone_number")
+  notes           String?         // Buyer notes for the seller
 
   // Timestamps
   createdAt       DateTime        @default(now()) @map("created_at")
