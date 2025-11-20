@@ -33,6 +33,9 @@ interface SearchItemsParams {
   sellerId?: string;
   condition?: ItemCondition;
   governorate?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  status?: string;
   page?: number;
   limit?: number;
   sortBy?: 'createdAt' | 'updatedAt' | 'title';
@@ -280,6 +283,9 @@ export const searchItems = async (
     sellerId,
     condition,
     governorate,
+    minPrice,
+    maxPrice,
+    status,
     page = 1,
     limit = 20,
     sortBy = 'createdAt',
@@ -310,6 +316,22 @@ export const searchItems = async (
 
   if (governorate) {
     where.governorate = governorate;
+  }
+
+  // Price range filtering (using estimatedValue field)
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    where.estimatedValue = {};
+    if (minPrice !== undefined) {
+      where.estimatedValue.gte = minPrice;
+    }
+    if (maxPrice !== undefined) {
+      where.estimatedValue.lte = maxPrice;
+    }
+  }
+
+  // Status filtering
+  if (status) {
+    where.status = status;
   }
 
   // Calculate pagination

@@ -174,10 +174,10 @@ export default function ItemDetailsPage() {
             {/* Price Card */}
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
               <div className="mb-6">
-                {item.price ? (
+                {item.estimatedValue ? (
                   <>
                     <p className="text-sm text-gray-600 mb-1">Price</p>
-                    <p className="text-4xl font-bold text-purple-600">{item.price.toLocaleString()} EGP</p>
+                    <p className="text-4xl font-bold text-purple-600">{item.estimatedValue.toLocaleString()} EGP</p>
                   </>
                 ) : (
                   <p className="text-xl text-gray-700">Contact seller for price</p>
@@ -187,6 +187,9 @@ export default function ItemDetailsPage() {
               {/* Action Buttons */}
               {!isOwner && item.status === 'ACTIVE' && (
                 <div className="space-y-3">
+                  <button className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold transition">
+                    🛒 Buy Now
+                  </button>
                   <button className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition">
                     💬 Contact Seller
                   </button>

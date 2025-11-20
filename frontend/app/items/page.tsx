@@ -13,10 +13,13 @@ export default function ItemsPage() {
 
   // Filters
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
+  const [debouncedMinPrice, setDebouncedMinPrice] = useState('');
+  const [debouncedMaxPrice, setDebouncedMaxPrice] = useState('');
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -26,9 +29,29 @@ export default function ItemsPage() {
     loadCategories();
   }, []);
 
+  // Debounce search input (auto-search as user types)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Debounce price inputs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedMinPrice(minPrice);
+      setDebouncedMaxPrice(maxPrice);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [minPrice, maxPrice]);
+
+  // Load items when filters change
   useEffect(() => {
     loadItems();
-  }, [page, selectedCategory, selectedCondition, minPrice, maxPrice]);
+  }, [page, selectedCategory, selectedCondition, debouncedMinPrice, debouncedMaxPrice, debouncedSearch]);
 
   const loadCategories = async () => {
     try {
@@ -47,10 +70,10 @@ export default function ItemsPage() {
         limit: 12,
         categoryId: selectedCategory || undefined,
         condition: selectedCondition || undefined,
-        minPrice: minPrice ? parseFloat(minPrice) : undefined,
-        maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
-        search: search || undefined,
-        status: 'ACTIVE', // Changed from 'AVAILABLE' to 'ACTIVE' to match database enum
+        minPrice: debouncedMinPrice ? parseFloat(debouncedMinPrice) : undefined,
+        maxPrice: debouncedMaxPrice ? parseFloat(debouncedMaxPrice) : undefined,
+        search: debouncedSearch || undefined,
+        status: 'ACTIVE',
       });
 
       setItems(response.data.items);
@@ -62,18 +85,15 @@ export default function ItemsPage() {
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    loadItems();
-  };
-
   const clearFilters = () => {
     setSearch('');
+    setDebouncedSearch('');
     setSelectedCategory('');
     setSelectedCondition('');
     setMinPrice('');
     setMaxPrice('');
+    setDebouncedMinPrice('');
+    setDebouncedMaxPrice('');
     setPage(1);
   };
 
@@ -91,7 +111,7 @@ export default function ItemsPage() {
               href="/items/new"
               className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition font-semibold"
             >
-              + List an Item
+              + Sell an Item
             </Link>
           </div>
         </div>
@@ -112,27 +132,20 @@ export default function ItemsPage() {
                 </button>
               </div>
 
-              {/* Search */}
-              <form onSubmit={handleSearch} className="mb-6">
+              {/* Search - Auto-search as user types */}
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Search
                 </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search items..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-                  >
-                    🔍
-                  </button>
-                </div>
-              </form>
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search items..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">Results update as you type</p>
+              </div>
 
               {/* Category Filter */}
               <div className="mb-6">
@@ -189,6 +202,7 @@ export default function ItemsPage() {
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                     placeholder="Min"
+                    min="0"
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <input
@@ -196,9 +210,11 @@ export default function ItemsPage() {
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
                     placeholder="Max"
+                    min="0"
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
+                <p className="text-xs text-gray-500 mt-1">Filters update automatically</p>
               </div>
             </div>
           </div>
@@ -263,9 +279,9 @@ export default function ItemsPage() {
 
                         <div className="mt-3 flex items-center justify-between">
                           <div>
-                            {item.price ? (
+                            {item.estimatedValue ? (
                               <p className="text-xl font-bold text-purple-600">
-                                {item.price.toLocaleString()} EGP
+                                {item.estimatedValue.toLocaleString()} EGP
                               </p>
                             ) : (
                               <p className="text-sm text-gray-500">Contact for price</p>
@@ -274,8 +290,9 @@ export default function ItemsPage() {
                           <span className="text-xs text-gray-500">{item.category.nameEn}</span>
                         </div>
 
-                        <div className="mt-3 pt-3 border-t flex items-center text-sm text-gray-600">
-                          <span className="truncate">By {item.seller.fullName}</span>
+                        <div className="mt-3 pt-3 border-t flex items-center justify-between text-sm">
+                          <span className="text-gray-600 truncate">By {item.seller.fullName}</span>
+                          <span className="text-green-600 font-medium">Buy Now</span>
                         </div>
                       </div>
                     </Link>
