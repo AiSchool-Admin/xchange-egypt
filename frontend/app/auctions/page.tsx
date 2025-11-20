@@ -169,7 +169,7 @@ export default function AuctionsPage() {
                   <option value="">All Categories</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.name}
+                      {cat.nameEn}
                     </option>
                   ))}
                 </select>
@@ -304,7 +304,7 @@ export default function AuctionsPage() {
 
                             <div className="flex items-center justify-between text-sm text-gray-600">
                               <span>{auction.bidCount} bid{auction.bidCount !== 1 ? 's' : ''}</span>
-                              <span>{auction.item.category.name}</span>
+                              <span>{auction.item.category.nameEn}</span>
                             </div>
                           </div>
                         </div>

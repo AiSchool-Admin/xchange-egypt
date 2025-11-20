@@ -6,6 +6,23 @@ const paymentMethodEnum = z.string().min(1, 'Payment method is required');
 // Transaction status validation (as string)
 const transactionStatusEnum = z.string().min(1, 'Transaction status is required');
 
+// Buy Item Directly Schema (simplified for demo)
+export const buyItemSchema = z.object({
+  body: z.object({
+    itemId: z.string().uuid('Invalid item ID'),
+    paymentMethod: z.enum(['CASH_ON_DELIVERY', 'BANK_TRANSFER', 'INSTAPAY', 'VODAFONE_CASH']).default('CASH_ON_DELIVERY'),
+    shippingAddress: z
+      .string()
+      .min(10, 'Shipping address must be at least 10 characters')
+      .max(500, 'Shipping address must not exceed 500 characters'),
+    phoneNumber: z.string().min(10, 'Phone number is required'),
+    notes: z
+      .string()
+      .max(500, 'Notes must not exceed 500 characters')
+      .optional(),
+  }),
+});
+
 // Create Purchase Transaction Schema
 export const createPurchaseSchema = z.object({
   body: z.object({

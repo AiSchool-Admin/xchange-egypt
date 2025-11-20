@@ -200,44 +200,150 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Links */}
+        {/* Platform Features */}
         <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-          <h3 className="text-xl font-bold mb-4">🚀 Quick Links</h3>
-          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <h3 className="text-xl font-bold mb-6">🚀 Platform Features</h3>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link
+              href="/items"
+              className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg hover:shadow-md transition-all text-center border-2 border-purple-200"
+            >
+              <div className="text-3xl mb-3">📦</div>
+              <div className="font-bold text-purple-900 text-lg mb-1">Items Marketplace</div>
+              <div className="text-sm text-purple-700 mb-3">Buy & sell used goods</div>
+              <div className="flex gap-2 justify-center text-xs">
+                <Link
+                  href="/items"
+                  className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Browse
+                </Link>
+                <Link
+                  href="/items/new"
+                  className="px-3 py-1 bg-white text-purple-600 border border-purple-600 rounded hover:bg-purple-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  List Item
+                </Link>
+              </div>
+            </Link>
+
+            <Link
+              href="/auctions"
+              className="p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg hover:shadow-md transition-all text-center border-2 border-indigo-200"
+            >
+              <div className="text-3xl mb-3">🔨</div>
+              <div className="font-bold text-indigo-900 text-lg mb-1">Live Auctions</div>
+              <div className="text-sm text-indigo-700 mb-3">Bid & win great deals</div>
+              <div className="flex gap-2 justify-center text-xs">
+                <Link
+                  href="/auctions"
+                  className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Browse
+                </Link>
+                <Link
+                  href="/auctions/new"
+                  className="px-3 py-1 bg-white text-indigo-600 border border-indigo-600 rounded hover:bg-indigo-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Start Auction
+                </Link>
+              </div>
+            </Link>
+
+            <Link
+              href="/barter"
+              className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:shadow-md transition-all text-center border-2 border-green-200"
+            >
+              <div className="text-3xl mb-3">🔄</div>
+              <div className="font-bold text-green-900 text-lg mb-1">Barter & Exchange</div>
+              <div className="text-sm text-green-700 mb-3">Trade without money</div>
+              <div className="flex gap-2 justify-center text-xs">
+                <Link
+                  href="/barter"
+                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Browse
+                </Link>
+                <Link
+                  href="/barter/new"
+                  className="px-3 py-1 bg-white text-green-600 border border-green-600 rounded hover:bg-green-50"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  Make Offer
+                </Link>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        {/* My Activity */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
+          <h3 className="text-xl font-bold mb-4">📊 My Activity</h3>
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <Link
+              href="/items?user=me"
+              className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-all"
+            >
+              <div className="text-2xl mb-2">📦</div>
+              <div className="font-semibold text-gray-900">My Items</div>
+              <div className="text-xs text-gray-600">View your listings</div>
+            </Link>
+            <Link
+              href="/auctions?user=me"
+              className="p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+            >
+              <div className="text-2xl mb-2">🔨</div>
+              <div className="font-semibold text-gray-900">My Auctions</div>
+              <div className="text-xs text-gray-600">Manage your auctions</div>
+            </Link>
+            <Link
+              href="/barter/my-offers"
+              className="p-4 border-2 border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all"
+            >
+              <div className="text-2xl mb-2">🔄</div>
+              <div className="font-semibold text-gray-900">My Barter Offers</div>
+              <div className="text-xs text-gray-600">Track your trades</div>
+            </Link>
+          </div>
+        </div>
+
+        {/* System Status */}
+        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
+          <h3 className="text-xl font-bold mb-4">🔧 System Status</h3>
+          <div className="grid sm:grid-cols-2 gap-4">
             <a
               href={`${process.env.NEXT_PUBLIC_WS_URL}/health`}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-4 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors text-center"
+              className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
             >
-              <div className="text-2xl mb-2">🏥</div>
-              <div className="font-semibold text-primary-700">Health Check</div>
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🏥</div>
+                <div>
+                  <div className="font-semibold text-blue-900">Backend Health</div>
+                  <div className="text-xs text-blue-700">Check server status</div>
+                </div>
+              </div>
             </a>
             <a
               href={`${process.env.NEXT_PUBLIC_API_URL}/docs`}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-4 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors text-center"
+              className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
             >
-              <div className="text-2xl mb-2">📚</div>
-              <div className="font-semibold text-primary-700">API Docs</div>
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">📚</div>
+                <div>
+                  <div className="font-semibold text-blue-900">API Documentation</div>
+                  <div className="text-xs text-blue-700">View API endpoints</div>
+                </div>
+              </div>
             </a>
-            <Link
-              href="/items"
-              className="p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors text-center"
-            >
-              <div className="text-2xl mb-2">📦</div>
-              <div className="font-semibold text-purple-700">Items Marketplace</div>
-              <div className="text-xs text-purple-600">Browse & sell items</div>
-            </Link>
-            <Link
-              href="/auctions"
-              className="p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors text-center"
-            >
-              <div className="text-2xl mb-2">🔨</div>
-              <div className="font-semibold text-indigo-700">Live Auctions</div>
-              <div className="text-xs text-indigo-600">Bid on items now!</div>
-            </Link>
           </div>
         </div>
       </main>

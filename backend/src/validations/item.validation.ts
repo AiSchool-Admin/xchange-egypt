@@ -60,6 +60,11 @@ export const createItemSchema = z.object({
       .optional(),
     categoryId: z.string().uuid('Invalid category ID'),
     condition: itemConditionEnum,
+    estimatedValue: z
+      .number()
+      .positive('Estimated value must be positive')
+      .optional()
+      .default(0),
     quantity: z
       .number()
       .int('Quantity must be an integer')
@@ -71,7 +76,7 @@ export const createItemSchema = z.object({
       .max(200, 'Location must not exceed 200 characters'),
     governorate: z.enum(EGYPTIAN_GOVERNORATES, {
       errorMap: () => ({ message: 'Invalid governorate' }),
-    }),
+    }).optional(), // Made optional since Item model doesn't have this field
   }),
 });
 
@@ -102,6 +107,10 @@ export const updateItemSchema = z.object({
       .nullable(),
     categoryId: z.string().uuid('Invalid category ID').optional(),
     condition: itemConditionEnum.optional(),
+    estimatedValue: z
+      .number()
+      .positive('Estimated value must be positive')
+      .optional(),
     quantity: z
       .number()
       .int('Quantity must be an integer')
@@ -117,6 +126,7 @@ export const updateItemSchema = z.object({
         errorMap: () => ({ message: 'Invalid governorate' }),
       })
       .optional(),
+    imageUrls: z.array(z.string().url('Invalid image URL')).optional(),
   }),
 });
 

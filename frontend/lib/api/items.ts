@@ -6,12 +6,14 @@ export interface Item {
   description: string;
   condition: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
   price?: number;
+  estimatedValue?: number;
   location?: string;
-  status: 'AVAILABLE' | 'RESERVED' | 'SOLD';
+  governorate?: string;
+  status: 'DRAFT' | 'ACTIVE' | 'SOLD' | 'TRADED' | 'ARCHIVED'; // Updated to match database ItemStatus enum
   images: Array<{ id: string; url: string; isPrimary: boolean }>;
   category: {
     id: string;
-    name: string;
+    nameEn: string;
     nameAr: string;
   };
   seller: {
@@ -25,12 +27,16 @@ export interface Item {
 }
 
 export interface CreateItemData {
-  title: string;
-  description: string;
+  titleAr: string;
+  titleEn?: string;
+  descriptionAr: string;
+  descriptionEn?: string;
   condition: string;
-  price?: number;
   categoryId: string;
-  location?: string;
+  estimatedValue?: number;
+  location: string;
+  governorate: string;
+  quantity?: number;
   imageUrls?: string[];
 }
 
@@ -74,7 +80,7 @@ export const getItems = async (params?: {
   if (params?.search) queryParams.append('search', params.search);
   if (params?.status) queryParams.append('status', params.status);
 
-  const response = await apiClient.get(`/items?${queryParams.toString()}`);
+  const response = await apiClient.get(`/items/search?${queryParams.toString()}`);
   return response.data;
 };
 

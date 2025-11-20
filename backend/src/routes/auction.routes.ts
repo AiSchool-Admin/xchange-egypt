@@ -27,6 +27,28 @@ const router = Router();
  */
 router.get('/', validate(listAuctionsSchema), auctionController.listAuctions);
 
+// ============================================
+// Protected Routes - MUST be BEFORE /:id route
+// ============================================
+
+/**
+ * @route   GET /api/v1/auctions/my
+ * @desc    Get my auctions
+ * @access  Private
+ */
+router.get('/my', authenticate, auctionController.getMyAuctions);
+
+/**
+ * @route   GET /api/v1/auctions/my-bids
+ * @desc    Get my bids
+ * @access  Private
+ */
+router.get('/my-bids', authenticate, auctionController.getMyBids);
+
+// ============================================
+// Public Routes (continued)
+// ============================================
+
 /**
  * @route   GET /api/v1/auctions/:id
  * @desc    Get auction details by ID
@@ -75,7 +97,7 @@ router.patch(
 
 /**
  * @route   DELETE /api/v1/auctions/:id
- * @desc    Cancel auction
+ * @desc    Cancel/delete auction
  * @access  Private (Seller only, before bids)
  */
 router.delete(
@@ -86,7 +108,31 @@ router.delete(
 );
 
 /**
- * @route   POST /api/v1/auctions/:id/bids
+ * @route   PATCH /api/v1/auctions/:id/cancel
+ * @desc    Cancel auction (alternative endpoint for frontend compatibility)
+ * @access  Private (Seller only, before bids)
+ */
+router.patch(
+  '/:id/cancel',
+  authenticate,
+  validate(cancelAuctionSchema),
+  auctionController.cancelAuction
+);
+
+/**
+ * @route   POST /api/v1/auctions/:id/bid
+ * @desc    Place a bid on an auction
+ * @access  Private
+ */
+router.post(
+  '/:id/bid',
+  authenticate,
+  validate(placeBidSchema),
+  auctionController.placeBid
+);
+
+/**
+ * @route   POST /api/v1/auctions/:id/bids (legacy support)
  * @desc    Place a bid on an auction
  * @access  Private
  */
@@ -121,19 +167,5 @@ router.post(
   validate(endAuctionSchema),
   auctionController.endAuction
 );
-
-/**
- * @route   GET /api/v1/auctions/my-auctions
- * @desc    Get my auctions
- * @access  Private
- */
-router.get('/my/auctions', authenticate, auctionController.getMyAuctions);
-
-/**
- * @route   GET /api/v1/auctions/my-bids
- * @desc    Get my bids
- * @access  Private
- */
-router.get('/my/bids', authenticate, auctionController.getMyBids);
 
 export default router;

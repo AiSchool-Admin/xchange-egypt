@@ -14,8 +14,18 @@ export const createItem = async (
 ) => {
   try {
     const userId = req.user!.id;
-    const itemData = req.body;
     const imageFiles = req.files as Express.Multer.File[] | undefined;
+
+    // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
+    const itemData = {
+      title: req.body.titleAr || req.body.titleEn || req.body.title,
+      description: req.body.descriptionAr || req.body.descriptionEn || req.body.description,
+      categoryId: req.body.categoryId,
+      condition: req.body.condition,
+      estimatedValue: req.body.estimatedValue || 0,
+      location: req.body.location,
+      governorate: req.body.governorate,
+    };
 
     const item = await itemService.createItem(userId, itemData, imageFiles);
 
@@ -57,7 +67,25 @@ export const updateItem = async (
   try {
     const { id } = req.params;
     const userId = req.user!.id;
-    const updateData = req.body;
+
+    // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
+    const updateData: any = {};
+
+    if (req.body.titleAr || req.body.titleEn) {
+      updateData.title = req.body.titleAr || req.body.titleEn;
+    }
+
+    if (req.body.descriptionAr || req.body.descriptionEn) {
+      updateData.description = req.body.descriptionAr || req.body.descriptionEn;
+    }
+
+    if (req.body.categoryId) updateData.categoryId = req.body.categoryId;
+    if (req.body.condition) updateData.condition = req.body.condition;
+    if (req.body.estimatedValue !== undefined) updateData.estimatedValue = req.body.estimatedValue;
+    if (req.body.quantity) updateData.quantity = req.body.quantity;
+    if (req.body.location) updateData.location = req.body.location;
+    if (req.body.governorate) updateData.governorate = req.body.governorate;
+    if (req.body.imageUrls) updateData.imageUrls = req.body.imageUrls;
 
     const item = await itemService.updateItem(id, userId, updateData);
 
@@ -110,6 +138,31 @@ export const searchItems = async (
     const result = await itemService.searchItems(params);
 
     return successResponse(res, result, 'Items retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get authenticated user's items
+ * GET /api/v1/items/my
+ */
+export const getMyItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { page, limit } = req.query;
+
+    const result = await itemService.getUserItems(
+      userId,
+      page ? parseInt(page as string) : undefined,
+      limit ? parseInt(limit as string) : undefined
+    );
+
+    return successResponse(res, result, 'Your items retrieved successfully');
   } catch (error) {
     next(error);
   }

@@ -1,17 +1,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createItem } from '@/lib/api/items';
+import { useParams, useRouter } from 'next/navigation';
+import { getItem, updateItem } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
-export default function NewItemPage() {
+export default function EditItemPage() {
+  const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingItem, setLoadingItem] = useState(true);
   const [error, setError] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
@@ -31,7 +33,8 @@ export default function NewItemPage() {
       return;
     }
     loadCategories();
-  }, [user, router]);
+    loadItem();
+  }, [user, params.id]);
 
   const loadCategories = async () => {
     try {
@@ -39,6 +42,42 @@ export default function NewItemPage() {
       setCategories(response.data);
     } catch (err) {
       console.error('Failed to load categories:', err);
+    }
+  };
+
+  const loadItem = async () => {
+    try {
+      setLoadingItem(true);
+      const response = await getItem(params.id as string);
+      const item = response.data;
+
+      // Check ownership
+      if (item.seller.id !== user?.id) {
+        setError('You do not have permission to edit this item');
+        router.push(`/items/${params.id}`);
+        return;
+      }
+
+      // Pre-populate form
+      setFormData({
+        title: item.title,
+        description: item.description,
+        categoryId: item.category.id,
+        condition: item.condition,
+        price: item.estimatedValue?.toString() || '',
+        location: item.location || '',
+        governorate: item.governorate || '',
+      });
+
+      // Set existing images
+      if (item.images && item.images.length > 0) {
+        setUploadedImages(item.images.map((img) => img.url));
+      }
+    } catch (err: any) {
+      setError('Failed to load item');
+      console.error(err);
+    } finally {
+      setLoadingItem(false);
     }
   };
 
@@ -66,7 +105,7 @@ export default function NewItemPage() {
     e.preventDefault();
     setError('');
 
-    // Detailed validation with specific error messages
+    // Validation
     if (!formData.title || formData.title.length < 3) {
       setError('Title must be at least 3 characters long');
       return;
@@ -82,19 +121,9 @@ export default function NewItemPage() {
       return;
     }
 
-    if (!formData.governorate) {
-      setError('Please select a governorate');
-      return;
-    }
-
-    if (!formData.location || formData.location.length < 3) {
-      setError('Location must be at least 3 characters long');
-      return;
-    }
-
     try {
       setLoading(true);
-      await createItem({
+      await updateItem(params.id as string, {
         titleAr: formData.title,
         titleEn: formData.title,
         descriptionAr: formData.description,
@@ -103,13 +132,13 @@ export default function NewItemPage() {
         condition: formData.condition,
         estimatedValue: formData.price ? parseFloat(formData.price) : 0,
         location: formData.location,
-        governorate: formData.governorate,
+        governorate: formData.governorate || undefined,
         imageUrls: uploadedImages.length > 0 ? uploadedImages : undefined,
       });
 
-      router.push('/items?success=true');
+      router.push(`/items/${params.id}`);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create item. Please check all fields.');
+      setError(err.response?.data?.message || 'Failed to update item. Please check all fields.');
     } finally {
       setLoading(false);
     }
@@ -119,13 +148,24 @@ export default function NewItemPage() {
     return null;
   }
 
+  if (loadingItem) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-gray-600">Loading item...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-3xl mx-auto px-4">
         <div className="bg-white rounded-lg shadow-sm p-8">
           <div className="mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">List an Item</h1>
-            <p className="text-gray-600 mt-1">Fill in the details below to list your item</p>
+            <h1 className="text-3xl font-bold text-gray-900">Edit Item</h1>
+            <p className="text-gray-600 mt-1">Update the details of your item</p>
           </div>
 
           {error && (
@@ -133,21 +173,6 @@ export default function NewItemPage() {
               <p className="text-red-600">{error}</p>
             </div>
           )}
-
-          {/* Requirements Info Box */}
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="font-semibold text-blue-900 text-sm mb-2">📋 Required Information</h3>
-            <ul className="text-xs text-blue-800 space-y-1">
-              <li>• Title: Minimum 3 characters, maximum 200</li>
-              <li>• Description: Minimum 10 characters (be detailed!)</li>
-              <li>• Category: Select from dropdown</li>
-              <li>• Condition: Choose item condition</li>
-              <li>• Estimated Value: Optional (helps with barter matching)</li>
-              <li>• Governorate: Select your governorate</li>
-              <li>• Location: Area/neighborhood (minimum 3 characters)</li>
-              <li>• Photos: Optional but recommended</li>
-            </ul>
-          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Title */}
@@ -264,13 +289,12 @@ export default function NewItemPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Governorate <span className="text-red-500">*</span>
+                  Governorate
                 </label>
                 <select
                   name="governorate"
                   value={formData.governorate}
                   onChange={handleChange}
-                  required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="">Select governorate</option>
@@ -306,14 +330,13 @@ export default function NewItemPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location <span className="text-red-500">*</span>
+                  Location
                 </label>
                 <input
                   type="text"
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  required
                   minLength={3}
                   maxLength={200}
                   placeholder="e.g., Nasr City, Downtown"
@@ -322,7 +345,7 @@ export default function NewItemPage() {
                 <p className={`text-xs mt-1 ${formData.location.length > 0 && formData.location.length < 3 ? 'text-red-500' : 'text-gray-500'}`}>
                   {formData.location.length > 0 && formData.location.length < 3
                     ? `Need ${3 - formData.location.length} more characters (minimum 3)`
-                    : 'Area or neighborhood (minimum 3 characters)'}
+                    : 'Area or neighborhood'}
                 </p>
               </div>
             </div>
@@ -370,7 +393,7 @@ export default function NewItemPage() {
             <div className="flex gap-4 pt-4">
               <button
                 type="button"
-                onClick={() => router.back()}
+                onClick={() => router.push(`/items/${params.id}`)}
                 className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold transition"
               >
                 Cancel
@@ -380,7 +403,7 @@ export default function NewItemPage() {
                 disabled={loading}
                 className="flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Creating...' : 'List Item'}
+                {loading ? 'Updating...' : 'Update Item'}
               </button>
             </div>
           </form>

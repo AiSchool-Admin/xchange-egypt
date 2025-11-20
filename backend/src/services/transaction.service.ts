@@ -96,11 +96,6 @@ export const createPurchase = async (
         },
       },
       listing: {
-        select: {
-          id: true,
-          listingType: true,
-          status: true,
-        },
         include: {
           item: {
             include: {
@@ -122,6 +117,124 @@ export const createPurchase = async (
   // For now, we'll just create the transaction in PENDING status
 
   return transaction;
+};
+
+/**
+ * Buy an item directly (simplified flow for demo)
+ */
+export const buyItemDirectly = async (
+  buyerId: string,
+  purchaseData: {
+    itemId: string;
+    paymentMethod: string;
+    shippingAddress: string;
+    phoneNumber: string;
+    notes?: string;
+  }
+): Promise<any> => {
+  // Get item with seller information
+  const item = await prisma.item.findUnique({
+    where: { id: purchaseData.itemId },
+    include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          nameAr: true,
+          nameEn: true,
+        },
+      },
+    },
+  });
+
+  if (!item) {
+    throw new NotFoundError('Item not found');
+  }
+
+  // Check item is available
+  if (item.status !== 'ACTIVE') {
+    throw new BadRequestError('Item is not available for purchase');
+  }
+
+  // Check buyer is not the seller
+  if (item.sellerId === buyerId) {
+    throw new BadRequestError('You cannot buy your own item');
+  }
+
+  // Create or find a listing for this item
+  let listing = await prisma.listing.findFirst({
+    where: { itemId: item.id, status: 'ACTIVE' },
+  });
+
+  if (!listing) {
+    // Create a listing automatically
+    listing = await prisma.listing.create({
+      data: {
+        itemId: item.id,
+        userId: item.sellerId,
+        listingType: 'DIRECT_SALE',
+        price: item.estimatedValue,
+        currency: 'EGP',
+        status: 'ACTIVE',
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      },
+    });
+  }
+
+  // Create the transaction
+  const transaction = await prisma.transaction.create({
+    data: {
+      listingId: listing.id,
+      buyerId,
+      sellerId: item.sellerId,
+      transactionType: 'DIRECT_SALE',
+      amount: item.estimatedValue,
+      currency: 'EGP',
+      paymentMethod: purchaseData.paymentMethod,
+      paymentStatus: 'PENDING',
+      deliveryStatus: 'PENDING',
+    },
+    include: {
+      buyer: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  // Update item status to SOLD
+  await prisma.item.update({
+    where: { id: item.id },
+    data: { status: 'SOLD' },
+  });
+
+  // Update listing status
+  await prisma.listing.update({
+    where: { id: listing.id },
+    data: { status: 'COMPLETED' },
+  });
+
+  return {
+    transaction,
+    item,
+    message: 'Purchase successful! The seller will contact you shortly.',
+  };
 };
 
 /**
@@ -154,11 +267,6 @@ export const getTransactionById = async (
         },
       },
       listing: {
-        select: {
-          id: true,
-          listingType: true,
-          status: true,
-        },
         include: {
           item: {
             include: {
@@ -249,11 +357,6 @@ export const updateDeliveryStatus = async (
         },
       },
       listing: {
-        select: {
-          id: true,
-          listingType: true,
-          status: true,
-        },
         include: {
           item: {
             include: {
