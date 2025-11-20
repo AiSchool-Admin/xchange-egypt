@@ -182,7 +182,6 @@ export const buyItemDirectly = async (
         price: item.estimatedValue,
         currency: 'EGP',
         status: 'ACTIVE',
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       },
     });
   }
