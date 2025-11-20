@@ -689,6 +689,20 @@ export const completeBarterExchange = async (
     throw new BadRequestError('Only accepted offers can be completed');
   }
 
+  // Get full offer details with items
+  const fullOffer = await prisma.barterOffer.findUnique({
+    where: { id: offerId },
+    include: {
+      preferenceSets: {
+        include: {
+          items: true,
+        },
+        orderBy: { priority: 'asc' },
+        take: 1, // Get the first (matched) preference set
+      },
+    },
+  });
+
   // Mark as completed
   const completedOffer = await prisma.barterOffer.update({
     where: { id: offerId },
@@ -716,9 +730,54 @@ export const completeBarterExchange = async (
     },
   });
 
-  // TODO: Transfer item ownership or mark items as exchanged
-  // TODO: Create transaction records
-  // TODO: Update item status to TRADED
+  // Update offered items to TRADED status
+  if (offer.offeredItemIds && offer.offeredItemIds.length > 0) {
+    await prisma.item.updateMany({
+      where: { id: { in: offer.offeredItemIds } },
+      data: { status: 'TRADED' },
+    });
+  }
+
+  // Update requested items to TRADED status
+  if (fullOffer?.preferenceSets && fullOffer.preferenceSets.length > 0) {
+    const requestedItemIds = fullOffer.preferenceSets[0].items.map(item => item.itemId);
+    if (requestedItemIds.length > 0) {
+      await prisma.item.updateMany({
+        where: { id: { in: requestedItemIds } },
+        data: { status: 'TRADED' },
+      });
+    }
+  }
+
+  // Create transaction record for the barter
+  // First, get or create listings for the items
+  const initiatorListing = await prisma.listing.create({
+    data: {
+      itemId: offer.offeredItemIds[0], // Use first offered item as primary
+      userId: offer.initiatorId,
+      listingType: 'DIRECT_SALE',
+      price: fullOffer?.offeredBundleValue || 0,
+      currency: 'EGP',
+      status: 'COMPLETED',
+    },
+  });
+
+  // Create transaction
+  await prisma.transaction.create({
+    data: {
+      listingId: initiatorListing.id,
+      buyerId: offer.recipientId!,
+      sellerId: offer.initiatorId,
+      transactionType: 'BARTER',
+      amount: fullOffer?.offeredBundleValue || 0,
+      currency: 'EGP',
+      paymentMethod: 'BARTER_EXCHANGE',
+      paymentStatus: 'COMPLETED',
+      deliveryStatus: 'DELIVERED',
+      completedAt: new Date(),
+      notes: `Barter exchange completed. Offer ID: ${offer.id}`,
+    },
+  });
 
   return completedOffer;
 };

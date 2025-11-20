@@ -19,28 +19,81 @@ export interface BarterItem {
   createdAt: string;
 }
 
+export interface PreferenceSet {
+  id: string;
+  priority: number;
+  totalValue: number;
+  valueDifference: number;
+  isBalanced: boolean;
+  items: BarterItem[];
+}
+
 export interface BarterOffer {
   id: string;
-  offererId: string;
-  offeredItems: BarterItem[];
-  requestedItems: BarterItem[];
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
-  message?: string;
-  counterOfferId?: string;
-  offerer: {
+  initiatorId: string;
+  recipientId?: string;
+  offeredItemIds: string[];
+  offeredItems?: BarterItem[];
+  offeredBundleValue: number;
+  status: 'PENDING' | 'COUNTER_OFFERED' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'COMPLETED' | 'CANCELLED';
+  isOpenOffer: boolean;
+  notes?: string;
+  expiresAt?: string;
+  preferenceSets?: PreferenceSet[];
+  initiator: {
     id: string;
     fullName: string;
     email: string;
-    userType: string;
+    phone?: string;
   };
-  recipient: {
+  recipient?: {
     id: string;
     fullName: string;
     email: string;
-    userType: string;
+    phone?: string;
   };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface BarterChainParticipant {
+  id: string;
+  userId: string;
+  givingItemId: string;
+  receivingItemId: string;
+  position: number;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED';
+  user: {
+    id: string;
+    fullName: string;
+    email: string;
+  };
+  givingItem: BarterItem;
+  receivingItem: BarterItem;
+}
+
+export interface BarterChain {
+  id: string;
+  chainType: 'CYCLE' | 'CHAIN';
+  participantCount: number;
+  matchScore: number;
+  status: 'PROPOSED' | 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
+  expiresAt: string;
+  participants: BarterChainParticipant[];
+  createdAt: string;
+}
+
+export interface SmartOpportunity {
+  type: 'cycle' | 'chain';
+  participants: Array<{
+    userId: string;
+    givingItemId: string;
+    receivingItemId: string;
+    user?: { fullName: string };
+    givingItem?: BarterItem;
+    receivingItem?: BarterItem;
+  }>;
+  score: number;
 }
 
 export interface CreateBarterOfferData {
@@ -78,7 +131,9 @@ export interface BarterItemsResponse {
 export interface BarterOffersResponse {
   success: boolean;
   data: {
-    offers: BarterOffer[];
+    sent?: BarterOffer[];
+    received?: BarterOffer[];
+    offers?: BarterOffer[];
     pagination?: {
       page: number;
       limit: number;
@@ -91,6 +146,27 @@ export interface BarterOffersResponse {
 export interface BarterOfferResponse {
   success: boolean;
   data: BarterOffer;
+  message?: string;
+}
+
+export interface BarterChainsResponse {
+  success: boolean;
+  data: {
+    chains: BarterChain[];
+  };
+}
+
+export interface BarterChainResponse {
+  success: boolean;
+  data: BarterChain;
+  message?: string;
+}
+
+export interface SmartOpportunitiesResponse {
+  success: boolean;
+  data: {
+    opportunities: SmartOpportunity[];
+  };
 }
 
 // Get barterable items (public)
@@ -142,7 +218,7 @@ export const createBarterOffer = async (
       },
     ],
     notes: data.message,
-    isOpenOffer: true, // Open offer means anyone with the requested items can accept
+    isOpenOffer: true,
   };
 
   const response = await apiClient.post('/barter/offers', backendData);
@@ -150,8 +226,8 @@ export const createBarterOffer = async (
 };
 
 // Accept barter offer
-export const acceptBarterOffer = async (id: string): Promise<BarterOfferResponse> => {
-  const response = await apiClient.post(`/barter/offers/${id}/accept`);
+export const acceptBarterOffer = async (id: string, preferenceSetId?: string): Promise<BarterOfferResponse> => {
+  const response = await apiClient.post(`/barter/offers/${id}/accept`, { preferenceSetId });
   return response.data;
 };
 
@@ -167,7 +243,7 @@ export const rejectBarterOffer = async (
 // Create counter offer
 export const createCounterOffer = async (
   id: string,
-  data: CreateBarterOfferData
+  data: { offeredItemIds: string[]; requestedItemIds: string[]; notes?: string }
 ): Promise<BarterOfferResponse> => {
   const response = await apiClient.post(`/barter/offers/${id}/counter`, data);
   return response.data;
@@ -188,5 +264,65 @@ export const completeBarterExchange = async (id: string): Promise<BarterOfferRes
 // Find barter matches for an item
 export const findBarterMatches = async (itemId: string): Promise<BarterItemsResponse> => {
   const response = await apiClient.get(`/barter/matches/${itemId}`);
+  return response.data;
+};
+
+// Get smart barter opportunities for an item
+export const getSmartOpportunities = async (itemId: string): Promise<SmartOpportunitiesResponse> => {
+  const response = await apiClient.get(`/barter/opportunities/${itemId}`);
+  return response.data;
+};
+
+// ========== Chain/Multi-party Barter ==========
+
+// Get my barter chains
+export const getMyBarterChains = async (): Promise<BarterChainsResponse> => {
+  const response = await apiClient.get('/barter/chains/my');
+  return response.data;
+};
+
+// Get pending chain proposals
+export const getPendingChainProposals = async (): Promise<BarterChainsResponse> => {
+  const response = await apiClient.get('/barter/chains/pending');
+  return response.data;
+};
+
+// Get chain statistics
+export const getChainStats = async (): Promise<{ success: boolean; data: any }> => {
+  const response = await apiClient.get('/barter/chains/stats');
+  return response.data;
+};
+
+// Create smart barter proposal (chain/cycle)
+export const createBarterChain = async (opportunity: SmartOpportunity): Promise<BarterChainResponse> => {
+  const response = await apiClient.post('/barter/chains', opportunity);
+  return response.data;
+};
+
+// Get chain by ID
+export const getBarterChain = async (id: string): Promise<BarterChainResponse> => {
+  const response = await apiClient.get(`/barter/chains/${id}`);
+  return response.data;
+};
+
+// Respond to chain proposal (accept/reject)
+export const respondToChainProposal = async (
+  id: string,
+  accept: boolean,
+  reason?: string
+): Promise<BarterChainResponse> => {
+  const response = await apiClient.post(`/barter/chains/${id}/respond`, { accept, reason });
+  return response.data;
+};
+
+// Execute/complete chain
+export const executeBarterChain = async (id: string): Promise<BarterChainResponse> => {
+  const response = await apiClient.post(`/barter/chains/${id}/execute`);
+  return response.data;
+};
+
+// Cancel chain
+export const cancelBarterChain = async (id: string): Promise<BarterChainResponse> => {
+  const response = await apiClient.delete(`/barter/chains/${id}`);
   return response.data;
 };
