@@ -43,8 +43,6 @@ export default function TransactionsPage() {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
@@ -127,7 +125,7 @@ export default function TransactionsPage() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              All Transactions
+              All ({transactions.length})
             </button>
             <button
               onClick={() => setFilter('buyer')}
@@ -137,7 +135,7 @@ export default function TransactionsPage() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Purchases
+              Purchases ({transactions.filter(t => t.buyerId === user.id).length})
             </button>
             <button
               onClick={() => setFilter('seller')}
@@ -147,7 +145,7 @@ export default function TransactionsPage() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Sales
+              Sales ({transactions.filter(t => t.sellerId === user.id).length})
             </button>
           </div>
         </div>
@@ -183,60 +181,79 @@ export default function TransactionsPage() {
             {filteredTransactions.map((transaction) => {
               const isBuyer = transaction.buyerId === user.id;
               const otherParty = isBuyer ? transaction.seller : transaction.buyer;
+              const item = transaction.listing?.item;
 
               return (
-                <div key={transaction.id} className="bg-white rounded-lg shadow-sm p-6">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-sm font-medium px-2 py-1 rounded ${isBuyer ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                          {isBuyer ? 'Purchase' : 'Sale'}
+                <Link
+                  key={transaction.id}
+                  href={`/transactions/${transaction.id}`}
+                  className="block bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition"
+                >
+                  <div className="flex gap-4">
+                    {/* Item Image */}
+                    <div className="flex-shrink-0">
+                      {item?.images?.[0] ? (
+                        <img
+                          src={item.images[0].url}
+                          alt={item.title}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl">📦</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Transaction Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h3 className="font-semibold text-gray-900 truncate">
+                            {item?.title || 'Item'}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded ${isBuyer ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
+                              {isBuyer ? 'Purchase' : 'Sale'}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {formatDate(transaction.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-lg font-bold text-purple-600 whitespace-nowrap ml-4">
+                          {transaction.amount?.toLocaleString()} {transaction.currency}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-3 mt-3">
+                        <div className="text-sm text-gray-600">
+                          {isBuyer ? 'Seller' : 'Buyer'}: <span className="font-medium">{otherParty.fullName}</span>
+                        </div>
+                        <span className={`text-xs px-2 py-0.5 rounded ${getStatusColor(transaction.paymentStatus)}`}>
+                          Payment: {transaction.paymentStatus}
                         </span>
-                        <span className="text-sm text-gray-500">
-                          {formatDate(transaction.createdAt)}
+                        <span className={`text-xs px-2 py-0.5 rounded ${getDeliveryStatusColor(transaction.deliveryStatus)}`}>
+                          Delivery: {transaction.deliveryStatus}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-600">
-                        Transaction ID: {transaction.id.slice(0, 8)}...
-                      </p>
-                    </div>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {transaction.amount?.toLocaleString()} {transaction.currency}
-                    </p>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <p className="text-sm text-gray-600">{isBuyer ? 'Seller' : 'Buyer'}</p>
-                      <p className="font-semibold">{otherParty.fullName}</p>
-                      <p className="text-sm text-gray-500">{otherParty.email}</p>
+                      {/* Action hint */}
+                      {transaction.paymentStatus !== 'REFUNDED' && transaction.deliveryStatus !== 'DELIVERED' && (
+                        <p className="text-xs text-purple-600 mt-2">
+                          {isBuyer && transaction.deliveryStatus === 'SHIPPED' && 'Click to confirm delivery'}
+                          {!isBuyer && transaction.paymentStatus === 'PENDING' && 'Click to confirm payment'}
+                          {!isBuyer && transaction.paymentStatus === 'COMPLETED' && transaction.deliveryStatus === 'PENDING' && 'Click to mark as shipped'}
+                        </p>
+                      )}
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Payment Status</p>
-                      <span className={`inline-block px-2 py-1 rounded text-sm font-medium ${getStatusColor(transaction.paymentStatus)}`}>
-                        {transaction.paymentStatus}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Delivery Status</p>
-                      <span className={`inline-block px-2 py-1 rounded text-sm font-medium ${getDeliveryStatusColor(transaction.deliveryStatus)}`}>
-                        {transaction.deliveryStatus}
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="flex justify-between items-center pt-4 border-t">
-                    <p className="text-sm text-gray-600">
-                      Payment Method: <span className="font-medium">{transaction.paymentMethod?.replace(/_/g, ' ')}</span>
-                    </p>
-                    <Link
-                      href={`/transactions/${transaction.id}`}
-                      className="text-purple-600 hover:text-purple-700 font-medium text-sm"
-                    >
-                      View Details →
-                    </Link>
+                    {/* Arrow */}
+                    <div className="flex-shrink-0 self-center">
+                      <span className="text-gray-400">→</span>
+                    </div>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>
