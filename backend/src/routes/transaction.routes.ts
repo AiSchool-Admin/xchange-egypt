@@ -4,6 +4,7 @@ import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import {
   createPurchaseSchema,
+  buyItemSchema,
   updateTransactionStatusSchema,
   confirmPaymentSchema,
   markAsShippedSchema,
@@ -27,6 +28,17 @@ router.get(
   authenticate,
   validate(getMyTransactionsSchema),
   transactionController.getMyTransactions
+);
+
+/**
+ * Buy an item directly (simplified flow)
+ * POST /api/v1/transactions/buy-item
+ */
+router.post(
+  '/buy-item',
+  authenticate,
+  validate(buyItemSchema),
+  transactionController.buyItem
 );
 
 /**

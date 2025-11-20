@@ -24,6 +24,27 @@ export const createPurchase = async (
 };
 
 /**
+ * Buy an item directly
+ * POST /api/v1/transactions/buy-item
+ */
+export const buyItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const buyerId = req.user!.id;
+    const purchaseData = req.body;
+
+    const result = await transactionService.buyItemDirectly(buyerId, purchaseData);
+
+    return successResponse(res, result, 'Purchase successful! The seller will contact you shortly.', 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get transaction by ID
  * GET /api/v1/transactions/:id
  */
