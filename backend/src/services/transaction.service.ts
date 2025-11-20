@@ -183,7 +183,7 @@ export const buyItemDirectly = async (
       data: {
         itemId: item.id,
         userId: item.sellerId,
-        listingType: 'SALE',
+        listingType: 'DIRECT_SALE',
         price: item.estimatedValue,
         currency: 'EGP',
         status: 'ACTIVE',
@@ -198,7 +198,7 @@ export const buyItemDirectly = async (
       listingId: listing.id,
       buyerId,
       sellerId: item.sellerId,
-      transactionType: 'SALE',
+      transactionType: 'DIRECT_SALE',
       amount: item.estimatedValue,
       currency: 'EGP',
       paymentMethod: purchaseData.paymentMethod,
@@ -232,7 +232,7 @@ export const buyItemDirectly = async (
   // Update listing status
   await prisma.listing.update({
     where: { id: listing.id },
-    data: { status: 'SOLD' },
+    data: { status: 'COMPLETED' },
   });
 
   return {
