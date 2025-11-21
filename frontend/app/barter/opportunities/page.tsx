@@ -228,27 +228,27 @@ export default function BarterOpportunitiesPage() {
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-gray-500">Total Value</p>
                     <p className="font-bold text-lg">
-                      {opportunity.participants.reduce((sum, p) => sum + (p.givingItem.estimatedValue || 0), 0).toLocaleString()} EGP
+                      {opportunity.participants.reduce((sum, p) => sum + (p.givingItem?.estimatedValue || 0), 0).toLocaleString()} EGP
                     </p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-gray-500">Your Item Value</p>
                     <p className="font-bold text-lg">
-                      {opportunity.participants.find(p => p.userId === user.id)?.givingItem.estimatedValue?.toLocaleString() || 0} EGP
+                      {opportunity.participants.find(p => p.userId === user.id)?.givingItem?.estimatedValue?.toLocaleString() || 0} EGP
                     </p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-gray-500">You'll Receive</p>
                     <p className="font-bold text-lg">
-                      {opportunity.participants.find(p => p.userId === user.id)?.receivingItem.estimatedValue?.toLocaleString() || 0} EGP
+                      {opportunity.participants.find(p => p.userId === user.id)?.receivingItem?.estimatedValue?.toLocaleString() || 0} EGP
                     </p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-3">
                     <p className="text-gray-500">Your Benefit</p>
                     <p className="font-bold text-lg text-green-600">
                       +{(
-                        (opportunity.participants.find(p => p.userId === user.id)?.receivingItem.estimatedValue || 0) -
-                        (opportunity.participants.find(p => p.userId === user.id)?.givingItem.estimatedValue || 0)
+                        (opportunity.participants.find(p => p.userId === user.id)?.receivingItem?.estimatedValue || 0) -
+                        (opportunity.participants.find(p => p.userId === user.id)?.givingItem?.estimatedValue || 0)
                       ).toLocaleString()} EGP
                     </p>
                   </div>
