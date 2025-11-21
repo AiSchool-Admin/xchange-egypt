@@ -5,7 +5,7 @@
     "buildCommand": "cd backend && npm install && npm run build"
   },
   "deploy": {
-    "startCommand": "cd backend && DATABASE_URL=$DIRECT_DATABASE_URL npx prisma migrate deploy && npm start",
+    "startCommand": "cd backend && npm run start:prod",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 30000,
     "restartPolicyType": "ON_FAILURE",
