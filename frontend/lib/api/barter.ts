@@ -137,6 +137,7 @@ export interface BarterOffersResponse {
     sent?: BarterOffer[];
     received?: BarterOffer[];
     offers?: BarterOffer[];
+    items?: BarterOffer[];
     pagination?: {
       page: number;
       limit: number;
