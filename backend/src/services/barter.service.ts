@@ -526,6 +526,10 @@ export const searchBarterableItems = async (
     limit = 20,
   } = params;
 
+  // Ensure page and limit are numbers
+  const pageNum = Number(page) || 1;
+  const limitNum = Number(limit) || 20;
+
   const where: any = {
     // Exclude items with active sale listings
     listings: {
@@ -555,14 +559,14 @@ export const searchBarterableItems = async (
     where.sellerId = { not: userId };
   }
 
-  const skip = (page - 1) * limit;
+  const skip = (pageNum - 1) * limitNum;
 
   const total = await prisma.item.count({ where });
 
   const items = await prisma.item.findMany({
     where,
     skip,
-    take: limit,
+    take: limitNum,
     orderBy: { createdAt: 'desc' },
     include: {
       seller: {
@@ -583,16 +587,16 @@ export const searchBarterableItems = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = Math.ceil(total / limitNum);
 
   return {
     items,
     pagination: {
-      page,
-      limit,
+      page: pageNum,
+      limit: limitNum,
       total,
       totalPages,
-      hasMore: page < totalPages,
+      hasMore: pageNum < totalPages,
     },
   };
 };
