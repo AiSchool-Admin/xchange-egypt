@@ -201,23 +201,26 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     });
   }
 
-  // Handle other errors
-  if (isDevelopment) {
-    res.status(500).json({
+  // Handle Prisma errors specifically
+  if (err.constructor.name.includes('Prisma')) {
+    console.error('Prisma Error Details:', JSON.stringify(err, null, 2));
+    return res.status(500).json({
       success: false,
       error: {
-        message: err.message,
-        stack: err.stack,
-      },
-    });
-  } else {
-    res.status(500).json({
-      success: false,
-      error: {
-        message: 'An unexpected error occurred',
+        message: `Database error: ${err.message}`,
+        code: (err as any).code,
       },
     });
   }
+
+  // Handle other errors - show message in production for debugging
+  res.status(500).json({
+    success: false,
+    error: {
+      message: err.message || 'An unexpected error occurred',
+      ...(isDevelopment && { stack: err.stack }),
+    },
+  });
 });
 
 // ============================================
