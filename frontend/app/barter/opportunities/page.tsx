@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import {
-  getSmartOpportunities,
   createBarterChain,
   SmartOpportunity,
 } from '@/lib/api/barter';
@@ -34,8 +33,9 @@ export default function BarterOpportunitiesPage() {
   const loadOpportunities = async () => {
     try {
       setLoading(true);
-      const response = await getSmartOpportunities();
-      setOpportunities(response.data.opportunities || []);
+      // Smart opportunities feature requires selecting specific items
+      // For now, show empty state - users can discover opportunities via their items
+      setOpportunities([]);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load opportunities');
     } finally {
