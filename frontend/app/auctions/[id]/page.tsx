@@ -318,7 +318,7 @@ export default function AuctionDetailsPage() {
                         </p>
                       </div>
                       <p className="text-lg font-bold text-purple-600">
-                        {bid.amount.toLocaleString()} EGP
+                        {(bid.bidAmount || bid.amount || 0).toLocaleString()} EGP
                       </p>
                     </div>
                   ))}
