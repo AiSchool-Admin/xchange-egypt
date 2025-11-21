@@ -226,8 +226,9 @@ export default function AuctionsPage() {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {auctions.map((auction) => {
-                    const primaryImage = auction.item.images?.find((img) => img.isPrimary)?.url ||
-                                       auction.item.images?.[0]?.url;
+                    const item = auction.listing?.item || auction.item;
+                    const primaryImage = item?.images?.find((img) => img.isPrimary)?.url ||
+                                       item?.images?.[0]?.url;
                     const isEnded = new Date(auction.endTime) < new Date();
                     const hasStarted = new Date(auction.startTime) < new Date();
 
@@ -242,7 +243,7 @@ export default function AuctionsPage() {
                           {primaryImage ? (
                             <img
                               src={primaryImage}
-                              alt={auction.item.title}
+                              alt={item?.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                             />
                           ) : (
@@ -279,10 +280,10 @@ export default function AuctionsPage() {
                         {/* Content */}
                         <div className="p-4">
                           <h3 className="font-semibold text-gray-900 line-clamp-1 group-hover:text-purple-600 transition">
-                            {auction.item.title}
+                            {item?.title}
                           </h3>
                           <p className="text-sm text-gray-600 line-clamp-1 mt-1">
-                            {auction.item.description}
+                            {item?.description}
                           </p>
 
                           <div className="mt-3 space-y-2">
@@ -303,8 +304,8 @@ export default function AuctionsPage() {
                             )}
 
                             <div className="flex items-center justify-between text-sm text-gray-600">
-                              <span>{auction.bidCount} bid{auction.bidCount !== 1 ? 's' : ''}</span>
-                              <span>{auction.item.category.nameEn}</span>
+                              <span>{(auction.totalBids || auction.bidCount || 0)} bid{(auction.totalBids || auction.bidCount || 0) !== 1 ? 's' : ''}</span>
+                              <span>{item?.category?.nameEn}</span>
                             </div>
                           </div>
                         </div>
