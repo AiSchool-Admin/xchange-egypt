@@ -340,3 +340,51 @@ export const getSuggestedPartners = async (
     next(error);
   }
 };
+
+/**
+ * Get AI price recommendation for an item
+ * GET /api/v1/barter/price-recommendation
+ */
+export const getPriceRecommendation = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { itemId, categoryId, condition, userEstimate } = req.query;
+
+    const recommendation = await barterService.getAIPriceRecommendation(
+      itemId as string | undefined,
+      categoryId as string | undefined,
+      condition as string | undefined,
+      userEstimate ? parseFloat(userEstimate as string) : undefined
+    );
+
+    return successResponse(res, recommendation, 'Price recommendation generated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Evaluate barter fairness
+ * POST /api/v1/barter/evaluate-fairness
+ */
+export const evaluateFairness = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { offeredItemIds, requestedItemIds } = req.body;
+
+    const evaluation = await barterService.evaluateBarterFairness(
+      offeredItemIds,
+      requestedItemIds
+    );
+
+    return successResponse(res, evaluation, 'Barter fairness evaluated successfully');
+  } catch (error) {
+    next(error);
+  }
+};

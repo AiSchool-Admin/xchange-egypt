@@ -391,3 +391,73 @@ export const getSuggestedPartners = async (itemId?: string): Promise<SuggestedPa
   const response = await apiClient.get(`/barter/suggested-partners${params}`);
   return response.data;
 };
+
+// ========== AI Price Recommendations ==========
+
+export interface PriceRecommendation {
+  recommendedValue: number;
+  minValue: number;
+  maxValue: number;
+  confidence: number;
+  similarItemsCount: number;
+  factors: {
+    categoryAverage: number;
+    conditionMultiplier: number;
+    marketTrend: string;
+    demandLevel: string;
+  };
+  similarItems: {
+    id: string;
+    title: string;
+    value: number;
+    condition: string;
+  }[];
+}
+
+export interface PriceRecommendationResponse {
+  success: boolean;
+  data: PriceRecommendation;
+}
+
+export interface FairnessEvaluation {
+  isFair: boolean;
+  offeredValue: number;
+  requestedValue: number;
+  valueDifference: number;
+  percentageDiff: number;
+  recommendation: string;
+}
+
+export interface FairnessEvaluationResponse {
+  success: boolean;
+  data: FairnessEvaluation;
+}
+
+// Get AI price recommendation
+export const getAIPriceRecommendation = async (params: {
+  itemId?: string;
+  categoryId?: string;
+  condition?: string;
+  userEstimate?: number;
+}): Promise<PriceRecommendationResponse> => {
+  const queryParams = new URLSearchParams();
+  if (params.itemId) queryParams.append('itemId', params.itemId);
+  if (params.categoryId) queryParams.append('categoryId', params.categoryId);
+  if (params.condition) queryParams.append('condition', params.condition);
+  if (params.userEstimate) queryParams.append('userEstimate', params.userEstimate.toString());
+
+  const response = await apiClient.get(`/barter/price-recommendation?${queryParams.toString()}`);
+  return response.data;
+};
+
+// Evaluate barter fairness
+export const evaluateBarterFairness = async (
+  offeredItemIds: string[],
+  requestedItemIds: string[]
+): Promise<FairnessEvaluationResponse> => {
+  const response = await apiClient.post('/barter/evaluate-fairness', {
+    offeredItemIds,
+    requestedItemIds,
+  });
+  return response.data;
+};

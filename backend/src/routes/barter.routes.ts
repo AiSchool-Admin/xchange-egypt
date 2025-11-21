@@ -182,6 +182,26 @@ router.get(
   barterController.getSuggestedPartners
 );
 
+/**
+ * Get AI price recommendation
+ * GET /api/v1/barter/price-recommendation
+ */
+router.get(
+  '/price-recommendation',
+  authenticate,
+  barterController.getPriceRecommendation
+);
+
+/**
+ * Evaluate barter fairness
+ * POST /api/v1/barter/evaluate-fairness
+ */
+router.post(
+  '/evaluate-fairness',
+  authenticate,
+  barterController.evaluateFairness
+);
+
 // ============================================
 // Multi-Party Smart Barter Chains
 // ============================================

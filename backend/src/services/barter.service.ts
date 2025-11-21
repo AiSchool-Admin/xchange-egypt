@@ -1178,3 +1178,186 @@ function calculatePartnerMatchScore(userItems: any[], partnerItems: any[]): numb
 
   return Math.max(0, Math.min(100, score));
 }
+
+// ============================================
+// AI PRICE RECOMMENDATIONS
+// ============================================
+
+interface PriceRecommendation {
+  recommendedValue: number;
+  minValue: number;
+  maxValue: number;
+  confidence: number;
+  similarItemsCount: number;
+  factors: {
+    categoryAverage: number;
+    conditionMultiplier: number;
+    marketTrend: string;
+    demandLevel: string;
+  };
+  similarItems: {
+    id: string;
+    title: string;
+    value: number;
+    condition: string;
+  }[];
+}
+
+/**
+ * Get AI-powered price recommendation for an item
+ */
+export const getAIPriceRecommendation = async (
+  itemId?: string,
+  categoryId?: string,
+  condition?: string,
+  userEstimate?: number
+): Promise<PriceRecommendation> => {
+  let targetCategoryId = categoryId;
+  let targetCondition = condition;
+
+  if (itemId) {
+    const item = await prisma.item.findUnique({ where: { id: itemId } });
+    if (item) {
+      targetCategoryId = item.categoryId;
+      targetCondition = item.condition;
+      userEstimate = userEstimate || item.estimatedValue;
+    }
+  }
+
+  if (!targetCategoryId) {
+    throw new BadRequestError('Category ID is required');
+  }
+
+  const similarItems = await prisma.item.findMany({
+    where: {
+      categoryId: targetCategoryId,
+      estimatedValue: { gt: 0 },
+      status: { in: ['ACTIVE', 'TRADED'] },
+      ...(itemId && { id: { not: itemId } }),
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  });
+
+  if (similarItems.length === 0) {
+    const defaultValue = userEstimate || 1000;
+    return {
+      recommendedValue: defaultValue,
+      minValue: defaultValue * 0.7,
+      maxValue: defaultValue * 1.3,
+      confidence: 20,
+      similarItemsCount: 0,
+      factors: {
+        categoryAverage: defaultValue,
+        conditionMultiplier: 1.0,
+        marketTrend: 'unknown',
+        demandLevel: 'unknown',
+      },
+      similarItems: [],
+    };
+  }
+
+  const categoryAverage = similarItems.reduce((sum, i) => sum + i.estimatedValue, 0) / similarItems.length;
+
+  const conditionMultipliers: Record<string, number> = {
+    NEW: 1.2, LIKE_NEW: 1.1, GOOD: 1.0, FAIR: 0.85, POOR: 0.7,
+  };
+  const conditionMultiplier = conditionMultipliers[targetCondition || 'GOOD'] || 1.0;
+
+  const sameConditionItems = similarItems.filter(i => i.condition === targetCondition);
+  const conditionAverage = sameConditionItems.length > 0
+    ? sameConditionItems.reduce((sum, i) => sum + i.estimatedValue, 0) / sameConditionItems.length
+    : categoryAverage * conditionMultiplier;
+
+  let recommendedValue = sameConditionItems.length >= 3
+    ? conditionAverage
+    : categoryAverage * conditionMultiplier;
+
+  if (userEstimate && userEstimate > 0) {
+    recommendedValue = recommendedValue * 0.6 + userEstimate * 0.4;
+  }
+
+  const values = similarItems.map(i => i.estimatedValue);
+  const variance = values.reduce((sum, v) => sum + Math.pow(v - categoryAverage, 2), 0) / values.length;
+  const stdDev = Math.sqrt(variance);
+  const confidence = Math.min(100, Math.max(20, 50 + (similarItems.length * 2) - (stdDev / categoryAverage * 30)));
+
+  const recentItems = similarItems.filter(i => {
+    const days = (Date.now() - new Date(i.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+    return days <= 30;
+  });
+  const demandLevel = recentItems.length >= 10 ? 'high' : recentItems.length >= 5 ? 'medium' : 'low';
+
+  const oldItems = similarItems.filter(i => {
+    const days = (Date.now() - new Date(i.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+    return days > 30 && days <= 90;
+  });
+  const oldAverage = oldItems.length > 0
+    ? oldItems.reduce((sum, i) => sum + i.estimatedValue, 0) / oldItems.length
+    : categoryAverage;
+  const recentAverage = recentItems.length > 0
+    ? recentItems.reduce((sum, i) => sum + i.estimatedValue, 0) / recentItems.length
+    : categoryAverage;
+
+  const marketTrend = recentAverage > oldAverage * 1.1 ? 'rising' :
+    recentAverage < oldAverage * 0.9 ? 'falling' : 'stable';
+
+  if (marketTrend === 'rising') recommendedValue *= 1.05;
+  else if (marketTrend === 'falling') recommendedValue *= 0.95;
+
+  recommendedValue = Math.round(recommendedValue / 10) * 10;
+
+  return {
+    recommendedValue,
+    minValue: Math.round(recommendedValue * 0.8 / 10) * 10,
+    maxValue: Math.round(recommendedValue * 1.2 / 10) * 10,
+    confidence: Math.round(confidence),
+    similarItemsCount: similarItems.length,
+    factors: {
+      categoryAverage: Math.round(categoryAverage),
+      conditionMultiplier,
+      marketTrend,
+      demandLevel,
+    },
+    similarItems: similarItems.slice(0, 5).map(item => ({
+      id: item.id,
+      title: item.titleEn || item.titleAr,
+      value: item.estimatedValue,
+      condition: item.condition,
+    })),
+  };
+};
+
+/**
+ * Evaluate if a barter exchange is fair
+ */
+export const evaluateBarterFairness = async (
+  offeredItemIds: string[],
+  requestedItemIds: string[]
+): Promise<{
+  isFair: boolean;
+  offeredValue: number;
+  requestedValue: number;
+  valueDifference: number;
+  percentageDiff: number;
+  recommendation: string;
+}> => {
+  const offeredItems = await prisma.item.findMany({ where: { id: { in: offeredItemIds } } });
+  const offeredValue = offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0);
+
+  const requestedItems = await prisma.item.findMany({ where: { id: { in: requestedItemIds } } });
+  const requestedValue = requestedItems.reduce((sum, item) => sum + item.estimatedValue, 0);
+
+  const valueDifference = Math.abs(offeredValue - requestedValue);
+  const avgValue = (offeredValue + requestedValue) / 2;
+  const percentageDiff = avgValue > 0 ? (valueDifference / avgValue) * 100 : 0;
+  const isFair = percentageDiff <= 20;
+
+  let recommendation: string;
+  if (percentageDiff <= 10) recommendation = 'Excellent match! Values are very close.';
+  else if (percentageDiff <= 20) recommendation = 'Good match. Values are reasonably balanced.';
+  else if (percentageDiff <= 35) recommendation = 'Consider adjusting. There is a noticeable value difference.';
+  else recommendation = 'Significant imbalance. Consider adding items or finding different match.';
+
+  return { isFair, offeredValue, requestedValue, valueDifference, percentageDiff: Math.round(percentageDiff), recommendation };
+};
