@@ -330,3 +330,64 @@ export const cancelBarterChain = async (id: string): Promise<BarterChainResponse
   const response = await apiClient.delete(`/barter/chains/${id}`);
   return response.data;
 };
+
+// ========== Multi-Party Matching Algorithm ==========
+
+export interface BarterNode {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  offeredItems: {
+    id: string;
+    title: string;
+    value: number;
+    categoryId: string;
+    images?: { url: string }[];
+  }[];
+  wantedCategories: string[];
+  wantedMinValue: number;
+  wantedMaxValue: number;
+}
+
+export interface MultiPartyMatch {
+  chain: BarterNode[];
+  totalValue: number;
+  matchScore: number;
+  type: 'two-party' | 'three-party' | 'multi-party';
+}
+
+export interface MultiPartyMatchesResponse {
+  success: boolean;
+  data: {
+    matches: MultiPartyMatch[];
+  };
+}
+
+export interface SuggestedPartner {
+  id: string;
+  fullName: string;
+  avatar?: string;
+  matchingItems: BarterItem[];
+  matchScore: number;
+}
+
+export interface SuggestedPartnersResponse {
+  success: boolean;
+  data: {
+    partners: SuggestedPartner[];
+  };
+}
+
+// Find multi-party barter matches
+export const getMultiPartyMatches = async (maxChainLength?: number): Promise<MultiPartyMatchesResponse> => {
+  const params = maxChainLength ? `?maxChainLength=${maxChainLength}` : '';
+  const response = await apiClient.get(`/barter/multi-party-matches${params}`);
+  return response.data;
+};
+
+// Get suggested barter partners
+export const getSuggestedPartners = async (itemId?: string): Promise<SuggestedPartnersResponse> => {
+  const params = itemId ? `?itemId=${itemId}` : '';
+  const response = await apiClient.get(`/barter/suggested-partners${params}`);
+  return response.data;
+};

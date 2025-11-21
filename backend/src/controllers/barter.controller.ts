@@ -292,3 +292,51 @@ export const getBestMatch = async (
     next(error);
   }
 };
+
+/**
+ * Find multi-party barter matches
+ * GET /api/v1/barter/multi-party-matches
+ */
+export const findMultiPartyMatches = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { maxChainLength } = req.query;
+
+    const matches = await barterService.findMultiPartyMatches(
+      userId,
+      maxChainLength ? parseInt(maxChainLength as string) : 5
+    );
+
+    return successResponse(res, { matches }, 'Multi-party matches found successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get suggested barter partners
+ * GET /api/v1/barter/suggested-partners
+ */
+export const getSuggestedPartners = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { itemId } = req.query;
+
+    const partners = await barterService.getSuggestedBarterPartners(
+      userId,
+      itemId as string | undefined
+    );
+
+    return successResponse(res, { partners }, 'Suggested partners found successfully');
+  } catch (error) {
+    next(error);
+  }
+};

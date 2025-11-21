@@ -785,3 +785,396 @@ export const completeBarterExchange = async (
 
   return completedOffer;
 };
+
+// ============================================
+// MULTI-PARTY BARTER MATCHING ALGORITHM
+// ============================================
+
+interface BarterNode {
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  offeredItems: {
+    id: string;
+    title: string;
+    value: number;
+    categoryId: string;
+    images?: { url: string }[];
+  }[];
+  wantedCategories: string[];
+  wantedMinValue: number;
+  wantedMaxValue: number;
+}
+
+interface BarterMatch {
+  chain: BarterNode[];
+  totalValue: number;
+  matchScore: number;
+  type: 'two-party' | 'three-party' | 'multi-party';
+}
+
+/**
+ * Find multi-party barter matches using graph cycle detection
+ * This finds chains where: A wants what B has, B wants what C has, C wants what A has
+ */
+export const findMultiPartyMatches = async (
+  userId: string,
+  maxChainLength: number = 5
+): Promise<BarterMatch[]> => {
+  // Get all active barter offers
+  const activeOffers = await prisma.barterOffer.findMany({
+    where: {
+      status: 'PENDING',
+      isOpenOffer: true,
+      expiresAt: { gt: new Date() },
+    },
+    include: {
+      initiator: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+        },
+      },
+      preferenceSets: {
+        include: {
+          items: {
+            include: {
+              item: {
+                select: {
+                  categoryId: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { priority: 'asc' },
+      },
+    },
+  });
+
+  // Get offered items details
+  const allOfferedItemIds = activeOffers.flatMap(o => o.offeredItemIds);
+  const offeredItems = await prisma.item.findMany({
+    where: { id: { in: allOfferedItemIds } },
+    include: {
+      images: { take: 1 },
+      category: true,
+    },
+  });
+
+  const itemsMap = new Map(offeredItems.map(item => [item.id, item]));
+
+  // Build graph nodes
+  const nodes: Map<string, BarterNode> = new Map();
+
+  for (const offer of activeOffers) {
+    const offeredItemDetails = offer.offeredItemIds
+      .map(id => itemsMap.get(id))
+      .filter(Boolean)
+      .map(item => ({
+        id: item!.id,
+        title: item!.titleEn || item!.titleAr,
+        value: item!.estimatedValue,
+        categoryId: item!.categoryId,
+        images: item!.images,
+      }));
+
+    // Get wanted categories from preference sets
+    const wantedCategories: string[] = [];
+    let wantedMinValue = 0;
+    let wantedMaxValue = Infinity;
+
+    for (const prefSet of offer.preferenceSets) {
+      for (const prefItem of prefSet.items) {
+        if (prefItem.categoryId) {
+          wantedCategories.push(prefItem.categoryId);
+        }
+        if (prefItem.item?.categoryId) {
+          wantedCategories.push(prefItem.item.categoryId);
+        }
+      }
+      if (prefSet.totalValue > 0) {
+        wantedMinValue = Math.min(wantedMinValue || prefSet.totalValue, prefSet.totalValue * 0.8);
+        wantedMaxValue = Math.max(wantedMaxValue === Infinity ? 0 : wantedMaxValue, prefSet.totalValue * 1.2);
+      }
+    }
+
+    // If no preferences, use offered value as reference
+    if (wantedMinValue === 0) {
+      wantedMinValue = offer.offeredBundleValue * 0.7;
+      wantedMaxValue = offer.offeredBundleValue * 1.3;
+    }
+
+    nodes.set(offer.initiatorId, {
+      userId: offer.initiatorId,
+      userName: offer.initiator.fullName,
+      userAvatar: offer.initiator.avatar || undefined,
+      offeredItems: offeredItemDetails,
+      wantedCategories: [...new Set(wantedCategories)],
+      wantedMinValue,
+      wantedMaxValue,
+    });
+  }
+
+  // Build adjacency graph (directed edges: A -> B means A wants what B has)
+  const graph: Map<string, string[]> = new Map();
+
+  for (const [nodeIdA, nodeA] of nodes) {
+    const edges: string[] = [];
+
+    for (const [nodeIdB, nodeB] of nodes) {
+      if (nodeIdA === nodeIdB) continue;
+
+      // Check if A wants what B has
+      const match = checkMatch(nodeA, nodeB);
+      if (match) {
+        edges.push(nodeIdB);
+      }
+    }
+
+    graph.set(nodeIdA, edges);
+  }
+
+  // Find cycles starting from the current user
+  const matches: BarterMatch[] = [];
+  const userNode = nodes.get(userId);
+
+  if (!userNode) {
+    // User doesn't have active offers, find potential matches based on their items
+    const userItems = await prisma.item.findMany({
+      where: {
+        sellerId: userId,
+        status: 'ACTIVE',
+      },
+      include: {
+        images: { take: 1 },
+        category: true,
+      },
+    });
+
+    if (userItems.length === 0) {
+      return [];
+    }
+
+    // Create a temporary node for the user
+    const tempNode: BarterNode = {
+      userId,
+      userName: 'You',
+      offeredItems: userItems.map(item => ({
+        id: item.id,
+        title: item.titleEn || item.titleAr,
+        value: item.estimatedValue,
+        categoryId: item.categoryId,
+        images: item.images,
+      })),
+      wantedCategories: [], // Will match any category
+      wantedMinValue: 0,
+      wantedMaxValue: Infinity,
+    };
+
+    nodes.set(userId, tempNode);
+
+    // Add edges for temp node
+    const edges: string[] = [];
+    for (const [nodeIdB, nodeB] of nodes) {
+      if (nodeIdB === userId) continue;
+      // Any node that has items the user might want
+      edges.push(nodeIdB);
+    }
+    graph.set(userId, edges);
+  }
+
+  // Find all cycles of length 2 to maxChainLength that include the user
+  const cycles = findCycles(graph, userId, maxChainLength);
+
+  // Convert cycles to BarterMatch objects
+  for (const cycle of cycles) {
+    const chainNodes = cycle.map(id => nodes.get(id)!).filter(Boolean);
+    if (chainNodes.length < 2) continue;
+
+    const totalValue = chainNodes.reduce(
+      (sum, node) => sum + node.offeredItems.reduce((s, item) => s + item.value, 0),
+      0
+    );
+
+    const matchScore = calculateMatchScore(chainNodes);
+
+    matches.push({
+      chain: chainNodes,
+      totalValue,
+      matchScore,
+      type: cycle.length === 2 ? 'two-party' : cycle.length === 3 ? 'three-party' : 'multi-party',
+    });
+  }
+
+  // Sort by match score (highest first)
+  matches.sort((a, b) => b.matchScore - a.matchScore);
+
+  return matches.slice(0, 20); // Return top 20 matches
+};
+
+/**
+ * Check if nodeA wants what nodeB has
+ */
+function checkMatch(nodeA: BarterNode, nodeB: BarterNode): boolean {
+  const bOfferedValue = nodeB.offeredItems.reduce((sum, item) => sum + item.value, 0);
+  const bCategories = nodeB.offeredItems.map(item => item.categoryId);
+
+  // Check value range
+  if (bOfferedValue < nodeA.wantedMinValue || bOfferedValue > nodeA.wantedMaxValue) {
+    return false;
+  }
+
+  // Check category match (if A has preferences)
+  if (nodeA.wantedCategories.length > 0) {
+    const hasMatchingCategory = bCategories.some(cat => nodeA.wantedCategories.includes(cat));
+    if (!hasMatchingCategory) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Find all cycles in the graph that include the start node
+ */
+function findCycles(
+  graph: Map<string, string[]>,
+  startNode: string,
+  maxLength: number
+): string[][] {
+  const cycles: string[][] = [];
+  const visited = new Set<string>();
+
+  function dfs(current: string, path: string[]): void {
+    if (path.length > maxLength) return;
+
+    const neighbors = graph.get(current) || [];
+
+    for (const neighbor of neighbors) {
+      if (neighbor === startNode && path.length >= 2) {
+        // Found a cycle back to start
+        cycles.push([...path]);
+      } else if (!visited.has(neighbor) && path.length < maxLength) {
+        visited.add(neighbor);
+        dfs(neighbor, [...path, neighbor]);
+        visited.delete(neighbor);
+      }
+    }
+  }
+
+  visited.add(startNode);
+  dfs(startNode, [startNode]);
+
+  return cycles;
+}
+
+/**
+ * Calculate match score based on value balance and category relevance
+ */
+function calculateMatchScore(chain: BarterNode[]): number {
+  let score = 100;
+
+  // Penalize for value imbalance
+  const values = chain.map(node =>
+    node.offeredItems.reduce((sum, item) => sum + item.value, 0)
+  );
+  const avgValue = values.reduce((a, b) => a + b, 0) / values.length;
+  const maxDeviation = Math.max(...values.map(v => Math.abs(v - avgValue) / avgValue));
+  score -= maxDeviation * 30;
+
+  // Bonus for category matches
+  const allCategories = chain.flatMap(node => node.offeredItems.map(item => item.categoryId));
+  const uniqueCategories = new Set(allCategories).size;
+  score += (allCategories.length - uniqueCategories) * 5; // Bonus for same categories
+
+  // Bonus for shorter chains (more practical)
+  score += (5 - chain.length) * 10;
+
+  return Math.max(0, Math.min(100, score));
+}
+
+/**
+ * Get suggested barter partners based on item compatibility
+ */
+export const getSuggestedBarterPartners = async (
+  userId: string,
+  itemId?: string
+): Promise<any[]> => {
+  // Get user's items
+  const userItems = itemId
+    ? await prisma.item.findMany({ where: { id: itemId, sellerId: userId } })
+    : await prisma.item.findMany({ where: { sellerId: userId, status: 'ACTIVE' } });
+
+  if (userItems.length === 0) {
+    return [];
+  }
+
+  const categoryIds = userItems.map(item => item.categoryId);
+  const totalValue = userItems.reduce((sum, item) => sum + item.estimatedValue, 0);
+
+  // Find users with items in similar categories and value range
+  const potentialPartners = await prisma.user.findMany({
+    where: {
+      id: { not: userId },
+      items: {
+        some: {
+          status: 'ACTIVE',
+          categoryId: { in: categoryIds },
+          estimatedValue: {
+            gte: totalValue * 0.5,
+            lte: totalValue * 1.5,
+          },
+        },
+      },
+    },
+    include: {
+      items: {
+        where: {
+          status: 'ACTIVE',
+          categoryId: { in: categoryIds },
+        },
+        include: {
+          images: { take: 1 },
+          category: {
+            select: {
+              id: true,
+              nameAr: true,
+              nameEn: true,
+            },
+          },
+        },
+        take: 5,
+      },
+    },
+    take: 10,
+  });
+
+  return potentialPartners.map(partner => ({
+    id: partner.id,
+    fullName: partner.fullName,
+    avatar: partner.avatar,
+    matchingItems: partner.items,
+    matchScore: calculatePartnerMatchScore(userItems, partner.items),
+  }));
+};
+
+function calculatePartnerMatchScore(userItems: any[], partnerItems: any[]): number {
+  let score = 50;
+
+  // Category overlap
+  const userCategories = new Set(userItems.map(i => i.categoryId));
+  const partnerCategories = new Set(partnerItems.map(i => i.categoryId));
+  const overlap = [...userCategories].filter(c => partnerCategories.has(c)).length;
+  score += overlap * 10;
+
+  // Value similarity
+  const userValue = userItems.reduce((s, i) => s + i.estimatedValue, 0);
+  const partnerValue = partnerItems.reduce((s, i) => s + i.estimatedValue, 0);
+  const valueDiff = Math.abs(userValue - partnerValue) / Math.max(userValue, partnerValue);
+  score -= valueDiff * 20;
+
+  return Math.max(0, Math.min(100, score));
+}

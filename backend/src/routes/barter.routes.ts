@@ -162,6 +162,26 @@ router.get(
   barterController.findBarterMatches
 );
 
+/**
+ * Find multi-party barter matches
+ * GET /api/v1/barter/multi-party-matches
+ */
+router.get(
+  '/multi-party-matches',
+  authenticate,
+  barterController.findMultiPartyMatches
+);
+
+/**
+ * Get suggested barter partners
+ * GET /api/v1/barter/suggested-partners
+ */
+router.get(
+  '/suggested-partners',
+  authenticate,
+  barterController.getSuggestedPartners
+);
+
 // ============================================
 // Multi-Party Smart Barter Chains
 // ============================================
