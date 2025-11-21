@@ -5,7 +5,7 @@
   "main": "dist/app.js",
   "scripts": {
     "dev": "tsx watch src/app.ts",
-    "build": "echo '=== Starting Prisma Generate ===' && prisma generate && echo '=== Prisma Generate Complete ===' && echo '=== Starting TypeScript Compilation ===' && tsc && echo '=== Build Complete ==='",
+    "build": "echo '=== Starting Prisma Generate ===' && prisma generate && echo '=== Prisma Generate Complete ===' && echo '=== Running Prisma Migrations ===' && prisma migrate deploy && echo '=== Migrations Complete ===' && echo '=== Starting TypeScript Compilation ===' && tsc && echo '=== Build Complete ==='",
     "start": "node dist/app.js",
     "test": "jest",
     "test:watch": "jest --watch",
