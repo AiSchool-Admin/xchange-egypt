@@ -191,24 +191,24 @@ export default function BarterOpportunitiesPage() {
                             : 'bg-white border border-gray-200'
                         }`}>
                           <p className="font-medium text-sm">
-                            {participant.userId === user.id ? 'You' : participant.user.fullName}
+                            {participant.userId === user.id ? 'You' : participant.user?.fullName}
                           </p>
                           <div className="flex items-center gap-2 text-xs">
                             <div className="flex-1">
                               <p className="text-gray-500">Gives:</p>
                               <p className="font-medium truncate max-w-[120px]">
-                                {participant.givingItem.title}
+                                {participant.givingItem?.title}
                               </p>
-                              <p className="text-green-600">{participant.givingItem.estimatedValue?.toLocaleString()} EGP</p>
+                              <p className="text-green-600">{participant.givingItem?.estimatedValue?.toLocaleString()} EGP</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-xs">
                             <div className="flex-1">
                               <p className="text-gray-500">Gets:</p>
                               <p className="font-medium truncate max-w-[120px]">
-                                {participant.receivingItem.title}
+                                {participant.receivingItem?.title}
                               </p>
-                              <p className="text-green-600">{participant.receivingItem.estimatedValue?.toLocaleString()} EGP</p>
+                              <p className="text-green-600">{participant.receivingItem?.estimatedValue?.toLocaleString()} EGP</p>
                             </div>
                           </div>
                         </div>
