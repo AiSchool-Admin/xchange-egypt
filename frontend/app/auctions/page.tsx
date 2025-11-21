@@ -86,7 +86,7 @@ export default function AuctionsPage() {
       });
 
       setAuctions(response.data.auctions);
-      setTotalPages(response.data.pagination.totalPages);
+      setTotalPages(response.data.pagination.totalPages || response.data.pagination.pages || 1);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load auctions');
     } finally {
