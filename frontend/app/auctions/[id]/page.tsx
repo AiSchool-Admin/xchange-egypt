@@ -94,7 +94,7 @@ export default function AuctionDetailsPage() {
     setBidError('');
 
     try {
-      await placeBid(auctionId, { amount: parseFloat(bidAmount) });
+      await placeBid(auctionId, { bidAmount: parseFloat(bidAmount) });
       await loadAuction(); // Reload to show new bid
       setBidAmount((parseFloat(bidAmount) + 10).toString()); // Increment for next bid
     } catch (err: any) {
