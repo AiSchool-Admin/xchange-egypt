@@ -55,7 +55,12 @@ export default function BarterPage() {
       setItems(response.data.items);
       setTotalPages(response.data.pagination.totalPages);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load items');
+      console.error('Barter items load error:', err);
+      const errorMsg = err.response?.data?.message
+        || err.message
+        || 'Failed to load items';
+      const statusCode = err.response?.status ? ` (${err.response.status})` : '';
+      setError(`${errorMsg}${statusCode}`);
     } finally {
       setLoading(false);
     }

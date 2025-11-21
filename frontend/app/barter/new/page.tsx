@@ -55,7 +55,11 @@ export default function CreateBarterOfferPage() {
       setMyItems(availableItems);
     } catch (err: any) {
       console.error('Failed to load my items:', err);
-      setError('Failed to load your items. Please try again.');
+      const errorMsg = err.response?.data?.message
+        || err.message
+        || 'Failed to load your items';
+      const statusCode = err.response?.status ? ` (${err.response.status})` : '';
+      setError(`${errorMsg}${statusCode}. Please try again.`);
     } finally {
       setLoadingMyItems(false);
     }
