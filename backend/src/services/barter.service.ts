@@ -858,7 +858,6 @@ export const findMultiPartyMatches = async (
   const offeredItems = await prisma.item.findMany({
     where: { id: { in: allOfferedItemIds } },
     include: {
-      images: { take: 1 },
       category: true,
     },
   });
@@ -874,10 +873,10 @@ export const findMultiPartyMatches = async (
       .filter(Boolean)
       .map(item => ({
         id: item!.id,
-        title: item!.titleEn || item!.titleAr,
+        title: item!.title,
         value: item!.estimatedValue,
         categoryId: item!.categoryId,
-        images: item!.images,
+        images: item!.images.length > 0 ? [{ url: item!.images[0] }] : [],
       }));
 
     // Get wanted categories from preference sets

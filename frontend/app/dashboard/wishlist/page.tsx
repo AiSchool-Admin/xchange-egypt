@@ -278,14 +278,14 @@ export default function WishListPage() {
                           >
                             {item.images?.[0] && (
                               <img
-                                src={item.images[0].url}
-                                alt={item.titleEn}
+                                src={item.images[0]}
+                                alt={item.title}
                                 className="w-12 h-12 object-cover rounded"
                               />
                             )}
                             <div className="flex-1 min-w-0">
                               <div className="font-medium text-sm truncate">
-                                {language === 'ar' ? item.titleAr : item.titleEn}
+                                {item.title}
                               </div>
                               <div className="text-xs text-green-600">
                                 {item.estimatedValue?.toLocaleString()} EGP

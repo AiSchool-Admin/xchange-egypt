@@ -181,6 +181,9 @@ export const getBarterItems = async (params?: {
   search?: string;
   minValue?: number;
   maxValue?: number;
+  condition?: string;
+  governorate?: string;
+  sortBy?: string;
 }): Promise<BarterItemsResponse> => {
   const queryParams = new URLSearchParams();
 
@@ -190,6 +193,9 @@ export const getBarterItems = async (params?: {
   if (params?.search) queryParams.append('search', params.search);
   if (params?.minValue) queryParams.append('minValue', params.minValue.toString());
   if (params?.maxValue) queryParams.append('maxValue', params.maxValue.toString());
+  if (params?.condition) queryParams.append('condition', params.condition);
+  if (params?.governorate) queryParams.append('governorate', params.governorate);
+  if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
 
   const response = await apiClient.get(`/barter/items?${queryParams.toString()}`);
   return response.data;

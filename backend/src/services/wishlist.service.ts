@@ -124,19 +124,15 @@ export const findWishListMatches = async (
         OR: [
           // Match by keywords in title
           ...wishItem.keywords.map(keyword => ({
-            titleEn: { contains: keyword, mode: 'insensitive' as const },
-          })),
-          ...wishItem.keywords.map(keyword => ({
-            titleAr: { contains: keyword, mode: 'insensitive' as const },
+            title: { contains: keyword, mode: 'insensitive' as const },
           })),
           // Match by keywords in description
           ...wishItem.keywords.map(keyword => ({
-            descriptionEn: { contains: keyword, mode: 'insensitive' as const },
+            description: { contains: keyword, mode: 'insensitive' as const },
           })),
         ],
       },
       include: {
-        images: { take: 1 },
         seller: {
           select: {
             id: true,
@@ -186,7 +182,7 @@ export const checkAndNotifyMatches = async (userId: string): Promise<number> => 
         where: {
           userId,
           type: 'ITEM_AVAILABLE',
-          referenceId: item.id,
+          entityId: item.id,
           createdAt: {
             gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Within last 7 days
           },
@@ -200,9 +196,9 @@ export const checkAndNotifyMatches = async (userId: string): Promise<number> => 
             userId,
             type: 'ITEM_AVAILABLE',
             title: 'Item Match Found!',
-            message: `"${item.titleEn || item.titleAr}" matches your wish list item "${match.wishListItem.description}"`,
-            referenceId: item.id,
-            referenceType: 'Item',
+            message: `"${item.title}" matches your wish list item "${match.wishListItem.description}"`,
+            entityId: item.id,
+            entityType: 'Item',
           },
         });
         notificationCount++;
