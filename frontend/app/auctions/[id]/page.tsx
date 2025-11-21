@@ -159,7 +159,8 @@ export default function AuctionDetailsPage() {
   const isEnded = new Date(auction.endTime) < new Date();
   const hasStarted = new Date(auction.startTime) < new Date();
   const isActive = hasStarted && !isEnded;
-  const isSeller = user?.id === auction.item.seller.id;
+  const item = auction.listing?.item || auction.item;
+  const isSeller = user?.id === item?.seller?.id;
   const minBid = auction.currentPrice + 10;
 
   return (
@@ -184,10 +185,10 @@ export default function AuctionDetailsPage() {
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               {/* Main Image */}
               <div className="relative h-96 bg-gray-200">
-                {auction.item.images && auction.item.images.length > 0 ? (
+                {item?.images && item?.images.length > 0 ? (
                   <img
-                    src={auction.item.images[selectedImage]?.url}
-                    alt={auction.item.title}
+                    src={item?.images[selectedImage]?.url}
+                    alt={item?.title}
                     className="w-full h-full object-contain"
                   />
                 ) : (
@@ -215,9 +216,9 @@ export default function AuctionDetailsPage() {
               </div>
 
               {/* Thumbnail Navigation */}
-              {auction.item.images && auction.item.images.length > 1 && (
+              {item?.images && item?.images.length > 1 && (
                 <div className="p-4 flex gap-2 overflow-x-auto">
-                  {auction.item.images.map((image, index) => (
+                  {item?.images.map((image, index) => (
                     <button
                       key={image.id}
                       onClick={() => setSelectedImage(index)}
@@ -229,7 +230,7 @@ export default function AuctionDetailsPage() {
                     >
                       <img
                         src={image.url}
-                        alt={`${auction.item.title} ${index + 1}`}
+                        alt={`${item?.title} ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
                     </button>
@@ -241,21 +242,21 @@ export default function AuctionDetailsPage() {
             {/* Item Details */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                {auction.item.title}
+                {item?.title}
               </h1>
 
               <div className="flex items-center gap-4 mb-6">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                  {auction.item.category.nameEn}
+                  {item?.category.nameEn}
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                  {auction.item.condition}
+                  {item?.condition}
                 </span>
               </div>
 
               <h2 className="text-lg font-semibold mb-2">Description</h2>
               <p className="text-gray-700 whitespace-pre-wrap mb-6">
-                {auction.item.description}
+                {item?.description}
               </p>
 
               <div className="border-t pt-6">
@@ -286,8 +287,8 @@ export default function AuctionDetailsPage() {
 
               <div className="border-t pt-6 mt-6">
                 <h2 className="text-lg font-semibold mb-2">Seller</h2>
-                <p className="text-gray-700">{auction.item.seller.fullName}</p>
-                <p className="text-sm text-gray-600 capitalize">{auction.item.seller.userType}</p>
+                <p className="text-gray-700">{item?.seller.fullName}</p>
+                <p className="text-sm text-gray-600 capitalize">{item?.seller.userType}</p>
               </div>
             </div>
 
