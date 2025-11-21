@@ -48,15 +48,7 @@ export default function BarterOpportunitiesPage() {
     setError('');
     setSuccessMessage('');
     try {
-      await createBarterChain({
-        participantIds: opportunity.participants.map(p => p.userId),
-        chainType: opportunity.type,
-        itemMappings: opportunity.participants.map(p => ({
-          userId: p.userId,
-          givingItemId: p.givingItem.id,
-          receivingItemId: p.receivingItem.id,
-        })),
-      });
+      await createBarterChain(opportunity);
       setSuccessMessage('Barter chain initiated! All participants will be notified.');
       await loadOpportunities();
     } catch (err: any) {
