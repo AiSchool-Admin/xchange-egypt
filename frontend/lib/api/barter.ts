@@ -84,8 +84,10 @@ export interface BarterChain {
 }
 
 export interface SmartOpportunity {
-  type: 'cycle' | 'chain';
+  id: string;
+  type: 'cycle' | 'chain' | 'CYCLE' | 'CHAIN';
   participants: Array<{
+    id?: string;
     userId: string;
     givingItemId: string;
     receivingItemId: string;
@@ -94,6 +96,7 @@ export interface SmartOpportunity {
     receivingItem?: BarterItem;
   }>;
   score: number;
+  matchScore?: number;
 }
 
 export interface CreateBarterOfferData {
