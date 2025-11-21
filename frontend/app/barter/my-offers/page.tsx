@@ -31,8 +31,14 @@ export default function MyBarterOffersPage() {
     try {
       setLoading(true);
       const response = await getMyBarterOffers();
-      setSentOffers(response.data.sent || []);
-      setReceivedOffers(response.data.received || []);
+
+      // Backend returns items array, split into sent/received based on initiatorId
+      const allOffers = response.data.offers || response.data.items || [];
+      const sent = allOffers.filter((offer: any) => offer.initiatorId === user?.id);
+      const received = allOffers.filter((offer: any) => offer.recipientId === user?.id);
+
+      setSentOffers(response.data.sent || sent);
+      setReceivedOffers(response.data.received || received);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load offers');
     } finally {
