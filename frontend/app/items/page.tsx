@@ -57,8 +57,10 @@ export default function ItemsPage() {
 
   const loadCategories = async () => {
     try {
-      const response = await getCategories();
-      setCategories(response.data);
+      const response = await getCategories({ includeChildren: true });
+      // Filter to only show parent categories (those without parentId)
+      const parentCategories = response.data.filter(cat => !cat.parentId);
+      setCategories(parentCategories);
     } catch (err: any) {
       console.error('Failed to load categories:', err);
     }
@@ -164,9 +166,16 @@ export default function ItemsPage() {
                 >
                   <option value="">{t('جميع الفئات', 'All Categories')}</option>
                   {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {language === 'ar' ? cat.nameAr : cat.nameEn}
-                    </option>
+                    <React.Fragment key={cat.id}>
+                      <option value={cat.id} className="font-semibold">
+                        {language === 'ar' ? cat.nameAr : cat.nameEn}
+                      </option>
+                      {cat.children && cat.children.map((child) => (
+                        <option key={child.id} value={child.id}>
+                          &nbsp;&nbsp;↳ {language === 'ar' ? child.nameAr : child.nameEn}
+                        </option>
+                      ))}
+                    </React.Fragment>
                   ))}
                 </select>
               </div>

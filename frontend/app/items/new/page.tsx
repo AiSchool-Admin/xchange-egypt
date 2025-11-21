@@ -6,10 +6,12 @@ import { createItem } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 export default function NewItemPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { language, t } = useLanguage();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,8 +37,10 @@ export default function NewItemPage() {
 
   const loadCategories = async () => {
     try {
-      const response = await getCategories();
-      setCategories(response.data);
+      const response = await getCategories({ includeChildren: true });
+      // Filter to only show parent categories (those without parentId)
+      const parentCategories = response.data.filter(cat => !cat.parentId);
+      setCategories(parentCategories);
     } catch (err) {
       console.error('Failed to load categories:', err);
     }
@@ -213,11 +217,18 @@ export default function NewItemPage() {
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="">Select a category</option>
+                  <option value="">{t('اختر فئة', 'Select a category')}</option>
                   {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.nameEn}
-                    </option>
+                    <React.Fragment key={cat.id}>
+                      <option value={cat.id}>
+                        {language === 'ar' ? cat.nameAr : cat.nameEn}
+                      </option>
+                      {cat.children && cat.children.map((child) => (
+                        <option key={child.id} value={child.id}>
+                          &nbsp;&nbsp;↳ {language === 'ar' ? child.nameAr : child.nameEn}
+                        </option>
+                      ))}
+                    </React.Fragment>
                   ))}
                 </select>
               </div>
