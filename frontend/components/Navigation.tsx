@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Don't show navigation on login/register pages
@@ -63,6 +65,14 @@ export default function Navigation() {
               </Link>
             ))}
           </div>
+
+          {/* Language Toggle */}
+          <button
+            onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+            className="hidden md:flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium transition"
+          >
+            {language === 'en' ? '🇪🇬 عربي' : '🇬🇧 English'}
+          </button>
 
           {/* Desktop User Menu */}
           <div className="hidden md:flex items-center gap-3">
@@ -165,6 +175,14 @@ export default function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-200">
             <div className="space-y-1">
+              {/* Mobile Language Toggle */}
+              <button
+                onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+                className="w-full text-left px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition flex items-center gap-2"
+              >
+                {language === 'en' ? '🇪🇬 عربي' : '🇬🇧 English'}
+              </button>
+
               {navLinks.map((link) => (
                 <Link
                   key={link.href}

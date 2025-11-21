@@ -4,8 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getItems, Item } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
+import { useLanguage } from '@/lib/contexts/LanguageContext';
 
 export default function ItemsPage() {
+  const { language, t } = useLanguage();
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,10 +162,10 @@ export default function ItemsPage() {
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="">All Categories</option>
+                  <option value="">{t('جميع الفئات', 'All Categories')}</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.nameEn}
+                      {language === 'ar' ? cat.nameAr : cat.nameEn}
                     </option>
                   ))}
                 </select>
@@ -287,7 +289,7 @@ export default function ItemsPage() {
                               <p className="text-sm text-gray-500">Contact for price</p>
                             )}
                           </div>
-                          <span className="text-xs text-gray-500">{item.category.nameEn}</span>
+                          <span className="text-xs text-gray-500">{language === 'ar' ? item.category.nameAr : item.category.nameEn}</span>
                         </div>
 
                         <div className="mt-3 pt-3 border-t flex items-center justify-between text-sm">
