@@ -30,15 +30,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const loadUser = async () => {
     try {
       const token = localStorage.getItem('accessToken');
+      console.log('[Auth] loadUser called, token exists:', !!token);
       if (!token) {
         setLoading(false);
         return;
       }
 
       const userData = await authApi.getCurrentUser();
+      console.log('[Auth] getCurrentUser success:', userData);
       setUser(userData);
     } catch (error) {
-      console.error('Failed to load user:', error);
+      console.error('[Auth] Failed to load user:', error);
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
     } finally {
@@ -48,19 +50,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (data: LoginData) => {
     try {
+      console.log('[Auth] Login attempt...');
       const response = await authApi.login(data);
+      console.log('[Auth] Login response:', response);
 
       // Store tokens
       localStorage.setItem('accessToken', response.accessToken);
       localStorage.setItem('refreshToken', response.refreshToken);
+      console.log('[Auth] Tokens stored');
 
       // Set user
       setUser(response.user);
+      console.log('[Auth] User set, redirecting to dashboard...');
 
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('[Auth] Login failed:', error);
       throw error;
     }
   };

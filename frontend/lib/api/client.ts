@@ -60,7 +60,8 @@ apiClient.interceptors.response.use(
           refreshToken,
         });
 
-        const { accessToken } = response.data;
+        // Backend returns { success, data: { accessToken } }
+        const { accessToken } = response.data.data || response.data;
 
         // Store new access token
         if (typeof window !== 'undefined') {
