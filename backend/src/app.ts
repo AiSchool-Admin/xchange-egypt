@@ -24,6 +24,7 @@ import reviewRoutes from './routes/review.routes';
 import searchRoutes from './routes/search.routes';
 import chatRoutes from './routes/chat.routes';
 import adminRoutes from './routes/admin.routes';
+import wishlistRoutes from './routes/wishlist.routes';
 
 // Initialize Express app
 const app: Application = express();
@@ -177,6 +178,7 @@ app.use('/api/v1/chat', chatRoutes);
 
 // Admin routes (for seeding, etc.)
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/wishlist', wishlistRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
