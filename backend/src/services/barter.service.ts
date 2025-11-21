@@ -886,9 +886,6 @@ export const findMultiPartyMatches = async (
 
     for (const prefSet of offer.preferenceSets) {
       for (const prefItem of prefSet.items) {
-        if (prefItem.categoryId) {
-          wantedCategories.push(prefItem.categoryId);
-        }
         if (prefItem.item?.categoryId) {
           wantedCategories.push(prefItem.item.categoryId);
         }
@@ -947,7 +944,6 @@ export const findMultiPartyMatches = async (
         status: 'ACTIVE',
       },
       include: {
-        images: { take: 1 },
         category: true,
       },
     });
@@ -962,10 +958,10 @@ export const findMultiPartyMatches = async (
       userName: 'You',
       offeredItems: userItems.map(item => ({
         id: item.id,
-        title: item.titleEn || item.titleAr,
+        title: item.title,
         value: item.estimatedValue,
         categoryId: item.categoryId,
-        images: item.images,
+        images: item.images.length > 0 ? [{ url: item.images[0] }] : [],
       })),
       wantedCategories: [], // Will match any category
       wantedMinValue: 0,
@@ -1136,7 +1132,6 @@ export const getSuggestedBarterPartners = async (
           categoryId: { in: categoryIds },
         },
         include: {
-          images: { take: 1 },
           category: {
             select: {
               id: true,
@@ -1320,7 +1315,7 @@ export const getAIPriceRecommendation = async (
     },
     similarItems: similarItems.slice(0, 5).map(item => ({
       id: item.id,
-      title: item.titleEn || item.titleAr,
+      title: item.title,
       value: item.estimatedValue,
       condition: item.condition,
     })),
