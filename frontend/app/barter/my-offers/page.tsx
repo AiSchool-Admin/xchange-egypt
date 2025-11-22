@@ -25,7 +25,7 @@ export default function MyBarterOffersPage() {
     try {
       setLoading(true);
       const response = await getMyBarterOffers();
-      setOffers(response.data.offers || []);
+      setOffers(response.data.items || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load offers');
     } finally {

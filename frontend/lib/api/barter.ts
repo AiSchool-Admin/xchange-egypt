@@ -78,7 +78,7 @@ export interface BarterItemsResponse {
 export interface BarterOffersResponse {
   success: boolean;
   data: {
-    offers: BarterOffer[];
+    items: BarterOffer[];
     pagination?: {
       page: number;
       limit: number;
