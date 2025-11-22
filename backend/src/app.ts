@@ -24,6 +24,13 @@ import reviewRoutes from './routes/review.routes';
 import searchRoutes from './routes/search.routes';
 import chatRoutes from './routes/chat.routes';
 import adminRoutes from './routes/admin.routes';
+import cartRoutes from './routes/cart.routes';
+import orderRoutes from './routes/order.routes';
+import paymentRoutes from './routes/payment.routes';
+import pushRoutes from './routes/push.routes';
+
+// Import background jobs
+import { startBarterMatcherJob } from './jobs/barterMatcher.job';
 
 // Initialize Express app
 const app: Application = express();
@@ -178,6 +185,18 @@ app.use('/api/v1/chat', chatRoutes);
 // Admin routes (for seeding, etc.)
 app.use('/api/v1/admin', adminRoutes);
 
+// Cart routes
+app.use('/api/v1/cart', cartRoutes);
+
+// Order routes
+app.use('/api/v1/orders', orderRoutes);
+
+// Payment routes
+app.use('/api/v1/payment', paymentRoutes);
+
+// Push notification routes
+app.use('/api/v1/push', pushRoutes);
+
 // 404 handler
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
@@ -232,6 +251,11 @@ const startServer = async () => {
     // Test database connection
     await prisma.$connect();
     console.log('✅ Database connected');
+
+    // Start background jobs in production
+    if (env.server.nodeEnv === 'production') {
+      startBarterMatcherJob();
+    }
 
     // Start Express server - listen on 0.0.0.0 for Railway compatibility
     app.listen(env.server.port, '0.0.0.0', () => {

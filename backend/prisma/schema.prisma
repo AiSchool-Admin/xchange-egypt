@@ -75,6 +75,10 @@ model User {
   refreshTokens             RefreshToken[]
   notifications             Notification[]            @relation("UserNotifications")
   notificationPreferences   NotificationPreference?   @relation("UserPreferences")
+  cart                      Cart?
+  shippingAddresses         ShippingAddress[]
+  orders                    Order[]
+  pushSubscriptions         PushSubscription[]
 
   @@map("users")
   @@index([email])
@@ -123,6 +127,7 @@ model Category {
   items            Item[]
   reverseAuctions  ReverseAuction[]
   wishListItems    WishListItem[]
+  itemRequests     ItemRequest[]
 
   @@map("categories")
   @@index([slug])
@@ -245,6 +250,8 @@ model Listing {
   auction     Auction?
   auctionBids  AuctionBid[]
   transactions Transaction[]
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
 
   @@map("listings")
   @@index([itemId])
@@ -252,6 +259,132 @@ model Listing {
   @@index([listingType])
   @@index([status])
   @@index([endDate])
+}
+
+// ============================================
+// Shopping Cart
+// ============================================
+
+model Cart {
+  id        String     @id @default(uuid())
+  userId    String     @unique @map("user_id")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String   @map("cart_id")
+  listingId String   @map("listing_id")
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id])
+
+  @@unique([cartId, listingId])
+  @@map("cart_items")
+}
+
+// ============================================
+// Shipping & Orders
+// ============================================
+
+model ShippingAddress {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  fullName     String   @map("full_name")
+  phone        String
+  address      String
+  city         String
+  governorate  String
+  postalCode   String?  @map("postal_code")
+  isDefault    Boolean  @default(false) @map("is_default")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       Order[]
+
+  @@map("shipping_addresses")
+  @@index([userId])
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+model Order {
+  id                String        @id @default(uuid())
+  userId            String        @map("user_id")
+  orderNumber       String        @unique @map("order_number")
+  status            OrderStatus   @default(PENDING)
+  subtotal          Float
+  shippingCost      Float         @map("shipping_cost")
+  total             Float
+  shippingAddressId String        @map("shipping_address_id")
+  paymentMethod     String        @map("payment_method")
+  paymentId         String?       @map("payment_id")
+  notes             String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  paidAt            DateTime?     @map("paid_at")
+  shippedAt         DateTime?     @map("shipped_at")
+  deliveredAt       DateTime?     @map("delivered_at")
+
+  user              User          @relation(fields: [userId], references: [id])
+  shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id])
+  items             OrderItem[]
+
+  @@map("orders")
+  @@index([userId])
+  @@index([status])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String   @map("order_id")
+  listingId   String   @map("listing_id")
+  sellerId    String   @map("seller_id")
+  quantity    Int
+  price       Float
+
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  listing     Listing  @relation(fields: [listingId], references: [id])
+
+  @@map("order_items")
+  @@index([orderId])
+  @@index([sellerId])
+}
+
+// ============================================
+// Push Subscriptions
+// ============================================
+
+model PushSubscription {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  endpoint     String   @unique
+  p256dh       String
+  auth         String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("push_subscriptions")
+  @@index([userId])
 }
 
 // ============================================
@@ -287,6 +420,10 @@ model BarterOffer {
   // Matched preference (when offer is accepted)
   matchedPreferenceSetId String?       @map("matched_preference_set_id")
 
+  // Cash support
+  offeredCashAmount   Float              @default(0) @map("offered_cash_amount")
+  requestedCashAmount Float              @default(0) @map("requested_cash_amount")
+
   // Additional info
   notes             String?
   expiresAt         DateTime?          @map("expires_at")
@@ -303,6 +440,7 @@ model BarterOffer {
   // Relations
   initiator         User               @relation("BarterInitiator", fields: [initiatorId], references: [id])
   recipient         User?              @relation("BarterRecipient", fields: [recipientId], references: [id])
+  itemRequests      ItemRequest[]
 
   @@map("barter_offers")
   @@index([initiatorId])
@@ -310,6 +448,27 @@ model BarterOffer {
   @@index([status])
   @@index([expiresAt])
   @@index([isOpenOffer])
+}
+
+// Abstract item request for barter (when user doesn't want specific items)
+model ItemRequest {
+  id              String         @id @default(uuid())
+  barterOfferId   String         @map("barter_offer_id")
+  description     String
+  categoryId      String?        @map("category_id")
+  subcategoryId   String?        @map("subcategory_id")
+  minPrice        Float?         @map("min_price")
+  maxPrice        Float?         @map("max_price")
+  condition       ItemCondition?
+  keywords        String[]
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  barterOffer     BarterOffer    @relation(fields: [barterOfferId], references: [id], onDelete: Cascade)
+  category        Category?      @relation(fields: [categoryId], references: [id])
+
+  @@map("item_requests")
+  @@index([barterOfferId])
+  @@index([categoryId])
 }
 
 // Preference set - represents one alternative bundle the user wants
