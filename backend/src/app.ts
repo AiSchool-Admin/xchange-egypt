@@ -27,6 +27,7 @@ import adminRoutes from './routes/admin.routes';
 import cartRoutes from './routes/cart.routes';
 import orderRoutes from './routes/order.routes';
 import paymentRoutes from './routes/payment.routes';
+import pushRoutes from './routes/push.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -192,6 +193,9 @@ app.use('/api/v1/orders', orderRoutes);
 
 // Payment routes
 app.use('/api/v1/payment', paymentRoutes);
+
+// Push notification routes
+app.use('/api/v1/push', pushRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
