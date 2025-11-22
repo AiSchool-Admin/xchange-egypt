@@ -1,0 +1,155 @@
+import { Request, Response, NextFunction } from 'express';
+import * as orderService from '../services/order.service';
+import { successResponse } from '../utils/response';
+import { OrderStatus } from '@prisma/client';
+
+/**
+ * Get user's orders
+ * GET /api/v1/orders
+ */
+export const getMyOrders = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { page, limit, status } = req.query;
+
+    const result = await orderService.getMyOrders(
+      userId,
+      page ? parseInt(page as string) : 1,
+      limit ? parseInt(limit as string) : 20,
+      status as OrderStatus | undefined
+    );
+
+    return successResponse(res, result, 'Orders retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get order by ID
+ * GET /api/v1/orders/:orderId
+ */
+export const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { orderId } = req.params;
+
+    const order = await orderService.getOrderById(userId, orderId);
+    return successResponse(res, order, 'Order retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Create order from cart
+ * POST /api/v1/orders
+ */
+export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { shippingAddressId, paymentMethod, notes } = req.body;
+
+    const order = await orderService.createOrder(userId, {
+      shippingAddressId,
+      paymentMethod,
+      notes,
+    });
+
+    return successResponse(res, order, 'Order created successfully', 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Cancel order
+ * POST /api/v1/orders/:orderId/cancel
+ */
+export const cancelOrder = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { orderId } = req.params;
+
+    const order = await orderService.cancelOrder(userId, orderId);
+    return successResponse(res, order, 'Order cancelled successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get shipping addresses
+ * GET /api/v1/orders/addresses
+ */
+export const getShippingAddresses = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const addresses = await orderService.getShippingAddresses(userId);
+    return successResponse(res, addresses, 'Addresses retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Create shipping address
+ * POST /api/v1/orders/addresses
+ */
+export const createShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const addressData = req.body;
+
+    const address = await orderService.createShippingAddress(userId, addressData);
+    return successResponse(res, address, 'Address created successfully', 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update shipping address
+ * PUT /api/v1/orders/addresses/:addressId
+ */
+export const updateShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { addressId } = req.params;
+    const addressData = req.body;
+
+    const address = await orderService.updateShippingAddress(userId, addressId, addressData);
+    return successResponse(res, address, 'Address updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete shipping address
+ * DELETE /api/v1/orders/addresses/:addressId
+ */
+export const deleteShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { addressId } = req.params;
+
+    await orderService.deleteShippingAddress(userId, addressId);
+    return successResponse(res, null, 'Address deleted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get Egyptian governorates with shipping costs
+ * GET /api/v1/orders/governorates
+ */
+export const getGovernorates = async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const governorates = orderService.getGovernorates();
+    return successResponse(res, governorates, 'Governorates retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};

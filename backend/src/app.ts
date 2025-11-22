@@ -24,6 +24,9 @@ import reviewRoutes from './routes/review.routes';
 import searchRoutes from './routes/search.routes';
 import chatRoutes from './routes/chat.routes';
 import adminRoutes from './routes/admin.routes';
+import cartRoutes from './routes/cart.routes';
+import orderRoutes from './routes/order.routes';
+import paymentRoutes from './routes/payment.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -180,6 +183,15 @@ app.use('/api/v1/chat', chatRoutes);
 
 // Admin routes (for seeding, etc.)
 app.use('/api/v1/admin', adminRoutes);
+
+// Cart routes
+app.use('/api/v1/cart', cartRoutes);
+
+// Order routes
+app.use('/api/v1/orders', orderRoutes);
+
+// Payment routes
+app.use('/api/v1/payment', paymentRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
