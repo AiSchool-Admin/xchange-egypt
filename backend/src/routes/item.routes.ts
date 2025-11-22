@@ -48,16 +48,6 @@ router.get(
   itemController.getCategoryItems
 );
 
-/**
- * Get item by ID
- * GET /api/v1/items/:id
- */
-router.get(
-  '/:id',
-  validate(getItemByIdSchema),
-  itemController.getItemById
-);
-
 // Protected routes (require authentication)
 
 /**
@@ -68,6 +58,16 @@ router.get(
   '/my',
   authenticate,
   itemController.getMyItems
+);
+
+/**
+ * Get item by ID
+ * GET /api/v1/items/:id
+ */
+router.get(
+  '/:id',
+  validate(getItemByIdSchema),
+  itemController.getItemById
 );
 
 /**
