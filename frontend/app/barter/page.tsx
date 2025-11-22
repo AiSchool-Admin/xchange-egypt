@@ -279,7 +279,7 @@ export default function BarterPage() {
 
                             <div className="pt-2 border-t">
                               <p className="text-xs text-gray-600">
-                                By {item.seller.fullName}
+                                By {item.seller?.fullName || 'Unknown'}
                               </p>
                             </div>
                           </div>
