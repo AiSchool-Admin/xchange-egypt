@@ -28,6 +28,10 @@ export default function ItemDetailsPage() {
     notes: '',
   });
 
+  // Add to Cart State
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartMessage, setCartMessage] = useState('');
+
   useEffect(() => {
     if (params.id) {
       loadItem(params.id as string);
@@ -79,6 +83,45 @@ export default function ItemDetailsPage() {
       setBuyError(err.response?.data?.message || 'Failed to complete purchase. Please try again.');
     } finally {
       setBuyLoading(false);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (!item) return;
+
+    setAddingToCart(true);
+    setCartMessage('');
+
+    try {
+      const token = localStorage.getItem('token');
+      // First check if item has a listing, if not create one or use item ID
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          listingId: item.id, // Using item ID as listing ID for now
+          quantity: 1,
+        }),
+      });
+
+      if (response.ok) {
+        setCartMessage('Added to cart!');
+        setTimeout(() => setCartMessage(''), 3000);
+      } else {
+        const data = await response.json();
+        setCartMessage(data.message || 'Failed to add to cart');
+      }
+    } catch (err) {
+      setCartMessage('Failed to add to cart');
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -240,8 +283,20 @@ export default function ItemDetailsPage() {
                     onClick={handleBuyNow}
                     className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold transition"
                   >
-                    🛒 Buy Now
+                    💳 Buy Now
                   </button>
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={addingToCart}
+                    className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 font-semibold transition disabled:opacity-50"
+                  >
+                    {addingToCart ? 'Adding...' : '🛒 Add to Cart'}
+                  </button>
+                  {cartMessage && (
+                    <p className={`text-center text-sm ${cartMessage.includes('Added') ? 'text-green-600' : 'text-red-600'}`}>
+                      {cartMessage}
+                    </p>
+                  )}
                   <button className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition">
                     💬 Contact Seller
                   </button>
