@@ -97,6 +97,16 @@ router.get(
 );
 
 /**
+ * Get smart matches for an offer's item requests
+ * GET /api/v1/barter/offers/:offerId/smart-matches
+ */
+router.get(
+  '/offers/:offerId/smart-matches',
+  authenticate,
+  barterController.getSmartMatches
+);
+
+/**
  * Accept a barter offer (with preference set selection)
  * POST /api/v1/barter/offers/:offerId/accept
  */

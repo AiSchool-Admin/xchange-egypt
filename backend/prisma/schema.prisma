@@ -123,6 +123,7 @@ model Category {
   items            Item[]
   reverseAuctions  ReverseAuction[]
   wishListItems    WishListItem[]
+  itemRequests     ItemRequest[]
 
   @@map("categories")
   @@index([slug])
@@ -287,6 +288,10 @@ model BarterOffer {
   // Matched preference (when offer is accepted)
   matchedPreferenceSetId String?       @map("matched_preference_set_id")
 
+  // Cash support
+  offeredCashAmount   Float              @default(0) @map("offered_cash_amount")
+  requestedCashAmount Float              @default(0) @map("requested_cash_amount")
+
   // Additional info
   notes             String?
   expiresAt         DateTime?          @map("expires_at")
@@ -303,6 +308,7 @@ model BarterOffer {
   // Relations
   initiator         User               @relation("BarterInitiator", fields: [initiatorId], references: [id])
   recipient         User?              @relation("BarterRecipient", fields: [recipientId], references: [id])
+  itemRequests      ItemRequest[]
 
   @@map("barter_offers")
   @@index([initiatorId])
@@ -310,6 +316,27 @@ model BarterOffer {
   @@index([status])
   @@index([expiresAt])
   @@index([isOpenOffer])
+}
+
+// Abstract item request for barter (when user doesn't want specific items)
+model ItemRequest {
+  id              String         @id @default(uuid())
+  barterOfferId   String         @map("barter_offer_id")
+  description     String
+  categoryId      String?        @map("category_id")
+  subcategoryId   String?        @map("subcategory_id")
+  minPrice        Float?         @map("min_price")
+  maxPrice        Float?         @map("max_price")
+  condition       ItemCondition?
+  keywords        String[]
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  barterOffer     BarterOffer    @relation(fields: [barterOfferId], references: [id], onDelete: Cascade)
+  category        Category?      @relation(fields: [categoryId], references: [id])
+
+  @@map("item_requests")
+  @@index([barterOfferId])
+  @@index([categoryId])
 }
 
 // Preference set - represents one alternative bundle the user wants

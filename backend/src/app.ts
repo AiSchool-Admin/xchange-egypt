@@ -25,6 +25,9 @@ import searchRoutes from './routes/search.routes';
 import chatRoutes from './routes/chat.routes';
 import adminRoutes from './routes/admin.routes';
 
+// Import background jobs
+import { startBarterMatcherJob } from './jobs/barterMatcher.job';
+
 // Initialize Express app
 const app: Application = express();
 
@@ -232,6 +235,11 @@ const startServer = async () => {
     // Test database connection
     await prisma.$connect();
     console.log('✅ Database connected');
+
+    // Start background jobs in production
+    if (env.server.nodeEnv === 'production') {
+      startBarterMatcherJob();
+    }
 
     // Start Express server - listen on 0.0.0.0 for Railway compatibility
     app.listen(env.server.port, '0.0.0.0', () => {

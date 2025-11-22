@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as barterService from '../services/barter.service';
 import * as bundleService from '../services/barter-bundle.service';
+import * as smartMatchService from '../services/smartMatch.service';
 import { successResponse } from '../utils/response';
 
 /**
@@ -288,6 +289,27 @@ export const getBestMatch = async (
     } else {
       return successResponse(res, bestMatch, 'Best match found successfully');
     }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get smart matches for an offer's item requests
+ * GET /api/v1/barter/offers/:offerId/smart-matches
+ */
+export const getSmartMatches = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { offerId } = req.params;
+    const userId = req.user!.id;
+
+    const matches = await smartMatchService.getSmartMatches(offerId, userId);
+
+    return successResponse(res, matches, 'Smart matches found successfully');
   } catch (error) {
     next(error);
   }

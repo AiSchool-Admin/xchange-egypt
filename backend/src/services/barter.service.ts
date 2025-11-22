@@ -6,9 +6,36 @@ const prisma = new PrismaClient();
 // Types
 interface CreateBarterOfferData {
   offeredItemIds: string[];
+  offeredCashAmount?: number;
+  requestedCashAmount?: number;
+  itemRequests?: {
+    description: string;
+    categoryId?: string;
+    subcategoryId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    condition?: string;
+    keywords?: string[];
+  }[];
+  preferenceSets?: {
+    priority: number;
+    itemIds: string[];
+    description?: string;
+  }[];
   recipientId?: string;
   notes?: string;
   expiresAt?: Date;
+  isOpenOffer?: boolean;
+}
+
+// Helper to extract keywords from description
+function extractKeywords(description: string): string[] {
+  const stopWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'i', 'want', 'need', 'looking', 'any', 'some'];
+  return description
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(word => word.length > 2 && !stopWords.includes(word))
+    .slice(0, 10);
 }
 
 interface CreateCounterOfferData {
@@ -45,53 +72,113 @@ export const createBarterOffer = async (
   initiatorId: string,
   offerData: CreateBarterOfferData
 ): Promise<any> => {
-  const { offeredItemIds, recipientId, notes, expiresAt } = offerData;
+  const {
+    offeredItemIds,
+    offeredCashAmount = 0,
+    requestedCashAmount = 0,
+    itemRequests,
+    preferenceSets,
+    recipientId,
+    notes,
+    expiresAt,
+    isOpenOffer
+  } = offerData;
 
-  if (!offeredItemIds || offeredItemIds.length === 0) {
-    throw new BadRequestError('Must offer at least one item');
+  if ((!offeredItemIds || offeredItemIds.length === 0) && offeredCashAmount <= 0) {
+    throw new BadRequestError('Must offer at least one item or cash');
   }
 
-  // Verify offered items exist and belong to initiator
-  const offeredItems = await prisma.item.findMany({
-    where: { id: { in: offeredItemIds } },
-    include: {
-      listings: {
-        where: { status: 'ACTIVE' },
+  let offeredBundleValue = offeredCashAmount;
+
+  if (offeredItemIds && offeredItemIds.length > 0) {
+    // Verify offered items exist and belong to initiator
+    const offeredItems = await prisma.item.findMany({
+      where: { id: { in: offeredItemIds } },
+      include: {
+        listings: {
+          where: { status: 'ACTIVE' },
+        },
       },
-    },
-  });
+    });
 
-  if (offeredItems.length !== offeredItemIds.length) {
-    throw new NotFoundError('One or more offered items not found');
+    if (offeredItems.length !== offeredItemIds.length) {
+      throw new NotFoundError('One or more offered items not found');
+    }
+
+    const notOwned = offeredItems.filter((item) => item.sellerId !== initiatorId);
+    if (notOwned.length > 0) {
+      throw new ForbiddenError('You can only offer your own items');
+    }
+
+    // Check if offered items have active listings
+    const hasActiveListings = offeredItems.some((item) => item.listings.length > 0);
+    if (hasActiveListings) {
+      throw new BadRequestError(
+        'Cannot barter items that have active sale listings. Please close the listing first.'
+      );
+    }
+
+    // Calculate offered bundle value including items
+    offeredBundleValue += offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0);
   }
 
-  const notOwned = offeredItems.filter((item) => item.sellerId !== initiatorId);
-  if (notOwned.length > 0) {
-    throw new ForbiddenError('You can only offer your own items');
+  // Build preference sets data if provided
+  let preferenceSetsData;
+  if (preferenceSets && preferenceSets.length > 0) {
+    preferenceSetsData = {
+      create: await Promise.all(preferenceSets.map(async (ps) => {
+        const items = await prisma.item.findMany({
+          where: { id: { in: ps.itemIds } },
+        });
+        const totalValue = items.reduce((sum, item) => sum + item.estimatedValue, 0);
+        return {
+          priority: ps.priority,
+          totalValue,
+          valueDifference: totalValue - offeredBundleValue,
+          isBalanced: Math.abs(totalValue - offeredBundleValue) / offeredBundleValue < 0.2,
+          description: ps.description,
+          items: {
+            create: ps.itemIds.map(itemId => ({
+              itemId,
+              itemValue: items.find(i => i.id === itemId)?.estimatedValue || 0,
+            })),
+          },
+        };
+      })),
+    };
   }
 
-  // Check if offered items have active listings
-  const hasActiveListings = offeredItems.some((item) => item.listings.length > 0);
-  if (hasActiveListings) {
-    throw new BadRequestError(
-      'Cannot barter items that have active sale listings. Please close the listing first.'
-    );
+  // Build item requests data if provided
+  let itemRequestsData;
+  if (itemRequests && itemRequests.length > 0) {
+    itemRequestsData = {
+      create: itemRequests.map(req => ({
+        description: req.description,
+        categoryId: req.categoryId,
+        subcategoryId: req.subcategoryId,
+        minPrice: req.minPrice,
+        maxPrice: req.maxPrice,
+        condition: req.condition as ItemCondition | undefined,
+        keywords: req.keywords || extractKeywords(req.description),
+      })),
+    };
   }
 
-  // Calculate offered bundle value
-  const offeredBundleValue = offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0);
-
-  // Create the barter offer (open offer without preference sets)
+  // Create the barter offer
   const barterOffer = await prisma.barterOffer.create({
     data: {
       initiatorId,
       recipientId,
-      offeredItemIds,
+      offeredItemIds: offeredItemIds || [],
       offeredBundleValue,
+      offeredCashAmount,
+      requestedCashAmount,
       status: BarterOfferStatus.PENDING,
       notes,
       expiresAt: expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default 7 days
-      isOpenOffer: !recipientId,
+      isOpenOffer: isOpenOffer ?? !recipientId,
+      preferenceSets: preferenceSetsData,
+      itemRequests: itemRequestsData,
     },
     include: {
       initiator: {
@@ -113,6 +200,17 @@ export const createBarterOffer = async (
           items: {
             include: {
               item: true,
+            },
+          },
+        },
+      },
+      itemRequests: {
+        include: {
+          category: {
+            select: {
+              id: true,
+              nameAr: true,
+              nameEn: true,
             },
           },
         },
@@ -168,6 +266,17 @@ export const getBarterOfferById = async (
           },
         },
       },
+      itemRequests: {
+        include: {
+          category: {
+            select: {
+              id: true,
+              nameAr: true,
+              nameEn: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -181,6 +290,47 @@ export const getBarterOfferById = async (
   }
 
   return offer;
+};
+
+/**
+ * Calculate total value of offer including cash
+ */
+export const calculateOfferValue = async (offerId: string) => {
+  const offer = await prisma.barterOffer.findUnique({
+    where: { id: offerId },
+    include: {
+      itemRequests: true,
+      preferenceSets: { include: { items: { include: { item: true } } } },
+    },
+  });
+
+  if (!offer) return { offered: 0, requested: 0 };
+
+  // Offered value
+  const offeredItems = await prisma.item.findMany({
+    where: { id: { in: offer.offeredItemIds } },
+  });
+  const offeredValue = offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0)
+    + offer.offeredCashAmount;
+
+  // Requested value
+  let requestedValue = offer.requestedCashAmount;
+
+  // From preference sets
+  if (offer.preferenceSets.length > 0) {
+    requestedValue += offer.preferenceSets[0].totalValue;
+  }
+
+  // From item requests (use average of price range)
+  for (const req of offer.itemRequests) {
+    if (req.minPrice && req.maxPrice) {
+      requestedValue += (req.minPrice + req.maxPrice) / 2;
+    } else if (req.maxPrice) {
+      requestedValue += req.maxPrice;
+    }
+  }
+
+  return { offered: offeredValue, requested: requestedValue };
 };
 
 /**
@@ -488,6 +638,17 @@ export const getMyBarterOffers = async (
                   condition: true,
                 },
               },
+            },
+          },
+        },
+      },
+      itemRequests: {
+        include: {
+          category: {
+            select: {
+              id: true,
+              nameAr: true,
+              nameEn: true,
             },
           },
         },
