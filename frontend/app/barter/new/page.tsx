@@ -67,7 +67,7 @@ export default function CreateBarterOfferPage() {
       const response = await getBarterItems({ limit: 50 });
       // Filter out my own items
       const filtered = response.data.items.filter(
-        (item) => item.seller.id !== user?.id
+        (item) => item.seller?.id !== user?.id
       );
       setAvailableItems(filtered);
     } catch (err: any) {
