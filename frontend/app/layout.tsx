@@ -3,7 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { SocketProvider } from '@/lib/contexts/SocketContext';
 import Navigation from '@/components/Navigation';
-import { PWAProvider } from '@/components/pwa/PWAProvider';
+import PWAProvider from '@/components/pwa/PWAProvider';
 
 export const metadata: Metadata = {
   title: 'Xchange - E-commerce Platform',
