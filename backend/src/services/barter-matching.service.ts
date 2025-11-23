@@ -344,7 +344,7 @@ const calculatePairMatchScore = (itemA: any, itemB: any): number => {
  * A cycle is: A→B→C→A (everyone gets what they want in a loop)
  */
 export const findBarterCycles = async (
-  maxCycleLength: number = 5,
+  maxCycleLength: number = 10,
   minCycleLength: number = 3,
   minScore: number = 0.5
 ): Promise<BarterCycle[]> => {
@@ -499,7 +499,7 @@ const findCyclesFromNode = (
  * Useful when there's no cycle but a sequence of barters can satisfy everyone
  */
 export const findBarterChains = async (
-  maxChainLength: number = 5,
+  maxChainLength: number = 10,
   minChainLength: number = 3,
   minScore: number = 0.5
 ): Promise<BarterChain[]> => {

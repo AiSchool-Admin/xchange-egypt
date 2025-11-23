@@ -8,6 +8,7 @@
 import { PrismaClient, BarterChainStatus, ParticipantStatus } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import * as matchingService from './barter-matching.service';
+import * as notificationService from './notification.service';
 
 const prisma = new PrismaClient();
 
@@ -138,7 +139,19 @@ export const createSmartProposal = async (
   // Create proposal
   const proposal = await matchingService.createBarterChainProposal(bestMatch);
 
-  // TODO: Send notifications to all participants
+  // Send notifications to all participants
+  const participantUserIds = proposal.participants.map((p: any) => p.userId);
+
+  await notificationService.createBulkNotifications(participantUserIds, {
+    type: 'BARTER_CHAIN_PROPOSAL',
+    title: 'New Multi-Party Trade Proposal',
+    message: `You've been included in a ${proposal.participants.length}-party trade proposal. Review and respond!`,
+    priority: 'HIGH',
+    entityType: 'BarterChain',
+    entityId: proposal.id,
+    actionUrl: `/barter/chains`,
+    actionText: 'View Proposal',
+  });
 
   return proposal;
 };
