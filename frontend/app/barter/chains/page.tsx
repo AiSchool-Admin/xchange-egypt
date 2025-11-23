@@ -62,14 +62,22 @@ export default function ChainsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [itemsResponse, proposalsResponse] = await Promise.all([
-        getMyItems(),
-        getChainProposals(),
-      ]);
+
+      // Load items first
+      const itemsResponse = await getMyItems();
       setMyItems(itemsResponse.data.items.filter((item: any) => item.status === 'ACTIVE'));
-      setProposals(proposalsResponse.data || []);
+
+      // Try to load proposals (may not exist yet)
+      try {
+        const proposalsResponse = await getChainProposals();
+        setProposals(proposalsResponse.data || []);
+      } catch (proposalErr) {
+        // Proposals endpoint may not exist, that's ok
+        console.log('Chain proposals not available yet');
+        setProposals([]);
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load data');
+      setError(err.response?.data?.message || 'Failed to load items');
     } finally {
       setLoading(false);
     }

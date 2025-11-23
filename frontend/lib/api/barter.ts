@@ -230,3 +230,20 @@ export const rejectChainProposal = async (proposalId: string): Promise<any> => {
   const response = await apiClient.post(`/barter/chains/proposals/${proposalId}/reject`);
   return response.data;
 };
+
+// Get barter offers with filters
+export const getBarterOffers = async (params?: {
+  status?: string;
+  isOpen?: boolean;
+  page?: number;
+  limit?: number;
+}): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.isOpen !== undefined) queryParams.append('isOpen', params.isOpen.toString());
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+  const response = await apiClient.get(`/barter/offers?${queryParams.toString()}`);
+  return response.data;
+};
