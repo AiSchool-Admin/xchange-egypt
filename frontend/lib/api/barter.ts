@@ -123,12 +123,6 @@ export const getBarterItems = async (params?: {
   return response.data;
 };
 
-// Get my barter offers
-export const getMyBarterOffers = async (): Promise<BarterOffersResponse> => {
-  const response = await apiClient.get('/barter/offers/my');
-  return response.data;
-};
-
 // Get barter offer by ID
 export const getBarterOffer = async (id: string): Promise<BarterOfferResponse> => {
   const response = await apiClient.get(`/barter/offers/${id}`);
