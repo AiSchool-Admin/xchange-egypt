@@ -77,15 +77,6 @@ export const buildBarterGraph = async (): Promise<{
       status: 'PENDING',
     },
     include: {
-      offeredItems: {
-        include: {
-          item: {
-            include: {
-              category: true,
-            },
-          },
-        },
-      },
       preferenceSets: {
         include: {
           items: {
@@ -103,20 +94,37 @@ export const buildBarterGraph = async (): Promise<{
     },
   });
 
+  // Get all offered items
+  const allOfferedItemIds = offers.flatMap(o => o.offeredItemIds);
+  const offeredItems = await prisma.item.findMany({
+    where: {
+      id: { in: allOfferedItemIds },
+    },
+    include: {
+      category: true,
+    },
+  });
+
+  // Create a map for quick lookup
+  const itemMap = new Map(offeredItems.map(item => [item.id, item]));
+
   const nodes = new Map<string, BarterNode>();
   const edges: BarterEdge[] = [];
 
   // Process each offer to create graph edges
   for (const offer of offers) {
     // Get what the user is offering
-    for (const offeredItem of offer.offeredItems) {
-      const nodeKey = `${offer.initiatorId}-${offeredItem.itemId}`;
+    for (const offeredItemId of offer.offeredItemIds) {
+      const offeredItem = itemMap.get(offeredItemId);
+      if (!offeredItem) continue;
+
+      const nodeKey = `${offer.initiatorId}-${offeredItemId}`;
       nodes.set(nodeKey, {
         userId: offer.initiatorId,
-        itemId: offeredItem.itemId,
+        itemId: offeredItemId,
         wantsItemId: '', // Will be filled when finding matches
-        itemValue: offeredItem.item.estimatedValue,
-        categoryId: offeredItem.item.categoryId,
+        itemValue: offeredItem.estimatedValue,
+        categoryId: offeredItem.categoryId,
       });
 
       // Create edges to what they want
@@ -126,8 +134,8 @@ export const buildBarterGraph = async (): Promise<{
           if (wantedItem.item.sellerId === offer.initiatorId) continue;
 
           // Calculate match score based on value similarity
-          const valueDiff = Math.abs(offeredItem.item.estimatedValue - wantedItem.item.estimatedValue);
-          const avgValue = (offeredItem.item.estimatedValue + wantedItem.item.estimatedValue) / 2;
+          const valueDiff = Math.abs(offeredItem.estimatedValue - wantedItem.item.estimatedValue);
+          const avgValue = (offeredItem.estimatedValue + wantedItem.item.estimatedValue) / 2;
           const valueScore = avgValue > 0 ? Math.max(0, 1 - valueDiff / avgValue) : 0.5;
 
           // Higher base score since this is an actual preference (not guessed)
@@ -136,7 +144,7 @@ export const buildBarterGraph = async (): Promise<{
           edges.push({
             from: offer.initiatorId,
             to: wantedItem.item.sellerId,
-            givingItemId: offeredItem.itemId,
+            givingItemId: offeredItemId,
             receivingItemId: wantedItem.itemId,
             matchScore,
           });
