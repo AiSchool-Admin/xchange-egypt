@@ -143,7 +143,7 @@ export const createSmartProposal = async (
   const participantUserIds = proposal.participants.map((p: any) => p.userId);
 
   await notificationService.createBulkNotifications(participantUserIds, {
-    type: 'BARTER_CHAIN_PROPOSAL',
+    type: 'BARTER_OFFER_RECEIVED',
     title: 'New Multi-Party Trade Proposal',
     message: `You've been included in a ${proposal.participants.length}-party trade proposal. Review and respond!`,
     priority: 'HIGH',
