@@ -66,12 +66,13 @@ interface UserPreferences {
  * Build a directed graph of all possible barter connections
  * Each edge represents: User A wants to give Item X to get Item Y from User B
  * Uses actual barter offers to determine what users want
+ * Supports both specific item selections AND description-based requests
  */
 export const buildBarterGraph = async (): Promise<{
   nodes: Map<string, BarterNode>;
   edges: BarterEdge[];
 }> => {
-  // Get all pending barter offers with their preferences
+  // Get all pending barter offers with their preferences AND item requests
   const offers = await prisma.barterOffer.findMany({
     where: {
       status: 'PENDING',
@@ -91,6 +92,11 @@ export const buildBarterGraph = async (): Promise<{
           },
         },
       },
+      itemRequests: {
+        include: {
+          category: true,
+        },
+      },
     },
   });
 
@@ -101,6 +107,17 @@ export const buildBarterGraph = async (): Promise<{
       id: { in: allOfferedItemIds },
     },
     include: {
+      category: true,
+    },
+  });
+
+  // Get ALL available items for description matching
+  const allAvailableItems = await prisma.item.findMany({
+    where: {
+      status: 'ACTIVE',
+    },
+    include: {
+      seller: true,
       category: true,
     },
   });
@@ -127,10 +144,10 @@ export const buildBarterGraph = async (): Promise<{
         categoryId: offeredItem.categoryId,
       });
 
-      // Create edges to what they want
+      // Create edges from specific item preferences
       for (const prefSet of offer.preferenceSets) {
         for (const wantedItem of prefSet.items) {
-          // Skip if same owner (shouldn't happen but safety check)
+          // Skip if same owner
           if (wantedItem.item.sellerId === offer.initiatorId) continue;
 
           // Calculate match score based on value similarity
@@ -162,10 +179,103 @@ export const buildBarterGraph = async (): Promise<{
           }
         }
       }
+
+      // Create edges from description-based requests (itemRequests)
+      for (const itemRequest of offer.itemRequests || []) {
+        // Find items matching the description
+        const matchingItems = findItemsMatchingDescription(
+          itemRequest,
+          allAvailableItems,
+          offer.initiatorId
+        );
+
+        for (const matchedItem of matchingItems) {
+          // Calculate match score based on description match quality and value
+          const valueDiff = Math.abs(offeredItem.estimatedValue - matchedItem.item.estimatedValue);
+          const avgValue = (offeredItem.estimatedValue + matchedItem.item.estimatedValue) / 2;
+          const valueScore = avgValue > 0 ? Math.max(0, 1 - valueDiff / avgValue) : 0.5;
+
+          // Lower base score for description matches (less certain than specific items)
+          const matchScore = 0.3 + (matchedItem.confidence * 0.4) + (valueScore * 0.3);
+
+          edges.push({
+            from: offer.initiatorId,
+            to: matchedItem.item.sellerId,
+            givingItemId: offeredItemId,
+            receivingItemId: matchedItem.item.id,
+            matchScore,
+          });
+
+          // Create node for matched item owner
+          const matchedNodeKey = `${matchedItem.item.sellerId}-${matchedItem.item.id}`;
+          if (!nodes.has(matchedNodeKey)) {
+            nodes.set(matchedNodeKey, {
+              userId: matchedItem.item.sellerId,
+              itemId: matchedItem.item.id,
+              wantsItemId: '',
+              itemValue: matchedItem.item.estimatedValue,
+              categoryId: matchedItem.item.categoryId,
+            });
+          }
+        }
+      }
     }
   }
 
   return { nodes, edges };
+};
+
+/**
+ * Find items matching a description-based request
+ * Uses category matching and keyword similarity
+ */
+const findItemsMatchingDescription = (
+  request: { description: string; categoryId?: string | null; minPrice?: number | null; maxPrice?: number | null },
+  allItems: any[],
+  excludeUserId: string
+): { item: any; confidence: number }[] => {
+  const matches: { item: any; confidence: number }[] = [];
+  const descriptionLower = request.description.toLowerCase();
+  const keywords = descriptionLower.split(/\s+/).filter(w => w.length > 2);
+
+  for (const item of allItems) {
+    // Skip own items
+    if (item.sellerId === excludeUserId) continue;
+
+    let confidence = 0;
+
+    // Category match (high confidence boost)
+    if (request.categoryId && item.categoryId === request.categoryId) {
+      confidence += 0.4;
+    }
+
+    // Price range match
+    if (request.minPrice && item.estimatedValue < request.minPrice) continue;
+    if (request.maxPrice && item.estimatedValue > request.maxPrice) continue;
+
+    // Keyword matching in title and description
+    const itemText = `${item.title} ${item.description || ''}`.toLowerCase();
+    let keywordMatches = 0;
+    for (const keyword of keywords) {
+      if (itemText.includes(keyword)) {
+        keywordMatches++;
+      }
+    }
+
+    if (keywords.length > 0) {
+      const keywordScore = keywordMatches / keywords.length;
+      confidence += keywordScore * 0.6;
+    }
+
+    // Only include if there's some confidence
+    if (confidence > 0.2) {
+      matches.push({ item, confidence: Math.min(1, confidence) });
+    }
+  }
+
+  // Sort by confidence and return top matches
+  matches.sort((a, b) => b.confidence - a.confidence);
+  return matches.slice(0, 10); // Limit to top 10 matches
 };
 
 /**
