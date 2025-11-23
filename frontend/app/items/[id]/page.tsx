@@ -97,7 +97,7 @@ export default function ItemDetailsPage() {
     setCartMessage('');
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items`, {
         method: 'POST',
         headers: {
