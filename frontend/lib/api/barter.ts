@@ -27,6 +27,14 @@ export interface BarterOffer {
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
   message?: string;
   counterOfferId?: string;
+  offeredBundleValue?: number;
+  itemRequests?: Array<{
+    id: string;
+    description: string;
+    categoryId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  }>;
   offerer: {
     id: string;
     fullName: string;
