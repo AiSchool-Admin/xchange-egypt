@@ -95,6 +95,12 @@ export default function BarterPage() {
                 Browse Offers
               </Link>
               <Link
+                href="/barter/chains"
+                className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-lg hover:bg-opacity-30 transition font-semibold"
+              >
+                Smart Chains
+              </Link>
+              <Link
                 href="/barter/new"
                 className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 transition font-semibold shadow-lg"
               >

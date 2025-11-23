@@ -245,3 +245,55 @@ export const findBarterMatches = async (itemId: string): Promise<BarterItemsResp
   const response = await apiClient.get(`/barter/matches/${itemId}`);
   return response.data;
 };
+
+// ============================================
+// Barter Chains (Multi-party trades)
+// ============================================
+
+// Discover chain opportunities for an item
+export const discoverChainOpportunities = async (itemId: string): Promise<any> => {
+  const response = await apiClient.get(`/barter/items/${itemId}/discover`);
+  return response.data;
+};
+
+// Get my barter chains
+export const getMyBarterChains = async (): Promise<any> => {
+  const response = await apiClient.get('/barter/chains/my');
+  return response.data;
+};
+
+// Get pending chain proposals
+export const getPendingChainProposals = async (): Promise<any> => {
+  const response = await apiClient.get('/barter/chains/pending');
+  return response.data;
+};
+
+// Create smart barter proposal
+export const createSmartProposal = async (itemId: string): Promise<any> => {
+  const response = await apiClient.post('/barter/chains', { itemId });
+  return response.data;
+};
+
+// Get chain by ID
+export const getBarterChain = async (chainId: string): Promise<any> => {
+  const response = await apiClient.get(`/barter/chains/${chainId}`);
+  return response.data;
+};
+
+// Respond to chain proposal
+export const respondToChain = async (chainId: string, accept: boolean, message?: string): Promise<any> => {
+  const response = await apiClient.post(`/barter/chains/${chainId}/respond`, { accept, message });
+  return response.data;
+};
+
+// Execute chain
+export const executeChain = async (chainId: string): Promise<any> => {
+  const response = await apiClient.post(`/barter/chains/${chainId}/execute`);
+  return response.data;
+};
+
+// Cancel chain
+export const cancelChain = async (chainId: string): Promise<any> => {
+  const response = await apiClient.delete(`/barter/chains/${chainId}`);
+  return response.data;
+};
