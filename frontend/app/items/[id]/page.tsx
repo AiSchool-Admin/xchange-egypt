@@ -28,6 +28,10 @@ export default function ItemDetailsPage() {
     notes: '',
   });
 
+  // Add to Cart State
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartMessage, setCartMessage] = useState('');
+
   useEffect(() => {
     if (params.id) {
       loadItem(params.id as string);
@@ -79,6 +83,44 @@ export default function ItemDetailsPage() {
       setBuyError(err.response?.data?.message || 'Failed to complete purchase. Please try again.');
     } finally {
       setBuyLoading(false);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (!item) return;
+
+    setAddingToCart(true);
+    setCartMessage('');
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          listingId: item.id,
+          quantity: 1,
+        }),
+      });
+
+      if (response.ok) {
+        setCartMessage('Added to cart!');
+        setTimeout(() => setCartMessage(''), 3000);
+      } else {
+        const data = await response.json();
+        setCartMessage(data.message || 'Failed to add to cart');
+      }
+    } catch (err) {
+      setCartMessage('Failed to add to cart');
+    } finally {
+      setAddingToCart(false);
     }
   };
 
