@@ -139,7 +139,7 @@ export default function RespondToOfferPage() {
             {/* What they're offering */}
             <div className="bg-green-50 p-4 rounded-lg">
               <h3 className="font-semibold text-green-700 mb-2">
-                {offer.initiator.fullName} is offering:
+                {offer.offerer.fullName} is offering:
               </h3>
               <p className="text-sm text-gray-700">
                 {offer.offeredItemIds?.length || 0} item(s)
@@ -238,10 +238,10 @@ export default function RespondToOfferPage() {
           {/* Chat Button */}
           <button
             type="button"
-            onClick={() => router.push(`/messages?userId=${offer.initiator.id}`)}
+            onClick={() => router.push(`/messages?userId=${offer.offerer.id}`)}
             className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
           >
-            💬 Chat with {offer.initiator.fullName} to Negotiate
+            💬 Chat with {offer.offerer.fullName} to Negotiate
           </button>
 
           <div className="flex gap-4">
