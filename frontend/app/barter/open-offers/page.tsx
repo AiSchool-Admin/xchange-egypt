@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { getBarterOffers, BarterOffer } from '@/lib/api/barter';
+import { getMatchingOffers, BarterOffer } from '@/lib/api/barter';
 
 export default function OpenOffersPage() {
   const router = useRouter();
@@ -20,8 +20,8 @@ export default function OpenOffersPage() {
   const loadOffers = async () => {
     try {
       setLoading(true);
-      const response = await getBarterOffers({ status: 'PENDING', isOpen: true });
-      setOffers(response.data.offers || []);
+      const response = await getMatchingOffers();
+      setOffers(response.data?.offers || response.data || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load open offers');
     } finally {
