@@ -104,8 +104,8 @@ export default function MyBarterOffersPage() {
         ) : (
           <div className="space-y-4">
             {offers.map((offer) => {
-              const isOfferer = offer.offererId === user.id;
-              const otherParty = isOfferer ? offer.recipient : offer.offerer;
+              const isInitiator = offer.initiatorId === user.id;
+              const otherParty = isInitiator ? offer.recipient : offer.initiator;
 
               return (
                 <div
@@ -116,7 +116,7 @@ export default function MyBarterOffersPage() {
                     <div>
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {isOfferer ? 'Offer to' : 'Offer from'} {otherParty.fullName}
+                          {isInitiator ? 'Offer to' : 'Offer from'} {otherParty?.fullName || 'Open Offer'}
                         </h3>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
@@ -136,7 +136,7 @@ export default function MyBarterOffersPage() {
                     {/* Offered Items */}
                     <div>
                       <h4 className="font-semibold text-gray-700 mb-2">
-                        {isOfferer ? 'You Offer:' : 'They Offer:'}
+                        {isInitiator ? 'You Offer:' : 'They Offer:'}
                       </h4>
                       <div className="space-y-2">
                         {offer.offeredItems.map((item) => (
@@ -170,7 +170,7 @@ export default function MyBarterOffersPage() {
                     {/* Requested Items */}
                     <div>
                       <h4 className="font-semibold text-gray-700 mb-2">
-                        {isOfferer ? 'You Get:' : 'They Want:'}
+                        {isInitiator ? 'You Get:' : 'They Want:'}
                       </h4>
                       <div className="space-y-2">
                         {offer.requestedItems.map((item) => (
