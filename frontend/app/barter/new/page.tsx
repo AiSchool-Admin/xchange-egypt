@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { createBarterOffer } from '@/lib/api/barter';
 import { getMyItems } from '@/lib/api/items';
 import { getBarterItems } from '@/lib/api/barter';
+import { getCategories, Category } from '@/lib/api/categories';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface SelectableItem {
@@ -39,6 +40,8 @@ export default function CreateBarterOfferPage() {
   // NEW: Request mode and cash
   const [requestMode, setRequestMode] = useState<'select' | 'describe'>('select');
   const [requestDescription, setRequestDescription] = useState('');
+  const [requestCategory, setRequestCategory] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [offeredCash, setOfferedCash] = useState(0);
   const [requestedCash, setRequestedCash] = useState(0);
 
@@ -49,7 +52,17 @@ export default function CreateBarterOfferPage() {
     }
     loadMyItems();
     loadAvailableItems();
+    loadCategories();
   }, [user]);
+
+  const loadCategories = async () => {
+    try {
+      const response = await getCategories();
+      setCategories(response.data || []);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+    }
+  };
 
   const loadMyItems = async () => {
     try {
@@ -153,6 +166,7 @@ export default function CreateBarterOfferPage() {
         requestedCashAmount: requestedCash,
         itemRequest: requestMode === 'describe' ? {
           description: requestDescription,
+          categoryId: requestCategory || undefined,
         } : undefined,
       };
 
@@ -406,6 +420,25 @@ export default function CreateBarterOfferPage() {
                       <p className="text-xs text-gray-500 mt-2">
                         AI will find matching items from available listings
                       </p>
+                    </div>
+
+                    {/* Category Filter */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Category (optional - improves matching)
+                      </label>
+                      <select
+                        value={requestCategory}
+                        onChange={(e) => setRequestCategory(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        <option value="">Any Category</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.nameEn}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   </>
                 )}
