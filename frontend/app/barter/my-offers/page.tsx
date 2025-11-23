@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getMyBarterOffers, BarterOffer } from '@/lib/api/barter';
+import { getMyBarterOffers, cancelBarterOffer, acceptBarterOffer, rejectBarterOffer, BarterOffer } from '@/lib/api/barter';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function MyBarterOffersPage() {
@@ -11,6 +11,7 @@ export default function MyBarterOffersPage() {
   const { user } = useAuth();
   const [offers, setOffers] = useState<BarterOffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -30,6 +31,45 @@ export default function MyBarterOffersPage() {
       setError(err.response?.data?.message || 'Failed to load offers');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancel = async (offerId: string) => {
+    if (!confirm('Are you sure you want to cancel this offer?')) return;
+    try {
+      setActionLoading(offerId);
+      await cancelBarterOffer(offerId);
+      await loadOffers();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to cancel offer');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAccept = async (offerId: string) => {
+    if (!confirm('Are you sure you want to accept this offer?')) return;
+    try {
+      setActionLoading(offerId);
+      await acceptBarterOffer(offerId);
+      await loadOffers();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to accept offer');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (offerId: string) => {
+    if (!confirm('Are you sure you want to reject this offer?')) return;
+    try {
+      setActionLoading(offerId);
+      await rejectBarterOffer(offerId);
+      await loadOffers();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to reject offer');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -204,6 +244,38 @@ export default function MyBarterOffersPage() {
                   {offer.message && (
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
                       <p className="text-sm text-gray-700">{offer.message}</p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  {offer.status === 'PENDING' && (
+                    <div className="mt-4 pt-4 border-t flex gap-3">
+                      {isInitiator ? (
+                        <button
+                          onClick={() => handleCancel(offer.id)}
+                          disabled={actionLoading === offer.id}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
+                        >
+                          {actionLoading === offer.id ? 'Cancelling...' : 'Cancel Offer'}
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleAccept(offer.id)}
+                            disabled={actionLoading === offer.id}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
+                          >
+                            {actionLoading === offer.id ? 'Processing...' : 'Accept'}
+                          </button>
+                          <button
+                            onClick={() => handleReject(offer.id)}
+                            disabled={actionLoading === offer.id}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
+                          >
+                            {actionLoading === offer.id ? 'Processing...' : 'Reject'}
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
