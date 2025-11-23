@@ -36,6 +36,12 @@ export default function CreateBarterOfferPage() {
   const [selectedRequestedItems, setSelectedRequestedItems] = useState<string[]>([]);
   const [message, setMessage] = useState('');
 
+  // NEW: Request mode and cash
+  const [requestMode, setRequestMode] = useState<'select' | 'describe'>('select');
+  const [requestDescription, setRequestDescription] = useState('');
+  const [offeredCash, setOfferedCash] = useState(0);
+  const [requestedCash, setRequestedCash] = useState(0);
+
   useEffect(() => {
     if (!user) {
       router.push('/login');
@@ -50,7 +56,7 @@ export default function CreateBarterOfferPage() {
       setLoadingMyItems(true);
       const response = await getMyItems();
       const availableItems = response.data.items.filter(
-        (item: any) => item.status === 'ACTIVE' // Changed from 'AVAILABLE' to 'ACTIVE' to match database enum
+        (item: any) => item.status === 'ACTIVE'
       );
       setMyItems(availableItems);
     } catch (err: any) {
@@ -65,7 +71,6 @@ export default function CreateBarterOfferPage() {
     try {
       setLoadingAvailableItems(true);
       const response = await getBarterItems({ limit: 50 });
-      // Filter out my own items
       const filtered = response.data.items.filter(
         (item) => item.seller?.id !== user?.id
       );
@@ -93,16 +98,35 @@ export default function CreateBarterOfferPage() {
     );
   };
 
+  // Calculate total values
+  const offeredItemsValue = myItems
+    .filter((item) => selectedOfferedItems.includes(item.id))
+    .reduce((sum, item) => sum + (item.estimatedValue || item.price || 0), 0);
+
+  const requestedItemsValue = availableItems
+    .filter((item) => selectedRequestedItems.includes(item.id))
+    .reduce((sum, item) => sum + (item.estimatedValue || item.price || 0), 0);
+
+  const totalOfferedValue = offeredItemsValue + offeredCash;
+  const totalRequestedValue = requestedItemsValue + requestedCash;
+  const valueDifference = totalOfferedValue - totalRequestedValue;
+  const isBalanced = Math.abs(valueDifference) <= totalOfferedValue * 0.2; // Within 20%
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (selectedOfferedItems.length === 0) {
-      setError('Please select at least one item to offer');
+    if (selectedOfferedItems.length === 0 && offeredCash === 0) {
+      setError('Please select at least one item to offer or add cash');
       return;
     }
 
-    if (selectedRequestedItems.length === 0) {
-      setError('Please select at least one item you want in exchange');
+    if (requestMode === 'select' && selectedRequestedItems.length === 0 && requestedCash === 0) {
+      setError('Please select at least one item you want or add cash');
+      return;
+    }
+
+    if (requestMode === 'describe' && !requestDescription.trim()) {
+      setError('Please describe what you are looking for');
       return;
     }
 
@@ -111,17 +135,25 @@ export default function CreateBarterOfferPage() {
 
     try {
       // Find recipient from selected items (if all belong to same seller)
-      const selectedItems = availableItems.filter((item) =>
-        selectedRequestedItems.includes(item.id)
-      );
-      const sellerIds = [...new Set(selectedItems.map((item) => item.seller?.id).filter(Boolean))];
-      const recipientId = sellerIds.length === 1 ? sellerIds[0] : undefined;
+      let recipientId: string | undefined;
+      if (requestMode === 'select' && selectedRequestedItems.length > 0) {
+        const selectedItems = availableItems.filter((item) =>
+          selectedRequestedItems.includes(item.id)
+        );
+        const sellerIds = [...new Set(selectedItems.map((item) => item.seller?.id).filter(Boolean))];
+        recipientId = sellerIds.length === 1 ? sellerIds[0] : undefined;
+      }
 
       const offerData = {
         offeredItemIds: selectedOfferedItems,
-        requestedItemIds: selectedRequestedItems,
+        requestedItemIds: requestMode === 'select' ? selectedRequestedItems : [],
         recipientId,
         message: message || undefined,
+        offeredCashAmount: offeredCash,
+        requestedCashAmount: requestedCash,
+        itemRequest: requestMode === 'describe' ? {
+          description: requestDescription,
+        } : undefined,
       };
 
       const response = await createBarterOffer(offerData);
@@ -155,9 +187,9 @@ export default function CreateBarterOfferPage() {
           >
             ← Back to Barter
           </Link>
-          <h1 className="text-4xl font-bold">🔄 Make a Barter Offer</h1>
+          <h1 className="text-4xl font-bold">Make a Barter Offer</h1>
           <p className="text-green-100 mt-2">
-            Select items to trade and items you want in exchange
+            Offer items + cash for items or describe what you need
           </p>
         </div>
       </div>
@@ -171,190 +203,283 @@ export default function CreateBarterOfferPage() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left: Items I'm Offering */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                📤 Items I'm Offering ({selectedOfferedItems.length})
-              </h2>
+            {/* Left: What I'm Offering */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  What I'm Offering
+                </h2>
 
-              {loadingMyItems ? (
-                <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                </div>
-              ) : myItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-600 mb-4">You don't have any items available</p>
-                  <Link
-                    href="/items/new"
-                    className="inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition"
-                  >
-                    + List an Item
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {myItems.map((item) => {
-                    const isSelected = selectedOfferedItems.includes(item.id);
-                    const primaryImage =
-                      item.images?.find((img) => img.isPrimary)?.url ||
-                      item.images?.[0]?.url;
+                {/* My Items */}
+                <h3 className="font-semibold text-gray-700 mb-3">
+                  Items ({selectedOfferedItems.length})
+                </h3>
+                {loadingMyItems ? (
+                  <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                  </div>
+                ) : myItems.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600 mb-4">No items available</p>
+                    <Link
+                      href="/items/new"
+                      className="inline-block bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm"
+                    >
+                      + List an Item
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+                    {myItems.map((item) => {
+                      const isSelected = selectedOfferedItems.includes(item.id);
+                      const primaryImage =
+                        item.images?.find((img) => img.isPrimary)?.url ||
+                        item.images?.[0]?.url;
 
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => toggleOfferedItem(item.id)}
-                        className={`w-full p-3 rounded-lg border-2 transition text-left ${
-                          isSelected
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex gap-3">
-                          {primaryImage && (
-                            <img
-                              src={primaryImage}
-                              alt={item.title}
-                              className="w-16 h-16 object-cover rounded"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate">
-                              {item.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 truncate">
-                              {item.category.nameEn}
-                            </p>
-                            {item.price && (
-                              <p className="text-sm font-medium text-green-600">
-                                {item.price.toLocaleString()} EGP
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => toggleOfferedItem(item.id)}
+                          className={`w-full p-3 rounded-lg border-2 transition text-left ${
+                            isSelected
+                              ? 'border-green-500 bg-green-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <div className="flex gap-3">
+                            {primaryImage && (
+                              <img
+                                src={primaryImage}
+                                alt={item.title}
+                                className="w-12 h-12 object-cover rounded"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 truncate text-sm">
+                                {item.title}
+                              </h4>
+                              <p className="text-xs text-green-600">
+                                ~{(item.estimatedValue || item.price || 0).toLocaleString()} EGP
                               </p>
+                            </div>
+                            {isSelected && (
+                              <div className="flex-shrink-0 text-green-600">✓</div>
                             )}
                           </div>
-                          {isSelected && (
-                            <div className="flex-shrink-0 text-green-600">✓</div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Cash Offered */}
+                <div className="pt-4 border-t">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    + Cash (EGP)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={offeredCash || ''}
+                    onChange={(e) => setOfferedCash(Number(e.target.value) || 0)}
+                    placeholder="0"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
                 </div>
-              )}
+
+                {/* Total Offered Value */}
+                <div className="mt-4 p-3 bg-green-50 rounded-lg">
+                  <p className="text-sm font-semibold text-green-700">
+                    Total Offer Value: {totalOfferedValue.toLocaleString()} EGP
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {/* Right: Items I Want */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                📥 Items I Want ({selectedRequestedItems.length})
-              </h2>
+            {/* Right: What I Want */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">
+                  What I Want
+                </h2>
 
-              {loadingAvailableItems ? (
-                <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                {/* Request Mode Toggle */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setRequestMode('select')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
+                      requestMode === 'select'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Select Items
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRequestMode('describe')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
+                      requestMode === 'describe'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Describe
+                  </button>
                 </div>
-              ) : availableItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-gray-600">No items available for barter yet</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {availableItems.map((item) => {
-                    const isSelected = selectedRequestedItems.includes(item.id);
-                    const primaryImage =
-                      item.images?.find((img) => img.isPrimary)?.url ||
-                      item.images?.[0]?.url;
 
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => toggleRequestedItem(item.id)}
-                        className={`w-full p-3 rounded-lg border-2 transition text-left ${
-                          isSelected
-                            ? 'border-green-500 bg-green-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex gap-3">
-                          {primaryImage && (
-                            <img
-                              src={primaryImage}
-                              alt={item.title}
-                              className="w-16 h-16 object-cover rounded"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate">
-                              {item.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 truncate">
-                              {item.category.nameEn} • {item.seller?.fullName}
-                            </p>
-                            {item.estimatedValue && (
-                              <p className="text-sm font-medium text-green-600">
-                                ~{item.estimatedValue.toLocaleString()} EGP
-                              </p>
-                            )}
-                          </div>
-                          {isSelected && (
-                            <div className="flex-shrink-0 text-green-600">✓</div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                {requestMode === 'select' ? (
+                  <>
+                    {/* Select Specific Items */}
+                    {loadingAvailableItems ? (
+                      <div className="text-center py-8">
+                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                      </div>
+                    ) : availableItems.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-600">No items available</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+                        {availableItems.map((item) => {
+                          const isSelected = selectedRequestedItems.includes(item.id);
+                          const primaryImage =
+                            item.images?.find((img) => img.isPrimary)?.url ||
+                            item.images?.[0]?.url;
+
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => toggleRequestedItem(item.id)}
+                              className={`w-full p-3 rounded-lg border-2 transition text-left ${
+                                isSelected
+                                  ? 'border-green-500 bg-green-50'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <div className="flex gap-3">
+                                {primaryImage && (
+                                  <img
+                                    src={primaryImage}
+                                    alt={item.title}
+                                    className="w-12 h-12 object-cover rounded"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-medium text-gray-900 truncate text-sm">
+                                    {item.title}
+                                  </h4>
+                                  <p className="text-xs text-gray-500">
+                                    {item.seller?.fullName}
+                                  </p>
+                                  <p className="text-xs text-green-600">
+                                    ~{(item.estimatedValue || 0).toLocaleString()} EGP
+                                  </p>
+                                </div>
+                                {isSelected && (
+                                  <div className="flex-shrink-0 text-green-600">✓</div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Describe What You Want */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Describe what you're looking for
+                      </label>
+                      <textarea
+                        value={requestDescription}
+                        onChange={(e) => setRequestDescription(e.target.value)}
+                        rows={4}
+                        placeholder="Example: Looking for a gaming laptop with RTX 3060 or better, or a high-end smartphone like iPhone 13 or Samsung S22..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-2">
+                        AI will find matching items from available listings
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {/* Cash Requested */}
+                <div className="pt-4 border-t">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    + Cash (EGP)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={requestedCash || ''}
+                    onChange={(e) => setRequestedCash(Number(e.target.value) || 0)}
+                    placeholder="0"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
                 </div>
-              )}
+
+                {/* Total Requested Value */}
+                {requestMode === 'select' && (
+                  <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm font-semibold text-blue-700">
+                      Total Request Value: {totalRequestedValue.toLocaleString()} EGP
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Summary */}
-          {(selectedOfferedItems.length > 0 || selectedRequestedItems.length > 0) && (
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Trade Summary</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Fairness Indicator */}
+          {requestMode === 'select' && (totalOfferedValue > 0 || totalRequestedValue > 0) && (
+            <div className={`p-4 rounded-lg border-2 ${
+              isBalanced
+                ? 'bg-green-50 border-green-200'
+                : valueDifference > 0
+                  ? 'bg-yellow-50 border-yellow-200'
+                  : 'bg-red-50 border-red-200'
+            }`}>
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">You Offer:</h3>
-                  {selectedOfferedDetails.length > 0 ? (
-                    <ul className="space-y-1 text-sm text-gray-600">
-                      {selectedOfferedDetails.map((item) => (
-                        <li key={item.id}>• {item.title}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-gray-500">No items selected</p>
-                  )}
+                  <h3 className="font-semibold text-gray-900">Trade Balance</h3>
+                  <p className="text-sm text-gray-600">
+                    {isBalanced
+                      ? 'This trade is balanced (within 20%)'
+                      : valueDifference > 0
+                        ? `You're offering ${valueDifference.toLocaleString()} EGP more`
+                        : `You're requesting ${Math.abs(valueDifference).toLocaleString()} EGP more`
+                    }
+                  </p>
                 </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">You Get:</h3>
-                  {selectedRequestedDetails.length > 0 ? (
-                    <ul className="space-y-1 text-sm text-gray-600">
-                      {selectedRequestedDetails.map((item) => (
-                        <li key={item.id}>• {item.title}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-gray-500">No items selected</p>
-                  )}
+                <div className={`text-2xl ${
+                  isBalanced ? 'text-green-600' : valueDifference > 0 ? 'text-yellow-600' : 'text-red-600'
+                }`}>
+                  {isBalanced ? '✓' : valueDifference > 0 ? '↑' : '↓'}
                 </div>
-              </div>
-
-              <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Message (Optional)
-                </label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={3}
-                  placeholder="Add a message to your offer..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
               </div>
             </div>
           )}
+
+          {/* Message */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Message (Optional)
+            </label>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={3}
+              placeholder="Add a message to your offer..."
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
 
           {/* Submit Buttons */}
           <div className="flex gap-4">
@@ -367,11 +492,7 @@ export default function CreateBarterOfferPage() {
             </button>
             <button
               type="submit"
-              disabled={
-                loading ||
-                selectedOfferedItems.length === 0 ||
-                selectedRequestedItems.length === 0
-              }
+              disabled={loading}
               className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creating Offer...' : 'Send Barter Offer'}
