@@ -16,17 +16,29 @@ const preferenceSetSchema = z.object({
   description: z.string().max(200, 'Description must not exceed 200 characters').optional(),
 });
 
+// Item Request Schema (for description-based requests)
+const itemRequestSchema = z.object({
+  description: z.string().min(1, 'Description is required').max(500, 'Description must not exceed 500 characters'),
+  categoryId: z.string().uuid('Invalid category ID').optional(),
+  minPrice: z.number().min(0).optional(),
+  maxPrice: z.number().min(0).optional(),
+});
+
 // Create Barter Offer Schema (with Bundle & Preferences support)
 export const createBarterOfferSchema = z.object({
   body: z.object({
     offeredItemIds: z
       .array(z.string().uuid('Invalid offered item ID'))
-      .min(1, 'Must offer at least one item')
-      .max(20, 'Maximum 20 items per bundle'),
+      .max(20, 'Maximum 20 items per bundle')
+      .default([]),
     preferenceSets: z
       .array(preferenceSetSchema)
-      .min(1, 'Must specify at least one preference set')
-      .max(10, 'Maximum 10 preference sets'),
+      .max(10, 'Maximum 10 preference sets')
+      .default([]),
+    itemRequests: z
+      .array(itemRequestSchema)
+      .max(5, 'Maximum 5 item requests')
+      .optional(),
     recipientId: z.string().uuid('Invalid recipient ID').optional(),
     notes: z
       .string()
@@ -38,9 +50,33 @@ export const createBarterOfferSchema = z.object({
       .optional()
       .transform((val) => (val ? new Date(val) : undefined)),
     isOpenOffer: z.boolean().default(false).optional(),
+    offeredCashAmount: z.number().min(0, 'Cash amount must be positive').default(0).optional(),
+    requestedCashAmount: z.number().min(0, 'Cash amount must be positive').default(0).optional(),
   }).refine(
     (data) => {
-      // Ensure priorities are unique
+      // Must have something to offer (items or cash)
+      return data.offeredItemIds.length > 0 || (data.offeredCashAmount && data.offeredCashAmount > 0);
+    },
+    {
+      message: 'Must offer at least one item or cash',
+      path: ['offeredItemIds'],
+    }
+  ).refine(
+    (data) => {
+      // Must have something to request (items, description, or cash)
+      const hasPreferenceSets = data.preferenceSets.length > 0;
+      const hasItemRequests = data.itemRequests && data.itemRequests.length > 0;
+      const hasRequestedCash = data.requestedCashAmount && data.requestedCashAmount > 0;
+      return hasPreferenceSets || hasItemRequests || hasRequestedCash;
+    },
+    {
+      message: 'Must specify what you want (items, description, or cash)',
+      path: ['preferenceSets'],
+    }
+  ).refine(
+    (data) => {
+      // Ensure priorities are unique (only if preferenceSets exist)
+      if (data.preferenceSets.length === 0) return true;
       const priorities = data.preferenceSets.map((ps) => ps.priority);
       const uniquePriorities = new Set(priorities);
       return priorities.length === uniquePriorities.size;
@@ -52,6 +88,7 @@ export const createBarterOfferSchema = z.object({
   ).refine(
     (data) => {
       // Check no overlap between offered and requested items
+      if (data.preferenceSets.length === 0) return true;
       const offeredSet = new Set(data.offeredItemIds);
       const allRequestedIds = data.preferenceSets.flatMap((ps) => ps.itemIds);
       return !allRequestedIds.some((id) => offeredSet.has(id));

@@ -31,6 +31,13 @@ interface PreferenceSetInput {
   description?: string;
 }
 
+interface ItemRequestInput {
+  description: string;
+  categoryId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
 interface CreateBundleOfferInput {
   offeredItemIds: string[];
   preferenceSets: PreferenceSetInput[];
@@ -38,6 +45,9 @@ interface CreateBundleOfferInput {
   notes?: string;
   expiresAt?: Date;
   isOpenOffer?: boolean;
+  offeredCashAmount?: number;
+  requestedCashAmount?: number;
+  itemRequests?: ItemRequestInput[];
 }
 
 interface BundleMatchResult {
@@ -219,75 +229,91 @@ export const createBundleOffer = async (
   userId: string,
   input: CreateBundleOfferInput
 ): Promise<any> => {
-  const { offeredItemIds, preferenceSets, recipientId, notes, expiresAt, isOpenOffer } = input;
+  const {
+    offeredItemIds = [],
+    preferenceSets = [],
+    recipientId,
+    notes,
+    expiresAt,
+    isOpenOffer,
+    offeredCashAmount = 0,
+    requestedCashAmount = 0,
+    itemRequests = []
+  } = input;
 
-  // Validate offered items
-  if (!offeredItemIds || offeredItemIds.length === 0) {
-    throw new BadRequestError('Must offer at least one item');
+  // Validate offered items or cash
+  if (offeredItemIds.length === 0 && offeredCashAmount === 0) {
+    throw new BadRequestError('Must offer at least one item or cash');
   }
 
-  // Validate preference sets
-  if (!preferenceSets || preferenceSets.length === 0) {
-    throw new BadRequestError('Must specify at least one preference set');
+  // Validate preference sets, item requests, or cash request
+  if (preferenceSets.length === 0 && itemRequests.length === 0 && requestedCashAmount === 0) {
+    throw new BadRequestError('Must specify what you want (items, description, or cash)');
   }
 
-  // Verify all offered items belong to user
-  const offeredItems = await prisma.item.findMany({
-    where: {
-      id: { in: offeredItemIds },
-    },
-    include: {
-      listings: {
-        where: { status: 'ACTIVE' },
+  // Verify all offered items belong to user (if any)
+  let offeredBundleValue = offeredCashAmount;
+
+  if (offeredItemIds.length > 0) {
+    const offeredItems = await prisma.item.findMany({
+      where: {
+        id: { in: offeredItemIds },
       },
-    },
-  });
+      include: {
+        listings: {
+          where: { status: 'ACTIVE' },
+        },
+      },
+    });
 
-  if (offeredItems.length !== offeredItemIds.length) {
-    throw new NotFoundError('One or more offered items not found');
+    if (offeredItems.length !== offeredItemIds.length) {
+      throw new NotFoundError('One or more offered items not found');
+    }
+
+    // Check ownership
+    const notOwned = offeredItems.filter((item) => item.sellerId !== userId);
+    if (notOwned.length > 0) {
+      throw new ForbiddenError('You can only offer your own items');
+    }
+
+    // Check for active listings
+    const hasActiveListings = offeredItems.some((item) => item.listings.length > 0);
+    if (hasActiveListings) {
+      throw new BadRequestError('Cannot barter items that have active sale listings');
+    }
+
+    // Calculate offered bundle value (items + cash)
+    offeredBundleValue = offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0) + offeredCashAmount;
   }
 
-  // Check ownership
-  const notOwned = offeredItems.filter((item) => item.sellerId !== userId);
-  if (notOwned.length > 0) {
-    throw new ForbiddenError('You can only offer your own items');
-  }
+  // Validate all preference set items exist (if any)
+  if (preferenceSets.length > 0) {
+    const allPreferenceItemIds = preferenceSets.flatMap((ps) => ps.itemIds);
+    const uniquePreferenceItemIds = [...new Set(allPreferenceItemIds)];
 
-  // Check for active listings
-  const hasActiveListings = offeredItems.some((item) => item.listings.length > 0);
-  if (hasActiveListings) {
-    throw new BadRequestError('Cannot barter items that have active sale listings');
-  }
+    const preferenceItems = await prisma.item.findMany({
+      where: {
+        id: { in: uniquePreferenceItemIds },
+      },
+    });
 
-  // Calculate offered bundle value
-  const offeredBundleValue = offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0);
+    if (preferenceItems.length !== uniquePreferenceItemIds.length) {
+      throw new NotFoundError('One or more requested items not found');
+    }
 
-  // Validate all preference set items exist
-  const allPreferenceItemIds = preferenceSets.flatMap((ps) => ps.itemIds);
-  const uniquePreferenceItemIds = [...new Set(allPreferenceItemIds)];
+    // Prevent offering items you're requesting
+    const offeredItemIdsSet = new Set(offeredItemIds);
+    const conflictingItems = uniquePreferenceItemIds.filter((id) => offeredItemIdsSet.has(id));
+    if (conflictingItems.length > 0) {
+      throw new BadRequestError('Cannot request items you are offering');
+    }
 
-  const preferenceItems = await prisma.item.findMany({
-    where: {
-      id: { in: uniquePreferenceItemIds },
-    },
-  });
-
-  if (preferenceItems.length !== uniquePreferenceItemIds.length) {
-    throw new NotFoundError('One or more requested items not found');
-  }
-
-  // Prevent offering items you're requesting
-  const offeredItemIdsSet = new Set(offeredItemIds);
-  const conflictingItems = uniquePreferenceItemIds.filter((id) => offeredItemIdsSet.has(id));
-  if (conflictingItems.length > 0) {
-    throw new BadRequestError('Cannot request items you are offering');
-  }
-
-  // If recipientId is specified, verify they own at least one item in preferences
-  if (recipientId && !isOpenOffer) {
-    const recipientOwnedItems = preferenceItems.filter((item) => item.sellerId === recipientId);
-    if (recipientOwnedItems.length === 0) {
-      throw new BadRequestError('Recipient does not own any of the requested items');
+    // If recipientId is specified, verify they own at least one item in preferences
+    if (recipientId && !isOpenOffer) {
+      const recipientOwnedItems = preferenceItems.filter((item) => item.sellerId === recipientId);
+      if (recipientOwnedItems.length === 0) {
+        throw new BadRequestError('Recipient does not own any of the requested items');
+      }
     }
   }
 
@@ -302,15 +328,32 @@ export const createBundleOffer = async (
       recipientId: isOpenOffer ? null : recipientId,
       offeredItemIds,
       offeredBundleValue,
+      offeredCashAmount,
+      requestedCashAmount,
       notes,
       expiresAt: expiresAt || defaultExpiry,
-      isOpenOffer: isOpenOffer || false,
+      isOpenOffer: isOpenOffer || (itemRequests.length > 0),
       status: 'PENDING',
     },
   });
 
-  // Create preference sets
-  await createPreferenceSets(barterOffer.id, offeredBundleValue, preferenceSets);
+  // Create preference sets (if any)
+  if (preferenceSets.length > 0) {
+    await createPreferenceSets(barterOffer.id, offeredBundleValue, preferenceSets);
+  }
+
+  // Create item requests (for description-based requests)
+  if (itemRequests.length > 0) {
+    await prisma.itemRequest.createMany({
+      data: itemRequests.map((req) => ({
+        barterOfferId: barterOffer.id,
+        description: req.description,
+        categoryId: req.categoryId,
+        minPrice: req.minPrice,
+        maxPrice: req.maxPrice,
+      })),
+    });
+  }
 
   // Get complete offer with preference sets
   const completeOffer = await prisma.barterOffer.findUnique({

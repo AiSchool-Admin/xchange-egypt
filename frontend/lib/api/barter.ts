@@ -23,8 +23,7 @@ export interface BarterOffer {
   id: string;
   initiatorId: string;
   recipientId?: string | null;
-  offeredItems: BarterItem[];
-  requestedItems: BarterItem[];
+  offeredItemIds: string[];
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
   message?: string;
   notes?: string;
@@ -34,8 +33,24 @@ export interface BarterOffer {
   preferenceSets?: Array<{
     id: string;
     priority: number;
-    itemIds: string[];
     description?: string;
+    items: Array<{
+      id: string;
+      item: {
+        id: string;
+        title: string;
+        images: Array<{ id: string; url: string; isPrimary?: boolean }>;
+        condition: string;
+      };
+    }>;
+  }>;
+  itemRequests?: Array<{
+    id: string;
+    category: {
+      id: string;
+      nameAr: string;
+      nameEn: string;
+    };
   }>;
   initiator: {
     id: string;
@@ -58,7 +73,16 @@ export interface BarterOffer {
 export interface CreateBarterOfferData {
   offeredItemIds: string[];
   requestedItemIds: string[];
+  recipientId?: string;
   message?: string;
+  offeredCashAmount?: number;
+  requestedCashAmount?: number;
+  itemRequest?: {
+    description: string;
+    categoryId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  };
 }
 
 export interface BackendBarterOfferData {
@@ -72,6 +96,14 @@ export interface BackendBarterOfferData {
   notes?: string;
   expiresAt?: string;
   isOpenOffer?: boolean;
+  offeredCashAmount?: number;
+  requestedCashAmount?: number;
+  itemRequests?: Array<{
+    description: string;
+    categoryId?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  }>;
 }
 
 export interface BarterItemsResponse {
@@ -146,15 +178,19 @@ export const createBarterOffer = async (
   // Transform frontend data to backend format
   const backendData: BackendBarterOfferData = {
     offeredItemIds: data.offeredItemIds,
-    preferenceSets: [
+    preferenceSets: data.requestedItemIds.length > 0 ? [
       {
         priority: 1,
         itemIds: data.requestedItemIds,
         description: data.message,
       },
-    ],
+    ] : [],
+    recipientId: data.recipientId,
     notes: data.message,
-    isOpenOffer: true, // Open offer means anyone with the requested items can accept
+    isOpenOffer: !data.recipientId, // Open offer if no specific recipient
+    offeredCashAmount: data.offeredCashAmount || 0,
+    requestedCashAmount: data.requestedCashAmount || 0,
+    itemRequests: data.itemRequest ? [data.itemRequest] : undefined,
   };
 
   const response = await apiClient.post('/barter/offers', backendData);
