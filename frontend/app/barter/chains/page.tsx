@@ -9,6 +9,7 @@ import {
   discoverChainOpportunities,
   createSmartProposal,
   respondToChain,
+  executeChain,
 } from '@/lib/api/barter';
 import { getMyItems } from '@/lib/api/items';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -96,6 +97,15 @@ export default function BarterChainsPage() {
       await loadData();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to respond');
+    }
+  };
+
+  const handleExecute = async (chainId: string) => {
+    try {
+      await executeChain(chainId);
+      await loadData();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to execute');
     }
   };
 
@@ -245,7 +255,7 @@ export default function BarterChainsPage() {
                 <div className="space-y-4">
                   {myChains.map((chain) => (
                     <div key={chain.id} className="p-4 border rounded-lg">
-                      <div className="flex justify-between items-start">
+                      <div className="flex justify-between items-start mb-3">
                         <div>
                           <p className="font-semibold text-gray-900">
                             {chain.participants?.length || 0}-Party Trade
@@ -256,12 +266,59 @@ export default function BarterChainsPage() {
                         </div>
                         <span className={`px-2 py-1 rounded text-xs ${
                           chain.status === 'COMPLETED' ? 'bg-green-100 text-green-800' :
-                          chain.status === 'ACTIVE' ? 'bg-blue-100 text-blue-800' :
+                          chain.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-800' :
+                          chain.status === 'PROPOSED' || chain.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {chain.status}
                         </span>
                       </div>
+
+                      {/* Show participants */}
+                      {chain.participants && chain.participants.length > 0 && (
+                        <div className="mb-3 text-sm">
+                          <p className="font-medium text-gray-700 mb-1">Participants:</p>
+                          {chain.participants.map((p: any, idx: number) => (
+                            <p key={p.id} className="text-gray-600">
+                              {idx + 1}. {p.user?.fullName || 'User'}: gives "{p.givingItem?.title}" → gets "{p.receivingItem?.title}"
+                              <span className={`ml-2 text-xs ${
+                                p.status === 'ACCEPTED' ? 'text-green-600' :
+                                p.status === 'REJECTED' ? 'text-red-600' :
+                                'text-yellow-600'
+                              }`}>
+                                ({p.status})
+                              </span>
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Action buttons based on status */}
+                      {(chain.status === 'PROPOSED' || chain.status === 'PENDING') && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleRespond(chain.id, true)}
+                            className="px-4 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleRespond(chain.id, false)}
+                            className="px-4 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+
+                      {chain.status === 'ACCEPTED' && (
+                        <button
+                          onClick={() => handleExecute(chain.id)}
+                          className="px-4 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          Confirm Completed
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
