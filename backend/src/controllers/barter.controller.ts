@@ -161,6 +161,31 @@ export const getMyBarterOffers = async (
 };
 
 /**
+ * Get open barter offers
+ * GET /api/v1/barter/offers/open
+ */
+export const getOpenBarterOffers = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { page, limit } = req.query;
+
+    const result = await barterService.getOpenBarterOffers(
+      userId,
+      page ? parseInt(page as string) : undefined,
+      limit ? parseInt(limit as string) : undefined
+    );
+
+    return successResponse(res, result, 'Open barter offers retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Search barterable items
  * GET /api/v1/barter/items
  */

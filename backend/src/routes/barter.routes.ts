@@ -53,6 +53,16 @@ router.get(
 );
 
 /**
+ * Get open barter offers (public offers looking for items)
+ * GET /api/v1/barter/offers/open
+ */
+router.get(
+  '/offers/open',
+  authenticate,
+  barterController.getOpenBarterOffers
+);
+
+/**
  * Get matching offers for my items (Bundle feature)
  * GET /api/v1/barter/offers/matching
  */

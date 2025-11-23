@@ -89,6 +89,12 @@ export default function BarterPage() {
                 My Offers
               </Link>
               <Link
+                href="/barter/open-offers"
+                className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-lg hover:bg-opacity-30 transition font-semibold"
+              >
+                Browse Offers
+              </Link>
+              <Link
                 href="/barter/new"
                 className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 transition font-semibold shadow-lg"
               >

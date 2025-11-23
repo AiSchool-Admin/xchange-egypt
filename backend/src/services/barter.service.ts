@@ -671,6 +671,81 @@ export const getMyBarterOffers = async (
 };
 
 /**
+ * Get open barter offers (public offers looking for items)
+ */
+export const getOpenBarterOffers = async (
+  userId: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResult<any>> => {
+  const where: any = {
+    isOpenOffer: true,
+    status: 'PENDING',
+    initiatorId: { not: userId }, // Exclude own offers
+  };
+
+  const skip = (page - 1) * limit;
+
+  const total = await prisma.barterOffer.count({ where });
+
+  const offers = await prisma.barterOffer.findMany({
+    where,
+    skip,
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      initiator: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+        },
+      },
+      preferenceSets: {
+        include: {
+          items: {
+            include: {
+              item: {
+                select: {
+                  id: true,
+                  title: true,
+                  images: true,
+                  condition: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      itemRequests: {
+        include: {
+          category: {
+            select: {
+              id: true,
+              nameAr: true,
+              nameEn: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    items: offers,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasMore: page < totalPages,
+    },
+  };
+};
+
+/**
  * Search barterable items (items available for barter)
  */
 export const searchBarterableItems = async (

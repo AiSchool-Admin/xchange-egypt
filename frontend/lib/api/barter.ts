@@ -166,6 +166,12 @@ export const getMyBarterOffers = async (): Promise<BarterOffersResponse> => {
   return response.data;
 };
 
+// Get open barter offers (from others)
+export const getOpenBarterOffers = async (): Promise<BarterOffersResponse> => {
+  const response = await apiClient.get('/barter/offers/open');
+  return response.data;
+};
+
 // Get barter offer by ID
 export const getBarterOffer = async (id: string): Promise<BarterOfferResponse> => {
   const response = await apiClient.get(`/barter/offers/${id}`);
