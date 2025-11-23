@@ -252,7 +252,7 @@ export const findBarterMatches = async (itemId: string): Promise<BarterItemsResp
 
 // Discover chain opportunities for an item
 export const discoverChainOpportunities = async (itemId: string): Promise<any> => {
-  const response = await apiClient.get(`/barter/items/${itemId}/discover`);
+  const response = await apiClient.get(`/barter/opportunities/${itemId}`);
   return response.data;
 };
 
