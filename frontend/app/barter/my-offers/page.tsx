@@ -138,66 +138,65 @@ export default function MyBarterOffersPage() {
                       <h4 className="font-semibold text-gray-700 mb-2">
                         {isInitiator ? 'You Offer:' : 'They Offer:'}
                       </h4>
-                      <div className="space-y-2">
-                        {offer.offeredItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex gap-3 p-2 bg-gray-50 rounded"
-                          >
-                            {item.images && item.images.length > 0 && (
-                              <img
-                                src={
-                                  item.images.find((img) => img.isPrimary)?.url ||
-                                  item.images[0]?.url
-                                }
-                                alt={item.title}
-                                className="w-12 h-12 object-cover rounded"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-gray-900 truncate">
-                                {item.title}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {item.category.nameEn}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="p-3 bg-gray-50 rounded">
+                        <p className="text-sm text-gray-700">
+                          {offer.offeredItemIds?.length || 0} item(s) offered
+                        </p>
+                        {offer.offeredBundleValue && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Value: EGP {offer.offeredBundleValue.toLocaleString()}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    {/* Requested Items */}
+                    {/* Requested Items / Preferences */}
                     <div>
                       <h4 className="font-semibold text-gray-700 mb-2">
-                        {isInitiator ? 'You Get:' : 'They Want:'}
+                        {isInitiator ? 'Looking For:' : 'They Want:'}
                       </h4>
                       <div className="space-y-2">
-                        {offer.requestedItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex gap-3 p-2 bg-gray-50 rounded"
-                          >
-                            {item.images && item.images.length > 0 && (
-                              <img
-                                src={
-                                  item.images.find((img) => img.isPrimary)?.url ||
-                                  item.images[0]?.url
-                                }
-                                alt={item.title}
-                                className="w-12 h-12 object-cover rounded"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-gray-900 truncate">
-                                {item.title}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {item.category.nameEn}
+                        {offer.preferenceSets && offer.preferenceSets.length > 0 ? (
+                          offer.preferenceSets.map((prefSet) => (
+                            <div key={prefSet.id} className="p-2 bg-gray-50 rounded">
+                              {prefSet.items.map((prefItem) => (
+                                <div key={prefItem.id} className="flex gap-3 items-center">
+                                  {prefItem.item.images && prefItem.item.images.length > 0 && (
+                                    <img
+                                      src={prefItem.item.images[0]?.url}
+                                      alt={prefItem.item.title}
+                                      className="w-10 h-10 object-cover rounded"
+                                    />
+                                  )}
+                                  <p className="text-sm text-gray-900 truncate">
+                                    {prefItem.item.title}
+                                  </p>
+                                </div>
+                              ))}
+                              {prefSet.description && (
+                                <p className="text-xs text-gray-500 mt-1">{prefSet.description}</p>
+                              )}
+                            </div>
+                          ))
+                        ) : offer.itemRequests && offer.itemRequests.length > 0 ? (
+                          offer.itemRequests.map((req) => (
+                            <div key={req.id} className="p-2 bg-gray-50 rounded">
+                              <p className="text-sm text-gray-700">
+                                Category: {req.category.nameEn}
                               </p>
                             </div>
+                          ))
+                        ) : offer.isOpenOffer ? (
+                          <div className="p-2 bg-yellow-50 rounded">
+                            <p className="text-sm text-yellow-700">
+                              Open offer - accepting any items
+                            </p>
                           </div>
-                        ))}
+                        ) : (
+                          <div className="p-2 bg-gray-50 rounded">
+                            <p className="text-sm text-gray-500">No specific preferences</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
