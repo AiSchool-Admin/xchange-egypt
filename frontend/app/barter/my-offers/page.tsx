@@ -235,8 +235,13 @@ export default function MyBarterOffersPage() {
                           offer.itemRequests.map((req) => (
                             <div key={req.id} className="p-2 bg-gray-50 rounded">
                               <p className="text-sm text-gray-700">
-                                Category: {req.category.nameEn}
+                                {req.description}
                               </p>
+                              {req.category && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Category: {req.category.nameEn}
+                                </p>
+                              )}
                             </div>
                           ))
                         ) : offer.isOpenOffer ? (

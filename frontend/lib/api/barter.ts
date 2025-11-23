@@ -46,11 +46,12 @@ export interface BarterOffer {
   }>;
   itemRequests?: Array<{
     id: string;
-    category: {
+    description: string;
+    category?: {
       id: string;
       nameAr: string;
       nameEn: string;
-    };
+    } | null;
   }>;
   initiator: {
     id: string;
