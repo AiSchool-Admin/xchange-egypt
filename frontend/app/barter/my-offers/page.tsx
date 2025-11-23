@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getMyBarterOffers, cancelBarterOffer, acceptBarterOffer, rejectBarterOffer, BarterOffer } from '@/lib/api/barter';
+import { getMyBarterOffers, cancelBarterOffer, acceptBarterOffer, rejectBarterOffer, completeBarterExchange, BarterOffer } from '@/lib/api/barter';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function MyBarterOffersPage() {
@@ -68,6 +68,19 @@ export default function MyBarterOffersPage() {
       await loadOffers();
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to reject offer');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleComplete = async (offerId: string) => {
+    if (!confirm('Confirm that the exchange has been completed?')) return;
+    try {
+      setActionLoading(offerId);
+      await completeBarterExchange(offerId);
+      await loadOffers();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to complete exchange');
     } finally {
       setActionLoading(null);
     }
@@ -276,6 +289,19 @@ export default function MyBarterOffersPage() {
                           </button>
                         </>
                       )}
+                    </div>
+                  )}
+
+                  {/* Complete Exchange Button for Accepted Offers */}
+                  {offer.status === 'ACCEPTED' && (
+                    <div className="mt-4 pt-4 border-t flex gap-3">
+                      <button
+                        onClick={() => handleComplete(offer.id)}
+                        disabled={actionLoading === offer.id}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm font-medium"
+                      >
+                        {actionLoading === offer.id ? 'Completing...' : '✓ Complete Exchange'}
+                      </button>
                     </div>
                   )}
                 </div>
