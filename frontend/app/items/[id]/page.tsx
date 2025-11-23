@@ -242,7 +242,28 @@ export default function ItemDetailsPage() {
                   >
                     🛒 Buy Now
                   </button>
-                  <button className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition">
+                  <button
+                    onClick={handleAddToCart}
+                    disabled={addingToCart}
+                    className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 font-semibold transition disabled:opacity-50"
+                  >
+                    {addingToCart ? 'Adding...' : '🛒 Add to Cart'}
+                  </button>
+                  {cartMessage && (
+                    <p className={`text-center text-sm ${cartMessage.includes('Added') ? 'text-green-600' : 'text-red-600'}`}>
+                      {cartMessage}
+                    </p>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        router.push('/login');
+                        return;
+                      }
+                      router.push(`/messages?userId=${item.seller.id}&itemId=${item.id}`);
+                    }}
+                    className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
+                  >
                     💬 Contact Seller
                   </button>
                   <button className="w-full border border-purple-600 text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 font-semibold transition">
