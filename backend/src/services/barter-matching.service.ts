@@ -65,33 +65,39 @@ interface UserPreferences {
 /**
  * Build a directed graph of all possible barter connections
  * Each edge represents: User A wants to give Item X to get Item Y from User B
+ * Uses actual barter offers to determine what users want
  */
 export const buildBarterGraph = async (): Promise<{
   nodes: Map<string, BarterNode>;
   edges: BarterEdge[];
 }> => {
-  // Get all active items available for barter
-  const items = await prisma.item.findMany({
+  // Get all pending barter offers with their preferences
+  const offers = await prisma.barterOffer.findMany({
     where: {
-      status: 'ACTIVE',
-      // Items not in active listings
-      listings: {
-        none: {
-          status: 'ACTIVE',
-        },
-      },
+      status: 'PENDING',
     },
     include: {
-      seller: {
-        select: {
-          id: true,
-          fullName: true,
+      offeredItems: {
+        include: {
+          item: {
+            include: {
+              category: true,
+            },
+          },
         },
       },
-      category: {
-        select: {
-          id: true,
-          parentId: true,
+      preferenceSets: {
+        include: {
+          items: {
+            include: {
+              item: {
+                include: {
+                  seller: true,
+                  category: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -100,37 +106,53 @@ export const buildBarterGraph = async (): Promise<{
   const nodes = new Map<string, BarterNode>();
   const edges: BarterEdge[] = [];
 
-  // Create nodes for each user-item pair
-  for (const item of items) {
-    const nodeKey = `${item.sellerId}-${item.id}`;
-    nodes.set(nodeKey, {
-      userId: item.sellerId,
-      itemId: item.id,
-      wantsItemId: '', // Will be filled when finding matches
-      itemValue: item.estimatedValue,
-      categoryId: item.categoryId,
-    });
-  }
+  // Process each offer to create graph edges
+  for (const offer of offers) {
+    // Get what the user is offering
+    for (const offeredItem of offer.offeredItems) {
+      const nodeKey = `${offer.initiatorId}-${offeredItem.itemId}`;
+      nodes.set(nodeKey, {
+        userId: offer.initiatorId,
+        itemId: offeredItem.itemId,
+        wantsItemId: '', // Will be filled when finding matches
+        itemValue: offeredItem.item.estimatedValue,
+        categoryId: offeredItem.item.categoryId,
+      });
 
-  // Create edges by finding potential matches
-  // For each item, find other items the owner might want
-  for (const itemA of items) {
-    for (const itemB of items) {
-      // Skip if same owner
-      if (itemA.sellerId === itemB.sellerId) continue;
+      // Create edges to what they want
+      for (const prefSet of offer.preferenceSets) {
+        for (const wantedItem of prefSet.items) {
+          // Skip if same owner (shouldn't happen but safety check)
+          if (wantedItem.item.sellerId === offer.initiatorId) continue;
 
-      // Calculate match score
-      const score = calculatePairMatchScore(itemA, itemB);
+          // Calculate match score based on value similarity
+          const valueDiff = Math.abs(offeredItem.item.estimatedValue - wantedItem.item.estimatedValue);
+          const avgValue = (offeredItem.item.estimatedValue + wantedItem.item.estimatedValue) / 2;
+          const valueScore = avgValue > 0 ? Math.max(0, 1 - valueDiff / avgValue) : 0.5;
 
-      if (score > 0.3) {
-        // Threshold for potential match
-        edges.push({
-          from: itemA.sellerId,
-          to: itemB.sellerId,
-          givingItemId: itemA.id,
-          receivingItemId: itemB.id,
-          matchScore: score,
-        });
+          // Higher base score since this is an actual preference (not guessed)
+          const matchScore = 0.5 + (valueScore * 0.5);
+
+          edges.push({
+            from: offer.initiatorId,
+            to: wantedItem.item.sellerId,
+            givingItemId: offeredItem.itemId,
+            receivingItemId: wantedItem.itemId,
+            matchScore,
+          });
+
+          // Also create node for the wanted item owner
+          const wantedNodeKey = `${wantedItem.item.sellerId}-${wantedItem.itemId}`;
+          if (!nodes.has(wantedNodeKey)) {
+            nodes.set(wantedNodeKey, {
+              userId: wantedItem.item.sellerId,
+              itemId: wantedItem.itemId,
+              wantsItemId: '',
+              itemValue: wantedItem.item.estimatedValue,
+              categoryId: wantedItem.item.categoryId,
+            });
+          }
+        }
       }
     }
   }
