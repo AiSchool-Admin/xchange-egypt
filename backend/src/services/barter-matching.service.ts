@@ -236,7 +236,8 @@ const findItemsMatchingDescription = (
 ): { item: any; confidence: number }[] => {
   const matches: { item: any; confidence: number }[] = [];
   const descriptionLower = request.description.toLowerCase();
-  const keywords = descriptionLower.split(/\s+/).filter(w => w.length > 2);
+  // Split on spaces and filter short words, but keep Arabic words
+  const keywords = descriptionLower.split(/\s+/).filter(w => w.length > 1);
 
   for (const item of allItems) {
     // Skip own items
@@ -246,7 +247,7 @@ const findItemsMatchingDescription = (
 
     // Category match (high confidence boost)
     if (request.categoryId && item.categoryId === request.categoryId) {
-      confidence += 0.4;
+      confidence += 0.5;
     }
 
     // Price range match
@@ -254,28 +255,47 @@ const findItemsMatchingDescription = (
     if (request.maxPrice && item.estimatedValue > request.maxPrice) continue;
 
     // Keyword matching in title and description
-    const itemText = `${item.title} ${item.description || ''}`.toLowerCase();
+    const itemTitle = (item.title || '').toLowerCase();
+    const itemDesc = (item.description || '').toLowerCase();
+    const itemText = `${itemTitle} ${itemDesc}`;
+
     let keywordMatches = 0;
     for (const keyword of keywords) {
-      if (itemText.includes(keyword)) {
+      // Check if keyword appears in item text (partial match for Arabic)
+      if (itemText.includes(keyword) || itemTitle.includes(keyword)) {
         keywordMatches++;
+      }
+      // Also check if any item word contains the keyword (for partial Arabic matches)
+      const itemWords = itemText.split(/\s+/);
+      for (const itemWord of itemWords) {
+        if (itemWord.includes(keyword) || keyword.includes(itemWord)) {
+          if (itemWord.length > 2) {
+            keywordMatches += 0.5;
+            break;
+          }
+        }
       }
     }
 
     if (keywords.length > 0) {
-      const keywordScore = keywordMatches / keywords.length;
-      confidence += keywordScore * 0.6;
+      const keywordScore = Math.min(1, keywordMatches / keywords.length);
+      confidence += keywordScore * 0.5;
     }
 
-    // Only include if there's some confidence
-    if (confidence > 0.2) {
+    // If no category selected but keywords match, give base confidence
+    if (!request.categoryId && keywordMatches > 0) {
+      confidence += 0.2;
+    }
+
+    // Lower threshold to be more inclusive
+    if (confidence > 0.15) {
       matches.push({ item, confidence: Math.min(1, confidence) });
     }
   }
 
   // Sort by confidence and return top matches
   matches.sort((a, b) => b.confidence - a.confidence);
-  return matches.slice(0, 10); // Limit to top 10 matches
+  return matches.slice(0, 15); // Increased limit to 15 matches
 };
 
 /**
