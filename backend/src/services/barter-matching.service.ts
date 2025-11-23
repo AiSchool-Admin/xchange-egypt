@@ -265,6 +265,7 @@ export const findBarterCycles = async (
 
 /**
  * DFS helper to find cycles starting from a specific node
+ * Now validates that items properly connect (what A wants = what B gives)
  */
 const findCyclesFromNode = (
   startUserId: string,
@@ -284,9 +285,27 @@ const findCyclesFromNode = (
   // Get neighbors
   const neighbors = adjacencyList.get(currentUserId) || [];
 
+  // Determine what item the current user must give
+  // (must match what the previous user wanted)
+  const requiredGivingItemId = path.length > 0
+    ? path[path.length - 1].receivingItemId
+    : null;
+
   for (const edge of neighbors) {
+    // If we have a required item, only follow edges where user gives that item
+    if (requiredGivingItemId && edge.givingItemId !== requiredGivingItemId) {
+      continue;
+    }
+
     // Found a cycle back to start
     if (edge.to === startUserId && path.length >= minLength - 1) {
+      // Validate the cycle closes properly:
+      // What this edge wants (receivingItemId) must be what the start user gives
+      const firstEdgeGivingItemId = path[0].givingItemId;
+      if (edge.receivingItemId !== firstEdgeGivingItemId) {
+        continue; // Invalid cycle - items don't connect
+      }
+
       const cycleEdges = [...path, edge];
       const totalScore = cycleEdges.reduce((sum, e) => sum + e.matchScore, 0) / cycleEdges.length;
 
