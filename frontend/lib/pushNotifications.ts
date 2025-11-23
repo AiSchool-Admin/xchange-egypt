@@ -59,7 +59,7 @@ export const subscribeToPush = async (apiUrl: string, token: string): Promise<bo
       const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey,
+        applicationServerKey: applicationServerKey.buffer as ArrayBuffer,
       });
     }
 
