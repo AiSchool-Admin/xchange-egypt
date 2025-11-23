@@ -73,6 +73,7 @@ export interface BarterOffer {
 export interface CreateBarterOfferData {
   offeredItemIds: string[];
   requestedItemIds: string[];
+  recipientId?: string;
   message?: string;
 }
 
@@ -168,8 +169,9 @@ export const createBarterOffer = async (
         description: data.message,
       },
     ],
+    recipientId: data.recipientId,
     notes: data.message,
-    isOpenOffer: true, // Open offer means anyone with the requested items can accept
+    isOpenOffer: !data.recipientId, // Open offer if no specific recipient
   };
 
   const response = await apiClient.post('/barter/offers', backendData);

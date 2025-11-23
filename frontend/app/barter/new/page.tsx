@@ -110,9 +110,17 @@ export default function CreateBarterOfferPage() {
     setError('');
 
     try {
+      // Find recipient from selected items (if all belong to same seller)
+      const selectedItems = availableItems.filter((item) =>
+        selectedRequestedItems.includes(item.id)
+      );
+      const sellerIds = [...new Set(selectedItems.map((item) => item.seller?.id).filter(Boolean))];
+      const recipientId = sellerIds.length === 1 ? sellerIds[0] : undefined;
+
       const offerData = {
         offeredItemIds: selectedOfferedItems,
         requestedItemIds: selectedRequestedItems,
+        recipientId,
         message: message || undefined,
       };
 
