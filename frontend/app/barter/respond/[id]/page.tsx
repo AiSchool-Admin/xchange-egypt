@@ -142,7 +142,7 @@ export default function RespondToOfferPage() {
                 {offer.offerer.fullName} is offering:
               </h3>
               <p className="text-sm text-gray-700">
-                {offer.offeredItemIds?.length || 0} item(s)
+                {offer.offeredItems?.length || 0} item(s)
               </p>
               {offer.offeredBundleValue && (
                 <p className="text-sm text-green-600 font-medium mt-1">
