@@ -83,6 +83,18 @@ export default function BarterPage() {
             </div>
             <div className="flex gap-3">
               <Link
+                href="/barter/chains"
+                className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-lg hover:bg-opacity-30 transition font-semibold"
+              >
+                🔗 Smart Chains
+              </Link>
+              <Link
+                href="/barter/open-offers"
+                className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-lg hover:bg-opacity-30 transition font-semibold"
+              >
+                Open Offers
+              </Link>
+              <Link
                 href="/barter/my-offers"
                 className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-lg hover:bg-opacity-30 transition font-semibold"
               >

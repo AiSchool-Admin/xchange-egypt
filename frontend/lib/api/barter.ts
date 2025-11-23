@@ -198,3 +198,35 @@ export const findBarterMatches = async (itemId: string): Promise<BarterItemsResp
   const response = await apiClient.get(`/barter/matches/${itemId}`);
   return response.data;
 };
+
+// Discover chain opportunities for an item
+export const discoverChainOpportunities = async (itemId: string): Promise<any> => {
+  const response = await apiClient.get(`/barter/opportunities/${itemId}`);
+  return response.data;
+};
+
+// Create chain proposal
+export const createChainProposal = async (data: {
+  participantItemIds: string[];
+}): Promise<any> => {
+  const response = await apiClient.post('/barter/chains/proposals', data);
+  return response.data;
+};
+
+// Get chain proposals
+export const getChainProposals = async (): Promise<any> => {
+  const response = await apiClient.get('/barter/chains/proposals');
+  return response.data;
+};
+
+// Accept chain proposal
+export const acceptChainProposal = async (proposalId: string): Promise<any> => {
+  const response = await apiClient.post(`/barter/chains/proposals/${proposalId}/accept`);
+  return response.data;
+};
+
+// Reject chain proposal
+export const rejectChainProposal = async (proposalId: string): Promise<any> => {
+  const response = await apiClient.post(`/barter/chains/proposals/${proposalId}/reject`);
+  return response.data;
+};
