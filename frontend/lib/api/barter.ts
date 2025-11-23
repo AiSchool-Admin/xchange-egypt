@@ -23,8 +23,7 @@ export interface BarterOffer {
   id: string;
   initiatorId: string;
   recipientId?: string | null;
-  offeredItems: BarterItem[];
-  requestedItems: BarterItem[];
+  offeredItemIds: string[];
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
   message?: string;
   notes?: string;
@@ -34,8 +33,24 @@ export interface BarterOffer {
   preferenceSets?: Array<{
     id: string;
     priority: number;
-    itemIds: string[];
     description?: string;
+    items: Array<{
+      id: string;
+      item: {
+        id: string;
+        title: string;
+        images: Array<{ id: string; url: string; isPrimary?: boolean }>;
+        condition: string;
+      };
+    }>;
+  }>;
+  itemRequests?: Array<{
+    id: string;
+    category: {
+      id: string;
+      nameAr: string;
+      nameEn: string;
+    };
   }>;
   initiator: {
     id: string;
