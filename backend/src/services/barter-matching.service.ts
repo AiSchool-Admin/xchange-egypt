@@ -224,8 +224,14 @@ export const findBarterCycles = async (
   const cycles: BarterCycle[] = [];
   const visited = new Set<string>();
 
-  // DFS from each node to find cycles
-  for (const [userId] of nodes) {
+  // Get unique userIds from nodes
+  const userIds = new Set<string>();
+  for (const [, node] of nodes) {
+    userIds.add(node.userId);
+  }
+
+  // DFS from each user to find cycles
+  for (const userId of userIds) {
     if (!visited.has(userId)) {
       findCyclesFromNode(
         userId,
@@ -353,8 +359,14 @@ export const findBarterChains = async (
 
   const chains: BarterChain[] = [];
 
-  // Find chains starting from each node
-  for (const [userId] of nodes) {
+  // Get unique userIds from nodes
+  const userIds = new Set<string>();
+  for (const [, node] of nodes) {
+    userIds.add(node.userId);
+  }
+
+  // Find chains starting from each user
+  for (const userId of userIds) {
     findChainsFromNode(
       userId,
       [],
