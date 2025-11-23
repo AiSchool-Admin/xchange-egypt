@@ -21,24 +21,36 @@ export interface BarterItem {
 
 export interface BarterOffer {
   id: string;
-  offererId: string;
+  initiatorId: string;
+  recipientId?: string | null;
   offeredItems: BarterItem[];
   requestedItems: BarterItem[];
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED';
   message?: string;
+  notes?: string;
   counterOfferId?: string;
-  offerer: {
+  isOpenOffer?: boolean;
+  offeredBundleValue?: number;
+  preferenceSets?: Array<{
+    id: string;
+    priority: number;
+    itemIds: string[];
+    description?: string;
+  }>;
+  initiator: {
     id: string;
     fullName: string;
-    email: string;
-    userType: string;
+    email?: string;
+    avatar?: string | null;
+    userType?: string;
   };
-  recipient: {
+  recipient?: {
     id: string;
     fullName: string;
-    email: string;
-    userType: string;
-  };
+    email?: string;
+    avatar?: string | null;
+    userType?: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
