@@ -352,9 +352,16 @@ export const acceptBarterOffer = async (
     throw new NotFoundError('Barter offer not found');
   }
 
-  // Only recipient can accept
-  if (offer.recipientId !== userId) {
-    throw new ForbiddenError('Only the recipient can accept this offer');
+  // For open offers, anyone except initiator can accept
+  // For regular offers, only recipient can accept
+  if (offer.isOpenOffer) {
+    if (offer.initiatorId === userId) {
+      throw new ForbiddenError('You cannot accept your own offer');
+    }
+  } else {
+    if (offer.recipientId !== userId) {
+      throw new ForbiddenError('Only the recipient can accept this offer');
+    }
   }
 
   if (offer.status !== 'PENDING' && offer.status !== 'COUNTER_OFFERED') {
@@ -370,12 +377,13 @@ export const acceptBarterOffer = async (
     throw new BadRequestError('This offer has expired');
   }
 
-  // Update offer status to accepted
+  // Update offer status to accepted (set recipient for open offers)
   const acceptedOffer = await prisma.barterOffer.update({
     where: { id: offerId },
     data: {
       status: BarterOfferStatus.ACCEPTED,
       respondedAt: new Date(),
+      recipientId: offer.isOpenOffer ? userId : offer.recipientId,
     },
     include: {
       initiator: {
