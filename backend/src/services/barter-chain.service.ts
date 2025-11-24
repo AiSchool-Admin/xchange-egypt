@@ -32,7 +32,7 @@ interface ParticipantResponse {
 
 /**
  * Discover smart barter opportunities for a user's item
- * Returns potential cycles and chains in frontend-expected format
+ * Returns potential cycles in the new optimized format
  */
 export const discoverBarterOpportunities = async (userId: string, itemId: string) => {
   // Verify item belongs to user
@@ -53,62 +53,27 @@ export const discoverBarterOpportunities = async (userId: string, itemId: string
     throw new ForbiddenError('This item does not belong to you');
   }
 
-  // Find matches using smart algorithm
+  // Find matches using optimized algorithm
   const matches = await matchingService.findMatchesForUser(userId, itemId, {
     includeCycles: true,
     includeChains: true,
     maxResults: 20,
   });
 
-  // Get all item details for the opportunities
-  const allItemIds = new Set<string>();
-  [...matches.cycles, ...matches.chains].forEach(match => {
-    match.participants.forEach(p => {
-      allItemIds.add(p.itemId);
-      if (p.wantsItemId) allItemIds.add(p.wantsItemId);
-    });
+  // Format opportunities with full exchange sequence
+  const opportunities = matches.cycles.map((cycle, index) => {
+    return matchingService.formatAsOpportunity(
+      cycle,
+      `OPP-${Date.now()}-${index}`
+    );
   });
-
-  const itemDetails = await prisma.item.findMany({
-    where: { id: { in: Array.from(allItemIds) } },
-    include: {
-      seller: {
-        select: { id: true, fullName: true },
-      },
-    },
-  });
-
-  const itemMap = new Map(itemDetails.map(i => [i.id, i]));
-
-  // Format opportunities for frontend
-  const formatOpportunity = (match: any) => {
-    const items = match.participants.map((p: any) => {
-      const itemDetail = itemMap.get(p.itemId);
-      return {
-        itemId: p.itemId,
-        title: itemDetail?.title || 'Unknown Item',
-        ownerId: p.userId,
-        ownerName: itemDetail?.seller?.fullName || 'Unknown User',
-      };
-    });
-
-    return {
-      cycle: match.participants.map((p: any) => p.userId),
-      items,
-      confidence: match.totalScore,
-    };
-  };
-
-  // Combine cycles and chains into single opportunities array
-  const opportunities = [
-    ...matches.cycles.map(formatOpportunity),
-    ...matches.chains.map(formatOpportunity),
-  ];
 
   return {
     item,
     opportunities,
     total: matches.totalMatches,
+    weights: matchingService.WEIGHTS,
+    threshold: matchingService.EDGE_THRESHOLD,
   };
 };
 
