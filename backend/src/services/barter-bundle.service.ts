@@ -267,18 +267,22 @@ export const createBundleOffer = async (
   // Calculate offered bundle value
   const offeredBundleValue = offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0);
 
-  // Validate all preference set items exist
-  const allPreferenceItemIds = preferenceSets.flatMap((ps) => ps.itemIds);
+  // Validate all preference set items exist (handle empty/undefined itemIds)
+  const allPreferenceItemIds = preferenceSets.flatMap((ps) => ps.itemIds || []);
   const uniquePreferenceItemIds = [...new Set(allPreferenceItemIds)];
 
-  const preferenceItems = await prisma.item.findMany({
-    where: {
-      id: { in: uniquePreferenceItemIds },
-    },
-  });
+  // Only query if there are items to validate
+  let preferenceItems: any[] = [];
+  if (uniquePreferenceItemIds.length > 0) {
+    preferenceItems = await prisma.item.findMany({
+      where: {
+        id: { in: uniquePreferenceItemIds },
+      },
+    });
 
-  if (preferenceItems.length !== uniquePreferenceItemIds.length) {
-    throw new NotFoundError('One or more requested items not found');
+    if (preferenceItems.length !== uniquePreferenceItemIds.length) {
+      throw new NotFoundError('One or more requested items not found');
+    }
   }
 
   // Prevent offering items you're requesting

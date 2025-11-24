@@ -130,10 +130,23 @@ export default function CreateBarterOfferPage() {
       router.push('/barter/my-offers');
     } catch (err: any) {
       console.error('Barter offer creation error:', err.response?.data || err);
-      const errorMessage = err.response?.data?.message ||
-                          err.response?.data?.error ||
-                          err.message ||
-                          'Failed to create barter offer';
+      let errorMessage = 'Failed to create barter offer';
+
+      if (err.response?.data) {
+        const data = err.response.data;
+        if (typeof data.message === 'string') {
+          errorMessage = data.message;
+        } else if (typeof data.error === 'string') {
+          errorMessage = data.error;
+        } else if (data.errors && Array.isArray(data.errors)) {
+          errorMessage = data.errors.map((e: any) => e.message || e).join(', ');
+        } else if (typeof data === 'string') {
+          errorMessage = data;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       setError(errorMessage);
     } finally {
       setLoading(false);
