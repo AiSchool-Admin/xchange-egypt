@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getMyBarterOffers, BarterOffer } from '@/lib/api/barter';
+import { getMyBarterOffers, cancelBarterOffer, acceptBarterOffer, rejectBarterOffer, completeBarterExchange, BarterOffer } from '@/lib/api/barter';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function MyBarterOffersPage() {
@@ -11,6 +11,7 @@ export default function MyBarterOffersPage() {
   const { user } = useAuth();
   const [offers, setOffers] = useState<BarterOffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -25,11 +26,63 @@ export default function MyBarterOffersPage() {
     try {
       setLoading(true);
       const response = await getMyBarterOffers();
-      setOffers(response.data.offers || []);
+      setOffers(response.data.items || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load offers');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancel = async (offerId: string) => {
+    if (!confirm('Are you sure you want to cancel this offer?')) return;
+    try {
+      setActionLoading(offerId);
+      await cancelBarterOffer(offerId);
+      await loadOffers();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to cancel offer');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleAccept = async (offerId: string) => {
+    if (!confirm('Are you sure you want to accept this offer?')) return;
+    try {
+      setActionLoading(offerId);
+      await acceptBarterOffer(offerId);
+      await loadOffers();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to accept offer');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleReject = async (offerId: string) => {
+    if (!confirm('Are you sure you want to reject this offer?')) return;
+    try {
+      setActionLoading(offerId);
+      await rejectBarterOffer(offerId);
+      await loadOffers();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to reject offer');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleComplete = async (offerId: string) => {
+    if (!confirm('Confirm that the exchange has been completed?')) return;
+    try {
+      setActionLoading(offerId);
+      await completeBarterExchange(offerId);
+      await loadOffers();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to complete exchange');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -104,8 +157,8 @@ export default function MyBarterOffersPage() {
         ) : (
           <div className="space-y-4">
             {offers.map((offer) => {
-              const isOfferer = offer.offererId === user.id;
-              const otherParty = isOfferer ? offer.recipient : offer.offerer;
+              const isInitiator = offer.initiatorId === user.id;
+              const otherParty = isInitiator ? offer.recipient : offer.initiator;
 
               return (
                 <div
@@ -116,7 +169,7 @@ export default function MyBarterOffersPage() {
                     <div>
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-semibold text-gray-900">
-                          {isOfferer ? 'Offer to' : 'Offer from'} {otherParty.fullName}
+                          {isInitiator ? 'Offer to' : 'Offer from'} {otherParty?.fullName || 'Open Offer'}
                         </h3>
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
@@ -136,68 +189,72 @@ export default function MyBarterOffersPage() {
                     {/* Offered Items */}
                     <div>
                       <h4 className="font-semibold text-gray-700 mb-2">
-                        {isOfferer ? 'You Offer:' : 'They Offer:'}
+                        {isInitiator ? 'You Offer:' : 'They Offer:'}
                       </h4>
-                      <div className="space-y-2">
-                        {offer.offeredItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex gap-3 p-2 bg-gray-50 rounded"
-                          >
-                            {item.images && item.images.length > 0 && (
-                              <img
-                                src={
-                                  item.images.find((img) => img.isPrimary)?.url ||
-                                  item.images[0]?.url
-                                }
-                                alt={item.title}
-                                className="w-12 h-12 object-cover rounded"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-gray-900 truncate">
-                                {item.title}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {item.category.nameEn}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                      <div className="p-3 bg-gray-50 rounded">
+                        <p className="text-sm text-gray-700">
+                          {offer.offeredItemIds?.length || 0} item(s) offered
+                        </p>
+                        {offer.offeredBundleValue && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Value: EGP {offer.offeredBundleValue.toLocaleString()}
+                          </p>
+                        )}
                       </div>
                     </div>
 
-                    {/* Requested Items */}
+                    {/* Requested Items / Preferences */}
                     <div>
                       <h4 className="font-semibold text-gray-700 mb-2">
-                        {isOfferer ? 'You Get:' : 'They Want:'}
+                        {isInitiator ? 'Looking For:' : 'They Want:'}
                       </h4>
                       <div className="space-y-2">
-                        {offer.requestedItems.map((item) => (
-                          <div
-                            key={item.id}
-                            className="flex gap-3 p-2 bg-gray-50 rounded"
-                          >
-                            {item.images && item.images.length > 0 && (
-                              <img
-                                src={
-                                  item.images.find((img) => img.isPrimary)?.url ||
-                                  item.images[0]?.url
-                                }
-                                alt={item.title}
-                                className="w-12 h-12 object-cover rounded"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm text-gray-900 truncate">
-                                {item.title}
-                              </p>
-                              <p className="text-xs text-gray-600">
-                                {item.category.nameEn}
-                              </p>
+                        {offer.preferenceSets && offer.preferenceSets.length > 0 ? (
+                          offer.preferenceSets.map((prefSet) => (
+                            <div key={prefSet.id} className="p-2 bg-gray-50 rounded">
+                              {prefSet.items.map((prefItem) => (
+                                <div key={prefItem.id} className="flex gap-3 items-center">
+                                  {prefItem.item.images && prefItem.item.images.length > 0 && (
+                                    <img
+                                      src={prefItem.item.images[0]?.url}
+                                      alt={prefItem.item.title}
+                                      className="w-10 h-10 object-cover rounded"
+                                    />
+                                  )}
+                                  <p className="text-sm text-gray-900 truncate">
+                                    {prefItem.item.title}
+                                  </p>
+                                </div>
+                              ))}
+                              {prefSet.description && (
+                                <p className="text-xs text-gray-500 mt-1">{prefSet.description}</p>
+                              )}
                             </div>
+                          ))
+                        ) : offer.itemRequests && offer.itemRequests.length > 0 ? (
+                          offer.itemRequests.map((req) => (
+                            <div key={req.id} className="p-2 bg-gray-50 rounded">
+                              <p className="text-sm text-gray-700">
+                                {req.description}
+                              </p>
+                              {req.category && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Category: {req.category.nameEn}
+                                </p>
+                              )}
+                            </div>
+                          ))
+                        ) : offer.isOpenOffer ? (
+                          <div className="p-2 bg-yellow-50 rounded">
+                            <p className="text-sm text-yellow-700">
+                              Open offer - accepting any items
+                            </p>
                           </div>
-                        ))}
+                        ) : (
+                          <div className="p-2 bg-gray-50 rounded">
+                            <p className="text-sm text-gray-500">No specific preferences</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -205,6 +262,51 @@ export default function MyBarterOffersPage() {
                   {offer.message && (
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
                       <p className="text-sm text-gray-700">{offer.message}</p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  {offer.status === 'PENDING' && (
+                    <div className="mt-4 pt-4 border-t flex gap-3">
+                      {isInitiator ? (
+                        <button
+                          onClick={() => handleCancel(offer.id)}
+                          disabled={actionLoading === offer.id}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
+                        >
+                          {actionLoading === offer.id ? 'Cancelling...' : 'Cancel Offer'}
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleAccept(offer.id)}
+                            disabled={actionLoading === offer.id}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
+                          >
+                            {actionLoading === offer.id ? 'Processing...' : 'Accept'}
+                          </button>
+                          <button
+                            onClick={() => handleReject(offer.id)}
+                            disabled={actionLoading === offer.id}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 text-sm font-medium"
+                          >
+                            {actionLoading === offer.id ? 'Processing...' : 'Reject'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Complete Exchange Button for Accepted Offers */}
+                  {offer.status === 'ACCEPTED' && (
+                    <div className="mt-4 pt-4 border-t flex gap-3">
+                      <button
+                        onClick={() => handleComplete(offer.id)}
+                        disabled={actionLoading === offer.id}
+                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm font-medium"
+                      >
+                        {actionLoading === offer.id ? 'Completing...' : '✓ Complete Exchange'}
+                      </button>
                     </div>
                   )}
                 </div>

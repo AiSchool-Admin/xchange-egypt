@@ -282,7 +282,7 @@ export default function ItemDetailsPage() {
                     onClick={handleBuyNow}
                     className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold transition"
                   >
-                    🛒 Buy Now
+                    💳 Buy Now
                   </button>
                   <button
                     onClick={handleAddToCart}

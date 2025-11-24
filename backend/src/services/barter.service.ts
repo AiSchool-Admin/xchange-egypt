@@ -695,9 +695,13 @@ export const searchBarterableItems = async (
     governorate,
     excludeMyItems = true,
     userId,
-    page = 1,
-    limit = 20,
+    page: rawPage = 1,
+    limit: rawLimit = 20,
   } = params;
+
+  // Ensure page and limit are integers
+  const page = typeof rawPage === 'string' ? parseInt(rawPage, 10) : rawPage;
+  const limit = typeof rawLimit === 'string' ? parseInt(rawLimit, 10) : rawLimit;
 
   const where: any = {
     // Exclude items with active sale listings
