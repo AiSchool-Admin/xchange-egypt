@@ -102,10 +102,10 @@ export const WEIGHTS = {
   LOCATION: 0.10,
 };
 
-export const EDGE_THRESHOLD = 0.50; // Minimum score to create an edge (lowered for testing)
+export const EDGE_THRESHOLD = 0.35; // Minimum score to create an edge
 const MIN_CYCLE_LENGTH = 2;
 const MAX_CYCLE_LENGTH = 5;
-const MIN_CYCLE_SCORE = 0.40; // Minimum average score for a valid cycle
+const MIN_CYCLE_SCORE = 0.30; // Minimum average score for a valid cycle
 
 // ============================================
 // Utility Functions
