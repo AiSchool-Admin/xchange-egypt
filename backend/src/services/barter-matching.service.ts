@@ -323,21 +323,8 @@ export const buildBarterGraph = async (): Promise<{
       },
     },
     include: {
-      seller: {
-        select: {
-          id: true,
-          fullName: true,
-          latitude: true,
-          longitude: true,
-        },
-      },
-      category: {
-        select: {
-          id: true,
-          parentId: true,
-          nameEn: true,
-        },
-      },
+      seller: true,
+      category: true,
     },
   });
 
@@ -348,19 +335,10 @@ export const buildBarterGraph = async (): Promise<{
       isOpenOffer: true,
     },
     include: {
-      initiator: {
-        select: {
-          id: true,
-          fullName: true,
-          latitude: true,
-          longitude: true,
-        },
-      },
+      initiator: true,
       itemRequests: {
         include: {
-          category: {
-            select: { id: true, parentId: true, nameEn: true },
-          },
+          category: true,
         },
       },
       preferenceSets: {
