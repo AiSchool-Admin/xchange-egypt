@@ -39,8 +39,20 @@ export default function CreateBarterOfferPage() {
   // NEW: Request mode and cash
   const [requestMode, setRequestMode] = useState<'select' | 'describe'>('select');
   const [requestDescription, setRequestDescription] = useState('');
+  const [requestCategory, setRequestCategory] = useState('');
   const [offeredCash, setOfferedCash] = useState(0);
   const [requestedCash, setRequestedCash] = useState(0);
+
+  // Categories from available items
+  const categories = React.useMemo(() => {
+    const catMap = new Map<string, string>();
+    availableItems.forEach(item => {
+      if (item.category?.nameEn) {
+        catMap.set(item.category.nameEn, item.category.nameEn);
+      }
+    });
+    return Array.from(catMap.values()).sort();
+  }, [availableItems]);
 
   useEffect(() => {
     if (!user) {
@@ -153,6 +165,7 @@ export default function CreateBarterOfferPage() {
         requestedCashAmount: requestedCash,
         itemRequest: requestMode === 'describe' ? {
           description: requestDescription,
+          category: requestCategory || undefined,
         } : undefined,
       };
 
@@ -393,6 +406,20 @@ export default function CreateBarterOfferPage() {
                   <>
                     {/* Describe What You Want */}
                     <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Category (Optional)
+                      </label>
+                      <select
+                        value={requestCategory}
+                        onChange={(e) => setRequestCategory(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent mb-4"
+                      >
+                        <option value="">Any Category</option>
+                        {categories.map((cat) => (
+                          <option key={cat} value={cat}>{cat}</option>
+                        ))}
+                      </select>
+
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Describe what you're looking for
                       </label>
