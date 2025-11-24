@@ -15,7 +15,7 @@ interface SelectableItem {
   price?: number;
   estimatedValue?: number;
   images: Array<{ url: string; isPrimary: boolean }>;
-  category: { nameEn: string };
+  category: { id: string; nameEn: string };
   seller?: { id: string; fullName: string };
 }
 
@@ -40,18 +40,21 @@ export default function CreateBarterOfferPage() {
   const [requestMode, setRequestMode] = useState<'select' | 'describe'>('select');
   const [requestDescription, setRequestDescription] = useState('');
   const [requestCategory, setRequestCategory] = useState('');
+  const [requestKeywords, setRequestKeywords] = useState('');
+  const [requestValueMin, setRequestValueMin] = useState('');
+  const [requestValueMax, setRequestValueMax] = useState('');
   const [offeredCash, setOfferedCash] = useState(0);
   const [requestedCash, setRequestedCash] = useState(0);
 
   // Categories from available items
   const categories = React.useMemo(() => {
-    const catMap = new Map<string, string>();
+    const catMap = new Map<string, { id: string; nameEn: string }>();
     availableItems.forEach(item => {
-      if (item.category?.nameEn) {
-        catMap.set(item.category.nameEn, item.category.nameEn);
+      if (item.category?.id && item.category?.nameEn) {
+        catMap.set(item.category.id, { id: item.category.id, nameEn: item.category.nameEn });
       }
     });
-    return Array.from(catMap.values()).sort();
+    return Array.from(catMap.values()).sort((a, b) => a.nameEn.localeCompare(b.nameEn));
   }, [availableItems]);
 
   useEffect(() => {
@@ -165,7 +168,12 @@ export default function CreateBarterOfferPage() {
         requestedCashAmount: requestedCash,
         itemRequest: requestMode === 'describe' ? {
           description: requestDescription,
-          category: requestCategory || undefined,
+          categoryId: requestCategory || undefined,
+          keywords: requestKeywords
+            ? requestKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
+            : undefined,
+          minPrice: requestValueMin ? parseFloat(requestValueMin) : undefined,
+          maxPrice: requestValueMax ? parseFloat(requestValueMax) : undefined,
         } : undefined,
       };
 
@@ -416,7 +424,7 @@ export default function CreateBarterOfferPage() {
                       >
                         <option value="">Any Category</option>
                         {categories.map((cat) => (
-                          <option key={cat} value={cat}>{cat}</option>
+                          <option key={cat.id} value={cat.id}>{cat.nameEn}</option>
                         ))}
                       </select>
 
@@ -433,6 +441,55 @@ export default function CreateBarterOfferPage() {
                       <p className="text-xs text-gray-500 mt-2">
                         AI will find matching items from available listings
                       </p>
+                    </div>
+
+                    {/* Keywords */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Keywords (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={requestKeywords}
+                        onChange={(e) => setRequestKeywords(e.target.value)}
+                        placeholder="e.g., iPhone, Samsung, laptop (comma-separated)"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Add specific keywords to refine your search
+                      </p>
+                    </div>
+
+                    {/* Value Range */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Min Value (EGP)
+                        </label>
+                        <input
+                          type="number"
+                          value={requestValueMin}
+                          onChange={(e) => setRequestValueMin(e.target.value)}
+                          min="0"
+                          step="100"
+                          placeholder="Minimum"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Max Value (EGP)
+                        </label>
+                        <input
+                          type="number"
+                          value={requestValueMax}
+                          onChange={(e) => setRequestValueMax(e.target.value)}
+                          min="0"
+                          step="100"
+                          placeholder="Maximum"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        />
+                      </div>
                     </div>
                   </>
                 )}

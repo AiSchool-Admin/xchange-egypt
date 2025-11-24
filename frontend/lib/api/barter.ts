@@ -82,8 +82,11 @@ export interface CreateBarterOfferData {
   itemRequest?: {
     description: string;
     categoryId?: string;
+    subcategoryId?: string;
     minPrice?: number;
     maxPrice?: number;
+    keywords?: string[];
+    condition?: string;
   };
 }
 
@@ -103,8 +106,11 @@ export interface BackendBarterOfferData {
   itemRequests?: Array<{
     description: string;
     categoryId?: string;
+    subcategoryId?: string;
     minPrice?: number;
     maxPrice?: number;
+    keywords?: string[];
+    condition?: string;
   }>;
 }
 
