@@ -65,6 +65,8 @@ interface UserPreferences {
 /**
  * Build a directed graph of all possible barter connections
  * Each edge represents: User A wants to give Item X to get Item Y from User B
+ *
+ * Uses actual user preferences from barter offers to create meaningful edges
  */
 export const buildBarterGraph = async (): Promise<{
   nodes: Map<string, BarterNode>;
@@ -74,14 +76,19 @@ export const buildBarterGraph = async (): Promise<{
   const items = await prisma.item.findMany({
     where: {
       status: 'ACTIVE',
-      // Items not in active listings
       listings: {
         none: {
           status: 'ACTIVE',
         },
       },
     },
-    include: {
+    select: {
+      id: true,
+      sellerId: true,
+      title: true,
+      estimatedValue: true,
+      categoryId: true,
+      condition: true,
       seller: {
         select: {
           id: true,
@@ -97,6 +104,45 @@ export const buildBarterGraph = async (): Promise<{
     },
   });
 
+  // Get all active/pending barter offers to understand what users want
+  const barterOffers = await prisma.barterOffer.findMany({
+    where: {
+      status: { in: ['PENDING', 'COUNTERED'] },
+      isOpenOffer: true, // Focus on open offers for chain discovery
+    },
+    include: {
+      initiator: {
+        select: { id: true, fullName: true },
+      },
+      // Get specific items user wants
+      preferenceSets: {
+        include: {
+          items: {
+            include: {
+              item: {
+                select: {
+                  id: true,
+                  sellerId: true,
+                  categoryId: true,
+                  estimatedValue: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { priority: 'asc' },
+      },
+      // Get category/description-based requests
+      itemRequests: {
+        include: {
+          category: {
+            select: { id: true, parentId: true },
+          },
+        },
+      },
+    },
+  });
+
   const nodes = new Map<string, BarterNode>();
   const edges: BarterEdge[] = [];
 
@@ -106,36 +152,151 @@ export const buildBarterGraph = async (): Promise<{
     nodes.set(nodeKey, {
       userId: item.sellerId,
       itemId: item.id,
-      wantsItemId: '', // Will be filled when finding matches
+      wantsItemId: '',
       itemValue: item.estimatedValue,
       categoryId: item.categoryId,
     });
   }
 
-  // Create edges by finding potential matches
-  // For each item, find other items the owner might want
+  // Create edges based on actual user preferences from barter offers
+  for (const offer of barterOffers) {
+    const userId = offer.initiatorId;
+    const offeredItemIds = offer.offeredItemIds;
+
+    // Get user's offered items
+    const userItems = items.filter(item =>
+      item.sellerId === userId && offeredItemIds.includes(item.id)
+    );
+
+    if (userItems.length === 0) continue;
+
+    // Process specific item wants from preference sets
+    for (const prefSet of offer.preferenceSets) {
+      for (const prefItem of prefSet.items) {
+        const wantedItem = prefItem.item;
+        if (!wantedItem || wantedItem.sellerId === userId) continue;
+
+        // Create edge: User wants this specific item
+        for (const userItem of userItems) {
+          const score = calculatePreferenceMatchScore(userItem, wantedItem, 1.0); // High score for specific wants
+          edges.push({
+            from: userId,
+            to: wantedItem.sellerId,
+            givingItemId: userItem.id,
+            receivingItemId: wantedItem.id,
+            matchScore: score,
+          });
+        }
+      }
+    }
+
+    // Process category-based wants from item requests
+    for (const request of offer.itemRequests) {
+      // Find items that match this category request
+      const matchingItems = items.filter(item => {
+        if (item.sellerId === userId) return false;
+
+        // Category match
+        if (request.categoryId) {
+          if (item.categoryId !== request.categoryId &&
+              item.category?.parentId !== request.categoryId) {
+            return false;
+          }
+        }
+
+        // Price range match
+        if (request.minPrice && item.estimatedValue < request.minPrice) return false;
+        if (request.maxPrice && item.estimatedValue > request.maxPrice) return false;
+
+        // Condition match
+        if (request.condition && item.condition !== request.condition) return false;
+
+        return true;
+      });
+
+      // Create edges for category matches
+      for (const matchingItem of matchingItems) {
+        for (const userItem of userItems) {
+          const score = calculatePreferenceMatchScore(userItem, matchingItem, 0.7); // Good score for category match
+
+          // Avoid duplicate edges
+          const existingEdge = edges.find(e =>
+            e.from === userId &&
+            e.to === matchingItem.sellerId &&
+            e.givingItemId === userItem.id &&
+            e.receivingItemId === matchingItem.id
+          );
+
+          if (!existingEdge) {
+            edges.push({
+              from: userId,
+              to: matchingItem.sellerId,
+              givingItemId: userItem.id,
+              receivingItemId: matchingItem.id,
+              matchScore: score,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // Also add edges based on item similarity as fallback (lower score)
+  // This helps find opportunities even without explicit barter offers
   for (const itemA of items) {
     for (const itemB of items) {
-      // Skip if same owner
       if (itemA.sellerId === itemB.sellerId) continue;
 
-      // Calculate match score
-      const score = calculatePairMatchScore(itemA, itemB);
+      // Check if edge already exists
+      const existingEdge = edges.find(e =>
+        e.from === itemA.sellerId &&
+        e.to === itemB.sellerId &&
+        e.givingItemId === itemA.id &&
+        e.receivingItemId === itemB.id
+      );
 
-      if (score > 0.3) {
-        // Threshold for potential match
-        edges.push({
-          from: itemA.sellerId,
-          to: itemB.sellerId,
-          givingItemId: itemA.id,
-          receivingItemId: itemB.id,
-          matchScore: score,
-        });
+      if (!existingEdge) {
+        const score = calculatePairMatchScore(itemA, itemB);
+        if (score > 0.5) { // Higher threshold for similarity-based matches
+          edges.push({
+            from: itemA.sellerId,
+            to: itemB.sellerId,
+            givingItemId: itemA.id,
+            receivingItemId: itemB.id,
+            matchScore: score * 0.5, // Reduce score for non-preference matches
+          });
+        }
       }
     }
   }
 
   return { nodes, edges };
+};
+
+/**
+ * Calculate match score based on user preference
+ */
+const calculatePreferenceMatchScore = (
+  offeredItem: any,
+  wantedItem: any,
+  baseScore: number
+): number => {
+  let score = baseScore;
+
+  // Value similarity bonus (up to +0.2)
+  const valueDiff = Math.abs(offeredItem.estimatedValue - wantedItem.estimatedValue);
+  const avgValue = (offeredItem.estimatedValue + wantedItem.estimatedValue) / 2;
+  if (avgValue > 0) {
+    const valueScore = Math.max(0, 1 - valueDiff / avgValue);
+    score += valueScore * 0.2;
+  }
+
+  // Category match bonus (up to +0.1)
+  if (offeredItem.categoryId === wantedItem.categoryId) {
+    score += 0.1;
+  }
+
+  return Math.min(1, score);
 };
 
 /**

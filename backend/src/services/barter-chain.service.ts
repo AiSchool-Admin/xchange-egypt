@@ -32,12 +32,17 @@ interface ParticipantResponse {
 
 /**
  * Discover smart barter opportunities for a user's item
- * Returns potential cycles and chains
+ * Returns potential cycles and chains in frontend-expected format
  */
 export const discoverBarterOpportunities = async (userId: string, itemId: string) => {
   // Verify item belongs to user
   const item = await prisma.item.findUnique({
     where: { id: itemId },
+    include: {
+      seller: {
+        select: { id: true, fullName: true },
+      },
+    },
   });
 
   if (!item) {
@@ -55,31 +60,55 @@ export const discoverBarterOpportunities = async (userId: string, itemId: string
     maxResults: 20,
   });
 
+  // Get all item details for the opportunities
+  const allItemIds = new Set<string>();
+  [...matches.cycles, ...matches.chains].forEach(match => {
+    match.participants.forEach(p => {
+      allItemIds.add(p.itemId);
+      if (p.wantsItemId) allItemIds.add(p.wantsItemId);
+    });
+  });
+
+  const itemDetails = await prisma.item.findMany({
+    where: { id: { in: Array.from(allItemIds) } },
+    include: {
+      seller: {
+        select: { id: true, fullName: true },
+      },
+    },
+  });
+
+  const itemMap = new Map(itemDetails.map(i => [i.id, i]));
+
+  // Format opportunities for frontend
+  const formatOpportunity = (match: any) => {
+    const items = match.participants.map((p: any) => {
+      const itemDetail = itemMap.get(p.itemId);
+      return {
+        itemId: p.itemId,
+        title: itemDetail?.title || 'Unknown Item',
+        ownerId: p.userId,
+        ownerName: itemDetail?.seller?.fullName || 'Unknown User',
+      };
+    });
+
+    return {
+      cycle: match.participants.map((p: any) => p.userId),
+      items,
+      confidence: match.totalScore,
+    };
+  };
+
+  // Combine cycles and chains into single opportunities array
+  const opportunities = [
+    ...matches.cycles.map(formatOpportunity),
+    ...matches.chains.map(formatOpportunity),
+  ];
+
   return {
     item,
-    opportunities: {
-      cycles: matches.cycles.map((c) => ({
-        type: 'CYCLE',
-        participants: c.participants.length,
-        matchScore: c.totalScore,
-        preview: c.participants.map((p) => ({
-          userId: p.userId,
-          givingItemId: p.itemId,
-          receivingItemId: p.wantsItemId,
-        })),
-      })),
-      chains: matches.chains.map((c) => ({
-        type: 'CHAIN',
-        participants: c.participants.length,
-        matchScore: c.totalScore,
-        preview: c.participants.map((p) => ({
-          userId: p.userId,
-          givingItemId: p.itemId,
-          receivingItemId: p.wantsItemId,
-        })),
-      })),
-      total: matches.totalMatches,
-    },
+    opportunities,
+    total: matches.totalMatches,
   };
 };
 
