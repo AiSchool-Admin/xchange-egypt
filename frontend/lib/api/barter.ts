@@ -76,6 +76,7 @@ export interface CreateBarterOfferData {
   requestedItemIds: string[];
   recipientId?: string;
   message?: string;
+  description?: string; // For description-based requests
   offeredCashAmount?: number;
   requestedCashAmount?: number;
   itemRequest?: {
@@ -160,12 +161,6 @@ export const getBarterItems = async (params?: {
   return response.data;
 };
 
-// Get my barter offers
-export const getMyBarterOffers = async (): Promise<BarterOffersResponse> => {
-  const response = await apiClient.get('/barter/offers/my');
-  return response.data;
-};
-
 // Get barter offer by ID
 export const getBarterOffer = async (id: string): Promise<BarterOfferResponse> => {
   const response = await apiClient.get(`/barter/offers/${id}`);
@@ -177,13 +172,15 @@ export const createBarterOffer = async (
   data: CreateBarterOfferData
 ): Promise<BarterOfferResponse> => {
   // Transform frontend data to backend format
+  const descriptionText = data.description || data.message;
+
   const backendData: BackendBarterOfferData = {
     offeredItemIds: data.offeredItemIds,
     preferenceSets: data.requestedItemIds.length > 0 ? [
       {
         priority: 1,
-        itemIds: data.requestedItemIds,
-        description: data.message,
+        itemIds: data.requestedItemIds || [],
+        description: descriptionText,
       },
     ] : [],
     recipientId: data.recipientId,
@@ -237,5 +234,71 @@ export const completeBarterExchange = async (id: string): Promise<BarterOfferRes
 // Find barter matches for an item
 export const findBarterMatches = async (itemId: string): Promise<BarterItemsResponse> => {
   const response = await apiClient.get(`/barter/matches/${itemId}`);
+  return response.data;
+};
+
+// Discover chain opportunities for an item
+export const discoverChainOpportunities = async (itemId: string): Promise<any> => {
+  const response = await apiClient.get(`/barter/opportunities/${itemId}`);
+  return response.data;
+};
+
+// Create chain proposal
+export const createChainProposal = async (data: {
+  participantItemIds: string[];
+}): Promise<any> => {
+  const response = await apiClient.post('/barter/chains', data);
+  return response.data;
+};
+
+// Get my barter chains
+export const getChainProposals = async (): Promise<any> => {
+  const response = await apiClient.get('/barter/chains/my');
+  return response.data;
+};
+
+// Get pending chain proposals
+export const getPendingChainProposals = async (): Promise<any> => {
+  const response = await apiClient.get('/barter/chains/pending');
+  return response.data;
+};
+
+// Accept chain proposal
+export const acceptChainProposal = async (chainId: string): Promise<any> => {
+  const response = await apiClient.post(`/barter/chains/${chainId}/respond`, { action: 'ACCEPT' });
+  return response.data;
+};
+
+// Reject chain proposal
+export const rejectChainProposal = async (chainId: string): Promise<any> => {
+  const response = await apiClient.post(`/barter/chains/${chainId}/respond`, { action: 'REJECT' });
+  return response.data;
+};
+
+// Get matching offers (open offers from others)
+export const getMatchingOffers = async (params?: {
+  page?: number;
+  limit?: number;
+}): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+  const response = await apiClient.get(`/barter/offers/matching?${queryParams.toString()}`);
+  return response.data;
+};
+
+// Get my barter offers
+export const getMyBarterOffers = async (params?: {
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<any> => {
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+  const response = await apiClient.get(`/barter/offers/my?${queryParams.toString()}`);
   return response.data;
 };

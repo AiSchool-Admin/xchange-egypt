@@ -97,8 +97,7 @@ export default function ItemDetailsPage() {
     setCartMessage('');
 
     try {
-      const token = localStorage.getItem('token');
-      // First check if item has a listing, if not create one or use item ID
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items`, {
         method: 'POST',
         headers: {
@@ -106,7 +105,7 @@ export default function ItemDetailsPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          listingId: item.id, // Using item ID as listing ID for now
+          listingId: item.id,
           quantity: 1,
         }),
       });
@@ -297,7 +296,16 @@ export default function ItemDetailsPage() {
                       {cartMessage}
                     </p>
                   )}
-                  <button className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition">
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        router.push('/login');
+                        return;
+                      }
+                      router.push(`/messages?userId=${item.seller.id}&itemId=${item.id}`);
+                    }}
+                    className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
+                  >
                     💬 Contact Seller
                   </button>
                   <button className="w-full border border-purple-600 text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 font-semibold transition">

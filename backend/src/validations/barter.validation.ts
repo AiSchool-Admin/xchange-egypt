@@ -11,10 +11,16 @@ const preferenceSetSchema = z.object({
   priority: z.number().int().min(1).max(10, 'Priority must be between 1 and 10'),
   itemIds: z
     .array(z.string().uuid('Invalid item ID'))
-    .min(1, 'Must specify at least one item')
-    .max(10, 'Maximum 10 items per preference set'),
-  description: z.string().max(200, 'Description must not exceed 200 characters').optional(),
-});
+    .max(10, 'Maximum 10 items per preference set')
+    .default([]),
+  description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
+}).refine(
+  (data) => data.itemIds.length > 0 || (data.description && data.description.trim().length > 0),
+  {
+    message: 'Must specify at least one item or provide a description',
+    path: ['itemIds'],
+  }
+);
 
 // Item Request Schema (for description-based requests)
 const itemRequestSchema = z.object({
