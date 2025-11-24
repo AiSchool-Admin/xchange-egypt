@@ -309,7 +309,10 @@ const calculateMatchScore = (
 /**
  * Build directed weighted graph from barter listings
  */
-export const buildBarterGraph = async (): Promise<{
+export const buildBarterGraph = async (
+  requestingUserId?: string,
+  requestingItemId?: string
+): Promise<{
   nodes: Map<string, BarterNode>;
   edges: BarterEdge[];
   listings: BarterListing[];
@@ -388,6 +391,41 @@ export const buildBarterGraph = async (): Promise<{
     }
   }
 
+  // Add requesting user's item if not already in the graph
+  if (requestingUserId && requestingItemId) {
+    const alreadyInGraph = listings.some(
+      l => l.userId === requestingUserId && l.itemId === requestingItemId
+    );
+
+    if (!alreadyInGraph) {
+      const requestingItem = items.find(i => i.id === requestingItemId);
+      if (requestingItem) {
+        // Create a listing for the requesting item
+        // This item wants to match with any item that other users are offering
+        const listing: BarterListing = {
+          userId: requestingUserId,
+          userName: requestingItem.seller.fullName,
+          itemId: requestingItem.id,
+          itemTitle: requestingItem.title,
+          offerCategory: requestingItem.category?.parentId || requestingItem.categoryId,
+          offerSubCategory: requestingItem.categoryId,
+          offerDescription: requestingItem.description || requestingItem.title,
+          estimatedValue: requestingItem.estimatedValue,
+          // For discovery, we're open to any category - match will be based on what others want
+          desiredCategory: null,
+          desiredSubCategory: null,
+          desiredDescription: '',
+          location: (requestingItem.seller as any).latitude && (requestingItem.seller as any).longitude
+            ? { lat: (requestingItem.seller as any).latitude, lng: (requestingItem.seller as any).longitude }
+            : null,
+        };
+
+        listings.push(listing);
+        nodes.set(`${listing.userId}-${listing.itemId}`, { listing });
+      }
+    }
+  }
+
   // Create edges based on match scores
   const edges: BarterEdge[] = [];
 
@@ -424,9 +462,11 @@ export const buildBarterGraph = async (): Promise<{
  */
 export const findBarterCycles = async (
   maxLength: number = MAX_CYCLE_LENGTH,
-  minLength: number = MIN_CYCLE_LENGTH
+  minLength: number = MIN_CYCLE_LENGTH,
+  requestingUserId?: string,
+  requestingItemId?: string
 ): Promise<BarterCycle[]> => {
-  const { nodes, edges, listings } = await buildBarterGraph();
+  const { nodes, edges, listings } = await buildBarterGraph(requestingUserId, requestingItemId);
 
   // Build adjacency list
   const adjacencyList = new Map<string, BarterEdge[]>();
@@ -604,7 +644,8 @@ export const findMatchesForUser = async (
   let cycles: BarterCycle[] = [];
 
   if (includeCycles) {
-    const allCycles = await findBarterCycles();
+    // Pass the requesting user's item to include it in the graph
+    const allCycles = await findBarterCycles(MAX_CYCLE_LENGTH, MIN_CYCLE_LENGTH, userId, itemId);
 
     // Filter cycles that include this user's item
     cycles = allCycles.filter(c =>
