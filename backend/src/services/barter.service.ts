@@ -1,5 +1,6 @@
 import { PrismaClient, BarterOfferStatus, ItemCondition } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
+import { createNotification } from './notification.service';
 
 const prisma = new PrismaClient();
 
@@ -413,7 +414,19 @@ export const acceptBarterOffer = async (
   });
 
   // TODO: Create transaction or exchange record
-  // TODO: Send notifications to both parties
+
+  // Send notification to initiator that offer was accepted
+  await createNotification({
+    userId: acceptedOffer.initiatorId,
+    type: 'BARTER_ACCEPTED',
+    title: 'Barter Offer Accepted!',
+    message: `${acceptedOffer.recipient?.fullName || 'Someone'} accepted your barter offer`,
+    priority: 'HIGH',
+    entityType: 'BARTER_OFFER',
+    entityId: acceptedOffer.id,
+    actionUrl: `/barter/my-offers`,
+    actionText: 'View Details',
+  });
 
   return acceptedOffer;
 };
@@ -467,6 +480,19 @@ export const rejectBarterOffer = async (
         },
       },
     },
+  });
+
+  // Send notification to initiator that offer was rejected
+  await createNotification({
+    userId: rejectedOffer.initiatorId,
+    type: 'BARTER_REJECTED',
+    title: 'Barter Offer Declined',
+    message: `${rejectedOffer.recipient?.fullName || 'Someone'} declined your barter offer`,
+    priority: 'MEDIUM',
+    entityType: 'BARTER_OFFER',
+    entityId: rejectedOffer.id,
+    actionUrl: `/barter/my-offers`,
+    actionText: 'View Details',
   });
 
   return rejectedOffer;
