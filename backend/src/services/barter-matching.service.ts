@@ -367,7 +367,10 @@ export const buildBarterGraph = async (
   const nodes = new Map<string, BarterNode>();
 
   for (const item of items) {
+    // Use item's own preferences (from item creation form)
+    // Fallback to barter offer preferences if item preferences not set
     const userDemand = userDemands.get(item.sellerId);
+    const itemPreferences = item as any; // Cast to access new fields
 
     const listing: BarterListing = {
       userId: item.sellerId,
@@ -378,10 +381,10 @@ export const buildBarterGraph = async (
       offerSubCategory: item.categoryId,
       offerDescription: item.description || item.title,
       estimatedValue: item.estimatedValue,
-      // Use specific demand if user has barter offer, otherwise open to similar value items
-      desiredCategory: userDemand?.categoryId || null,
-      desiredSubCategory: null,
-      desiredDescription: userDemand?.description || '',
+      // Priority: Item preferences > Barter offer preferences > null
+      desiredCategory: itemPreferences.desiredCategoryId || userDemand?.categoryId || null,
+      desiredSubCategory: itemPreferences.desiredCategoryId || null,
+      desiredDescription: itemPreferences.desiredKeywords || userDemand?.description || '',
       location: (item.seller as any).latitude && (item.seller as any).longitude
         ? { lat: (item.seller as any).latitude, lng: (item.seller as any).longitude }
         : null,
