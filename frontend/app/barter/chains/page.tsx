@@ -75,7 +75,8 @@ export default function ChainsPage() {
 
       // Load items first
       const itemsResponse = await getMyItems();
-      setMyItems(itemsResponse.data.items.filter((item: any) => item.status === 'ACTIVE'));
+      const items = itemsResponse?.data?.items || [];
+      setMyItems(items.filter((item: any) => item.status === 'ACTIVE'));
 
       // Try to load proposals (may not exist yet)
       try {
