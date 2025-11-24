@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createItem } from '@/lib/api/items';
-import { getCategories, Category } from '@/lib/api/categories';
+import { getRootCategories, Category } from '@/lib/api/categories';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
@@ -26,9 +26,10 @@ export default function NewItemPage() {
     governorate: '',
   });
 
-  // Filter parent categories and sub-categories
-  const parentCategories = categories.filter(cat => !cat.parentId);
-  const subCategories = categories.filter(cat => cat.parentId === formData.parentCategoryId);
+  // Parent categories are the root categories, sub-categories come from their children
+  const parentCategories = categories;
+  const selectedParent = categories.find(cat => cat.id === formData.parentCategoryId);
+  const subCategories = selectedParent?.children || [];
 
   useEffect(() => {
     if (!user) {
@@ -40,7 +41,7 @@ export default function NewItemPage() {
 
   const loadCategories = async () => {
     try {
-      const response = await getCategories();
+      const response = await getRootCategories();
       setCategories(response.data);
     } catch (err) {
       console.error('Failed to load categories:', err);
