@@ -107,7 +107,7 @@ export const buildBarterGraph = async (): Promise<{
   // Get all active/pending barter offers to understand what users want
   const barterOffers = await prisma.barterOffer.findMany({
     where: {
-      status: { in: ['PENDING', 'COUNTERED'] },
+      status: { in: ['PENDING', 'COUNTER_OFFERED'] },
       isOpenOffer: true, // Focus on open offers for chain discovery
     },
     include: {
@@ -171,8 +171,9 @@ export const buildBarterGraph = async (): Promise<{
     if (userItems.length === 0) continue;
 
     // Process specific item wants from preference sets
-    for (const prefSet of offer.preferenceSets) {
-      for (const prefItem of prefSet.items) {
+    const preferenceSets = (offer as any).preferenceSets || [];
+    for (const prefSet of preferenceSets) {
+      for (const prefItem of prefSet.items || []) {
         const wantedItem = prefItem.item;
         if (!wantedItem || wantedItem.sellerId === userId) continue;
 
@@ -191,7 +192,8 @@ export const buildBarterGraph = async (): Promise<{
     }
 
     // Process category-based wants from item requests
-    for (const request of offer.itemRequests) {
+    const itemRequests = (offer as any).itemRequests || [];
+    for (const request of itemRequests) {
       // Find items that match this category request
       const matchingItems = items.filter(item => {
         if (item.sellerId === userId) return false;
