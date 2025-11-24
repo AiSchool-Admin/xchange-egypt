@@ -291,7 +291,7 @@ export default function ChainsPage() {
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        {proposal.participants.length}-Party Chain
+                        {(proposal.participants?.length || 0)}-Party Chain
                       </h3>
                       <p className="text-sm text-gray-600">
                         Created {new Date(proposal.createdAt).toLocaleDateString()}
@@ -308,9 +308,9 @@ export default function ChainsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    {proposal.participants.map((p) => (
+                    {(proposal.participants || []).map((p) => (
                       <div key={p.userId} className="flex items-center justify-between text-sm">
-                        <span>{p.user.fullName}: {p.item.title}</span>
+                        <span>{p.user?.fullName || 'Unknown'}: {p.item?.title || 'Item'}</span>
                         <span className={`px-2 py-0.5 rounded text-xs ${
                           p.status === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
                           p.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
