@@ -94,7 +94,7 @@ interface BarterOpportunity {
 // Configuration
 // ============================================
 
-const WEIGHTS = {
+export const WEIGHTS = {
   VALUE: 0.35,
   DESCRIPTION: 0.35,
   SUB_CATEGORY: 0.10,
@@ -102,7 +102,7 @@ const WEIGHTS = {
   LOCATION: 0.10,
 };
 
-const EDGE_THRESHOLD = 0.50; // Minimum score to create an edge (lowered for testing)
+export const EDGE_THRESHOLD = 0.50; // Minimum score to create an edge (lowered for testing)
 const MIN_CYCLE_LENGTH = 2;
 const MAX_CYCLE_LENGTH = 5;
 const MIN_CYCLE_SCORE = 0.40; // Minimum average score for a valid cycle
@@ -378,8 +378,8 @@ export const buildBarterGraph = async (): Promise<{
         desiredCategory: request?.categoryId || request?.category?.parentId || null,
         desiredSubCategory: request?.subcategoryId || request?.categoryId || null,
         desiredDescription: request?.description || '',
-        location: offer.initiator.latitude && offer.initiator.longitude
-          ? { lat: offer.initiator.latitude, lng: offer.initiator.longitude }
+        location: (offer.initiator as any).latitude && (offer.initiator as any).longitude
+          ? { lat: (offer.initiator as any).latitude, lng: (offer.initiator as any).longitude }
           : null,
       };
 
