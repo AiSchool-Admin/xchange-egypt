@@ -154,11 +154,14 @@ export const createPreferenceSets = async (
 
   // Create preference sets with items
   for (const prefSetInput of preferenceSetsInput) {
-    // Get items and calculate total value
-    const items = await getBundleItems(prefSetInput.itemIds);
+    // Get items and calculate total value (handle empty itemIds for description-only)
+    const itemIds = prefSetInput.itemIds || [];
+    const items = itemIds.length > 0 ? await getBundleItems(itemIds) : [];
     const totalValue = items.reduce((sum, item) => sum + item.estimatedValue, 0);
     const valueDiff = calculateValueDifference(offeredBundleValue, totalValue);
-    const isBalanced = isBundleBalanced(offeredBundleValue, totalValue);
+    const isBalanced = offeredBundleValue > 0
+      ? isBundleBalanced(offeredBundleValue, totalValue)
+      : totalValue === 0;
 
     // Create preference set
     const preferenceSet = await prisma.barterPreferenceSet.create({
@@ -168,18 +171,20 @@ export const createPreferenceSets = async (
         totalValue,
         valueDifference: valueDiff,
         isBalanced,
-        description: prefSetInput.description || items.map((i) => i.title).join(' + '),
+        description: prefSetInput.description || (items.length > 0 ? items.map((i) => i.title).join(' + ') : ''),
       },
     });
 
-    // Create preference items
-    await prisma.barterPreferenceItem.createMany({
-      data: items.map((item) => ({
-        preferenceSetId: preferenceSet.id,
-        itemId: item.itemId,
-        itemValue: item.estimatedValue,
-      })),
-    });
+    // Create preference items only if there are items
+    if (items.length > 0) {
+      await prisma.barterPreferenceItem.createMany({
+        data: items.map((item) => ({
+          preferenceSetId: preferenceSet.id,
+          itemId: item.itemId,
+          itemValue: item.estimatedValue,
+        })),
+      });
+    }
   }
 };
 
