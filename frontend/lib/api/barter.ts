@@ -55,6 +55,7 @@ export interface CreateBarterOfferData {
   offeredItemIds: string[];
   requestedItemIds: string[];
   message?: string;
+  description?: string; // For description-based requests
 }
 
 export interface BackendBarterOfferData {
@@ -134,13 +135,15 @@ export const createBarterOffer = async (
   data: CreateBarterOfferData
 ): Promise<BarterOfferResponse> => {
   // Transform frontend data to backend format
+  const descriptionText = data.description || data.message;
+
   const backendData: BackendBarterOfferData = {
     offeredItemIds: data.offeredItemIds,
     preferenceSets: [
       {
         priority: 1,
-        itemIds: data.requestedItemIds,
-        description: data.message,
+        itemIds: data.requestedItemIds || [],
+        description: descriptionText,
       },
     ],
     notes: data.message,

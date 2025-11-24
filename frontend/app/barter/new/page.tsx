@@ -122,7 +122,8 @@ export default function CreateBarterOfferPage() {
       const offerData = {
         offeredItemIds: selectedOfferedItems,
         requestedItemIds: requestMode === 'items' ? selectedRequestedItems : [],
-        message: requestMode === 'description' ? requestDescription : (message || undefined),
+        message: message || undefined,
+        description: requestMode === 'description' ? requestDescription : undefined,
       };
 
       await createBarterOffer(offerData);
