@@ -79,7 +79,7 @@ export default function OpenOffersPage() {
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <h3 className="font-semibold text-gray-900">
-                      {offer.offerer.fullName} is offering
+                      {offer.initiator.fullName} is offering
                     </h3>
                     <p className="text-sm text-gray-600">
                       {new Date(offer.createdAt).toLocaleDateString()}
@@ -94,13 +94,9 @@ export default function OpenOffersPage() {
                   {/* Offering */}
                   <div className="bg-green-50 p-4 rounded-lg">
                     <h4 className="font-medium text-green-700 mb-2">Offering:</h4>
-                    <div className="space-y-1">
-                      {offer.offeredItems?.map((item) => (
-                        <p key={item.id} className="text-sm text-gray-700">
-                          • {item.title}
-                        </p>
-                      )) || <p className="text-sm text-gray-500">No items listed</p>}
-                    </div>
+                    <p className="text-sm text-gray-700">
+                      {offer.offeredItemIds.length} item{offer.offeredItemIds.length !== 1 ? 's' : ''}
+                    </p>
                     {offer.offeredBundleValue && (
                       <p className="text-sm text-green-600 font-medium mt-2">
                         Value: ~{offer.offeredBundleValue.toLocaleString()} EGP
@@ -119,12 +115,19 @@ export default function OpenOffersPage() {
                           </p>
                         ))}
                       </div>
-                    ) : offer.requestedItems && offer.requestedItems.length > 0 ? (
+                    ) : offer.preferenceSets && offer.preferenceSets.length > 0 ? (
                       <div className="space-y-1">
-                        {offer.requestedItems.map((item) => (
-                          <p key={item.id} className="text-sm text-gray-700">
-                            • {item.title}
-                          </p>
+                        {offer.preferenceSets.map((ps) => (
+                          <div key={ps.id}>
+                            {ps.description && (
+                              <p className="text-sm text-gray-700">• {ps.description}</p>
+                            )}
+                            {ps.items.map((item) => (
+                              <p key={item.id} className="text-sm text-gray-700">
+                                • {item.item.title}
+                              </p>
+                            ))}
+                          </div>
                         ))}
                       </div>
                     ) : (
@@ -133,7 +136,7 @@ export default function OpenOffersPage() {
                   </div>
                 </div>
 
-                {user && user.id !== offer.offererId && (
+                {user && user.id !== offer.initiator.id && (
                   <Link
                     href={`/barter/respond/${offer.id}`}
                     className="block w-full text-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold"
