@@ -31,6 +31,7 @@ export default function Navigation() {
     { href: '/auctions', label: 'Auctions', icon: '🔨' },
     { href: '/barter', label: 'Barter', icon: '🔄' },
     { href: '/messages', label: 'Messages', icon: '💬' },
+    { href: '/notifications', label: 'Notifications', icon: '🔔' },
   ];
 
   const isActive = (href: string) => pathname.startsWith(href);
