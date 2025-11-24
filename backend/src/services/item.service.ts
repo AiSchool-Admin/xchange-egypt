@@ -15,6 +15,11 @@ interface CreateItemData {
   estimatedValue: number;
   location?: string;
   governorate?: string;
+  // Barter preferences
+  desiredCategoryId?: string;
+  desiredKeywords?: string;
+  desiredValueMin?: number;
+  desiredValueMax?: number;
 }
 
 interface UpdateItemData {
@@ -102,6 +107,11 @@ export const createItem = async (
       estimatedValue: itemData.estimatedValue,
       location: itemData.location,
       images: processedImages,
+      // Barter preferences
+      desiredCategoryId: itemData.desiredCategoryId,
+      desiredKeywords: itemData.desiredKeywords,
+      desiredValueMin: itemData.desiredValueMin,
+      desiredValueMax: itemData.desiredValueMax,
     },
     include: {
       seller: {
