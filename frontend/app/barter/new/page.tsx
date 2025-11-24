@@ -129,7 +129,12 @@ export default function CreateBarterOfferPage() {
       await createBarterOffer(offerData);
       router.push('/barter/my-offers');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create barter offer');
+      console.error('Barter offer creation error:', err.response?.data || err);
+      const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.error ||
+                          err.message ||
+                          'Failed to create barter offer';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -127,23 +127,35 @@ export const createBarterOffer = async (
   if (preferenceSets && preferenceSets.length > 0) {
     preferenceSetsData = {
       create: await Promise.all(preferenceSets.map(async (ps) => {
-        const items = await prisma.item.findMany({
-          where: { id: { in: ps.itemIds } },
-        });
+        const items = ps.itemIds && ps.itemIds.length > 0
+          ? await prisma.item.findMany({
+              where: { id: { in: ps.itemIds } },
+            })
+          : [];
         const totalValue = items.reduce((sum, item) => sum + item.estimatedValue, 0);
-        return {
+
+        // Build the preference set data
+        const psData: any = {
           priority: ps.priority,
           totalValue,
           valueDifference: totalValue - offeredBundleValue,
-          isBalanced: Math.abs(totalValue - offeredBundleValue) / offeredBundleValue < 0.2,
+          isBalanced: offeredBundleValue > 0
+            ? Math.abs(totalValue - offeredBundleValue) / offeredBundleValue < 0.2
+            : totalValue === 0,
           description: ps.description,
-          items: {
+        };
+
+        // Only create items relation if there are items
+        if (ps.itemIds && ps.itemIds.length > 0) {
+          psData.items = {
             create: ps.itemIds.map(itemId => ({
               itemId,
               itemValue: items.find(i => i.id === itemId)?.estimatedValue || 0,
             })),
-          },
-        };
+          };
+        }
+
+        return psData;
       })),
     };
   }
