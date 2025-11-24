@@ -36,6 +36,10 @@ export default function CreateBarterOfferPage() {
   const [selectedRequestedItems, setSelectedRequestedItems] = useState<string[]>([]);
   const [message, setMessage] = useState('');
 
+  // Description mode for "What I Want"
+  const [requestMode, setRequestMode] = useState<'items' | 'description'>('items');
+  const [requestDescription, setRequestDescription] = useState('');
+
   useEffect(() => {
     if (!user) {
       router.push('/login');
@@ -101,8 +105,13 @@ export default function CreateBarterOfferPage() {
       return;
     }
 
-    if (selectedRequestedItems.length === 0) {
+    if (requestMode === 'items' && selectedRequestedItems.length === 0) {
       setError('Please select at least one item you want in exchange');
+      return;
+    }
+
+    if (requestMode === 'description' && !requestDescription.trim()) {
+      setError('Please describe what you want in exchange');
       return;
     }
 
@@ -112,11 +121,11 @@ export default function CreateBarterOfferPage() {
     try {
       const offerData = {
         offeredItemIds: selectedOfferedItems,
-        requestedItemIds: selectedRequestedItems,
-        message: message || undefined,
+        requestedItemIds: requestMode === 'items' ? selectedRequestedItems : [],
+        message: requestMode === 'description' ? requestDescription : (message || undefined),
       };
 
-      const response = await createBarterOffer(offerData);
+      await createBarterOffer(offerData);
       router.push('/barter/my-offers');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to create barter offer');
@@ -237,10 +246,49 @@ export default function CreateBarterOfferPage() {
             {/* Right: Items I Want */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
-                📥 Items I Want ({selectedRequestedItems.length})
+                📥 What I Want
               </h2>
 
-              {loadingAvailableItems ? (
+              {/* Mode Toggle */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setRequestMode('items')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
+                    requestMode === 'items'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Select Items
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRequestMode('description')}
+                  className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition ${
+                    requestMode === 'description'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Describe
+                </button>
+              </div>
+
+              {requestMode === 'description' ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Describe what you're looking for and let matching offers find you
+                  </p>
+                  <textarea
+                    value={requestDescription}
+                    onChange={(e) => setRequestDescription(e.target.value)}
+                    rows={6}
+                    placeholder="e.g., Looking for electronics, furniture, or books in good condition..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  />
+                </div>
+              ) : loadingAvailableItems ? (
                 <div className="text-center py-12">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                 </div>
@@ -301,7 +349,7 @@ export default function CreateBarterOfferPage() {
           </div>
 
           {/* Summary */}
-          {(selectedOfferedItems.length > 0 || selectedRequestedItems.length > 0) && (
+          {(selectedOfferedItems.length > 0 || selectedRequestedItems.length > 0 || requestDescription.trim()) && (
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Trade Summary</h2>
 
@@ -321,7 +369,9 @@ export default function CreateBarterOfferPage() {
 
                 <div>
                   <h3 className="font-semibold text-gray-700 mb-2">You Get:</h3>
-                  {selectedRequestedDetails.length > 0 ? (
+                  {requestMode === 'description' && requestDescription.trim() ? (
+                    <p className="text-sm text-gray-600 italic">"{requestDescription}"</p>
+                  ) : selectedRequestedDetails.length > 0 ? (
                     <ul className="space-y-1 text-sm text-gray-600">
                       {selectedRequestedDetails.map((item) => (
                         <li key={item.id}>• {item.title}</li>
@@ -362,7 +412,8 @@ export default function CreateBarterOfferPage() {
               disabled={
                 loading ||
                 selectedOfferedItems.length === 0 ||
-                selectedRequestedItems.length === 0
+                (requestMode === 'items' && selectedRequestedItems.length === 0) ||
+                (requestMode === 'description' && !requestDescription.trim())
               }
               className="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
