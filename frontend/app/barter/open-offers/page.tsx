@@ -122,9 +122,9 @@ export default function OpenOffersPage() {
                             {ps.description && (
                               <p className="text-sm text-gray-700">• {ps.description}</p>
                             )}
-                            {ps.items.map((item) => (
+                            {ps.items?.map((item) => (
                               <p key={item.id} className="text-sm text-gray-700">
-                                • {item.item.title}
+                                • {item.item?.title || 'Unknown item'}
                               </p>
                             ))}
                           </div>
