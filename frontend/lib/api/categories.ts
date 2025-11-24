@@ -51,3 +51,9 @@ export const getCategoryTree = async (): Promise<CategoriesResponse> => {
   const response = await apiClient.get('/categories/tree');
   return response.data;
 };
+
+// Get root categories with children
+export const getRootCategories = async (): Promise<CategoriesResponse> => {
+  const response = await apiClient.get('/categories/roots');
+  return response.data;
+};

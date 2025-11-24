@@ -77,6 +77,11 @@ export const createItemSchema = z.object({
     governorate: z.enum(EGYPTIAN_GOVERNORATES, {
       errorMap: () => ({ message: 'Invalid governorate' }),
     }).optional(), // Made optional since Item model doesn't have this field
+    // Barter preferences
+    desiredCategoryId: z.string().uuid('Invalid desired category ID').optional(),
+    desiredKeywords: z.string().max(500, 'Keywords must not exceed 500 characters').optional(),
+    desiredValueMin: z.number().positive('Minimum value must be positive').optional(),
+    desiredValueMax: z.number().positive('Maximum value must be positive').optional(),
   }),
 });
 

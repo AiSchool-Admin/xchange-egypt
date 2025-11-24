@@ -32,12 +32,17 @@ interface ParticipantResponse {
 
 /**
  * Discover smart barter opportunities for a user's item
- * Returns potential cycles and chains
+ * Returns potential cycles in the new optimized format
  */
 export const discoverBarterOpportunities = async (userId: string, itemId: string) => {
   // Verify item belongs to user
   const item = await prisma.item.findUnique({
     where: { id: itemId },
+    include: {
+      seller: {
+        select: { id: true, fullName: true },
+      },
+    },
   });
 
   if (!item) {
@@ -48,38 +53,27 @@ export const discoverBarterOpportunities = async (userId: string, itemId: string
     throw new ForbiddenError('This item does not belong to you');
   }
 
-  // Find matches using smart algorithm
+  // Find matches using optimized algorithm
   const matches = await matchingService.findMatchesForUser(userId, itemId, {
     includeCycles: true,
     includeChains: true,
     maxResults: 20,
   });
 
+  // Format opportunities with full exchange sequence
+  const opportunities = matches.cycles.map((cycle, index) => {
+    return matchingService.formatAsOpportunity(
+      cycle,
+      `OPP-${Date.now()}-${index}`
+    );
+  });
+
   return {
     item,
-    opportunities: {
-      cycles: matches.cycles.map((c) => ({
-        type: 'CYCLE',
-        participants: c.participants.length,
-        matchScore: c.totalScore,
-        preview: c.participants.map((p) => ({
-          userId: p.userId,
-          givingItemId: p.itemId,
-          receivingItemId: p.wantsItemId,
-        })),
-      })),
-      chains: matches.chains.map((c) => ({
-        type: 'CHAIN',
-        participants: c.participants.length,
-        matchScore: c.totalScore,
-        preview: c.participants.map((p) => ({
-          userId: p.userId,
-          givingItemId: p.itemId,
-          receivingItemId: p.wantsItemId,
-        })),
-      })),
-      total: matches.totalMatches,
-    },
+    opportunities,
+    total: matches.totalMatches,
+    weights: matchingService.WEIGHTS,
+    threshold: matchingService.EDGE_THRESHOLD,
   };
 };
 

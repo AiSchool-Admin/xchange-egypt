@@ -38,6 +38,11 @@ export interface CreateItemData {
   governorate: string;
   quantity?: number;
   imageUrls?: string[];
+  // Barter preferences
+  desiredCategoryId?: string;
+  desiredKeywords?: string;
+  desiredValueMin?: number;
+  desiredValueMax?: number;
 }
 
 export interface ItemsResponse {

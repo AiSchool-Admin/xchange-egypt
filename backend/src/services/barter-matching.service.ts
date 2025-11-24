@@ -1,12 +1,15 @@
 /**
- * Smart Barter Matching Service
+ * Optimized Complex Barter Matching Engine
  *
- * Advanced algorithms for multi-party barter matching
- * Supports:
- * - Cycle detection (A→B→C→A)
- * - Chain detection (A→B→C→D)
- * - Match score calculation
- * - Graph-based matching
+ * Multi-party (2-N parties) exchange cycle discovery that maximizes
+ * aggregate Match Score and minimizes cash differentials.
+ *
+ * Weights:
+ * - Value Equivalent: 35%
+ * - Description (Semantic): 35%
+ * - Sub-Category: 10%
+ * - Primary Category: 10%
+ * - Location/Logistics: 10%
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -17,416 +20,567 @@ const prisma = new PrismaClient();
 // Types and Interfaces
 // ============================================
 
-interface BarterNode {
+interface BarterListing {
   userId: string;
+  userName: string;
   itemId: string;
-  wantsItemId: string;
-  itemValue: number;
-  categoryId: string;
+  itemTitle: string;
+  offerCategory: string | null;      // Primary category ID
+  offerSubCategory: string | null;   // Sub-category ID (item's categoryId)
+  offerDescription: string;
+  estimatedValue: number;
+  desiredCategory: string | null;    // From itemRequest
+  desiredSubCategory: string | null; // From itemRequest
+  desiredDescription: string;        // From itemRequest
+  location: { lat: number; lng: number } | null;
+}
+
+interface BarterNode {
+  listing: BarterListing;
 }
 
 interface BarterEdge {
-  from: string; // userId
-  to: string;   // userId
-  givingItemId: string;
-  receivingItemId: string;
+  from: string;           // userId
+  to: string;             // userId
+  fromItemId: string;
+  toItemId: string;
   matchScore: number;
+  breakdown: {
+    valueScore: number;
+    descriptionScore: number;
+    subCategoryScore: number;
+    categoryScore: number;
+    locationScore: number;
+  };
 }
 
 interface BarterCycle {
-  participants: BarterNode[];
+  participants: BarterListing[];
   edges: BarterEdge[];
-  totalScore: number;
-  cycleType: 'CYCLE';
+  totalAggregateScore: number;
+  averageScore: number;
+  cashDifferential: number;
+  isOptimal: boolean;
 }
 
-interface BarterChain {
-  participants: BarterNode[];
-  edges: BarterEdge[];
-  totalScore: number;
-  chainType: 'CHAIN';
+interface ExchangeSequenceItem {
+  from: string;
+  fromName: string;
+  to: string;
+  toName: string;
+  itemOffered: string;
+  itemOfferedTitle: string;
+  itemValue: number;
 }
 
-type BarterMatch = BarterCycle | BarterChain;
-
-interface UserPreferences {
-  userId: string;
-  itemId: string;
-  wantedCategories: string[];
-  maxDistance?: number;
-  minItemValue?: number;
-  maxItemValue?: number;
+interface BarterOpportunity {
+  opportunityId: string;
+  type: string;
+  participantCount: number;
+  participants: string[];
+  participantNames: string[];
+  exchangeSequence: ExchangeSequenceItem[];
+  totalAggregateMatchScore: number;
+  averageMatchScore: number;
+  requiredCashDifferential: number;
+  isOptimal: boolean;
+  breakdown: {
+    totalValueOffered: number;
+    totalValueDemanded: number;
+  };
 }
 
 // ============================================
-// Graph Building
+// Configuration
+// ============================================
+
+export const WEIGHTS = {
+  VALUE: 0.35,
+  DESCRIPTION: 0.35,
+  SUB_CATEGORY: 0.10,
+  CATEGORY: 0.10,
+  LOCATION: 0.10,
+};
+
+export const EDGE_THRESHOLD = 0.35; // Minimum score to create an edge
+const MIN_CYCLE_LENGTH = 2;
+const MAX_CYCLE_LENGTH = 5;
+const MIN_CYCLE_SCORE = 0.30; // Minimum average score for a valid cycle
+
+// ============================================
+// Utility Functions
 // ============================================
 
 /**
- * Build a directed graph of all possible barter connections
- * Each edge represents: User A wants to give Item X to get Item Y from User B
+ * Calculate Haversine distance between two coordinates in kilometers
  */
-export const buildBarterGraph = async (): Promise<{
+const calculateDistance = (
+  loc1: { lat: number; lng: number } | null,
+  loc2: { lat: number; lng: number } | null
+): number => {
+  if (!loc1 || !loc2) return 1000; // Default large distance if no location
+
+  const R = 6371; // Earth's radius in km
+  const dLat = ((loc2.lat - loc1.lat) * Math.PI) / 180;
+  const dLon = ((loc2.lng - loc1.lng) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((loc1.lat * Math.PI) / 180) *
+      Math.cos((loc2.lat * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+/**
+ * Tokenize and normalize text for comparison
+ */
+const tokenize = (text: string): string[] => {
+  if (!text) return [];
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s\u0600-\u06FF]/g, ' ') // Keep Arabic and English chars
+    .split(/\s+/)
+    .filter(word => word.length > 2);
+};
+
+/**
+ * Calculate semantic similarity between two descriptions
+ * Using TF-IDF-like approach with keyword matching
+ */
+const calculateDescriptionSimilarity = (
+  offerDesc: string,
+  desiredDesc: string
+): number => {
+  const offerTokens = tokenize(offerDesc);
+  const desiredTokens = tokenize(desiredDesc);
+
+  if (offerTokens.length === 0 || desiredTokens.length === 0) {
+    return 0.5; // Neutral score if no description
+  }
+
+  // Calculate Jaccard-like similarity with weighting
+  const offerSet = new Set(offerTokens);
+  const desiredSet = new Set(desiredTokens);
+
+  let matchCount = 0;
+  let totalWeight = 0;
+
+  for (const token of desiredSet) {
+    totalWeight += 1;
+    if (offerSet.has(token)) {
+      matchCount += 1;
+    }
+  }
+
+  // Also check partial matches (substring)
+  for (const desiredToken of desiredSet) {
+    for (const offerToken of offerSet) {
+      if (
+        offerToken.includes(desiredToken) ||
+        desiredToken.includes(offerToken)
+      ) {
+        if (!offerSet.has(desiredToken)) {
+          matchCount += 0.5; // Partial match
+        }
+      }
+    }
+  }
+
+  const similarity = totalWeight > 0 ? matchCount / totalWeight : 0;
+  return Math.min(1, similarity);
+};
+
+/**
+ * Calculate value similarity score
+ * Closer values = higher score
+ */
+const calculateValueSimilarity = (
+  offeredValue: number,
+  desiredValue: number
+): number => {
+  if (offeredValue <= 0 || desiredValue <= 0) return 0.5;
+
+  const ratio = Math.min(offeredValue, desiredValue) / Math.max(offeredValue, desiredValue);
+  return ratio; // 1 = exact match, 0 = very different
+};
+
+/**
+ * Calculate location score (inverse of distance)
+ */
+const calculateLocationScore = (
+  loc1: { lat: number; lng: number } | null,
+  loc2: { lat: number; lng: number } | null
+): number => {
+  const distance = calculateDistance(loc1, loc2);
+
+  // Score decreases with distance
+  // 0 km = 1.0, 50 km = 0.5, 100+ km = ~0.1
+  if (distance <= 0) return 1.0;
+  return Math.max(0.1, 1 / (1 + distance / 50));
+};
+
+// ============================================
+// Core Match Function
+// ============================================
+
+/**
+ * Calculate composite match score between Listing A's offer and Listing B's demand
+ *
+ * Score = Σ(Wi × Similarityi)
+ *
+ * Weights:
+ * - Value Equivalent: 35%
+ * - Description (Semantic): 35%
+ * - Sub-Category: 10%
+ * - Primary Category: 10%
+ * - Location/Logistics: 10%
+ */
+const calculateMatchScore = (
+  offerListing: BarterListing,
+  demandListing: BarterListing
+): { score: number; breakdown: BarterEdge['breakdown'] } => {
+  // 1. Value Similarity (35%)
+  const valueScore = calculateValueSimilarity(
+    offerListing.estimatedValue,
+    demandListing.estimatedValue
+  );
+
+  // 2. Description Similarity (35%)
+  const descriptionScore = calculateDescriptionSimilarity(
+    offerListing.offerDescription,
+    demandListing.desiredDescription
+  );
+
+  // 3. Sub-Category Match (10%) - Binary
+  let subCategoryScore = 0;
+  if (demandListing.desiredSubCategory) {
+    if (offerListing.offerSubCategory === demandListing.desiredSubCategory) {
+      subCategoryScore = 1;
+    }
+  } else {
+    subCategoryScore = 0.5; // Neutral if no specific subcategory desired
+  }
+
+  // 4. Primary Category Match (10%) - Binary
+  let categoryScore = 0;
+  if (demandListing.desiredCategory) {
+    if (
+      offerListing.offerCategory === demandListing.desiredCategory ||
+      offerListing.offerSubCategory === demandListing.desiredCategory
+    ) {
+      categoryScore = 1;
+    }
+  } else {
+    categoryScore = 0.5; // Neutral if no specific category desired
+  }
+
+  // 5. Location Score (10%)
+  const locationScore = calculateLocationScore(
+    offerListing.location,
+    demandListing.location
+  );
+
+  // Calculate weighted total
+  const totalScore =
+    WEIGHTS.VALUE * valueScore +
+    WEIGHTS.DESCRIPTION * descriptionScore +
+    WEIGHTS.SUB_CATEGORY * subCategoryScore +
+    WEIGHTS.CATEGORY * categoryScore +
+    WEIGHTS.LOCATION * locationScore;
+
+  return {
+    score: Math.min(1, totalScore),
+    breakdown: {
+      valueScore,
+      descriptionScore,
+      subCategoryScore,
+      categoryScore,
+      locationScore,
+    },
+  };
+};
+
+// ============================================
+// Graph Construction
+// ============================================
+
+/**
+ * Build directed weighted graph from barter listings
+ */
+export const buildBarterGraph = async (
+  requestingUserId?: string,
+  requestingItemId?: string
+): Promise<{
   nodes: Map<string, BarterNode>;
   edges: BarterEdge[];
+  listings: BarterListing[];
 }> => {
   // Get all active items available for barter
   const items = await prisma.item.findMany({
     where: {
       status: 'ACTIVE',
-      // Items not in active listings
       listings: {
-        none: {
-          status: 'ACTIVE',
-        },
+        none: { status: 'ACTIVE' },
       },
     },
     include: {
-      seller: {
-        select: {
-          id: true,
-          fullName: true,
-        },
-      },
+      seller: true,
       category: {
-        select: {
-          id: true,
-          parentId: true,
+        include: {
+          parent: true,
         },
       },
     },
   });
 
-  const nodes = new Map<string, BarterNode>();
-  const edges: BarterEdge[] = [];
+  // Get barter offers to understand specific demands (enhances matching)
+  const barterOffers = await prisma.barterOffer.findMany({
+    where: {
+      status: { in: ['PENDING', 'COUNTER_OFFERED'] },
+      isOpenOffer: true,
+    },
+    include: {
+      itemRequests: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  });
 
-  // Create nodes for each user-item pair
-  for (const item of items) {
-    const nodeKey = `${item.sellerId}-${item.id}`;
-    nodes.set(nodeKey, {
-      userId: item.sellerId,
-      itemId: item.id,
-      wantsItemId: '', // Will be filled when finding matches
-      itemValue: item.estimatedValue,
-      categoryId: item.categoryId,
-    });
+  // Create a map of user demands from barter offers
+  const userDemands = new Map<string, { categoryId: string | null; description: string }>();
+  for (const offer of barterOffers) {
+    const request = (offer as any).itemRequests?.[0];
+    if (request) {
+      userDemands.set(offer.initiatorId, {
+        categoryId: request.categoryId || null,
+        description: request.description || '',
+      });
+    }
   }
 
-  // Create edges by finding potential matches
-  // For each item, find other items the owner might want
-  for (const itemA of items) {
-    for (const itemB of items) {
-      // Skip if same owner
-      if (itemA.sellerId === itemB.sellerId) continue;
+  // Create listings from ALL active items
+  const listings: BarterListing[] = [];
+  const nodes = new Map<string, BarterNode>();
 
-      // Calculate match score
-      const score = calculatePairMatchScore(itemA, itemB);
+  for (const item of items) {
+    // Use item's own preferences (from item creation form)
+    // Fallback to barter offer preferences if item preferences not set
+    const userDemand = userDemands.get(item.sellerId);
+    const itemPreferences = item as any; // Cast to access new fields
 
-      if (score > 0.3) {
-        // Threshold for potential match
+    const listing: BarterListing = {
+      userId: item.sellerId,
+      userName: item.seller.fullName,
+      itemId: item.id,
+      itemTitle: item.title,
+      offerCategory: item.category?.parentId || item.categoryId,
+      offerSubCategory: item.categoryId,
+      offerDescription: item.description || item.title,
+      estimatedValue: item.estimatedValue,
+      // Priority: Item preferences > Barter offer preferences > null
+      desiredCategory: itemPreferences.desiredCategoryId || userDemand?.categoryId || null,
+      desiredSubCategory: itemPreferences.desiredCategoryId || null,
+      desiredDescription: itemPreferences.desiredKeywords || userDemand?.description || '',
+      location: (item.seller as any).latitude && (item.seller as any).longitude
+        ? { lat: (item.seller as any).latitude, lng: (item.seller as any).longitude }
+        : null,
+    };
+
+    listings.push(listing);
+    nodes.set(`${listing.userId}-${listing.itemId}`, { listing });
+  }
+
+  // Create edges based on match scores
+  const edges: BarterEdge[] = [];
+
+  for (const listingA of listings) {
+    for (const listingB of listings) {
+      // Skip same user
+      if (listingA.userId === listingB.userId) continue;
+
+      // Calculate match: A's offer matches B's demand
+      const { score, breakdown } = calculateMatchScore(listingA, listingB);
+
+      if (score >= EDGE_THRESHOLD) {
         edges.push({
-          from: itemA.sellerId,
-          to: itemB.sellerId,
-          givingItemId: itemA.id,
-          receivingItemId: itemB.id,
+          from: listingA.userId,
+          to: listingB.userId,
+          fromItemId: listingA.itemId,
+          toItemId: listingB.itemId,
           matchScore: score,
+          breakdown,
         });
       }
     }
   }
 
-  return { nodes, edges };
-};
-
-/**
- * Calculate match score between two items
- * Score 0-1 based on:
- * - Category similarity
- * - Value similarity
- * - Condition match
- */
-const calculatePairMatchScore = (itemA: any, itemB: any): number => {
-  let score = 0;
-
-  // Category match (40%)
-  if (itemA.categoryId === itemB.categoryId) {
-    score += 0.4;
-  } else if (itemA.category.parentId === itemB.category.parentId) {
-    score += 0.2; // Same parent category
-  }
-
-  // Value similarity (40%)
-  const valueDiff = Math.abs(itemA.estimatedValue - itemB.estimatedValue);
-  const avgValue = (itemA.estimatedValue + itemB.estimatedValue) / 2;
-  const valueScore = Math.max(0, 1 - valueDiff / avgValue);
-  score += valueScore * 0.4;
-
-  // Condition match (20%)
-  const conditionScore =
-    itemA.condition === itemB.condition
-      ? 1.0
-      : itemA.condition === 'NEW' || itemB.condition === 'NEW'
-      ? 0.5
-      : 0.7;
-  score += conditionScore * 0.2;
-
-  return Math.min(1, score);
+  return { nodes, edges, listings };
 };
 
 // ============================================
-// Cycle Detection (Tarjan's Algorithm + DFS)
+// Cycle Finding Algorithm (DFS)
 // ============================================
 
 /**
- * Find all cycles in the barter graph
- * Uses DFS-based cycle detection
- *
- * A cycle is: A→B→C→A (everyone gets what they want in a loop)
+ * Find all cycles in the graph using modified DFS
  */
 export const findBarterCycles = async (
-  maxCycleLength: number = 5,
-  minCycleLength: number = 3,
-  minScore: number = 0.5
+  maxLength: number = MAX_CYCLE_LENGTH,
+  minLength: number = MIN_CYCLE_LENGTH,
+  requestingUserId?: string,
+  requestingItemId?: string
 ): Promise<BarterCycle[]> => {
-  const { nodes, edges } = await buildBarterGraph();
+  const { nodes, edges, listings } = await buildBarterGraph(requestingUserId, requestingItemId);
 
   // Build adjacency list
   const adjacencyList = new Map<string, BarterEdge[]>();
   for (const edge of edges) {
-    if (!adjacencyList.has(edge.from)) {
-      adjacencyList.set(edge.from, []);
+    const key = edge.from;
+    if (!adjacencyList.has(key)) {
+      adjacencyList.set(key, []);
     }
-    adjacencyList.get(edge.from)!.push(edge);
+    adjacencyList.get(key)!.push(edge);
   }
 
   const cycles: BarterCycle[] = [];
   const visited = new Set<string>();
 
-  // DFS from each node to find cycles
-  for (const [userId] of nodes) {
-    if (!visited.has(userId)) {
-      findCyclesFromNode(
-        userId,
-        userId,
-        [],
-        new Set(),
-        adjacencyList,
-        nodes,
-        cycles,
-        maxCycleLength,
-        minCycleLength,
-        minScore
-      );
-      visited.add(userId);
-    }
+  // Get unique user IDs
+  const userIds = [...new Set(listings.map(l => l.userId))];
+
+  // DFS from each user to find cycles
+  for (const startUserId of userIds) {
+    findCyclesFromNode(
+      startUserId,
+      startUserId,
+      [],
+      new Set(),
+      adjacencyList,
+      listings,
+      cycles,
+      maxLength,
+      minLength
+    );
   }
 
-  // Sort by total score descending
-  cycles.sort((a, b) => b.totalScore - a.totalScore);
+  // Calculate additional metrics for each cycle
+  const processedCycles = cycles.map(cycle => {
+    // Calculate cash differential
+    const totalOffered = cycle.participants.reduce((sum, p) => sum + p.estimatedValue, 0);
+    const avgValue = totalOffered / cycle.participants.length;
+    const cashDifferential = Math.abs(
+      cycle.participants.reduce((diff, p, i) => {
+        const nextP = cycle.participants[(i + 1) % cycle.participants.length];
+        return diff + (p.estimatedValue - nextP.estimatedValue);
+      }, 0)
+    );
 
-  return cycles;
+    return {
+      ...cycle,
+      cashDifferential,
+      isOptimal: cycle.averageScore >= 0.70 && cashDifferential < avgValue * 0.2,
+    };
+  });
+
+  // Sort by total aggregate score (descending)
+  processedCycles.sort((a, b) => b.totalAggregateScore - a.totalAggregateScore);
+
+  // Remove duplicates (same participants in different order)
+  const uniqueCycles = removeDuplicateCycles(processedCycles);
+
+  return uniqueCycles;
 };
 
 /**
- * DFS helper to find cycles starting from a specific node
+ * DFS helper to find cycles
  */
 const findCyclesFromNode = (
   startUserId: string,
   currentUserId: string,
   path: BarterEdge[],
-  pathSet: Set<string>,
+  pathUsers: Set<string>,
   adjacencyList: Map<string, BarterEdge[]>,
-  nodes: Map<string, BarterNode>,
+  listings: BarterListing[],
   cycles: BarterCycle[],
   maxLength: number,
-  minLength: number,
-  minScore: number
-) => {
-  // Stop if path too long
+  minLength: number
+): void => {
   if (path.length >= maxLength) return;
 
-  // Get neighbors
   const neighbors = adjacencyList.get(currentUserId) || [];
 
   for (const edge of neighbors) {
-    // Found a cycle back to start
+    // Found cycle back to start
     if (edge.to === startUserId && path.length >= minLength - 1) {
       const cycleEdges = [...path, edge];
-      const totalScore = cycleEdges.reduce((sum, e) => sum + e.matchScore, 0) / cycleEdges.length;
+      const totalScore = cycleEdges.reduce((sum, e) => sum + e.matchScore, 0);
+      const avgScore = totalScore / cycleEdges.length;
 
-      if (totalScore >= minScore) {
-        // Build participant list
-        const participants: BarterNode[] = [];
+      if (avgScore >= MIN_CYCLE_SCORE) {
+        // Build participants list
+        const participants: BarterListing[] = [];
         for (const e of cycleEdges) {
-          // Find node for this user
-          for (const [, node] of nodes) {
-            if (node.userId === e.from && node.itemId === e.givingItemId) {
-              participants.push({
-                ...node,
-                wantsItemId: e.receivingItemId,
-              });
-              break;
-            }
-          }
+          const listing = listings.find(
+            l => l.userId === e.from && l.itemId === e.fromItemId
+          );
+          if (listing) participants.push(listing);
         }
 
         cycles.push({
           participants,
           edges: cycleEdges,
-          totalScore,
-          cycleType: 'CYCLE',
+          totalAggregateScore: totalScore,
+          averageScore: avgScore,
+          cashDifferential: 0, // Calculated later
+          isOptimal: false, // Determined later
         });
       }
       continue;
     }
 
-    // Skip if already in path (avoid repeating users)
-    if (pathSet.has(edge.to)) continue;
+    // Skip if user already in path
+    if (pathUsers.has(edge.to)) continue;
 
     // Continue DFS
     const newPath = [...path, edge];
-    const newPathSet = new Set(pathSet);
-    newPathSet.add(edge.to);
+    const newPathUsers = new Set(pathUsers);
+    newPathUsers.add(edge.to);
 
     findCyclesFromNode(
       startUserId,
       edge.to,
       newPath,
-      newPathSet,
+      newPathUsers,
       adjacencyList,
-      nodes,
+      listings,
       cycles,
       maxLength,
-      minLength,
-      minScore
+      minLength
     );
   }
 };
 
-// ============================================
-// Chain Detection
-// ============================================
-
 /**
- * Find all chains in the barter graph
- * A chain is: A→B→C→D (linear, not circular)
- *
- * Useful when there's no cycle but a sequence of barters can satisfy everyone
+ * Remove duplicate cycles
  */
-export const findBarterChains = async (
-  maxChainLength: number = 5,
-  minChainLength: number = 3,
-  minScore: number = 0.5
-): Promise<BarterChain[]> => {
-  const { nodes, edges } = await buildBarterGraph();
-
-  // Build adjacency list
-  const adjacencyList = new Map<string, BarterEdge[]>();
-  for (const edge of edges) {
-    if (!adjacencyList.has(edge.from)) {
-      adjacencyList.set(edge.from, []);
-    }
-    adjacencyList.get(edge.from)!.push(edge);
-  }
-
-  const chains: BarterChain[] = [];
-
-  // Find chains starting from each node
-  for (const [userId] of nodes) {
-    findChainsFromNode(
-      userId,
-      [],
-      new Set([userId]),
-      adjacencyList,
-      nodes,
-      chains,
-      maxChainLength,
-      minChainLength,
-      minScore
-    );
-  }
-
-  // Sort by total score descending
-  chains.sort((a, b) => b.totalScore - a.totalScore);
-
-  // Remove duplicates (same chain found from different starts)
-  const uniqueChains = removeDuplicateChains(chains);
-
-  return uniqueChains;
-};
-
-/**
- * DFS helper to find chains
- */
-const findChainsFromNode = (
-  currentUserId: string,
-  path: BarterEdge[],
-  pathSet: Set<string>,
-  adjacencyList: Map<string, BarterEdge[]>,
-  nodes: Map<string, BarterNode>,
-  chains: BarterChain[],
-  maxLength: number,
-  minLength: number,
-  minScore: number
-) => {
-  // Record chain if it meets minimum length
-  if (path.length >= minLength) {
-    const totalScore = path.reduce((sum, e) => sum + e.matchScore, 0) / path.length;
-
-    if (totalScore >= minScore) {
-      const participants: BarterNode[] = [];
-      for (const e of path) {
-        for (const [, node] of nodes) {
-          if (node.userId === e.from && node.itemId === e.givingItemId) {
-            participants.push({
-              ...node,
-              wantsItemId: e.receivingItemId,
-            });
-            break;
-          }
-        }
-      }
-
-      chains.push({
-        participants,
-        edges: path,
-        totalScore,
-        chainType: 'CHAIN',
-      });
-    }
-  }
-
-  // Stop if reached max length
-  if (path.length >= maxLength) return;
-
-  // Continue exploring
-  const neighbors = adjacencyList.get(currentUserId) || [];
-  for (const edge of neighbors) {
-    // Skip if user already in path
-    if (pathSet.has(edge.to)) continue;
-
-    const newPath = [...path, edge];
-    const newPathSet = new Set(pathSet);
-    newPathSet.add(edge.to);
-
-    findChainsFromNode(edge.to, newPath, newPathSet, adjacencyList, nodes, chains, maxLength, minLength, minScore);
-  }
-};
-
-/**
- * Remove duplicate chains
- */
-const removeDuplicateChains = (chains: BarterChain[]): BarterChain[] => {
+const removeDuplicateCycles = (cycles: BarterCycle[]): BarterCycle[] => {
   const seen = new Set<string>();
-  const unique: BarterChain[] = [];
+  const unique: BarterCycle[] = [];
 
-  for (const chain of chains) {
-    // Create signature from user IDs in order
-    const signature = chain.participants.map((p) => p.userId).join('→');
+  for (const cycle of cycles) {
+    // Create signature from sorted user IDs
+    const signature = cycle.participants
+      .map(p => p.userId)
+      .sort()
+      .join('-');
 
     if (!seen.has(signature)) {
       seen.add(signature);
-      unique.push(chain);
+      unique.push(cycle);
     }
   }
 
@@ -434,12 +588,11 @@ const removeDuplicateChains = (chains: BarterChain[]): BarterChain[] => {
 };
 
 // ============================================
-// Smart Matching for Specific User
+// API: Find Matches for User
 // ============================================
 
 /**
- * Find best matches for a specific user's item
- * Returns both cycles and chains that include this user
+ * Discover barter opportunities for a specific user's item
  */
 export const findMatchesForUser = async (
   userId: string,
@@ -451,117 +604,126 @@ export const findMatchesForUser = async (
   } = {}
 ): Promise<{
   cycles: BarterCycle[];
-  chains: BarterChain[];
+  chains: BarterCycle[];
   totalMatches: number;
 }> => {
-  const { includeCycles = true, includeChains = true, maxResults = 10 } = options;
+  const { includeCycles = true, maxResults = 20 } = options;
 
   let cycles: BarterCycle[] = [];
-  let chains: BarterChain[] = [];
 
   if (includeCycles) {
-    const allCycles = await findBarterCycles();
-    cycles = allCycles.filter((c) => c.participants.some((p) => p.userId === userId && p.itemId === itemId));
-  }
+    // Pass the requesting user's item to include it in the graph
+    const allCycles = await findBarterCycles(MAX_CYCLE_LENGTH, MIN_CYCLE_LENGTH, userId, itemId);
 
-  if (includeChains) {
-    const allChains = await findBarterChains();
-    chains = allChains.filter((c) => c.participants.some((p) => p.userId === userId && p.itemId === itemId));
+    // Filter cycles that include this user's item
+    cycles = allCycles.filter(c =>
+      c.participants.some(p => p.userId === userId && p.itemId === itemId)
+    );
   }
-
-  // Combine and sort by score
-  const allMatches = [...cycles, ...chains].sort((a, b) => b.totalScore - a.totalScore);
 
   // Take top results
-  const topMatches = allMatches.slice(0, maxResults);
+  const topCycles = cycles.slice(0, maxResults);
 
   return {
-    cycles: topMatches.filter((m) => 'cycleType' in m) as BarterCycle[],
-    chains: topMatches.filter((m) => 'chainType' in m) as BarterChain[],
-    totalMatches: allMatches.length,
+    cycles: topCycles,
+    chains: [], // Chains are treated as 2-party cycles
+    totalMatches: cycles.length,
+  };
+};
+
+/**
+ * Format cycle as API opportunity response
+ */
+export const formatAsOpportunity = (
+  cycle: BarterCycle,
+  opportunityId: string
+): BarterOpportunity => {
+  const exchangeSequence: ExchangeSequenceItem[] = cycle.edges.map((edge, i) => {
+    const fromParticipant = cycle.participants.find(
+      p => p.userId === edge.from && p.itemId === edge.fromItemId
+    );
+    const toParticipant = cycle.participants.find(p => p.userId === edge.to);
+
+    return {
+      from: edge.from,
+      fromName: fromParticipant?.userName || 'Unknown',
+      to: edge.to,
+      toName: toParticipant?.userName || 'Unknown',
+      itemOffered: edge.fromItemId,
+      itemOfferedTitle: fromParticipant?.itemTitle || 'Unknown Item',
+      itemValue: fromParticipant?.estimatedValue || 0,
+    };
+  });
+
+  const totalOffered = cycle.participants.reduce((sum, p) => sum + p.estimatedValue, 0);
+
+  return {
+    opportunityId,
+    type: cycle.participants.length === 2 ? 'Direct (2-Party)' : `Multi-Party (${cycle.participants.length})`,
+    participantCount: cycle.participants.length,
+    participants: cycle.participants.map(p => p.userId),
+    participantNames: cycle.participants.map(p => p.userName),
+    exchangeSequence,
+    totalAggregateMatchScore: Math.round(cycle.totalAggregateScore * 100) / 100,
+    averageMatchScore: Math.round(cycle.averageScore * 100) / 100,
+    requiredCashDifferential: Math.round(cycle.cashDifferential),
+    isOptimal: cycle.isOptimal,
+    breakdown: {
+      totalValueOffered: totalOffered,
+      totalValueDemanded: totalOffered, // In a cycle, total offered = total demanded
+    },
   };
 };
 
 // ============================================
-// Create Barter Chain Proposals
+// Create Barter Chain Proposal
 // ============================================
 
-/**
- * Create a barter chain proposal in the database
- */
-export const createBarterChainProposal = async (match: BarterMatch): Promise<any> => {
+export const createBarterChainProposal = async (cycle: BarterCycle): Promise<any> => {
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // Expire in 7 days
-
-  const chainType = 'cycleType' in match ? 'CYCLE' : 'CHAIN';
+  expiresAt.setDate(expiresAt.getDate() + 7);
 
   const chain = await prisma.barterChain.create({
     data: {
-      chainType,
-      participantCount: match.participants.length,
-      matchScore: match.totalScore,
-      algorithmVersion: '1.0',
-      description: generateChainDescription(match),
+      chainType: cycle.participants.length === 2 ? 'DIRECT' : 'CYCLE',
+      participantCount: cycle.participants.length,
+      matchScore: cycle.averageScore,
+      algorithmVersion: '2.0',
+      description: `${cycle.participants.length}-Party Exchange Cycle`,
       status: 'PROPOSED',
       expiresAt,
       participants: {
-        create: match.participants.map((participant, index) => ({
-          userId: participant.userId,
-          givingItemId: participant.itemId,
-          receivingItemId: participant.wantsItemId,
-          position: index,
-          status: 'PENDING',
-        })),
+        create: cycle.participants.map((participant, index) => {
+          const nextParticipant = cycle.participants[(index + 1) % cycle.participants.length];
+          return {
+            userId: participant.userId,
+            givingItemId: participant.itemId,
+            receivingItemId: nextParticipant.itemId,
+            position: index,
+            status: 'PENDING',
+          };
+        }),
       },
     },
     include: {
       participants: {
         include: {
           user: {
-            select: {
-              id: true,
-              fullName: true,
-              avatar: true,
-            },
+            select: { id: true, fullName: true, avatar: true },
           },
           givingItem: {
-            select: {
-              id: true,
-              title: true,
-              images: true,
-              estimatedValue: true,
-            },
+            select: { id: true, title: true, images: true, estimatedValue: true },
           },
           receivingItem: {
-            select: {
-              id: true,
-              title: true,
-              images: true,
-              estimatedValue: true,
-            },
+            select: { id: true, title: true, images: true, estimatedValue: true },
           },
         },
-        orderBy: {
-          position: 'asc',
-        },
+        orderBy: { position: 'asc' },
       },
     },
   });
 
   return chain;
-};
-
-/**
- * Generate human-readable description of the chain
- */
-const generateChainDescription = (match: BarterMatch): string => {
-  const userNames = match.participants.map((p) => `User ${p.userId.slice(0, 8)}`);
-
-  if ('cycleType' in match) {
-    return `Cycle: ${userNames.join(' → ')} → ${userNames[0]} (${match.participants.length} parties)`;
-  } else {
-    return `Chain: ${userNames.join(' → ')} (${match.participants.length} parties)`;
-  }
 };
 
 // ============================================
@@ -571,7 +733,10 @@ const generateChainDescription = (match: BarterMatch): string => {
 export default {
   buildBarterGraph,
   findBarterCycles,
-  findBarterChains,
   findMatchesForUser,
+  formatAsOpportunity,
   createBarterChainProposal,
+  calculateMatchScore,
+  WEIGHTS,
+  EDGE_THRESHOLD,
 };

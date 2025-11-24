@@ -11,6 +11,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
+import { createNotification } from './notification.service';
 
 const prisma = new PrismaClient();
 
@@ -398,6 +399,21 @@ export const createBundleOffer = async (
       },
     },
   });
+
+  // Create notification for recipient (if specified) or for open offer
+  if (completeOffer && recipientId) {
+    await createNotification({
+      userId: recipientId,
+      type: 'BARTER_OFFER_RECEIVED',
+      title: 'New Barter Offer',
+      message: `${completeOffer.initiator?.fullName || 'Someone'} sent you a barter offer`,
+      priority: 'HIGH',
+      entityType: 'BARTER_OFFER',
+      entityId: completeOffer.id,
+      actionUrl: `/barter/respond/${completeOffer.id}`,
+      actionText: 'View Offer',
+    });
+  }
 
   return completeOffer;
 };

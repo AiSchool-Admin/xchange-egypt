@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createItem } from '@/lib/api/items';
-import { getCategories, Category } from '@/lib/api/categories';
+import { getRootCategories, Category } from '@/lib/api/categories';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
@@ -18,12 +18,28 @@ export default function NewItemPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    parentCategoryId: '',
     categoryId: '',
     condition: 'GOOD',
     price: '',
     location: '',
     governorate: '',
+    // Barter preferences
+    desiredParentCategoryId: '',
+    desiredCategoryId: '',
+    desiredKeywords: '',
+    desiredValueMin: '',
+    desiredValueMax: '',
   });
+
+  // Parent categories are the root categories, sub-categories come from their children
+  const parentCategories = categories;
+  const selectedParent = categories.find(cat => cat.id === formData.parentCategoryId);
+  const subCategories = selectedParent?.children || [];
+
+  // Desired categories for barter preferences
+  const selectedDesiredParent = categories.find(cat => cat.id === formData.desiredParentCategoryId);
+  const desiredSubCategories = selectedDesiredParent?.children || [];
 
   useEffect(() => {
     if (!user) {
@@ -35,18 +51,36 @@ export default function NewItemPage() {
 
   const loadCategories = async () => {
     try {
-      const response = await getCategories();
-      setCategories(response.data);
+      const response = await getRootCategories();
+      setCategories(response.data || []);
     } catch (err) {
       console.error('Failed to load categories:', err);
+      setCategories([]);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    // Reset sub-category when parent category changes
+    if (name === 'parentCategoryId') {
+      setFormData({
+        ...formData,
+        parentCategoryId: value,
+        categoryId: '',
+      });
+    } else if (name === 'desiredParentCategoryId') {
+      setFormData({
+        ...formData,
+        desiredParentCategoryId: value,
+        desiredCategoryId: '',
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   const handleUploadComplete = (urls: string[]) => {
@@ -105,6 +139,11 @@ export default function NewItemPage() {
         location: formData.location,
         governorate: formData.governorate,
         imageUrls: uploadedImages.length > 0 ? uploadedImages : undefined,
+        // Barter preferences
+        desiredCategoryId: formData.desiredCategoryId || undefined,
+        desiredKeywords: formData.desiredKeywords || undefined,
+        desiredValueMin: formData.desiredValueMin ? parseFloat(formData.desiredValueMin) : undefined,
+        desiredValueMax: formData.desiredValueMax ? parseFloat(formData.desiredValueMax) : undefined,
       });
 
       router.push('/items?success=true');
@@ -200,21 +239,21 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            {/* Category and Condition */}
+            {/* Category and Sub-Category */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="categoryId"
-                  value={formData.categoryId}
+                  name="parentCategoryId"
+                  value={formData.parentCategoryId}
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="">Select a category</option>
-                  {categories.map((cat) => (
+                  {parentCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.nameEn}
                     </option>
@@ -224,22 +263,46 @@ export default function NewItemPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Condition <span className="text-red-500">*</span>
+                  Sub-Category <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="condition"
-                  value={formData.condition}
+                  name="categoryId"
+                  value={formData.categoryId}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  disabled={!formData.parentCategoryId}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <option value="NEW">New</option>
-                  <option value="LIKE_NEW">Like New</option>
-                  <option value="GOOD">Good</option>
-                  <option value="FAIR">Fair</option>
-                  <option value="POOR">Poor</option>
+                  <option value="">
+                    {formData.parentCategoryId ? 'Select a sub-category' : 'Select category first'}
+                  </option>
+                  {subCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nameEn}
+                    </option>
+                  ))}
                 </select>
               </div>
+            </div>
+
+            {/* Condition */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Condition <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="condition"
+                value={formData.condition}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="NEW">New</option>
+                <option value="LIKE_NEW">Like New</option>
+                <option value="GOOD">Good</option>
+                <option value="FAIR">Fair</option>
+                <option value="POOR">Poor</option>
+              </select>
             </div>
 
             {/* Price/Estimated Value */}
@@ -324,6 +387,113 @@ export default function NewItemPage() {
                     ? `Need ${3 - formData.location.length} more characters (minimum 3)`
                     : 'Area or neighborhood (minimum 3 characters)'}
                 </p>
+              </div>
+            </div>
+
+            {/* Barter Preferences Section */}
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                🔄 Barter Preferences - What are you looking for?
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Specify what you want in exchange to get better barter matches
+              </p>
+
+              {/* Desired Category and Sub-Category */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Desired Category
+                  </label>
+                  <select
+                    name="desiredParentCategoryId"
+                    value={formData.desiredParentCategoryId}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                    <option value="">Any category (open to offers)</option>
+                    {parentCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.nameEn}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Desired Sub-Category
+                  </label>
+                  <select
+                    name="desiredCategoryId"
+                    value={formData.desiredCategoryId}
+                    onChange={handleChange}
+                    disabled={!formData.desiredParentCategoryId}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">
+                      {formData.desiredParentCategoryId ? 'Any sub-category' : 'Select category first'}
+                    </option>
+                    {desiredSubCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.nameEn}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Desired Keywords */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Desired Keywords
+                </label>
+                <input
+                  type="text"
+                  name="desiredKeywords"
+                  value={formData.desiredKeywords}
+                  onChange={handleChange}
+                  placeholder="e.g., iPhone, Samsung, MacBook (comma-separated)"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Add keywords to help match with specific items
+                </p>
+              </div>
+
+              {/* Desired Value Range */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Min Value (EGP)
+                  </label>
+                  <input
+                    type="number"
+                    name="desiredValueMin"
+                    value={formData.desiredValueMin}
+                    onChange={handleChange}
+                    min="0"
+                    step="100"
+                    placeholder="Minimum acceptable value"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Max Value (EGP)
+                  </label>
+                  <input
+                    type="number"
+                    name="desiredValueMax"
+                    value={formData.desiredValueMax}
+                    onChange={handleChange}
+                    min="0"
+                    step="100"
+                    placeholder="Maximum acceptable value"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
               </div>
             </div>
 

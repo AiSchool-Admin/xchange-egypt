@@ -15,14 +15,24 @@ interface Item {
 }
 
 interface ChainOpportunity {
-  cycle: string[];
-  items: Array<{
-    itemId: string;
-    title: string;
-    ownerId: string;
-    ownerName: string;
+  opportunityId: string;
+  type: string;
+  participantCount: number;
+  participants: string[];
+  participantNames: string[];
+  exchangeSequence: Array<{
+    from: string;
+    fromName: string;
+    to: string;
+    toName: string;
+    itemOffered: string;
+    itemOfferedTitle: string;
+    itemValue: number;
   }>;
-  confidence: number;
+  totalAggregateMatchScore: number;
+  averageMatchScore: number;
+  requiredCashDifferential: number;
+  isOptimal: boolean;
 }
 
 interface ChainProposal {
@@ -65,7 +75,8 @@ export default function ChainsPage() {
 
       // Load items first
       const itemsResponse = await getMyItems();
-      setMyItems(itemsResponse.data.items.filter((item: any) => item.status === 'ACTIVE'));
+      const items = itemsResponse?.data?.items || [];
+      setMyItems(items.filter((item: any) => item.status === 'ACTIVE'));
 
       // Try to load proposals (may not exist yet)
       try {
@@ -104,10 +115,26 @@ export default function ChainsPage() {
                                response?.data?.cycles ||
                                response?.data ||
                                [];
-      const opps = Array.isArray(opportunitiesData) ? opportunitiesData : [];
+      let opps = Array.isArray(opportunitiesData) ? opportunitiesData : [];
+
+      // Filter and rank opportunities
+      opps = opps
+        // Filter: Only show high-quality matches (>= 50% score)
+        .filter(opp => (opp.averageMatchScore || 0) >= 0.50)
+        // Filter: Value-balanced cycles (cash differential < 30% of average value)
+        .filter(opp => {
+          if (!opp.exchangeSequence || opp.exchangeSequence.length === 0) return false;
+          const avgValue = opp.exchangeSequence.reduce((sum: number, e: any) => sum + e.itemValue, 0) / opp.exchangeSequence.length;
+          return opp.requiredCashDifferential < (avgValue * 0.3);
+        })
+        // Sort by match score (highest first)
+        .sort((a, b) => (b.averageMatchScore || 0) - (a.averageMatchScore || 0))
+        // Limit to top 5 opportunities
+        .slice(0, 5);
+
       setOpportunities(opps);
       if (opps.length === 0) {
-        setError('No chain opportunities found. Try different items or wait for more users to list items.');
+        setError('No high-quality chain opportunities found. Try specifying your barter preferences when creating items.');
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to discover opportunities');
@@ -121,7 +148,7 @@ export default function ChainsPage() {
       setCreating(true);
       setError('');
       await createChainProposal({
-        participantItemIds: opportunity.items.map(i => i.itemId),
+        participantItemIds: opportunity.exchangeSequence?.map(e => e.itemOffered) || [],
       });
       setSuccess('Proposal created! Participants have been notified.');
       setOpportunities([]);
@@ -218,25 +245,26 @@ export default function ChainsPage() {
 
             <div className="space-y-4">
               {opportunities.map((opp, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div key={opp.opportunityId || index} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-semibold text-gray-900">
-                      {opp.items.length}-Party Chain
+                      {opp.type || `${opp.participantCount}-Party Chain`}
                     </h3>
                     <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded">
-                      {Math.round(opp.confidence * 100)}% match
+                      {Math.round((opp.averageMatchScore || 0) * 100)}% match
                     </span>
                   </div>
 
                   <div className="mb-4">
                     <div className="flex flex-wrap items-center gap-2">
-                      {opp.items.map((item, i) => (
-                        <React.Fragment key={item.itemId}>
+                      {(opp.exchangeSequence || []).map((exchange, i) => (
+                        <React.Fragment key={exchange.itemOffered || i}>
                           <div className="bg-gray-100 px-3 py-2 rounded text-sm">
-                            <p className="font-medium">{item.ownerName}</p>
-                            <p className="text-gray-600 text-xs">{item.title}</p>
+                            <p className="font-medium">{exchange.fromName || 'Unknown'}</p>
+                            <p className="text-gray-600 text-xs">{exchange.itemOfferedTitle || 'Item'}</p>
+                            <p className="text-purple-600 text-xs">{(exchange.itemValue || 0).toLocaleString()} EGP</p>
                           </div>
-                          {i < opp.items.length - 1 && (
+                          {i < (opp.exchangeSequence?.length || 0) - 1 && (
                             <span className="text-purple-600">→</span>
                           )}
                         </React.Fragment>
@@ -245,6 +273,12 @@ export default function ChainsPage() {
                       <span className="text-sm text-gray-500">(back to first)</span>
                     </div>
                   </div>
+
+                  {opp.requiredCashDifferential > 0 && (
+                    <p className="text-sm text-orange-600 mb-3">
+                      💰 Cash differential: {opp.requiredCashDifferential.toLocaleString()} EGP
+                    </p>
+                  )}
 
                   <button
                     onClick={() => handleCreateProposal(opp)}
@@ -274,7 +308,7 @@ export default function ChainsPage() {
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        {proposal.participants.length}-Party Chain
+                        {(proposal.participants?.length || 0)}-Party Chain
                       </h3>
                       <p className="text-sm text-gray-600">
                         Created {new Date(proposal.createdAt).toLocaleDateString()}
@@ -291,9 +325,9 @@ export default function ChainsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    {proposal.participants.map((p) => (
+                    {(proposal.participants || []).map((p) => (
                       <div key={p.userId} className="flex items-center justify-between text-sm">
-                        <span>{p.user.fullName}: {p.item.title}</span>
+                        <span>{p.user?.fullName || 'Unknown'}: {p.item?.title || 'Item'}</span>
                         <span className={`px-2 py-0.5 rounded text-xs ${
                           p.status === 'ACCEPTED' ? 'bg-green-100 text-green-700' :
                           p.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
