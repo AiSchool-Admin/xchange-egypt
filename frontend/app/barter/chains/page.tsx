@@ -115,10 +115,26 @@ export default function ChainsPage() {
                                response?.data?.cycles ||
                                response?.data ||
                                [];
-      const opps = Array.isArray(opportunitiesData) ? opportunitiesData : [];
+      let opps = Array.isArray(opportunitiesData) ? opportunitiesData : [];
+
+      // Filter and rank opportunities
+      opps = opps
+        // Filter: Only show high-quality matches (>= 50% score)
+        .filter(opp => (opp.averageMatchScore || 0) >= 0.50)
+        // Filter: Value-balanced cycles (cash differential < 30% of average value)
+        .filter(opp => {
+          if (!opp.exchangeSequence || opp.exchangeSequence.length === 0) return false;
+          const avgValue = opp.exchangeSequence.reduce((sum, e) => sum + e.itemValue, 0) / opp.exchangeSequence.length;
+          return opp.requiredCashDifferential < (avgValue * 0.3);
+        })
+        // Sort by match score (highest first)
+        .sort((a, b) => (b.averageMatchScore || 0) - (a.averageMatchScore || 0))
+        // Limit to top 5 opportunities
+        .slice(0, 5);
+
       setOpportunities(opps);
       if (opps.length === 0) {
-        setError('No chain opportunities found. Try different items or wait for more users to list items.');
+        setError('No high-quality chain opportunities found. Try specifying your barter preferences when creating items.');
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to discover opportunities');
