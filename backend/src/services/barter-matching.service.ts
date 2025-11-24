@@ -199,8 +199,15 @@ export const buildBarterGraph = async (): Promise<{
       const matchingItems = items.filter(item => {
         if (item.sellerId === userId) return false;
 
-        // Category match
-        if (request.categoryId) {
+        // Subcategory match (most specific)
+        if (request.subcategoryId) {
+          if (item.categoryId !== request.subcategoryId) {
+            return false;
+          }
+        }
+        // Category match (parent category)
+        else if (request.categoryId) {
+          // Item's category should match OR item's parent should match
           if (item.categoryId !== request.categoryId &&
               item.category?.parentId !== request.categoryId) {
             return false;
@@ -220,9 +227,11 @@ export const buildBarterGraph = async (): Promise<{
       // Create edges for category matches
       for (const matchingItem of matchingItems) {
         for (const userItem of userItems) {
-          // Description match = 0.8 for category-based match (good but not exact)
-          // Could be improved with keyword matching in the future
-          const score = calculatePreferenceMatchScore(userItem, matchingItem, 0.8);
+          // Calculate description match based on specificity
+          // Subcategory match = 1.0 (very specific)
+          // Category match = 0.8 (less specific)
+          const descMatch = request.subcategoryId ? 1.0 : 0.8;
+          const score = calculatePreferenceMatchScore(userItem, matchingItem, descMatch);
 
           // Avoid duplicate edges
           const existingEdge = edges.find(e =>
@@ -283,6 +292,9 @@ export const buildBarterGraph = async (): Promise<{
  *
  * Weights:
  * - Category match: 40%
+ *   - Exact subcategory match = 40%
+ *   - Same parent category = 20%
+ *   - Different category = 0%
  * - Description match: 40%
  * - Price match: 20%
  */
@@ -294,11 +306,19 @@ const calculatePreferenceMatchScore = (
   let score = 0;
 
   // Category match (40%)
+  // Check for exact subcategory match (same categoryId)
   if (offeredItem.categoryId === wantedItem.categoryId) {
-    score += 0.4;
-  } else if (offeredItem.category?.parentId === wantedItem.category?.parentId &&
-             offeredItem.category?.parentId) {
-    score += 0.2; // Same parent category = half points
+    score += 0.4; // Full points for exact subcategory match
+  }
+  // Check for same parent category (sibling subcategories)
+  else if (offeredItem.category?.parentId && wantedItem.category?.parentId &&
+           offeredItem.category.parentId === wantedItem.category.parentId) {
+    score += 0.2; // Half points for same parent category
+  }
+  // Check if one is parent of the other
+  else if (offeredItem.categoryId === wantedItem.category?.parentId ||
+           offeredItem.category?.parentId === wantedItem.categoryId) {
+    score += 0.3; // Good match if parent-child relationship
   }
 
   // Description match (40%)
