@@ -42,9 +42,10 @@ export default function NewItemPage() {
   const loadCategories = async () => {
     try {
       const response = await getRootCategories();
-      setCategories(response.data);
+      setCategories(response.data || []);
     } catch (err) {
       console.error('Failed to load categories:', err);
+      setCategories([]);
     }
   };
 
