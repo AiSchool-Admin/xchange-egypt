@@ -70,7 +70,12 @@ export default function ChainsPage() {
       // Try to load proposals (may not exist yet)
       try {
         const proposalsResponse = await getChainProposals();
-        setProposals(proposalsResponse.data || []);
+        // Handle different response structures
+        const proposalsData = proposalsResponse?.data?.chains ||
+                             proposalsResponse?.data?.proposals ||
+                             proposalsResponse?.data ||
+                             [];
+        setProposals(Array.isArray(proposalsData) ? proposalsData : []);
       } catch (proposalErr) {
         // Proposals endpoint may not exist, that's ok
         console.log('Chain proposals not available yet');
@@ -94,8 +99,14 @@ export default function ChainsPage() {
       setError('');
       setOpportunities([]);
       const response = await discoverChainOpportunities(selectedItem);
-      setOpportunities(response.data || []);
-      if (response.data?.length === 0) {
+      // Handle different response structures
+      const opportunitiesData = response?.data?.opportunities ||
+                               response?.data?.cycles ||
+                               response?.data ||
+                               [];
+      const opps = Array.isArray(opportunitiesData) ? opportunitiesData : [];
+      setOpportunities(opps);
+      if (opps.length === 0) {
         setError('No chain opportunities found. Try different items or wait for more users to list items.');
       }
     } catch (err: any) {
