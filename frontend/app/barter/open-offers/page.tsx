@@ -21,8 +21,23 @@ export default function OpenOffersPage() {
     try {
       setLoading(true);
       const response = await getMatchingOffers();
-      setOffers(response.data?.offers || response.data || []);
+      console.log('Matching offers response:', response);
+
+      // Handle various response structures
+      let offersData: any[] = [];
+      if (Array.isArray(response)) {
+        offersData = response;
+      } else if (response?.data?.offers && Array.isArray(response.data.offers)) {
+        offersData = response.data.offers;
+      } else if (response?.data && Array.isArray(response.data)) {
+        offersData = response.data;
+      } else if (response?.offers && Array.isArray(response.offers)) {
+        offersData = response.offers;
+      }
+
+      setOffers(offersData);
     } catch (err: any) {
+      console.error('Failed to load offers:', err);
       setError(err.response?.data?.message || 'Failed to load open offers');
     } finally {
       setLoading(false);
