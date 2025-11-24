@@ -178,8 +178,9 @@ export const buildBarterGraph = async (): Promise<{
         if (!wantedItem || wantedItem.sellerId === userId) continue;
 
         // Create edge: User wants this specific item
+        // Description match = 1.0 (exact item match)
         for (const userItem of userItems) {
-          const score = calculatePreferenceMatchScore(userItem, wantedItem, 1.0); // High score for specific wants
+          const score = calculatePreferenceMatchScore(userItem, wantedItem, 1.0);
           edges.push({
             from: userId,
             to: wantedItem.sellerId,
@@ -219,7 +220,9 @@ export const buildBarterGraph = async (): Promise<{
       // Create edges for category matches
       for (const matchingItem of matchingItems) {
         for (const userItem of userItems) {
-          const score = calculatePreferenceMatchScore(userItem, matchingItem, 0.7); // Good score for category match
+          // Description match = 0.8 for category-based match (good but not exact)
+          // Could be improved with keyword matching in the future
+          const score = calculatePreferenceMatchScore(userItem, matchingItem, 0.8);
 
           // Avoid duplicate edges
           const existingEdge = edges.find(e =>
@@ -277,25 +280,38 @@ export const buildBarterGraph = async (): Promise<{
 
 /**
  * Calculate match score based on user preference
+ *
+ * Weights:
+ * - Category match: 40%
+ * - Description match: 40%
+ * - Price match: 20%
  */
 const calculatePreferenceMatchScore = (
   offeredItem: any,
   wantedItem: any,
-  baseScore: number
+  descriptionMatch: number // 0.0 to 1.0 - how well description matches
 ): number => {
-  let score = baseScore;
+  let score = 0;
 
-  // Value similarity bonus (up to +0.2)
+  // Category match (40%)
+  if (offeredItem.categoryId === wantedItem.categoryId) {
+    score += 0.4;
+  } else if (offeredItem.category?.parentId === wantedItem.category?.parentId &&
+             offeredItem.category?.parentId) {
+    score += 0.2; // Same parent category = half points
+  }
+
+  // Description match (40%)
+  score += descriptionMatch * 0.4;
+
+  // Price/Value similarity (20%)
   const valueDiff = Math.abs(offeredItem.estimatedValue - wantedItem.estimatedValue);
   const avgValue = (offeredItem.estimatedValue + wantedItem.estimatedValue) / 2;
   if (avgValue > 0) {
-    const valueScore = Math.max(0, 1 - valueDiff / avgValue);
-    score += valueScore * 0.2;
-  }
-
-  // Category match bonus (up to +0.1)
-  if (offeredItem.categoryId === wantedItem.categoryId) {
-    score += 0.1;
+    const priceScore = Math.max(0, 1 - valueDiff / avgValue);
+    score += priceScore * 0.2;
+  } else {
+    score += 0.2; // If no prices, give full points
   }
 
   return Math.min(1, score);
