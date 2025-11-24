@@ -124,7 +124,7 @@ export default function ChainsPage() {
         // Filter: Value-balanced cycles (cash differential < 30% of average value)
         .filter(opp => {
           if (!opp.exchangeSequence || opp.exchangeSequence.length === 0) return false;
-          const avgValue = opp.exchangeSequence.reduce((sum: number, e) => sum + e.itemValue, 0) / opp.exchangeSequence.length;
+          const avgValue = opp.exchangeSequence.reduce((sum: number, e: any) => sum + e.itemValue, 0) / opp.exchangeSequence.length;
           return opp.requiredCashDifferential < (avgValue * 0.3);
         })
         // Sort by match score (highest first)
