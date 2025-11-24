@@ -18,12 +18,17 @@ export default function NewItemPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    parentCategoryId: '',
     categoryId: '',
     condition: 'GOOD',
     price: '',
     location: '',
     governorate: '',
   });
+
+  // Filter parent categories and sub-categories
+  const parentCategories = categories.filter(cat => !cat.parentId);
+  const subCategories = categories.filter(cat => cat.parentId === formData.parentCategoryId);
 
   useEffect(() => {
     if (!user) {
@@ -43,10 +48,21 @@ export default function NewItemPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    // Reset sub-category when parent category changes
+    if (name === 'parentCategoryId') {
+      setFormData({
+        ...formData,
+        parentCategoryId: value,
+        categoryId: '',
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   const handleUploadComplete = (urls: string[]) => {
@@ -200,21 +216,21 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            {/* Category and Condition */}
+            {/* Category and Sub-Category */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="categoryId"
-                  value={formData.categoryId}
+                  name="parentCategoryId"
+                  value={formData.parentCategoryId}
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="">Select a category</option>
-                  {categories.map((cat) => (
+                  {parentCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.nameEn}
                     </option>
@@ -224,22 +240,46 @@ export default function NewItemPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Condition <span className="text-red-500">*</span>
+                  Sub-Category <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="condition"
-                  value={formData.condition}
+                  name="categoryId"
+                  value={formData.categoryId}
                   onChange={handleChange}
                   required
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  disabled={!formData.parentCategoryId}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  <option value="NEW">New</option>
-                  <option value="LIKE_NEW">Like New</option>
-                  <option value="GOOD">Good</option>
-                  <option value="FAIR">Fair</option>
-                  <option value="POOR">Poor</option>
+                  <option value="">
+                    {formData.parentCategoryId ? 'Select a sub-category' : 'Select category first'}
+                  </option>
+                  {subCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nameEn}
+                    </option>
+                  ))}
                 </select>
               </div>
+            </div>
+
+            {/* Condition */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Condition <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="condition"
+                value={formData.condition}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="NEW">New</option>
+                <option value="LIKE_NEW">Like New</option>
+                <option value="GOOD">Good</option>
+                <option value="FAIR">Fair</option>
+                <option value="POOR">Poor</option>
+              </select>
             </div>
 
             {/* Price/Estimated Value */}
