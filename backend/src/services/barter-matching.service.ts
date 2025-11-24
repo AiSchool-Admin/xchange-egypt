@@ -317,7 +317,7 @@ export const buildBarterGraph = async (
   edges: BarterEdge[];
   listings: BarterListing[];
 }> => {
-  // Get all active items
+  // Get all active items available for barter
   const items = await prisma.item.findMany({
     where: {
       status: 'ACTIVE',
@@ -327,103 +327,68 @@ export const buildBarterGraph = async (
     },
     include: {
       seller: true,
-      category: true,
+      category: {
+        include: {
+          parent: true,
+        },
+      },
     },
   });
 
-  // Get all open barter offers to understand demands
+  // Get barter offers to understand specific demands (enhances matching)
   const barterOffers = await prisma.barterOffer.findMany({
     where: {
       status: { in: ['PENDING', 'COUNTER_OFFERED'] },
       isOpenOffer: true,
     },
     include: {
-      initiator: true,
       itemRequests: {
         include: {
           category: true,
         },
       },
-      preferenceSets: {
-        include: {
-          items: {
-            include: {
-              item: true,
-            },
-          },
-        },
-      },
     },
   });
 
-  // Create listings from items with barter offers
-  const listings: BarterListing[] = [];
-  const nodes = new Map<string, BarterNode>();
-
+  // Create a map of user demands from barter offers
+  const userDemands = new Map<string, { categoryId: string | null; description: string }>();
   for (const offer of barterOffers) {
-    // Get the items being offered
-    for (const itemId of offer.offeredItemIds) {
-      const item = items.find(i => i.id === itemId);
-      if (!item) continue;
-
-      // Get desired info from item requests
-      const request = offer.itemRequests[0]; // Primary request
-
-      const listing: BarterListing = {
-        userId: offer.initiatorId,
-        userName: offer.initiator.fullName,
-        itemId: item.id,
-        itemTitle: item.title,
-        offerCategory: item.category?.parentId || item.categoryId,
-        offerSubCategory: item.categoryId,
-        offerDescription: item.description || item.title,
-        estimatedValue: item.estimatedValue,
-        desiredCategory: request?.categoryId || request?.category?.parentId || null,
-        desiredSubCategory: request?.subcategoryId || request?.categoryId || null,
-        desiredDescription: request?.description || '',
-        location: (offer.initiator as any).latitude && (offer.initiator as any).longitude
-          ? { lat: (offer.initiator as any).latitude, lng: (offer.initiator as any).longitude }
-          : null,
-      };
-
-      listings.push(listing);
-      nodes.set(`${listing.userId}-${listing.itemId}`, { listing });
+    const request = (offer as any).itemRequests?.[0];
+    if (request) {
+      userDemands.set(offer.initiatorId, {
+        categoryId: request.categoryId || null,
+        description: request.description || '',
+      });
     }
   }
 
-  // Add requesting user's item if not already in the graph
-  if (requestingUserId && requestingItemId) {
-    const alreadyInGraph = listings.some(
-      l => l.userId === requestingUserId && l.itemId === requestingItemId
-    );
+  // Create listings from ALL active items
+  const listings: BarterListing[] = [];
+  const nodes = new Map<string, BarterNode>();
 
-    if (!alreadyInGraph) {
-      const requestingItem = items.find(i => i.id === requestingItemId);
-      if (requestingItem) {
-        // Create a listing for the requesting item
-        // This item wants to match with any item that other users are offering
-        const listing: BarterListing = {
-          userId: requestingUserId,
-          userName: requestingItem.seller.fullName,
-          itemId: requestingItem.id,
-          itemTitle: requestingItem.title,
-          offerCategory: requestingItem.category?.parentId || requestingItem.categoryId,
-          offerSubCategory: requestingItem.categoryId,
-          offerDescription: requestingItem.description || requestingItem.title,
-          estimatedValue: requestingItem.estimatedValue,
-          // For discovery, we're open to any category - match will be based on what others want
-          desiredCategory: null,
-          desiredSubCategory: null,
-          desiredDescription: '',
-          location: (requestingItem.seller as any).latitude && (requestingItem.seller as any).longitude
-            ? { lat: (requestingItem.seller as any).latitude, lng: (requestingItem.seller as any).longitude }
-            : null,
-        };
+  for (const item of items) {
+    const userDemand = userDemands.get(item.sellerId);
 
-        listings.push(listing);
-        nodes.set(`${listing.userId}-${listing.itemId}`, { listing });
-      }
-    }
+    const listing: BarterListing = {
+      userId: item.sellerId,
+      userName: item.seller.fullName,
+      itemId: item.id,
+      itemTitle: item.title,
+      offerCategory: item.category?.parentId || item.categoryId,
+      offerSubCategory: item.categoryId,
+      offerDescription: item.description || item.title,
+      estimatedValue: item.estimatedValue,
+      // Use specific demand if user has barter offer, otherwise open to similar value items
+      desiredCategory: userDemand?.categoryId || null,
+      desiredSubCategory: null,
+      desiredDescription: userDemand?.description || '',
+      location: (item.seller as any).latitude && (item.seller as any).longitude
+        ? { lat: (item.seller as any).latitude, lng: (item.seller as any).longitude }
+        : null,
+    };
+
+    listings.push(listing);
+    nodes.set(`${listing.userId}-${listing.itemId}`, { listing });
   }
 
   // Create edges based on match scores
