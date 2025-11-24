@@ -15,14 +15,24 @@ interface Item {
 }
 
 interface ChainOpportunity {
-  cycle: string[];
-  items: Array<{
-    itemId: string;
-    title: string;
-    ownerId: string;
-    ownerName: string;
+  opportunityId: string;
+  type: string;
+  participantCount: number;
+  participants: string[];
+  participantNames: string[];
+  exchangeSequence: Array<{
+    from: string;
+    fromName: string;
+    to: string;
+    toName: string;
+    itemOffered: string;
+    itemOfferedTitle: string;
+    itemValue: number;
   }>;
-  confidence: number;
+  totalAggregateMatchScore: number;
+  averageMatchScore: number;
+  requiredCashDifferential: number;
+  isOptimal: boolean;
 }
 
 interface ChainProposal {
@@ -121,7 +131,7 @@ export default function ChainsPage() {
       setCreating(true);
       setError('');
       await createChainProposal({
-        participantItemIds: opportunity.items.map(i => i.itemId),
+        participantItemIds: opportunity.exchangeSequence?.map(e => e.itemOffered) || [],
       });
       setSuccess('Proposal created! Participants have been notified.');
       setOpportunities([]);
@@ -218,25 +228,26 @@ export default function ChainsPage() {
 
             <div className="space-y-4">
               {opportunities.map((opp, index) => (
-                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                <div key={opp.opportunityId || index} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-semibold text-gray-900">
-                      {opp.items.length}-Party Chain
+                      {opp.type || `${opp.participantCount}-Party Chain`}
                     </h3>
                     <span className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded">
-                      {Math.round(opp.confidence * 100)}% match
+                      {Math.round((opp.averageMatchScore || 0) * 100)}% match
                     </span>
                   </div>
 
                   <div className="mb-4">
                     <div className="flex flex-wrap items-center gap-2">
-                      {opp.items.map((item, i) => (
-                        <React.Fragment key={item.itemId}>
+                      {(opp.exchangeSequence || []).map((exchange, i) => (
+                        <React.Fragment key={exchange.itemOffered || i}>
                           <div className="bg-gray-100 px-3 py-2 rounded text-sm">
-                            <p className="font-medium">{item.ownerName}</p>
-                            <p className="text-gray-600 text-xs">{item.title}</p>
+                            <p className="font-medium">{exchange.fromName || 'Unknown'}</p>
+                            <p className="text-gray-600 text-xs">{exchange.itemOfferedTitle || 'Item'}</p>
+                            <p className="text-purple-600 text-xs">{(exchange.itemValue || 0).toLocaleString()} EGP</p>
                           </div>
-                          {i < opp.items.length - 1 && (
+                          {i < (opp.exchangeSequence?.length || 0) - 1 && (
                             <span className="text-purple-600">→</span>
                           )}
                         </React.Fragment>
@@ -245,6 +256,12 @@ export default function ChainsPage() {
                       <span className="text-sm text-gray-500">(back to first)</span>
                     </div>
                   </div>
+
+                  {opp.requiredCashDifferential > 0 && (
+                    <p className="text-sm text-orange-600 mb-3">
+                      💰 Cash differential: {opp.requiredCashDifferential.toLocaleString()} EGP
+                    </p>
+                  )}
 
                   <button
                     onClick={() => handleCreateProposal(opp)}
