@@ -418,7 +418,7 @@ export const acceptBarterOffer = async (
   // Send notification to initiator that offer was accepted
   await createNotification({
     userId: acceptedOffer.initiatorId,
-    type: 'BARTER_ACCEPTED',
+    type: 'BARTER_OFFER_ACCEPTED',
     title: 'Barter Offer Accepted!',
     message: `${acceptedOffer.recipient?.fullName || 'Someone'} accepted your barter offer`,
     priority: 'HIGH',
@@ -485,7 +485,7 @@ export const rejectBarterOffer = async (
   // Send notification to initiator that offer was rejected
   await createNotification({
     userId: rejectedOffer.initiatorId,
-    type: 'BARTER_REJECTED',
+    type: 'BARTER_OFFER_REJECTED',
     title: 'Barter Offer Declined',
     message: `${rejectedOffer.recipient?.fullName || 'Someone'} declined your barter offer`,
     priority: 'MEDIUM',

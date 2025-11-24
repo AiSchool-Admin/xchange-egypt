@@ -404,7 +404,7 @@ export const createBundleOffer = async (
   if (completeOffer && recipientId) {
     await createNotification({
       userId: recipientId,
-      type: 'BARTER_OFFER',
+      type: 'BARTER_OFFER_RECEIVED',
       title: 'New Barter Offer',
       message: `${completeOffer.initiator?.fullName || 'Someone'} sent you a barter offer`,
       priority: 'HIGH',
