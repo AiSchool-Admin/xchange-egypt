@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { createBarterOffer } from '@/lib/api/barter';
 import { getMyItems } from '@/lib/api/items';
 import { getBarterItems } from '@/lib/api/barter';
+import { getRootCategories, Category } from '@/lib/api/categories';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface SelectableItem {
@@ -36,35 +37,44 @@ export default function CreateBarterOfferPage() {
   const [selectedRequestedItems, setSelectedRequestedItems] = useState<string[]>([]);
   const [message, setMessage] = useState('');
 
-  // NEW: Request mode and cash
+  // Categories
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Request mode and preferences
   const [requestMode, setRequestMode] = useState<'select' | 'describe'>('select');
   const [requestDescription, setRequestDescription] = useState('');
-  const [requestCategory, setRequestCategory] = useState('');
+  const [requestParentCategory, setRequestParentCategory] = useState('');
+  const [requestSubCategory, setRequestSubCategory] = useState('');
   const [requestKeywords, setRequestKeywords] = useState('');
   const [requestValueMin, setRequestValueMin] = useState('');
   const [requestValueMax, setRequestValueMax] = useState('');
   const [offeredCash, setOfferedCash] = useState(0);
   const [requestedCash, setRequestedCash] = useState(0);
 
-  // Categories from available items
-  const categories = React.useMemo(() => {
-    const catMap = new Map<string, { id: string; nameEn: string }>();
-    availableItems.forEach(item => {
-      if (item.category?.id && item.category?.nameEn) {
-        catMap.set(item.category.id, { id: item.category.id, nameEn: item.category.nameEn });
-      }
-    });
-    return Array.from(catMap.values()).sort((a, b) => a.nameEn.localeCompare(b.nameEn));
-  }, [availableItems]);
+  // Category hierarchy
+  const parentCategories = categories;
+  const selectedParent = categories.find(cat => cat.id === requestParentCategory);
+  const subCategories = selectedParent?.children || [];
 
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
+    loadCategories();
     loadMyItems();
     loadAvailableItems();
   }, [user]);
+
+  const loadCategories = async () => {
+    try {
+      const response = await getRootCategories();
+      setCategories(response.data || []);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      setCategories([]);
+    }
+  };
 
   const loadMyItems = async () => {
     try {
@@ -140,9 +150,36 @@ export default function CreateBarterOfferPage() {
       return;
     }
 
-    if (requestMode === 'describe' && !requestDescription.trim()) {
-      setError('Please describe what you are looking for');
-      return;
+    // Mandatory validation for "describe" mode
+    if (requestMode === 'describe') {
+      if (!requestDescription.trim()) {
+        setError('Please describe what you are looking for');
+        return;
+      }
+      if (!requestParentCategory) {
+        setError('Please select a category');
+        return;
+      }
+      if (!requestSubCategory) {
+        setError('Please select a sub-category');
+        return;
+      }
+      if (!requestKeywords.trim()) {
+        setError('Please enter keywords');
+        return;
+      }
+      if (!requestValueMin || parseFloat(requestValueMin) <= 0) {
+        setError('Please enter a valid minimum value');
+        return;
+      }
+      if (!requestValueMax || parseFloat(requestValueMax) <= 0) {
+        setError('Please enter a valid maximum value');
+        return;
+      }
+      if (parseFloat(requestValueMin) > parseFloat(requestValueMax)) {
+        setError('Minimum value cannot be greater than maximum value');
+        return;
+      }
     }
 
     setLoading(true);
@@ -168,12 +205,11 @@ export default function CreateBarterOfferPage() {
         requestedCashAmount: requestedCash,
         itemRequest: requestMode === 'describe' ? {
           description: requestDescription,
-          categoryId: requestCategory || undefined,
-          keywords: requestKeywords
-            ? requestKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0)
-            : undefined,
-          minPrice: requestValueMin ? parseFloat(requestValueMin) : undefined,
-          maxPrice: requestValueMax ? parseFloat(requestValueMax) : undefined,
+          categoryId: requestParentCategory,
+          subcategoryId: requestSubCategory,
+          keywords: requestKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0),
+          minPrice: parseFloat(requestValueMin),
+          maxPrice: parseFloat(requestValueMax),
         } : undefined,
       };
 
@@ -412,24 +448,17 @@ export default function CreateBarterOfferPage() {
                   </>
                 ) : (
                   <>
-                    {/* Describe What You Want */}
+                    {/* Describe What You Want - ALL FIELDS REQUIRED */}
+                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800 font-medium">
+                        ⚠️ All fields are required to help us find the best matches
+                      </p>
+                    </div>
+
+                    {/* Description */}
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category (Optional)
-                      </label>
-                      <select
-                        value={requestCategory}
-                        onChange={(e) => setRequestCategory(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent mb-4"
-                      >
-                        <option value="">Any Category</option>
-                        {categories.map((cat) => (
-                          <option key={cat.id} value={cat.id}>{cat.nameEn}</option>
-                        ))}
-                      </select>
-
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Describe what you're looking for
+                        Description <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         value={requestDescription}
@@ -437,16 +466,57 @@ export default function CreateBarterOfferPage() {
                         rows={4}
                         placeholder="Example: Looking for a gaming laptop with RTX 3060 or better, or a high-end smartphone like iPhone 13 or Samsung S22..."
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
                       />
-                      <p className="text-xs text-gray-500 mt-2">
-                        AI will find matching items from available listings
-                      </p>
+                    </div>
+
+                    {/* Category and Sub-Category */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Category <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={requestParentCategory}
+                          onChange={(e) => {
+                            setRequestParentCategory(e.target.value);
+                            setRequestSubCategory(''); // Reset subcategory when parent changes
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          required
+                        >
+                          <option value="">Select Category</option>
+                          {parentCategories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.nameEn}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Sub-Category <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={requestSubCategory}
+                          onChange={(e) => setRequestSubCategory(e.target.value)}
+                          disabled={!requestParentCategory}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          required
+                        >
+                          <option value="">
+                            {requestParentCategory ? 'Select Sub-Category' : 'Select category first'}
+                          </option>
+                          {subCategories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.nameEn}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     {/* Keywords */}
                     <div className="mb-4">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Keywords (Optional)
+                        Keywords <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -454,6 +524,7 @@ export default function CreateBarterOfferPage() {
                         onChange={(e) => setRequestKeywords(e.target.value)}
                         placeholder="e.g., iPhone, Samsung, laptop (comma-separated)"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        required
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Add specific keywords to refine your search
@@ -464,7 +535,7 @@ export default function CreateBarterOfferPage() {
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Min Value (EGP)
+                          Min Value (EGP) <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="number"
@@ -474,11 +545,12 @@ export default function CreateBarterOfferPage() {
                           step="100"
                           placeholder="Minimum"
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          required
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Max Value (EGP)
+                          Max Value (EGP) <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="number"
@@ -488,6 +560,7 @@ export default function CreateBarterOfferPage() {
                           step="100"
                           placeholder="Maximum"
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          required
                         />
                       </div>
                     </div>
