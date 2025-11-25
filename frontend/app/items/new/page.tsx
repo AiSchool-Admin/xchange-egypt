@@ -20,16 +20,19 @@ export default function NewItemPage() {
     description: '',
     parentCategoryId: '',
     categoryId: '',
+    subSubCategoryId: '',
     condition: 'GOOD',
     price: '',
     location: '',
     governorate: '',
   });
 
-  // Parent categories are the root categories, sub-categories come from their children
+  // 3-level category hierarchy
   const parentCategories = categories;
   const selectedParent = categories.find(cat => cat.id === formData.parentCategoryId);
   const subCategories = selectedParent?.children || [];
+  const selectedSub = subCategories.find(cat => cat.id === formData.categoryId);
+  const subSubCategories = selectedSub?.children || [];
 
   useEffect(() => {
     if (!user) {
@@ -52,12 +55,19 @@ export default function NewItemPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
 
-    // Reset sub-category when parent category changes
+    // Reset child categories when parent changes
     if (name === 'parentCategoryId') {
       setFormData({
         ...formData,
         parentCategoryId: value,
         categoryId: '',
+        subSubCategoryId: '',
+      });
+    } else if (name === 'categoryId') {
+      setFormData({
+        ...formData,
+        categoryId: value,
+        subSubCategoryId: '',
       });
     } else {
       setFormData({
@@ -96,7 +106,12 @@ export default function NewItemPage() {
     }
 
     if (!formData.categoryId) {
-      setError('Please select a category');
+      setError('Please select a sub-category');
+      return;
+    }
+
+    if (!formData.subSubCategoryId) {
+      setError('Please select a sub-sub-category');
       return;
     }
 
@@ -117,7 +132,7 @@ export default function NewItemPage() {
         titleEn: formData.title,
         descriptionAr: formData.description,
         descriptionEn: formData.description,
-        categoryId: formData.categoryId,
+        categoryId: formData.subSubCategoryId, // Use Level 3 (most specific)
         condition: formData.condition,
         estimatedValue: formData.price ? parseFloat(formData.price) : 0,
         location: formData.location,
@@ -158,7 +173,7 @@ export default function NewItemPage() {
             <ul className="text-xs text-blue-800 space-y-1">
               <li>• Title: Minimum 3 characters, maximum 200</li>
               <li>• Description: Minimum 10 characters (be detailed!)</li>
-              <li>• Category: Select from dropdown</li>
+              <li>• Category: Select all 3 levels (Category → Sub-Category → Sub-Sub-Category)</li>
               <li>• Condition: Choose item condition</li>
               <li>• Estimated Value: Optional (helps with barter matching)</li>
               <li>• Governorate: Select your governorate</li>
@@ -218,8 +233,8 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            {/* Category and Sub-Category */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 3-Level Category Selection */}
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category <span className="text-red-500">*</span>
@@ -256,6 +271,29 @@ export default function NewItemPage() {
                     {formData.parentCategoryId ? 'Select a sub-category' : 'Select category first'}
                   </option>
                   {subCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nameEn}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sub-Sub-Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="subSubCategoryId"
+                  value={formData.subSubCategoryId}
+                  onChange={handleChange}
+                  required
+                  disabled={!formData.categoryId}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {formData.categoryId ? 'Select a sub-sub-category' : 'Select sub-category first'}
+                  </option>
+                  {subSubCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.nameEn}
                     </option>
