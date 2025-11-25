@@ -11,8 +11,9 @@ interface CreateBarterOfferData {
   requestedCashAmount?: number;
   itemRequests?: {
     description: string;
-    categoryId?: string;
-    subcategoryId?: string;
+    categoryId?: string;           // Level 1: Root category
+    subcategoryId?: string;        // Level 2: Sub-category
+    subSubcategoryId?: string;     // Level 3: Sub-sub-category
     minPrice?: number;
     maxPrice?: number;
     condition?: string;
@@ -169,6 +170,7 @@ export const createBarterOffer = async (
         description: req.description,
         categoryId: req.categoryId,
         subcategoryId: req.subcategoryId,
+        subSubcategoryId: req.subSubcategoryId,
         minPrice: req.minPrice,
         maxPrice: req.maxPrice,
         condition: req.condition as ItemCondition | undefined,
