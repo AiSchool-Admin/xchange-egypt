@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XChange - Seed Categories</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #059669;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .success {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            color: #065f46;
+        }
+        .error {
+            background: #fee2e2;
+            border: 2px solid #ef4444;
+            color: #991b1b;
+        }
+        .loading {
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+            color: #1e40af;
+        }
+        pre {
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 XChange - Seed Categories</h1>
+        <p>Click the button below to populate the database with 3-level category hierarchy.</p>
+
+        <button id="seedBtn" onclick="seedCategories()">
+            🚀 Seed Categories Now
+        </button>
+
+        <div id="result"></div>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+
+        <h3>What gets seeded?</h3>
+        <ul>
+            <li><strong>Electronics</strong> → Smartphones → iPhone, Samsung, etc.</li>
+            <li><strong>Home Appliances</strong> → Refrigerators → 16 Feet, 24 Feet, etc.</li>
+            <li><strong>Furniture</strong> → Living Room → Sofas, TV Units</li>
+            <li><strong>Vehicles</strong> → Cars → Sedans, SUVs, Hatchbacks</li>
+        </ul>
+    </div>
+
+    <script>
+        const API_URL = 'https://xchange-egypt-production.up.railway.app/api/v1/seed/seed-categories';
+
+        async function seedCategories() {
+            const btn = document.getElementById('seedBtn');
+            const result = document.getElementById('result');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Seeding...';
+
+            result.style.display = 'block';
+            result.className = 'loading';
+            result.innerHTML = '<strong>⏳ Seeding in progress...</strong><br>Please wait...';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    result.className = 'success';
+                    result.innerHTML = `
+                        <strong>✅ Success!</strong><br>
+                        ${data.message}<br><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <br>
+                        <strong>✨ Categories are now available!</strong><br>
+                        Go to "Make a Barter Offer" → "Describe" mode to see them.
+                    `;
+                    btn.textContent = '✅ Seeding Complete';
+                } else {
+                    result.className = 'error';
+                    result.innerHTML = `
+                        <strong>⚠️ ${data.message || 'Seeding failed'}</strong><br><br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                    btn.disabled = false;
+                    btn.textContent = '🔄 Try Again';
+                }
+            } catch (error) {
+                result.className = 'error';
+                result.innerHTML = `
+                    <strong>❌ Error</strong><br>
+                    ${error.message}<br><br>
+                    <strong>Possible reasons:</strong>
+                    <ul>
+                        <li>Backend not deployed yet</li>
+                        <li>CORS issue</li>
+                        <li>Network error</li>
+                    </ul>
+                `;
+                btn.disabled = false;
+                btn.textContent = '🔄 Try Again';
+            }
+        }
+    </script>
+</body>
+</html>
