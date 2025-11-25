@@ -81,8 +81,9 @@ export interface CreateBarterOfferData {
   requestedCashAmount?: number;
   itemRequest?: {
     description: string;
-    categoryId?: string;
-    subcategoryId?: string;
+    categoryId?: string;           // Level 1: Root category
+    subcategoryId?: string;        // Level 2: Sub-category
+    subSubcategoryId?: string;     // Level 3: Sub-sub-category
     minPrice?: number;
     maxPrice?: number;
     keywords?: string[];
@@ -105,8 +106,9 @@ export interface BackendBarterOfferData {
   requestedCashAmount?: number;
   itemRequests?: Array<{
     description: string;
-    categoryId?: string;
-    subcategoryId?: string;
+    categoryId?: string;           // Level 1: Root category
+    subcategoryId?: string;        // Level 2: Sub-category
+    subSubcategoryId?: string;     // Level 3: Sub-sub-category
     minPrice?: number;
     maxPrice?: number;
     keywords?: string[];

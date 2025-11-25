@@ -459,23 +459,26 @@ model BarterOffer {
 
 // Abstract item request for barter (when user doesn't want specific items)
 model ItemRequest {
-  id              String         @id @default(uuid())
-  barterOfferId   String         @map("barter_offer_id")
-  description     String
-  categoryId      String?        @map("category_id")
-  subcategoryId   String?        @map("subcategory_id")
-  minPrice        Float?         @map("min_price")
-  maxPrice        Float?         @map("max_price")
-  condition       ItemCondition?
-  keywords        String[]
-  createdAt       DateTime       @default(now()) @map("created_at")
+  id                String         @id @default(uuid())
+  barterOfferId     String         @map("barter_offer_id")
+  description       String
+  categoryId        String?        @map("category_id")          // Level 1: Root category
+  subcategoryId     String?        @map("subcategory_id")       // Level 2: Sub-category
+  subSubcategoryId  String?        @map("sub_subcategory_id")   // Level 3: Sub-sub-category
+  minPrice          Float?         @map("min_price")
+  maxPrice          Float?         @map("max_price")
+  condition         ItemCondition?
+  keywords          String[]
+  createdAt         DateTime       @default(now()) @map("created_at")
 
-  barterOffer     BarterOffer    @relation(fields: [barterOfferId], references: [id], onDelete: Cascade)
-  category        Category?      @relation(fields: [categoryId], references: [id])
+  barterOffer       BarterOffer    @relation(fields: [barterOfferId], references: [id], onDelete: Cascade)
+  category          Category?      @relation(fields: [categoryId], references: [id])
 
   @@map("item_requests")
   @@index([barterOfferId])
   @@index([categoryId])
+  @@index([subcategoryId])
+  @@index([subSubcategoryId])
 }
 
 // Preference set - represents one alternative bundle the user wants

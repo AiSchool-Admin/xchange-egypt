@@ -4,12 +4,12 @@
  * Multi-party (2-N parties) exchange cycle discovery that maximizes
  * aggregate Match Score and minimizes cash differentials.
  *
- * Weights:
- * - Value Equivalent: 35%
- * - Description (Semantic): 35%
- * - Sub-Category: 10%
- * - Primary Category: 10%
- * - Location/Logistics: 10%
+ * NEW Weights (Updated):
+ * - Description + Keywords: 40%
+ * - Sub-Category (Level 2): 30%
+ * - Sub-Sub-Category (Level 3): 30%
+ *
+ * Note: If any preference is not available, lower scores are still possible
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -25,13 +25,15 @@ interface BarterListing {
   userName: string;
   itemId: string;
   itemTitle: string;
-  offerCategory: string | null;      // Primary category ID
-  offerSubCategory: string | null;   // Sub-category ID (item's categoryId)
+  offerCategory: string | null;         // Level 1: Primary category ID
+  offerSubCategory: string | null;      // Level 2: Sub-category ID
+  offerSubSubCategory: string | null;   // Level 3: Sub-sub-category ID (item's categoryId)
   offerDescription: string;
   estimatedValue: number;
-  desiredCategory: string | null;    // From itemRequest
-  desiredSubCategory: string | null; // From itemRequest
-  desiredDescription: string;        // From itemRequest
+  desiredCategory: string | null;       // Level 1: From itemRequest
+  desiredSubCategory: string | null;    // Level 2: From itemRequest
+  desiredSubSubCategory: string | null; // Level 3: From itemRequest
+  desiredDescription: string;           // From itemRequest (includes keywords)
   location: { lat: number; lng: number } | null;
 }
 
@@ -46,11 +48,9 @@ interface BarterEdge {
   toItemId: string;
   matchScore: number;
   breakdown: {
-    valueScore: number;
-    descriptionScore: number;
-    subCategoryScore: number;
-    categoryScore: number;
-    locationScore: number;
+    descriptionScore: number;      // 40% - Description + Keywords
+    subCategoryScore: number;      // 30% - Level 2 match
+    subSubCategoryScore: number;   // 30% - Level 3 match
   };
 }
 
@@ -95,11 +95,9 @@ interface BarterOpportunity {
 // ============================================
 
 export const WEIGHTS = {
-  VALUE: 0.35,
-  DESCRIPTION: 0.35,
-  SUB_CATEGORY: 0.10,
-  CATEGORY: 0.10,
-  LOCATION: 0.10,
+  DESCRIPTION: 0.40,        // Description + Keywords: 40%
+  SUB_CATEGORY: 0.30,       // Level 2 (Sub-Category): 30%
+  SUB_SUB_CATEGORY: 0.30,   // Level 3 (Sub-Sub-Category): 30%
 };
 
 export const EDGE_THRESHOLD = 0.35; // Minimum score to create an edge
@@ -230,74 +228,68 @@ const calculateLocationScore = (
  *
  * Score = Σ(Wi × Similarityi)
  *
- * Weights:
- * - Value Equivalent: 35%
- * - Description (Semantic): 35%
- * - Sub-Category: 10%
- * - Primary Category: 10%
- * - Location/Logistics: 10%
+ * NEW Weights:
+ * - Description + Keywords: 40%
+ * - Sub-Category (Level 2): 30%
+ * - Sub-Sub-Category (Level 3): 30%
+ *
+ * Graceful degradation: If preferences not specified, lower scores still possible
  */
 const calculateMatchScore = (
   offerListing: BarterListing,
   demandListing: BarterListing
 ): { score: number; breakdown: BarterEdge['breakdown'] } => {
-  // 1. Value Similarity (35%)
-  const valueScore = calculateValueSimilarity(
-    offerListing.estimatedValue,
-    demandListing.estimatedValue
-  );
-
-  // 2. Description Similarity (35%)
+  // 1. Description + Keywords Similarity (40%)
+  // This includes both description text and keywords matching
   const descriptionScore = calculateDescriptionSimilarity(
     offerListing.offerDescription,
     demandListing.desiredDescription
   );
 
-  // 3. Sub-Category Match (10%) - Binary
+  // 2. Sub-Category Match (30%) - Level 2
+  // Graceful degradation: Full score if match, partial score if no preference, zero if mismatch
   let subCategoryScore = 0;
   if (demandListing.desiredSubCategory) {
     if (offerListing.offerSubCategory === demandListing.desiredSubCategory) {
-      subCategoryScore = 1;
+      subCategoryScore = 1.0; // Perfect match
+    } else if (offerListing.offerCategory === demandListing.desiredSubCategory) {
+      subCategoryScore = 0.5; // Partial match (parent category matches)
+    } else {
+      subCategoryScore = 0.0; // No match
     }
   } else {
-    subCategoryScore = 0.5; // Neutral if no specific subcategory desired
+    subCategoryScore = 0.3; // Neutral/partial if no specific subcategory desired
   }
 
-  // 4. Primary Category Match (10%) - Binary
-  let categoryScore = 0;
-  if (demandListing.desiredCategory) {
-    if (
-      offerListing.offerCategory === demandListing.desiredCategory ||
-      offerListing.offerSubCategory === demandListing.desiredCategory
-    ) {
-      categoryScore = 1;
+  // 3. Sub-Sub-Category Match (30%) - Level 3
+  // Graceful degradation: Full score if match, partial score if no preference, zero if mismatch
+  let subSubCategoryScore = 0;
+  if (demandListing.desiredSubSubCategory) {
+    if (offerListing.offerSubSubCategory === demandListing.desiredSubSubCategory) {
+      subSubCategoryScore = 1.0; // Perfect match
+    } else if (offerListing.offerSubCategory === demandListing.desiredSubSubCategory) {
+      subSubCategoryScore = 0.5; // Partial match (sub-category matches)
+    } else if (offerListing.offerCategory === demandListing.desiredSubSubCategory) {
+      subSubCategoryScore = 0.3; // Weak match (parent category matches)
+    } else {
+      subSubCategoryScore = 0.0; // No match
     }
   } else {
-    categoryScore = 0.5; // Neutral if no specific category desired
+    subSubCategoryScore = 0.3; // Neutral/partial if no specific sub-sub-category desired
   }
-
-  // 5. Location Score (10%)
-  const locationScore = calculateLocationScore(
-    offerListing.location,
-    demandListing.location
-  );
 
   // Calculate weighted total
   const totalScore =
-    WEIGHTS.VALUE * valueScore +
     WEIGHTS.DESCRIPTION * descriptionScore +
     WEIGHTS.SUB_CATEGORY * subCategoryScore +
-    WEIGHTS.CATEGORY * categoryScore +
-    WEIGHTS.LOCATION * locationScore;
+    WEIGHTS.SUB_SUB_CATEGORY * subSubCategoryScore;
 
   return {
     score: Math.min(1, totalScore),
     breakdown: {
-      valueScore,
       descriptionScore,
       subCategoryScore,
-      categoryScore,
-      locationScore,
+      subSubCategoryScore,
     },
   };
 };
@@ -329,7 +321,11 @@ export const buildBarterGraph = async (
       seller: true,
       category: {
         include: {
-          parent: true,
+          parent: {
+            include: {
+              parent: true, // Include grandparent for 3-level hierarchy
+            },
+          },
         },
       },
     },
@@ -351,12 +347,19 @@ export const buildBarterGraph = async (
   });
 
   // Create a map of user demands from barter offers
-  const userDemands = new Map<string, { categoryId: string | null; description: string }>();
+  const userDemands = new Map<string, {
+    categoryId: string | null;
+    subcategoryId: string | null;
+    subSubcategoryId: string | null;
+    description: string;
+  }>();
   for (const offer of barterOffers) {
     const request = (offer as any).itemRequests?.[0];
     if (request) {
       userDemands.set(offer.initiatorId, {
         categoryId: request.categoryId || null,
+        subcategoryId: request.subcategoryId || null,
+        subSubcategoryId: request.subSubcategoryId || null,
         description: request.description || '',
       });
     }
@@ -372,19 +375,46 @@ export const buildBarterGraph = async (
     const userDemand = userDemands.get(item.sellerId);
     const itemPreferences = item as any; // Cast to access new fields
 
+    // Determine category hierarchy (up to 3 levels)
+    let offerCategory: string | null = null;
+    let offerSubCategory: string | null = null;
+    let offerSubSubCategory: string | null = null;
+
+    if (item.category) {
+      if (item.category.parent?.parent) {
+        // Level 3: Item is in a sub-sub-category
+        offerCategory = item.category.parent.parent.id;
+        offerSubCategory = item.category.parent.id;
+        offerSubSubCategory = item.category.id;
+      } else if (item.category.parent) {
+        // Level 2: Item is in a sub-category
+        offerCategory = item.category.parent.id;
+        offerSubCategory = item.category.id;
+        offerSubSubCategory = null;
+      } else {
+        // Level 1: Item is in a root category
+        offerCategory = item.category.id;
+        offerSubCategory = null;
+        offerSubSubCategory = null;
+      }
+    }
+
     const listing: BarterListing = {
       userId: item.sellerId,
       userName: item.seller.fullName,
       itemId: item.id,
       itemTitle: item.title,
-      offerCategory: item.category?.parentId || item.categoryId,
-      offerSubCategory: item.categoryId,
+      offerCategory,
+      offerSubCategory,
+      offerSubSubCategory,
       offerDescription: item.description || item.title,
       estimatedValue: item.estimatedValue,
-      // Priority: Item preferences > Barter offer preferences > null
-      desiredCategory: itemPreferences.desiredCategoryId || userDemand?.categoryId || null,
-      desiredSubCategory: itemPreferences.desiredCategoryId || null,
-      desiredDescription: itemPreferences.desiredKeywords || userDemand?.description || '',
+      // Priority: Barter offer preferences (from ItemRequest)
+      // These come from the user's barter offer where they specified what they want
+      desiredCategory: userDemand?.categoryId || null,
+      desiredSubCategory: userDemand?.subcategoryId || null,
+      desiredSubSubCategory: userDemand?.subSubcategoryId || null,
+      desiredDescription: userDemand?.description || '',
       location: (item.seller as any).latitude && (item.seller as any).longitude
         ? { lat: (item.seller as any).latitude, lng: (item.seller as any).longitude }
         : null,

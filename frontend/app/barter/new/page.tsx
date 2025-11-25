@@ -45,16 +45,19 @@ export default function CreateBarterOfferPage() {
   const [requestDescription, setRequestDescription] = useState('');
   const [requestParentCategory, setRequestParentCategory] = useState('');
   const [requestSubCategory, setRequestSubCategory] = useState('');
+  const [requestSubSubCategory, setRequestSubSubCategory] = useState('');
   const [requestKeywords, setRequestKeywords] = useState('');
   const [requestValueMin, setRequestValueMin] = useState('');
   const [requestValueMax, setRequestValueMax] = useState('');
   const [offeredCash, setOfferedCash] = useState(0);
   const [requestedCash, setRequestedCash] = useState(0);
 
-  // Category hierarchy
+  // Category hierarchy (3 levels)
   const parentCategories = categories;
   const selectedParent = categories.find(cat => cat.id === requestParentCategory);
   const subCategories = selectedParent?.children || [];
+  const selectedSub = subCategories.find(cat => cat.id === requestSubCategory);
+  const subSubCategories = selectedSub?.children || [];
 
   useEffect(() => {
     if (!user) {
@@ -164,6 +167,10 @@ export default function CreateBarterOfferPage() {
         setError('Please select a sub-category');
         return;
       }
+      if (!requestSubSubCategory) {
+        setError('Please select a sub-sub-category');
+        return;
+      }
       if (!requestKeywords.trim()) {
         setError('Please enter keywords');
         return;
@@ -207,6 +214,7 @@ export default function CreateBarterOfferPage() {
           description: requestDescription,
           categoryId: requestParentCategory,
           subcategoryId: requestSubCategory,
+          subSubcategoryId: requestSubSubCategory,
           keywords: requestKeywords.split(',').map(k => k.trim()).filter(k => k.length > 0),
           minPrice: parseFloat(requestValueMin),
           maxPrice: parseFloat(requestValueMax),
@@ -470,8 +478,8 @@ export default function CreateBarterOfferPage() {
                       />
                     </div>
 
-                    {/* Category and Sub-Category */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {/* Category, Sub-Category, and Sub-Sub-Category (3 levels) */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Category <span className="text-red-500">*</span>
@@ -481,6 +489,7 @@ export default function CreateBarterOfferPage() {
                           onChange={(e) => {
                             setRequestParentCategory(e.target.value);
                             setRequestSubCategory(''); // Reset subcategory when parent changes
+                            setRequestSubSubCategory(''); // Reset sub-subcategory
                           }}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                           required
@@ -490,6 +499,7 @@ export default function CreateBarterOfferPage() {
                             <option key={cat.id} value={cat.id}>{cat.nameEn}</option>
                           ))}
                         </select>
+                        <p className="text-xs text-gray-500 mt-1">Level 1</p>
                       </div>
 
                       <div>
@@ -498,7 +508,10 @@ export default function CreateBarterOfferPage() {
                         </label>
                         <select
                           value={requestSubCategory}
-                          onChange={(e) => setRequestSubCategory(e.target.value)}
+                          onChange={(e) => {
+                            setRequestSubCategory(e.target.value);
+                            setRequestSubSubCategory(''); // Reset sub-subcategory when subcategory changes
+                          }}
                           disabled={!requestParentCategory}
                           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                           required
@@ -510,6 +523,28 @@ export default function CreateBarterOfferPage() {
                             <option key={cat.id} value={cat.id}>{cat.nameEn}</option>
                           ))}
                         </select>
+                        <p className="text-xs text-gray-500 mt-1">Level 2</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Sub-Sub-Category <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={requestSubSubCategory}
+                          onChange={(e) => setRequestSubSubCategory(e.target.value)}
+                          disabled={!requestSubCategory}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          required
+                        >
+                          <option value="">
+                            {requestSubCategory ? 'Select Sub-Sub-Category' : 'Select sub-category first'}
+                          </option>
+                          {subSubCategories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>{cat.nameEn}</option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">Level 3 (e.g., "24 Feet")</p>
                       </div>
                     </div>
 
