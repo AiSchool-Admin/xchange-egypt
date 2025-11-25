@@ -60,28 +60,7 @@ export const getRootCategories = async (includeInactive = false) => {
           children: {
             where: includeInactive ? {} : { isActive: true },
             orderBy: { order: 'asc' },
-            select: {
-              id: true,
-              nameAr: true,
-              nameEn: true,
-              slug: true,
-              icon: true,
-              image: true,
-              order: true,
-              isActive: true,
-            },
           },
-        },
-        select: {
-          id: true,
-          nameAr: true,
-          nameEn: true,
-          slug: true,
-          icon: true,
-          image: true,
-          order: true,
-          isActive: true,
-          children: true, // Include the nested children array
         },
       },
     },
