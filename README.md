@@ -1,5 +1,27 @@
 # 🔄 Xchange - منصة التجارة الإلكترونية الذكية
 
+> **🆕 NEW: Multi-Party Bartering System Documentation**
+> Complete architecture and implementation guide now available!
+> 📖 **Start here:** [PROJECT-ROADMAP.md](./PROJECT-ROADMAP.md)
+
+---
+
+## 📚 Multi-Party Bartering Documentation
+
+We've just completed comprehensive documentation for the multi-party bartering system (2-N participant chains with AI-driven discovery):
+
+| Document | Purpose | Start Here If... |
+|----------|---------|------------------|
+| **[PROJECT-ROADMAP.md](./PROJECT-ROADMAP.md)** | Executive summary & 8-week timeline | You're new to the project |
+| **[ARCHITECTURE.md](./ARCHITECTURE.md)** | System design & technical architecture | You need the big picture |
+| **[IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md)** | Step-by-step implementation guide | You're ready to code |
+| **[TYPESCRIPT-INTERFACES.md](./TYPESCRIPT-INTERFACES.md)** | Complete type definitions | You need type safety |
+| **[QUICK-START.md](./QUICK-START.md)** | Developer quick reference | You want to start NOW |
+
+**Current Status:** ✅ Planning complete, ready for Phase 1 implementation (Database Setup)
+
+---
+
 <div dir="rtl">
 
 ## نظرة عامة
