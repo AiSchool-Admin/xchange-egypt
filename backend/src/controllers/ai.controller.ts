@@ -10,6 +10,7 @@ import * as fraudDetection from '../services/fraudDetection.service';
 import * as barterRanking from '../services/barterRanking.service';
 import { buildSmartSearchTerms, calculateRelevanceScore } from '../utils/arabicSearch';
 import { ItemCondition } from '@prisma/client';
+import prisma from '../config/database';
 
 // ============================================
 // AUTO-CATEGORIZATION
@@ -36,12 +37,66 @@ export const categorizeItem = async (
 
     const result = await autoCategorization.categorizeItem(title, description);
 
+    // Fetch category details from database
+    const category = await prisma.category.findUnique({
+      where: { slug: result.categorySlug },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        parent: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    // Fetch alternative category details
+    const alternatives = [];
+    if (result.suggestedCategories && result.suggestedCategories.length > 0) {
+      const altCategories = await prisma.category.findMany({
+        where: {
+          slug: {
+            in: result.suggestedCategories.map(cat => cat.slug),
+          },
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          parent: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Map with confidence scores
+      for (const altCat of altCategories) {
+        const suggestionData = result.suggestedCategories.find(s => s.slug === altCat.slug);
+        if (suggestionData) {
+          alternatives.push({
+            id: altCat.id,
+            name: altCat.name,
+            confidence: suggestionData.confidence / 100, // Convert to 0-1
+            parentCategory: altCat.parent?.name,
+          });
+        }
+      }
+    }
+
+    // Format response to match frontend expectations
     res.json({
       success: true,
-      data: result,
-      message: result.confidence > 70
-        ? 'Category detected with high confidence'
-        : 'Category suggestion provided (low confidence)',
+      category: {
+        id: category?.id || result.categoryId || 'unknown',
+        name: category?.name || result.categorySlug,
+        confidence: result.confidence / 100, // Convert to 0-1 for frontend
+        parentCategory: category?.parent?.name,
+      },
+      alternatives,
     });
   } catch (error) {
     next(error);
@@ -147,12 +202,25 @@ export const estimatePrice = async (
       description
     );
 
+    // Get market trend
+    const trendData = await priceEstimation.getCategoryPriceTrends(categoryId, 30);
+
+    // Format response to match frontend expectations
     res.json({
       success: true,
-      data: result,
-      message: result.confidence > 60
-        ? 'Price estimate based on market data'
-        : 'Limited data available - estimate may be less accurate',
+      estimation: {
+        estimatedPrice: result.estimatedPrice,
+        confidence: result.confidence / 100, // Convert to 0-1
+        priceRange: result.priceRange,
+        marketTrend: trendData.trend,
+        comparableItems: result.sampleSize,
+      },
+      suggestion: result.suggestions && result.suggestions.length > 0
+        ? result.suggestions[0]
+        : undefined,
+      warning: result.confidence < 40
+        ? 'Limited data available - estimate may be less accurate'
+        : undefined,
     });
   } catch (error) {
     next(error);
@@ -235,7 +303,7 @@ export const checkListing = async (
 ) => {
   try {
     const {
-      userId,
+      sellerId,
       title,
       description,
       price,
@@ -244,10 +312,13 @@ export const checkListing = async (
       images,
     } = req.body;
 
-    if (!userId || !title || !description || !price || !condition || !categoryId) {
+    // Get userId from sellerId or authenticated user
+    const userId = sellerId || (req as any).user?.id || 'guest';
+
+    if (!title || !description || price === undefined || !categoryId) {
       return res.status(400).json({
         success: false,
-        error: 'All fields are required',
+        error: 'Title, description, price, and categoryId are required',
       });
     }
 
@@ -256,19 +327,52 @@ export const checkListing = async (
       title,
       description,
       parseFloat(price),
-      condition as ItemCondition,
+      condition as ItemCondition || 'GOOD',
       categoryId,
-      images
+      Array.isArray(images) ? images.length : 0
     );
 
+    // Extract details from flags
+    const priceFlags = result.flags.filter(f =>
+      f.type === 'too_good_to_be_true' || f.type === 'suspiciously_low_price'
+    );
+    const keywordFlags = result.flags.filter(f => f.type === 'scam_keywords');
+
+    const priceDeviation = priceFlags.length > 0 ? -50 : undefined; // Approximate
+    const suspiciousKeywords = keywordFlags.length > 0 && keywordFlags[0].details
+      ? keywordFlags[0].details.replace('Found: ', '').split(', ')
+      : undefined;
+
+    // Map risk level to uppercase
+    const riskLevelMap: { [key: string]: 'LOW' | 'MEDIUM' | 'HIGH' } = {
+      'low': 'LOW',
+      'medium': 'MEDIUM',
+      'high': 'HIGH',
+      'critical': 'HIGH',
+    };
+
+    // Map to recommendation
+    let recommendation: 'APPROVED' | 'REVIEW_REQUIRED' | 'REJECTED';
+    if (result.shouldBlock) {
+      recommendation = 'REJECTED';
+    } else if (result.isSuspicious || result.riskLevel !== 'low') {
+      recommendation = 'REVIEW_REQUIRED';
+    } else {
+      recommendation = 'APPROVED';
+    }
+
+    // Format response to match frontend expectations
     res.json({
       success: true,
-      data: result,
-      message: result.shouldBlock
-        ? 'Listing blocked - high fraud risk'
-        : result.isSuspicious
-        ? 'Listing flagged for review'
-        : 'Listing appears legitimate',
+      fraudScore: result.riskScore / 100, // Convert to 0-1
+      riskLevel: riskLevelMap[result.riskLevel] || 'LOW',
+      flags: result.flags.map(f => f.message),
+      recommendation,
+      details: {
+        priceDeviation,
+        suspiciousKeywords,
+        imageCount: Array.isArray(images) ? images.length : 0,
+      },
     });
   } catch (error) {
     next(error);
