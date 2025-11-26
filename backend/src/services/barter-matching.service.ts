@@ -313,9 +313,24 @@ export const buildBarterGraph = async (
   const items = await prisma.item.findMany({
     where: {
       status: 'ACTIVE',
-      listings: {
-        none: { status: 'ACTIVE' },
-      },
+      // Include items that either:
+      // 1. Have no listings (newly created items)
+      // 2. Have active BARTER listings
+      OR: [
+        {
+          listings: {
+            none: {},
+          },
+        },
+        {
+          listings: {
+            some: {
+              status: 'ACTIVE',
+              listingType: 'BARTER',
+            },
+          },
+        },
+      ],
     },
     include: {
       seller: true,
@@ -409,12 +424,12 @@ export const buildBarterGraph = async (
       offerSubSubCategory,
       offerDescription: item.description || item.title,
       estimatedValue: item.estimatedValue,
-      // Priority: Barter offer preferences (from ItemRequest)
-      // These come from the user's barter offer where they specified what they want
-      desiredCategory: userDemand?.categoryId || null,
-      desiredSubCategory: userDemand?.subcategoryId || null,
-      desiredSubSubCategory: userDemand?.subSubcategoryId || null,
-      desiredDescription: userDemand?.description || '',
+      // Priority 1: Item's own desired preferences (from item creation/edit)
+      // Priority 2: Barter offer preferences (from ItemRequest)
+      desiredCategory: itemPreferences.desiredCategoryId || userDemand?.categoryId || null,
+      desiredSubCategory: itemPreferences.desiredSubCategoryId || userDemand?.subcategoryId || null,
+      desiredSubSubCategory: itemPreferences.desiredSubSubCategoryId || userDemand?.subSubcategoryId || null,
+      desiredDescription: itemPreferences.desiredKeywords || userDemand?.description || '',
       location: (item.seller as any).latitude && (item.seller as any).longitude
         ? { lat: (item.seller as any).latitude, lng: (item.seller as any).longitude }
         : null,

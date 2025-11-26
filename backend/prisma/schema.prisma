@@ -174,11 +174,13 @@ model Item {
   // Specs (flexible JSON)
   specifications  Json?         @map("specifications")
 
-  // Barter Preferences: What does the seller want in exchange?
-  desiredCategoryId     String?   @map("desired_category_id")
-  desiredKeywords       String?   @map("desired_keywords") // Comma-separated keywords
-  desiredValueMin       Float?    @map("desired_value_min") // Minimum acceptable value
-  desiredValueMax       Float?    @map("desired_value_max") // Maximum acceptable value
+  // Barter Preferences: What does the seller want in exchange? (3-Level Categories)
+  desiredCategoryId        String?   @map("desired_category_id")        // Level 1 or fallback
+  desiredSubCategoryId     String?   @map("desired_sub_category_id")    // Level 2
+  desiredSubSubCategoryId  String?   @map("desired_sub_sub_category_id") // Level 3 (most specific)
+  desiredKeywords          String?   @map("desired_keywords") // Comma-separated keywords
+  desiredValueMin          Float?    @map("desired_value_min") // Minimum acceptable value
+  desiredValueMax          Float?    @map("desired_value_max") // Maximum acceptable value
 
   // Status
   status          ItemStatus    @default(ACTIVE)
@@ -203,6 +205,8 @@ model Item {
   @@index([status])
   @@index([createdAt])
   @@index([desiredCategoryId])
+  @@index([desiredSubCategoryId])
+  @@index([desiredSubSubCategoryId])
 }
 
 // ============================================
