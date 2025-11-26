@@ -106,4 +106,29 @@ router.get('/search-terms', aiController.getSearchTerms);
  */
 router.get('/status', aiController.getAiStatus);
 
+// ============================================
+// BARTER RANKING ENDPOINTS
+// ============================================
+
+/**
+ * @route   POST /api/v1/ai/rank-barter-cycle
+ * @desc    Rank a barter cycle intelligently
+ * @access  Private
+ */
+router.post('/rank-barter-cycle', authenticate, aiController.rankBarterCycle);
+
+/**
+ * @route   POST /api/v1/ai/rank-barter-cycles
+ * @desc    Rank multiple barter cycles
+ * @access  Private
+ */
+router.post('/rank-barter-cycles', authenticate, aiController.rankMultipleBarterCycles);
+
+/**
+ * @route   GET /api/v1/ai/barter-recommendations/:userId
+ * @desc    Get personalized barter recommendations
+ * @access  Private
+ */
+router.get('/barter-recommendations/:userId', authenticate, aiController.getBarterRecommendations);
+
 export default router;

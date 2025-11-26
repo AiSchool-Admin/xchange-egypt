@@ -7,6 +7,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as autoCategorization from '../services/autoCategorization.service';
 import * as priceEstimation from '../services/priceEstimation.service';
 import * as fraudDetection from '../services/fraudDetection.service';
+import * as barterRanking from '../services/barterRanking.service';
 import { buildSmartSearchTerms, calculateRelevanceScore } from '../utils/arabicSearch';
 import { ItemCondition } from '@prisma/client';
 
@@ -405,11 +406,123 @@ export const getAiStatus = async (
             cost: 'free',
             features: ['diacritic removal', 'phonetic matching', 'dialect support'],
           },
+          barterRanking: {
+            status: 'active',
+            type: 'intelligent ranking',
+            cost: 'free',
+            factors: ['user trust', 'location', 'value balance', 'condition compatibility'],
+          },
         },
         version: '1.0.0',
         lastUpdated: new Date().toISOString(),
       },
       message: 'All AI features are operational',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ============================================
+// BARTER RANKING
+// ============================================
+
+/**
+ * Rank a barter cycle intelligently
+ * POST /api/v1/ai/rank-barter-cycle
+ */
+export const rankBarterCycle = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { participants, originalMatchScore } = req.body;
+
+    if (!participants || !Array.isArray(participants) || participants.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least 2 participants required',
+      });
+    }
+
+    if (!originalMatchScore) {
+      return res.status(400).json({
+        success: false,
+        error: 'originalMatchScore is required',
+      });
+    }
+
+    const result = await barterRanking.rankBarterCycle({
+      participants,
+      originalMatchScore,
+    });
+
+    res.json({
+      success: true,
+      data: result,
+      message: `Barter cycle ranked: ${result.recommendationStrength}`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Rank multiple barter cycles
+ * POST /api/v1/ai/rank-barter-cycles
+ */
+export const rankMultipleBarterCycles = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { cycles } = req.body;
+
+    if (!cycles || !Array.isArray(cycles) || cycles.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Cycles array is required',
+      });
+    }
+
+    const results = await barterRanking.rankMultipleBarterCycles(cycles);
+
+    res.json({
+      success: true,
+      data: results,
+      total: results.length,
+      message: `${results.length} barter cycles ranked`,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get personalized barter recommendations for a user
+ * GET /api/v1/ai/barter-recommendations/:userId
+ */
+export const getBarterRecommendations = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { userId } = req.params;
+    const { limit = '10' } = req.query;
+
+    const recommendations = await barterRanking.getPersonalizedBarterRecommendations(
+      userId,
+      parseInt(limit as string)
+    );
+
+    res.json({
+      success: true,
+      data: recommendations,
+      total: recommendations.length,
+      message: `Found ${recommendations.length} personalized recommendations`,
     });
   } catch (error) {
     next(error);
