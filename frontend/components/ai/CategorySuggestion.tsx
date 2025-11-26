@@ -41,7 +41,7 @@ export function CategorySuggestion({ suggestions, onSelect, loading }: CategoryS
   }
 
   const primarySuggestion = suggestions[0];
-  const alternat ives = suggestions.slice(1, 3); // Show top 3 alternatives
+  const alternatives = suggestions.slice(1, 3); // Show top 3 alternatives
 
   return (
     <div className="mt-2 p-4 bg-purple-50 border border-purple-300 rounded-md">
