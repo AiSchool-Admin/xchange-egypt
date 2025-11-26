@@ -35,7 +35,6 @@ interface PriceEstimate {
 const CONDITION_MULTIPLIERS: Record<ItemCondition, number> = {
   NEW: 1.0,           // 100% of market price
   LIKE_NEW: 0.85,     // 85% - minimal use
-  EXCELLENT: 0.75,    // 75% - well maintained
   GOOD: 0.60,         // 60% - normal wear
   FAIR: 0.45,         // 45% - visible wear
   POOR: 0.30,         // 30% - significant issues
@@ -53,15 +52,15 @@ export async function estimatePrice(
   // Get recent items in same category
   const recentItems = await prisma.item.findMany({
     where: {
-      category_id: categoryId,
-      is_active: true,
-      estimated_value: { gt: 0 }, // Only items with price
-      created_at: {
+      categoryId: categoryId,
+      status: 'ACTIVE',
+      estimatedValue: { gt: 0 }, // Only items with price
+      createdAt: {
         gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // Last 90 days
       },
     },
     select: {
-      estimated_value: true,
+      estimatedValue: true,
       condition: true,
       title: true,
     },
@@ -74,7 +73,7 @@ export async function estimatePrice(
   }
 
   // Calculate statistics
-  const prices = recentItems.map(item => item.estimated_value);
+  const prices = recentItems.map(item => item.estimatedValue);
   const median = calculateMedian(prices);
   const mean = calculateMean(prices);
   const stdDev = calculateStdDev(prices, mean);
@@ -132,23 +131,23 @@ async function estimateFromCategoryWide(
   // Try parent category, then grandparent
   const categoriesToCheck = [
     categoryId,
-    category?.parent_id,
-    category?.parent?.parent_id,
+    category?.parentId,
+    category?.parent?.parentId,
   ].filter(Boolean) as string[];
 
   for (const catId of categoriesToCheck) {
     const items = await prisma.item.findMany({
       where: {
-        category_id: catId,
-        is_active: true,
-        estimated_value: { gt: 0 },
+        categoryId: catId,
+        status: 'ACTIVE',
+        estimatedValue: { gt: 0 },
       },
-      select: { estimated_value: true },
+      select: { estimatedValue: true },
       take: 50,
     });
 
     if (items.length >= 3) {
-      const prices = items.map(i => i.estimated_value);
+      const prices = items.map(i => i.estimatedValue);
       const median = calculateMedian(prices);
       const adjusted = median * CONDITION_MULTIPLIERS[condition];
 
@@ -296,16 +295,16 @@ export async function getCategoryPriceTrends(
 
   const items = await prisma.item.findMany({
     where: {
-      category_id: categoryId,
-      is_active: true,
-      estimated_value: { gt: 0 },
-      created_at: { gte: startDate },
+      categoryId: categoryId,
+      status: 'ACTIVE',
+      estimatedValue: { gt: 0 },
+      createdAt: { gte: startDate },
     },
     select: {
-      estimated_value: true,
-      created_at: true,
+      estimatedValue: true,
+      createdAt: true,
     },
-    orderBy: { created_at: 'asc' },
+    orderBy: { createdAt: 'asc' },
   });
 
   if (items.length < 2) {
@@ -322,8 +321,8 @@ export async function getCategoryPriceTrends(
   const firstHalf = items.slice(0, midPoint);
   const secondHalf = items.slice(midPoint);
 
-  const avgFirst = calculateMean(firstHalf.map(i => i.estimated_value));
-  const avgSecond = calculateMean(secondHalf.map(i => i.estimated_value));
+  const avgFirst = calculateMean(firstHalf.map(i => i.estimatedValue));
+  const avgSecond = calculateMean(secondHalf.map(i => i.estimatedValue));
 
   const changePercent = ((avgSecond - avgFirst) / avgFirst) * 100;
   let trend: 'rising' | 'falling' | 'stable' = 'stable';
@@ -331,7 +330,7 @@ export async function getCategoryPriceTrends(
   if (changePercent > 5) trend = 'rising';
   else if (changePercent < -5) trend = 'falling';
 
-  const averagePrice = calculateMean(items.map(i => i.estimated_value));
+  const averagePrice = calculateMean(items.map(i => i.estimatedValue));
 
   return {
     averagePrice: Math.round(averagePrice),

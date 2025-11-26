@@ -72,12 +72,13 @@ const DISTANCE_THRESHOLDS = {
   REGIONAL: 200,    // km
 };
 
+// Map each condition to compatible conditions for barter exchanges
+// Users are more likely to accept items of similar or better condition
 const CONDITION_COMPATIBILITY: Record<ItemCondition, ItemCondition[]> = {
   NEW: ['NEW', 'LIKE_NEW'],
-  LIKE_NEW: ['NEW', 'LIKE_NEW', 'EXCELLENT'],
-  EXCELLENT: ['LIKE_NEW', 'EXCELLENT', 'GOOD'],
-  GOOD: ['EXCELLENT', 'GOOD', 'FAIR'],
-  FAIR: ['GOOD', 'FAIR'],
+  LIKE_NEW: ['NEW', 'LIKE_NEW', 'GOOD'],
+  GOOD: ['LIKE_NEW', 'GOOD', 'FAIR'],
+  FAIR: ['GOOD', 'FAIR', 'POOR'],
   POOR: ['FAIR', 'POOR'],
 };
 
@@ -93,14 +94,13 @@ async function getUserTrustMetrics(userId: string): Promise<UserTrustMetrics> {
     where: { id: userId },
     select: {
       rating: true,
-      total_transactions: true,
-      email_verified: true,
-      phone_verified: true,
-      created_at: true,
+      emailVerified: true,
+      phoneVerified: true,
+      createdAt: true,
       _count: {
         select: {
-          transactions_as_buyer: true,
-          transactions_as_seller: true,
+          transactionsAsBuyer: true,
+          transactionsAsSeller: true,
         },
       },
     },
@@ -118,11 +118,11 @@ async function getUserTrustMetrics(userId: string): Promise<UserTrustMetrics> {
     };
   }
 
-  const totalTransactions = user.total_transactions || 0;
+  const totalTransactions = (user._count.transactionsAsBuyer + user._count.transactionsAsSeller) || 0;
   const completedTransactions = await prisma.transaction.count({
     where: {
-      OR: [{ buyer_id: userId }, { seller_id: userId }],
-      status: 'COMPLETED',
+      OR: [{ buyerId: userId }, { sellerId: userId }],
+      paymentStatus: 'COMPLETED',
     },
   });
 
@@ -131,7 +131,7 @@ async function getUserTrustMetrics(userId: string): Promise<UserTrustMetrics> {
     : 0;
 
   const accountAge = Math.floor(
-    (Date.now() - user.created_at.getTime()) / (24 * 60 * 60 * 1000)
+    (Date.now() - user.createdAt.getTime()) / (24 * 60 * 60 * 1000)
   );
 
   return {
@@ -139,8 +139,8 @@ async function getUserTrustMetrics(userId: string): Promise<UserTrustMetrics> {
     totalTransactions,
     successRate,
     averageResponseTime: 12, // TODO: Calculate from chat data
-    hasVerifiedEmail: user.email_verified,
-    hasVerifiedPhone: user.phone_verified,
+    hasVerifiedEmail: user.emailVerified,
+    hasVerifiedPhone: user.phoneVerified,
     accountAge,
   };
 }
@@ -198,8 +198,8 @@ async function calculateLocationScore(userIds: string[]): Promise<number> {
     where: { id: { in: userIds } },
     select: {
       id: true,
-      location_governorate: true,
-      location_city: true,
+      governorate: true,
+      city: true,
     },
   });
 
@@ -208,8 +208,8 @@ async function calculateLocationScore(userIds: string[]): Promise<number> {
   // If Egypt-wide = 50
   // If international = 20
 
-  const governorates = new Set(users.map(u => u.location_governorate).filter(Boolean));
-  const cities = new Set(users.map(u => u.location_city).filter(Boolean));
+  const governorates = new Set(users.map(u => u.governorate).filter(Boolean));
+  const cities = new Set(users.map(u => u.city).filter(Boolean));
 
   if (cities.size === 1) return 100; // Same city
   if (governorates.size === 1) return 85; // Same governorate
@@ -444,15 +444,13 @@ export async function getPersonalizedBarterRecommendations(
   // Get user's barter offers
   const userOffers = await prisma.barterOffer.findMany({
     where: {
-      initiator_id: userId,
+      initiatorId: userId,
       status: 'PENDING',
     },
-    include: {
-      offered_items: {
-        include: {
-          item: true,
-        },
-      },
+    select: {
+      id: true,
+      offeredItemIds: true,
+      offeredBundleValue: true,
     },
     take: 5,
   });

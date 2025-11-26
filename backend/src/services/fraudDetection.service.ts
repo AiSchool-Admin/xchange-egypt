@@ -60,16 +60,17 @@ export async function checkListing(
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      created_at: true,
+      createdAt: true,
       status: true,
-      email_verified: true,
-      phone_verified: true,
+      emailVerified: true,
+      phoneVerified: true,
       rating: true,
-      total_transactions: true,
       _count: {
         select: {
           items: true,
           listings: true,
+          transactionsAsBuyer: true,
+          transactionsAsSeller: true,
         },
       },
     },
@@ -84,8 +85,9 @@ export async function checkListing(
     riskScore += 100;
   } else {
     // New user (< 7 days)
-    const userAge = Date.now() - user.created_at.getTime();
+    const userAge = Date.now() - user.createdAt.getTime();
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    const totalTransactions = user._count.transactionsAsBuyer + user._count.transactionsAsSeller;
 
     if (userAge < sevenDays) {
       flags.push({
@@ -98,7 +100,7 @@ export async function checkListing(
     }
 
     // Unverified email
-    if (!user.email_verified) {
+    if (!user.emailVerified) {
       flags.push({
         type: 'unverified_email',
         severity: 'warning',
@@ -108,7 +110,7 @@ export async function checkListing(
     }
 
     // Unverified phone
-    if (!user.phone_verified) {
+    if (!user.phoneVerified) {
       flags.push({
         type: 'unverified_phone',
         severity: 'warning',
@@ -118,7 +120,7 @@ export async function checkListing(
     }
 
     // Low rating (if user has transactions)
-    if (user.total_transactions > 5 && user.rating < 2.0) {
+    if (totalTransactions > 5 && user.rating < 2.0) {
       flags.push({
         type: 'low_rating',
         severity: 'danger',
@@ -158,16 +160,16 @@ export async function checkListing(
   // Check against market average
   const recentItems = await prisma.item.findMany({
     where: {
-      category_id: categoryId,
-      estimated_value: { gt: 0 },
-      is_active: true,
+      categoryId: categoryId,
+      estimatedValue: { gt: 0 },
+      status: 'ACTIVE',
     },
-    select: { estimated_value: true },
+    select: { estimatedValue: true },
     take: 50,
   });
 
   if (recentItems.length > 5) {
-    const avgPrice = recentItems.reduce((sum, i) => sum + i.estimated_value, 0) / recentItems.length;
+    const avgPrice = recentItems.reduce((sum, i) => sum + i.estimatedValue, 0) / recentItems.length;
 
     // Price is 70% below market average
     if (price < avgPrice * 0.3) {
@@ -302,12 +304,12 @@ export async function checkListing(
   const duplicates = await prisma.item.findMany({
     where: {
       title: { equals: title, mode: 'insensitive' },
-      user_id: { not: userId },
-      created_at: {
+      sellerId: { not: userId },
+      createdAt: {
         gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
       },
     },
-    select: { id: true, user_id: true },
+    select: { id: true, sellerId: true },
   });
 
   if (duplicates.length > 0) {
@@ -426,8 +428,8 @@ export async function checkUserBehavior(userId: string): Promise<{
         select: {
           items: true,
           listings: true,
-          transactions_as_buyer: true,
-          transactions_as_seller: true,
+          transactionsAsBuyer: true,
+          transactionsAsSeller: true,
         },
       },
     },
@@ -441,7 +443,7 @@ export async function checkUserBehavior(userId: string): Promise<{
     };
   }
 
-  const userAge = Date.now() - user.created_at.getTime();
+  const userAge = Date.now() - user.createdAt.getTime();
   const userAgeDays = userAge / (24 * 60 * 60 * 1000);
 
   // Multiple accounts from same IP (would need IP tracking)
@@ -460,7 +462,7 @@ export async function checkUserBehavior(userId: string): Promise<{
   }
 
   // No transactions despite many listings
-  if (user._count.listings > 20 && user._count.transactions_as_seller === 0) {
+  if (user._count.listings > 20 && user._count.transactionsAsSeller === 0) {
     flags.push({
       type: 'no_transactions',
       severity: 'warning',
@@ -511,10 +513,10 @@ export async function checkTransaction(
   const recentTransactions = await prisma.transaction.findMany({
     where: {
       OR: [
-        { buyer_id: buyerId, seller_id: sellerId },
-        { buyer_id: sellerId, seller_id: buyerId },
+        { buyerId: buyerId, sellerId: sellerId },
+        { buyerId: sellerId, sellerId: buyerId },
       ],
-      created_at: {
+      createdAt: {
         gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
       },
     },
