@@ -6,6 +6,9 @@ import { createItem } from '@/lib/api/items';
 import { getRootCategories, Category } from '@/lib/api/categories';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { PriceWarning, CategorySuggestion, FraudWarning } from '@/components/ai';
+import * as aiApi from '@/lib/api/ai';
+import { useDebounce } from '@/lib/hooks/useDebounce';
 
 export default function NewItemPage() {
   const router = useRouter();
@@ -25,6 +28,17 @@ export default function NewItemPage() {
     location: '',
     governorate: '',
   });
+
+  // AI Features State
+  const [priceEstimation, setPriceEstimation] = useState<aiApi.PriceEstimationResponse | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [categorySuggestions, setCategorySuggestions] = useState<aiApi.CategorySuggestion[]>([]);
+  const [categoryLoading, setCategoryLoading] = useState(false);
+  const [fraudCheck, setFraudCheck] = useState<aiApi.FraudCheckResponse | null>(null);
+
+  // Debounced values for AI calls
+  const debouncedTitle = useDebounce(formData.title, 1000);
+  const debouncedPrice = useDebounce(formData.price, 800);
 
   // Parent categories are the root categories, sub-categories come from their children
   const parentCategories = categories;
@@ -48,6 +62,102 @@ export default function NewItemPage() {
       setCategories([]);
     }
   };
+
+  // AI: Auto-categorize when title changes
+  const suggestCategory = async () => {
+    if (!debouncedTitle || debouncedTitle.length < 3) return;
+
+    setCategoryLoading(true);
+    try {
+      const result = await aiApi.categorizeItem({
+        title: debouncedTitle,
+        description: formData.description,
+      });
+
+      if (result && result.success) {
+        setCategorySuggestions([result.category, ...result.alternatives]);
+      }
+    } catch (error) {
+      console.error('Category suggestion error:', error);
+    } finally {
+      setCategoryLoading(false);
+    }
+  };
+
+  // AI: Validate price
+  const validatePriceWithAI = async () => {
+    const price = parseFloat(debouncedPrice);
+    if (isNaN(price) || price <= 0 || !formData.categoryId) return;
+
+    setPriceLoading(true);
+    try {
+      const result = await aiApi.estimatePrice({
+        title: formData.title,
+        description: formData.description,
+        categoryId: formData.categoryId,
+        condition: formData.condition as any,
+        estimatedValue: price,
+      });
+
+      setPriceEstimation(result);
+    } catch (error) {
+      console.error('Price estimation error:', error);
+    } finally {
+      setPriceLoading(false);
+    }
+  };
+
+  // AI: Handle category selection from AI suggestion
+  const handleAICategorySelect = (categoryId: string) => {
+    const selected = categorySuggestions.find((cat) => cat.id === categoryId);
+    if (selected) {
+      // Find parent category if this is a subcategory
+      const parentCat = categories.find((cat) =>
+        cat.children?.some((child) => child.id === categoryId)
+      );
+
+      setFormData({
+        ...formData,
+        categoryId: categoryId,
+        parentCategoryId: parentCat?.id || '',
+      });
+      setCategorySuggestions([]); // Clear suggestions after selection
+    }
+  };
+
+  // AI: Run fraud check before submit
+  const runFraudCheck = async (): Promise<boolean> => {
+    const result = await aiApi.checkListing({
+      title: formData.title,
+      description: formData.description,
+      price: parseFloat(formData.price) || 0,
+      categoryId: formData.categoryId,
+      images: uploadedImages,
+    });
+
+    setFraudCheck(result);
+
+    // Block submission if high risk
+    if (result && result.riskLevel === 'HIGH') {
+      setError('This listing has suspicious indicators. Please review the warnings below.');
+      return false;
+    }
+
+    return true;
+  };
+
+  // AI: Effects for auto-suggestions
+  useEffect(() => {
+    if (debouncedTitle.length >= 3) {
+      suggestCategory();
+    }
+  }, [debouncedTitle, formData.description]);
+
+  useEffect(() => {
+    if (debouncedPrice && formData.categoryId) {
+      validatePriceWithAI();
+    }
+  }, [debouncedPrice, formData.categoryId, formData.condition]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -110,6 +220,13 @@ export default function NewItemPage() {
       return;
     }
 
+    // AI: Run fraud check before submission
+    const fraudCheckPassed = await runFraudCheck();
+    if (!fraudCheckPassed) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     try {
       setLoading(true);
       await createItem({
@@ -152,6 +269,9 @@ export default function NewItemPage() {
             </div>
           )}
 
+          {/* AI: Fraud Warning */}
+          {fraudCheck && fraudCheck.riskLevel !== 'LOW' && <FraudWarning fraudCheck={fraudCheck} />}
+
           {/* Requirements Info Box */}
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <h3 className="font-semibold text-blue-900 text-sm mb-2">📋 Required Information</h3>
@@ -190,6 +310,15 @@ export default function NewItemPage() {
                 </span>
                 <span className="text-gray-500">{formData.title.length}/200 characters</span>
               </div>
+
+              {/* AI: Category Suggestions */}
+              {categorySuggestions.length > 0 && (
+                <CategorySuggestion
+                  suggestions={categorySuggestions}
+                  onSelect={handleAICategorySelect}
+                  loading={categoryLoading}
+                />
+              )}
             </div>
 
             {/* Description */}
@@ -300,6 +429,15 @@ export default function NewItemPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-1">Optional - estimated value of the item</p>
+
+              {/* AI: Price Warning */}
+              {formData.price && formData.categoryId && (
+                <PriceWarning
+                  estimation={priceEstimation}
+                  enteredPrice={parseFloat(formData.price)}
+                  loading={priceLoading}
+                />
+              )}
             </div>
 
             {/* Location and Governorate */}
