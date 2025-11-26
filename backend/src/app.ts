@@ -23,7 +23,8 @@ import notificationRoutes from './routes/notification.routes';
 import reviewRoutes from './routes/review.routes';
 import searchRoutes from './routes/search.routes';
 import chatRoutes from './routes/chat.routes';
-import adminRoutes from './routes/admin.routes';
+// FIXME: Admin routes temporarily disabled - needs schema fixes for Phase 2
+// import adminRoutes from './routes/admin.routes';
 import seedRoutes from './routes/seed.routes';
 import cartRoutes from './routes/cart.routes';
 import orderRoutes from './routes/order.routes';
@@ -183,8 +184,9 @@ app.use('/api/v1/search', searchRoutes);
 // Chat routes
 app.use('/api/v1/chat', chatRoutes);
 
+// FIXME: Admin routes temporarily disabled - needs schema fixes for Phase 2
 // Admin routes (for seeding, etc.)
-app.use('/api/v1/admin', adminRoutes);
+// app.use('/api/v1/admin', adminRoutes);
 
 // TEMPORARY: Seed routes (DELETE AFTER USE)
 app.use('/api/v1/seed', seedRoutes);
