@@ -273,8 +273,8 @@ const notifyParticipants = async (
       const userItems = cycle.participants
         .filter((p: any) => p.userId === userId)
         .map((p: any) => ({
-          itemId: p.itemId,
-          itemTitle: p.itemTitle,
+          itemId: p.itemId as string,
+          itemTitle: p.itemTitle as string,
         }));
 
       // Create database notification
@@ -297,12 +297,12 @@ const notifyParticipants = async (
         opportunityId,
         participantCount: cycle.participants.length,
         averageMatchScore: cycle.averageScore,
-        participants: participantUserIds,
+        participants: participantUserIds as string[],
         userItems,
         timestamp: new Date(),
       };
 
-      notifyUser(userId, notification);
+      notifyUser(userId as string, notification);
       notificationCount++;
     }
   }

@@ -728,15 +728,13 @@ export const createBarterChainProposal = async (cycle: BarterCycle): Promise<any
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  // Calculate total value and commission
-  const totalValue = cycle.edges.reduce((sum, edge) => sum + edge.itemValue, 0);
+  // Calculate total value and commission from participants
+  const totalValue = cycle.participants.reduce((sum, p) => sum + p.estimatedValue, 0);
   const commissionRate = cashFlowService.DEFAULT_COMMISSION_RATE;
   const commissionAmount = cashFlowService.calculateCommission(totalValue, commissionRate);
 
-  // Check if any items involve cash
-  const involvesCash = cycle.edges.some(
-    edge => edge.itemType === 'CASH' || (edge.cashAmount && edge.cashAmount > 0)
-  );
+  // Check if any participants involve cash (assuming all participants are goods/services for now)
+  const involvesCash = false; // TODO: Check when cash items are implemented
 
   const chain = await prisma.barterChain.create({
     data: {
