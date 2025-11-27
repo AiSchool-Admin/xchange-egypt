@@ -24,12 +24,23 @@ export default function NewItemPage() {
     price: '',
     location: '',
     governorate: '',
+    // Barter preferences
+    enableBarter: false,
+    desiredParentCategoryId: '',
+    desiredCategoryId: '',
+    desiredKeywords: '',
+    desiredValueMin: '',
+    desiredValueMax: '',
   });
 
   // Parent categories are the root categories, sub-categories come from their children
   const parentCategories = categories;
   const selectedParent = categories.find(cat => cat.id === formData.parentCategoryId);
   const subCategories = selectedParent?.children || [];
+
+  // Desired categories for barter
+  const desiredParent = categories.find(cat => cat.id === formData.desiredParentCategoryId);
+  const desiredSubCategories = desiredParent?.children || [];
 
   useEffect(() => {
     if (!user) {
@@ -50,7 +61,8 @@ export default function NewItemPage() {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    const newValue = type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
 
     // Reset sub-category when parent category changes
     if (name === 'parentCategoryId') {
@@ -59,10 +71,16 @@ export default function NewItemPage() {
         parentCategoryId: value,
         categoryId: '',
       });
+    } else if (name === 'desiredParentCategoryId') {
+      setFormData({
+        ...formData,
+        desiredParentCategoryId: value,
+        desiredCategoryId: '',
+      });
     } else {
       setFormData({
         ...formData,
-        [name]: value,
+        [name]: newValue,
       });
     }
   };
@@ -112,7 +130,7 @@ export default function NewItemPage() {
 
     try {
       setLoading(true);
-      await createItem({
+      const itemData: any = {
         titleAr: formData.title,
         titleEn: formData.title,
         descriptionAr: formData.description,
@@ -123,7 +141,25 @@ export default function NewItemPage() {
         location: formData.location,
         governorate: formData.governorate,
         imageUrls: uploadedImages.length > 0 ? uploadedImages : undefined,
-      });
+      };
+
+      // Add barter preferences if enabled
+      if (formData.enableBarter) {
+        if (formData.desiredCategoryId) {
+          itemData.desiredCategoryId = formData.desiredCategoryId;
+        }
+        if (formData.desiredKeywords) {
+          itemData.desiredKeywords = formData.desiredKeywords;
+        }
+        if (formData.desiredValueMin) {
+          itemData.desiredValueMin = parseFloat(formData.desiredValueMin);
+        }
+        if (formData.desiredValueMax) {
+          itemData.desiredValueMax = parseFloat(formData.desiredValueMax);
+        }
+      }
+
+      await createItem(itemData);
 
       router.push('/items?success=true');
     } catch (err: any) {
@@ -367,6 +403,137 @@ export default function NewItemPage() {
                     : 'Area or neighborhood (minimum 3 characters)'}
                 </p>
               </div>
+            </div>
+
+            {/* Barter Preferences Section */}
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">🔄 Barter Preferences</h3>
+                  <p className="text-sm text-gray-600">Enable trading this item for other items</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="enableBarter"
+                    checked={formData.enableBarter}
+                    onChange={handleChange}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                </label>
+              </div>
+
+              {formData.enableBarter && (
+                <div className="space-y-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-800 mb-4">
+                    ✨ Specify what you're looking for in exchange. Our smart matching system will find the best trades for you!
+                  </p>
+
+                  {/* Desired Category */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Desired Category
+                      </label>
+                      <select
+                        name="desiredParentCategoryId"
+                        value={formData.desiredParentCategoryId}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      >
+                        <option value="">Any category</option>
+                        {parentCategories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.nameEn}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Desired Sub-Category
+                      </label>
+                      <select
+                        name="desiredCategoryId"
+                        value={formData.desiredCategoryId}
+                        onChange={handleChange}
+                        disabled={!formData.desiredParentCategoryId}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      >
+                        <option value="">
+                          {formData.desiredParentCategoryId ? 'Any sub-category' : 'Select category first'}
+                        </option>
+                        {desiredSubCategories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.nameEn}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Desired Keywords */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Desired Keywords
+                    </label>
+                    <input
+                      type="text"
+                      name="desiredKeywords"
+                      value={formData.desiredKeywords}
+                      onChange={handleChange}
+                      placeholder="e.g., MacBook, laptop, Dell XPS (comma-separated)"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-600 mt-1">
+                      Add keywords to help find better matches
+                    </p>
+                  </div>
+
+                  {/* Desired Value Range */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Min Value (EGP)
+                      </label>
+                      <input
+                        type="number"
+                        name="desiredValueMin"
+                        value={formData.desiredValueMin}
+                        onChange={handleChange}
+                        min="0"
+                        step="100"
+                        placeholder="e.g., 12000"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Max Value (EGP)
+                      </label>
+                      <input
+                        type="number"
+                        name="desiredValueMax"
+                        value={formData.desiredValueMax}
+                        onChange={handleChange}
+                        min="0"
+                        step="100"
+                        placeholder="e.g., 18000"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-white border border-green-300 rounded-lg">
+                    <p className="text-xs text-green-800">
+                      💡 <strong>Pro Tip:</strong> The more specific you are, the better matches you'll get! Our AI will notify you instantly when a matching item is listed.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Image Upload */}
