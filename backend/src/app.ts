@@ -1,4 +1,6 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -34,9 +36,50 @@ import aiRoutes from './routes/ai.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
+import { startLockCleanupJob } from './jobs/lockCleanup.job';
+
+// Import real-time matching
+import { initializeWebSocket, startRealtimeMatching } from './services/realtime-matching.service';
 
 // Initialize Express app
 const app: Application = express();
+
+// Create HTTP server for Socket.IO
+const httpServer = http.createServer(app);
+
+// Initialize Socket.IO with CORS configuration
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: (origin, callback) => {
+      // Allow all origins for Socket.IO (same logic as REST API)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const allowedOrigins = env.cors.origin;
+      const isAllowed = allowedOrigins.some((allowed) => {
+        if (allowed === origin) return true;
+        if (allowed.includes('*')) {
+          const pattern = allowed.replace(/\*/g, '.*');
+          const regex = new RegExp(`^${pattern}$`);
+          return regex.test(origin);
+        }
+        return false;
+      });
+
+      const isVercel = origin.endsWith('.vercel.app');
+      const isLocalhost = origin.includes('localhost');
+
+      if (isAllowed || isVercel || isLocalhost) {
+        callback(null, true);
+      } else {
+        console.log(`⚠️  Socket.IO CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+  },
+});
 
 // ============================================
 // Middleware
@@ -262,17 +305,27 @@ const startServer = async () => {
     await prisma.$connect();
     console.log('✅ Database connected');
 
-    // Start background jobs in production
+    // Initialize WebSocket for real-time matching
+    initializeWebSocket(io);
+    console.log('✅ WebSocket server initialized');
+
+    // Start real-time matching service
+    startRealtimeMatching();
+    console.log('✅ Real-time matching service started');
+
+    // Start background jobs (kept for fallback and cleanup)
     if (env.server.nodeEnv === 'production') {
-      startBarterMatcherJob();
+      startBarterMatcherJob(); // Runs every 15 minutes as fallback
+      startLockCleanupJob();   // Runs every 5 minutes for cleanup
     }
 
-    // Start Express server - listen on 0.0.0.0 for Railway compatibility
-    app.listen(env.server.port, '0.0.0.0', () => {
+    // Start HTTP server (Express + Socket.IO) - listen on 0.0.0.0 for Railway compatibility
+    httpServer.listen(env.server.port, '0.0.0.0', () => {
       console.log(`🚀 Server running on port ${env.server.port}`);
       console.log(`🌍 Environment: ${env.server.nodeEnv}`);
       console.log(`📍 API URL: ${env.server.apiUrl}`);
       console.log(`🔗 Health check: ${env.server.apiUrl}/health`);
+      console.log(`⚡ WebSocket available on ws://${env.server.port}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
