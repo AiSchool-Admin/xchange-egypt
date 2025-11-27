@@ -4,10 +4,11 @@
  * Multi-party (2-N parties) exchange cycle discovery that maximizes
  * aggregate Match Score and minimizes cash differentials.
  *
- * NEW Weights (Updated):
- * - Description + Keywords: 40%
+ * NEW Weights (Updated with Geographic Clustering):
+ * - Description + Keywords: 35%
  * - Sub-Category (Level 2): 30%
- * - Sub-Sub-Category (Level 3): 30%
+ * - Sub-Sub-Category (Level 3): 25%
+ * - Geographic Location: 10%
  *
  * Note: If any preference is not available, lower scores are still possible
  */
@@ -15,6 +16,7 @@
 import { PrismaClient, LockType } from '@prisma/client';
 import * as lockService from './inventory-lock.service';
 import * as cashFlowService from './cash-flow.service';
+import { calculateLocationScore, formatDistance, getDistanceTier } from '../utils/geo.utils';
 
 const prisma = new PrismaClient();
 
@@ -49,10 +51,13 @@ interface BarterEdge {
   fromItemId: string;
   toItemId: string;
   matchScore: number;
+  distance?: number;      // Distance in km (NEW)
+  distanceTier?: string;  // "Same City", "Nearby", etc. (NEW)
   breakdown: {
-    descriptionScore: number;      // 40% - Description + Keywords
+    descriptionScore: number;      // 35% - Description + Keywords
     subCategoryScore: number;      // 30% - Level 2 match
-    subSubCategoryScore: number;   // 30% - Level 3 match
+    subSubCategoryScore: number;   // 25% - Level 3 match
+    locationScore: number;         // 10% - Geographic proximity (NEW)
   };
 }
 
@@ -97,9 +102,10 @@ interface BarterOpportunity {
 // ============================================
 
 export const WEIGHTS = {
-  DESCRIPTION: 0.40,        // Description + Keywords: 40%
+  DESCRIPTION: 0.35,        // Description + Keywords: 35%
   SUB_CATEGORY: 0.30,       // Level 2 (Sub-Category): 30%
-  SUB_SUB_CATEGORY: 0.30,   // Level 3 (Sub-Sub-Category): 30%
+  SUB_SUB_CATEGORY: 0.25,   // Level 3 (Sub-Sub-Category): 25%
+  LOCATION: 0.10,           // Geographic Proximity: 10%
 };
 
 export const EDGE_THRESHOLD = 0.35; // Minimum score to create an edge
@@ -230,18 +236,19 @@ const calculateLocationScore = (
  *
  * Score = Σ(Wi × Similarityi)
  *
- * NEW Weights:
- * - Description + Keywords: 40%
+ * NEW Weights (with Geographic Clustering):
+ * - Description + Keywords: 35%
  * - Sub-Category (Level 2): 30%
- * - Sub-Sub-Category (Level 3): 30%
+ * - Sub-Sub-Category (Level 3): 25%
+ * - Geographic Location: 10%
  *
  * Graceful degradation: If preferences not specified, lower scores still possible
  */
 const calculateMatchScore = (
   offerListing: BarterListing,
   demandListing: BarterListing
-): { score: number; breakdown: BarterEdge['breakdown'] } => {
-  // 1. Description + Keywords Similarity (40%)
+): { score: number; breakdown: BarterEdge['breakdown']; distance?: number } => {
+  // 1. Description + Keywords Similarity (35%)
   // This includes both description text and keywords matching
   const descriptionScore = calculateDescriptionSimilarity(
     offerListing.offerDescription,
@@ -263,7 +270,7 @@ const calculateMatchScore = (
     subCategoryScore = 0.3; // Neutral/partial if no specific subcategory desired
   }
 
-  // 3. Sub-Sub-Category Match (30%) - Level 3
+  // 3. Sub-Sub-Category Match (25%) - Level 3
   // Graceful degradation: Full score if match, partial score if no preference, zero if mismatch
   let subSubCategoryScore = 0;
   if (demandListing.desiredSubSubCategory) {
@@ -280,11 +287,26 @@ const calculateMatchScore = (
     subSubCategoryScore = 0.3; // Neutral/partial if no specific sub-sub-category desired
   }
 
+  // 4. Geographic Location (10%) - NEW!
+  // Convert location format from { lat, lng } to { primaryLatitude, primaryLongitude }
+  const user1Location = offerListing.location
+    ? { primaryLatitude: offerListing.location.lat, primaryLongitude: offerListing.location.lng }
+    : { primaryLatitude: null, primaryLongitude: null };
+
+  const user2Location = demandListing.location
+    ? { primaryLatitude: demandListing.location.lat, primaryLongitude: demandListing.location.lng }
+    : { primaryLatitude: null, primaryLongitude: null };
+
+  const locationResult = calculateLocationScore(user1Location, user2Location);
+  const locationScore = locationResult.score;
+  const distance = locationResult.distance;
+
   // Calculate weighted total
   const totalScore =
     WEIGHTS.DESCRIPTION * descriptionScore +
     WEIGHTS.SUB_CATEGORY * subCategoryScore +
-    WEIGHTS.SUB_SUB_CATEGORY * subSubCategoryScore;
+    WEIGHTS.SUB_SUB_CATEGORY * subSubCategoryScore +
+    WEIGHTS.LOCATION * locationScore;
 
   return {
     score: Math.min(1, totalScore),
@@ -292,7 +314,9 @@ const calculateMatchScore = (
       descriptionScore,
       subCategoryScore,
       subSubCategoryScore,
+      locationScore,
     },
+    distance,
   };
 };
 
@@ -417,8 +441,8 @@ export const buildBarterGraph = async (
       desiredSubCategory: userDemand?.subcategoryId || null,
       desiredSubSubCategory: userDemand?.subSubcategoryId || null,
       desiredDescription: userDemand?.description || '',
-      location: (item.seller as any).latitude && (item.seller as any).longitude
-        ? { lat: (item.seller as any).latitude, lng: (item.seller as any).longitude }
+      location: (item.seller as any).primaryLatitude && (item.seller as any).primaryLongitude
+        ? { lat: (item.seller as any).primaryLatitude, lng: (item.seller as any).primaryLongitude }
         : null,
     };
 
@@ -435,7 +459,7 @@ export const buildBarterGraph = async (
       if (listingA.userId === listingB.userId) continue;
 
       // Calculate match: A's offer matches B's demand
-      const { score, breakdown } = calculateMatchScore(listingA, listingB);
+      const { score, breakdown, distance } = calculateMatchScore(listingA, listingB);
 
       if (score >= EDGE_THRESHOLD) {
         edges.push({
@@ -444,6 +468,8 @@ export const buildBarterGraph = async (
           fromItemId: listingA.itemId,
           toItemId: listingB.itemId,
           matchScore: score,
+          distance,
+          distanceTier: distance ? getDistanceTier(distance) : undefined,
           breakdown,
         });
       }
