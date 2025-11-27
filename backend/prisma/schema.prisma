@@ -44,6 +44,12 @@ model User {
   governorate       String?
   postalCode        String?     @map("postal_code")
 
+  // Primary location (for geographic clustering)
+  primaryGovernorate  String?   @map("primary_governorate")
+  primaryCity         String?   @map("primary_city")
+  primaryLatitude     Float?    @map("primary_latitude")
+  primaryLongitude    Float?    @map("primary_longitude")
+
   // Business info (if userType = BUSINESS)
   businessName      String?     @map("business_name")
   taxId             String?     @map("tax_id")
@@ -139,6 +145,12 @@ model Category {
 // Items (Products/Services)
 // ============================================
 
+enum ItemType {
+  GOOD      // Physical product
+  SERVICE   // Service offering
+  CASH      // Cash/money
+}
+
 enum ItemCondition {
   NEW
   LIKE_NEW
@@ -162,9 +174,18 @@ model Item {
   title           String
   description     String
   categoryId      String        @map("category_id")
+
+  // Item type classification
+  itemType        ItemType      @default(GOOD) @map("item_type")
+
   condition       ItemCondition
   estimatedValue  Float         @map("estimated_value") // In EGP
   images          String[]      // Array of image URLs
+
+  // Type-specific fields
+  cashAmount      Float?        @map("cash_amount")     // For CASH type
+  serviceHours    Float?        @map("service_hours")   // For SERVICE type
+  serviceDuration String?       @map("service_duration") // e.g., "1 day", "2 weeks"
 
   // Location
   location        String?
@@ -203,6 +224,7 @@ model Item {
   @@index([status])
   @@index([createdAt])
   @@index([desiredCategoryId])
+  @@index([itemType])
 }
 
 // ============================================
@@ -565,6 +587,17 @@ model BarterChain {
   // Description
   description     String?            // Human-readable description of the chain
 
+  // Commission tracking
+  commissionAmount   Float?          @map("commission_amount")    // Platform commission in EGP
+  commissionRate     Float?          @map("commission_rate")      // Commission rate (e.g., 0.05 for 5%)
+  commissionStatus   String?         @map("commission_status")    // PENDING, COLLECTED, WAIVED
+  commissionPaidAt   DateTime?       @map("commission_paid_at")   // When commission was paid
+  commissionPaidBy   String?         @map("commission_paid_by")   // User ID who paid commission
+
+  // Cash flow tracking
+  involvesCash    Boolean            @default(false) @map("involves_cash") // Does this chain involve cash?
+  totalCashFlow   Float              @default(0) @map("total_cash_flow")   // Total cash in chain
+
   // Status
   status          BarterChainStatus  @default(PROPOSED)
 
@@ -578,12 +611,15 @@ model BarterChain {
 
   // Relations
   participants    BarterParticipant[]
+  cashFlows       CashFlow[]
 
   @@map("barter_chains")
   @@index([status])
   @@index([chainType])
   @@index([createdAt])
   @@index([expiresAt])
+  @@index([commissionStatus])
+  @@index([involvesCash])
 }
 
 // Individual participant in a barter chain
@@ -613,6 +649,13 @@ model BarterParticipant {
   responseMessage String?            @map("response_message")
   respondedAt     DateTime?          @map("responded_at")
 
+  // Counter-proposal support
+  hasCounterProposal     Boolean    @default(false) @map("has_counter_proposal")
+  counterProposalItemId  String?    @map("counter_proposal_item_id")  // Alternative item to give
+  counterProposalMessage String?    @map("counter_proposal_message")  // Reason for counter
+  counterProposalCash    Float?     @map("counter_proposal_cash")     // Cash adjustment
+  counterProposalStatus  String?    @map("counter_proposal_status")   // PENDING, ACCEPTED, REJECTED
+
   // Timestamps
   createdAt       DateTime           @default(now()) @map("created_at")
   updatedAt       DateTime           @updatedAt @map("updated_at")
@@ -628,6 +671,119 @@ model BarterParticipant {
   @@index([chainId])
   @@index([userId])
   @@index([status])
+  @@index([hasCounterProposal])
+  @@index([counterProposalStatus])
+}
+
+// ============================================
+// Inventory Lock System - Prevents Race Conditions
+// ============================================
+
+enum LockType {
+  SOFT       // Advisory lock, can be overridden
+  HARD       // Strict lock, cannot be overridden
+  RESERVED   // Item reserved for specific chain
+}
+
+enum LockStatus {
+  ACTIVE     // Lock is currently active
+  RELEASED   // Lock has been released
+  EXPIRED    // Lock expired automatically
+}
+
+model InventoryLock {
+  id              String      @id @default(uuid())
+  itemId          String      @map("item_id")
+  userId          String      @map("user_id")
+
+  // Lock details
+  lockType        LockType    @default(SOFT) @map("lock_type")
+  lockStatus      LockStatus  @default(ACTIVE) @map("lock_status")
+
+  // Related chain (if locked for a barter chain)
+  lockedByChainId String?     @map("locked_by_chain_id")
+  lockedByOfferId String?     @map("locked_by_offer_id")
+
+  // Expiration
+  lockedAt        DateTime    @default(now()) @map("locked_at")
+  expiresAt       DateTime    @map("expires_at")
+  autoRelease     Boolean     @default(true) @map("auto_release")
+
+  // Release tracking
+  releasedAt      DateTime?   @map("released_at")
+  releasedBy      String?     @map("released_by")  // User ID who released
+  releaseReason   String?     @map("release_reason")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("inventory_locks")
+  @@index([itemId])
+  @@index([userId])
+  @@index([lockStatus])
+  @@index([expiresAt])
+  @@index([lockedByChainId])
+  @@index([lockedByOfferId])
+}
+
+// ============================================
+// Cash Flow Tracking - For Barter Chains with Cash
+// ============================================
+
+enum CashFlowStatus {
+  PENDING       // Payment pending
+  COMPLETED     // Payment completed
+  FAILED        // Payment failed
+  REFUNDED      // Payment refunded
+  CANCELLED     // Transaction cancelled
+}
+
+enum CashFlowType {
+  CHAIN_BALANCE    // Cash to balance unequal trades
+  COMMISSION       // Platform commission
+  SHIPPING_FEE     // Shipping/delivery fee
+  ADJUSTMENT       // Manual adjustment
+}
+
+model CashFlow {
+  id              String          @id @default(uuid())
+  chainId         String?         @map("chain_id")
+
+  // Parties
+  fromUserId      String          @map("from_user_id")
+  toUserId        String          @map("to_user_id")
+
+  // Amount
+  amount          Float
+  currency        String          @default("EGP")
+  flowType        CashFlowType    @default(CHAIN_BALANCE) @map("flow_type")
+
+  // Payment details
+  paymentStatus   CashFlowStatus  @default(PENDING) @map("payment_status")
+  paymentMethod   String?         @map("payment_method")  // "CASH", "ONLINE", "BANK_TRANSFER"
+  paymentReference String?        @map("payment_reference") // Transaction reference
+
+  // Description
+  description     String?
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  completedAt     DateTime?       @map("completed_at")
+  refundedAt      DateTime?       @map("refunded_at")
+
+  // Relations
+  chain           BarterChain?    @relation(fields: [chainId], references: [id], onDelete: Cascade)
+
+  @@map("cash_flows")
+  @@index([chainId])
+  @@index([fromUserId])
+  @@index([toUserId])
+  @@index([paymentStatus])
+  @@index([flowType])
+  @@index([createdAt])
 }
 
 // ============================================
