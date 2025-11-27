@@ -215,18 +215,6 @@ const calculateValueSimilarity = (
 /**
  * Calculate location score (inverse of distance)
  */
-const calculateLocationScore = (
-  loc1: { lat: number; lng: number } | null,
-  loc2: { lat: number; lng: number } | null
-): number => {
-  const distance = calculateDistance(loc1, loc2);
-
-  // Score decreases with distance
-  // 0 km = 1.0, 50 km = 0.5, 100+ km = ~0.1
-  if (distance <= 0) return 1.0;
-  return Math.max(0.1, 1 / (1 + distance / 50));
-};
-
 // ============================================
 // Core Match Function
 // ============================================
@@ -288,7 +276,6 @@ const calculateMatchScore = (
   }
 
   // 4. Geographic Location (10%) - NEW!
-  // Convert location format from { lat, lng } to { primaryLatitude, primaryLongitude }
   const user1Location = offerListing.location
     ? { primaryLatitude: offerListing.location.lat, primaryLongitude: offerListing.location.lng }
     : { primaryLatitude: null, primaryLongitude: null };

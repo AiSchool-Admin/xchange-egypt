@@ -258,7 +258,7 @@ const notifyParticipants = async (
       const recentNotification = await prisma.notification.findFirst({
         where: {
           userId,
-          type: 'BARTER_MATCH',
+          type: 'BARTER_OFFER_RECEIVED',
           entityId: triggerItemId,
           createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) }, // Last hour
         },
@@ -281,7 +281,7 @@ const notifyParticipants = async (
       await prisma.notification.create({
         data: {
           userId,
-          type: 'BARTER_MATCH',
+          type: 'BARTER_OFFER_RECEIVED',
           title: notificationType === 'new_match'
             ? 'New Barter Match Found!'
             : 'Updated Barter Match',
