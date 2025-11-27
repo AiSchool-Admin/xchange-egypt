@@ -217,6 +217,7 @@ model Item {
   participantsGiving      BarterParticipant[]     @relation("ParticipantGivingItem")
   participantsReceiving   BarterParticipant[]     @relation("ParticipantReceivingItem")
   reverseAuctionBids      ReverseAuctionBid[]     @relation("ReverseAuctionBidItem")
+  inventoryLocks          InventoryLock[]         @relation("InventoryLocks")
 
   @@map("items")
   @@index([sellerId])
@@ -717,6 +718,9 @@ model InventoryLock {
   // Timestamps
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  item            Item        @relation("InventoryLocks", fields: [itemId], references: [id])
 
   @@map("inventory_locks")
   @@index([itemId])

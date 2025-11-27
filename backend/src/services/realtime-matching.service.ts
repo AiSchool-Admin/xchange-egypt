@@ -280,13 +280,13 @@ const notifyParticipants = async (
       // Create database notification
       await prisma.notification.create({
         data: {
-          userId,
+          userId: userId as string,
           type: 'BARTER_OFFER_RECEIVED',
           title: notificationType === 'new_match'
             ? 'New Barter Match Found!'
             : 'Updated Barter Match',
           message: `Found a ${Math.round(cycle.averageScore * 100)}% match with ${cycle.participants.length} participants. Check it out!`,
-          entityId: triggerItemId,
+          entityId: triggerItemId as string,
           entityType: 'BarterChain',
         },
       });
