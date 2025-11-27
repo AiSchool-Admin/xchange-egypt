@@ -42,11 +42,11 @@ export const categorizeItem = async (
       where: { slug: result.categorySlug },
       select: {
         id: true,
-        name: true,
+        nameEn: true,
         slug: true,
         parent: {
           select: {
-            name: true,
+            nameEn: true,
           },
         },
       },
@@ -63,11 +63,11 @@ export const categorizeItem = async (
         },
         select: {
           id: true,
-          name: true,
+          nameEn: true,
           slug: true,
           parent: {
             select: {
-              name: true,
+              nameEn: true,
             },
           },
         },
@@ -79,9 +79,9 @@ export const categorizeItem = async (
         if (suggestionData) {
           alternatives.push({
             id: altCat.id,
-            name: altCat.name,
+            name: altCat.nameEn,
             confidence: suggestionData.confidence / 100, // Convert to 0-1
-            parentCategory: altCat.parent?.name,
+            parentCategory: altCat.parent?.nameEn,
           });
         }
       }
@@ -92,9 +92,9 @@ export const categorizeItem = async (
       success: true,
       category: {
         id: category?.id || result.categoryId || 'unknown',
-        name: category?.name || result.categorySlug,
+        name: category?.nameEn || result.categorySlug,
         confidence: result.confidence / 100, // Convert to 0-1 for frontend
-        parentCategory: category?.parent?.name,
+        parentCategory: category?.parent?.nameEn,
       },
       alternatives,
     });
