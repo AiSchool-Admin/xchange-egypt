@@ -34,6 +34,7 @@ import aiRoutes from './routes/ai.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
+import { startLockCleanupJob } from './jobs/lockCleanup.job';
 
 // Initialize Express app
 const app: Application = express();
@@ -265,6 +266,7 @@ const startServer = async () => {
     // Start background jobs in production
     if (env.server.nodeEnv === 'production') {
       startBarterMatcherJob();
+      startLockCleanupJob();
     }
 
     // Start Express server - listen on 0.0.0.0 for Railway compatibility

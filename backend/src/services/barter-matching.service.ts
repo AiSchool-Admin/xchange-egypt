@@ -12,7 +12,9 @@
  * Note: If any preference is not available, lower scores are still possible
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, LockType } from '@prisma/client';
+import * as lockService from './inventory-lock.service';
+import * as cashFlowService from './cash-flow.service';
 
 const prisma = new PrismaClient();
 
@@ -713,6 +715,16 @@ export const createBarterChainProposal = async (cycle: BarterCycle): Promise<any
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
+  // Calculate total value and commission
+  const totalValue = cycle.edges.reduce((sum, edge) => sum + edge.itemValue, 0);
+  const commissionRate = cashFlowService.DEFAULT_COMMISSION_RATE;
+  const commissionAmount = cashFlowService.calculateCommission(totalValue, commissionRate);
+
+  // Check if any items involve cash
+  const involvesCash = cycle.edges.some(
+    edge => edge.itemType === 'CASH' || (edge.cashAmount && edge.cashAmount > 0)
+  );
+
   const chain = await prisma.barterChain.create({
     data: {
       chainType: cycle.participants.length === 2 ? 'DIRECT' : 'CYCLE',
@@ -722,6 +734,11 @@ export const createBarterChainProposal = async (cycle: BarterCycle): Promise<any
       description: `${cycle.participants.length}-Party Exchange Cycle`,
       status: 'PROPOSED',
       expiresAt,
+      commissionAmount,
+      commissionRate,
+      commissionStatus: 'PENDING',
+      involvesCash,
+      totalCashFlow: 0, // Will be calculated when cash flows are created
       participants: {
         create: cycle.participants.map((participant, index) => {
           const nextParticipant = cycle.participants[(index + 1) % cycle.participants.length];
@@ -752,6 +769,32 @@ export const createBarterChainProposal = async (cycle: BarterCycle): Promise<any
       },
     },
   });
+
+  // Create SOFT locks for all items in the chain
+  const locks = [];
+  for (const participant of cycle.participants) {
+    try {
+      const lock = await lockService.lockItem({
+        itemId: participant.itemId,
+        userId: participant.userId,
+        lockType: LockType.SOFT,
+        durationMinutes: 60, // 60 minutes for proposal acceptance
+        chainId: chain.id,
+      });
+      locks.push(lock);
+    } catch (error) {
+      console.error(`Failed to lock item ${participant.itemId}:`, error);
+      // If any lock fails, release all created locks and throw error
+      for (const createdLock of locks) {
+        await lockService.releaseLock({
+          lockId: createdLock.id,
+          userId: participant.userId,
+          reason: 'Chain creation failed',
+        });
+      }
+      throw error;
+    }
+  }
 
   return chain;
 };

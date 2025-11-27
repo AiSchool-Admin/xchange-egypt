@@ -5,9 +5,11 @@
  * Handles proposal, acceptance, rejection, and execution
  */
 
-import { PrismaClient, BarterChainStatus, ParticipantStatus } from '@prisma/client';
+import { PrismaClient, BarterChainStatus, ParticipantStatus, LockType } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import * as matchingService from './barter-matching.service';
+import * as lockService from './inventory-lock.service';
+import * as cashFlowService from './cash-flow.service';
 
 const prisma = new PrismaClient();
 
@@ -263,21 +265,37 @@ export const respondToChainProposal = async (
     },
   });
 
-  // If anyone rejected, mark chain as rejected
+  // If anyone rejected, mark chain as rejected and release all locks
   if (updatedChain!.participants.some((p) => p.status === 'REJECTED')) {
     await prisma.barterChain.update({
       where: { id: chainId },
       data: { status: BarterChainStatus.REJECTED },
     });
+
+    // Release all locks for this chain
+    await lockService.releaseChainLocks(
+      chainId,
+      userId,
+      'Chain rejected by participant'
+    );
   }
-  // If all accepted, mark as accepted
+  // If all accepted, mark as accepted and upgrade locks
   else if (updatedChain!.participants.every((p) => p.status === 'ACCEPTED')) {
     await prisma.barterChain.update({
       where: { id: chainId },
       data: { status: BarterChainStatus.ACCEPTED },
     });
 
-    // TODO: Lock items, create transactions
+    // Upgrade locks from SOFT to HARD
+    await lockService.upgradeLocks(chainId, LockType.HARD);
+
+    // Create cash flows for the chain
+    try {
+      await cashFlowService.createChainCashFlows(chainId);
+    } catch (error) {
+      console.error('Failed to create cash flows:', error);
+      // Don't fail the whole operation if cash flows fail
+    }
   }
   // Otherwise, keep as PENDING
   else {
@@ -335,6 +353,13 @@ export const cancelBarterChain = async (chainId: string, userId: string): Promis
       },
     },
   });
+
+  // Release all locks for this chain
+  await lockService.releaseChainLocks(
+    chainId,
+    userId,
+    'Chain cancelled by initiator'
+  );
 
   return cancelled;
 };
