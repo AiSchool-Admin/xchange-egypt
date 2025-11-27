@@ -1,6 +1,7 @@
 import { PrismaClient, ItemCondition } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { processItemImage } from '../utils/image';
+import { itemEvents } from '../events/item.events';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -132,6 +133,22 @@ export const createItem = async (
     },
   });
 
+  // Emit item created event for real-time matching
+  const hasBarterPreferences = !!(
+    itemData.desiredCategoryId ||
+    itemData.desiredKeywords ||
+    itemData.desiredValueMin ||
+    itemData.desiredValueMax
+  );
+
+  itemEvents.emitItemCreated({
+    itemId: item.id,
+    userId: item.sellerId,
+    categoryId: item.categoryId,
+    hasBarterPreferences,
+    timestamp: new Date(),
+  });
+
   return item;
 };
 
@@ -235,6 +252,19 @@ export const updateItem = async (
     },
   });
 
+  // Emit item updated event for real-time matching
+  itemEvents.emitItemUpdated({
+    itemId: updatedItem.id,
+    userId: updatedItem.sellerId,
+    categoryId: updatedItem.categoryId,
+    changes: {
+      category: updateData.categoryId !== undefined,
+      barterPreferences: false, // Item preferences update not supported yet
+      description: updateData.description !== undefined,
+    },
+    timestamp: new Date(),
+  });
+
   return updatedItem;
 };
 
@@ -278,6 +308,13 @@ export const deleteItem = async (
   // Delete the item (cascade will handle related records)
   await prisma.item.delete({
     where: { id: itemId },
+  });
+
+  // Emit item deleted event
+  itemEvents.emitItemDeleted({
+    itemId: item.id,
+    userId: item.sellerId,
+    timestamp: new Date(),
   });
 };
 

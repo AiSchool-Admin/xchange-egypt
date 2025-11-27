@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as barterController from '../controllers/barter.controller';
 import * as barterChainController from '../controllers/barter-chain.controller';
+import * as realtimeMatchingService from '../services/realtime-matching.service';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import {
@@ -272,6 +273,55 @@ router.delete(
   authenticate,
   validate(cancelBarterChainSchema),
   barterChainController.cancelBarterChain
+);
+
+// ============================================
+// Real-Time Matching (Testing/Admin)
+// ============================================
+
+/**
+ * Get real-time matching statistics
+ * GET /api/v1/barter/realtime/stats
+ */
+router.get(
+  '/realtime/stats',
+  authenticate,
+  async (_req, res, next) => {
+    try {
+      const stats = realtimeMatchingService.getRealtimeMatchingStats();
+      res.json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * Manually trigger matching for a specific item
+ * POST /api/v1/barter/realtime/trigger/:itemId
+ */
+router.post(
+  '/realtime/trigger/:itemId',
+  authenticate,
+  async (req, res, next) => {
+    try {
+      const { itemId } = req.params;
+      const userId = (req as any).user.userId;
+
+      const result = await realtimeMatchingService.triggerMatchingForItem(userId, itemId);
+
+      res.json({
+        success: true,
+        data: result,
+        message: `Found ${result.matchCount} matches, sent ${result.notificationsSent} notifications`,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 export default router;
