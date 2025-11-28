@@ -25,6 +25,11 @@ export const createItem = async (
       estimatedValue: req.body.estimatedValue || 0,
       location: req.body.location,
       governorate: req.body.governorate,
+      // Barter preferences
+      desiredCategoryId: req.body.desiredCategoryId,
+      desiredKeywords: req.body.desiredKeywords,
+      desiredValueMin: req.body.desiredValueMin ? parseFloat(req.body.desiredValueMin) : undefined,
+      desiredValueMax: req.body.desiredValueMax ? parseFloat(req.body.desiredValueMax) : undefined,
     };
 
     const item = await itemService.createItem(userId, itemData, imageFiles);
