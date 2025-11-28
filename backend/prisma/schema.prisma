@@ -131,6 +131,7 @@ model Category {
 
   // Relations
   items            Item[]
+  itemsDesiring    Item[]           @relation("ItemDesiredCategory")
   reverseAuctions  ReverseAuction[]
   wishListItems    WishListItem[]
   itemRequests     ItemRequest[]
@@ -212,6 +213,7 @@ model Item {
   // Relations
   seller                  User                    @relation("UserItems", fields: [sellerId], references: [id])
   category                Category                @relation(fields: [categoryId], references: [id])
+  desiredCategory         Category?               @relation("ItemDesiredCategory", fields: [desiredCategoryId], references: [id])
   listings                Listing[]
   barterPreferenceItems   BarterPreferenceItem[]  @relation("BarterPreferenceItems")
   participantsGiving      BarterParticipant[]     @relation("ParticipantGivingItem")
