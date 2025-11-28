@@ -341,6 +341,16 @@ export const buildBarterGraph = async (
           },
         },
       },
+      // Include desired category for barter preferences
+      desiredCategory: {
+        include: {
+          parent: {
+            include: {
+              parent: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -388,7 +398,7 @@ export const buildBarterGraph = async (
     const userDemand = userDemands.get(item.sellerId);
     const itemPreferences = item as any; // Cast to access new fields
 
-    // Determine category hierarchy (up to 3 levels)
+    // Determine OFFER category hierarchy (what they're offering) - up to 3 levels
     let offerCategory: string | null = null;
     let offerSubCategory: string | null = null;
     let offerSubSubCategory: string | null = null;
@@ -412,6 +422,40 @@ export const buildBarterGraph = async (
       }
     }
 
+    // Determine DESIRED category hierarchy (what they want) - up to 3 levels
+    let desiredCategory: string | null = null;
+    let desiredSubCategory: string | null = null;
+    let desiredSubSubCategory: string | null = null;
+
+    // PRIORITY: Item's barter preferences (from item creation form)
+    if (itemPreferences.desiredCategoryId) {
+      const desiredCat = itemPreferences.desiredCategory;
+      if (desiredCat) {
+        if (desiredCat.parent?.parent) {
+          // Level 3: Desired is a sub-sub-category
+          desiredCategory = desiredCat.parent.parent.id;
+          desiredSubCategory = desiredCat.parent.id;
+          desiredSubSubCategory = desiredCat.id;
+        } else if (desiredCat.parent) {
+          // Level 2: Desired is a sub-category
+          desiredCategory = desiredCat.parent.id;
+          desiredSubCategory = desiredCat.id;
+          desiredSubSubCategory = null;
+        } else {
+          // Level 1: Desired is a root category
+          desiredCategory = desiredCat.id;
+          desiredSubCategory = null;
+          desiredSubSubCategory = null;
+        }
+      }
+    }
+    // FALLBACK: Use barter offer preferences if item preferences not set
+    else if (userDemand) {
+      desiredCategory = userDemand.categoryId;
+      desiredSubCategory = userDemand.subcategoryId;
+      desiredSubSubCategory = userDemand.subSubcategoryId;
+    }
+
     const listing: BarterListing = {
       userId: item.sellerId,
       userName: item.seller.fullName,
@@ -422,12 +466,11 @@ export const buildBarterGraph = async (
       offerSubSubCategory,
       offerDescription: item.description || item.title,
       estimatedValue: item.estimatedValue,
-      // Priority: Barter offer preferences (from ItemRequest)
-      // These come from the user's barter offer where they specified what they want
-      desiredCategory: userDemand?.categoryId || null,
-      desiredSubCategory: userDemand?.subcategoryId || null,
-      desiredSubSubCategory: userDemand?.subSubcategoryId || null,
-      desiredDescription: userDemand?.description || '',
+      // Use item's barter preferences with fallback to barter offers
+      desiredCategory,
+      desiredSubCategory,
+      desiredSubSubCategory,
+      desiredDescription: itemPreferences.desiredKeywords || userDemand?.description || '',
       location: (item.seller as any).primaryLatitude && (item.seller as any).primaryLongitude
         ? { lat: (item.seller as any).primaryLatitude, lng: (item.seller as any).primaryLongitude }
         : null,
