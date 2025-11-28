@@ -297,6 +297,10 @@ export default function NewItemPage() {
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-900">List an Item</h1>
             <p className="text-gray-600 mt-1">Fill in the details below to list your item</p>
+            {/* TEST INDICATOR - Version with Barter Preferences */}
+            <div className="mt-2 inline-block px-3 py-1 bg-green-100 text-green-800 text-xs font-bold rounded-full">
+              ✅ VERSION 2.0 - BARTER ENABLED
+            </div>
           </div>
 
           {error && (
