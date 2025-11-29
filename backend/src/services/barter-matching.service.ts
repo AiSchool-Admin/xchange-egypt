@@ -539,17 +539,41 @@ export const buildBarterGraph = async (
     console.log(`[BarterMatcher] Requesting item ${requestingItemId.substring(0, 8)}... has ${itemEdges.length} connected edges (${fromEdges.length} FROM, ${toEdges.length} TO)`);
 
     if (fromEdges.length > 0) {
-      console.log(`  FROM edges (outgoing):`);
-      fromEdges.slice(0, 3).forEach(e => {
-        console.log(`    → to item ${e.toItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
-      });
+      console.log(`  FROM edges (outgoing) - TOP 5 BY SCORE:`);
+      fromEdges
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 5)
+        .forEach(e => {
+          console.log(`    → to item ${e.toItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
+        });
     }
 
     if (toEdges.length > 0) {
-      console.log(`  TO edges (incoming):`);
-      toEdges.slice(0, 3).forEach(e => {
-        console.log(`    ← from item ${e.fromItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
+      console.log(`  TO edges (incoming) - TOP 5 BY SCORE:`);
+      toEdges
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 5)
+        .forEach(e => {
+          console.log(`    ← from item ${e.fromItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
+        });
+    }
+
+    // Check for bidirectional edges (2-cycles)
+    const bidirectionalEdges = fromEdges.filter(fromEdge =>
+      toEdges.some(toEdge => toEdge.fromItemId === fromEdge.toItemId)
+    );
+    if (bidirectionalEdges.length > 0) {
+      console.log(`  BIDIRECTIONAL MATCHES (potential 2-cycles): ${bidirectionalEdges.length}`);
+      bidirectionalEdges.forEach(e => {
+        const reverseEdge = toEdges.find(te => te.fromItemId === e.toItemId);
+        const avgScore = ((e.matchScore + (reverseEdge?.matchScore || 0)) / 2) * 100;
+        console.log(`    ↔ item ${e.toItemId.substring(0, 8)}... (avg score: ${avgScore.toFixed(1)}%)`);
       });
+    } else {
+      console.log(`  ⚠️ NO BIDIRECTIONAL MATCHES FOUND - checking why...`);
+      console.log(`     - Item wants to give to ${fromEdges.length} items`);
+      console.log(`     - ${toEdges.length} items want this item`);
+      console.log(`     - But none overlap for a 2-cycle`);
     }
   }
 
