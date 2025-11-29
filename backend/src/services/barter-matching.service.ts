@@ -515,10 +515,22 @@ export const buildBarterGraph = async (
     const itemEdges = edges.filter(e =>
       e.fromItemId === requestingItemId || e.toItemId === requestingItemId
     );
-    console.log(`[BarterMatcher] Requesting item ${requestingItemId.substring(0, 8)}... has ${itemEdges.length} connected edges`);
-    if (itemEdges.length > 0) {
-      itemEdges.slice(0, 3).forEach(e => {
-        console.log(`  - ${e.fromItemId === requestingItemId ? 'FROM' : 'TO'} this item, score: ${(e.matchScore * 100).toFixed(1)}%`);
+    const fromEdges = itemEdges.filter(e => e.fromItemId === requestingItemId);
+    const toEdges = itemEdges.filter(e => e.toItemId === requestingItemId);
+
+    console.log(`[BarterMatcher] Requesting item ${requestingItemId.substring(0, 8)}... has ${itemEdges.length} connected edges (${fromEdges.length} FROM, ${toEdges.length} TO)`);
+
+    if (fromEdges.length > 0) {
+      console.log(`  FROM edges (outgoing):`);
+      fromEdges.slice(0, 3).forEach(e => {
+        console.log(`    → to item ${e.toItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
+      });
+    }
+
+    if (toEdges.length > 0) {
+      console.log(`  TO edges (incoming):`);
+      toEdges.slice(0, 3).forEach(e => {
+        console.log(`    ← from item ${e.fromItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
       });
     }
   }
