@@ -429,11 +429,21 @@ export const buildBarterGraph = async (
 
     // PRIORITY: Item's barter preferences (from item creation form)
     if (itemPreferences.desiredCategoryId) {
-      const desiredCat = itemPreferences.desiredCategory;
+      let desiredCat = itemPreferences.desiredCategory;
 
-      // DEBUG: Log if desiredCategory relation is null
+      // FALLBACK: If relation is null, fetch category directly
       if (!desiredCat) {
-        console.log(`[BarterMatcher] WARNING: Item ${item.id.substring(0, 8)} has desiredCategoryId but desiredCategory relation is NULL!`);
+        console.log(`[BarterMatcher] WARNING: desiredCategory relation NULL for item ${item.id.substring(0, 8)}, fetching directly...`);
+        desiredCat = await prisma.category.findUnique({
+          where: { id: itemPreferences.desiredCategoryId },
+          include: {
+            parent: {
+              include: {
+                parent: true,
+              },
+            },
+          },
+        });
       }
 
       if (desiredCat) {
@@ -453,6 +463,8 @@ export const buildBarterGraph = async (
           desiredSubCategory = null;
           desiredSubSubCategory = null;
         }
+      } else {
+        console.log(`[BarterMatcher] ERROR: Could not load category ${itemPreferences.desiredCategoryId} for item ${item.id.substring(0, 8)}`);
       }
     }
     // FALLBACK: Use barter offer preferences if item preferences not set
