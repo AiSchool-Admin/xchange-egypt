@@ -480,6 +480,8 @@ export const buildBarterGraph = async (
     nodes.set(`${listing.userId}-${listing.itemId}`, { listing });
   }
 
+  console.log(`[BarterMatcher] Built graph with ${listings.length} items`);
+
   // Create edges based on match scores
   const edges: BarterEdge[] = [];
 
@@ -505,6 +507,8 @@ export const buildBarterGraph = async (
       }
     }
   }
+
+  console.log(`[BarterMatcher] Created ${edges.length} edges (threshold: ${EDGE_THRESHOLD * 100}%)`);
 
   return { nodes, edges, listings };
 };
