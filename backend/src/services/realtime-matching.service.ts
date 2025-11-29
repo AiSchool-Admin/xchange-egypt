@@ -130,6 +130,22 @@ const handleItemCreated = async (payload: ItemCreatedPayload): Promise<void> => 
       return;
     }
 
+    // DEBUG: Fetch and log item details to verify barter preferences
+    const item = await prisma.item.findUnique({
+      where: { id: payload.itemId },
+      include: {
+        category: { select: { id: true, nameEn: true } },
+        desiredCategory: { select: { id: true, nameEn: true } }
+      }
+    });
+
+    if (item) {
+      console.log(`[RealTimeMatching] Item details:`);
+      console.log(`  - Offering: ${item.category?.nameEn} (${item.categoryId})`);
+      console.log(`  - Wants: ${item.desiredCategory?.nameEn || 'NULL'} (${item.desiredCategoryId || 'NULL'})`);
+      console.log(`  - Keywords: "${item.desiredKeywords || 'NULL'}"`);
+    }
+
     // Find matches for this specific item
     const matches = await matchingService.findMatchesForUser(
       payload.userId,
