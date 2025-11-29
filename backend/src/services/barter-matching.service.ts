@@ -510,6 +510,19 @@ export const buildBarterGraph = async (
 
   console.log(`[BarterMatcher] Created ${edges.length} edges (threshold: ${EDGE_THRESHOLD * 100}%)`);
 
+  // DEBUG: Log edges involving requesting item if specified
+  if (requestingItemId) {
+    const itemEdges = edges.filter(e =>
+      e.fromItemId === requestingItemId || e.toItemId === requestingItemId
+    );
+    console.log(`[BarterMatcher] Requesting item ${requestingItemId.substring(0, 8)}... has ${itemEdges.length} connected edges`);
+    if (itemEdges.length > 0) {
+      itemEdges.slice(0, 3).forEach(e => {
+        console.log(`  - ${e.fromItemId === requestingItemId ? 'FROM' : 'TO'} this item, score: ${(e.matchScore * 100).toFixed(1)}%`);
+      });
+    }
+  }
+
   return { nodes, edges, listings };
 };
 
