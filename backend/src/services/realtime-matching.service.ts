@@ -143,10 +143,20 @@ const handleItemCreated = async (payload: ItemCreatedPayload): Promise<void> => 
 
     console.log(`[RealTimeMatching] Found ${matches.totalMatches} potential matches`);
 
+    // Log all match scores for debugging
+    if (matches.cycles.length > 0) {
+      console.log(`[RealTimeMatching] Match scores:`);
+      matches.cycles.forEach((cycle, index) => {
+        console.log(`  Match ${index + 1}: ${(cycle.averageScore * 100).toFixed(1)}% (threshold: 60%)`);
+      });
+    }
+
     // Filter for high-quality matches
     const highQualityMatches = matches.cycles.filter(
       cycle => cycle.averageScore >= MIN_MATCH_SCORE_FOR_NOTIFICATION
     );
+
+    console.log(`[RealTimeMatching] High-quality matches (≥60%): ${highQualityMatches.length}/${matches.cycles.length}`);
 
     // Notify all participants in top matches
     const notificationsSent = await notifyParticipants(
