@@ -347,3 +347,4 @@ process.on('unhandledRejection', (reason, promise) => {
 startServer();
 
 export default app;
+export { io };
