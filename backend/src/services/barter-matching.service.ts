@@ -430,6 +430,12 @@ export const buildBarterGraph = async (
     // PRIORITY: Item's barter preferences (from item creation form)
     if (itemPreferences.desiredCategoryId) {
       const desiredCat = itemPreferences.desiredCategory;
+
+      // DEBUG: Log if desiredCategory relation is null
+      if (!desiredCat) {
+        console.log(`[BarterMatcher] WARNING: Item ${item.id.substring(0, 8)} has desiredCategoryId but desiredCategory relation is NULL!`);
+      }
+
       if (desiredCat) {
         if (desiredCat.parent?.parent) {
           // Level 3: Desired is a sub-sub-category
