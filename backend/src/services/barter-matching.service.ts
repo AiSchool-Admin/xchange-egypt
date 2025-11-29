@@ -538,23 +538,22 @@ export const buildBarterGraph = async (
 
     console.log(`[BarterMatcher] Requesting item ${requestingItemId.substring(0, 8)}... has ${itemEdges.length} connected edges (${fromEdges.length} FROM, ${toEdges.length} TO)`);
 
+    // Show detailed breakdown for ALL edges (sorted by score)
     if (fromEdges.length > 0) {
-      console.log(`  FROM edges (outgoing) - TOP 5 BY SCORE:`);
+      console.log(`  FROM edges (sorted by score):`);
       fromEdges
         .sort((a, b) => b.matchScore - a.matchScore)
-        .slice(0, 5)
         .forEach(e => {
-          console.log(`    → to item ${e.toItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
+          console.log(`    → ${e.toItemId.substring(0, 8)}: ${(e.matchScore * 100).toFixed(1)}% [desc=${(e.breakdown.descriptionScore * 100).toFixed(0)}% cat=${(e.breakdown.subCategoryScore * 100).toFixed(0)}% subcat=${(e.breakdown.subSubCategoryScore * 100).toFixed(0)}% loc=${(e.breakdown.locationScore * 100).toFixed(0)}%]`);
         });
     }
 
     if (toEdges.length > 0) {
-      console.log(`  TO edges (incoming) - TOP 5 BY SCORE:`);
+      console.log(`  TO edges (sorted by score):`);
       toEdges
         .sort((a, b) => b.matchScore - a.matchScore)
-        .slice(0, 5)
         .forEach(e => {
-          console.log(`    ← from item ${e.fromItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
+          console.log(`    ← ${e.fromItemId.substring(0, 8)}: ${(e.matchScore * 100).toFixed(1)}% [desc=${(e.breakdown.descriptionScore * 100).toFixed(0)}% cat=${(e.breakdown.subCategoryScore * 100).toFixed(0)}% subcat=${(e.breakdown.subSubCategoryScore * 100).toFixed(0)}% loc=${(e.breakdown.locationScore * 100).toFixed(0)}%]`);
         });
     }
 
@@ -775,6 +774,20 @@ export const findMatchesForUser = async (
     const allCycles = await findBarterCycles(MAX_CYCLE_LENGTH, MIN_CYCLE_LENGTH, userId, itemId);
 
     console.log(`[BarterMatcher] Found ${allCycles.length} total cycles in graph`);
+
+    // DEBUG: Show what we're looking for
+    console.log(`[BarterMatcher] Looking for cycles with userId=${userId.substring(0, 8)}... AND itemId=${itemId.substring(0, 8)}...`);
+
+    // DEBUG: Show first few cycles to understand structure
+    if (allCycles.length > 0 && allCycles.length < 20) {
+      console.log(`[BarterMatcher] Examining ${Math.min(allCycles.length, 5)} cycles:`);
+      allCycles.slice(0, 5).forEach((c, i) => {
+        const participantInfo = c.participants.map(p =>
+          `${p.userId.substring(0, 8)}/${p.itemId.substring(0, 8)}`
+        ).join(' → ');
+        console.log(`  Cycle ${i + 1}: ${participantInfo} (score: ${(c.averageScore * 100).toFixed(1)}%)`);
+      });
+    }
 
     // Filter cycles that include this user's item
     cycles = allCycles.filter(c =>
