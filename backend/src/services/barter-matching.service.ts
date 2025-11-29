@@ -730,9 +730,10 @@ const removeDuplicateCycles = (cycles: BarterCycle[]): BarterCycle[] => {
   const unique: BarterCycle[] = [];
 
   for (const cycle of cycles) {
-    // Create signature from sorted user IDs
+    // Create signature from sorted user:item pairs (NOT just userIds!)
+    // This ensures cycles with same users but different items are NOT treated as duplicates
     const signature = cycle.participants
-      .map(p => p.userId)
+      .map(p => `${p.userId}:${p.itemId}`)
       .sort()
       .join('-');
 
