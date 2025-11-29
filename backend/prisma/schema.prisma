@@ -1319,6 +1319,7 @@ enum NotificationType {
   BARTER_OFFER_REJECTED        // Your offer was rejected
   BARTER_OFFER_COUNTERED       // Counter offer received
   BARTER_OFFER_EXPIRED         // Offer expired
+  BARTER_MATCH                 // Automatic match found
 
   // Item notifications
   ITEM_SOLD                    // Your item sold
