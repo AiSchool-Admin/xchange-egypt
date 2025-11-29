@@ -429,7 +429,23 @@ export const buildBarterGraph = async (
 
     // PRIORITY: Item's barter preferences (from item creation form)
     if (itemPreferences.desiredCategoryId) {
-      const desiredCat = itemPreferences.desiredCategory;
+      let desiredCat = itemPreferences.desiredCategory;
+
+      // FALLBACK: If relation is null, fetch category directly
+      if (!desiredCat) {
+        console.log(`[BarterMatcher] WARNING: desiredCategory relation NULL for item ${item.id.substring(0, 8)}, fetching directly...`);
+        desiredCat = await prisma.category.findUnique({
+          where: { id: itemPreferences.desiredCategoryId },
+          include: {
+            parent: {
+              include: {
+                parent: true,
+              },
+            },
+          },
+        });
+      }
+
       if (desiredCat) {
         if (desiredCat.parent?.parent) {
           // Level 3: Desired is a sub-sub-category
@@ -447,6 +463,8 @@ export const buildBarterGraph = async (
           desiredSubCategory = null;
           desiredSubSubCategory = null;
         }
+      } else {
+        console.log(`[BarterMatcher] ERROR: Could not load category ${itemPreferences.desiredCategoryId} for item ${item.id.substring(0, 8)}`);
       }
     }
     // FALLBACK: Use barter offer preferences if item preferences not set
@@ -515,10 +533,22 @@ export const buildBarterGraph = async (
     const itemEdges = edges.filter(e =>
       e.fromItemId === requestingItemId || e.toItemId === requestingItemId
     );
-    console.log(`[BarterMatcher] Requesting item ${requestingItemId.substring(0, 8)}... has ${itemEdges.length} connected edges`);
-    if (itemEdges.length > 0) {
-      itemEdges.slice(0, 3).forEach(e => {
-        console.log(`  - ${e.fromItemId === requestingItemId ? 'FROM' : 'TO'} this item, score: ${(e.matchScore * 100).toFixed(1)}%`);
+    const fromEdges = itemEdges.filter(e => e.fromItemId === requestingItemId);
+    const toEdges = itemEdges.filter(e => e.toItemId === requestingItemId);
+
+    console.log(`[BarterMatcher] Requesting item ${requestingItemId.substring(0, 8)}... has ${itemEdges.length} connected edges (${fromEdges.length} FROM, ${toEdges.length} TO)`);
+
+    if (fromEdges.length > 0) {
+      console.log(`  FROM edges (outgoing):`);
+      fromEdges.slice(0, 3).forEach(e => {
+        console.log(`    → to item ${e.toItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
+      });
+    }
+
+    if (toEdges.length > 0) {
+      console.log(`  TO edges (incoming):`);
+      toEdges.slice(0, 3).forEach(e => {
+        console.log(`    ← from item ${e.fromItemId.substring(0, 8)}..., score: ${(e.matchScore * 100).toFixed(1)}%`);
       });
     }
   }
