@@ -707,10 +707,14 @@ export const findMatchesForUser = async (
     // Pass the requesting user's item to include it in the graph
     const allCycles = await findBarterCycles(MAX_CYCLE_LENGTH, MIN_CYCLE_LENGTH, userId, itemId);
 
+    console.log(`[BarterMatcher] Found ${allCycles.length} total cycles in graph`);
+
     // Filter cycles that include this user's item
     cycles = allCycles.filter(c =>
       c.participants.some(p => p.userId === userId && p.itemId === itemId)
     );
+
+    console.log(`[BarterMatcher] Filtered to ${cycles.length} cycles including user's item`);
   }
 
   // Take top results
