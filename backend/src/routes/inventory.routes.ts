@@ -31,6 +31,25 @@ router.get('/latest', inventoryController.getLatestItems);
  */
 router.get('/markets', inventoryController.getMarkets);
 
+/**
+ * @route GET /api/v1/inventory/nearby
+ * @desc Get nearby items by location
+ * @query governorate - Required: Filter by governorate
+ * @query city - Optional: Filter by city
+ * @query district - Optional: Filter by district
+ * @query type - Optional: SUPPLY or DEMAND (default: SUPPLY)
+ * @query limit - Optional: Number of items (default: 20)
+ * @access Public
+ */
+router.get('/nearby', inventoryController.getNearbyItems);
+
+/**
+ * @route GET /api/v1/inventory/proximity-stats
+ * @desc Get proximity matching statistics
+ * @access Public
+ */
+router.get('/proximity-stats', inventoryController.getProximityStats);
+
 // ============================================
 // Protected Routes (authentication required)
 // ============================================
@@ -49,6 +68,15 @@ router.get('/', inventoryController.getInventory);
  * @access Private
  */
 router.get('/stats', inventoryController.getStats);
+
+/**
+ * @route GET /api/v1/inventory/proximity-matches
+ * @desc Get proximity matches for user's items (Supply & Demand)
+ * @query type - Optional: SUPPLY, DEMAND, or ALL (default: ALL)
+ * @query limit - Optional: Number of matches (default: 20)
+ * @access Private
+ */
+router.get('/proximity-matches', inventoryController.getProximityMatches);
 
 /**
  * @route POST /api/v1/inventory
@@ -77,5 +105,14 @@ router.delete('/:id', inventoryController.deleteItem);
  * @access Private
  */
 router.get('/:id/matches', inventoryController.findMatches);
+
+/**
+ * @route GET /api/v1/inventory/:id/proximity-matches
+ * @desc Get proximity matches for a specific item
+ * @query maxResults - Optional: Max results (default: 10)
+ * @query minScore - Optional: Min match score (default: 0.3)
+ * @access Private
+ */
+router.get('/:id/proximity-matches', inventoryController.getItemProximityMatches);
 
 export default router;

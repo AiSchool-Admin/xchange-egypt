@@ -6,6 +6,7 @@
  */
 
 import { PrismaClient, ItemType, ItemCondition, MarketType } from '@prisma/client';
+import * as proximityMatching from './proximity-matching.service';
 
 const prisma = new PrismaClient();
 
@@ -317,6 +318,11 @@ export const createInventoryItem = async (
       });
     }
 
+    // Trigger proximity matching asynchronously (don't wait)
+    proximityMatching.processNewSupplyItem(item.id).catch(err => {
+      console.error('[Inventory] Error processing proximity matching:', err);
+    });
+
     return {
       id: item.id,
       side: 'SUPPLY',
@@ -356,13 +362,18 @@ export const createInventoryItem = async (
       },
     });
 
+    // Trigger proximity matching asynchronously (don't wait)
+    proximityMatching.processNewDemandItem(offer.id).catch(err => {
+      console.error('[Inventory] Error processing proximity matching for demand:', err);
+    });
+
     return {
       id: offer.id,
       side: 'DEMAND',
       type: input.type,
       title: input.title,
       listingType: input.listingType,
-      marketType: input.marketType || 'NEIGHBORHOOD',
+      marketType: input.marketType || 'DISTRICT',
       status: 'ACTIVE',
       createdAt: offer.createdAt,
     };

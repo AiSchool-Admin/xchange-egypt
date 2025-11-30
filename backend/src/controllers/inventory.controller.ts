@@ -6,6 +6,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import * as inventoryService from '../services/inventory.service';
+import * as proximityService from '../services/proximity-matching.service';
 import { successResponse } from '../utils/response';
 
 /**
@@ -176,6 +177,113 @@ export const getMarkets = async (
   try {
     const markets = inventoryService.MARKET_CONFIG;
     return successResponse(res, markets, 'Markets retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ============================================
+// Proximity Matching Endpoints
+// ============================================
+
+/**
+ * Get proximity matches for user's items
+ * GET /api/v1/inventory/proximity-matches
+ * Query: type (SUPPLY|DEMAND|ALL), limit
+ */
+export const getProximityMatches = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { type, limit } = req.query;
+
+    const matches = await proximityService.getMatchesForUser(userId, {
+      type: type as 'SUPPLY' | 'DEMAND' | 'ALL',
+      limit: limit ? parseInt(limit as string) : 20,
+    });
+
+    return successResponse(res, matches, 'Proximity matches retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get proximity matches for a specific item
+ * GET /api/v1/inventory/:id/proximity-matches
+ * Query: maxResults, minScore
+ */
+export const getItemProximityMatches = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const { maxResults, minScore } = req.query;
+
+    const matches = await proximityService.findMatchesForSupply(id, {
+      maxResults: maxResults ? parseInt(maxResults as string) : 10,
+      minScore: minScore ? parseFloat(minScore as string) : 0.3,
+    });
+
+    return successResponse(res, { matches, count: matches.length }, 'Item proximity matches retrieved');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get nearby items by location (public)
+ * GET /api/v1/inventory/nearby
+ * Query: governorate (required), city, district, type, limit
+ */
+export const getNearbyItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { governorate, city, district, type, limit } = req.query;
+
+    if (!governorate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Governorate is required',
+      });
+    }
+
+    const items = await proximityService.getNearbyItems(
+      governorate as string,
+      city as string | undefined,
+      district as string | undefined,
+      {
+        type: type as 'SUPPLY' | 'DEMAND',
+        limit: limit ? parseInt(limit as string) : 20,
+      }
+    );
+
+    return successResponse(res, { items, count: items.length }, 'Nearby items retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get proximity matching stats
+ * GET /api/v1/inventory/proximity-stats
+ */
+export const getProximityStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const stats = await proximityService.getProximityMatchingStats();
+    return successResponse(res, stats, 'Proximity stats retrieved successfully');
   } catch (error) {
     next(error);
   }
