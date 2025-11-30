@@ -3,6 +3,60 @@ import apiClient from './client';
 export type InventorySide = 'SUPPLY' | 'DEMAND';
 export type InventoryItemType = 'GOODS' | 'SERVICES' | 'CASH';
 export type ListingType = 'DIRECT_SALE' | 'AUCTION' | 'BARTER' | 'DIRECT_BUY' | 'REVERSE_AUCTION';
+export type MarketType = 'NEIGHBORHOOD' | 'GOVERNORATE' | 'NATIONAL' | 'LUXURY';
+
+// Market configuration
+export const MARKET_CONFIG = {
+  NEIGHBORHOOD: {
+    id: 'NEIGHBORHOOD',
+    nameAr: 'سوق الحي',
+    nameEn: 'Neighborhood Market',
+    icon: '🏘️',
+    color: 'green',
+    listingFee: 0,
+    commission: 0,
+    maxValue: 5000,
+    description: 'مجاني - نطاق 5 كم',
+    descriptionEn: 'Free - 5km radius',
+  },
+  GOVERNORATE: {
+    id: 'GOVERNORATE',
+    nameAr: 'سوق المحافظة',
+    nameEn: 'Governorate Market',
+    icon: '🏙️',
+    color: 'blue',
+    listingFee: 10,
+    commission: 2,
+    maxValue: 50000,
+    description: '10 ج.م - كل المحافظة',
+    descriptionEn: '10 EGP - Entire governorate',
+  },
+  NATIONAL: {
+    id: 'NATIONAL',
+    nameAr: 'السوق الشامل',
+    nameEn: 'National Market',
+    icon: '🇪🇬',
+    color: 'purple',
+    listingFee: 25,
+    commission: 5,
+    maxValue: null,
+    description: '25 ج.م - كل مصر',
+    descriptionEn: '25 EGP - All Egypt',
+  },
+  LUXURY: {
+    id: 'LUXURY',
+    nameAr: 'السوق المميز',
+    nameEn: 'Luxury Market',
+    icon: '💎',
+    color: 'amber',
+    listingFee: 100,
+    commission: 3,
+    maxValue: null,
+    description: 'اشتراك VIP - سلع فاخرة',
+    descriptionEn: 'VIP subscription - Luxury items',
+    subscriptionRequired: true,
+  },
+};
 
 export interface InventoryItem {
   id: string;
@@ -18,8 +72,11 @@ export interface InventoryItem {
   categoryId?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  // Market & Location
+  marketType: MarketType;
   governorate?: string;
   city?: string;
+  district?: string;
   viewCount: number;
   matchCount: number;
   createdAt: string;
@@ -57,8 +114,11 @@ export interface CreateInventoryItemInput {
   categoryId?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  // Market & Location
+  marketType?: MarketType;
   governorate?: string;
   city?: string;
+  district?: string;
   startingBid?: number;
   auctionDurationDays?: number;
 }
@@ -128,6 +188,11 @@ export interface PublicItem {
     nameAr: string;
     nameEn: string;
   } | null;
+  // Market & Location
+  marketType?: MarketType;
+  governorate?: string | null;
+  city?: string | null;
+  district?: string | null;
   location?: string;
   keywords?: string[];
   user: {
@@ -150,7 +215,19 @@ export interface LatestItemsResponse {
   };
 }
 
-export const getLatestItems = async (limit: number = 8): Promise<LatestItemsResponse> => {
-  const response = await apiClient.get(`/inventory/latest?limit=${limit}`);
+export interface GetLatestItemsParams {
+  limit?: number;
+  marketType?: MarketType;
+  governorate?: string;
+}
+
+export const getLatestItems = async (params: GetLatestItemsParams = {}): Promise<LatestItemsResponse> => {
+  const { limit = 8, marketType, governorate } = params;
+  const queryParams = new URLSearchParams();
+  queryParams.append('limit', limit.toString());
+  if (marketType) queryParams.append('marketType', marketType);
+  if (governorate) queryParams.append('governorate', governorate);
+
+  const response = await apiClient.get(`/inventory/latest?${queryParams.toString()}`);
   return response.data;
 };

@@ -5,7 +5,7 @@
  * Supports goods, services, and cash items with multiple listing types.
  */
 
-import { PrismaClient, ItemType, ItemCondition } from '@prisma/client';
+import { PrismaClient, ItemType, ItemCondition, MarketType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +16,45 @@ const prisma = new PrismaClient();
 export type InventorySide = 'SUPPLY' | 'DEMAND';
 export type InventoryItemType = 'GOODS' | 'SERVICES' | 'CASH';
 export type ListingType = 'DIRECT_SALE' | 'AUCTION' | 'BARTER' | 'DIRECT_BUY' | 'REVERSE_AUCTION';
+export type MarketTypeValue = 'NEIGHBORHOOD' | 'GOVERNORATE' | 'NATIONAL' | 'LUXURY';
+
+// Market configuration
+export const MARKET_CONFIG = {
+  NEIGHBORHOOD: {
+    nameAr: 'سوق الحي',
+    nameEn: 'Neighborhood Market',
+    listingFee: 0,      // مجاني (أول 5)
+    commission: 0,      // 0%
+    maxValue: 5000,     // حد أقصى 5000 ج.م
+    radiusKm: 5,
+  },
+  GOVERNORATE: {
+    nameAr: 'سوق المحافظة',
+    nameEn: 'Governorate Market',
+    listingFee: 10,     // 10 ج.م
+    commission: 2,      // 2%
+    maxValue: 50000,    // حد أقصى 50000 ج.م
+    radiusKm: null,     // كل المحافظة
+  },
+  NATIONAL: {
+    nameAr: 'السوق الشامل',
+    nameEn: 'National Market',
+    listingFee: 25,     // 25 ج.م
+    commission: 5,      // 5%
+    maxValue: null,     // بدون حد
+    radiusKm: null,     // كل مصر
+  },
+  LUXURY: {
+    nameAr: 'السوق المميز',
+    nameEn: 'Luxury Market',
+    listingFee: 100,    // 100 ج.م
+    commission: 3,      // 3%
+    maxValue: null,     // بدون حد
+    radiusKm: null,     // كل مصر
+    subscriptionRequired: true,
+    monthlyFee: 500,
+  },
+};
 
 export interface InventoryItem {
   id: string;
@@ -31,8 +70,11 @@ export interface InventoryItem {
   categoryId?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  // Market & Location
+  marketType: MarketTypeValue;
   governorate?: string;
   city?: string;
+  district?: string;
   latitude?: number;
   longitude?: number;
   // Auction specific
@@ -56,8 +98,11 @@ export interface CreateInventoryItemInput {
   categoryId?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  // Market & Location
+  marketType?: MarketTypeValue;
   governorate?: string;
   city?: string;
+  district?: string;
   // Auction specific
   startingBid?: number;
   auctionDurationDays?: number;
@@ -205,7 +250,12 @@ export const createInventoryItem = async (
         desiredCategoryId: input.desiredCategoryId || null,
         desiredKeywords: input.desiredKeywords || null,
         images: input.images || [],
-        location: input.city || input.governorate || null,
+        // Market & Location
+        marketType: (input.marketType as MarketType) || 'NEIGHBORHOOD',
+        governorate: input.governorate || null,
+        city: input.city || null,
+        district: input.district || null,
+        location: input.district || input.city || input.governorate || null,
         status: 'ACTIVE',
         condition: 'GOOD',
       },
@@ -254,6 +304,7 @@ export const createInventoryItem = async (
       type: input.type,
       title: item.title,
       listingType: input.listingType,
+      marketType: input.marketType || 'NEIGHBORHOOD',
       status: 'ACTIVE',
       createdAt: item.createdAt,
     };
@@ -269,6 +320,11 @@ export const createInventoryItem = async (
         status: 'PENDING',
         offeredBundleValue: 0,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        // Market & Location
+        marketType: (input.marketType as MarketType) || 'NEIGHBORHOOD',
+        governorate: input.governorate || null,
+        city: input.city || null,
+        district: input.district || null,
         itemRequests: {
           create: {
             categoryId: input.desiredCategoryId || null,
@@ -287,6 +343,7 @@ export const createInventoryItem = async (
       type: input.type,
       title: input.title,
       listingType: input.listingType,
+      marketType: input.marketType || 'NEIGHBORHOOD',
       status: 'ACTIVE',
       createdAt: offer.createdAt,
     };
@@ -373,20 +430,32 @@ export const findMatchesForItem = async (
 
 /**
  * Get latest public items for home page (no auth required)
+ * Supports filtering by market type and governorate
  */
 export const getLatestPublicItems = async (options: {
   limit?: number;
+  marketType?: MarketTypeValue;
+  governorate?: string;
 } = {}): Promise<{
   supply: any[];
   demand: any[];
 }> => {
-  const { limit = 8 } = options;
+  const { limit = 8, marketType, governorate } = options;
+
+  // Build where clause for SUPPLY
+  const supplyWhere: any = {
+    status: 'ACTIVE',
+  };
+  if (marketType) {
+    supplyWhere.marketType = marketType;
+  }
+  if (governorate) {
+    supplyWhere.governorate = governorate;
+  }
 
   // Get latest SUPPLY items (Items with ACTIVE status)
   const supplyItems = await prisma.item.findMany({
-    where: {
-      status: 'ACTIVE',
-    },
+    where: supplyWhere,
     take: limit,
     orderBy: { createdAt: 'desc' },
     include: {
@@ -403,15 +472,24 @@ export const getLatestPublicItems = async (options: {
     },
   });
 
+  // Build where clause for DEMAND
+  const demandWhere: any = {
+    isOpenOffer: true,
+    status: 'PENDING',
+    expiresAt: {
+      gt: new Date(),
+    },
+  };
+  if (marketType) {
+    demandWhere.marketType = marketType;
+  }
+  if (governorate) {
+    demandWhere.governorate = governorate;
+  }
+
   // Get latest DEMAND items (Open BarterOffers with ItemRequests)
   const demandOffers = await prisma.barterOffer.findMany({
-    where: {
-      isOpenOffer: true,
-      status: 'PENDING',
-      expiresAt: {
-        gt: new Date(),
-      },
-    },
+    where: demandWhere,
     take: limit,
     orderBy: { createdAt: 'desc' },
     include: {
@@ -446,6 +524,11 @@ export const getLatestPublicItems = async (options: {
         nameAr: item.category.nameAr,
         nameEn: item.category.nameEn,
       } : null,
+      // Market & Location
+      marketType: item.marketType,
+      governorate: item.governorate,
+      city: item.city,
+      district: item.district,
       location: item.location,
       user: {
         id: item.seller.id,
@@ -471,6 +554,11 @@ export const getLatestPublicItems = async (options: {
         nameEn: offer.itemRequests[0].category.nameEn,
       } : null,
       keywords: offer.itemRequests.flatMap(r => r.keywords),
+      // Market & Location
+      marketType: offer.marketType,
+      governorate: offer.governorate,
+      city: offer.city,
+      district: offer.district,
       user: {
         id: offer.initiator.id,
         name: offer.initiator.fullName,

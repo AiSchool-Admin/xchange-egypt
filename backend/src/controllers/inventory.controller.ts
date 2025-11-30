@@ -142,6 +142,7 @@ export const findMatches = async (
 /**
  * Get latest public items for home page (no auth required)
  * GET /api/v1/inventory/latest
+ * Query params: limit, marketType, governorate
  */
 export const getLatestItems = async (
   req: Request,
@@ -149,13 +150,32 @@ export const getLatestItems = async (
   next: NextFunction
 ) => {
   try {
-    const { limit } = req.query;
+    const { limit, marketType, governorate } = req.query;
 
     const result = await inventoryService.getLatestPublicItems({
       limit: limit ? parseInt(limit as string) : 8,
+      marketType: marketType as any,
+      governorate: governorate as string,
     });
 
     return successResponse(res, result, 'Latest items retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get market configuration
+ * GET /api/v1/inventory/markets
+ */
+export const getMarkets = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const markets = inventoryService.MARKET_CONFIG;
+    return successResponse(res, markets, 'Markets retrieved successfully');
   } catch (error) {
     next(error);
   }

@@ -17,9 +17,19 @@ const router = Router();
 /**
  * @route GET /api/v1/inventory/latest
  * @desc Get latest public items for home page
+ * @query limit - Number of items (default: 8)
+ * @query marketType - Filter by market (NEIGHBORHOOD, GOVERNORATE, NATIONAL, LUXURY)
+ * @query governorate - Filter by governorate
  * @access Public
  */
 router.get('/latest', inventoryController.getLatestItems);
+
+/**
+ * @route GET /api/v1/inventory/markets
+ * @desc Get market configuration (fees, limits, etc.)
+ * @access Public
+ */
+router.get('/markets', inventoryController.getMarkets);
 
 // ============================================
 // Protected Routes (authentication required)

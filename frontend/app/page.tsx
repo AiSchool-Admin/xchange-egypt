@@ -2,7 +2,47 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getLatestItems, PublicItem } from '@/lib/api/inventory';
+import { getLatestItems, PublicItem, MarketType, MARKET_CONFIG } from '@/lib/api/inventory';
+
+// Market Tabs Component
+function MarketTabs({
+  selectedMarket,
+  onSelect
+}: {
+  selectedMarket: MarketType | null;
+  onSelect: (market: MarketType | null) => void;
+}) {
+  const markets = [
+    { id: null, nameAr: 'الكل', icon: '🌍', color: 'gray' },
+    { id: 'NEIGHBORHOOD' as MarketType, ...MARKET_CONFIG.NEIGHBORHOOD },
+    { id: 'GOVERNORATE' as MarketType, ...MARKET_CONFIG.GOVERNORATE },
+    { id: 'NATIONAL' as MarketType, ...MARKET_CONFIG.NATIONAL },
+    { id: 'LUXURY' as MarketType, ...MARKET_CONFIG.LUXURY },
+  ];
+
+  return (
+    <div className="flex flex-wrap justify-center gap-2 mb-8">
+      {markets.map((market) => (
+        <button
+          key={market.id || 'all'}
+          onClick={() => onSelect(market.id)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            selectedMarket === market.id
+              ? market.id === 'NEIGHBORHOOD' ? 'bg-green-500 text-white'
+              : market.id === 'GOVERNORATE' ? 'bg-blue-500 text-white'
+              : market.id === 'NATIONAL' ? 'bg-purple-500 text-white'
+              : market.id === 'LUXURY' ? 'bg-amber-500 text-white'
+              : 'bg-gray-800 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+          }`}
+        >
+          <span>{market.icon}</span>
+          <span>{market.nameAr}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 // Item Card Component for both Supply and Demand
 function ItemCard({ item, type }: { item: PublicItem; type: 'supply' | 'demand' }) {
@@ -179,12 +219,16 @@ export default function Home() {
   const [demandItems, setDemandItems] = useState<PublicItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedMarket, setSelectedMarket] = useState<MarketType | null>(null);
 
   useEffect(() => {
     const fetchItems = async () => {
       try {
         setLoading(true);
-        const response = await getLatestItems(8);
+        const response = await getLatestItems({
+          limit: 8,
+          marketType: selectedMarket || undefined,
+        });
         if (response.success) {
           setSupplyItems(response.data.supply);
           setDemandItems(response.data.demand);
@@ -199,7 +243,7 @@ export default function Home() {
     };
 
     fetchItems();
-  }, []);
+  }, [selectedMarket]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white" dir="rtl">
@@ -292,6 +336,30 @@ export default function Home() {
             </p>
           </div>
         </div>
+      </section>
+
+      {/* Market Selection Tabs */}
+      <section className="max-w-7xl mx-auto px-4 py-8">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">اختر السوق</h2>
+          <p className="text-gray-600">تصفح العروض والطلبات حسب نطاق السوق</p>
+        </div>
+        <MarketTabs selectedMarket={selectedMarket} onSelect={setSelectedMarket} />
+
+        {/* Selected market info */}
+        {selectedMarket && (
+          <div className={`text-center p-4 rounded-xl mb-4 ${
+            selectedMarket === 'NEIGHBORHOOD' ? 'bg-green-50 text-green-800' :
+            selectedMarket === 'GOVERNORATE' ? 'bg-blue-50 text-blue-800' :
+            selectedMarket === 'NATIONAL' ? 'bg-purple-50 text-purple-800' :
+            'bg-amber-50 text-amber-800'
+          }`}>
+            <span className="text-2xl mr-2">{MARKET_CONFIG[selectedMarket].icon}</span>
+            <span className="font-bold">{MARKET_CONFIG[selectedMarket].nameAr}</span>
+            <span className="mx-2">-</span>
+            <span>{MARKET_CONFIG[selectedMarket].description}</span>
+          </div>
+        )}
       </section>
 
       {/* Latest Offers (Supply) Section */}
