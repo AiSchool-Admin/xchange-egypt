@@ -73,6 +73,7 @@ export default function Navigation() {
   };
 
   const navLinks = [
+    { href: '/inventory', label: 'My Inventory', icon: '📦' },
     { href: '/items', label: 'Marketplace', icon: '🛒' },
     { href: '/auctions', label: 'Auctions', icon: '🔨' },
     { href: '/barter', label: 'Barter', icon: '🔄' },

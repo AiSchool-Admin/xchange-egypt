@@ -32,6 +32,7 @@ import orderRoutes from './routes/order.routes';
 import paymentRoutes from './routes/payment.routes';
 import pushRoutes from './routes/push.routes';
 import aiRoutes from './routes/ai.routes';
+import inventoryRoutes from './routes/inventory.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -247,6 +248,9 @@ app.use('/api/v1/push', pushRoutes);
 
 // AI features routes (FREE services)
 app.use('/api/v1/ai', aiRoutes);
+
+// Inventory routes
+app.use('/api/v1/inventory', inventoryRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
