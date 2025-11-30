@@ -122,19 +122,19 @@ export const getUserInventory = async (
       id: item.id,
       userId: item.sellerId,
       side: 'SUPPLY' as InventorySide, // Currently all items are supply-side
-      type: item.itemType as InventoryItemType,
+      type: item.itemType === 'GOOD' ? 'GOODS' : item.itemType as InventoryItemType,
       title: item.title,
       description: item.description,
       estimatedValue: item.estimatedValue,
-      listingType: item.enableBarter ? 'BARTER' : 'DIRECT_SALE',
-      status: item.status,
+      listingType: item.desiredCategoryId ? 'BARTER' : 'DIRECT_SALE',
+      status: item.status === 'ACTIVE' ? 'ACTIVE' : item.status === 'SOLD' ? 'COMPLETED' : item.status,
       images: item.images,
       categoryId: item.categoryId,
       desiredCategoryId: item.desiredCategoryId,
       desiredKeywords: item.desiredKeywords,
-      governorate: item.governorate,
+      governorate: item.location,
       city: item.location,
-      viewCount: 0,
+      viewCount: item.views || 0,
       matchCount: 0,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
@@ -142,7 +142,7 @@ export const getUserInventory = async (
     total,
     stats: {
       active: stats.find(s => s.status === 'ACTIVE')?._count || 0,
-      pending: stats.find(s => s.status === 'PENDING')?._count || 0,
+      pending: stats.find(s => s.status === 'DRAFT')?._count || 0,
       sold: stats.find(s => s.status === 'SOLD')?._count || 0,
     },
   };
@@ -156,14 +156,14 @@ export const getInventoryStats = async (userId: string) => {
     prisma.item.count({ where: { sellerId: userId, status: 'ACTIVE' } }),
     // For now, demand items don't exist in the schema - return 0
     Promise.resolve(0),
-    prisma.barterChainParticipant.count({
+    prisma.barterParticipant.count({
       where: {
         userId,
         status: 'ACCEPTED',
         chain: { status: { in: ['PROPOSED', 'ACCEPTED'] } },
       },
     }),
-    prisma.barterChainParticipant.count({
+    prisma.barterParticipant.count({
       where: {
         userId,
         status: 'COMPLETED',
@@ -190,23 +190,24 @@ export const createInventoryItem = async (
 ): Promise<any> => {
   // For SUPPLY side with different listing types
   if (input.side === 'SUPPLY') {
+    // Map type to schema enum
+    const itemType = input.type === 'SERVICES' ? 'SERVICE' : input.type === 'CASH' ? 'CASH' : 'GOOD';
+
     // Create item in the existing Item model
     const item = await prisma.item.create({
       data: {
         sellerId: userId,
         title: input.title,
         description: input.description,
-        itemType: input.type === 'SERVICES' ? 'SERVICE' : 'PHYSICAL',
+        itemType: itemType,
         estimatedValue: input.estimatedValue,
         categoryId: input.categoryId || null,
         desiredCategoryId: input.desiredCategoryId || null,
         desiredKeywords: input.desiredKeywords || null,
         images: input.images || [],
-        governorate: input.governorate || null,
-        location: input.city || null,
-        enableBarter: input.listingType === 'BARTER',
+        location: input.city || input.governorate || null,
         status: 'ACTIVE',
-        condition: 'USED',
+        condition: 'GOOD',
       },
       include: {
         category: true,
@@ -214,18 +215,33 @@ export const createInventoryItem = async (
       },
     });
 
-    // If auction, create auction listing
+    // If auction, create listing and auction
     if (input.listingType === 'AUCTION' && input.startingBid) {
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + (input.auctionDurationDays || 7));
 
-      await prisma.auctionListing.create({
+      // First create listing
+      const listing = await prisma.listing.create({
         data: {
           itemId: item.id,
-          sellerId: userId,
-          startingPrice: input.startingBid,
+          userId: userId,
+          listingType: 'AUCTION',
+          startingBid: input.startingBid,
+          currentBid: input.startingBid,
           reservePrice: input.estimatedValue,
+          endDate: endDate,
+          status: 'ACTIVE',
+        },
+      });
+
+      // Then create auction
+      await prisma.auction.create({
+        data: {
+          listingId: listing.id,
+          startingPrice: input.startingBid,
           currentPrice: input.startingBid,
+          reservePrice: input.estimatedValue,
+          startTime: new Date(),
           endTime: endDate,
           status: 'ACTIVE',
         },
@@ -251,12 +267,15 @@ export const createInventoryItem = async (
         initiatorId: userId,
         isOpenOffer: true,
         status: 'PENDING',
+        offeredBundleValue: 0,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         itemRequests: {
           create: {
             categoryId: input.desiredCategoryId || null,
             description: input.description,
-            estimatedValue: input.estimatedValue,
+            minPrice: input.estimatedValue * 0.8, // 80% of estimated
+            maxPrice: input.estimatedValue * 1.2, // 120% of estimated
+            keywords: input.desiredKeywords ? input.desiredKeywords.split(',').map(k => k.trim()) : [],
           },
         },
       },
