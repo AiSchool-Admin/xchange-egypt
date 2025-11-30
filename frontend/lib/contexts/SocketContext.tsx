@@ -13,6 +13,15 @@ interface Message {
   read: boolean;
 }
 
+interface MatchNotification {
+  type: 'new_match' | 'updated_match';
+  opportunityId: string;
+  participantCount: number;
+  averageMatchScore: number;
+  participants: string[];
+  timestamp: Date;
+}
+
 interface SocketContextType {
   socket: Socket | null;
   connected: boolean;
@@ -21,6 +30,8 @@ interface SocketContextType {
   leaveConversation: (conversationId: string) => void;
   onMessage: (callback: (message: Message) => void) => void;
   offMessage: (callback: (message: Message) => void) => void;
+  onMatchFound: (callback: (notification: MatchNotification) => void) => void;
+  offMatchFound: (callback: (notification: MatchNotification) => void) => void;
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
@@ -117,6 +128,19 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     socket.off('new_message', callback);
   };
 
+  const onMatchFound = (callback: (notification: MatchNotification) => void) => {
+    if (!socket) return;
+
+    socket.on('match:found', callback);
+    console.log('🔔 Listening for match notifications');
+  };
+
+  const offMatchFound = (callback: (notification: MatchNotification) => void) => {
+    if (!socket) return;
+
+    socket.off('match:found', callback);
+  };
+
   return (
     <SocketContext.Provider
       value={{
@@ -127,6 +151,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         leaveConversation,
         onMessage,
         offMessage,
+        onMatchFound,
+        offMatchFound,
       }}
     >
       {children}

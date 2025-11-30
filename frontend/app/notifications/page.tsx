@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { useSocket } from '@/lib/contexts/SocketContext';
 import {
   getNotifications,
   markAsRead,
@@ -15,6 +16,7 @@ import {
 export default function NotificationsPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { onMatchFound, offMatchFound } = useSocket();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -26,6 +28,22 @@ export default function NotificationsPage() {
     }
     loadNotifications();
   }, [user]);
+
+  // Listen for real-time match notifications
+  useEffect(() => {
+    const handleMatchNotification = (notification: any) => {
+      console.log('🔔 Received match notification:', notification);
+      // Refresh notifications from database
+      loadNotifications();
+      // Optionally show a toast here
+    };
+
+    onMatchFound(handleMatchNotification);
+
+    return () => {
+      offMatchFound(handleMatchNotification);
+    };
+  }, [onMatchFound, offMatchFound]);
 
   const loadNotifications = async () => {
     try {
@@ -72,6 +90,8 @@ export default function NotificationsPage() {
     switch (type) {
       case 'BARTER_OFFER':
         return '🔄';
+      case 'BARTER_OFFER_RECEIVED':
+        return '🎯';
       case 'BARTER_ACCEPTED':
         return '✅';
       case 'BARTER_REJECTED':
