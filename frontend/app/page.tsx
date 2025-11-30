@@ -14,10 +14,10 @@ function MarketTabs({
 }) {
   const markets = [
     { id: null, nameAr: 'الكل', icon: '🌍', color: 'gray' },
-    { id: 'NEIGHBORHOOD' as MarketType, ...MARKET_CONFIG.NEIGHBORHOOD },
+    { id: 'DISTRICT' as MarketType, ...MARKET_CONFIG.DISTRICT },
+    { id: 'CITY' as MarketType, ...MARKET_CONFIG.CITY },
     { id: 'GOVERNORATE' as MarketType, ...MARKET_CONFIG.GOVERNORATE },
     { id: 'NATIONAL' as MarketType, ...MARKET_CONFIG.NATIONAL },
-    { id: 'LUXURY' as MarketType, ...MARKET_CONFIG.LUXURY },
   ];
 
   return (
@@ -28,10 +28,10 @@ function MarketTabs({
           onClick={() => onSelect(market.id)}
           className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
             selectedMarket === market.id
-              ? market.id === 'NEIGHBORHOOD' ? 'bg-green-500 text-white'
-              : market.id === 'GOVERNORATE' ? 'bg-blue-500 text-white'
-              : market.id === 'NATIONAL' ? 'bg-purple-500 text-white'
-              : market.id === 'LUXURY' ? 'bg-amber-500 text-white'
+              ? market.id === 'DISTRICT' ? 'bg-green-500 text-white'
+              : market.id === 'CITY' ? 'bg-blue-500 text-white'
+              : market.id === 'GOVERNORATE' ? 'bg-purple-500 text-white'
+              : market.id === 'NATIONAL' ? 'bg-amber-500 text-white'
               : 'bg-gray-800 text-white'
               : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
           }`}
@@ -349,9 +349,9 @@ export default function Home() {
         {/* Selected market info */}
         {selectedMarket && (
           <div className={`text-center p-4 rounded-xl mb-4 ${
-            selectedMarket === 'NEIGHBORHOOD' ? 'bg-green-50 text-green-800' :
-            selectedMarket === 'GOVERNORATE' ? 'bg-blue-50 text-blue-800' :
-            selectedMarket === 'NATIONAL' ? 'bg-purple-50 text-purple-800' :
+            selectedMarket === 'DISTRICT' ? 'bg-green-50 text-green-800' :
+            selectedMarket === 'CITY' ? 'bg-blue-50 text-blue-800' :
+            selectedMarket === 'GOVERNORATE' ? 'bg-purple-50 text-purple-800' :
             'bg-amber-50 text-amber-800'
           }`}>
             <span className="text-2xl mr-2">{MARKET_CONFIG[selectedMarket].icon}</span>

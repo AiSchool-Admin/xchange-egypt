@@ -16,43 +16,62 @@ const prisma = new PrismaClient();
 export type InventorySide = 'SUPPLY' | 'DEMAND';
 export type InventoryItemType = 'GOODS' | 'SERVICES' | 'CASH';
 export type ListingType = 'DIRECT_SALE' | 'AUCTION' | 'BARTER' | 'DIRECT_BUY' | 'REVERSE_AUCTION';
-export type MarketTypeValue = 'NEIGHBORHOOD' | 'GOVERNORATE' | 'NATIONAL' | 'LUXURY';
+export type MarketTypeValue = 'DISTRICT' | 'CITY' | 'GOVERNORATE' | 'NATIONAL';
 
-// Market configuration
+// Market configuration - Unified fees: 25 EGP + 5% commission
+// الميزة الرئيسية: المطابقة التلقائية بالقرب الجغرافي
 export const MARKET_CONFIG = {
-  NEIGHBORHOOD: {
+  DISTRICT: {
+    id: 'DISTRICT',
     nameAr: 'سوق الحي',
-    nameEn: 'Neighborhood Market',
-    listingFee: 0,      // مجاني (أول 5)
-    commission: 0,      // 0%
-    maxValue: 5000,     // حد أقصى 5000 ج.م
-    radiusKm: 5,
-  },
-  GOVERNORATE: {
-    nameAr: 'سوق المحافظة',
-    nameEn: 'Governorate Market',
-    listingFee: 10,     // 10 ج.م
-    commission: 2,      // 2%
-    maxValue: 50000,    // حد أقصى 50000 ج.م
-    radiusKm: null,     // كل المحافظة
-  },
-  NATIONAL: {
-    nameAr: 'السوق الشامل',
-    nameEn: 'National Market',
+    nameEn: 'District Market',
+    icon: '🏘️',
+    color: 'green',
+    description: 'نطاق الحي - أقرب المستخدمين',
+    descriptionEn: 'District scope - Nearest users',
+    // Unified fees
     listingFee: 25,     // 25 ج.م
     commission: 5,      // 5%
     maxValue: null,     // بدون حد
-    radiusKm: null,     // كل مصر
   },
-  LUXURY: {
-    nameAr: 'السوق المميز',
-    nameEn: 'Luxury Market',
-    listingFee: 100,    // 100 ج.م
-    commission: 3,      // 3%
+  CITY: {
+    id: 'CITY',
+    nameAr: 'سوق المدينة',
+    nameEn: 'City Market',
+    icon: '🏙️',
+    color: 'blue',
+    description: 'نطاق المدينة بأكملها',
+    descriptionEn: 'Entire city scope',
+    // Unified fees
+    listingFee: 25,     // 25 ج.م
+    commission: 5,      // 5%
     maxValue: null,     // بدون حد
-    radiusKm: null,     // كل مصر
-    subscriptionRequired: true,
-    monthlyFee: 500,
+  },
+  GOVERNORATE: {
+    id: 'GOVERNORATE',
+    nameAr: 'سوق المحافظة',
+    nameEn: 'Governorate Market',
+    icon: '🗺️',
+    color: 'purple',
+    description: 'نطاق المحافظة بأكملها',
+    descriptionEn: 'Entire governorate scope',
+    // Unified fees
+    listingFee: 25,     // 25 ج.م
+    commission: 5,      // 5%
+    maxValue: null,     // بدون حد
+  },
+  NATIONAL: {
+    id: 'NATIONAL',
+    nameAr: 'السوق الشامل',
+    nameEn: 'National Market',
+    icon: '🇪🇬',
+    color: 'amber',
+    description: 'كل مصر - 27 محافظة',
+    descriptionEn: 'All Egypt - 27 governorates',
+    // Unified fees
+    listingFee: 25,     // 25 ج.م
+    commission: 5,      // 5%
+    maxValue: null,     // بدون حد
   },
 };
 
@@ -251,7 +270,7 @@ export const createInventoryItem = async (
         desiredKeywords: input.desiredKeywords || null,
         images: input.images || [],
         // Market & Location
-        marketType: (input.marketType as MarketType) || 'NEIGHBORHOOD',
+        marketType: (input.marketType as MarketType) || 'DISTRICT',
         governorate: input.governorate || null,
         city: input.city || null,
         district: input.district || null,
@@ -304,7 +323,7 @@ export const createInventoryItem = async (
       type: input.type,
       title: item.title,
       listingType: input.listingType,
-      marketType: input.marketType || 'NEIGHBORHOOD',
+      marketType: input.marketType || 'DISTRICT',
       status: 'ACTIVE',
       createdAt: item.createdAt,
     };
@@ -321,7 +340,7 @@ export const createInventoryItem = async (
         offeredBundleValue: 0,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
         // Market & Location
-        marketType: (input.marketType as MarketType) || 'NEIGHBORHOOD',
+        marketType: (input.marketType as MarketType) || 'DISTRICT',
         governorate: input.governorate || null,
         city: input.city || null,
         district: input.district || null,

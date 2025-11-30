@@ -170,14 +170,15 @@ enum ItemStatus {
 }
 
 // ============================================
-// Market Types (Geographic Tiers)
+// Market Types (Geographic Levels)
+// النطاق الجغرافي للعرض - المطابقة بالقرب الجغرافي
 // ============================================
 
 enum MarketType {
-  NEIGHBORHOOD   // سوق الحي - نطاق 5 كم
-  GOVERNORATE    // سوق المحافظة
-  NATIONAL       // السوق الشامل - كل مصر
-  LUXURY         // السوق المميز - سلع فاخرة
+  DISTRICT      // سوق الحي
+  CITY          // سوق المدينة
+  GOVERNORATE   // سوق المحافظة
+  NATIONAL      // السوق الشامل - كل مصر
 }
 
 model Item {
@@ -200,7 +201,7 @@ model Item {
   serviceDuration String?       @map("service_duration") // e.g., "1 day", "2 weeks"
 
   // Market Type
-  marketType      MarketType    @default(NEIGHBORHOOD) @map("market_type")
+  marketType      MarketType    @default(DISTRICT) @map("market_type")
 
   // Location (Hierarchical)
   governorate     String?       // المحافظة
@@ -483,7 +484,7 @@ model BarterOffer {
   isOpenOffer       Boolean            @default(false) @map("is_open_offer")  // Open to anyone
 
   // Market Type & Location (for Demand items)
-  marketType        MarketType         @default(NEIGHBORHOOD) @map("market_type")
+  marketType        MarketType         @default(DISTRICT) @map("market_type")
   governorate       String?            // المحافظة
   city              String?            // المدينة
   district          String?            // الحي

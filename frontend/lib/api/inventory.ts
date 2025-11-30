@@ -3,58 +3,58 @@ import apiClient from './client';
 export type InventorySide = 'SUPPLY' | 'DEMAND';
 export type InventoryItemType = 'GOODS' | 'SERVICES' | 'CASH';
 export type ListingType = 'DIRECT_SALE' | 'AUCTION' | 'BARTER' | 'DIRECT_BUY' | 'REVERSE_AUCTION';
-export type MarketType = 'NEIGHBORHOOD' | 'GOVERNORATE' | 'NATIONAL' | 'LUXURY';
+export type MarketType = 'DISTRICT' | 'CITY' | 'GOVERNORATE' | 'NATIONAL';
 
-// Market configuration
+// Market configuration - Unified fees: 25 EGP + 5% commission
+// الميزة الرئيسية: المطابقة التلقائية بالقرب الجغرافي
 export const MARKET_CONFIG = {
-  NEIGHBORHOOD: {
-    id: 'NEIGHBORHOOD',
+  DISTRICT: {
+    id: 'DISTRICT',
     nameAr: 'سوق الحي',
-    nameEn: 'Neighborhood Market',
+    nameEn: 'District Market',
     icon: '🏘️',
     color: 'green',
-    listingFee: 0,
-    commission: 0,
-    maxValue: 5000,
-    description: 'مجاني - نطاق 5 كم',
-    descriptionEn: 'Free - 5km radius',
+    listingFee: 25,
+    commission: 5,
+    maxValue: null,
+    description: 'نطاق الحي - أقرب المستخدمين',
+    descriptionEn: 'District scope - Nearest users',
+  },
+  CITY: {
+    id: 'CITY',
+    nameAr: 'سوق المدينة',
+    nameEn: 'City Market',
+    icon: '🏙️',
+    color: 'blue',
+    listingFee: 25,
+    commission: 5,
+    maxValue: null,
+    description: 'نطاق المدينة بأكملها',
+    descriptionEn: 'Entire city scope',
   },
   GOVERNORATE: {
     id: 'GOVERNORATE',
     nameAr: 'سوق المحافظة',
     nameEn: 'Governorate Market',
-    icon: '🏙️',
-    color: 'blue',
-    listingFee: 10,
-    commission: 2,
-    maxValue: 50000,
-    description: '10 ج.م - كل المحافظة',
-    descriptionEn: '10 EGP - Entire governorate',
+    icon: '🗺️',
+    color: 'purple',
+    listingFee: 25,
+    commission: 5,
+    maxValue: null,
+    description: 'نطاق المحافظة بأكملها',
+    descriptionEn: 'Entire governorate scope',
   },
   NATIONAL: {
     id: 'NATIONAL',
     nameAr: 'السوق الشامل',
     nameEn: 'National Market',
     icon: '🇪🇬',
-    color: 'purple',
+    color: 'amber',
     listingFee: 25,
     commission: 5,
     maxValue: null,
-    description: '25 ج.م - كل مصر',
-    descriptionEn: '25 EGP - All Egypt',
-  },
-  LUXURY: {
-    id: 'LUXURY',
-    nameAr: 'السوق المميز',
-    nameEn: 'Luxury Market',
-    icon: '💎',
-    color: 'amber',
-    listingFee: 100,
-    commission: 3,
-    maxValue: null,
-    description: 'اشتراك VIP - سلع فاخرة',
-    descriptionEn: 'VIP subscription - Luxury items',
-    subscriptionRequired: true,
+    description: 'كل مصر - 27 محافظة',
+    descriptionEn: 'All Egypt - 27 governorates',
   },
 };
 
