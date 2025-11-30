@@ -68,6 +68,52 @@ export default function NotificationsPage() {
     }
   };
 
+  const handleNotificationClick = async (notification: Notification) => {
+    // Mark as read first
+    if (!notification.isRead) {
+      await handleMarkAsRead(notification.id);
+    }
+
+    // Navigate based on notification type or action URL
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl);
+      return;
+    }
+
+    // Handle different notification types
+    switch (notification.type) {
+      case 'BARTER_OFFER_RECEIVED':
+      case 'BARTER_OFFER':
+        router.push('/barter');
+        break;
+      case 'BARTER_ACCEPTED':
+      case 'BARTER_REJECTED':
+        if (notification.entityId) {
+          router.push(`/barter/${notification.entityId}`);
+        } else {
+          router.push('/barter');
+        }
+        break;
+      case 'MESSAGE':
+        if (notification.entityId) {
+          router.push(`/messages/${notification.entityId}`);
+        } else {
+          router.push('/messages');
+        }
+        break;
+      case 'ORDER':
+        if (notification.entityId) {
+          router.push(`/orders/${notification.entityId}`);
+        } else {
+          router.push('/orders');
+        }
+        break;
+      default:
+        // For other types, just mark as read
+        break;
+    }
+  };
+
   const handleMarkAllAsRead = async () => {
     try {
       await markAllAsRead();
@@ -162,10 +208,11 @@ export default function NotificationsPage() {
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`bg-white rounded-lg shadow-sm p-4 border-l-4 ${
+                onClick={() => handleNotificationClick(notification)}
+                className={`bg-white rounded-lg shadow-sm p-4 border-l-4 cursor-pointer transition-all hover:shadow-md ${
                   notification.isRead
-                    ? 'border-gray-200'
-                    : 'border-purple-500 bg-purple-50'
+                    ? 'border-gray-200 hover:border-gray-300'
+                    : 'border-purple-500 bg-purple-50 hover:bg-purple-100'
                 }`}
               >
                 <div className="flex items-start gap-3">
@@ -183,23 +230,31 @@ export default function NotificationsPage() {
                       {new Date(notification.createdAt).toLocaleString()}
                     </p>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     {!notification.isRead && (
                       <button
                         onClick={() => handleMarkAsRead(notification.id)}
-                        className="text-xs text-purple-600 hover:text-purple-700"
+                        className="text-xs text-purple-600 hover:text-purple-700 px-2 py-1 rounded hover:bg-purple-100"
                       >
                         Mark read
                       </button>
                     )}
                     <button
                       onClick={() => handleDelete(notification.id)}
-                      className="text-xs text-red-600 hover:text-red-700"
+                      className="text-xs text-red-600 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
                     >
                       Delete
                     </button>
                   </div>
                 </div>
+                {/* Show action hint */}
+                {(notification.type === 'BARTER_OFFER_RECEIVED' || notification.type === 'BARTER_OFFER') && (
+                  <div className="mt-2 pt-2 border-t border-gray-100">
+                    <span className="text-xs text-purple-600 font-medium">
+                      Click to view barter matches →
+                    </span>
+                  </div>
+                )}
               </div>
             ))}
           </div>
