@@ -50,6 +50,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     const newSocket = io(WS_URL, {
       auth: {
         token,
+        userId: user.id,
       },
       transports: ['websocket', 'polling'],
     });
