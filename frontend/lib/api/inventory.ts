@@ -111,3 +111,46 @@ export const findMatches = async (id: string): Promise<any> => {
   const response = await apiClient.get(`/inventory/${id}/matches`);
   return response.data;
 };
+
+// Public API - Get latest items for home page (no auth required)
+export interface PublicItem {
+  id: string;
+  side: InventorySide;
+  type?: InventoryItemType;
+  title: string;
+  description: string;
+  estimatedValue: number;
+  minValue?: number;
+  maxValue?: number;
+  images?: string[];
+  category?: {
+    id: string;
+    nameAr: string;
+    nameEn: string;
+  } | null;
+  location?: string;
+  keywords?: string[];
+  user: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+    governorate?: string | null;
+    city?: string | null;
+  };
+  views?: number;
+  expiresAt?: string;
+  createdAt: string;
+}
+
+export interface LatestItemsResponse {
+  success: boolean;
+  data: {
+    supply: PublicItem[];
+    demand: PublicItem[];
+  };
+}
+
+export const getLatestItems = async (limit: number = 8): Promise<LatestItemsResponse> => {
+  const response = await apiClient.get(`/inventory/latest?limit=${limit}`);
+  return response.data;
+};

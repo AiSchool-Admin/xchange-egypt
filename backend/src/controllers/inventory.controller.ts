@@ -138,3 +138,25 @@ export const findMatches = async (
     next(error);
   }
 };
+
+/**
+ * Get latest public items for home page (no auth required)
+ * GET /api/v1/inventory/latest
+ */
+export const getLatestItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { limit } = req.query;
+
+    const result = await inventoryService.getLatestPublicItems({
+      limit: limit ? parseInt(limit as string) : 8,
+    });
+
+    return successResponse(res, result, 'Latest items retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
