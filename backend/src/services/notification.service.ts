@@ -156,7 +156,7 @@ export const getUserNotifications = async (
   ]);
 
   return {
-    items: notifications,
+    notifications,
     pagination: {
       page,
       limit,
