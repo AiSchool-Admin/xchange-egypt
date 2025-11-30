@@ -33,6 +33,7 @@ import paymentRoutes from './routes/payment.routes';
 import pushRoutes from './routes/push.routes';
 import aiRoutes from './routes/ai.routes';
 import inventoryRoutes from './routes/inventory.routes';
+import locationsRoutes from './routes/locations.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -251,6 +252,9 @@ app.use('/api/v1/ai', aiRoutes);
 
 // Inventory routes
 app.use('/api/v1/inventory', inventoryRoutes);
+
+// Locations routes (Egyptian governorates, cities, districts)
+app.use('/api/v1/locations', locationsRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
