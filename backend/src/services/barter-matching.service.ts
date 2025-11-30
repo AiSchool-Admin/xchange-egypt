@@ -730,9 +730,10 @@ const removeDuplicateCycles = (cycles: BarterCycle[]): BarterCycle[] => {
   const unique: BarterCycle[] = [];
 
   for (const cycle of cycles) {
-    // Create signature from sorted user IDs
+    // Create signature from sorted user:item pairs (NOT just userIds!)
+    // This ensures cycles with same users but different items are NOT treated as duplicates
     const signature = cycle.participants
-      .map(p => p.userId)
+      .map(p => `${p.userId}:${p.itemId}`)
       .sort()
       .join('-');
 
@@ -778,14 +779,16 @@ export const findMatchesForUser = async (
     // DEBUG: Show what we're looking for
     console.log(`[BarterMatcher] Looking for cycles with userId=${userId.substring(0, 8)}... AND itemId=${itemId.substring(0, 8)}...`);
 
-    // DEBUG: Show first few cycles to understand structure
-    if (allCycles.length > 0 && allCycles.length < 20) {
-      console.log(`[BarterMatcher] Examining ${Math.min(allCycles.length, 5)} cycles:`);
-      allCycles.slice(0, 5).forEach((c, i) => {
+    // DEBUG: Show ALL cycles to find the missing one
+    if (allCycles.length > 0) {
+      console.log(`[BarterMatcher] Examining ALL ${allCycles.length} cycles:`);
+      allCycles.forEach((c, i) => {
         const participantInfo = c.participants.map(p =>
           `${p.userId.substring(0, 8)}/${p.itemId.substring(0, 8)}`
         ).join(' → ');
-        console.log(`  Cycle ${i + 1}: ${participantInfo} (score: ${(c.averageScore * 100).toFixed(1)}%)`);
+        const hasRequestingItem = c.participants.some(p => p.itemId === itemId);
+        const marker = hasRequestingItem ? '✅ MATCH' : '  ';
+        console.log(`  ${marker} Cycle ${i + 1}: ${participantInfo} (score: ${(c.averageScore * 100).toFixed(1)}%)`);
       });
     }
 
