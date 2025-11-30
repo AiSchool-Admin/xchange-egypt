@@ -4,19 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
-
-interface InventoryItem {
-  id: string;
-  title: string;
-  type: 'GOODS' | 'SERVICES' | 'CASH';
-  side: 'SUPPLY' | 'DEMAND';
-  image?: string;
-  value: number;
-  status: 'ACTIVE' | 'PENDING' | 'MATCHED' | 'COMPLETED';
-  listingType?: 'DIRECT_SALE' | 'AUCTION' | 'BARTER' | 'REVERSE_AUCTION';
-  matchCount?: number;
-  createdAt: string;
-}
+import { getInventory, getInventoryStats, InventoryItem, InventoryStats } from '@/lib/api/inventory';
 
 export default function InventoryPage() {
   const router = useRouter();
@@ -24,6 +12,7 @@ export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<'SUPPLY' | 'DEMAND'>('SUPPLY');
   const [supplyItems, setSupplyItems] = useState<InventoryItem[]>([]);
   const [demandItems, setDemandItems] = useState<InventoryItem[]>([]);
+  const [stats, setStats] = useState<InventoryStats>({ supply: 0, demand: 0, matched: 0, completed: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -41,12 +30,23 @@ export default function InventoryPage() {
   const loadInventory = async () => {
     try {
       setIsLoading(true);
-      // TODO: Fetch from API
-      // For now, using mock data
-      setSupplyItems([]);
-      setDemandItems([]);
+
+      // Fetch inventory items and stats in parallel
+      const [inventoryResponse, statsResponse] = await Promise.all([
+        getInventory({ limit: 50 }),
+        getInventoryStats(),
+      ]);
+
+      // Separate supply and demand items
+      const items = inventoryResponse.data.items || [];
+      setSupplyItems(items.filter(item => item.side === 'SUPPLY'));
+      setDemandItems(items.filter(item => item.side === 'DEMAND'));
+      setStats(statsResponse.data);
     } catch (error) {
       console.error('Failed to load inventory:', error);
+      // Set empty arrays on error
+      setSupplyItems([]);
+      setDemandItems([]);
     } finally {
       setIsLoading(false);
     }
@@ -294,20 +294,20 @@ export default function InventoryPage() {
 
         {/* Quick Stats */}
         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-6 text-center shadow-md">
-            <div className="text-3xl font-bold text-purple-600">{supplyItems.length}</div>
+          <div className="bg-white rounded-2xl p-6 text-center shadow-md hover:shadow-lg transition-shadow">
+            <div className="text-3xl font-bold text-purple-600">{stats.supply}</div>
             <div className="text-sm text-gray-600">Items for Sale</div>
           </div>
-          <div className="bg-white rounded-2xl p-6 text-center shadow-md">
-            <div className="text-3xl font-bold text-indigo-600">{demandItems.length}</div>
+          <div className="bg-white rounded-2xl p-6 text-center shadow-md hover:shadow-lg transition-shadow">
+            <div className="text-3xl font-bold text-indigo-600">{stats.demand}</div>
             <div className="text-sm text-gray-600">Want to Buy</div>
           </div>
-          <div className="bg-white rounded-2xl p-6 text-center shadow-md">
-            <div className="text-3xl font-bold text-green-600">0</div>
+          <div className="bg-white rounded-2xl p-6 text-center shadow-md hover:shadow-lg transition-shadow">
+            <div className="text-3xl font-bold text-green-600">{stats.matched}</div>
             <div className="text-sm text-gray-600">Active Matches</div>
           </div>
-          <div className="bg-white rounded-2xl p-6 text-center shadow-md">
-            <div className="text-3xl font-bold text-orange-600">0</div>
+          <div className="bg-white rounded-2xl p-6 text-center shadow-md hover:shadow-lg transition-shadow">
+            <div className="text-3xl font-bold text-orange-600">{stats.completed}</div>
             <div className="text-sm text-gray-600">Completed</div>
           </div>
         </div>

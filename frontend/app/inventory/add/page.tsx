@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { createInventoryItem } from '@/lib/api/inventory';
 
 type ItemSide = 'supply' | 'demand';
 type ItemType = 'goods' | 'services' | 'cash';
@@ -81,15 +82,29 @@ function AddInventoryContent() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // TODO: Submit to API
-      console.log('Submitting:', formData);
+      // Map form data to API format
+      const apiInput = {
+        side: formData.side.toUpperCase() as 'SUPPLY' | 'DEMAND',
+        type: formData.type.toUpperCase() as 'GOODS' | 'SERVICES' | 'CASH',
+        title: formData.title,
+        description: formData.description,
+        estimatedValue: parseInt(formData.value) || 0,
+        listingType: formData.listingType.toUpperCase() as any,
+        images: formData.images,
+        categoryId: formData.subcategory || formData.category || undefined,
+        desiredCategoryId: formData.desiredCategory || undefined,
+        desiredKeywords: formData.desiredKeywords || undefined,
+        governorate: formData.governorate || undefined,
+        city: formData.city || undefined,
+        startingBid: formData.startingBid ? parseInt(formData.startingBid) : undefined,
+        auctionDurationDays: formData.auctionDuration ? parseInt(formData.auctionDuration) : undefined,
+      };
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      await createInventoryItem(apiInput);
       router.push('/inventory');
     } catch (error) {
       console.error('Submit error:', error);
+      alert('Failed to create item. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
