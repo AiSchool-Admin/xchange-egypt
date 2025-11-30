@@ -371,6 +371,119 @@ export const findMatchesForItem = async (
   }));
 };
 
+/**
+ * Get latest public items for home page (no auth required)
+ */
+export const getLatestPublicItems = async (options: {
+  limit?: number;
+} = {}): Promise<{
+  supply: any[];
+  demand: any[];
+}> => {
+  const { limit = 8 } = options;
+
+  // Get latest SUPPLY items (Items with ACTIVE status)
+  const supplyItems = await prisma.item.findMany({
+    where: {
+      status: 'ACTIVE',
+    },
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      category: true,
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+          governorate: true,
+          city: true,
+        },
+      },
+    },
+  });
+
+  // Get latest DEMAND items (Open BarterOffers with ItemRequests)
+  const demandOffers = await prisma.barterOffer.findMany({
+    where: {
+      isOpenOffer: true,
+      status: 'PENDING',
+      expiresAt: {
+        gt: new Date(),
+      },
+    },
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      initiator: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+          governorate: true,
+          city: true,
+        },
+      },
+      itemRequests: {
+        include: {
+          category: true,
+        },
+      },
+    },
+  });
+
+  return {
+    supply: supplyItems.map(item => ({
+      id: item.id,
+      side: 'SUPPLY' as const,
+      type: item.itemType === 'GOOD' ? 'GOODS' : item.itemType,
+      title: item.title,
+      description: item.description,
+      estimatedValue: item.estimatedValue,
+      images: item.images,
+      category: item.category ? {
+        id: item.category.id,
+        nameAr: item.category.nameAr,
+        nameEn: item.category.nameEn,
+      } : null,
+      location: item.location,
+      user: {
+        id: item.seller.id,
+        name: item.seller.fullName,
+        avatar: item.seller.avatar,
+        governorate: item.seller.governorate,
+        city: item.seller.city,
+      },
+      views: item.views,
+      createdAt: item.createdAt,
+    })),
+    demand: demandOffers.map(offer => ({
+      id: offer.id,
+      side: 'DEMAND' as const,
+      title: offer.itemRequests[0]?.description || 'طلب عام',
+      description: offer.notes || offer.itemRequests.map(r => r.description).join(', '),
+      estimatedValue: offer.itemRequests[0]?.maxPrice || 0,
+      minValue: offer.itemRequests[0]?.minPrice || 0,
+      maxValue: offer.itemRequests[0]?.maxPrice || 0,
+      category: offer.itemRequests[0]?.category ? {
+        id: offer.itemRequests[0].category.id,
+        nameAr: offer.itemRequests[0].category.nameAr,
+        nameEn: offer.itemRequests[0].category.nameEn,
+      } : null,
+      keywords: offer.itemRequests.flatMap(r => r.keywords),
+      user: {
+        id: offer.initiator.id,
+        name: offer.initiator.fullName,
+        avatar: offer.initiator.avatar,
+        governorate: offer.initiator.governorate,
+        city: offer.initiator.city,
+      },
+      expiresAt: offer.expiresAt,
+      createdAt: offer.createdAt,
+    })),
+  };
+};
+
 export default {
   getUserInventory,
   getInventoryStats,
@@ -378,4 +491,5 @@ export default {
   updateInventoryItemStatus,
   deleteInventoryItem,
   findMatchesForItem,
+  getLatestPublicItems,
 };

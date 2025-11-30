@@ -1,134 +1,41 @@
 /**
  * Egyptian Locations API Client
- * Fetches governorates, cities, and districts from backend
+ * Uses static data for immediate availability (no API dependency)
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+import {
+  egyptLocations,
+  getAllGovernorates as getStaticGovernorates,
+  getCitiesByGovernorate as getStaticCities,
+  getDistrictsByCity as getStaticDistricts,
+  Governorate,
+  City,
+  District,
+} from '@/lib/data/egypt-locations';
 
-export interface District {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-}
-
-export interface City {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-  districts?: District[];
-}
-
-export interface Governorate {
-  id: string;
-  nameAr: string;
-  nameEn: string;
-  cities?: City[];
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  error?: string;
-}
+// Re-export types
+export type { Governorate, City, District };
 
 /**
- * Get all Egyptian governorates
+ * Get all Egyptian governorates (static data)
  */
 export async function getGovernorates(): Promise<Governorate[]> {
-  try {
-    const response = await fetch(`${API_URL}/api/v1/locations/governorates`);
-    const result: ApiResponse<Governorate[]> = await response.json();
-
-    if (!result.success) {
-      console.error('Failed to fetch governorates:', result.error);
-      return [];
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error('Error fetching governorates:', error);
-    return [];
-  }
+  // Return static data immediately (no network call needed)
+  return getStaticGovernorates();
 }
 
 /**
- * Get a specific governorate with all its cities
- */
-export async function getGovernorate(governorateId: string): Promise<Governorate | null> {
-  try {
-    const response = await fetch(`${API_URL}/api/v1/locations/governorates/${governorateId}`);
-    const result: ApiResponse<Governorate> = await response.json();
-
-    if (!result.success) {
-      console.error('Failed to fetch governorate:', result.error);
-      return null;
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error('Error fetching governorate:', error);
-    return null;
-  }
-}
-
-/**
- * Get all cities in a governorate
+ * Get all cities in a governorate (static data)
  */
 export async function getCities(governorateId: string): Promise<City[]> {
-  try {
-    const response = await fetch(`${API_URL}/api/v1/locations/governorates/${governorateId}/cities`);
-    const result: ApiResponse<City[]> = await response.json();
-
-    if (!result.success) {
-      console.error('Failed to fetch cities:', result.error);
-      return [];
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error('Error fetching cities:', error);
-    return [];
-  }
+  return getStaticCities(governorateId);
 }
 
 /**
- * Get a specific city with all its districts
- */
-export async function getCity(governorateId: string, cityId: string): Promise<City | null> {
-  try {
-    const response = await fetch(`${API_URL}/api/v1/locations/governorates/${governorateId}/cities/${cityId}`);
-    const result: ApiResponse<City> = await response.json();
-
-    if (!result.success) {
-      console.error('Failed to fetch city:', result.error);
-      return null;
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error('Error fetching city:', error);
-    return null;
-  }
-}
-
-/**
- * Get all districts in a city
+ * Get all districts in a city (static data)
  */
 export async function getDistricts(governorateId: string, cityId: string): Promise<District[]> {
-  try {
-    const response = await fetch(`${API_URL}/api/v1/locations/governorates/${governorateId}/cities/${cityId}/districts`);
-    const result: ApiResponse<District[]> = await response.json();
-
-    if (!result.success) {
-      console.error('Failed to fetch districts:', result.error);
-      return [];
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error('Error fetching districts:', error);
-    return [];
-  }
+  return getStaticDistricts(governorateId, cityId);
 }
 
 /**
@@ -161,3 +68,6 @@ export function formatFullLocation(
 
   return parts.join(', ');
 }
+
+// Export static data for direct access if needed
+export { egyptLocations };

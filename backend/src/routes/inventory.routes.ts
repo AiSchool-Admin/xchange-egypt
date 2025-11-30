@@ -10,7 +10,20 @@ import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
-// All routes require authentication
+// ============================================
+// Public Routes (no authentication required)
+// ============================================
+
+/**
+ * @route GET /api/v1/inventory/latest
+ * @desc Get latest public items for home page
+ * @access Public
+ */
+router.get('/latest', inventoryController.getLatestItems);
+
+// ============================================
+// Protected Routes (authentication required)
+// ============================================
 router.use(authenticate);
 
 /**
