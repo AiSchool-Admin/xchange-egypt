@@ -7,7 +7,11 @@ export interface Notification {
   message: string;
   isRead: boolean;
   priority: string;
-  data?: any;
+  entityType?: string;
+  entityId?: string;
+  actionUrl?: string;
+  actionText?: string;
+  metadata?: any;
   createdAt: string;
 }
 
