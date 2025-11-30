@@ -6,6 +6,14 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { createInventoryItem } from '@/lib/api/inventory';
+import {
+  getGovernorates,
+  getCities,
+  getDistricts,
+  Governorate,
+  City,
+  District,
+} from '@/lib/api/locations';
 
 type ItemSide = 'supply' | 'demand';
 type ItemType = 'goods' | 'services' | 'cash';
@@ -28,8 +36,12 @@ interface FormData {
   desiredCategory: string;
   desiredKeywords: string;
   // Location
-  governorate: string;
-  city: string;
+  governorateId: string;
+  governorateName: string;
+  cityId: string;
+  cityName: string;
+  districtId: string;
+  districtName: string;
 }
 
 function AddInventoryContent() {
@@ -52,10 +64,20 @@ function AddInventoryContent() {
     auctionDuration: '7',
     desiredCategory: '',
     desiredKeywords: '',
-    governorate: '',
-    city: '',
+    governorateId: '',
+    governorateName: '',
+    cityId: '',
+    cityName: '',
+    districtId: '',
+    districtName: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Location state
+  const [governorates, setGovernorates] = useState<Governorate[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -63,9 +85,82 @@ function AddInventoryContent() {
     }
   }, [user, loading, router]);
 
+  // Load governorates on mount
+  useEffect(() => {
+    const loadGovernorates = async () => {
+      const data = await getGovernorates();
+      setGovernorates(data);
+    };
+    loadGovernorates();
+  }, []);
+
+  // Load cities when governorate changes
+  useEffect(() => {
+    if (formData.governorateId) {
+      setLoadingLocations(true);
+      getCities(formData.governorateId).then(data => {
+        setCities(data);
+        setDistricts([]);
+        setLoadingLocations(false);
+      });
+    } else {
+      setCities([]);
+      setDistricts([]);
+    }
+  }, [formData.governorateId]);
+
+  // Load districts when city changes
+  useEffect(() => {
+    if (formData.governorateId && formData.cityId) {
+      setLoadingLocations(true);
+      getDistricts(formData.governorateId, formData.cityId).then(data => {
+        setDistricts(data);
+        setLoadingLocations(false);
+      });
+    } else {
+      setDistricts([]);
+    }
+  }, [formData.governorateId, formData.cityId]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleGovernorateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const governorateId = e.target.value;
+    const governorate = governorates.find(g => g.id === governorateId);
+    setFormData(prev => ({
+      ...prev,
+      governorateId,
+      governorateName: governorate?.nameEn || '',
+      cityId: '',
+      cityName: '',
+      districtId: '',
+      districtName: '',
+    }));
+  };
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const cityId = e.target.value;
+    const city = cities.find(c => c.id === cityId);
+    setFormData(prev => ({
+      ...prev,
+      cityId,
+      cityName: city?.nameEn || '',
+      districtId: '',
+      districtName: '',
+    }));
+  };
+
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const districtId = e.target.value;
+    const district = districts.find(d => d.id === districtId);
+    setFormData(prev => ({
+      ...prev,
+      districtId,
+      districtName: district?.nameEn || '',
+    }));
   };
 
   const handleImageUpload = (urls: string[]) => {
@@ -82,6 +177,13 @@ function AddInventoryContent() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      // Build location string: District, City, Governorate
+      const locationParts = [];
+      if (formData.districtName) locationParts.push(formData.districtName);
+      if (formData.cityName) locationParts.push(formData.cityName);
+      if (formData.governorateName) locationParts.push(formData.governorateName);
+      const locationString = locationParts.join(', ');
+
       // Map form data to API format
       const apiInput = {
         side: formData.side.toUpperCase() as 'SUPPLY' | 'DEMAND',
@@ -94,8 +196,8 @@ function AddInventoryContent() {
         categoryId: formData.subcategory || formData.category || undefined,
         desiredCategoryId: formData.desiredCategory || undefined,
         desiredKeywords: formData.desiredKeywords || undefined,
-        governorate: formData.governorate || undefined,
-        city: formData.city || undefined,
+        governorate: formData.governorateName || undefined,
+        city: locationString || undefined, // Full location string
         startingBid: formData.startingBid ? parseInt(formData.startingBid) : undefined,
         auctionDurationDays: formData.auctionDuration ? parseInt(formData.auctionDuration) : undefined,
       };
@@ -367,39 +469,91 @@ function AddInventoryContent() {
                 </div>
               )}
 
-              {/* Location */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Governorate
-                  </label>
-                  <select
-                    name="governorate"
-                    value={formData.governorate}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors"
-                  >
-                    <option value="">Select...</option>
-                    <option value="cairo">Cairo</option>
-                    <option value="giza">Giza</option>
-                    <option value="alexandria">Alexandria</option>
-                    <option value="dakahlia">Dakahlia</option>
-                    <option value="sharqia">Sharqia</option>
-                  </select>
+              {/* Location - Cascading Dropdowns */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">📍</span>
+                  <label className="text-sm font-semibold text-gray-700">Location</label>
+                  {loadingLocations && (
+                    <span className="animate-spin text-xs">⏳</span>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    City/Area
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    placeholder="e.g., Nasr City"
-                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors"
-                  />
+                <div className="grid sm:grid-cols-3 gap-4">
+                  {/* Governorate */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      Governorate / المحافظة
+                    </label>
+                    <select
+                      value={formData.governorateId}
+                      onChange={handleGovernorateChange}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors"
+                    >
+                      <option value="">Select Governorate...</option>
+                      {governorates.map(gov => (
+                        <option key={gov.id} value={gov.id}>
+                          {gov.nameEn} - {gov.nameAr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* City */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      City / المدينة
+                    </label>
+                    <select
+                      value={formData.cityId}
+                      onChange={handleCityChange}
+                      disabled={!formData.governorateId || cities.length === 0}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">
+                        {!formData.governorateId ? 'Select governorate first' : 'Select City...'}
+                      </option>
+                      {cities.map(city => (
+                        <option key={city.id} value={city.id}>
+                          {city.nameEn} - {city.nameAr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* District */}
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      District / الحي
+                    </label>
+                    <select
+                      value={formData.districtId}
+                      onChange={handleDistrictChange}
+                      disabled={!formData.cityId || districts.length === 0}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    >
+                      <option value="">
+                        {!formData.cityId ? 'Select city first' : districts.length === 0 ? 'No districts available' : 'Select District...'}
+                      </option>
+                      {districts.map(district => (
+                        <option key={district.id} value={district.id}>
+                          {district.nameEn} - {district.nameAr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+
+                {/* Location Preview */}
+                {(formData.governorateName || formData.cityName || formData.districtName) && (
+                  <div className="p-3 bg-purple-50 rounded-xl">
+                    <div className="text-xs text-purple-600 font-medium mb-1">Selected Location:</div>
+                    <div className="text-sm text-purple-800">
+                      {[formData.districtName, formData.cityName, formData.governorateName]
+                        .filter(Boolean)
+                        .join(', ')}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -598,10 +752,14 @@ function AddInventoryContent() {
                       EGP {parseInt(formData.value).toLocaleString()}
                     </div>
                   </div>
-                  {formData.governorate && (
+                  {formData.governorateName && (
                     <div className="text-right">
                       <div className="text-sm text-gray-500">Location</div>
-                      <div className="text-gray-800">{formData.city}, {formData.governorate}</div>
+                      <div className="text-gray-800">
+                        {[formData.districtName, formData.cityName, formData.governorateName]
+                          .filter(Boolean)
+                          .join(', ')}
+                      </div>
                     </div>
                   )}
                 </div>
