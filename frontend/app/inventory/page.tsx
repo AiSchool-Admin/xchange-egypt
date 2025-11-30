@@ -200,9 +200,9 @@ export default function InventoryPage() {
                 href={`/inventory/${item.id}`}
                 className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1 overflow-hidden"
               >
-                {item.image ? (
+                {item.images && item.images.length > 0 ? (
                   <div className="aspect-video bg-gray-100">
-                    <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                    <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
                   </div>
                 ) : (
                   <div className="aspect-video bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
@@ -216,7 +216,7 @@ export default function InventoryPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-500">{getTypeIcon(item.type)} {item.type}</span>
-                    <span className="font-bold text-purple-600">EGP {item.value.toLocaleString()}</span>
+                    <span className="font-bold text-purple-600">EGP {item.estimatedValue.toLocaleString()}</span>
                   </div>
                   {item.matchCount && item.matchCount > 0 && (
                     <div className="mt-3 p-2 bg-green-50 rounded-lg text-center">
