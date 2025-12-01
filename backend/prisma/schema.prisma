@@ -186,7 +186,7 @@ model Item {
   sellerId        String        @map("seller_id")
   title           String
   description     String
-  categoryId      String        @map("category_id")
+  categoryId      String?       @map("category_id")
 
   // Item type classification
   itemType        ItemType      @default(GOOD) @map("item_type")
@@ -230,7 +230,7 @@ model Item {
 
   // Relations
   seller                  User                    @relation("UserItems", fields: [sellerId], references: [id])
-  category                Category                @relation(fields: [categoryId], references: [id])
+  category                Category?               @relation(fields: [categoryId], references: [id])
   desiredCategory         Category?               @relation("ItemDesiredCategory", fields: [desiredCategoryId], references: [id])
   listings                Listing[]
   barterPreferenceItems   BarterPreferenceItem[]  @relation("BarterPreferenceItems")
