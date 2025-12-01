@@ -197,7 +197,7 @@ export default function InventoryPage() {
             {currentItems.map((item) => (
               <Link
                 key={item.id}
-                href={`/inventory/${item.id}`}
+                href={`/items/${item.id}`}
                 className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1 overflow-hidden"
               >
                 {item.images && item.images.length > 0 ? (
