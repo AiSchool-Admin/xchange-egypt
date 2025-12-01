@@ -451,6 +451,49 @@ export const createInventoryItem = async (
       console.error('[Inventory] Error processing proximity matching:', err);
     });
 
+    // For BARTER listings, also create a DEMAND entry for what user wants
+    // هذا يضمن ظهور الصنف المطلوب في جانب الطلب
+    let linkedDemandId: string | null = null;
+    if (input.listingType === 'BARTER' && (resolvedDesiredCategoryId || input.desiredKeywords)) {
+      try {
+        const demandOffer = await prisma.barterOffer.create({
+          data: {
+            initiator: { connect: { id: userId } },
+            isOpenOffer: true,
+            status: 'PENDING',
+            offeredBundleValue: 0,
+            expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+            // Link to the supply item
+            linkedItemId: item.id,
+            // Market & Location (same as supply item)
+            marketType: (input.marketType as MarketType) || 'DISTRICT',
+            governorate: input.governorate || null,
+            city: input.city || null,
+            district: input.district || null,
+            itemRequests: {
+              create: {
+                category: resolvedDesiredCategoryId ? { connect: { id: resolvedDesiredCategoryId } } : undefined,
+                description: `مطلوب للمقايضة: ${input.desiredKeywords || 'أي صنف من نفس الفئة'}`,
+                minPrice: input.estimatedValue * 0.7, // 70% of estimated
+                maxPrice: input.estimatedValue * 1.3, // 130% of estimated
+                keywords: input.desiredKeywords ? input.desiredKeywords.split(',').map(k => k.trim()) : [],
+              },
+            },
+          },
+        });
+        linkedDemandId = demandOffer.id;
+        console.log(`[Inventory] Created linked DEMAND ${demandOffer.id} for SUPPLY ${item.id}`);
+
+        // Trigger proximity matching for the demand side too
+        proximityMatching.processNewDemandItem(demandOffer.id).catch(err => {
+          console.error('[Inventory] Error processing proximity matching for linked demand:', err);
+        });
+      } catch (err) {
+        console.error('[Inventory] Error creating linked demand for barter:', err);
+        // Don't fail the whole operation if demand creation fails
+      }
+    }
+
     return {
       id: item.id,
       side: 'SUPPLY',
@@ -460,6 +503,7 @@ export const createInventoryItem = async (
       marketType: input.marketType || 'DISTRICT',
       status: 'ACTIVE',
       createdAt: item.createdAt,
+      linkedDemandId, // Include the linked demand ID if created
     };
   }
 

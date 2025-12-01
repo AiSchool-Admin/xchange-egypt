@@ -483,6 +483,9 @@ model BarterOffer {
   expiresAt         DateTime?          @map("expires_at")
   isOpenOffer       Boolean            @default(false) @map("is_open_offer")  // Open to anyone
 
+  // Link to supply item (for barter - links demand to the supply item)
+  linkedItemId      String?            @map("linked_item_id")
+
   // Market Type & Location (for Demand items)
   marketType        MarketType         @default(DISTRICT) @map("market_type")
   governorate       String?            // المحافظة
@@ -511,6 +514,7 @@ model BarterOffer {
   @@index([marketType])
   @@index([governorate])
   @@index([marketType, isOpenOffer])
+  @@index([linkedItemId])
 }
 
 // Abstract item request for barter (when user doesn't want specific items)
