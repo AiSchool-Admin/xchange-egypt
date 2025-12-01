@@ -73,6 +73,10 @@ export const getItems = async (params?: {
   maxPrice?: number;
   search?: string;
   status?: string;
+  // Location filters
+  governorate?: string;
+  city?: string;
+  district?: string;
 }): Promise<ItemsResponse> => {
   const queryParams = new URLSearchParams();
 
@@ -84,6 +88,10 @@ export const getItems = async (params?: {
   if (params?.maxPrice) queryParams.append('maxPrice', params.maxPrice.toString());
   if (params?.search) queryParams.append('search', params.search);
   if (params?.status) queryParams.append('status', params.status);
+  // Location params
+  if (params?.governorate) queryParams.append('governorate', params.governorate);
+  if (params?.city) queryParams.append('city', params.city);
+  if (params?.district) queryParams.append('district', params.district);
 
   const response = await apiClient.get(`/items/search?${queryParams.toString()}`);
   return response.data;

@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getItems, Item } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
+import LocationSelector, { LocationSelection } from '@/components/LocationSelector';
+import { getLocationLabel } from '@/lib/data/egyptLocations';
 
 const CONDITIONS = {
   NEW: 'جديد',
@@ -19,6 +21,9 @@ export default function ItemsPage() {
   const router = useRouter();
   const categorySlug = searchParams.get('category');
   const searchQuery = searchParams.get('search');
+  const governorateParam = searchParams.get('governorate');
+  const cityParam = searchParams.get('city');
+  const districtParam = searchParams.get('district');
 
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -34,6 +39,14 @@ export default function ItemsPage() {
   const [maxPrice, setMaxPrice] = useState('');
   const [debouncedMinPrice, setDebouncedMinPrice] = useState('');
   const [debouncedMaxPrice, setDebouncedMaxPrice] = useState('');
+
+  // Location Filter
+  const [location, setLocation] = useState<LocationSelection>({
+    scope: governorateParam ? (cityParam ? (districtParam ? 'DISTRICT' : 'CITY') : 'GOVERNORATE') : 'NATIONAL',
+    governorateId: governorateParam || undefined,
+    cityId: cityParam || undefined,
+    districtId: districtParam || undefined,
+  });
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -77,7 +90,7 @@ export default function ItemsPage() {
   // Load items when filters change
   useEffect(() => {
     loadItems();
-  }, [page, selectedCategory, selectedCondition, debouncedMinPrice, debouncedMaxPrice, debouncedSearch]);
+  }, [page, selectedCategory, selectedCondition, debouncedMinPrice, debouncedMaxPrice, debouncedSearch, location]);
 
   const loadCategories = async () => {
     try {
@@ -100,6 +113,9 @@ export default function ItemsPage() {
         maxPrice: debouncedMaxPrice ? parseFloat(debouncedMaxPrice) : undefined,
         search: debouncedSearch || undefined,
         status: 'ACTIVE',
+        governorate: location.governorateId || undefined,
+        city: location.cityId || undefined,
+        district: location.districtId || undefined,
       });
 
       setItems(response.data.items);
@@ -112,6 +128,15 @@ export default function ItemsPage() {
     }
   };
 
+  const updateURL = (params: Record<string, string | undefined>) => {
+    const urlParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) urlParams.set(key, value);
+    });
+    const queryString = urlParams.toString();
+    router.push(queryString ? `/items?${queryString}` : '/items');
+  };
+
   const clearFilters = () => {
     setSearch('');
     setDebouncedSearch('');
@@ -121,23 +146,43 @@ export default function ItemsPage() {
     setMaxPrice('');
     setDebouncedMinPrice('');
     setDebouncedMaxPrice('');
+    setLocation({ scope: 'NATIONAL' });
     setPage(1);
-    // Clear URL params
     router.push('/items');
   };
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
     setPage(1);
-    // Update URL
     if (categoryId) {
       const category = categories.find(cat => cat.id === categoryId);
       if (category) {
-        router.push(`/items?category=${category.slug}`);
+        updateURL({
+          category: category.slug,
+          governorate: location.governorateId,
+          city: location.cityId,
+          district: location.districtId,
+        });
       }
     } else {
-      router.push('/items');
+      updateURL({
+        governorate: location.governorateId,
+        city: location.cityId,
+        district: location.districtId,
+      });
     }
+  };
+
+  const handleLocationChange = (newLocation: LocationSelection) => {
+    setLocation(newLocation);
+    setPage(1);
+    const category = categories.find(cat => cat.id === selectedCategory);
+    updateURL({
+      category: category?.slug,
+      governorate: newLocation.governorateId,
+      city: newLocation.cityId,
+      district: newLocation.districtId,
+    });
   };
 
   const getCategoryName = () => {
@@ -148,6 +193,8 @@ export default function ItemsPage() {
     return 'السوق';
   };
 
+  const locationLabel = getLocationLabel(location.governorateId, location.cityId, location.districtId);
+
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
@@ -156,17 +203,31 @@ export default function ItemsPage() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold">{getCategoryName()}</h1>
-              <p className="text-emerald-100 mt-1">
-                {totalItems > 0 ? `${totalItems} عنصر متاح` : 'تصفح وشراء العناصر المستعملة'}
-              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-emerald-100">
+                  {totalItems > 0 ? `${totalItems} عنصر متاح` : 'تصفح وشراء العناصر'}
+                </span>
+                {location.governorateId && (
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                    📍 {locationLabel}
+                  </span>
+                )}
+              </div>
             </div>
-            <Link
-              href="/inventory/add"
-              className="bg-white text-emerald-600 px-6 py-3 rounded-xl hover:bg-emerald-50 transition font-bold flex items-center gap-2 shadow-lg"
-            >
-              <span>➕</span>
-              أضف إعلان جديد
-            </Link>
+            <div className="flex items-center gap-3">
+              <LocationSelector
+                value={location}
+                onChange={handleLocationChange}
+                compact
+              />
+              <Link
+                href="/inventory/add"
+                className="bg-white text-emerald-600 px-6 py-3 rounded-xl hover:bg-emerald-50 transition font-bold flex items-center gap-2 shadow-lg"
+              >
+                <span>➕</span>
+                أضف إعلان جديد
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -175,8 +236,8 @@ export default function ItemsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Filters Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-20">
-              <div className="flex justify-between items-center mb-6">
+            <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-20 space-y-6">
+              <div className="flex justify-between items-center">
                 <h2 className="text-lg font-bold text-gray-900">🔍 الفلاتر</h2>
                 <button
                   onClick={clearFilters}
@@ -186,8 +247,16 @@ export default function ItemsPage() {
                 </button>
               </div>
 
+              {/* Location Filter */}
+              <div className="pb-6 border-b border-gray-100">
+                <LocationSelector
+                  value={location}
+                  onChange={handleLocationChange}
+                />
+              </div>
+
               {/* Search */}
-              <div className="mb-6">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   البحث
                 </label>
@@ -202,7 +271,7 @@ export default function ItemsPage() {
               </div>
 
               {/* Category Filter */}
-              <div className="mb-6">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   الفئة
                 </label>
@@ -221,7 +290,7 @@ export default function ItemsPage() {
               </div>
 
               {/* Condition Filter */}
-              <div className="mb-6">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   الحالة
                 </label>
@@ -243,7 +312,7 @@ export default function ItemsPage() {
               </div>
 
               {/* Price Range */}
-              <div className="mb-6">
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   نطاق السعر (ج.م)
                 </label>
@@ -268,10 +337,16 @@ export default function ItemsPage() {
               </div>
 
               {/* Active Filters */}
-              {(selectedCategory || selectedCondition || debouncedSearch || debouncedMinPrice || debouncedMaxPrice) && (
+              {(selectedCategory || selectedCondition || debouncedSearch || debouncedMinPrice || debouncedMaxPrice || location.governorateId) && (
                 <div className="pt-4 border-t border-gray-100">
                   <p className="text-sm font-medium text-gray-700 mb-2">الفلاتر النشطة:</p>
                   <div className="flex flex-wrap gap-2">
+                    {location.governorateId && (
+                      <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                        📍 {locationLabel}
+                        <button onClick={() => handleLocationChange({ scope: 'NATIONAL' })} className="hover:text-blue-900">×</button>
+                      </span>
+                    )}
                     {selectedCategory && (
                       <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm flex items-center gap-1">
                         {categories.find(c => c.id === selectedCategory)?.nameAr}
@@ -317,12 +392,16 @@ export default function ItemsPage() {
               <div className="text-center py-16 bg-white rounded-2xl">
                 <div className="text-6xl mb-4">📦</div>
                 <p className="text-gray-600 text-xl font-medium">لا توجد عناصر</p>
-                <p className="text-gray-500 mt-2">جرب تعديل الفلاتر أو البحث عن شيء آخر</p>
+                <p className="text-gray-500 mt-2">
+                  {location.governorateId
+                    ? `لا توجد عناصر في ${locationLabel}. جرب توسيع نطاق البحث.`
+                    : 'جرب تعديل الفلاتر أو البحث عن شيء آخر'}
+                </p>
                 <button
                   onClick={clearFilters}
                   className="mt-6 bg-emerald-500 text-white px-6 py-3 rounded-xl hover:bg-emerald-600 transition font-medium"
                 >
-                  عرض جميع العناصر
+                  عرض جميع العناصر في كل مصر
                 </button>
               </div>
             ) : (
@@ -331,6 +410,7 @@ export default function ItemsPage() {
                 <div className="mb-4 flex justify-between items-center">
                   <p className="text-gray-600">
                     عرض {items.length} من {totalItems} عنصر
+                    {location.governorateId && <span className="text-emerald-600"> في {locationLabel}</span>}
                   </p>
                 </div>
 
@@ -357,6 +437,11 @@ export default function ItemsPage() {
                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-700">
                           {CONDITIONS[item.condition as keyof typeof CONDITIONS] || item.condition}
                         </div>
+                        {item.governorate && (
+                          <div className="absolute top-3 left-3 bg-blue-500/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs text-white">
+                            📍 {item.governorate}
+                          </div>
+                        )}
                         {item.images && item.images.length > 1 && (
                           <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-sm px-2 py-1 rounded text-xs text-white">
                             📷 {item.images.length}

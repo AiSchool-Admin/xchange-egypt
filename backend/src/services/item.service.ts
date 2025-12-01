@@ -38,6 +38,8 @@ interface SearchItemsParams {
   sellerId?: string;
   condition?: ItemCondition;
   governorate?: string;
+  city?: string;
+  district?: string;
   minPrice?: number;
   maxPrice?: number;
   status?: string;
@@ -329,6 +331,8 @@ export const searchItems = async (
     sellerId,
     condition,
     governorate,
+    city,
+    district,
     minPrice,
     maxPrice,
     status,
@@ -360,8 +364,18 @@ export const searchItems = async (
     where.condition = condition;
   }
 
+  // Location filtering - hierarchical (governorate > city > district)
   if (governorate) {
     where.governorate = governorate;
+  }
+
+  // City and district filtering via location field (contains search)
+  if (city) {
+    where.location = { contains: city, mode: 'insensitive' };
+  }
+
+  if (district) {
+    where.location = { contains: district, mode: 'insensitive' };
   }
 
   // Price range filtering (using estimatedValue field)
