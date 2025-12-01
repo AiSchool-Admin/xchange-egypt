@@ -261,13 +261,13 @@ export const createInventoryItem = async (
     // Create item in the existing Item model
     const item = await prisma.item.create({
       data: {
-        sellerId: userId,
+        seller: { connect: { id: userId } },
         title: input.title,
         description: input.description,
         itemType: itemType,
         estimatedValue: input.estimatedValue,
-        categoryId: input.categoryId || null,
-        desiredCategoryId: input.desiredCategoryId || null,
+        category: input.categoryId ? { connect: { id: input.categoryId } } : undefined,
+        desiredCategory: input.desiredCategoryId ? { connect: { id: input.desiredCategoryId } } : undefined,
         desiredKeywords: input.desiredKeywords || null,
         images: input.images || [],
         // Market & Location
@@ -340,7 +340,7 @@ export const createInventoryItem = async (
   if (input.side === 'DEMAND') {
     const offer = await prisma.barterOffer.create({
       data: {
-        initiatorId: userId,
+        initiator: { connect: { id: userId } },
         isOpenOffer: true,
         status: 'PENDING',
         offeredBundleValue: 0,
@@ -352,7 +352,7 @@ export const createInventoryItem = async (
         district: input.district || null,
         itemRequests: {
           create: {
-            categoryId: input.desiredCategoryId || null,
+            category: input.desiredCategoryId ? { connect: { id: input.desiredCategoryId } } : undefined,
             description: input.description,
             minPrice: input.estimatedValue * 0.8, // 80% of estimated
             maxPrice: input.estimatedValue * 1.2, // 120% of estimated
