@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { getLatestItems, PublicItem } from '@/lib/api/inventory';
+import { getItems } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 
 // ============================================
@@ -441,7 +442,9 @@ function PublicLandingPage({ supplyItems, demandItems, loading, categories }: {
               <h4 className="text-white font-semibold mb-3">روابط مهمة</h4>
               <ul className="space-y-2 text-sm">
                 <li><Link href="/items" className="hover:text-white transition-colors">تصفح الإعلانات</Link></li>
-                <li><Link href="/inventory/add" className="hover:text-white transition-colors">أضف إعلان</Link></li>
+                <li><Link href="/luxury" className="hover:text-white transition-colors">سوق السلع الفاخرة 👑</Link></li>
+                <li><Link href="/map" className="hover:text-white transition-colors">الخريطة التفاعلية 🗺️</Link></li>
+                <li><Link href="/promote" className="hover:text-white transition-colors">ترويج إعلانك ⭐</Link></li>
                 <li><Link href="/barter" className="hover:text-white transition-colors">المقايضة</Link></li>
               </ul>
             </div>
@@ -631,24 +634,56 @@ export default function Home() {
       try {
         setLoading(true);
 
-        // Fetch categories and items in parallel
-        const [itemsResponse, categoriesResponse] = await Promise.all([
-          getLatestItems({ limit: 24 }),
-          getCategories().catch(() => ({ success: false, data: [] })),
-        ]);
-
-        if (itemsResponse.success) {
-          setSupplyItems(itemsResponse.data.supply);
-          setDemandItems(itemsResponse.data.demand);
-        }
+        // Fetch categories first
+        const categoriesResponse = await getCategories().catch(() => ({ success: false, data: [] }));
 
         // Transform categories from API
         if (categoriesResponse.success && categoriesResponse.data.length > 0) {
-          // Filter only parent categories (no parentId)
           const parentCategories = categoriesResponse.data
             .filter((cat: Category) => !cat.parentId)
             .map(transformCategory);
           setCategories(parentCategories.length > 0 ? parentCategories : DEFAULT_CATEGORIES);
+        }
+
+        // Try inventory API first
+        try {
+          const itemsResponse = await getLatestItems({ limit: 24 });
+          if (itemsResponse.success && (itemsResponse.data.supply.length > 0 || itemsResponse.data.demand.length > 0)) {
+            setSupplyItems(itemsResponse.data.supply);
+            setDemandItems(itemsResponse.data.demand);
+            return;
+          }
+        } catch (inventoryError) {
+          console.log('Inventory API failed, trying items API...');
+        }
+
+        // Fallback: Try items API
+        try {
+          const itemsResult = await getItems({ limit: 24, status: 'ACTIVE' });
+          if (itemsResult.success && itemsResult.data?.items) {
+            // Transform items to PublicItem format
+            const transformedItems: PublicItem[] = itemsResult.data.items.map((item: any) => ({
+              id: item.id,
+              side: 'SUPPLY' as const,
+              title: item.title,
+              description: item.description,
+              estimatedValue: item.estimatedValue || 0,
+              images: item.images?.map((img: any) => typeof img === 'string' ? img : img.url) || [],
+              category: item.category,
+              governorate: item.governorate,
+              location: item.location,
+              user: {
+                id: item.seller?.id || '',
+                name: item.seller?.fullName || '',
+                avatar: item.seller?.avatar,
+                governorate: item.seller?.governorate,
+              },
+              createdAt: item.createdAt,
+            }));
+            setSupplyItems(transformedItems);
+          }
+        } catch (itemsError) {
+          console.error('Items API also failed:', itemsError);
         }
       } catch (err: any) {
         console.error('Failed to fetch data:', err);

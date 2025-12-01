@@ -70,6 +70,8 @@ export default function Navigation() {
   const navLinks = [
     { href: '/inventory', label: 'مخزوني', icon: '📦' },
     { href: '/items', label: 'السوق', icon: '🛒' },
+    { href: '/luxury', label: 'سوق الفاخرة', icon: '👑' },
+    { href: '/map', label: 'الخريطة', icon: '🗺️' },
     { href: '/auctions', label: 'المزادات', icon: '🔨' },
     { href: '/barter', label: 'المقايضة', icon: '🔄' },
     { href: '/messages', label: 'الرسائل', icon: '💬' },
