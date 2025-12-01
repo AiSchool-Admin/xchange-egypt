@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import { NotFoundError, BadRequestError } from '../utils/errors';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 /**
  * Get or create cart for user

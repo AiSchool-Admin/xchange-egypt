@@ -1,11 +1,10 @@
-import { PrismaClient, ItemCondition } from '@prisma/client';
+import { ItemCondition } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { processItemImage } from '../utils/image';
 import { itemEvents } from '../events/item.events';
 import path from 'path';
 import fs from 'fs/promises';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // Types
 interface CreateItemData {

@@ -1,8 +1,7 @@
-import { PrismaClient, AuctionStatus, BidStatus, ListingType, ListingStatus, ItemStatus } from '@prisma/client';
+import { AuctionStatus, BidStatus, ListingType, ListingStatus, ItemStatus } from '@prisma/client';
 import { CreateAuctionInput, UpdateAuctionInput, PlaceBidInput, ListAuctionsQuery } from '../validations/auction.validation';
 import { AppError } from '../middleware/errorHandler';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 /**
  * Create a new auction

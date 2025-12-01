@@ -4,11 +4,9 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import * as matchingService from '../services/barter-matching.service';
 import { successResponse } from '../utils/response';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 /**
  * Run retroactive matching for all existing items

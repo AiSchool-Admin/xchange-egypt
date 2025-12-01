@@ -10,10 +10,9 @@
  * - RESERVED: Item reserved for specific chain/offer
  */
 
-import { PrismaClient, LockType, LockStatus } from '@prisma/client';
+import { LockType, LockStatus } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types

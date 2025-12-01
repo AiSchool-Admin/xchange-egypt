@@ -42,6 +42,9 @@ import { startLockCleanupJob } from './jobs/lockCleanup.job';
 // Import real-time matching
 import { initializeWebSocket, startRealtimeMatching } from './services/realtime-matching.service';
 
+// Import chat WebSocket service
+import { attachChatEventHandlers } from './services/socket.service';
+
 // Initialize Express app
 const app: Application = express();
 
@@ -314,6 +317,10 @@ const startServer = async () => {
     // Initialize WebSocket for real-time matching
     initializeWebSocket(io);
     console.log('✅ WebSocket server initialized');
+
+    // Attach chat event handlers to WebSocket
+    attachChatEventHandlers(io);
+    console.log('✅ Chat WebSocket handlers attached');
 
     // Start real-time matching service
     startRealtimeMatching();

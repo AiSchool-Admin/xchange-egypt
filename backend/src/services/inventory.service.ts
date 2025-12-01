@@ -5,10 +5,9 @@
  * Supports goods, services, and cash items with multiple listing types.
  */
 
-import { PrismaClient, ItemType, ItemCondition, MarketType } from '@prisma/client';
+import { ItemType, ItemCondition, MarketType } from '@prisma/client';
+import prisma from '../lib/prisma';
 import * as proximityMatching from './proximity-matching.service';
-
-const prisma = new PrismaClient();
 
 // ============================================
 // Helper Functions
@@ -50,6 +49,7 @@ export type InventorySide = 'SUPPLY' | 'DEMAND';
 export type InventoryItemType = 'GOODS' | 'SERVICES' | 'CASH';
 export type ListingType = 'DIRECT_SALE' | 'AUCTION' | 'BARTER' | 'DIRECT_BUY' | 'REVERSE_AUCTION';
 export type MarketTypeValue = 'DISTRICT' | 'CITY' | 'GOVERNORATE' | 'NATIONAL';
+export type ItemConditionValue = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
 
 // Market configuration - Unified fees: 25 EGP + 5% commission
 // الميزة الرئيسية: المطابقة التلقائية بالقرب الجغرافي
@@ -150,6 +150,8 @@ export interface CreateInventoryItemInput {
   categoryId?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  // Item condition
+  condition?: ItemConditionValue;
   // Market & Location
   marketType?: MarketTypeValue;
   governorate?: string;
@@ -403,7 +405,7 @@ export const createInventoryItem = async (
         district: input.district || null,
         location: input.district || input.city || input.governorate || null,
         status: 'ACTIVE',
-        condition: 'GOOD',
+        condition: input.condition || 'GOOD',
       },
       include: {
         category: true,

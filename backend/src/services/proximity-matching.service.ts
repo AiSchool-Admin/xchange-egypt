@@ -7,10 +7,9 @@
  * Hierarchy: District → City → Governorate → National
  */
 
-import { PrismaClient, MarketType } from '@prisma/client';
+import { MarketType } from '@prisma/client';
 import { Server as SocketIOServer } from 'socket.io';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types

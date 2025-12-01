@@ -1,7 +1,6 @@
-import { PrismaClient, ListingType, ListingStatus } from '@prisma/client';
+import { ListingType, ListingStatus } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // Types
 interface CreateSaleListingData {
