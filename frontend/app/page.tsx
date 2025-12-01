@@ -4,20 +4,55 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { getLatestItems, PublicItem } from '@/lib/api/inventory';
+import { getCategories, Category } from '@/lib/api/categories';
 
 // ============================================
-// الفئات الرئيسية - Main Categories
+// الفئات الافتراضية - Default Categories (fallback)
 // ============================================
-const CATEGORIES = [
-  { id: 'electronics', slug: 'electronics', nameAr: 'موبايلات وإلكترونيات', icon: '📱', color: 'bg-blue-500', gradient: 'from-blue-500 to-blue-600' },
+const DEFAULT_CATEGORIES = [
+  { id: 'electronics', slug: 'electronics', nameAr: 'إلكترونيات', icon: '📱', color: 'bg-blue-500', gradient: 'from-blue-500 to-blue-600' },
   { id: 'vehicles', slug: 'vehicles', nameAr: 'سيارات ومركبات', icon: '🚗', color: 'bg-red-500', gradient: 'from-red-500 to-red-600' },
-  { id: 'properties', slug: 'properties', nameAr: 'عقارات', icon: '🏠', color: 'bg-green-500', gradient: 'from-green-500 to-green-600' },
+  { id: 'real-estate', slug: 'real-estate', nameAr: 'عقارات', icon: '🏠', color: 'bg-green-500', gradient: 'from-green-500 to-green-600' },
   { id: 'furniture', slug: 'furniture', nameAr: 'أثاث ومفروشات', icon: '🛋️', color: 'bg-amber-500', gradient: 'from-amber-500 to-amber-600' },
   { id: 'fashion', slug: 'fashion', nameAr: 'أزياء وملابس', icon: '👗', color: 'bg-pink-500', gradient: 'from-pink-500 to-pink-600' },
-  { id: 'jobs', slug: 'jobs', nameAr: 'وظائف وخدمات', icon: '💼', color: 'bg-purple-500', gradient: 'from-purple-500 to-purple-600' },
-  { id: 'sports', slug: 'sports', nameAr: 'رياضة وهوايات', icon: '⚽', color: 'bg-teal-500', gradient: 'from-teal-500 to-teal-600' },
-  { id: 'kids', slug: 'kids', nameAr: 'أطفال ورضع', icon: '🧸', color: 'bg-orange-500', gradient: 'from-orange-500 to-orange-600' },
+  { id: 'services', slug: 'services', nameAr: 'خدمات', icon: '💼', color: 'bg-purple-500', gradient: 'from-purple-500 to-purple-600' },
+  { id: 'sports-hobbies', slug: 'sports-hobbies', nameAr: 'رياضة وهوايات', icon: '⚽', color: 'bg-teal-500', gradient: 'from-teal-500 to-teal-600' },
+  { id: 'home-appliances', slug: 'home-appliances', nameAr: 'أجهزة منزلية', icon: '🏡', color: 'bg-orange-500', gradient: 'from-orange-500 to-orange-600' },
 ];
+
+// Map category slugs to icons and colors
+const CATEGORY_STYLES: Record<string, { icon: string; color: string; gradient: string }> = {
+  'electronics': { icon: '📱', color: 'bg-blue-500', gradient: 'from-blue-500 to-blue-600' },
+  'vehicles': { icon: '🚗', color: 'bg-red-500', gradient: 'from-red-500 to-red-600' },
+  'real-estate': { icon: '🏠', color: 'bg-green-500', gradient: 'from-green-500 to-green-600' },
+  'furniture': { icon: '🛋️', color: 'bg-amber-500', gradient: 'from-amber-500 to-amber-600' },
+  'fashion': { icon: '👗', color: 'bg-pink-500', gradient: 'from-pink-500 to-pink-600' },
+  'services': { icon: '💼', color: 'bg-purple-500', gradient: 'from-purple-500 to-purple-600' },
+  'sports-hobbies': { icon: '⚽', color: 'bg-teal-500', gradient: 'from-teal-500 to-teal-600' },
+  'home-appliances': { icon: '🏡', color: 'bg-orange-500', gradient: 'from-orange-500 to-orange-600' },
+  'raw-materials': { icon: '🧱', color: 'bg-gray-500', gradient: 'from-gray-500 to-gray-600' },
+  'books-media': { icon: '📚', color: 'bg-indigo-500', gradient: 'from-indigo-500 to-indigo-600' },
+};
+
+// Transform API category to display format
+interface DisplayCategory {
+  id: string;
+  slug: string;
+  nameAr: string;
+  icon: string;
+  color: string;
+  gradient: string;
+}
+
+const transformCategory = (cat: Category): DisplayCategory => {
+  const style = CATEGORY_STYLES[cat.slug] || { icon: '📦', color: 'bg-gray-500', gradient: 'from-gray-500 to-gray-600' };
+  return {
+    id: cat.id,
+    slug: cat.slug,
+    nameAr: cat.nameAr,
+    ...style,
+  };
+};
 
 // ============================================
 // مكون البحث - Search Component
@@ -127,7 +162,7 @@ function CategorySection({
   items,
   type
 }: {
-  category: typeof CATEGORIES[0];
+  category: DisplayCategory;
   items: PublicItem[];
   type: 'supply' | 'demand'
 }) {
@@ -147,7 +182,7 @@ function CategorySection({
           <h2 className="text-xl font-bold text-gray-800">{title}</h2>
         </div>
         <Link
-          href={`/items?category=${category.slug}&type=${type}`}
+          href={`/items?category=${category.slug}`}
           className="text-emerald-600 text-sm font-medium hover:text-emerald-700 flex items-center gap-1"
         >
           عرض الكل
@@ -168,25 +203,28 @@ function CategorySection({
 // ============================================
 // صفحة الهبوط للزوار - Public Landing Page
 // ============================================
-function PublicLandingPage({ supplyItems, demandItems, loading }: {
+function PublicLandingPage({ supplyItems, demandItems, loading, categories }: {
   supplyItems: PublicItem[];
   demandItems: PublicItem[];
   loading: boolean;
+  categories: DisplayCategory[];
 }) {
-  // Group items by category (simulated - in real app, items would have categoryId)
+  // Group items by their actual categoryId
   const groupItemsByCategory = (items: PublicItem[]) => {
-    // For now, distribute items across categories for demo
-    // In production, filter by actual categoryId
     const grouped: Record<string, PublicItem[]> = {};
-    CATEGORIES.forEach(cat => {
+
+    // Initialize with empty arrays for all categories
+    categories.forEach(cat => {
       grouped[cat.id] = [];
     });
 
-    items.forEach((item, index) => {
-      const catIndex = index % CATEGORIES.length;
-      const catId = CATEGORIES[catIndex].id;
-      if (grouped[catId].length < 6) {
-        grouped[catId].push(item);
+    // Group items by their category.id
+    items.forEach((item) => {
+      const categoryId = item.category?.id;
+      if (categoryId && grouped[categoryId]) {
+        if (grouped[categoryId].length < 6) {
+          grouped[categoryId].push(item);
+        }
       }
     });
 
@@ -217,7 +255,7 @@ function PublicLandingPage({ supplyItems, demandItems, loading }: {
       <section className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-xl font-bold text-gray-800 mb-6">تصفح حسب الفئة</h2>
         <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <Link
               key={cat.id}
               href={`/items?category=${cat.slug}`}
@@ -277,7 +315,7 @@ function PublicLandingPage({ supplyItems, demandItems, loading }: {
           </div>
         ) : supplyItems.length > 0 ? (
           <>
-            {CATEGORIES.slice(0, 4).map((category) => (
+            {categories.slice(0, 4).map((category) => (
               <CategorySection
                 key={category.id}
                 category={category}
@@ -307,7 +345,7 @@ function PublicLandingPage({ supplyItems, demandItems, loading }: {
 
           {demandItems.length > 0 ? (
             <>
-              {CATEGORIES.slice(0, 3).map((category) => (
+              {categories.slice(0, 3).map((category) => (
                 <CategorySection
                   key={category.id}
                   category={category}
@@ -390,7 +428,7 @@ function PublicLandingPage({ supplyItems, demandItems, loading }: {
             <div>
               <h4 className="text-white font-semibold mb-3">الفئات</h4>
               <ul className="space-y-2 text-sm">
-                {CATEGORIES.slice(0, 4).map(cat => (
+                {DEFAULT_CATEGORIES.slice(0, 4).map(cat => (
                   <li key={cat.id}>
                     <Link href={`/items?category=${cat.slug}`} className="hover:text-white transition-colors">
                       {cat.nameAr}
@@ -529,7 +567,7 @@ function UserDashboard({ user, supplyItems, demandItems, loading }: {
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="text-lg font-bold text-gray-800 mb-4">تصفح حسب الفئة</h2>
           <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-            {CATEGORIES.map((cat) => (
+            {DEFAULT_CATEGORIES.map((cat) => (
               <Link
                 key={cat.id}
                 href={`/items?category=${cat.slug}`}
@@ -585,25 +623,41 @@ export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const [supplyItems, setSupplyItems] = useState<PublicItem[]>([]);
   const [demandItems, setDemandItems] = useState<PublicItem[]>([]);
+  const [categories, setCategories] = useState<DisplayCategory[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchItems = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await getLatestItems({ limit: 24 });
-        if (response.success) {
-          setSupplyItems(response.data.supply);
-          setDemandItems(response.data.demand);
+
+        // Fetch categories and items in parallel
+        const [itemsResponse, categoriesResponse] = await Promise.all([
+          getLatestItems({ limit: 24 }),
+          getCategories().catch(() => ({ success: false, data: [] })),
+        ]);
+
+        if (itemsResponse.success) {
+          setSupplyItems(itemsResponse.data.supply);
+          setDemandItems(itemsResponse.data.demand);
+        }
+
+        // Transform categories from API
+        if (categoriesResponse.success && categoriesResponse.data.length > 0) {
+          // Filter only parent categories (no parentId)
+          const parentCategories = categoriesResponse.data
+            .filter((cat: Category) => !cat.parentId)
+            .map(transformCategory);
+          setCategories(parentCategories.length > 0 ? parentCategories : DEFAULT_CATEGORIES);
         }
       } catch (err: any) {
-        console.error('Failed to fetch items:', err);
+        console.error('Failed to fetch data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchItems();
+    fetchData();
   }, []);
 
   if (authLoading) {
@@ -621,5 +675,5 @@ export default function Home() {
     return <UserDashboard user={user} supplyItems={supplyItems} demandItems={demandItems} loading={loading} />;
   }
 
-  return <PublicLandingPage supplyItems={supplyItems} demandItems={demandItems} loading={loading} />;
+  return <PublicLandingPage supplyItems={supplyItems} demandItems={demandItems} loading={loading} categories={categories} />;
 }

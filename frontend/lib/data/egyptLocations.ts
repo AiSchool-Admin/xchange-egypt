@@ -1892,3 +1892,21 @@ export const MARKET_SCOPES: { id: MarketScope; nameAr: string; nameEn: string; i
   { id: 'CITY', nameAr: 'المدينة', nameEn: 'City', icon: '🏙️' },
   { id: 'DISTRICT', nameAr: 'الحي', nameEn: 'District', icon: '📍' },
 ];
+
+// Get Arabic names from IDs for API filtering
+export const getGovernorateNameAr = (governorateId: string): string | undefined => {
+  const gov = getGovernorateById(governorateId);
+  return gov?.nameAr;
+};
+
+export const getCityNameAr = (governorateId: string, cityId: string): string | undefined => {
+  const cities = getCitiesByGovernorate(governorateId);
+  const city = cities.find(c => c.id === cityId);
+  return city?.nameAr;
+};
+
+export const getDistrictNameAr = (governorateId: string, cityId: string, districtId: string): string | undefined => {
+  const districts = getDistrictsByCity(governorateId, cityId);
+  const district = districts.find(d => d.id === districtId);
+  return district?.nameAr;
+};

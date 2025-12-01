@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { getItems, Item } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 import LocationSelector, { LocationSelection } from '@/components/LocationSelector';
-import { getLocationLabel } from '@/lib/data/egyptLocations';
+import { getLocationLabel, getGovernorateNameAr, getCityNameAr, getDistrictNameAr } from '@/lib/data/egyptLocations';
 
 const CONDITIONS = {
   NEW: 'جديد',
@@ -104,6 +104,22 @@ export default function ItemsPage() {
   const loadItems = async () => {
     try {
       setLoading(true);
+
+      // Convert location IDs to Arabic names for API filtering
+      let governorateFilter: string | undefined;
+      let cityFilter: string | undefined;
+      let districtFilter: string | undefined;
+
+      if (location.governorateId) {
+        governorateFilter = getGovernorateNameAr(location.governorateId);
+        if (location.cityId) {
+          cityFilter = getCityNameAr(location.governorateId, location.cityId);
+          if (location.districtId) {
+            districtFilter = getDistrictNameAr(location.governorateId, location.cityId, location.districtId);
+          }
+        }
+      }
+
       const response = await getItems({
         page,
         limit: 12,
@@ -113,9 +129,9 @@ export default function ItemsPage() {
         maxPrice: debouncedMaxPrice ? parseFloat(debouncedMaxPrice) : undefined,
         search: debouncedSearch || undefined,
         status: 'ACTIVE',
-        governorate: location.governorateId || undefined,
-        city: location.cityId || undefined,
-        district: location.districtId || undefined,
+        governorate: governorateFilter,
+        city: cityFilter,
+        district: districtFilter,
       });
 
       setItems(response.data.items);
