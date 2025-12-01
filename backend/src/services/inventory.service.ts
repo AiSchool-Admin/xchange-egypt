@@ -11,6 +11,38 @@ import * as proximityMatching from './proximity-matching.service';
 const prisma = new PrismaClient();
 
 // ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Resolve category ID - handles both UUID and slug
+ * If the input looks like a UUID, use it directly
+ * If it's a slug, look up the actual UUID
+ */
+const resolveCategoryId = async (categoryIdOrSlug: string | null | undefined): Promise<string | null> => {
+  if (!categoryIdOrSlug) return null;
+
+  // UUID pattern check (simple version)
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (uuidPattern.test(categoryIdOrSlug)) {
+    // It's already a UUID, verify it exists
+    const category = await prisma.category.findUnique({
+      where: { id: categoryIdOrSlug },
+      select: { id: true }
+    });
+    return category?.id || null;
+  }
+
+  // It's a slug, look up the UUID
+  const category = await prisma.category.findUnique({
+    where: { slug: categoryIdOrSlug },
+    select: { id: true }
+  });
+  return category?.id || null;
+};
+
+// ============================================
 // Types
 // ============================================
 
@@ -258,6 +290,10 @@ export const createInventoryItem = async (
     // Map type to schema enum
     const itemType = input.type === 'SERVICES' ? 'SERVICE' : input.type === 'CASH' ? 'CASH' : 'GOOD';
 
+    // Resolve category IDs (handles both UUID and slug)
+    const resolvedCategoryId = await resolveCategoryId(input.categoryId);
+    const resolvedDesiredCategoryId = await resolveCategoryId(input.desiredCategoryId);
+
     // Create item in the existing Item model
     const item = await prisma.item.create({
       data: {
@@ -266,8 +302,8 @@ export const createInventoryItem = async (
         description: input.description,
         itemType: itemType,
         estimatedValue: input.estimatedValue,
-        category: input.categoryId ? { connect: { id: input.categoryId } } : undefined,
-        desiredCategory: input.desiredCategoryId ? { connect: { id: input.desiredCategoryId } } : undefined,
+        category: resolvedCategoryId ? { connect: { id: resolvedCategoryId } } : undefined,
+        desiredCategory: resolvedDesiredCategoryId ? { connect: { id: resolvedDesiredCategoryId } } : undefined,
         desiredKeywords: input.desiredKeywords || null,
         images: input.images || [],
         // Market & Location
@@ -338,6 +374,9 @@ export const createInventoryItem = async (
   // For DEMAND side - create a want-ad/request
   // For now, we'll use BarterOffer with isOpenOffer = true
   if (input.side === 'DEMAND') {
+    // Resolve category ID (handles both UUID and slug)
+    const resolvedDesiredCategoryId = await resolveCategoryId(input.desiredCategoryId);
+
     const offer = await prisma.barterOffer.create({
       data: {
         initiator: { connect: { id: userId } },
@@ -352,7 +391,7 @@ export const createInventoryItem = async (
         district: input.district || null,
         itemRequests: {
           create: {
-            category: input.desiredCategoryId ? { connect: { id: input.desiredCategoryId } } : undefined,
+            category: resolvedDesiredCategoryId ? { connect: { id: resolvedDesiredCategoryId } } : undefined,
             description: input.description,
             minPrice: input.estimatedValue * 0.8, // 80% of estimated
             maxPrice: input.estimatedValue * 1.2, // 120% of estimated
