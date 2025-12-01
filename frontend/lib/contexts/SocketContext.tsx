@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
@@ -90,7 +90,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  const sendMessage = (conversationId: string, content: string) => {
+  const sendMessage = useCallback((conversationId: string, content: string) => {
     if (!socket || !connected) {
       console.error('Socket not connected');
       return;
@@ -100,46 +100,46 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       conversationId,
       content,
     });
-  };
+  }, [socket, connected]);
 
-  const joinConversation = (conversationId: string) => {
+  const joinConversation = useCallback((conversationId: string) => {
     if (!socket || !connected) return;
 
     socket.emit('join_conversation', conversationId);
     console.log(`Joined conversation: ${conversationId}`);
-  };
+  }, [socket, connected]);
 
-  const leaveConversation = (conversationId: string) => {
+  const leaveConversation = useCallback((conversationId: string) => {
     if (!socket || !connected) return;
 
     socket.emit('leave_conversation', conversationId);
     console.log(`Left conversation: ${conversationId}`);
-  };
+  }, [socket, connected]);
 
-  const onMessage = (callback: (message: Message) => void) => {
+  const onMessage = useCallback((callback: (message: Message) => void) => {
     if (!socket) return;
 
     socket.on('new_message', callback);
-  };
+  }, [socket]);
 
-  const offMessage = (callback: (message: Message) => void) => {
+  const offMessage = useCallback((callback: (message: Message) => void) => {
     if (!socket) return;
 
     socket.off('new_message', callback);
-  };
+  }, [socket]);
 
-  const onMatchFound = (callback: (notification: MatchNotification) => void) => {
+  const onMatchFound = useCallback((callback: (notification: MatchNotification) => void) => {
     if (!socket) return;
 
     socket.on('match:found', callback);
     console.log('🔔 Listening for match notifications');
-  };
+  }, [socket]);
 
-  const offMatchFound = (callback: (notification: MatchNotification) => void) => {
+  const offMatchFound = useCallback((callback: (notification: MatchNotification) => void) => {
     if (!socket) return;
 
     socket.off('match:found', callback);
-  };
+  }, [socket]);
 
   return (
     <SocketContext.Provider
