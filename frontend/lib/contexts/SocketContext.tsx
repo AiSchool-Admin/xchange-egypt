@@ -8,9 +8,16 @@ interface Message {
   id: string;
   conversationId: string;
   senderId: string;
+  recipientId?: string;
   content: string;
+  type?: 'TEXT' | 'IMAGE' | 'FILE' | 'ITEM' | 'OFFER' | 'SYSTEM';
   createdAt: string;
-  read: boolean;
+  read?: boolean;
+  isRead?: boolean;
+  isEdited?: boolean;
+  isDeleted?: boolean;
+  attachments?: string[];
+  status?: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
 }
 
 interface MatchNotification {
@@ -22,14 +29,55 @@ interface MatchNotification {
   timestamp: Date;
 }
 
+interface TypingEvent {
+  conversationId: string;
+  userId: string;
+  userName?: string;
+}
+
+interface ReadEvent {
+  conversationId: string;
+  userId: string;
+  messageIds?: string[];
+}
+
+interface PresenceEvent {
+  userId: string;
+  isOnline: boolean;
+  lastSeenAt?: string;
+}
+
 interface SocketContextType {
   socket: Socket | null;
   connected: boolean;
-  sendMessage: (conversationId: string, content: string) => void;
+  // Messaging
+  sendMessage: (conversationId: string, content: string, type?: string) => void;
+  editMessage: (messageId: string, content: string) => void;
+  deleteMessage: (messageId: string) => void;
+  markAsRead: (conversationId: string) => void;
+  // Typing
+  startTyping: (conversationId: string) => void;
+  stopTyping: (conversationId: string) => void;
+  // Presence
+  checkPresence: (userIds: string[]) => void;
+  // Conversations
   joinConversation: (conversationId: string) => void;
   leaveConversation: (conversationId: string) => void;
+  // Event listeners
   onMessage: (callback: (message: Message) => void) => void;
   offMessage: (callback: (message: Message) => void) => void;
+  onMessageEdited: (callback: (message: Message) => void) => void;
+  offMessageEdited: (callback: (message: Message) => void) => void;
+  onMessageDeleted: (callback: (data: { messageId: string; conversationId: string }) => void) => void;
+  offMessageDeleted: (callback: (data: { messageId: string; conversationId: string }) => void) => void;
+  onMessagesRead: (callback: (event: ReadEvent) => void) => void;
+  offMessagesRead: (callback: (event: ReadEvent) => void) => void;
+  onTyping: (callback: (event: TypingEvent) => void) => void;
+  offTyping: (callback: (event: TypingEvent) => void) => void;
+  onStopTyping: (callback: (event: TypingEvent) => void) => void;
+  offStopTyping: (callback: (event: TypingEvent) => void) => void;
+  onPresenceUpdate: (callback: (event: PresenceEvent) => void) => void;
+  offPresenceUpdate: (callback: (event: PresenceEvent) => void) => void;
   onMatchFound: (callback: (notification: MatchNotification) => void) => void;
   offMatchFound: (callback: (notification: MatchNotification) => void) => void;
 }
@@ -90,54 +138,136 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [user]);
 
-  const sendMessage = useCallback((conversationId: string, content: string) => {
+  // === MESSAGING ===
+  const sendMessage = useCallback((conversationId: string, content: string, type: string = 'TEXT') => {
     if (!socket || !connected) {
       console.error('Socket not connected');
       return;
     }
-
-    socket.emit('send_message', {
-      conversationId,
-      content,
-    });
+    socket.emit('send_message', { conversationId, content, type });
   }, [socket, connected]);
 
+  const editMessage = useCallback((messageId: string, content: string) => {
+    if (!socket || !connected) return;
+    socket.emit('edit_message', { messageId, content });
+  }, [socket, connected]);
+
+  const deleteMessage = useCallback((messageId: string) => {
+    if (!socket || !connected) return;
+    socket.emit('delete_message', { messageId });
+  }, [socket, connected]);
+
+  const markAsRead = useCallback((conversationId: string) => {
+    if (!socket || !connected) return;
+    socket.emit('mark_as_read', { conversationId });
+  }, [socket, connected]);
+
+  // === TYPING ===
+  const startTyping = useCallback((conversationId: string) => {
+    if (!socket || !connected) return;
+    socket.emit('typing', { conversationId });
+  }, [socket, connected]);
+
+  const stopTyping = useCallback((conversationId: string) => {
+    if (!socket || !connected) return;
+    socket.emit('stop_typing', { conversationId });
+  }, [socket, connected]);
+
+  // === PRESENCE ===
+  const checkPresence = useCallback((userIds: string[]) => {
+    if (!socket || !connected) return;
+    socket.emit('check_presence', { userIds });
+  }, [socket, connected]);
+
+  // === CONVERSATIONS ===
   const joinConversation = useCallback((conversationId: string) => {
     if (!socket || !connected) return;
-
     socket.emit('join_conversation', conversationId);
-    console.log(`Joined conversation: ${conversationId}`);
   }, [socket, connected]);
 
   const leaveConversation = useCallback((conversationId: string) => {
     if (!socket || !connected) return;
-
     socket.emit('leave_conversation', conversationId);
-    console.log(`Left conversation: ${conversationId}`);
   }, [socket, connected]);
 
+  // === EVENT LISTENERS ===
   const onMessage = useCallback((callback: (message: Message) => void) => {
     if (!socket) return;
-
     socket.on('new_message', callback);
   }, [socket]);
 
   const offMessage = useCallback((callback: (message: Message) => void) => {
     if (!socket) return;
-
     socket.off('new_message', callback);
+  }, [socket]);
+
+  const onMessageEdited = useCallback((callback: (message: Message) => void) => {
+    if (!socket) return;
+    socket.on('message_edited', callback);
+  }, [socket]);
+
+  const offMessageEdited = useCallback((callback: (message: Message) => void) => {
+    if (!socket) return;
+    socket.off('message_edited', callback);
+  }, [socket]);
+
+  const onMessageDeleted = useCallback((callback: (data: { messageId: string; conversationId: string }) => void) => {
+    if (!socket) return;
+    socket.on('message_deleted', callback);
+  }, [socket]);
+
+  const offMessageDeleted = useCallback((callback: (data: { messageId: string; conversationId: string }) => void) => {
+    if (!socket) return;
+    socket.off('message_deleted', callback);
+  }, [socket]);
+
+  const onMessagesRead = useCallback((callback: (event: ReadEvent) => void) => {
+    if (!socket) return;
+    socket.on('messages_read', callback);
+  }, [socket]);
+
+  const offMessagesRead = useCallback((callback: (event: ReadEvent) => void) => {
+    if (!socket) return;
+    socket.off('messages_read', callback);
+  }, [socket]);
+
+  const onTyping = useCallback((callback: (event: TypingEvent) => void) => {
+    if (!socket) return;
+    socket.on('user_typing', callback);
+  }, [socket]);
+
+  const offTyping = useCallback((callback: (event: TypingEvent) => void) => {
+    if (!socket) return;
+    socket.off('user_typing', callback);
+  }, [socket]);
+
+  const onStopTyping = useCallback((callback: (event: TypingEvent) => void) => {
+    if (!socket) return;
+    socket.on('user_stopped_typing', callback);
+  }, [socket]);
+
+  const offStopTyping = useCallback((callback: (event: TypingEvent) => void) => {
+    if (!socket) return;
+    socket.off('user_stopped_typing', callback);
+  }, [socket]);
+
+  const onPresenceUpdate = useCallback((callback: (event: PresenceEvent) => void) => {
+    if (!socket) return;
+    socket.on('presence_update', callback);
+  }, [socket]);
+
+  const offPresenceUpdate = useCallback((callback: (event: PresenceEvent) => void) => {
+    if (!socket) return;
+    socket.off('presence_update', callback);
   }, [socket]);
 
   const onMatchFound = useCallback((callback: (notification: MatchNotification) => void) => {
     if (!socket) return;
-
     socket.on('match:found', callback);
-    console.log('🔔 Listening for match notifications');
   }, [socket]);
 
   const offMatchFound = useCallback((callback: (notification: MatchNotification) => void) => {
     if (!socket) return;
-
     socket.off('match:found', callback);
   }, [socket]);
 
@@ -146,11 +276,34 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       value={{
         socket,
         connected,
+        // Messaging
         sendMessage,
+        editMessage,
+        deleteMessage,
+        markAsRead,
+        // Typing
+        startTyping,
+        stopTyping,
+        // Presence
+        checkPresence,
+        // Conversations
         joinConversation,
         leaveConversation,
+        // Event listeners
         onMessage,
         offMessage,
+        onMessageEdited,
+        offMessageEdited,
+        onMessageDeleted,
+        offMessageDeleted,
+        onMessagesRead,
+        offMessagesRead,
+        onTyping,
+        offTyping,
+        onStopTyping,
+        offStopTyping,
+        onPresenceUpdate,
+        offPresenceUpdate,
         onMatchFound,
         offMatchFound,
       }}

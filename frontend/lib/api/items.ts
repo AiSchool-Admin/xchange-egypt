@@ -73,6 +73,7 @@ export const getItems = async (params?: {
   maxPrice?: number;
   search?: string;
   status?: string;
+  sellerId?: string;
   // Location filters
   governorate?: string;
   city?: string;
@@ -88,6 +89,7 @@ export const getItems = async (params?: {
   if (params?.maxPrice) queryParams.append('maxPrice', params.maxPrice.toString());
   if (params?.search) queryParams.append('search', params.search);
   if (params?.status) queryParams.append('status', params.status);
+  if (params?.sellerId) queryParams.append('sellerId', params.sellerId);
   // Location params
   if (params?.governorate) queryParams.append('governorate', params.governorate);
   if (params?.city) queryParams.append('city', params.city);
