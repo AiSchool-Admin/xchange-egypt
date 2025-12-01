@@ -7,10 +7,9 @@
  * Hierarchy: District → City → Governorate → National
  */
 
-import { PrismaClient, MarketType } from '@prisma/client';
+import { MarketType } from '@prisma/client';
 import { Server as SocketIOServer } from 'socket.io';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types
@@ -18,7 +17,7 @@ const prisma = new PrismaClient();
 
 export interface ProximityMatch {
   id: string;
-  type: 'SUPPLY_TO_DEMAND' | 'DEMAND_TO_SUPPLY';
+  type: 'SUPPLY_TO_DEMAND' | 'DEMAND_TO_SUPPLY' | 'SUPPLY_TO_SUPPLY';
   score: number;
   proximityLevel: MarketType;
   distance: number | null; // In kilometers (if coordinates available)
@@ -312,6 +311,191 @@ export const findMatchesForDemand = async (
     .slice(0, maxResults);
 };
 
+/**
+ * Find SUPPLY-to-SUPPLY barter matches
+ * When person A has item X (category) and wants Y (desiredCategory)
+ * And person B has item Y (category) and wants X (desiredCategory)
+ * They are a perfect barter match!
+ */
+export const findBarterMatches = async (
+  itemId: string,
+  options: { maxResults?: number; minScore?: number } = {}
+): Promise<ProximityMatch[]> => {
+  const { maxResults = 10, minScore = 0.3 } = options;
+
+  // Get the source item
+  const sourceItem = await prisma.item.findUnique({
+    where: { id: itemId },
+    include: {
+      seller: { select: { id: true, fullName: true } },
+      category: true,
+      desiredCategory: true,
+    },
+  });
+
+  if (!sourceItem || !sourceItem.desiredCategoryId) {
+    return []; // No desired category = not looking to barter
+  }
+
+  // Find other items where:
+  // 1. Their category matches our desiredCategory
+  // 2. Their desiredCategory matches our category (mutual barter)
+  // 3. Same geographic area
+  const potentialMatches = await prisma.item.findMany({
+    where: {
+      status: 'ACTIVE',
+      sellerId: { not: sourceItem.sellerId }, // Not from same user
+      categoryId: sourceItem.desiredCategoryId, // They have what we want
+      desiredCategoryId: sourceItem.categoryId, // They want what we have (optional but increases score)
+      // Match by market type hierarchy
+      OR: getMarketTypeFilter(sourceItem.marketType, sourceItem.governorate, sourceItem.city, sourceItem.district),
+    },
+    include: {
+      seller: { select: { id: true, fullName: true } },
+      category: true,
+      desiredCategory: true,
+    },
+    take: 50,
+  });
+
+  // Also find items that just have what we want (even if they don't specifically want what we have)
+  const looseMatches = await prisma.item.findMany({
+    where: {
+      status: 'ACTIVE',
+      sellerId: { not: sourceItem.sellerId },
+      categoryId: sourceItem.desiredCategoryId, // They have what we want
+      desiredCategoryId: { not: sourceItem.categoryId }, // Exclude already found (mutual matches)
+      // Match by market type hierarchy
+      OR: getMarketTypeFilter(sourceItem.marketType, sourceItem.governorate, sourceItem.city, sourceItem.district),
+    },
+    include: {
+      seller: { select: { id: true, fullName: true } },
+      category: true,
+      desiredCategory: true,
+    },
+    take: 30,
+  });
+
+  const allMatches = [...potentialMatches, ...looseMatches];
+  const matches: ProximityMatch[] = [];
+
+  for (const matchedItem of allMatches) {
+    const score = calculateBarterMatchScore(sourceItem, matchedItem);
+
+    if (score.total >= minScore) {
+      matches.push({
+        id: `BM-${sourceItem.id}-${matchedItem.id}`,
+        type: 'SUPPLY_TO_SUPPLY',
+        score: score.total,
+        proximityLevel: score.proximityLevel,
+        distance: calculateDistance(
+          sourceItem.latitude,
+          sourceItem.longitude,
+          matchedItem.latitude,
+          matchedItem.longitude
+        ),
+        sourceItem: {
+          id: sourceItem.id,
+          title: sourceItem.title,
+          type: 'SUPPLY',
+          estimatedValue: sourceItem.estimatedValue,
+          marketType: sourceItem.marketType,
+          userId: sourceItem.sellerId,
+          userName: sourceItem.seller.fullName,
+          location: {
+            governorate: sourceItem.governorate,
+            city: sourceItem.city,
+            district: sourceItem.district,
+            latitude: sourceItem.latitude,
+            longitude: sourceItem.longitude,
+          },
+        },
+        matchedItem: {
+          id: matchedItem.id,
+          title: matchedItem.title,
+          type: 'SUPPLY',
+          estimatedValue: matchedItem.estimatedValue,
+          marketType: matchedItem.marketType,
+          userId: matchedItem.sellerId,
+          userName: matchedItem.seller.fullName,
+          location: {
+            governorate: matchedItem.governorate,
+            city: matchedItem.city,
+            district: matchedItem.district,
+            latitude: matchedItem.latitude,
+            longitude: matchedItem.longitude,
+          },
+        },
+        matchReason: score.reason,
+        createdAt: new Date(),
+      });
+    }
+  }
+
+  console.log(`[ProximityMatching] Found ${matches.length} barter matches for item ${itemId}`);
+
+  return matches
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxResults);
+};
+
+/**
+ * Calculate barter match score between two Supply items
+ */
+function calculateBarterMatchScore(itemA: any, itemB: any): MatchScore {
+  let reasons: string[] = [];
+
+  // 1. Proximity Score (30% weight for barter)
+  const { proximityScore, level } = calculateProximityScore(
+    itemA.governorate, itemA.city, itemA.district,
+    itemB.governorate, itemB.city, itemB.district
+  );
+
+  if (proximityScore > 0) {
+    reasons.push(getProximityLabel(level));
+  }
+
+  // 2. Category Match Score (40% weight for barter - most important)
+  let categoryScore = 0;
+
+  // They have what we want
+  if (itemB.categoryId === itemA.desiredCategoryId) {
+    categoryScore += 0.5;
+    reasons.push('لديهم ما تريد');
+  }
+
+  // Mutual match - they also want what we have
+  if (itemB.desiredCategoryId === itemA.categoryId) {
+    categoryScore += 0.5;
+    reasons.push('مقايضة متبادلة مثالية!');
+  }
+
+  // 3. Value Match Score (30% weight)
+  let valueScore = 0;
+  if (itemA.estimatedValue > 0 && itemB.estimatedValue > 0) {
+    const valueDiff = Math.abs(itemA.estimatedValue - itemB.estimatedValue);
+    const avgValue = (itemA.estimatedValue + itemB.estimatedValue) / 2;
+    const valueRatio = 1 - Math.min(valueDiff / avgValue, 1);
+    valueScore = valueRatio;
+
+    if (valueRatio >= 0.8) {
+      reasons.push('قيم متقاربة');
+    }
+  }
+
+  // Calculate total score
+  const total = (proximityScore * 0.3) + (categoryScore * 0.4) + (valueScore * 0.3);
+
+  return {
+    total,
+    proximityScore,
+    proximityLevel: level,
+    categoryScore,
+    valueScore,
+    reason: reasons.join(' • ') || 'تطابق محتمل',
+  };
+}
+
 // ============================================
 // Scoring Functions
 // ============================================
@@ -593,20 +777,35 @@ export const processNewSupplyItem = async (itemId: string): Promise<number> => {
   console.log(`[ProximityMatching] Processing new supply item: ${itemId}`);
 
   try {
-    const matches = await findMatchesForSupply(itemId, {
+    let notificationCount = 0;
+
+    // 1. Find Supply → Demand matches (traditional)
+    const demandMatches = await findMatchesForSupply(itemId, {
       minScore: MIN_NOTIFICATION_SCORE
     });
 
-    console.log(`[ProximityMatching] Found ${matches.length} matches`);
+    console.log(`[ProximityMatching] Found ${demandMatches.length} demand matches`);
 
-    let notificationCount = 0;
-
-    for (const match of matches) {
+    for (const match of demandMatches) {
       // Notify the demand owner about the new supply
       await notifyProximityMatch(match.matchedItem.userId, match);
       notificationCount++;
     }
 
+    // 2. Find Supply → Supply barter matches (item-to-item)
+    const barterMatches = await findBarterMatches(itemId, {
+      minScore: MIN_NOTIFICATION_SCORE
+    });
+
+    console.log(`[ProximityMatching] Found ${barterMatches.length} barter matches`);
+
+    for (const match of barterMatches) {
+      // Notify the other item owner about potential barter
+      await notifyProximityMatch(match.matchedItem.userId, match);
+      notificationCount++;
+    }
+
+    console.log(`[ProximityMatching] Total notifications sent: ${notificationCount}`);
     return notificationCount;
   } catch (error) {
     console.error('[ProximityMatching] Error processing supply item:', error);
@@ -808,6 +1007,7 @@ export default {
   initializeProximityMatching,
   findMatchesForSupply,
   findMatchesForDemand,
+  findBarterMatches,
   processNewSupplyItem,
   processNewDemandItem,
   getMatchesForUser,

@@ -1,8 +1,7 @@
-import { PrismaClient, BarterOfferStatus, ItemCondition } from '@prisma/client';
+import { BarterOfferStatus, ItemCondition } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { createNotification } from './notification.service';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // Types
 interface CreateBarterOfferData {

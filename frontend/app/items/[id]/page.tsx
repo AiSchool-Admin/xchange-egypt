@@ -228,7 +228,7 @@ export default function ItemDetailsPage() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Category</p>
-                  <p className="font-semibold">{item.category.nameEn}</p>
+                  <p className="font-semibold">{item.category?.nameEn || 'Uncategorized'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>

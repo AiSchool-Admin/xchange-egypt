@@ -5,10 +5,41 @@
  * Supports goods, services, and cash items with multiple listing types.
  */
 
-import { PrismaClient, ItemType, ItemCondition, MarketType } from '@prisma/client';
+import { ItemType, ItemCondition, MarketType } from '@prisma/client';
+import prisma from '../lib/prisma';
 import * as proximityMatching from './proximity-matching.service';
 
-const prisma = new PrismaClient();
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Resolve category ID - handles both UUID and slug
+ * If the input looks like a UUID, use it directly
+ * If it's a slug, look up the actual UUID
+ */
+const resolveCategoryId = async (categoryIdOrSlug: string | null | undefined): Promise<string | null> => {
+  if (!categoryIdOrSlug) return null;
+
+  // UUID pattern check (simple version)
+  const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (uuidPattern.test(categoryIdOrSlug)) {
+    // It's already a UUID, verify it exists
+    const category = await prisma.category.findUnique({
+      where: { id: categoryIdOrSlug },
+      select: { id: true }
+    });
+    return category?.id || null;
+  }
+
+  // It's a slug, look up the UUID
+  const category = await prisma.category.findUnique({
+    where: { slug: categoryIdOrSlug },
+    select: { id: true }
+  });
+  return category?.id || null;
+};
 
 // ============================================
 // Types
@@ -18,6 +49,7 @@ export type InventorySide = 'SUPPLY' | 'DEMAND';
 export type InventoryItemType = 'GOODS' | 'SERVICES' | 'CASH';
 export type ListingType = 'DIRECT_SALE' | 'AUCTION' | 'BARTER' | 'DIRECT_BUY' | 'REVERSE_AUCTION';
 export type MarketTypeValue = 'DISTRICT' | 'CITY' | 'GOVERNORATE' | 'NATIONAL';
+export type ItemConditionValue = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
 
 // Market configuration - Unified fees: 25 EGP + 5% commission
 // الميزة الرئيسية: المطابقة التلقائية بالقرب الجغرافي
@@ -118,6 +150,8 @@ export interface CreateInventoryItemInput {
   categoryId?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  // Item condition
+  condition?: ItemConditionValue;
   // Market & Location
   marketType?: MarketTypeValue;
   governorate?: string;
@@ -146,47 +180,45 @@ export const getUserInventory = async (
   } = {}
 ): Promise<{ items: any[]; total: number; stats: any }> => {
   const { side, type, status = 'ACTIVE', page = 1, limit = 20 } = options;
-
-  // Build where clause - get items from Item model
-  const where: any = {
-    sellerId: userId,
-    status: status === 'ACTIVE' ? 'ACTIVE' : status,
-  };
-
-  // For now, we'll use the existing Item model
-  // The "side" concept will be derived from whether it's an item listing or a want-ad
-  if (type) {
-    where.itemType = type;
-  }
-
   const skip = (page - 1) * limit;
 
-  const [items, total] = await Promise.all([
-    prisma.item.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        category: true,
-        desiredCategory: true,
-      },
-    }),
-    prisma.item.count({ where }),
-  ]);
+  let allItems: any[] = [];
+  let totalSupply = 0;
+  let totalDemand = 0;
 
-  // Get stats
-  const stats = await prisma.item.groupBy({
-    by: ['status'],
-    where: { sellerId: userId },
-    _count: true,
-  });
+  // ============================================
+  // Get SUPPLY items (from Item model)
+  // ============================================
+  if (!side || side === 'SUPPLY') {
+    const supplyWhere: any = {
+      sellerId: userId,
+      status: status === 'ACTIVE' ? 'ACTIVE' : status,
+    };
 
-  return {
-    items: items.map(item => ({
+    if (type) {
+      supplyWhere.itemType = type === 'GOODS' ? 'GOOD' : type;
+    }
+
+    const [supplyItems, supplyCount] = await Promise.all([
+      prisma.item.findMany({
+        where: supplyWhere,
+        skip: side === 'SUPPLY' ? skip : 0,
+        take: side === 'SUPPLY' ? limit : 50,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          category: true,
+          desiredCategory: true,
+        },
+      }),
+      prisma.item.count({ where: supplyWhere }),
+    ]);
+
+    totalSupply = supplyCount;
+
+    const mappedSupply = supplyItems.map(item => ({
       id: item.id,
       userId: item.sellerId,
-      side: 'SUPPLY' as InventorySide, // Currently all items are supply-side
+      side: 'SUPPLY' as InventorySide,
       type: item.itemType === 'GOOD' ? 'GOODS' : item.itemType as InventoryItemType,
       title: item.title,
       description: item.description,
@@ -195,20 +227,102 @@ export const getUserInventory = async (
       status: item.status === 'ACTIVE' ? 'ACTIVE' : item.status === 'SOLD' ? 'COMPLETED' : item.status,
       images: item.images,
       categoryId: item.categoryId,
+      categoryName: item.category?.nameEn,
       desiredCategoryId: item.desiredCategoryId,
+      desiredCategoryName: item.desiredCategory?.nameEn,
       desiredKeywords: item.desiredKeywords,
-      governorate: item.location,
-      city: item.location,
+      marketType: item.marketType,
+      governorate: item.governorate,
+      city: item.city,
+      district: item.district,
       viewCount: item.views || 0,
       matchCount: 0,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
-    })),
-    total,
+    }));
+
+    allItems = [...allItems, ...mappedSupply];
+  }
+
+  // ============================================
+  // Get DEMAND items (from BarterOffer model)
+  // ============================================
+  if (!side || side === 'DEMAND') {
+    const demandWhere: any = {
+      initiatorId: userId,
+      isOpenOffer: true,
+      status: status === 'ACTIVE' ? 'PENDING' : status,
+    };
+
+    const [demandOffers, demandCount] = await Promise.all([
+      prisma.barterOffer.findMany({
+        where: demandWhere,
+        skip: side === 'DEMAND' ? skip : 0,
+        take: side === 'DEMAND' ? limit : 50,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          itemRequests: {
+            include: { category: true },
+          },
+        },
+      }),
+      prisma.barterOffer.count({ where: demandWhere }),
+    ]);
+
+    totalDemand = demandCount;
+
+    const mappedDemand = demandOffers.map(offer => {
+      const request = offer.itemRequests[0];
+      return {
+        id: offer.id,
+        userId: offer.initiatorId,
+        side: 'DEMAND' as InventorySide,
+        type: 'GOODS' as InventoryItemType,
+        title: request?.description || 'طلب جديد',
+        description: request?.description || '',
+        estimatedValue: request?.maxPrice || 0,
+        listingType: 'DIRECT_BUY',
+        status: offer.status === 'PENDING' ? 'ACTIVE' : offer.status,
+        images: [],
+        categoryId: request?.categoryId,
+        categoryName: request?.category?.nameEn,
+        desiredCategoryId: null,
+        desiredCategoryName: null,
+        desiredKeywords: request?.keywords?.join(', '),
+        marketType: offer.marketType,
+        governorate: offer.governorate,
+        city: offer.city,
+        district: offer.district,
+        viewCount: 0,
+        matchCount: 0,
+        createdAt: offer.createdAt,
+        updatedAt: offer.updatedAt,
+      };
+    });
+
+    allItems = [...allItems, ...mappedDemand];
+  }
+
+  // Sort by createdAt and apply pagination for mixed results
+  if (!side) {
+    allItems.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    allItems = allItems.slice(skip, skip + limit);
+  }
+
+  // Get stats
+  const supplyStats = await prisma.item.groupBy({
+    by: ['status'],
+    where: { sellerId: userId },
+    _count: true,
+  });
+
+  return {
+    items: allItems,
+    total: totalSupply + totalDemand,
     stats: {
-      active: stats.find(s => s.status === 'ACTIVE')?._count || 0,
-      pending: stats.find(s => s.status === 'DRAFT')?._count || 0,
-      sold: stats.find(s => s.status === 'SOLD')?._count || 0,
+      active: supplyStats.find(s => s.status === 'ACTIVE')?._count || 0,
+      pending: supplyStats.find(s => s.status === 'DRAFT')?._count || 0,
+      sold: supplyStats.find(s => s.status === 'SOLD')?._count || 0,
     },
   };
 };
@@ -218,9 +332,18 @@ export const getUserInventory = async (
  */
 export const getInventoryStats = async (userId: string) => {
   const [supplyCount, demandCount, matchedCount, completedCount] = await Promise.all([
+    // SUPPLY: Count items from Item model
     prisma.item.count({ where: { sellerId: userId, status: 'ACTIVE' } }),
-    // For now, demand items don't exist in the schema - return 0
-    Promise.resolve(0),
+    // DEMAND: Count open offers from BarterOffer model
+    prisma.barterOffer.count({
+      where: {
+        initiatorId: userId,
+        isOpenOffer: true,
+        status: 'PENDING',
+        expiresAt: { gt: new Date() },
+      },
+    }),
+    // MATCHED: Barter participants accepted
     prisma.barterParticipant.count({
       where: {
         userId,
@@ -228,6 +351,7 @@ export const getInventoryStats = async (userId: string) => {
         chain: { status: { in: ['PROPOSED', 'ACCEPTED'] } },
       },
     }),
+    // COMPLETED: Completed transactions
     prisma.barterParticipant.count({
       where: {
         userId,
@@ -258,6 +382,10 @@ export const createInventoryItem = async (
     // Map type to schema enum
     const itemType = input.type === 'SERVICES' ? 'SERVICE' : input.type === 'CASH' ? 'CASH' : 'GOOD';
 
+    // Resolve category IDs (handles both UUID and slug)
+    const resolvedCategoryId = await resolveCategoryId(input.categoryId);
+    const resolvedDesiredCategoryId = await resolveCategoryId(input.desiredCategoryId);
+
     // Create item in the existing Item model
     const item = await prisma.item.create({
       data: {
@@ -266,8 +394,8 @@ export const createInventoryItem = async (
         description: input.description,
         itemType: itemType,
         estimatedValue: input.estimatedValue,
-        category: input.categoryId ? { connect: { id: input.categoryId } } : undefined,
-        desiredCategory: input.desiredCategoryId ? { connect: { id: input.desiredCategoryId } } : undefined,
+        category: resolvedCategoryId ? { connect: { id: resolvedCategoryId } } : undefined,
+        desiredCategory: resolvedDesiredCategoryId ? { connect: { id: resolvedDesiredCategoryId } } : undefined,
         desiredKeywords: input.desiredKeywords || null,
         images: input.images || [],
         // Market & Location
@@ -277,7 +405,7 @@ export const createInventoryItem = async (
         district: input.district || null,
         location: input.district || input.city || input.governorate || null,
         status: 'ACTIVE',
-        condition: 'GOOD',
+        condition: input.condition || 'GOOD',
       },
       include: {
         category: true,
@@ -338,6 +466,9 @@ export const createInventoryItem = async (
   // For DEMAND side - create a want-ad/request
   // For now, we'll use BarterOffer with isOpenOffer = true
   if (input.side === 'DEMAND') {
+    // Resolve category ID (handles both UUID and slug)
+    const resolvedDesiredCategoryId = await resolveCategoryId(input.desiredCategoryId);
+
     const offer = await prisma.barterOffer.create({
       data: {
         initiator: { connect: { id: userId } },
@@ -352,7 +483,7 @@ export const createInventoryItem = async (
         district: input.district || null,
         itemRequests: {
           create: {
-            category: input.desiredCategoryId ? { connect: { id: input.desiredCategoryId } } : undefined,
+            category: resolvedDesiredCategoryId ? { connect: { id: resolvedDesiredCategoryId } } : undefined,
             description: input.description,
             minPrice: input.estimatedValue * 0.8, // 80% of estimated
             maxPrice: input.estimatedValue * 1.2, // 120% of estimated

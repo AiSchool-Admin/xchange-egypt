@@ -1,8 +1,7 @@
-import { PrismaClient, OrderStatus } from '@prisma/client';
+import { OrderStatus } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { clearCart, getCart } from './cart.service';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // Egyptian governorates for shipping calculations
 const EGYPTIAN_GOVERNORATES = [

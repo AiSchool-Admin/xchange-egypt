@@ -5,13 +5,12 @@
  * Handles proposal, acceptance, rejection, and execution
  */
 
-import { PrismaClient, BarterChainStatus, ParticipantStatus, LockType } from '@prisma/client';
+import { BarterChainStatus, ParticipantStatus, LockType } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import * as matchingService from './barter-matching.service';
 import * as lockService from './inventory-lock.service';
 import * as cashFlowService from './cash-flow.service';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types

@@ -6,12 +6,10 @@
  * to users via WebSocket.
  */
 
-import { PrismaClient } from '@prisma/client';
 import { itemEvents, ItemCreatedPayload, ItemUpdatedPayload } from '../events/item.events';
 import * as matchingService from './barter-matching.service';
 import { Server as SocketIOServer } from 'socket.io';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types

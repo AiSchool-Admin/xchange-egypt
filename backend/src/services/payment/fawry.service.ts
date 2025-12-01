@@ -1,7 +1,6 @@
-import { PrismaClient, OrderStatus } from '@prisma/client';
+import { OrderStatus } from '@prisma/client';
 import crypto from 'crypto';
-
-const prisma = new PrismaClient();
+import prisma from '../../lib/prisma';
 
 // Fawry configuration from environment
 const FAWRY_CONFIG = {

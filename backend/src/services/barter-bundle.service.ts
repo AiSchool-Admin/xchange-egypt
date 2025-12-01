@@ -9,11 +9,9 @@
  * - Smart recommendations
  */
 
-import { PrismaClient } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { createNotification } from './notification.service';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types and Interfaces
