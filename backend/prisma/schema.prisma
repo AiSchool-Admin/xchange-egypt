@@ -169,6 +169,18 @@ enum ItemStatus {
   DELETED
 }
 
+// ============================================
+// Market Types (Geographic Levels)
+// النطاق الجغرافي للعرض - المطابقة بالقرب الجغرافي
+// ============================================
+
+enum MarketType {
+  DISTRICT      // سوق الحي
+  CITY          // سوق المدينة
+  GOVERNORATE   // سوق المحافظة
+  NATIONAL      // السوق الشامل - كل مصر
+}
+
 model Item {
   id              String        @id @default(uuid())
   sellerId        String        @map("seller_id")
@@ -188,8 +200,14 @@ model Item {
   serviceHours    Float?        @map("service_hours")   // For SERVICE type
   serviceDuration String?       @map("service_duration") // e.g., "1 day", "2 weeks"
 
-  // Location
-  location        String?
+  // Market Type
+  marketType      MarketType    @default(DISTRICT) @map("market_type")
+
+  // Location (Hierarchical)
+  governorate     String?       // المحافظة
+  city            String?       // المدينة
+  district        String?       // الحي
+  location        String?       // العنوان التفصيلي
   latitude        Float?
   longitude       Float?
 
@@ -228,6 +246,10 @@ model Item {
   @@index([createdAt])
   @@index([desiredCategoryId])
   @@index([itemType])
+  @@index([marketType])
+  @@index([governorate])
+  @@index([marketType, governorate])
+  @@index([marketType, status])
 }
 
 // ============================================
@@ -461,6 +483,12 @@ model BarterOffer {
   expiresAt         DateTime?          @map("expires_at")
   isOpenOffer       Boolean            @default(false) @map("is_open_offer")  // Open to anyone
 
+  // Market Type & Location (for Demand items)
+  marketType        MarketType         @default(DISTRICT) @map("market_type")
+  governorate       String?            // المحافظة
+  city              String?            // المدينة
+  district          String?            // الحي
+
   // Status
   status            BarterOfferStatus  @default(PENDING)
 
@@ -480,6 +508,9 @@ model BarterOffer {
   @@index([status])
   @@index([expiresAt])
   @@index([isOpenOffer])
+  @@index([marketType])
+  @@index([governorate])
+  @@index([marketType, isOpenOffer])
 }
 
 // Abstract item request for barter (when user doesn't want specific items)

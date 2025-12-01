@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { createInventoryItem } from '@/lib/api/inventory';
+import { createInventoryItem, MarketType, MARKET_CONFIG } from '@/lib/api/inventory';
 import {
   getGovernorates,
   getCities,
@@ -35,6 +35,8 @@ interface FormData {
   // Barter specific
   desiredCategory: string;
   desiredKeywords: string;
+  // Market Type
+  marketType: MarketType;
   // Location
   governorateId: string;
   governorateName: string;
@@ -64,6 +66,7 @@ function AddInventoryContent() {
     auctionDuration: '7',
     desiredCategory: '',
     desiredKeywords: '',
+    marketType: 'DISTRICT',
     governorateId: '',
     governorateName: '',
     cityId: '',
@@ -196,8 +199,11 @@ function AddInventoryContent() {
         categoryId: formData.subcategory || formData.category || undefined,
         desiredCategoryId: formData.desiredCategory || undefined,
         desiredKeywords: formData.desiredKeywords || undefined,
+        // Market & Location
+        marketType: formData.marketType,
         governorate: formData.governorateName || undefined,
-        city: locationString || undefined, // Full location string
+        city: formData.cityName || undefined,
+        district: formData.districtName || undefined,
         startingBid: formData.startingBid ? parseInt(formData.startingBid) : undefined,
         auctionDurationDays: formData.auctionDuration ? parseInt(formData.auctionDuration) : undefined,
       };
@@ -237,7 +243,7 @@ function AddInventoryContent() {
 
   if (!user) return null;
 
-  const totalSteps = formData.side === 'supply' ? 5 : 4;
+  const totalSteps = formData.side === 'supply' ? 6 : 5;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
@@ -575,8 +581,84 @@ function AddInventoryContent() {
           </div>
         )}
 
-        {/* Step 4: Listing Type */}
+        {/* Step 4: Market Selection */}
         {step === 4 && (
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-800 mb-4">
+              اختر نطاق السوق
+            </h1>
+            <p className="text-gray-600 mb-2">
+              حدد النطاق الجغرافي الذي تريد عرض إعلانك فيه
+            </p>
+            <p className="text-sm text-purple-600 mb-8">
+              رسوم موحدة: 25 ج.م + 5% عمولة على كل المستويات
+            </p>
+
+            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              {(Object.keys(MARKET_CONFIG) as MarketType[]).map((marketId) => {
+                const market = MARKET_CONFIG[marketId];
+                const isSelected = formData.marketType === marketId;
+                const colorClasses = {
+                  green: isSelected ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300',
+                  blue: isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300',
+                  purple: isSelected ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300',
+                  amber: isSelected ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-amber-300',
+                };
+                return (
+                  <button
+                    key={marketId}
+                    onClick={() => setFormData(prev => ({ ...prev, marketType: marketId }))}
+                    className={`p-6 rounded-2xl border-2 transition-all bg-white text-left ${
+                      colorClasses[market.color as keyof typeof colorClasses] || colorClasses.green
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-3xl">{market.icon}</span>
+                      <div>
+                        <h3 className="font-bold text-gray-800">{market.nameAr}</h3>
+                        <p className="text-sm text-gray-500">{market.nameEn}</p>
+                      </div>
+                      {isSelected && (
+                        <span className="mr-auto text-2xl text-green-500">✓</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600">{market.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Fee info banner */}
+            <div className="mt-8 p-4 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-xl max-w-xl mx-auto">
+              <div className="flex items-center justify-center gap-2 text-purple-800">
+                <span className="text-xl">🇪🇬</span>
+                <span className="font-bold">25 ج.م</span>
+                <span>رسوم الإدراج</span>
+                <span className="mx-2">+</span>
+                <span className="font-bold">5%</span>
+                <span>عمولة عند البيع</span>
+              </div>
+            </div>
+
+            <div className="flex justify-between mt-8">
+              <button
+                onClick={() => setStep(3)}
+                className="px-6 py-3 text-gray-600 hover:text-gray-800"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => setStep(5)}
+                className="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
+              >
+                Continue →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Listing Type */}
+        {step === 5 && (
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-800 mb-4">
               How do you want to {formData.side === 'supply' ? 'sell' : 'get'} it?
@@ -687,13 +769,13 @@ function AddInventoryContent() {
 
             <div className="flex justify-between mt-8">
               <button
-                onClick={() => setStep(3)}
+                onClick={() => setStep(4)}
                 className="px-6 py-3 text-gray-600 hover:text-gray-800"
               >
                 ← Back
               </button>
               <button
-                onClick={() => formData.side === 'supply' ? setStep(5) : handleSubmit()}
+                onClick={() => formData.side === 'supply' ? setStep(6) : handleSubmit()}
                 className="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
               >
                 {formData.side === 'supply' ? 'Continue →' : 'Create Listing'}
@@ -702,8 +784,8 @@ function AddInventoryContent() {
           </div>
         )}
 
-        {/* Step 5: Review & Submit (Supply only) */}
-        {step === 5 && (
+        {/* Step 6: Review & Submit (Supply only) */}
+        {step === 6 && (
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-4 text-center">
               Review Your Listing
@@ -727,7 +809,7 @@ function AddInventoryContent() {
               )}
 
               <div className="p-6">
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex flex-wrap items-center gap-2 mb-4">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     formData.listingType === 'direct_sale' ? 'bg-purple-100 text-purple-700' :
                     formData.listingType === 'auction' ? 'bg-indigo-100 text-indigo-700' :
@@ -739,6 +821,15 @@ function AddInventoryContent() {
                   </span>
                   <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
                     {formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}
+                  </span>
+                  {/* Market Type Badge */}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    formData.marketType === 'DISTRICT' ? 'bg-green-100 text-green-700' :
+                    formData.marketType === 'CITY' ? 'bg-blue-100 text-blue-700' :
+                    formData.marketType === 'GOVERNORATE' ? 'bg-purple-100 text-purple-700' :
+                    'bg-amber-100 text-amber-700'
+                  }`}>
+                    {MARKET_CONFIG[formData.marketType].icon} {MARKET_CONFIG[formData.marketType].nameAr}
                   </span>
                 </div>
 
@@ -775,7 +866,7 @@ function AddInventoryContent() {
 
             <div className="flex justify-between mt-8">
               <button
-                onClick={() => setStep(4)}
+                onClick={() => setStep(5)}
                 className="px-6 py-3 text-gray-600 hover:text-gray-800"
               >
                 ← Back

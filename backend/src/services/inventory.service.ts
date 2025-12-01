@@ -5,7 +5,8 @@
  * Supports goods, services, and cash items with multiple listing types.
  */
 
-import { PrismaClient, ItemType, ItemCondition } from '@prisma/client';
+import { PrismaClient, ItemType, ItemCondition, MarketType } from '@prisma/client';
+import * as proximityMatching from './proximity-matching.service';
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,64 @@ const prisma = new PrismaClient();
 export type InventorySide = 'SUPPLY' | 'DEMAND';
 export type InventoryItemType = 'GOODS' | 'SERVICES' | 'CASH';
 export type ListingType = 'DIRECT_SALE' | 'AUCTION' | 'BARTER' | 'DIRECT_BUY' | 'REVERSE_AUCTION';
+export type MarketTypeValue = 'DISTRICT' | 'CITY' | 'GOVERNORATE' | 'NATIONAL';
+
+// Market configuration - Unified fees: 25 EGP + 5% commission
+// الميزة الرئيسية: المطابقة التلقائية بالقرب الجغرافي
+export const MARKET_CONFIG = {
+  DISTRICT: {
+    id: 'DISTRICT',
+    nameAr: 'سوق الحي',
+    nameEn: 'District Market',
+    icon: '🏘️',
+    color: 'green',
+    description: 'نطاق الحي - أقرب المستخدمين',
+    descriptionEn: 'District scope - Nearest users',
+    // Unified fees
+    listingFee: 25,     // 25 ج.م
+    commission: 5,      // 5%
+    maxValue: null,     // بدون حد
+  },
+  CITY: {
+    id: 'CITY',
+    nameAr: 'سوق المدينة',
+    nameEn: 'City Market',
+    icon: '🏙️',
+    color: 'blue',
+    description: 'نطاق المدينة بأكملها',
+    descriptionEn: 'Entire city scope',
+    // Unified fees
+    listingFee: 25,     // 25 ج.م
+    commission: 5,      // 5%
+    maxValue: null,     // بدون حد
+  },
+  GOVERNORATE: {
+    id: 'GOVERNORATE',
+    nameAr: 'سوق المحافظة',
+    nameEn: 'Governorate Market',
+    icon: '🗺️',
+    color: 'purple',
+    description: 'نطاق المحافظة بأكملها',
+    descriptionEn: 'Entire governorate scope',
+    // Unified fees
+    listingFee: 25,     // 25 ج.م
+    commission: 5,      // 5%
+    maxValue: null,     // بدون حد
+  },
+  NATIONAL: {
+    id: 'NATIONAL',
+    nameAr: 'السوق الشامل',
+    nameEn: 'National Market',
+    icon: '🇪🇬',
+    color: 'amber',
+    description: 'كل مصر - 27 محافظة',
+    descriptionEn: 'All Egypt - 27 governorates',
+    // Unified fees
+    listingFee: 25,     // 25 ج.م
+    commission: 5,      // 5%
+    maxValue: null,     // بدون حد
+  },
+};
 
 export interface InventoryItem {
   id: string;
@@ -31,8 +90,11 @@ export interface InventoryItem {
   categoryId?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  // Market & Location
+  marketType: MarketTypeValue;
   governorate?: string;
   city?: string;
+  district?: string;
   latitude?: number;
   longitude?: number;
   // Auction specific
@@ -56,8 +118,11 @@ export interface CreateInventoryItemInput {
   categoryId?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  // Market & Location
+  marketType?: MarketTypeValue;
   governorate?: string;
   city?: string;
+  district?: string;
   // Auction specific
   startingBid?: number;
   auctionDurationDays?: number;
@@ -205,7 +270,12 @@ export const createInventoryItem = async (
         desiredCategoryId: input.desiredCategoryId || null,
         desiredKeywords: input.desiredKeywords || null,
         images: input.images || [],
-        location: input.city || input.governorate || null,
+        // Market & Location
+        marketType: (input.marketType as MarketType) || 'DISTRICT',
+        governorate: input.governorate || null,
+        city: input.city || null,
+        district: input.district || null,
+        location: input.district || input.city || input.governorate || null,
         status: 'ACTIVE',
         condition: 'GOOD',
       },
@@ -248,12 +318,18 @@ export const createInventoryItem = async (
       });
     }
 
+    // Trigger proximity matching asynchronously (don't wait)
+    proximityMatching.processNewSupplyItem(item.id).catch(err => {
+      console.error('[Inventory] Error processing proximity matching:', err);
+    });
+
     return {
       id: item.id,
       side: 'SUPPLY',
       type: input.type,
       title: item.title,
       listingType: input.listingType,
+      marketType: input.marketType || 'DISTRICT',
       status: 'ACTIVE',
       createdAt: item.createdAt,
     };
@@ -269,6 +345,11 @@ export const createInventoryItem = async (
         status: 'PENDING',
         offeredBundleValue: 0,
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        // Market & Location
+        marketType: (input.marketType as MarketType) || 'DISTRICT',
+        governorate: input.governorate || null,
+        city: input.city || null,
+        district: input.district || null,
         itemRequests: {
           create: {
             categoryId: input.desiredCategoryId || null,
@@ -281,12 +362,18 @@ export const createInventoryItem = async (
       },
     });
 
+    // Trigger proximity matching asynchronously (don't wait)
+    proximityMatching.processNewDemandItem(offer.id).catch(err => {
+      console.error('[Inventory] Error processing proximity matching for demand:', err);
+    });
+
     return {
       id: offer.id,
       side: 'DEMAND',
       type: input.type,
       title: input.title,
       listingType: input.listingType,
+      marketType: input.marketType || 'DISTRICT',
       status: 'ACTIVE',
       createdAt: offer.createdAt,
     };
@@ -373,20 +460,32 @@ export const findMatchesForItem = async (
 
 /**
  * Get latest public items for home page (no auth required)
+ * Supports filtering by market type and governorate
  */
 export const getLatestPublicItems = async (options: {
   limit?: number;
+  marketType?: MarketTypeValue;
+  governorate?: string;
 } = {}): Promise<{
   supply: any[];
   demand: any[];
 }> => {
-  const { limit = 8 } = options;
+  const { limit = 8, marketType, governorate } = options;
+
+  // Build where clause for SUPPLY
+  const supplyWhere: any = {
+    status: 'ACTIVE',
+  };
+  if (marketType) {
+    supplyWhere.marketType = marketType;
+  }
+  if (governorate) {
+    supplyWhere.governorate = governorate;
+  }
 
   // Get latest SUPPLY items (Items with ACTIVE status)
   const supplyItems = await prisma.item.findMany({
-    where: {
-      status: 'ACTIVE',
-    },
+    where: supplyWhere,
     take: limit,
     orderBy: { createdAt: 'desc' },
     include: {
@@ -403,15 +502,24 @@ export const getLatestPublicItems = async (options: {
     },
   });
 
+  // Build where clause for DEMAND
+  const demandWhere: any = {
+    isOpenOffer: true,
+    status: 'PENDING',
+    expiresAt: {
+      gt: new Date(),
+    },
+  };
+  if (marketType) {
+    demandWhere.marketType = marketType;
+  }
+  if (governorate) {
+    demandWhere.governorate = governorate;
+  }
+
   // Get latest DEMAND items (Open BarterOffers with ItemRequests)
   const demandOffers = await prisma.barterOffer.findMany({
-    where: {
-      isOpenOffer: true,
-      status: 'PENDING',
-      expiresAt: {
-        gt: new Date(),
-      },
-    },
+    where: demandWhere,
     take: limit,
     orderBy: { createdAt: 'desc' },
     include: {
@@ -446,6 +554,11 @@ export const getLatestPublicItems = async (options: {
         nameAr: item.category.nameAr,
         nameEn: item.category.nameEn,
       } : null,
+      // Market & Location
+      marketType: item.marketType,
+      governorate: item.governorate,
+      city: item.city,
+      district: item.district,
       location: item.location,
       user: {
         id: item.seller.id,
@@ -471,6 +584,11 @@ export const getLatestPublicItems = async (options: {
         nameEn: offer.itemRequests[0].category.nameEn,
       } : null,
       keywords: offer.itemRequests.flatMap(r => r.keywords),
+      // Market & Location
+      marketType: offer.marketType,
+      governorate: offer.governorate,
+      city: offer.city,
+      district: offer.district,
       user: {
         id: offer.initiator.id,
         name: offer.initiator.fullName,
