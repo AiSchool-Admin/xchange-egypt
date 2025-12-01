@@ -6,10 +6,10 @@ import Navigation from '@/components/Navigation';
 import PWAProvider from '@/components/pwa/PWAProvider';
 
 export const metadata: Metadata = {
-  title: 'Xchange - E-commerce Platform',
-  description: 'Trade, barter, and auction your items on Xchange',
+  title: 'Xchange - منصة التبادل والمقايضة في مصر',
+  description: 'بيع واشتري ومبادلة في مصر - منصة التبادل والمقايضة الأولى',
   manifest: '/manifest.json',
-  themeColor: '#7c3aed',
+  themeColor: '#10b981',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -23,14 +23,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="ar" dir="rtl">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-cairo antialiased bg-gray-50">
         <AuthProvider>
           <SocketProvider>
             <PWAProvider>
