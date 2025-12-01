@@ -13,11 +13,11 @@ function MarketTabs({
   onSelect: (market: MarketType | null) => void;
 }) {
   const markets = [
-    { id: null, nameAr: 'الكل', icon: '🌍', color: 'gray' },
-    { id: 'DISTRICT' as MarketType, ...MARKET_CONFIG.DISTRICT },
-    { id: 'CITY' as MarketType, ...MARKET_CONFIG.CITY },
-    { id: 'GOVERNORATE' as MarketType, ...MARKET_CONFIG.GOVERNORATE },
-    { id: 'NATIONAL' as MarketType, ...MARKET_CONFIG.NATIONAL },
+    { id: null as MarketType | null, nameAr: 'الكل', nameEn: 'All', icon: '🌍', color: 'gray' },
+    { ...MARKET_CONFIG.DISTRICT, id: 'DISTRICT' as MarketType | null },
+    { ...MARKET_CONFIG.CITY, id: 'CITY' as MarketType | null },
+    { ...MARKET_CONFIG.GOVERNORATE, id: 'GOVERNORATE' as MarketType | null },
+    { ...MARKET_CONFIG.NATIONAL, id: 'NATIONAL' as MarketType | null },
   ];
 
   return (
