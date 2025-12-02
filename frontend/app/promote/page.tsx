@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { getMyItems, Item, promoteItem } from '@/lib/api/items';
+import { getMyItems, Item, promoteItem, PromotionTier } from '@/lib/api/items';
 
 interface PromotionPlan {
   id: string;
@@ -138,10 +138,11 @@ export default function PromotePage() {
         gold: 'GOLD',
       };
 
-      const response = await promoteItem(selectedItem.id, {
-        tier: tierMap[selectedPlan.tier] as any,
-        durationDays: selectedPlan.duration,
-      });
+      const response = await promoteItem(
+        selectedItem.id,
+        tierMap[selectedPlan.tier] as PromotionTier,
+        selectedPlan.duration
+      );
 
       if (response.success) {
         alert(`تم ترويج إعلانك بنجاح! 🎉\n\nسيظهر في قسم الإعلانات المميزة لمدة ${selectedPlan.duration} أيام.`);

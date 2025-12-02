@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { getLatestItems, PublicItem } from '@/lib/api/inventory';
-import { getItems } from '@/lib/api/items';
+import { getItems, getFeaturedItems, Item } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 
 // ============================================
@@ -227,9 +227,10 @@ function CategorySection({
 // ============================================
 // صفحة الهبوط للزوار - Public Landing Page
 // ============================================
-function PublicLandingPage({ supplyItems, demandItems, loading, categories }: {
+function PublicLandingPage({ supplyItems, demandItems, featuredItems, loading, categories }: {
   supplyItems: PublicItem[];
   demandItems: PublicItem[];
+  featuredItems: Item[];
   loading: boolean;
   categories: DisplayCategory[];
 }) {
@@ -292,6 +293,70 @@ function PublicLandingPage({ supplyItems, demandItems, loading, categories }: {
           </Link>
         </div>
       </section>
+
+      {/* Featured Items - إعلانات مميزة */}
+      {featuredItems.length > 0 && (
+        <section className="bg-gradient-to-l from-amber-50 to-yellow-50 py-10">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-400 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+                  ⭐
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">إعلانات مميزة</h2>
+                  <p className="text-amber-700 text-sm">إعلانات مروّجة من البائعين</p>
+                </div>
+              </div>
+              <Link href="/promote" className="text-amber-600 text-sm font-medium hover:text-amber-700 flex items-center gap-1">
+                روّج إعلانك
+                <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {featuredItems.map((item) => (
+                <Link key={item.id} href={`/items/${item.id}`} className="group block">
+                  <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden border-2 border-amber-200 relative">
+                    {/* Featured Badge */}
+                    <div className="absolute top-2 right-2 z-10">
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                        item.promotionTier === 'GOLD' ? 'bg-amber-500 text-white' :
+                        item.promotionTier === 'PREMIUM' ? 'bg-gray-400 text-white' :
+                        'bg-orange-500 text-white'
+                      }`}>
+                        {item.promotionTier === 'GOLD' ? '👑 ذهبي' :
+                         item.promotionTier === 'PREMIUM' ? '⭐ فضي' :
+                         '🌟 مميز'}
+                      </span>
+                    </div>
+                    <div className="relative h-36 bg-gray-100">
+                      {item.images && item.images.length > 0 ? (
+                        <img
+                          src={item.images[0].url}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-100 to-yellow-100">
+                          <span className="text-4xl opacity-30">⭐</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <div className="text-amber-600 font-bold text-sm mb-1">
+                        {(item.estimatedValue || 0).toLocaleString('ar-EG')} ج.م
+                      </div>
+                      <h3 className="text-gray-800 text-sm line-clamp-2 leading-snug">{item.title}</h3>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Items by Category - Supply */}
       <section className="max-w-7xl mx-auto px-4 py-8">
@@ -472,10 +537,11 @@ function PublicLandingPage({ supplyItems, demandItems, loading, categories }: {
 // ============================================
 // لوحة التحكم للمستخدمين - User Dashboard
 // ============================================
-function UserDashboard({ user, supplyItems, demandItems, loading }: {
+function UserDashboard({ user, supplyItems, demandItems, featuredItems, loading }: {
   user: any;
   supplyItems: PublicItem[];
   demandItems: PublicItem[];
+  featuredItems: Item[];
   loading: boolean;
 }) {
   return (
@@ -590,6 +656,57 @@ function UserDashboard({ user, supplyItems, demandItems, loading }: {
         </div>
       </section>
 
+      {/* Featured Items - إعلانات مميزة */}
+      {featuredItems.length > 0 && (
+        <section className="bg-gradient-to-l from-amber-50 to-yellow-50 py-6">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">⭐</span>
+                <h2 className="text-lg font-bold text-gray-800">إعلانات مميزة</h2>
+              </div>
+              <Link href="/promote" className="text-amber-600 text-sm font-medium">روّج إعلانك ←</Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {featuredItems.slice(0, 6).map((item) => (
+                <Link key={item.id} href={`/items/${item.id}`} className="group block">
+                  <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden border-2 border-amber-200 relative">
+                    <div className="absolute top-2 right-2 z-10">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        item.promotionTier === 'GOLD' ? 'bg-amber-500 text-white' :
+                        item.promotionTier === 'PREMIUM' ? 'bg-gray-400 text-white' :
+                        'bg-orange-500 text-white'
+                      }`}>
+                        {item.promotionTier === 'GOLD' ? '👑' : item.promotionTier === 'PREMIUM' ? '⭐' : '🌟'}
+                      </span>
+                    </div>
+                    <div className="h-32 bg-gray-100">
+                      {item.images && item.images.length > 0 ? (
+                        <img
+                          src={item.images[0].url}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-100 to-yellow-100">
+                          <span className="text-3xl opacity-30">⭐</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <div className="text-amber-600 font-bold text-sm mb-1">
+                        {(item.estimatedValue || 0).toLocaleString('ar-EG')} ج.م
+                      </div>
+                      <h3 className="text-gray-800 text-sm line-clamp-1">{item.title}</h3>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Latest in Market */}
       <section className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-4">
@@ -630,6 +747,7 @@ export default function Home() {
   const { user, loading: authLoading } = useAuth();
   const [supplyItems, setSupplyItems] = useState<PublicItem[]>([]);
   const [demandItems, setDemandItems] = useState<PublicItem[]>([]);
+  const [featuredItems, setFeaturedItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<DisplayCategory[]>(DEFAULT_CATEGORIES);
   const [loading, setLoading] = useState(true);
 
@@ -647,6 +765,16 @@ export default function Home() {
             .filter((cat: Category) => !cat.parentId)
             .map(transformCategory);
           setCategories(parentCategories.length > 0 ? parentCategories : DEFAULT_CATEGORIES);
+        }
+
+        // Fetch featured items
+        try {
+          const featuredResponse = await getFeaturedItems({ limit: 6 });
+          if (featuredResponse.success && featuredResponse.data?.items) {
+            setFeaturedItems(featuredResponse.data.items);
+          }
+        } catch (featuredError) {
+          console.log('Failed to fetch featured items:', featuredError);
         }
 
         // Try inventory API first
@@ -718,8 +846,8 @@ export default function Home() {
   }
 
   if (user) {
-    return <UserDashboard user={user} supplyItems={supplyItems} demandItems={demandItems} loading={loading} />;
+    return <UserDashboard user={user} supplyItems={supplyItems} demandItems={demandItems} featuredItems={featuredItems} loading={loading} />;
   }
 
-  return <PublicLandingPage supplyItems={supplyItems} demandItems={demandItems} loading={loading} categories={categories} />;
+  return <PublicLandingPage supplyItems={supplyItems} demandItems={demandItems} featuredItems={featuredItems} loading={loading} categories={categories} />;
 }
