@@ -135,7 +135,7 @@ const Popup = dynamic(
 
 // Marker cluster for better performance with many items
 function ItemMarker({ item }: { item: Item }) {
-  const [icon, setIcon] = useState<L.DivIcon | null>(null);
+  const [icon, setIcon] = useState<any>(null);
 
   useEffect(() => {
     // Create icon on client side only
@@ -237,7 +237,7 @@ function GovernorateMarker({
   itemCount: number;
   onClick: () => void;
 }) {
-  const [icon, setIcon] = useState<L.DivIcon | null>(null);
+  const [icon, setIcon] = useState<any>(null);
   const coords = GOVERNORATE_COORDS[governorate];
 
   useEffect(() => {

@@ -1,7 +1,5 @@
 'use client';
 
-import L from 'leaflet';
-
 // Category color mapping
 const CATEGORY_COLORS: Record<string, string> = {
   'electronics': '#3B82F6', // blue
@@ -25,7 +23,10 @@ export const getCategoryColor = (categorySlug?: string): string => {
 };
 
 // Create custom marker icon
-export const createMarkerIcon = (color: string = '#059669', size: 'small' | 'medium' | 'large' = 'medium'): L.DivIcon => {
+export const createMarkerIcon = (color: string = '#059669', size: 'small' | 'medium' | 'large' = 'medium') => {
+  // Import L dynamically to avoid SSR issues
+  const L = require('leaflet');
+
   const sizes = {
     small: { width: 24, height: 32, fontSize: 12 },
     medium: { width: 32, height: 42, fontSize: 14 },
@@ -56,7 +57,10 @@ export const createMarkerIcon = (color: string = '#059669', size: 'small' | 'med
 };
 
 // Create cluster icon for governorate
-export const createClusterIcon = (count: number, color: string = '#059669'): L.DivIcon => {
+export const createClusterIcon = (count: number, color: string = '#059669') => {
+  // Import L dynamically to avoid SSR issues
+  const L = require('leaflet');
+
   const size = count > 50 ? 56 : count > 20 ? 48 : count > 10 ? 42 : 36;
 
   return L.divIcon({
@@ -90,7 +94,10 @@ export const createClusterIcon = (count: number, color: string = '#059669'): L.D
 };
 
 // Create governorate label icon
-export const createGovernorateIcon = (name: string, count: number): L.DivIcon => {
+export const createGovernorateIcon = (name: string, count: number) => {
+  // Import L dynamically to avoid SSR issues
+  const L = require('leaflet');
+
   const baseSize = 48;
   const extraSize = Math.min(count * 0.5, 20);
   const size = baseSize + extraSize;
@@ -159,7 +166,10 @@ export const createItemIcon = (
   imageUrl?: string,
   categorySlug?: string,
   isFeatured?: boolean
-): L.DivIcon => {
+) => {
+  // Import L dynamically to avoid SSR issues
+  const L = require('leaflet');
+
   const color = getCategoryColor(categorySlug);
   const size = isFeatured ? 48 : 40;
   const borderColor = isFeatured ? '#D4AF37' : 'white';
