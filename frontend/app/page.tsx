@@ -60,13 +60,14 @@ const transformCategory = (cat: Category): DisplayCategory => {
 // ============================================
 function SearchBar() {
   const [query, setQuery] = useState('');
-  const [location, setLocation] = useState('');
+  const [governorate, setGovernorate] = useState('');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (query.trim()) {
-      window.location.href = `/items?search=${encodeURIComponent(query)}${location ? `&location=${encodeURIComponent(location)}` : ''}`;
-    }
+    const params = new URLSearchParams();
+    if (query.trim()) params.set('search', query);
+    if (governorate) params.set('governorate', governorate);
+    window.location.href = `/items${params.toString() ? '?' + params.toString() : ''}`;
   };
 
   return (
@@ -83,16 +84,38 @@ function SearchBar() {
         </div>
         <div className="flex gap-2">
           <select
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            value={governorate}
+            onChange={(e) => setGovernorate(e.target.value)}
             className="px-4 py-3 rounded-xl outline-none text-gray-700 bg-gray-50 border-0 min-w-[140px]"
           >
             <option value="">كل مصر</option>
             <option value="cairo">القاهرة</option>
             <option value="giza">الجيزة</option>
             <option value="alexandria">الإسكندرية</option>
-            <option value="dakahlia">الدقهلية</option>
+            <option value="qalyubia">القليوبية</option>
             <option value="sharqia">الشرقية</option>
+            <option value="dakahlia">الدقهلية</option>
+            <option value="gharbia">الغربية</option>
+            <option value="menoufia">المنوفية</option>
+            <option value="beheira">البحيرة</option>
+            <option value="kafr-el-sheikh">كفر الشيخ</option>
+            <option value="damietta">دمياط</option>
+            <option value="port-said">بورسعيد</option>
+            <option value="ismailia">الإسماعيلية</option>
+            <option value="suez">السويس</option>
+            <option value="red-sea">البحر الأحمر</option>
+            <option value="south-sinai">جنوب سيناء</option>
+            <option value="north-sinai">شمال سيناء</option>
+            <option value="fayoum">الفيوم</option>
+            <option value="beni-suef">بني سويف</option>
+            <option value="minya">المنيا</option>
+            <option value="assiut">أسيوط</option>
+            <option value="sohag">سوهاج</option>
+            <option value="qena">قنا</option>
+            <option value="luxor">الأقصر</option>
+            <option value="aswan">أسوان</option>
+            <option value="matrouh">مطروح</option>
+            <option value="new-valley">الوادي الجديد</option>
           </select>
           <button
             type="submit"

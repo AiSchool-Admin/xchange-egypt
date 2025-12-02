@@ -344,12 +344,15 @@ export const searchItems = async (
 
   // Build where clause
   const where: any = {};
+  const andConditions: any[] = [];
 
   if (search) {
-    where.OR = [
-      { title: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } },
-    ];
+    andConditions.push({
+      OR: [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ],
+    });
   }
 
   if (categoryId) {
@@ -365,8 +368,14 @@ export const searchItems = async (
   }
 
   // Location filtering - hierarchical (governorate > city > district)
+  // Use flexible matching to support both Arabic and English names
   if (governorate) {
-    where.governorate = governorate;
+    andConditions.push({
+      OR: [
+        { governorate: { contains: governorate, mode: 'insensitive' } },
+        { location: { contains: governorate, mode: 'insensitive' } },
+      ],
+    });
   }
 
   // City and district filtering via location field (contains search)
@@ -376,6 +385,11 @@ export const searchItems = async (
 
   if (district) {
     where.location = { contains: district, mode: 'insensitive' };
+  }
+
+  // Combine AND conditions
+  if (andConditions.length > 0) {
+    where.AND = andConditions;
   }
 
   // Price range filtering (using estimatedValue field)
@@ -544,8 +558,16 @@ export const getCategoryItems = async (
     where.condition = condition;
   }
 
+  // Location filtering - flexible matching for governorate
   if (governorate) {
-    where.governorate = governorate;
+    where.AND = [
+      {
+        OR: [
+          { governorate: { contains: governorate, mode: 'insensitive' } },
+          { location: { contains: governorate, mode: 'insensitive' } },
+        ],
+      },
+    ];
   }
 
   // Calculate pagination
