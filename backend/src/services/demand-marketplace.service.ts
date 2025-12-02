@@ -147,7 +147,7 @@ export const getPublicDemandItems = async (
         barterOffer: {
           include: {
             initiator: {
-              select: { id: true, firstName: true, lastName: true },
+              select: { id: true, fullName: true },
             },
           },
         },
@@ -160,7 +160,7 @@ export const getPublicDemandItems = async (
       id: req.id,
       type: 'BARTER_REQUEST' as DemandType,
       userId: req.barterOffer.initiatorId,
-      userName: `${req.barterOffer.initiator.firstName} ${req.barterOffer.initiator.lastName}`,
+      userName: req.barterOffer.initiator.fullName,
       title: req.description?.substring(0, 100) || 'طلب مقايضة',
       description: req.description,
       categoryId: req.categoryId || undefined,
@@ -192,10 +192,13 @@ export const getPublicDemandItems = async (
       status: 'ACTIVE',
       endDate: { gt: new Date() },
       ...(excludeUserId && { buyerId: { not: excludeUserId } }),
-      ...(governorate && { governorate }),
-      ...(city && { city }),
-      ...(district && { district }),
     };
+
+    // Location filter (ReverseAuction uses 'location' field)
+    if (governorate || city || district) {
+      const locationSearch = [governorate, city, district].filter(Boolean).join(' ');
+      reverseWhere.location = { contains: locationSearch, mode: 'insensitive' };
+    }
 
     // Category filter
     if (categoryId) reverseWhere.categoryId = categoryId;
@@ -224,7 +227,7 @@ export const getPublicDemandItems = async (
       where: reverseWhere,
       include: {
         buyer: {
-          select: { id: true, firstName: true, lastName: true },
+          select: { id: true, fullName: true },
         },
         category: true,
       },
@@ -235,7 +238,7 @@ export const getPublicDemandItems = async (
       id: auction.id,
       type: 'REVERSE_AUCTION' as DemandType,
       userId: auction.buyerId,
-      userName: `${auction.buyer.firstName} ${auction.buyer.lastName}`,
+      userName: auction.buyer.fullName,
       title: auction.title,
       description: auction.description || '',
       categoryId: auction.categoryId,
@@ -244,10 +247,7 @@ export const getPublicDemandItems = async (
       maxPrice: auction.maxBudget || undefined,
       condition: auction.condition || undefined,
       keywords: [],
-      governorate: auction.governorate || undefined,
-      city: auction.city || undefined,
-      district: auction.district || undefined,
-      marketType: auction.marketType || undefined,
+      governorate: auction.location || undefined, // ReverseAuction uses location field
       status: auction.status,
       createdAt: auction.startDate,
       updatedAt: auction.updatedAt || auction.startDate,
@@ -319,7 +319,7 @@ export const findMatchingSupplyItems = async (
     include: {
       category: true,
       seller: {
-        select: { id: true, firstName: true, lastName: true },
+        select: { id: true, fullName: true },
       },
     },
   });
@@ -403,7 +403,7 @@ export const notifyMatchingDemandUsers = async (
       type: 'SMART_MATCH_FOUND',
       title: 'تطابق جديد!',
       message,
-      data: {
+      metadata: {
         supplyItemId: supplyItem.id,
         demandItemId: demand.id,
         demandType: demand.type,
@@ -446,7 +446,7 @@ export const notifyMatchingSupplyUsers = async (
       type: 'SMART_MATCH_FOUND',
       title: 'فرصة جديدة!',
       message,
-      data: {
+      metadata: {
         supplyItemId: supply.id,
         demandItemId: demandItem.id,
         demandType: demandItem.type,

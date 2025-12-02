@@ -8,7 +8,7 @@
 
 import { Router, Request, Response } from 'express';
 import { getPublicDemandItems, findMatchingSupplyItems, DemandSearchParams } from '../services/demand-marketplace.service';
-import { authenticate, optionalAuthenticate } from '../middleware/auth';
+import { authenticate, optionalAuth } from '../middleware/auth';
 
 const router = Router();
 
@@ -17,7 +17,7 @@ const router = Router();
  * @desc    Get public demand items (barter requests + reverse auctions)
  * @access  Public
  */
-router.get('/', optionalAuthenticate, async (req: Request, res: Response) => {
+router.get('/', optionalAuth, async (req: Request, res: Response) => {
   try {
     const {
       categoryId,
@@ -79,7 +79,7 @@ router.get('/', optionalAuthenticate, async (req: Request, res: Response) => {
  * @desc    Get matching supply items for a demand item
  * @access  Public
  */
-router.get('/:id/matches', optionalAuthenticate, async (req: Request, res: Response) => {
+router.get('/:id/matches', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { limit = '10' } = req.query;

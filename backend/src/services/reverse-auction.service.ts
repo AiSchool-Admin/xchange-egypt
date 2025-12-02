@@ -164,10 +164,7 @@ export const createReverseAuction = async (
     condition: reverseAuction.condition || undefined,
     targetPrice: reverseAuction.targetPrice || undefined,
     maxBudget: reverseAuction.maxBudget || undefined,
-    governorate: reverseAuction.governorate || undefined,
-    city: reverseAuction.city || undefined,
-    district: reverseAuction.district || undefined,
-    marketType: reverseAuction.marketType || undefined,
+    governorate: reverseAuction.location || undefined, // ReverseAuction uses location field
     startDate: reverseAuction.startDate,
     endDate: reverseAuction.endDate,
     timestamp: new Date(),
