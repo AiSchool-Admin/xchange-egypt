@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { getMyItems, Item } from '@/lib/api/items';
+import { getMyItems, Item, promoteItem } from '@/lib/api/items';
 
 interface PromotionPlan {
   id: string;
@@ -121,10 +121,40 @@ export default function PromotePage() {
     setStep('confirm');
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const handleConfirm = async () => {
-    // In a real implementation, this would process payment and update the item
-    alert('سيتم تفعيل الترويج قريباً! شكراً لك.');
-    router.push('/inventory');
+    if (!selectedItem || !selectedPlan) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Map plan tier to API tier
+      const tierMap: Record<string, string> = {
+        bronze: 'FEATURED',
+        silver: 'PREMIUM',
+        gold: 'GOLD',
+      };
+
+      const response = await promoteItem(selectedItem.id, {
+        tier: tierMap[selectedPlan.tier] as any,
+        durationDays: selectedPlan.duration,
+      });
+
+      if (response.success) {
+        alert(`تم ترويج إعلانك بنجاح! 🎉\n\nسيظهر في قسم الإعلانات المميزة لمدة ${selectedPlan.duration} أيام.`);
+        router.push('/inventory');
+      } else {
+        setError('حدث خطأ أثناء الترويج. حاول مرة أخرى.');
+      }
+    } catch (err: any) {
+      console.error('Promotion error:', err);
+      setError(err.message || 'حدث خطأ أثناء الترويج. حاول مرة أخرى.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (authLoading || loading) {
@@ -385,12 +415,27 @@ export default function PromotePage() {
                   </div>
                 </div>
 
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-center">
+                    {error}
+                  </div>
+                )}
+
                 {/* Confirm Button */}
                 <button
                   onClick={handleConfirm}
-                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-400 text-gray-900 rounded-xl font-bold hover:from-amber-400 hover:to-yellow-300 transition"
+                  disabled={isSubmitting}
+                  className="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-400 text-gray-900 rounded-xl font-bold hover:from-amber-400 hover:to-yellow-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  تأكيد الترويج
+                  {isSubmitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-5 h-5 border-2 border-gray-900 border-t-transparent rounded-full animate-spin"></span>
+                      جاري الترويج...
+                    </span>
+                  ) : (
+                    'تأكيد الترويج'
+                  )}
                 </button>
 
                 <p className="text-center text-sm text-gray-500 mt-4">
