@@ -377,34 +377,42 @@ export const notifyMatchingDemandUsers = async (
 
   const notifiedUsers = new Set<string>();
 
+  const itemValue = supplyItem.estimatedValue.toLocaleString('ar-EG');
+
   for (const demand of matchingDemands) {
     if (notifiedUsers.has(demand.userId)) continue;
     notifiedUsers.add(demand.userId);
 
     let message = '';
     let actionUrl = '';
+    let title = '';
 
     switch (demand.type) {
       case 'BARTER_REQUEST':
-        message = `سلعة جديدة "${supplyItem.title}" تطابق ما تبحث عنه للمقايضة!`;
+        title = '🔄 تطابق مقايضة جديد!';
+        message = `سلعة "${supplyItem.title}" بقيمة ${itemValue} ج.م متاحة للمقايضة وتطابق طلبك!`;
         actionUrl = `/items/${supplyItem.id}`;
         break;
       case 'REVERSE_AUCTION':
-        message = `سلعة جديدة "${supplyItem.title}" تطابق طلبك في المناقصة!`;
+        title = '📢 عرض يطابق مناقصتك!';
+        message = `سلعة "${supplyItem.title}" بقيمة ${itemValue} ج.م تطابق طلبك في المناقصة!`;
         actionUrl = `/reverse-auctions/${demand.reverseAuctionId}`;
         break;
       default:
-        message = `سلعة جديدة "${supplyItem.title}" تطابق اهتماماتك!`;
+        title = '✨ سلعة تطابق اهتماماتك!';
+        message = `سلعة "${supplyItem.title}" بقيمة ${itemValue} ج.م تطابق ما تبحث عنه!`;
         actionUrl = `/items/${supplyItem.id}`;
     }
 
     await createNotification({
       userId: demand.userId,
       type: 'SMART_MATCH_FOUND',
-      title: 'تطابق جديد!',
+      title,
       message,
       metadata: {
         supplyItemId: supplyItem.id,
+        supplyItemTitle: supplyItem.title,
+        supplyItemValue: supplyItem.estimatedValue,
         demandItemId: demand.id,
         demandType: demand.type,
         matchType: 'SUPPLY_MATCHES_DEMAND',
@@ -424,32 +432,50 @@ export const notifyMatchingSupplyUsers = async (
 
   const notifiedUsers = new Set<string>();
 
+  const demandBudget = demandItem.maxPrice
+    ? demandItem.maxPrice.toLocaleString('ar-EG')
+    : null;
+
   for (const supply of matchingSupply) {
     if (notifiedUsers.has(supply.sellerId)) continue;
     notifiedUsers.add(supply.sellerId);
 
     let message = '';
+    let title = '';
+    const supplyValue = supply.estimatedValue.toLocaleString('ar-EG');
 
     switch (demandItem.type) {
       case 'BARTER_REQUEST':
-        message = `مستخدم يبحث عن سلعة تشبه "${supply.title}" للمقايضة!`;
+        title = '🔄 فرصة مقايضة جديدة!';
+        message = demandBudget
+          ? `مستخدم يبحث عن سلعة تشبه "${supply.title}" (${supplyValue} ج.م) للمقايضة - ميزانيته حتى ${demandBudget} ج.م`
+          : `مستخدم يبحث عن سلعة تشبه "${supply.title}" (${supplyValue} ج.م) للمقايضة!`;
         break;
       case 'REVERSE_AUCTION':
-        message = `مناقصة جديدة تطابق سلعتك "${supply.title}"!`;
+        title = '📢 مناقصة تطابق سلعتك!';
+        message = demandBudget
+          ? `مناقصة جديدة تطابق سلعتك "${supply.title}" (${supplyValue} ج.م) - الميزانية حتى ${demandBudget} ج.م`
+          : `مناقصة جديدة تطابق سلعتك "${supply.title}" (${supplyValue} ج.م)!`;
         break;
       default:
-        message = `طلب جديد يطابق سلعتك "${supply.title}"!`;
+        title = '✨ طلب جديد يطابق سلعتك!';
+        message = demandBudget
+          ? `طلب جديد يطابق سلعتك "${supply.title}" (${supplyValue} ج.م) - الميزانية حتى ${demandBudget} ج.م`
+          : `طلب جديد يطابق سلعتك "${supply.title}" (${supplyValue} ج.م)!`;
     }
 
     await createNotification({
       userId: supply.sellerId,
       type: 'SMART_MATCH_FOUND',
-      title: 'فرصة جديدة!',
+      title,
       message,
       metadata: {
         supplyItemId: supply.id,
+        supplyItemTitle: supply.title,
+        supplyItemValue: supply.estimatedValue,
         demandItemId: demandItem.id,
         demandType: demandItem.type,
+        demandBudget: demandItem.maxPrice,
         matchType: 'DEMAND_MATCHES_SUPPLY',
       },
       actionUrl: demandItem.type === 'REVERSE_AUCTION'

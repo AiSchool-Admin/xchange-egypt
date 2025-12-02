@@ -91,6 +91,7 @@ export const createBarterOffer = async (
   }
 
   let offeredBundleValue = offeredCashAmount;
+  let offeredItemsDetails: { title: string; estimatedValue: number }[] = [];
 
   if (offeredItemIds && offeredItemIds.length > 0) {
     // Verify offered items exist and belong to initiator
@@ -122,6 +123,12 @@ export const createBarterOffer = async (
 
     // Calculate offered bundle value including items
     offeredBundleValue += offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0);
+
+    // Store item details for notification
+    offeredItemsDetails = offeredItems.map(item => ({
+      title: item.title,
+      estimatedValue: item.estimatedValue,
+    }));
   }
 
   // Build preference sets data if provided
@@ -235,34 +242,56 @@ export const createBarterOffer = async (
 
   // Send notification to recipient (if specified)
   if (barterOffer && recipientId) {
+    // Build item details for notification
+    const itemsText = offeredItemsDetails.length > 0
+      ? offeredItemsDetails.map(item => `"${item.title}" (${item.estimatedValue.toLocaleString('ar-EG')} ج.م)`).join(' و ')
+      : '';
+    const totalValue = offeredBundleValue.toLocaleString('ar-EG');
+
     await createNotification({
       userId: recipientId,
       type: 'BARTER_OFFER_RECEIVED',
-      title: 'عرض مقايضة جديد',
-      message: `${barterOffer.initiator?.fullName || 'مستخدم'} أرسل لك عرض مقايضة`,
+      title: 'عرض مقايضة جديد 🔄',
+      message: itemsText
+        ? `${barterOffer.initiator?.fullName || 'مستخدم'} يعرض عليك: ${itemsText} - إجمالي القيمة: ${totalValue} ج.م`
+        : `${barterOffer.initiator?.fullName || 'مستخدم'} أرسل لك عرض مقايضة بقيمة ${totalValue} ج.م`,
       priority: 'HIGH',
       entityType: 'BARTER_OFFER',
       entityId: barterOffer.id,
       actionUrl: `/barter/respond/${barterOffer.id}`,
       actionText: 'عرض العرض',
+      metadata: {
+        offeredItems: offeredItemsDetails,
+        totalValue: offeredBundleValue,
+        initiatorName: barterOffer.initiator?.fullName,
+      },
     });
   }
 
   // Send notification to initiator confirming their offer was created
   if (barterOffer) {
     const recipientName = barterOffer.recipient?.fullName || 'المستخدم';
+    const itemsText = offeredItemsDetails.length > 0
+      ? offeredItemsDetails.map(item => `"${item.title}"`).join(' و ')
+      : '';
+    const totalValue = offeredBundleValue.toLocaleString('ar-EG');
+
     await createNotification({
       userId: initiatorId,
       type: 'BARTER_OFFER_CREATED',
-      title: 'تم إنشاء عرض المقايضة',
+      title: 'تم إنشاء عرض المقايضة ✅',
       message: recipientId
-        ? `تم إرسال عرض المقايضة إلى ${recipientName} بنجاح`
-        : 'تم إنشاء عرض المقايضة بنجاح وهو الآن مفتوح للجميع',
+        ? `تم إرسال عرض المقايضة (${itemsText}) إلى ${recipientName} بقيمة ${totalValue} ج.م`
+        : `تم إنشاء عرض المقايضة (${itemsText}) بقيمة ${totalValue} ج.م - مفتوح للجميع`,
       priority: 'MEDIUM',
       entityType: 'BARTER_OFFER',
       entityId: barterOffer.id,
       actionUrl: `/barter/my-offers`,
       actionText: 'عرض التفاصيل',
+      metadata: {
+        offeredItems: offeredItemsDetails,
+        totalValue: offeredBundleValue,
+      },
     });
 
     // Emit barter offer created event for smart matching
