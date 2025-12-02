@@ -161,7 +161,7 @@ export default function ItemDetailsPage() {
   }
 
   const images = item.images && item.images.length > 0 ? item.images : [];
-  const isOwner = user?.id === item.seller.id;
+  const isOwner = user?.id === item.seller?.id;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -302,7 +302,7 @@ export default function ItemDetailsPage() {
                         router.push('/login');
                         return;
                       }
-                      router.push(`/messages?userId=${item.seller.id}&itemId=${item.id}`);
+                      router.push(`/messages?userId=${item.seller?.id}&itemId=${item.id}`);
                     }}
                     className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
                   >
@@ -335,26 +335,28 @@ export default function ItemDetailsPage() {
               )}
 
               {/* Seller Info */}
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="font-semibold mb-3">Seller Information</h3>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold text-lg">
-                    {item.seller.fullName.charAt(0)}
+              {item.seller && (
+                <div className="mt-6 pt-6 border-t">
+                  <h3 className="font-semibold mb-3">Seller Information</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold text-lg">
+                      {item.seller.fullName?.charAt(0) || 'U'}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold">{item.seller.fullName || 'Unknown'}</p>
+                      <p className="text-sm text-gray-600">
+                        {item.seller.userType === 'BUSINESS' ? 'Business' : 'Individual'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold">{item.seller.fullName}</p>
-                    <p className="text-sm text-gray-600">
-                      {item.seller.userType === 'BUSINESS' ? 'Business' : 'Individual'}
-                    </p>
-                  </div>
+                  <Link
+                    href={`/users/${item.seller.id}`}
+                    className="mt-3 block text-center text-purple-600 hover:text-purple-700 font-semibold"
+                  >
+                    View Profile →
+                  </Link>
                 </div>
-                <Link
-                  href={`/users/${item.seller.id}`}
-                  className="mt-3 block text-center text-purple-600 hover:text-purple-700 font-semibold"
-                >
-                  View Profile →
-                </Link>
-              </div>
+              )}
 
               {/* Safety Tips */}
               <div className="mt-6 pt-6 border-t">

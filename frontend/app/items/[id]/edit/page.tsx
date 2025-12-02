@@ -52,7 +52,7 @@ export default function EditItemPage() {
       const item = response.data;
 
       // Check ownership
-      if (item.seller.id !== user?.id) {
+      if (item.seller?.id !== user?.id) {
         setError('You do not have permission to edit this item');
         router.push(`/items/${params.id}`);
         return;

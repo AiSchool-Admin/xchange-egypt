@@ -159,7 +159,7 @@ export default function AuctionDetailsPage() {
   const isEnded = new Date(auction.endTime) < new Date();
   const hasStarted = new Date(auction.startTime) < new Date();
   const isActive = hasStarted && !isEnded;
-  const isSeller = user?.id === auction.item.seller.id;
+  const isSeller = user?.id === auction.item.seller?.id;
   const minBid = auction.currentPrice + 10;
 
   return (
@@ -288,8 +288,8 @@ export default function AuctionDetailsPage() {
 
               <div className="border-t pt-6 mt-6">
                 <h2 className="text-lg font-semibold mb-2">Seller</h2>
-                <p className="text-gray-700">{auction.item.seller.fullName}</p>
-                <p className="text-sm text-gray-600 capitalize">{auction.item.seller.userType}</p>
+                <p className="text-gray-700">{auction.item.seller?.fullName || 'Unknown'}</p>
+                <p className="text-sm text-gray-600 capitalize">{auction.item.seller?.userType || 'Individual'}</p>
               </div>
             </div>
 

@@ -494,9 +494,9 @@ export default function ItemsPage() {
                         <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-sm">
                           <div className="flex items-center gap-2 text-gray-500">
                             <div className="w-6 h-6 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xs font-bold">
-                              {item.seller.fullName?.charAt(0).toUpperCase() || 'م'}
+                              {item.seller?.fullName?.charAt(0).toUpperCase() || 'م'}
                             </div>
-                            <span className="truncate max-w-[100px]">{item.seller.fullName}</span>
+                            <span className="truncate max-w-[100px]">{item.seller?.fullName || 'مستخدم'}</span>
                           </div>
                           <span className="text-emerald-600 font-bold group-hover:translate-x-[-4px] transition-transform">
                             عرض التفاصيل ←
