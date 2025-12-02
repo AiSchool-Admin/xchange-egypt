@@ -90,7 +90,7 @@ const findInterestedUsers = async (
   }
 
   // 3. Find users with item requests matching this item
-  const matchingItemRequests = await prisma.barterItemRequest.findMany({
+  const matchingItemRequests = await prisma.itemRequest.findMany({
     where: {
       OR: [
         { categoryId: item.categoryId },
