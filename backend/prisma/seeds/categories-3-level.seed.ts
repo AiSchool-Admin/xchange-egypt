@@ -403,6 +403,148 @@ const categories: CategoryData[] = [
       },
     ],
   },
+
+  // 9. Luxury Goods
+  {
+    nameEn: 'Luxury Goods',
+    nameAr: 'سلع فاخرة',
+    slug: 'luxury',
+    icon: '👑',
+    children: [
+      {
+        nameEn: 'Luxury Watches',
+        nameAr: 'ساعات فاخرة',
+        slug: 'luxury-watches',
+        children: [
+          { nameEn: 'Rolex', nameAr: 'رولكس', slug: 'rolex' },
+          { nameEn: 'Omega', nameAr: 'أوميغا', slug: 'omega' },
+          { nameEn: 'Cartier', nameAr: 'كارتييه', slug: 'cartier-watches' },
+          { nameEn: 'Patek Philippe', nameAr: 'باتيك فيليب', slug: 'patek-philippe' },
+          { nameEn: 'Other Brands', nameAr: 'ماركات أخرى', slug: 'other-luxury-watches' },
+        ],
+      },
+      {
+        nameEn: 'Jewelry',
+        nameAr: 'مجوهرات',
+        slug: 'jewelry',
+        children: [
+          { nameEn: 'Rings', nameAr: 'خواتم', slug: 'rings' },
+          { nameEn: 'Necklaces', nameAr: 'قلادات', slug: 'necklaces' },
+          { nameEn: 'Bracelets', nameAr: 'أساور', slug: 'bracelets' },
+          { nameEn: 'Earrings', nameAr: 'أقراط', slug: 'earrings' },
+          { nameEn: 'Gold', nameAr: 'ذهب', slug: 'gold' },
+          { nameEn: 'Diamonds', nameAr: 'ألماس', slug: 'diamonds' },
+        ],
+      },
+      {
+        nameEn: 'Luxury Bags',
+        nameAr: 'حقائب فاخرة',
+        slug: 'luxury-bags',
+        children: [
+          { nameEn: 'Louis Vuitton', nameAr: 'لويس فيتون', slug: 'louis-vuitton' },
+          { nameEn: 'Gucci', nameAr: 'غوتشي', slug: 'gucci' },
+          { nameEn: 'Chanel', nameAr: 'شانيل', slug: 'chanel' },
+          { nameEn: 'Hermès', nameAr: 'هيرميس', slug: 'hermes' },
+          { nameEn: 'Other Brands', nameAr: 'ماركات أخرى', slug: 'other-luxury-bags' },
+        ],
+      },
+      {
+        nameEn: 'Perfumes',
+        nameAr: 'عطور أصلية',
+        slug: 'perfumes',
+        children: [
+          { nameEn: 'Men\'s Perfumes', nameAr: 'عطور رجالية', slug: 'mens-perfumes' },
+          { nameEn: 'Women\'s Perfumes', nameAr: 'عطور نسائية', slug: 'womens-perfumes' },
+          { nameEn: 'Unisex', nameAr: 'عطور مشتركة', slug: 'unisex-perfumes' },
+          { nameEn: 'Arabian Oud', nameAr: 'عود عربي', slug: 'arabian-oud' },
+        ],
+      },
+    ],
+  },
+
+  // 10. Art & Collectibles
+  {
+    nameEn: 'Art & Collectibles',
+    nameAr: 'فنون ومقتنيات',
+    slug: 'art-collectibles',
+    icon: '🖼️',
+    children: [
+      {
+        nameEn: 'Paintings',
+        nameAr: 'لوحات فنية',
+        slug: 'paintings',
+        children: [
+          { nameEn: 'Oil Paintings', nameAr: 'لوحات زيتية', slug: 'oil-paintings' },
+          { nameEn: 'Watercolor', nameAr: 'ألوان مائية', slug: 'watercolor' },
+          { nameEn: 'Modern Art', nameAr: 'فن حديث', slug: 'modern-art' },
+          { nameEn: 'Egyptian Art', nameAr: 'فن مصري', slug: 'egyptian-art' },
+        ],
+      },
+      {
+        nameEn: 'Antiques',
+        nameAr: 'تحف أثرية',
+        slug: 'antiques',
+        children: [
+          { nameEn: 'Furniture', nameAr: 'أثاث أثري', slug: 'antique-furniture' },
+          { nameEn: 'Pottery', nameAr: 'فخار', slug: 'pottery' },
+          { nameEn: 'Clocks', nameAr: 'ساعات أثرية', slug: 'antique-clocks' },
+          { nameEn: 'Decorative Items', nameAr: 'ديكورات أثرية', slug: 'decorative-antiques' },
+        ],
+      },
+      {
+        nameEn: 'Coins & Currency',
+        nameAr: 'عملات ومسكوكات',
+        slug: 'coins-currency',
+        children: [
+          { nameEn: 'Ancient Coins', nameAr: 'عملات قديمة', slug: 'ancient-coins' },
+          { nameEn: 'Gold Coins', nameAr: 'عملات ذهبية', slug: 'gold-coins' },
+          { nameEn: 'Paper Money', nameAr: 'عملات ورقية', slug: 'paper-money' },
+          { nameEn: 'Foreign Currency', nameAr: 'عملات أجنبية', slug: 'foreign-currency' },
+        ],
+      },
+    ],
+  },
+
+  // 11. Real Estate (Luxury)
+  {
+    nameEn: 'Real Estate',
+    nameAr: 'عقارات',
+    slug: 'real-estate',
+    icon: '🏰',
+    children: [
+      {
+        nameEn: 'Luxury Apartments',
+        nameAr: 'شقق فاخرة',
+        slug: 'luxury-apartments',
+        children: [
+          { nameEn: 'Penthouse', nameAr: 'بنتهاوس', slug: 'penthouse' },
+          { nameEn: 'Duplex', nameAr: 'دوبلكس', slug: 'duplex' },
+          { nameEn: 'Smart Apartments', nameAr: 'شقق ذكية', slug: 'smart-apartments' },
+        ],
+      },
+      {
+        nameEn: 'Villas',
+        nameAr: 'فيلات',
+        slug: 'villas',
+        children: [
+          { nameEn: 'Standalone Villas', nameAr: 'فيلات مستقلة', slug: 'standalone-villas' },
+          { nameEn: 'Twin Houses', nameAr: 'توين هاوس', slug: 'twin-houses' },
+          { nameEn: 'Town Houses', nameAr: 'تاون هاوس', slug: 'town-houses' },
+          { nameEn: 'Palace', nameAr: 'قصور', slug: 'palace' },
+        ],
+      },
+      {
+        nameEn: 'Chalets & Resorts',
+        nameAr: 'شاليهات ومنتجعات',
+        slug: 'chalets-resorts',
+        children: [
+          { nameEn: 'North Coast', nameAr: 'الساحل الشمالي', slug: 'north-coast' },
+          { nameEn: 'Ain Sokhna', nameAr: 'العين السخنة', slug: 'ain-sokhna' },
+          { nameEn: 'Red Sea', nameAr: 'البحر الأحمر', slug: 'red-sea' },
+        ],
+      },
+    ],
+  },
 ];
 
 async function createCategoryHierarchy(

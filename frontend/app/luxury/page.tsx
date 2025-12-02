@@ -5,14 +5,16 @@ import Link from 'next/link';
 import { getItems, getLuxuryItems, Item } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 
-// Luxury categories with premium branding
+// Luxury categories with premium branding (matching database slugs)
 const LUXURY_CATEGORIES = [
-  { id: 'watches', nameAr: 'ساعات فاخرة', icon: '⌚', gradient: 'from-amber-600 to-yellow-500' },
+  { id: 'luxury-watches', nameAr: 'ساعات فاخرة', icon: '⌚', gradient: 'from-amber-600 to-yellow-500' },
   { id: 'jewelry', nameAr: 'مجوهرات', icon: '💎', gradient: 'from-purple-600 to-pink-500' },
-  { id: 'bags', nameAr: 'حقائب فاخرة', icon: '👜', gradient: 'from-rose-600 to-orange-500' },
+  { id: 'luxury-bags', nameAr: 'حقائب فاخرة', icon: '👜', gradient: 'from-rose-600 to-orange-500' },
   { id: 'cars', nameAr: 'سيارات فاخرة', icon: '🏎️', gradient: 'from-gray-700 to-gray-900' },
-  { id: 'art', nameAr: 'فنون وتحف', icon: '🖼️', gradient: 'from-teal-600 to-emerald-500' },
+  { id: 'paintings', nameAr: 'لوحات فنية', icon: '🖼️', gradient: 'from-teal-600 to-emerald-500' },
+  { id: 'antiques', nameAr: 'تحف أثرية', icon: '🏺', gradient: 'from-amber-700 to-orange-600' },
   { id: 'real-estate', nameAr: 'عقارات مميزة', icon: '🏰', gradient: 'from-blue-600 to-indigo-500' },
+  { id: 'perfumes', nameAr: 'عطور أصلية', icon: '🌸', gradient: 'from-pink-500 to-rose-400' },
 ];
 
 // Minimum price threshold for luxury items (in EGP)
