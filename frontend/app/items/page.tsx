@@ -112,6 +112,7 @@ export default function ItemsPage() {
 
       if (location.governorateId) {
         governorateFilter = getGovernorateNameAr(location.governorateId);
+        console.log('Governorate filter:', { id: location.governorateId, arabicName: governorateFilter });
         if (location.cityId) {
           cityFilter = getCityNameAr(location.governorateId, location.cityId);
           if (location.districtId) {
@@ -120,7 +121,7 @@ export default function ItemsPage() {
         }
       }
 
-      const response = await getItems({
+      const requestParams = {
         page,
         limit: 12,
         categoryId: selectedCategory || undefined,
@@ -132,7 +133,11 @@ export default function ItemsPage() {
         governorate: governorateFilter,
         city: cityFilter,
         district: districtFilter,
-      });
+      };
+      console.log('Items API request params:', requestParams);
+
+      const response = await getItems(requestParams);
+      console.log('Items API response:', response);
 
       setItems(response.data.items);
       setTotalPages(response.data.pagination.totalPages);
