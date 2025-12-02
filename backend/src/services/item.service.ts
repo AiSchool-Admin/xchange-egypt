@@ -6,6 +6,46 @@ import path from 'path';
 import fs from 'fs/promises';
 import prisma from '../lib/prisma';
 
+// Mapping of English governorate names to Arabic
+const GOVERNORATE_EN_TO_AR: Record<string, string> = {
+  'Cairo': 'القاهرة',
+  'cairo': 'القاهرة',
+  'Giza': 'الجيزة',
+  'giza': 'الجيزة',
+  'Alexandria': 'الإسكندرية',
+  'alexandria': 'الإسكندرية',
+  'Dakahlia': 'الدقهلية',
+  'Sharqia': 'الشرقية',
+  'Qalyubia': 'القليوبية',
+  'Gharbia': 'الغربية',
+  'Menoufia': 'المنوفية',
+  'Beheira': 'البحيرة',
+  'Kafr El Sheikh': 'كفر الشيخ',
+  'Damietta': 'دمياط',
+  'Port Said': 'بورسعيد',
+  'Ismailia': 'الإسماعيلية',
+  'Suez': 'السويس',
+  'North Sinai': 'شمال سيناء',
+  'South Sinai': 'جنوب سيناء',
+  'Red Sea': 'البحر الأحمر',
+  'Matrouh': 'مطروح',
+  'New Valley': 'الوادي الجديد',
+  'Fayoum': 'الفيوم',
+  'Beni Suef': 'بني سويف',
+  'Minya': 'المنيا',
+  'Assiut': 'أسيوط',
+  'Sohag': 'سوهاج',
+  'Qena': 'قنا',
+  'Luxor': 'الأقصر',
+  'Aswan': 'أسوان',
+};
+
+// Convert governorate to Arabic if it's in English
+const toArabicGovernorate = (governorate: string | undefined): string | undefined => {
+  if (!governorate) return undefined;
+  return GOVERNORATE_EN_TO_AR[governorate] || governorate;
+};
+
 // Types
 interface CreateItemData {
   title: string;
@@ -98,7 +138,7 @@ export const createItem = async (
     }
   }
 
-  // Get user's governorate as fallback
+  // Get user's governorate as fallback and convert to Arabic
   let governorate = itemData.governorate;
   if (!governorate) {
     const user = await prisma.user.findUnique({
@@ -107,6 +147,8 @@ export const createItem = async (
     });
     governorate = user?.governorate || undefined;
   }
+  // Convert to Arabic if in English
+  const arabicGovernorate = toArabicGovernorate(governorate);
 
   // Create the item
   const item = await prisma.item.create({
@@ -118,7 +160,7 @@ export const createItem = async (
       condition: itemData.condition,
       estimatedValue: itemData.estimatedValue,
       location: itemData.location,
-      governorate: governorate,
+      governorate: arabicGovernorate,
       images: processedImages,
       // Barter preferences
       desiredCategoryId: itemData.desiredCategoryId,

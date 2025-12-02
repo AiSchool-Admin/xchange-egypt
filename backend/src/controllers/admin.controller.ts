@@ -8,6 +8,69 @@ import * as matchingService from '../services/barter-matching.service';
 import { successResponse } from '../utils/response';
 import prisma from '../lib/prisma';
 
+// Mapping of English governorate names to Arabic
+const GOVERNORATE_EN_TO_AR: Record<string, string> = {
+  'Cairo': 'القاهرة',
+  'cairo': 'القاهرة',
+  'Giza': 'الجيزة',
+  'giza': 'الجيزة',
+  'Alexandria': 'الإسكندرية',
+  'alexandria': 'الإسكندرية',
+  'Dakahlia': 'الدقهلية',
+  'dakahlia': 'الدقهلية',
+  'Sharqia': 'الشرقية',
+  'sharqia': 'الشرقية',
+  'Qalyubia': 'القليوبية',
+  'qalyubia': 'القليوبية',
+  'Gharbia': 'الغربية',
+  'gharbia': 'الغربية',
+  'Menoufia': 'المنوفية',
+  'menoufia': 'المنوفية',
+  'Beheira': 'البحيرة',
+  'beheira': 'البحيرة',
+  'Kafr El Sheikh': 'كفر الشيخ',
+  'kafr-el-sheikh': 'كفر الشيخ',
+  'Damietta': 'دمياط',
+  'damietta': 'دمياط',
+  'Port Said': 'بورسعيد',
+  'port-said': 'بورسعيد',
+  'Ismailia': 'الإسماعيلية',
+  'ismailia': 'الإسماعيلية',
+  'Suez': 'السويس',
+  'suez': 'السويس',
+  'North Sinai': 'شمال سيناء',
+  'north-sinai': 'شمال سيناء',
+  'South Sinai': 'جنوب سيناء',
+  'south-sinai': 'جنوب سيناء',
+  'Red Sea': 'البحر الأحمر',
+  'red-sea': 'البحر الأحمر',
+  'Matrouh': 'مطروح',
+  'matrouh': 'مطروح',
+  'New Valley': 'الوادي الجديد',
+  'new-valley': 'الوادي الجديد',
+  'Fayoum': 'الفيوم',
+  'fayoum': 'الفيوم',
+  'Beni Suef': 'بني سويف',
+  'beni-suef': 'بني سويف',
+  'Minya': 'المنيا',
+  'minya': 'المنيا',
+  'Assiut': 'أسيوط',
+  'assiut': 'أسيوط',
+  'Sohag': 'سوهاج',
+  'sohag': 'سوهاج',
+  'Qena': 'قنا',
+  'qena': 'قنا',
+  'Luxor': 'الأقصر',
+  'luxor': 'الأقصر',
+  'Aswan': 'أسوان',
+  'aswan': 'أسوان',
+};
+
+// Convert governorate to Arabic if it's in English
+const toArabicGovernorate = (governorate: string): string => {
+  return GOVERNORATE_EN_TO_AR[governorate] || GOVERNORATE_EN_TO_AR[governorate.toLowerCase()] || governorate;
+};
+
 /**
  * Populate governorate field for items based on seller's governorate
  * POST /api/v1/admin/populate-governorates
@@ -20,7 +83,53 @@ export const populateGovernorates = async (
   try {
     console.log('[Admin] Starting governorate population...');
 
-    // Get all items without governorate
+    // Step 1: Update users with English governorate names to Arabic
+    const usersWithEnglishGov = await prisma.user.findMany({
+      where: {
+        governorate: { not: null },
+      },
+      select: {
+        id: true,
+        governorate: true,
+      },
+    });
+
+    let usersUpdated = 0;
+    for (const user of usersWithEnglishGov) {
+      if (user.governorate && GOVERNORATE_EN_TO_AR[user.governorate]) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { governorate: GOVERNORATE_EN_TO_AR[user.governorate] },
+        });
+        usersUpdated++;
+      }
+    }
+    console.log(`[Admin] Updated ${usersUpdated} users with Arabic governorate names`);
+
+    // Step 2: Update items with English governorate names to Arabic
+    const itemsWithEnglishGov = await prisma.item.findMany({
+      where: {
+        governorate: { not: null },
+      },
+      select: {
+        id: true,
+        governorate: true,
+      },
+    });
+
+    let itemsConvertedToArabic = 0;
+    for (const item of itemsWithEnglishGov) {
+      if (item.governorate && GOVERNORATE_EN_TO_AR[item.governorate]) {
+        await prisma.item.update({
+          where: { id: item.id },
+          data: { governorate: GOVERNORATE_EN_TO_AR[item.governorate] },
+        });
+        itemsConvertedToArabic++;
+      }
+    }
+    console.log(`[Admin] Converted ${itemsConvertedToArabic} items to Arabic governorate names`);
+
+    // Step 3: Get items without governorate and populate from seller
     const itemsWithoutGovernorate = await prisma.item.findMany({
       where: {
         governorate: null,
@@ -42,9 +151,10 @@ export const populateGovernorates = async (
 
     for (const item of itemsWithoutGovernorate) {
       if (item.seller?.governorate) {
+        const arabicGovernorate = toArabicGovernorate(item.seller.governorate);
         await prisma.item.update({
           where: { id: item.id },
-          data: { governorate: item.seller.governorate },
+          data: { governorate: arabicGovernorate },
         });
         updatedCount++;
       } else {
@@ -55,9 +165,11 @@ export const populateGovernorates = async (
     console.log(`[Admin] Governorate population complete: ${updatedCount} updated, ${skippedCount} skipped`);
 
     return successResponse(res, {
-      totalItems: itemsWithoutGovernorate.length,
-      updated: updatedCount,
-      skipped: skippedCount,
+      usersUpdated,
+      itemsConvertedToArabic,
+      itemsWithoutGovernorate: itemsWithoutGovernorate.length,
+      itemsPopulated: updatedCount,
+      itemsSkipped: skippedCount,
     }, 'Governorate population completed successfully');
 
   } catch (error) {

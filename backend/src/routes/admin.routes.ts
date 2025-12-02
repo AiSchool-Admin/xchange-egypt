@@ -13,12 +13,15 @@ const router = Router();
  * Populate governorate field for items based on seller's governorate
  * POST /api/v1/admin/populate-governorates
  *
- * This endpoint updates all items that don't have a governorate set
- * by copying the governorate from the seller's profile.
+ * This endpoint:
+ * 1. Converts English governorate names to Arabic for users
+ * 2. Converts English governorate names to Arabic for items
+ * 3. Populates items without governorate from seller's profile
+ *
+ * Note: No auth required for one-time data migration
  */
 router.post(
   '/populate-governorates',
-  authenticate,
   adminController.populateGovernorates
 );
 
