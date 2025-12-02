@@ -62,7 +62,7 @@ export default function EditItemPage() {
       setFormData({
         title: item.title,
         description: item.description,
-        categoryId: item.category.id,
+        categoryId: item.category?.id || '',
         condition: item.condition,
         price: item.estimatedValue?.toString() || '',
         location: item.location || '',

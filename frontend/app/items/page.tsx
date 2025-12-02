@@ -484,9 +484,11 @@ export default function ItemsPage() {
                               <p className="text-sm text-gray-500">اتصل للسعر</p>
                             )}
                           </div>
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                            {item.category.nameAr}
-                          </span>
+                          {item.category && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                              {item.category.nameAr}
+                            </span>
+                          )}
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-sm">
