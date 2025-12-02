@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getItems, Item } from '@/lib/api/items';
+import { getItems, getFeaturedItems, Item, PromotionTier } from '@/lib/api/items';
 import { FeaturedIndicator } from './FeaturedBadge';
 
 interface FeaturedSectionProps {
@@ -22,22 +22,41 @@ export default function FeaturedSection({
   useEffect(() => {
     const loadFeaturedItems = async () => {
       try {
-        // For now, get high-value items as "featured"
-        // Later this will use isFeatured filter
-        const response = await getItems({
-          limit,
-          minPrice: 10000,
-          status: 'ACTIVE',
-        });
+        // Try to get actual featured items first
+        const featuredResponse = await getFeaturedItems({ limit });
 
-        // Simulate featured items by sorting by value
-        const featuredItems = (response.data?.items || [])
-          .sort((a, b) => (b.estimatedValue || 0) - (a.estimatedValue || 0))
-          .slice(0, limit);
+        if (featuredResponse.data?.items && featuredResponse.data.items.length > 0) {
+          setItems(featuredResponse.data.items);
+        } else {
+          // Fallback: Get high-value items as "featured" if no promoted items exist
+          const response = await getItems({
+            limit,
+            minPrice: 10000,
+            status: 'ACTIVE',
+          });
 
-        setItems(featuredItems);
+          const fallbackItems = (response.data?.items || [])
+            .sort((a, b) => (b.estimatedValue || 0) - (a.estimatedValue || 0))
+            .slice(0, limit);
+
+          setItems(fallbackItems);
+        }
       } catch (error) {
         console.error('Failed to load featured items:', error);
+        // Fallback on error
+        try {
+          const response = await getItems({
+            limit,
+            minPrice: 10000,
+            status: 'ACTIVE',
+          });
+          const fallbackItems = (response.data?.items || [])
+            .sort((a, b) => (b.estimatedValue || 0) - (a.estimatedValue || 0))
+            .slice(0, limit);
+          setItems(fallbackItems);
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+        }
       } finally {
         setLoading(false);
       }
@@ -55,7 +74,16 @@ export default function FeaturedSection({
     return price.toLocaleString('ar-EG');
   };
 
-  const getTier = (index: number, price: number): 'gold' | 'silver' | 'bronze' => {
+  const getTier = (item: Item, index: number): 'gold' | 'silver' | 'bronze' => {
+    // Use actual promotion tier if available
+    if (item.promotionTier) {
+      if (item.promotionTier === 'PLATINUM' || item.promotionTier === 'GOLD') return 'gold';
+      if (item.promotionTier === 'PREMIUM' || item.promotionTier === 'FEATURED') return 'silver';
+      return 'bronze';
+    }
+
+    // Fallback to price-based tier
+    const price = item.estimatedValue || 0;
     if (index === 0 || price >= 500000) return 'gold';
     if (index < 3 || price >= 100000) return 'silver';
     return 'bronze';
@@ -113,7 +141,7 @@ export default function FeaturedSection({
         {/* Items Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {items.map((item, index) => {
-            const tier = getTier(index, item.estimatedValue || 0);
+            const tier = getTier(item, index);
 
             return (
               <Link

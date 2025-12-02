@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getItems, Item } from '@/lib/api/items';
+import { getItems, getLuxuryItems, Item } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 
 // Luxury categories with premium branding
@@ -32,46 +32,78 @@ export default function LuxuryMarketplacePage() {
   const loadItems = async () => {
     setLoading(true);
     try {
-      // Calculate min/max price based on range
+      // Calculate min price based on range
       let minPrice = LUXURY_MIN_PRICE;
-      let maxPrice: number | undefined;
 
       switch (priceRange) {
         case '50k-100k':
           minPrice = 50000;
-          maxPrice = 100000;
           break;
         case '100k-500k':
           minPrice = 100000;
-          maxPrice = 500000;
           break;
         case '500k-1m':
           minPrice = 500000;
-          maxPrice = 1000000;
           break;
         case '1m+':
           minPrice = 1000000;
           break;
       }
 
-      const response = await getItems({
-        minPrice,
-        maxPrice,
-        categoryId: selectedCategory || undefined,
-        status: 'ACTIVE',
-        limit: 50,
-      });
+      // Try the new luxury API first
+      try {
+        const luxuryResponse = await getLuxuryItems({
+          limit: 50,
+          minPrice,
+          categoryId: selectedCategory || undefined,
+          sortBy,
+        });
 
-      let sortedItems = response.data?.items || [];
+        let fetchedItems = luxuryResponse.data?.items || [];
 
-      // Sort items
-      if (sortBy === 'price_high') {
-        sortedItems = sortedItems.sort((a, b) => (b.estimatedValue || 0) - (a.estimatedValue || 0));
-      } else if (sortBy === 'price_low') {
-        sortedItems = sortedItems.sort((a, b) => (a.estimatedValue || 0) - (b.estimatedValue || 0));
+        // Apply max price filter on client side if needed
+        if (priceRange === '50k-100k') {
+          fetchedItems = fetchedItems.filter(item => (item.estimatedValue || 0) <= 100000);
+        } else if (priceRange === '100k-500k') {
+          fetchedItems = fetchedItems.filter(item => (item.estimatedValue || 0) <= 500000);
+        } else if (priceRange === '500k-1m') {
+          fetchedItems = fetchedItems.filter(item => (item.estimatedValue || 0) <= 1000000);
+        }
+
+        setItems(fetchedItems);
+      } catch (apiError) {
+        // Fallback to old API
+        let maxPrice: number | undefined;
+        switch (priceRange) {
+          case '50k-100k':
+            maxPrice = 100000;
+            break;
+          case '100k-500k':
+            maxPrice = 500000;
+            break;
+          case '500k-1m':
+            maxPrice = 1000000;
+            break;
+        }
+
+        const response = await getItems({
+          minPrice,
+          maxPrice,
+          categoryId: selectedCategory || undefined,
+          status: 'ACTIVE',
+          limit: 50,
+        });
+
+        let sortedItems = response.data?.items || [];
+
+        if (sortBy === 'price_high') {
+          sortedItems = sortedItems.sort((a, b) => (b.estimatedValue || 0) - (a.estimatedValue || 0));
+        } else if (sortBy === 'price_low') {
+          sortedItems = sortedItems.sort((a, b) => (a.estimatedValue || 0) - (b.estimatedValue || 0));
+        }
+
+        setItems(sortedItems);
       }
-
-      setItems(sortedItems);
     } catch (error) {
       console.error('Failed to load luxury items:', error);
     } finally {

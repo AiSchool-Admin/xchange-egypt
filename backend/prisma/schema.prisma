@@ -181,6 +181,15 @@ enum MarketType {
   NATIONAL      // السوق الشامل - كل مصر
 }
 
+// Promotion/Featured tiers
+enum PromotionTier {
+  BASIC         // Free listing
+  FEATURED      // Featured/highlighted listing
+  PREMIUM       // Premium listing with more visibility
+  GOLD          // Gold tier - high visibility
+  PLATINUM      // Platinum tier - maximum visibility
+}
+
 model Item {
   id              String        @id @default(uuid())
   sellerId        String        @map("seller_id")
@@ -224,6 +233,12 @@ model Item {
   status          ItemStatus    @default(ACTIVE)
   views           Int           @default(0)
 
+  // Featured/Promotion fields
+  isFeatured          Boolean       @default(false) @map("is_featured")
+  promotionTier       PromotionTier @default(BASIC) @map("promotion_tier")
+  promotedAt          DateTime?     @map("promoted_at")
+  promotionExpiresAt  DateTime?     @map("promotion_expires_at")
+
   // Timestamps
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
@@ -250,6 +265,10 @@ model Item {
   @@index([governorate])
   @@index([marketType, governorate])
   @@index([marketType, status])
+  @@index([isFeatured])
+  @@index([promotionTier])
+  @@index([isFeatured, status])
+  @@index([promotionExpiresAt])
 }
 
 // ============================================

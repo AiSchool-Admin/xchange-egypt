@@ -1,4 +1,4 @@
-import { ItemCondition } from '@prisma/client';
+import { ItemCondition, PromotionTier } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { processItemImage } from '../utils/image';
 import { itemEvents } from '../events/item.events';
@@ -83,9 +83,12 @@ interface SearchItemsParams {
   minPrice?: number;
   maxPrice?: number;
   status?: string;
+  // Featured/promotion filters
+  isFeatured?: boolean;
+  promotionTier?: PromotionTier;
   page?: number;
   limit?: number;
-  sortBy?: 'createdAt' | 'updatedAt' | 'title';
+  sortBy?: 'createdAt' | 'updatedAt' | 'title' | 'estimatedValue';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -389,6 +392,8 @@ export const searchItems = async (
     minPrice,
     maxPrice,
     status,
+    isFeatured,
+    promotionTier,
     page = 1,
     limit = 20,
     sortBy = 'createdAt',
@@ -470,6 +475,25 @@ export const searchItems = async (
   // Status filtering
   if (status) {
     where.status = status;
+  }
+
+  // Featured filtering
+  if (isFeatured !== undefined) {
+    where.isFeatured = isFeatured;
+    // Also check that promotion hasn't expired
+    if (isFeatured) {
+      andConditions.push({
+        OR: [
+          { promotionExpiresAt: null },
+          { promotionExpiresAt: { gte: new Date() } },
+        ],
+      });
+    }
+  }
+
+  // Promotion tier filtering
+  if (promotionTier) {
+    where.promotionTier = promotionTier;
   }
 
   // Calculate pagination
@@ -835,4 +859,265 @@ const cleanupImages = async (imagePaths: string[]): Promise<void> => {
       console.error(`Failed to delete image: ${imagePath}`, error);
     }
   }
+};
+
+/**
+ * Get featured items with optional filters
+ */
+export const getFeaturedItems = async (params: {
+  limit?: number;
+  categoryId?: string;
+  governorate?: string;
+  minTier?: PromotionTier;
+}): Promise<any[]> => {
+  const { limit = 10, categoryId, governorate, minTier } = params;
+
+  const where: any = {
+    isFeatured: true,
+    status: 'ACTIVE',
+    OR: [
+      { promotionExpiresAt: null },
+      { promotionExpiresAt: { gte: new Date() } },
+    ],
+  };
+
+  if (categoryId) {
+    where.categoryId = categoryId;
+  }
+
+  if (governorate) {
+    where.governorate = { contains: governorate, mode: 'insensitive' };
+  }
+
+  // Filter by minimum tier (PLATINUM > GOLD > PREMIUM > FEATURED > BASIC)
+  if (minTier) {
+    const tierOrder: PromotionTier[] = ['BASIC', 'FEATURED', 'PREMIUM', 'GOLD', 'PLATINUM'];
+    const minTierIndex = tierOrder.indexOf(minTier);
+    const validTiers = tierOrder.slice(minTierIndex);
+    where.promotionTier = { in: validTiers };
+  }
+
+  const items = await prisma.item.findMany({
+    where,
+    take: limit,
+    orderBy: [
+      // Order by tier first (higher tiers first)
+      { promotionTier: 'desc' },
+      // Then by estimated value
+      { estimatedValue: 'desc' },
+      // Then by promotion date
+      { promotedAt: 'desc' },
+    ],
+    include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+          businessName: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          nameAr: true,
+          nameEn: true,
+          slug: true,
+        },
+      },
+    },
+  });
+
+  return items;
+};
+
+/**
+ * Get luxury items (high-value items)
+ */
+export const getLuxuryItems = async (params: {
+  limit?: number;
+  minPrice?: number;
+  categoryId?: string;
+  governorate?: string;
+  sortBy?: 'price_high' | 'price_low' | 'recent';
+}): Promise<any[]> => {
+  const {
+    limit = 20,
+    minPrice = 50000, // Default luxury threshold
+    categoryId,
+    governorate,
+    sortBy = 'price_high'
+  } = params;
+
+  const where: any = {
+    status: 'ACTIVE',
+    estimatedValue: { gte: minPrice },
+  };
+
+  if (categoryId) {
+    where.categoryId = categoryId;
+  }
+
+  if (governorate) {
+    where.governorate = { contains: governorate, mode: 'insensitive' };
+  }
+
+  // Determine sort order
+  let orderBy: any;
+  switch (sortBy) {
+    case 'price_low':
+      orderBy = { estimatedValue: 'asc' };
+      break;
+    case 'recent':
+      orderBy = { createdAt: 'desc' };
+      break;
+    case 'price_high':
+    default:
+      orderBy = { estimatedValue: 'desc' };
+  }
+
+  const items = await prisma.item.findMany({
+    where,
+    take: limit,
+    orderBy,
+    include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+          businessName: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          nameAr: true,
+          nameEn: true,
+          slug: true,
+        },
+      },
+    },
+  });
+
+  return items;
+};
+
+/**
+ * Promote an item to featured status
+ */
+export const promoteItem = async (
+  itemId: string,
+  userId: string,
+  promotionData: {
+    tier: PromotionTier;
+    durationDays?: number;
+  }
+): Promise<any> => {
+  // Check if item exists and user owns it
+  const item = await prisma.item.findUnique({
+    where: { id: itemId },
+  });
+
+  if (!item) {
+    throw new NotFoundError('Item not found');
+  }
+
+  if (item.sellerId !== userId) {
+    throw new ForbiddenError('You can only promote your own items');
+  }
+
+  if (item.status !== 'ACTIVE') {
+    throw new BadRequestError('Only active items can be promoted');
+  }
+
+  // Calculate expiration date
+  const promotedAt = new Date();
+  let promotionExpiresAt: Date | null = null;
+
+  if (promotionData.durationDays) {
+    promotionExpiresAt = new Date(promotedAt);
+    promotionExpiresAt.setDate(promotionExpiresAt.getDate() + promotionData.durationDays);
+  }
+
+  // Update the item
+  const updatedItem = await prisma.item.update({
+    where: { id: itemId },
+    data: {
+      isFeatured: true,
+      promotionTier: promotionData.tier,
+      promotedAt,
+      promotionExpiresAt,
+    },
+    include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          nameAr: true,
+          nameEn: true,
+          slug: true,
+        },
+      },
+    },
+  });
+
+  return updatedItem;
+};
+
+/**
+ * Remove promotion from an item
+ */
+export const removePromotion = async (
+  itemId: string,
+  userId: string
+): Promise<any> => {
+  // Check if item exists and user owns it
+  const item = await prisma.item.findUnique({
+    where: { id: itemId },
+  });
+
+  if (!item) {
+    throw new NotFoundError('Item not found');
+  }
+
+  if (item.sellerId !== userId) {
+    throw new ForbiddenError('You can only modify your own items');
+  }
+
+  // Update the item
+  const updatedItem = await prisma.item.update({
+    where: { id: itemId },
+    data: {
+      isFeatured: false,
+      promotionTier: 'BASIC',
+      promotedAt: null,
+      promotionExpiresAt: null,
+    },
+    include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          nameAr: true,
+          nameEn: true,
+          slug: true,
+        },
+      },
+    },
+  });
+
+  return updatedItem;
 };
