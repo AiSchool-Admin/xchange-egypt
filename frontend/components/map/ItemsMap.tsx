@@ -5,6 +5,11 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Item } from '@/lib/api/items';
 import 'leaflet/dist/leaflet.css';
+import {
+  createGovernorateIcon,
+  createItemIcon,
+  getGovernorateArabicName,
+} from './MapIcons';
 
 // Egypt governorate coordinates (Arabic and English names)
 const GOVERNORATE_COORDS: Record<string, [number, number]> = {
@@ -100,7 +105,9 @@ const DEFAULT_ZOOM = 6;
 interface ItemsMapProps {
   items: Item[];
   selectedGovernorate?: string | null;
+  selectedCity?: string | null;
   onGovernorateSelect?: (governorate: string | null) => void;
+  onCitySelect?: (city: string | null) => void;
   height?: string;
   showFilters?: boolean;
 }
@@ -128,6 +135,18 @@ const Popup = dynamic(
 
 // Marker cluster for better performance with many items
 function ItemMarker({ item }: { item: Item }) {
+  const [icon, setIcon] = useState<L.DivIcon | null>(null);
+
+  useEffect(() => {
+    // Create icon on client side only
+    const newIcon = createItemIcon(
+      item.images?.[0]?.url,
+      item.category?.slug,
+      item.isFeatured || (item.promotionTier && item.promotionTier !== 'BASIC')
+    );
+    setIcon(newIcon);
+  }, [item]);
+
   const formatPrice = (price: number) => {
     if (price >= 1000000) {
       return `${(price / 1000000).toFixed(1)} مليون`;
@@ -142,27 +161,63 @@ function ItemMarker({ item }: { item: Item }) {
     ? GOVERNORATE_COORDS[item.governorate]
     : null;
 
-  if (!coords) return null;
+  if (!coords || !icon) return null;
+
+  // Add slight offset for items in same governorate to avoid overlap
+  const offset = Math.random() * 0.1 - 0.05;
+  const position: [number, number] = [coords[0] + offset, coords[1] + offset];
 
   return (
-    <Marker position={coords}>
+    <Marker position={position} icon={icon}>
       <Popup>
-        <div className="min-w-[200px]" dir="rtl">
+        <div className="min-w-[220px] max-w-[280px]" dir="rtl">
           {item.images && item.images.length > 0 && (
             <img
               src={item.images[0].url}
               alt={item.title}
-              className="w-full h-24 object-cover rounded mb-2"
+              className="w-full h-32 object-cover rounded-lg mb-3"
             />
           )}
-          <h3 className="font-bold text-gray-900 mb-1 line-clamp-2">{item.title}</h3>
-          <p className="text-emerald-600 font-bold mb-2">{formatPrice(item.estimatedValue || 0)} ج.م</p>
-          <div className="text-xs text-gray-500 mb-2">
-            {item.governorate || 'مصر'}
+          <h3 className="font-bold text-gray-900 mb-1 text-base line-clamp-2">{item.title}</h3>
+          <p className="text-emerald-600 font-bold text-lg mb-2">{formatPrice(item.estimatedValue || 0)} ج.م</p>
+
+          {/* Location info */}
+          <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-3">
+            {item.governorate && (
+              <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                <span>📍</span> {getGovernorateArabicName(item.governorate)}
+              </span>
+            )}
+            {item.city && (
+              <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                <span>🏘️</span> {item.city}
+              </span>
+            )}
+            {item.district && (
+              <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-full">
+                <span>🏠</span> {item.district}
+              </span>
+            )}
           </div>
+
+          {/* Category badge */}
+          {item.category && (
+            <span className="inline-block bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded-full mb-3">
+              {item.category.nameAr}
+            </span>
+          )}
+
+          {/* Featured badge */}
+          {(item.isFeatured || item.promotionTier) && (
+            <div className="flex items-center gap-1 text-amber-600 text-xs mb-3">
+              <span>⭐</span>
+              <span>إعلان مميز</span>
+            </div>
+          )}
+
           <Link
             href={`/items/${item.id}`}
-            className="block text-center py-2 bg-emerald-500 text-white rounded text-sm font-medium hover:bg-emerald-600"
+            className="block text-center py-2.5 bg-gradient-to-l from-emerald-500 to-teal-500 text-white rounded-lg text-sm font-medium hover:from-emerald-600 hover:to-teal-600 transition-all shadow-sm"
           >
             عرض التفاصيل
           </Link>
@@ -182,20 +237,33 @@ function GovernorateMarker({
   itemCount: number;
   onClick: () => void;
 }) {
+  const [icon, setIcon] = useState<L.DivIcon | null>(null);
   const coords = GOVERNORATE_COORDS[governorate];
-  if (!coords) return null;
+
+  useEffect(() => {
+    if (coords) {
+      const displayName = getGovernorateArabicName(governorate);
+      const newIcon = createGovernorateIcon(displayName, itemCount);
+      setIcon(newIcon);
+    }
+  }, [governorate, itemCount, coords]);
+
+  if (!coords || !icon) return null;
 
   return (
-    <Marker position={coords}>
+    <Marker position={coords} icon={icon} eventHandlers={{ click: onClick }}>
       <Popup>
-        <div className="text-center p-2" dir="rtl">
-          <h3 className="font-bold text-lg mb-1">{governorate}</h3>
-          <p className="text-gray-600 mb-2">{itemCount} إعلان</p>
+        <div className="text-center p-3 min-w-[180px]" dir="rtl">
+          <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
+            <span className="text-white font-bold text-lg">{itemCount}</span>
+          </div>
+          <h3 className="font-bold text-lg text-gray-900 mb-1">{getGovernorateArabicName(governorate)}</h3>
+          <p className="text-gray-600 text-sm mb-3">{itemCount} إعلان متاح</p>
           <button
             onClick={onClick}
-            className="w-full py-2 bg-emerald-500 text-white rounded text-sm font-medium hover:bg-emerald-600"
+            className="w-full py-2.5 bg-gradient-to-l from-emerald-500 to-teal-500 text-white rounded-lg text-sm font-medium hover:from-emerald-600 hover:to-teal-600 transition-all shadow-sm"
           >
-            عرض الإعلانات
+            استعراض الإعلانات
           </button>
         </div>
       </Popup>
@@ -206,7 +274,9 @@ function GovernorateMarker({
 export default function ItemsMap({
   items,
   selectedGovernorate,
+  selectedCity,
   onGovernorateSelect,
+  onCitySelect,
   height = '500px',
   showFilters = true,
 }: ItemsMapProps) {
@@ -228,11 +298,17 @@ export default function ItemsMap({
     return grouped;
   }, [items]);
 
-  // Filter items for selected governorate
+  // Filter items for display
   const displayItems = useMemo(() => {
-    if (!selectedGovernorate) return items;
-    return items.filter((item) => item.governorate === selectedGovernorate);
-  }, [items, selectedGovernorate]);
+    let filtered = items;
+    if (selectedGovernorate) {
+      filtered = filtered.filter((item) => item.governorate === selectedGovernorate);
+    }
+    if (selectedCity) {
+      filtered = filtered.filter((item) => item.city === selectedCity);
+    }
+    return filtered;
+  }, [items, selectedGovernorate, selectedCity]);
 
   if (!isClient) {
     return (
@@ -246,49 +322,74 @@ export default function ItemsMap({
   }
 
   return (
-    <div className="relative" dir="rtl">
-      {/* Filters */}
+    <div className="relative rounded-xl overflow-hidden shadow-lg" dir="rtl">
+      {/* View Mode Toggle */}
       {showFilters && (
-        <div className="absolute top-4 right-4 z-[1000] bg-white rounded-xl shadow-lg p-3 flex gap-2">
+        <div className="absolute top-4 right-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-2 flex gap-2">
           <button
             onClick={() => setViewMode('governorates')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               viewMode === 'governorates'
-                ? 'bg-emerald-500 text-white'
+                ? 'bg-gradient-to-l from-emerald-500 to-teal-500 text-white shadow-md'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            المحافظات
+            <span className="flex items-center gap-2">
+              <span>🗺️</span>
+              المحافظات
+            </span>
           </button>
           <button
             onClick={() => setViewMode('items')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               viewMode === 'items'
-                ? 'bg-emerald-500 text-white'
+                ? 'bg-gradient-to-l from-emerald-500 to-teal-500 text-white shadow-md'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
-            الإعلانات
+            <span className="flex items-center gap-2">
+              <span>📍</span>
+              الإعلانات
+            </span>
           </button>
         </div>
       )}
 
-      {/* Selected Governorate Info */}
-      {selectedGovernorate && (
-        <div className="absolute top-4 left-4 z-[1000] bg-white rounded-xl shadow-lg p-3">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-gray-900">{selectedGovernorate}</span>
+      {/* Selected Location Info */}
+      {(selectedGovernorate || selectedCity) && (
+        <div className="absolute top-4 left-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            {selectedGovernorate && (
+              <span className="flex items-center gap-2 bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                <span>📍</span>
+                {getGovernorateArabicName(selectedGovernorate)}
+                <button
+                  onClick={() => onGovernorateSelect?.(null)}
+                  className="hover:bg-emerald-200 rounded-full p-0.5 transition"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            )}
+            {selectedCity && (
+              <span className="flex items-center gap-2 bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                <span>🏘️</span>
+                {selectedCity}
+                <button
+                  onClick={() => onCitySelect?.(null)}
+                  className="hover:bg-blue-200 rounded-full p-0.5 transition"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            )}
             <span className="text-sm text-gray-500">
-              ({itemsByGovernorate[selectedGovernorate]?.length || 0} إعلان)
+              ({displayItems.length} إعلان)
             </span>
-            <button
-              onClick={() => onGovernorateSelect?.(null)}
-              className="p-1 hover:bg-gray-100 rounded"
-            >
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
           </div>
         </div>
       )}
@@ -300,11 +401,12 @@ export default function ItemsMap({
           : EGYPT_CENTER}
         zoom={selectedGovernorate ? 10 : DEFAULT_ZOOM}
         style={{ height, width: '100%' }}
-        className="rounded-xl z-0"
+        className="z-0"
       >
+        {/* Modern map tiles */}
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
         {viewMode === 'governorates' ? (
@@ -314,7 +416,10 @@ export default function ItemsMap({
               key={gov}
               governorate={gov}
               itemCount={govItems.length}
-              onClick={() => onGovernorateSelect?.(gov)}
+              onClick={() => {
+                onGovernorateSelect?.(gov);
+                setViewMode('items');
+              }}
             />
           ))
         ) : (
@@ -325,10 +430,30 @@ export default function ItemsMap({
         )}
       </MapContainer>
 
-      {/* Legend */}
-      <div className="absolute bottom-4 right-4 z-[1000] bg-white rounded-xl shadow-lg p-3">
-        <div className="text-xs text-gray-500 mb-1">إجمالي الإعلانات</div>
-        <div className="text-lg font-bold text-emerald-600">{items.length}</div>
+      {/* Stats Legend */}
+      <div className="absolute bottom-4 right-4 z-[1000] bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4">
+        <div className="flex items-center gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold bg-gradient-to-l from-emerald-500 to-teal-500 bg-clip-text text-transparent">
+              {displayItems.length}
+            </div>
+            <div className="text-xs text-gray-500">إعلان</div>
+          </div>
+          <div className="w-px h-8 bg-gray-200"></div>
+          <div className="text-center">
+            <div className="text-2xl font-bold bg-gradient-to-l from-blue-500 to-indigo-500 bg-clip-text text-transparent">
+              {Object.keys(itemsByGovernorate).length}
+            </div>
+            <div className="text-xs text-gray-500">محافظة</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Map Style Credit */}
+      <div className="absolute bottom-4 left-4 z-[1000]">
+        <span className="text-xs text-gray-400 bg-white/80 px-2 py-1 rounded">
+          خريطة تفاعلية
+        </span>
       </div>
     </div>
   );
