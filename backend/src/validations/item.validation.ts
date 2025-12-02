@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { ItemCondition } from '@prisma/client';
 
-// Egyptian Governorates
+// Egyptian Governorates (English and Arabic names)
 export const EGYPTIAN_GOVERNORATES = [
+  // English names
   'Cairo',
   'Giza',
   'Alexandria',
@@ -30,6 +31,34 @@ export const EGYPTIAN_GOVERNORATES = [
   'Qena',
   'North Sinai',
   'Sohag',
+  // Arabic names
+  'القاهرة',
+  'الجيزة',
+  'الإسكندرية',
+  'الدقهلية',
+  'البحر الأحمر',
+  'البحيرة',
+  'الفيوم',
+  'الغربية',
+  'الإسماعيلية',
+  'المنوفية',
+  'المنيا',
+  'القليوبية',
+  'الوادي الجديد',
+  'السويس',
+  'أسوان',
+  'أسيوط',
+  'بني سويف',
+  'بورسعيد',
+  'دمياط',
+  'الشرقية',
+  'جنوب سيناء',
+  'كفر الشيخ',
+  'مطروح',
+  'الأقصر',
+  'قنا',
+  'شمال سيناء',
+  'سوهاج',
 ] as const;
 
 // Item Condition validation
@@ -159,11 +188,16 @@ export const searchItemsSchema = z.object({
     categoryId: z.string().uuid('Invalid category ID').optional(),
     sellerId: z.string().uuid('Invalid seller ID').optional(),
     condition: itemConditionEnum.optional(),
+    status: z.enum(['DRAFT', 'ACTIVE', 'SOLD', 'TRADED', 'ARCHIVED', 'DELETED']).optional(),
     governorate: z
       .enum(EGYPTIAN_GOVERNORATES, {
         errorMap: () => ({ message: 'Invalid governorate' }),
       })
       .optional(),
+    city: z.string().optional(),
+    district: z.string().optional(),
+    minPrice: z.string().optional(),
+    maxPrice: z.string().optional(),
 
     // Pagination
     page: z
@@ -181,7 +215,7 @@ export const searchItemsSchema = z.object({
 
     // Sorting
     sortBy: z
-      .enum(['createdAt', 'updatedAt', 'titleAr', 'titleEn'])
+      .enum(['createdAt', 'updatedAt', 'titleAr', 'titleEn', 'title'])
       .default('createdAt')
       .optional(),
     sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
