@@ -431,13 +431,24 @@ export const searchItems = async (
     });
   }
 
-  // City and district filtering via location field (contains search)
+  // City filtering - search in city field
   if (city) {
-    where.location = { contains: city, mode: 'insensitive' };
+    andConditions.push({
+      OR: [
+        { city: { contains: city, mode: 'insensitive' } },
+        { location: { contains: city, mode: 'insensitive' } },
+      ],
+    });
   }
 
+  // District filtering - search in district field
   if (district) {
-    where.location = { contains: district, mode: 'insensitive' };
+    andConditions.push({
+      OR: [
+        { district: { contains: district, mode: 'insensitive' } },
+        { location: { contains: district, mode: 'insensitive' } },
+      ],
+    });
   }
 
   // Combine AND conditions
