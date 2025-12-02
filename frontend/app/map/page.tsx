@@ -50,8 +50,9 @@ export default function MapPage() {
       }
 
       // Load items (without status filter to show all items)
+      // Note: API has max limit of 100 per request
       const itemsResponse = await getItems({
-        limit: 500,
+        limit: 100,
         categoryId: selectedCategory || undefined,
       }).catch((err) => {
         console.error('Items API error:', err);
