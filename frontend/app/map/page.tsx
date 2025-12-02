@@ -36,18 +36,29 @@ export default function MapPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [itemsResponse, categoriesResponse] = await Promise.all([
-        getItems({
-          limit: 500,
-          categoryId: selectedCategory || undefined,
-          status: 'ACTIVE',
-        }),
-        getCategories().catch(() => ({ success: false, data: [] })),
-      ]);
+      // Load categories first
+      const categoriesResponse = await getCategories().catch(() => ({ success: false, data: [] }));
+      if (categoriesResponse.success && categoriesResponse.data) {
+        const parentCategories = categoriesResponse.data.filter((c: Category) => !c.parentId);
+        setCategories(parentCategories);
+        console.log('Loaded categories:', parentCategories.length);
+      }
 
-      setItems(itemsResponse.data?.items || []);
-      if (categoriesResponse.success) {
-        setCategories(categoriesResponse.data.filter((c: Category) => !c.parentId));
+      // Load items (without status filter to show all items)
+      const itemsResponse = await getItems({
+        limit: 500,
+        categoryId: selectedCategory || undefined,
+      }).catch(() => ({ success: false, data: { items: [] } }));
+
+      const loadedItems = itemsResponse.data?.items || [];
+      setItems(loadedItems);
+      console.log('Loaded items:', loadedItems.length);
+
+      // Debug: log items with governorate
+      const itemsWithGov = loadedItems.filter((i: Item) => i.governorate);
+      console.log('Items with governorate:', itemsWithGov.length);
+      if (itemsWithGov.length > 0) {
+        console.log('Governorates found:', [...new Set(itemsWithGov.map((i: Item) => i.governorate))]);
       }
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -100,7 +111,10 @@ export default function MapPage() {
               onChange={(e) => setSelectedCategory(e.target.value || null)}
               className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="">جميع الفئات</option>
+              <option value="">جميع الفئات {categories.length > 0 ? `(${categories.length})` : ''}</option>
+              {categories.length === 0 && !loading && (
+                <option value="" disabled>لا توجد فئات</option>
+              )}
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
               ))}
@@ -150,24 +164,39 @@ export default function MapPage() {
                 <h2 className="font-bold text-gray-900">المحافظات</h2>
               </div>
               <div className="max-h-[300px] overflow-y-auto">
-                {Object.entries(itemsByGovernorate)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([gov, count]) => (
-                    <button
-                      key={gov}
-                      onClick={() => setSelectedGovernorate(gov === selectedGovernorate ? null : gov)}
-                      className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition text-right ${
-                        selectedGovernorate === gov ? 'bg-emerald-50' : ''
-                      }`}
-                    >
-                      <span className={`font-medium ${selectedGovernorate === gov ? 'text-emerald-600' : 'text-gray-700'}`}>
-                        {gov}
-                      </span>
-                      <span className={`text-sm ${selectedGovernorate === gov ? 'text-emerald-600' : 'text-gray-500'}`}>
-                        {count} إعلان
-                      </span>
-                    </button>
-                  ))}
+                {loading ? (
+                  <div className="p-6 text-center">
+                    <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-gray-500 text-sm">جاري التحميل...</p>
+                  </div>
+                ) : Object.keys(itemsByGovernorate).length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">
+                    <div className="text-3xl mb-2">📍</div>
+                    <p className="text-sm mb-2">لا توجد إعلانات بمواقع محددة</p>
+                    <Link href="/inventory/add" className="text-emerald-600 text-sm font-medium hover:underline">
+                      أضف إعلان مع تحديد المحافظة
+                    </Link>
+                  </div>
+                ) : (
+                  Object.entries(itemsByGovernorate)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([gov, count]) => (
+                      <button
+                        key={gov}
+                        onClick={() => setSelectedGovernorate(gov === selectedGovernorate ? null : gov)}
+                        className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition text-right ${
+                          selectedGovernorate === gov ? 'bg-emerald-50' : ''
+                        }`}
+                      >
+                        <span className={`font-medium ${selectedGovernorate === gov ? 'text-emerald-600' : 'text-gray-700'}`}>
+                          {gov}
+                        </span>
+                        <span className={`text-sm ${selectedGovernorate === gov ? 'text-emerald-600' : 'text-gray-500'}`}>
+                          {count} إعلان
+                        </span>
+                      </button>
+                    ))
+                )}
               </div>
             </div>
 
