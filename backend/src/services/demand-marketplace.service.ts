@@ -454,7 +454,7 @@ export const notifyMatchingSupplyUsers = async (
       },
       actionUrl: demandItem.type === 'REVERSE_AUCTION'
         ? `/reverse-auctions/${demandItem.reverseAuctionId}`
-        : `/barter/${demandItem.barterOfferId}`,
+        : `/barter/respond/${demandItem.barterOfferId}`,
     });
   }
 };

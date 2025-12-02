@@ -349,7 +349,7 @@ export const notifyBarterOffer = async (
     priority: 'HIGH',
     entityType: 'barter',
     entityId: offerId,
-    actionUrl: `/barter/${offerId}`,
+    actionUrl: `/barter/respond/${offerId}`,
     actionText: 'View Offer',
     emailSubject: 'New Barter Offer - Xchange',
     emailData: {
@@ -376,7 +376,7 @@ export const notifyBarterAccepted = async (
     priority: 'URGENT',
     entityType: 'barter',
     entityId: offerId,
-    actionUrl: `/barter/${offerId}`,
+    actionUrl: `/barter/respond/${offerId}`,
     actionText: 'View Details',
     emailSubject: 'Barter Offer Accepted! - Xchange',
     emailData: {
