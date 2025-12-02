@@ -1,6 +1,7 @@
 import { AuctionStatus, BidStatus, ListingType, ListingStatus, ItemStatus } from '@prisma/client';
 import { CreateAuctionInput, UpdateAuctionInput, PlaceBidInput, ListAuctionsQuery } from '../validations/auction.validation';
 import { AppError } from '../middleware/errorHandler';
+import { createNotification } from './notification.service';
 import prisma from '../lib/prisma';
 
 /**
@@ -429,6 +430,65 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
     return newBid;
   });
 
+  // Get auction details for notifications
+  const auctionDetails = await prisma.auction.findUnique({
+    where: { id: auctionId },
+    include: {
+      listing: {
+        include: {
+          item: {
+            include: {
+              seller: { select: { id: true, fullName: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (auctionDetails) {
+    const itemTitle = auctionDetails.listing.item.title;
+    const sellerId = auctionDetails.listing.item.sellerId;
+
+    // Notify seller about new bid
+    await createNotification({
+      userId: sellerId,
+      type: 'AUCTION_NEW_BID',
+      title: 'مزايدة جديدة! 💰',
+      message: `مزايدة جديدة بقيمة ${result.bidAmount} ج.م على "${itemTitle}"`,
+      priority: 'HIGH',
+      entityType: 'AUCTION',
+      entityId: auctionId,
+      actionUrl: `/auctions/${auctionId}`,
+      actionText: 'عرض المزاد',
+    });
+
+    // Notify previous bidders that they were outbid
+    const outbidUsers = await prisma.auctionBid.findMany({
+      where: {
+        auctionId,
+        bidderId: { not: userId },
+        status: BidStatus.OUTBID,
+      },
+      distinct: ['bidderId'],
+      select: { bidderId: true },
+    });
+
+    for (const outbidUser of outbidUsers) {
+      await createNotification({
+        userId: outbidUser.bidderId,
+        type: 'AUCTION_OUTBID',
+        title: 'تم تجاوز مزايدتك! ⚠️',
+        message: `تم تجاوز مزايدتك على "${itemTitle}". السعر الحالي ${result.bidAmount} ج.م`,
+        priority: 'HIGH',
+        entityType: 'AUCTION',
+        entityId: auctionId,
+        actionUrl: `/auctions/${auctionId}`,
+        actionText: 'زايد مرة أخرى',
+      });
+    }
+  }
+
   return result;
 };
 
@@ -524,6 +584,60 @@ export const buyNow = async (auctionId: string, userId: string) => {
 
     return { auction, winningBid, transaction };
   });
+
+  // Send notifications for Buy Now
+  const itemTitle = auction.listing.item.title;
+  const sellerId = auction.listing.item.sellerId;
+
+  // Notify winner (buyer)
+  await createNotification({
+    userId: userId,
+    type: 'AUCTION_WON',
+    title: 'مبروك! فزت بالمزاد 🎉',
+    message: `لقد اشتريت "${itemTitle}" بسعر ${auction.buyNowPrice} ج.م`,
+    priority: 'HIGH',
+    entityType: 'AUCTION',
+    entityId: auctionId,
+    actionUrl: `/auctions/${auctionId}`,
+    actionText: 'إتمام الشراء',
+  });
+
+  // Notify seller
+  await createNotification({
+    userId: sellerId,
+    type: 'ITEM_SOLD',
+    title: 'تم بيع سلعتك! 🎉',
+    message: `تم شراء "${itemTitle}" بسعر الشراء الفوري ${auction.buyNowPrice} ج.م`,
+    priority: 'HIGH',
+    entityType: 'AUCTION',
+    entityId: auctionId,
+    actionUrl: `/auctions/${auctionId}`,
+    actionText: 'عرض التفاصيل',
+  });
+
+  // Notify other bidders that they lost
+  const otherBidders = await prisma.auctionBid.findMany({
+    where: {
+      auctionId,
+      bidderId: { not: userId },
+    },
+    distinct: ['bidderId'],
+    select: { bidderId: true },
+  });
+
+  for (const bidder of otherBidders) {
+    await createNotification({
+      userId: bidder.bidderId,
+      type: 'AUCTION_LOST',
+      title: 'انتهى المزاد',
+      message: `تم شراء "${itemTitle}" بسعر الشراء الفوري`,
+      priority: 'MEDIUM',
+      entityType: 'AUCTION',
+      entityId: auctionId,
+      actionUrl: `/auctions`,
+      actionText: 'تصفح مزادات أخرى',
+    });
+  }
 
   return result;
 };
@@ -695,6 +809,60 @@ export const endAuction = async (auctionId: string) => {
 
     return { winningBid, transaction };
   });
+
+  // Send notifications for auction completion
+  const itemTitle = auction.listing.item.title;
+  const sellerId = auction.listing.item.sellerId;
+
+  // Notify winner
+  await createNotification({
+    userId: winningBid.bidderId,
+    type: 'AUCTION_WON',
+    title: 'مبروك! فزت بالمزاد 🎉',
+    message: `لقد فزت بمزاد "${itemTitle}" بمبلغ ${winningBid.bidAmount} ج.م`,
+    priority: 'HIGH',
+    entityType: 'AUCTION',
+    entityId: auctionId,
+    actionUrl: `/auctions/${auctionId}`,
+    actionText: 'إتمام الشراء',
+  });
+
+  // Notify seller
+  await createNotification({
+    userId: sellerId,
+    type: 'AUCTION_ENDED',
+    title: 'انتهى المزاد بنجاح! 🎉',
+    message: `تم بيع "${itemTitle}" بمبلغ ${winningBid.bidAmount} ج.م`,
+    priority: 'HIGH',
+    entityType: 'AUCTION',
+    entityId: auctionId,
+    actionUrl: `/auctions/${auctionId}`,
+    actionText: 'عرض التفاصيل',
+  });
+
+  // Notify losing bidders
+  const losingBidders = await prisma.auctionBid.findMany({
+    where: {
+      auctionId,
+      bidderId: { not: winningBid.bidderId },
+    },
+    distinct: ['bidderId'],
+    select: { bidderId: true },
+  });
+
+  for (const bidder of losingBidders) {
+    await createNotification({
+      userId: bidder.bidderId,
+      type: 'AUCTION_LOST',
+      title: 'انتهى المزاد',
+      message: `لم تفز بمزاد "${itemTitle}". السعر النهائي ${winningBid.bidAmount} ج.م`,
+      priority: 'MEDIUM',
+      entityType: 'AUCTION',
+      entityId: auctionId,
+      actionUrl: `/auctions`,
+      actionText: 'تصفح مزادات أخرى',
+    });
+  }
 
   return {
     message: 'Auction completed successfully',

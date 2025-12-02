@@ -6,6 +6,7 @@
 
 import prisma from '../config/database';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
+import { createNotification } from './notification.service';
 
 // ============================================
 // Types
@@ -306,6 +307,29 @@ export const sendMessage = async (
     });
 
     return newMessage;
+  });
+
+  // Send notification to recipient about new message
+  const sender = await prisma.user.findUnique({
+    where: { id: senderId },
+    select: { fullName: true },
+  });
+
+  const senderName = sender?.fullName || 'مستخدم';
+  const messagePreview = type === 'TEXT'
+    ? content.substring(0, 50) + (content.length > 50 ? '...' : '')
+    : `[${type === 'IMAGE' ? 'صورة' : type === 'FILE' ? 'ملف' : type === 'ITEM' ? 'سلعة' : 'رسالة'}]`;
+
+  await createNotification({
+    userId: recipientId,
+    type: 'SYSTEM_ANNOUNCEMENT', // Using available type for messages
+    title: `رسالة جديدة من ${senderName}`,
+    message: messagePreview,
+    priority: 'MEDIUM',
+    entityType: 'CONVERSATION',
+    entityId: conversationId,
+    actionUrl: `/messages/${conversationId}`,
+    actionText: 'عرض الرسالة',
   });
 
   return message;

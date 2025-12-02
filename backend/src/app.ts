@@ -45,6 +45,9 @@ import { initializeWebSocket, startRealtimeMatching } from './services/realtime-
 // Import chat WebSocket service
 import { attachChatEventHandlers } from './services/socket.service';
 
+// Import item match notification service
+import { initItemMatchNotifications } from './services/item-match-notification.service';
+
 // Initialize Express app
 const app: Application = express();
 
@@ -325,6 +328,10 @@ const startServer = async () => {
     // Start real-time matching service
     startRealtimeMatching();
     console.log('✅ Real-time matching service started');
+
+    // Initialize item match notifications
+    initItemMatchNotifications();
+    console.log('✅ Item match notification service started');
 
     // Start background jobs (kept for fallback and cleanup)
     if (env.server.nodeEnv === 'production') {
