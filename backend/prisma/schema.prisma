@@ -224,12 +224,6 @@ model Item {
   status          ItemStatus    @default(ACTIVE)
   views           Int           @default(0)
 
-  // Featured/Premium Listings
-  isFeatured      Boolean       @default(false) @map("is_featured")
-  featuredUntil   DateTime?     @map("featured_until")
-  featuredTier    String?       @map("featured_tier")  // 'gold', 'silver', 'bronze'
-  boostScore      Int           @default(0) @map("boost_score")  // Higher = more visibility
-
   // Timestamps
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
@@ -253,8 +247,6 @@ model Item {
   @@index([desiredCategoryId])
   @@index([itemType])
   @@index([marketType])
-  @@index([isFeatured])
-  @@index([boostScore])
   @@index([governorate])
   @@index([marketType, governorate])
   @@index([marketType, status])
