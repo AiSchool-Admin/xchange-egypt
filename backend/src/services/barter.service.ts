@@ -232,6 +232,39 @@ export const createBarterOffer = async (
     },
   });
 
+  // Send notification to recipient (if specified)
+  if (barterOffer && recipientId) {
+    await createNotification({
+      userId: recipientId,
+      type: 'BARTER_OFFER_RECEIVED',
+      title: 'عرض مقايضة جديد',
+      message: `${barterOffer.initiator?.fullName || 'مستخدم'} أرسل لك عرض مقايضة`,
+      priority: 'HIGH',
+      entityType: 'BARTER_OFFER',
+      entityId: barterOffer.id,
+      actionUrl: `/barter/respond/${barterOffer.id}`,
+      actionText: 'عرض العرض',
+    });
+  }
+
+  // Send notification to initiator confirming their offer was created
+  if (barterOffer) {
+    const recipientName = barterOffer.recipient?.fullName || 'المستخدم';
+    await createNotification({
+      userId: initiatorId,
+      type: 'BARTER_OFFER_CREATED',
+      title: 'تم إنشاء عرض المقايضة',
+      message: recipientId
+        ? `تم إرسال عرض المقايضة إلى ${recipientName} بنجاح`
+        : 'تم إنشاء عرض المقايضة بنجاح وهو الآن مفتوح للجميع',
+      priority: 'MEDIUM',
+      entityType: 'BARTER_OFFER',
+      entityId: barterOffer.id,
+      actionUrl: `/barter/my-offers`,
+      actionText: 'عرض التفاصيل',
+    });
+  }
+
   return barterOffer;
 };
 
@@ -561,6 +594,19 @@ export const createCounterOffer = async (
         },
       },
     },
+  });
+
+  // Send notification to initiator about the counter offer
+  await createNotification({
+    userId: counterOffer.initiatorId,
+    type: 'BARTER_COUNTER_OFFER',
+    title: 'عرض مضاد جديد',
+    message: `${counterOffer.recipient?.fullName || 'المستخدم'} أرسل لك عرضاً مضاداً`,
+    priority: 'HIGH',
+    entityType: 'BARTER_OFFER',
+    entityId: counterOffer.id,
+    actionUrl: `/barter/respond/${counterOffer.id}`,
+    actionText: 'عرض العرض المضاد',
   });
 
   return counterOffer;
