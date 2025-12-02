@@ -28,6 +28,7 @@ export default function MapPage() {
   const [selectedGovernorate, setSelectedGovernorate] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -35,9 +36,13 @@ export default function MapPage() {
 
   const loadData = async () => {
     setLoading(true);
+    setError(null);
     try {
       // Load categories first
-      const categoriesResponse = await getCategories().catch(() => ({ success: false, data: [] }));
+      const categoriesResponse = await getCategories().catch((err) => {
+        console.error('Categories API error:', err);
+        return { success: false, data: [] };
+      });
       if (categoriesResponse.success && categoriesResponse.data) {
         const parentCategories = categoriesResponse.data.filter((c: Category) => !c.parentId);
         setCategories(parentCategories);
@@ -48,7 +53,11 @@ export default function MapPage() {
       const itemsResponse = await getItems({
         limit: 500,
         categoryId: selectedCategory || undefined,
-      }).catch(() => ({ success: false, data: { items: [] } }));
+      }).catch((err) => {
+        console.error('Items API error:', err);
+        setError(`فشل تحميل الأصناف: ${err.message || 'خطأ في الاتصال'}`);
+        return { success: false, data: { items: [] } };
+      });
 
       const loadedItems = itemsResponse.data?.items || [];
       setItems(loadedItems);
@@ -60,8 +69,13 @@ export default function MapPage() {
       if (itemsWithGov.length > 0) {
         console.log('Governorates found:', [...new Set(itemsWithGov.map((i: Item) => i.governorate))]);
       }
-    } catch (error) {
-      console.error('Failed to load data:', error);
+
+      if (loadedItems.length === 0 && !error) {
+        setError('لا توجد أصناف في قاعدة البيانات أو فشل الاتصال بالخادم');
+      }
+    } catch (err: any) {
+      console.error('Failed to load data:', err);
+      setError(`خطأ: ${err.message || 'فشل الاتصال بالخادم'}`);
     } finally {
       setLoading(false);
     }
@@ -139,6 +153,9 @@ export default function MapPage() {
             <div className="mr-auto flex items-center gap-4 text-sm text-gray-600">
               <span>{items.length} إعلان</span>
               <span>{Object.keys(itemsByGovernorate).length} محافظة</span>
+              {error && (
+                <span className="text-red-500">⚠️ {error}</span>
+              )}
             </div>
           </div>
         </div>
