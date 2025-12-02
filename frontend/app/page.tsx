@@ -210,31 +210,6 @@ function PublicLandingPage({ supplyItems, demandItems, loading, categories }: {
   loading: boolean;
   categories: DisplayCategory[];
 }) {
-  // Group items by their actual categoryId
-  const groupItemsByCategory = (items: PublicItem[]) => {
-    const grouped: Record<string, PublicItem[]> = {};
-
-    // Initialize with empty arrays for all categories
-    categories.forEach(cat => {
-      grouped[cat.id] = [];
-    });
-
-    // Group items by their category.id
-    items.forEach((item) => {
-      const categoryId = item.category?.id;
-      if (categoryId && grouped[categoryId]) {
-        if (grouped[categoryId].length < 6) {
-          grouped[categoryId].push(item);
-        }
-      }
-    });
-
-    return grouped;
-  };
-
-  const groupedSupply = groupItemsByCategory(supplyItems);
-  const groupedDemand = groupItemsByCategory(demandItems);
-
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Hero Section */}
@@ -297,9 +272,17 @@ function PublicLandingPage({ supplyItems, demandItems, loading, categories }: {
 
       {/* Items by Category - Supply */}
       <section className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center gap-2 mb-6">
-          <span className="text-2xl">🏷️</span>
-          <h2 className="text-2xl font-bold text-gray-800">إعلانات للبيع</h2>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🏷️</span>
+            <h2 className="text-2xl font-bold text-gray-800">إعلانات للبيع</h2>
+          </div>
+          <Link href="/items" className="text-emerald-600 text-sm font-medium hover:text-emerald-700 flex items-center gap-1">
+            عرض الكل
+            <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
 
         {loading ? (
@@ -315,16 +298,11 @@ function PublicLandingPage({ supplyItems, demandItems, loading, categories }: {
             ))}
           </div>
         ) : supplyItems.length > 0 ? (
-          <>
-            {categories.slice(0, 4).map((category) => (
-              <CategorySection
-                key={category.id}
-                category={category}
-                items={groupedSupply[category.id] || []}
-                type="supply"
-              />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {supplyItems.slice(0, 12).map((item) => (
+              <SmallItemCard key={item.id} item={item} type="supply" />
             ))}
-          </>
+          </div>
         ) : (
           <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
             <span className="text-5xl mb-4 block">📦</span>
@@ -339,22 +317,25 @@ function PublicLandingPage({ supplyItems, demandItems, loading, categories }: {
       {/* Items by Category - Demand */}
       <section className="bg-blue-50 py-10">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-2xl">🔍</span>
-            <h2 className="text-2xl font-bold text-gray-800">طلبات الشراء</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🔍</span>
+              <h2 className="text-2xl font-bold text-gray-800">طلبات الشراء</h2>
+            </div>
+            <Link href="/barter/open-offers" className="text-blue-600 text-sm font-medium hover:text-blue-700 flex items-center gap-1">
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
 
           {demandItems.length > 0 ? (
-            <>
-              {categories.slice(0, 3).map((category) => (
-                <CategorySection
-                  key={category.id}
-                  category={category}
-                  items={groupedDemand[category.id] || []}
-                  type="demand"
-                />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {demandItems.slice(0, 12).map((item) => (
+                <SmallItemCard key={item.id} item={item} type="demand" />
               ))}
-            </>
+            </div>
           ) : (
             <div className="text-center py-12 bg-white rounded-2xl">
               <span className="text-5xl mb-4 block">🔍</span>
