@@ -138,6 +138,12 @@ export default function ItemsPage() {
 
       const response = await getItems(requestParams);
       console.log('Items API response:', response);
+      console.log('Items count:', response.data.items?.length);
+      console.log('Sample item governorates:', response.data.items?.slice(0, 5).map((item: any) => ({
+        title: item.title?.substring(0, 30),
+        governorate: item.governorate,
+        location: item.location
+      })));
 
       setItems(response.data.items);
       setTotalPages(response.data.pagination.totalPages);
