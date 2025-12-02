@@ -34,6 +34,7 @@ import pushRoutes from './routes/push.routes';
 import aiRoutes from './routes/ai.routes';
 import inventoryRoutes from './routes/inventory.routes';
 import locationsRoutes from './routes/locations.routes';
+import demandMarketplaceRoutes from './routes/demand-marketplace.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -47,6 +48,9 @@ import { attachChatEventHandlers } from './services/socket.service';
 
 // Import item match notification service
 import { initItemMatchNotifications } from './services/item-match-notification.service';
+
+// Import demand marketplace service
+import { initDemandMarketplaceListeners } from './services/demand-marketplace.service';
 
 // Initialize Express app
 const app: Application = express();
@@ -262,6 +266,9 @@ app.use('/api/v1/inventory', inventoryRoutes);
 // Locations routes (Egyptian governorates, cities, districts)
 app.use('/api/v1/locations', locationsRoutes);
 
+// Demand Marketplace routes (unified demand items: barter requests + reverse auctions)
+app.use('/api/v1/demand', demandMarketplaceRoutes);
+
 // 404 handler
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
@@ -332,6 +339,10 @@ const startServer = async () => {
     // Initialize item match notifications
     initItemMatchNotifications();
     console.log('✅ Item match notification service started');
+
+    // Initialize demand marketplace listeners for smart matching
+    initDemandMarketplaceListeners();
+    console.log('✅ Demand marketplace listeners initialized');
 
     // Start background jobs (kept for fallback and cleanup)
     if (env.server.nodeEnv === 'production') {

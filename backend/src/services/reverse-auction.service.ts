@@ -10,6 +10,7 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
+import { reverseAuctionEvents } from '../events/reverse-auction.events';
 
 // ============================================
 // Types & Interfaces
@@ -151,6 +152,25 @@ export const createReverseAuction = async (
         },
       },
     },
+  });
+
+  // Emit event for smart matching (notify sellers with matching items)
+  reverseAuctionEvents.emitAuctionCreated({
+    auctionId: reverseAuction.id,
+    buyerId: reverseAuction.buyerId,
+    title: reverseAuction.title,
+    description: reverseAuction.description || '',
+    categoryId: reverseAuction.categoryId,
+    condition: reverseAuction.condition || undefined,
+    targetPrice: reverseAuction.targetPrice || undefined,
+    maxBudget: reverseAuction.maxBudget || undefined,
+    governorate: reverseAuction.governorate || undefined,
+    city: reverseAuction.city || undefined,
+    district: reverseAuction.district || undefined,
+    marketType: reverseAuction.marketType || undefined,
+    startDate: reverseAuction.startDate,
+    endDate: reverseAuction.endDate,
+    timestamp: new Date(),
   });
 
   return reverseAuction;

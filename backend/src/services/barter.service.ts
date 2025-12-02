@@ -2,6 +2,7 @@ import { BarterOfferStatus, ItemCondition } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { createNotification } from './notification.service';
 import prisma from '../lib/prisma';
+import { barterEvents } from '../events/barter.events';
 
 // Types
 interface CreateBarterOfferData {
@@ -263,6 +264,42 @@ export const createBarterOffer = async (
       actionUrl: `/barter/my-offers`,
       actionText: 'عرض التفاصيل',
     });
+
+    // Emit barter offer created event for smart matching
+    barterEvents.emitOfferCreated({
+      offerId: barterOffer.id,
+      initiatorId: barterOffer.initiatorId,
+      recipientId: barterOffer.recipientId || undefined,
+      isOpenOffer: barterOffer.isOpenOffer,
+      offeredItemIds: barterOffer.offeredItemIds,
+      categoryIds: barterOffer.itemRequests?.map(r => r.categoryId).filter(Boolean) as string[] || [],
+      governorate: barterOffer.governorate || undefined,
+      city: barterOffer.city || undefined,
+      district: barterOffer.district || undefined,
+      marketType: barterOffer.marketType || undefined,
+      timestamp: new Date(),
+    });
+
+    // Emit events for each item request (demand side matching)
+    if (barterOffer.itemRequests && barterOffer.itemRequests.length > 0) {
+      for (const request of barterOffer.itemRequests) {
+        barterEvents.emitItemRequestCreated({
+          requestId: request.id,
+          offerId: barterOffer.id,
+          initiatorId: barterOffer.initiatorId,
+          description: request.description,
+          categoryId: request.categoryId || undefined,
+          subcategoryId: request.subcategoryId || undefined,
+          subSubcategoryId: request.subSubcategoryId || undefined,
+          minPrice: request.minPrice || undefined,
+          maxPrice: request.maxPrice || undefined,
+          condition: request.condition || undefined,
+          keywords: request.keywords || [],
+          governorate: barterOffer.governorate || undefined,
+          timestamp: new Date(),
+        });
+      }
+    }
   }
 
   return barterOffer;
