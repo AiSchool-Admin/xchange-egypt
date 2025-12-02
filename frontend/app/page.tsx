@@ -629,19 +629,23 @@ export default function Home() {
         // Try inventory API first
         try {
           const itemsResponse = await getLatestItems({ limit: 24 });
+          console.log('Inventory API response:', itemsResponse);
           if (itemsResponse.success && (itemsResponse.data.supply.length > 0 || itemsResponse.data.demand.length > 0)) {
             setSupplyItems(itemsResponse.data.supply);
             setDemandItems(itemsResponse.data.demand);
+            console.log('Loaded from inventory API - Supply:', itemsResponse.data.supply.length, 'Demand:', itemsResponse.data.demand.length);
             return;
           }
+          console.log('Inventory API returned empty, trying items API...');
         } catch (inventoryError) {
-          console.log('Inventory API failed, trying items API...');
+          console.log('Inventory API failed:', inventoryError, '- trying items API...');
         }
 
-        // Fallback: Try items API
+        // Fallback: Try items API without status filter
         try {
-          const itemsResult = await getItems({ limit: 24, status: 'ACTIVE' });
-          if (itemsResult.success && itemsResult.data?.items) {
+          const itemsResult = await getItems({ limit: 24 });
+          console.log('Items API response:', itemsResult);
+          if (itemsResult.success && itemsResult.data?.items && itemsResult.data.items.length > 0) {
             // Transform items to PublicItem format
             const transformedItems: PublicItem[] = itemsResult.data.items.map((item: any) => ({
               id: item.id,
@@ -661,7 +665,10 @@ export default function Home() {
               },
               createdAt: item.createdAt,
             }));
+            console.log('Transformed items:', transformedItems.length);
             setSupplyItems(transformedItems);
+          } else {
+            console.log('No items returned from API');
           }
         } catch (itemsError) {
           console.error('Items API also failed:', itemsError);
