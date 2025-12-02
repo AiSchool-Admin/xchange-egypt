@@ -657,11 +657,6 @@ export default function Home() {
             setSupplyItems(itemsResponse.data.supply);
             setDemandItems(itemsResponse.data.demand);
             console.log('Loaded from inventory API - Supply:', itemsResponse.data.supply.length, 'Demand:', itemsResponse.data.demand.length);
-            console.log('Sample supply items governorate values:', itemsResponse.data.supply.slice(0, 5).map((item: any) => ({
-              title: item.title?.substring(0, 25),
-              governorate: item.governorate,
-              location: item.location
-            })));
             return;
           }
           console.log('Inventory API returned empty, trying items API...');

@@ -9,6 +9,63 @@ import { successResponse } from '../utils/response';
 import prisma from '../lib/prisma';
 
 /**
+ * Populate governorate field for items based on seller's governorate
+ * POST /api/v1/admin/populate-governorates
+ */
+export const populateGovernorates = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    console.log('[Admin] Starting governorate population...');
+
+    // Get all items without governorate
+    const itemsWithoutGovernorate = await prisma.item.findMany({
+      where: {
+        governorate: null,
+      },
+      include: {
+        seller: {
+          select: {
+            id: true,
+            governorate: true,
+          },
+        },
+      },
+    });
+
+    console.log(`[Admin] Found ${itemsWithoutGovernorate.length} items without governorate`);
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    for (const item of itemsWithoutGovernorate) {
+      if (item.seller?.governorate) {
+        await prisma.item.update({
+          where: { id: item.id },
+          data: { governorate: item.seller.governorate },
+        });
+        updatedCount++;
+      } else {
+        skippedCount++;
+      }
+    }
+
+    console.log(`[Admin] Governorate population complete: ${updatedCount} updated, ${skippedCount} skipped`);
+
+    return successResponse(res, {
+      totalItems: itemsWithoutGovernorate.length,
+      updated: updatedCount,
+      skipped: skippedCount,
+    }, 'Governorate population completed successfully');
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Run retroactive matching for all existing items
  * POST /api/v1/admin/retroactive-matching
  */

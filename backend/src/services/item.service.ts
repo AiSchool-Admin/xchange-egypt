@@ -98,6 +98,16 @@ export const createItem = async (
     }
   }
 
+  // Get user's governorate as fallback
+  let governorate = itemData.governorate;
+  if (!governorate) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { governorate: true },
+    });
+    governorate = user?.governorate || undefined;
+  }
+
   // Create the item
   const item = await prisma.item.create({
     data: {
@@ -108,6 +118,7 @@ export const createItem = async (
       condition: itemData.condition,
       estimatedValue: itemData.estimatedValue,
       location: itemData.location,
+      governorate: governorate,
       images: processedImages,
       // Barter preferences
       desiredCategoryId: itemData.desiredCategoryId,
