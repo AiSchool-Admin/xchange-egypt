@@ -103,13 +103,13 @@ const findInterestedUsers = async (
           ],
         },
       ],
-      offer: {
+      barterOffer: {
         status: 'PENDING',
         initiatorId: { not: sellerId },
       },
     },
     select: {
-      offer: {
+      barterOffer: {
         select: {
           initiatorId: true,
         },
@@ -118,7 +118,7 @@ const findInterestedUsers = async (
   });
 
   for (const request of matchingItemRequests) {
-    const userId = request.offer.initiatorId;
+    const userId = request.barterOffer.initiatorId;
     if (!interestedUsers.find(u => u.userId === userId)) {
       interestedUsers.push({
         userId,
