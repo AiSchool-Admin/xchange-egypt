@@ -863,10 +863,11 @@ const cleanupImages = async (imagePaths: string[]): Promise<void> => {
 
 /**
  * Get featured items with optional filters
+ * Supports filtering by category slug or ID, including child categories
  */
 export const getFeaturedItems = async (params: {
   limit?: number;
-  categoryId?: string;
+  categoryId?: string; // Can be a slug (e.g., 'luxury-watches') or UUID
   governorate?: string;
   minTier?: PromotionTier;
 }): Promise<any[]> => {
@@ -881,8 +882,40 @@ export const getFeaturedItems = async (params: {
     ],
   };
 
+  // Handle category filter - support both slug and UUID
   if (categoryId) {
-    where.categoryId = categoryId;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId);
+    let categoryIds: string[] = [];
+
+    if (isUUID) {
+      const category = await prisma.category.findUnique({
+        where: { id: categoryId },
+        include: { children: { select: { id: true } } }
+      });
+      if (category) {
+        categoryIds = [category.id, ...category.children.map(c => c.id)];
+      }
+    } else {
+      const category = await prisma.category.findUnique({
+        where: { slug: categoryId },
+        include: {
+          children: {
+            select: { id: true, children: { select: { id: true } } }
+          }
+        }
+      });
+      if (category) {
+        categoryIds = [category.id];
+        category.children.forEach(child => {
+          categoryIds.push(child.id);
+          child.children.forEach(grandchild => categoryIds.push(grandchild.id));
+        });
+      }
+    }
+
+    if (categoryIds.length > 0) {
+      where.categoryId = { in: categoryIds };
+    }
   }
 
   if (governorate) {
@@ -933,11 +966,12 @@ export const getFeaturedItems = async (params: {
 
 /**
  * Get luxury items (high-value items)
+ * Supports filtering by category slug or ID, including child categories
  */
 export const getLuxuryItems = async (params: {
   limit?: number;
   minPrice?: number;
-  categoryId?: string;
+  categoryId?: string; // Can be a slug (e.g., 'luxury-watches') or UUID
   governorate?: string;
   sortBy?: 'price_high' | 'price_low' | 'recent';
 }): Promise<any[]> => {
@@ -954,8 +988,51 @@ export const getLuxuryItems = async (params: {
     estimatedValue: { gte: minPrice },
   };
 
+  // Handle category filter - support both slug and UUID
   if (categoryId) {
-    where.categoryId = categoryId;
+    // Check if it's a UUID (36 chars with dashes) or a slug
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId);
+
+    let categoryIds: string[] = [];
+
+    if (isUUID) {
+      // It's a UUID - get this category and its children
+      const category = await prisma.category.findUnique({
+        where: { id: categoryId },
+        include: { children: { select: { id: true } } }
+      });
+      if (category) {
+        categoryIds = [category.id, ...category.children.map(c => c.id)];
+      }
+    } else {
+      // It's a slug - find category by slug and include children
+      const category = await prisma.category.findUnique({
+        where: { slug: categoryId },
+        include: {
+          children: {
+            select: {
+              id: true,
+              children: { select: { id: true } } // Level 3
+            }
+          }
+        }
+      });
+      if (category) {
+        categoryIds = [category.id];
+        // Add level 2 children
+        category.children.forEach(child => {
+          categoryIds.push(child.id);
+          // Add level 3 children
+          child.children.forEach(grandchild => {
+            categoryIds.push(grandchild.id);
+          });
+        });
+      }
+    }
+
+    if (categoryIds.length > 0) {
+      where.categoryId = { in: categoryIds };
+    }
   }
 
   if (governorate) {
