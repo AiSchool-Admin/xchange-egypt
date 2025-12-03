@@ -245,6 +245,14 @@ export const getItemById = async (itemId: string): Promise<any> => {
           },
         },
       },
+      // Include desired category for barter items
+      desiredCategory: {
+        select: {
+          id: true,
+          nameAr: true,
+          nameEn: true,
+        },
+      },
     },
   });
 

@@ -275,42 +275,101 @@ export default function ItemDetailsPage() {
                 )}
               </div>
 
+              {/* Barter Preferences - What seller wants */}
+              {(item.desiredItemTitle || item.desiredCategoryId) && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-700 font-semibold mb-2">🔄 للمقايضة فقط / For Barter Only</p>
+                  <p className="text-amber-800 font-medium">يبحث عن / Looking for:</p>
+                  {item.desiredItemTitle && (
+                    <p className="text-amber-900 font-semibold text-lg">🎯 {item.desiredItemTitle}</p>
+                  )}
+                  {item.desiredItemDescription && (
+                    <p className="text-amber-700 text-sm mt-1">{item.desiredItemDescription}</p>
+                  )}
+                  {item.desiredCategory && (
+                    <p className="text-amber-700 text-sm">📂 {item.desiredCategory.nameAr || item.desiredCategory.nameEn}</p>
+                  )}
+                </div>
+              )}
+
               {/* Action Buttons */}
               {!isOwner && item.status === 'ACTIVE' && (
                 <div className="space-y-3">
-                  <button
-                    onClick={handleBuyNow}
-                    className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold transition"
-                  >
-                    💳 Buy Now
-                  </button>
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={addingToCart}
-                    className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 font-semibold transition disabled:opacity-50"
-                  >
-                    {addingToCart ? 'Adding...' : '🛒 Add to Cart'}
-                  </button>
-                  {cartMessage && (
-                    <p className={`text-center text-sm ${cartMessage.includes('Added') ? 'text-green-600' : 'text-red-600'}`}>
-                      {cartMessage}
-                    </p>
+                  {/* If item has barter preferences, only show Make Barter Offer */}
+                  {(item.desiredItemTitle || item.desiredCategoryId) ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push('/login');
+                            return;
+                          }
+                          router.push(`/barter/new?wantedItemId=${item.id}`);
+                        }}
+                        className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
+                      >
+                        🔁 عرض مقايضة / Make Barter Offer
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push('/login');
+                            return;
+                          }
+                          router.push(`/messages?userId=${item.seller?.id}&itemId=${item.id}`);
+                        }}
+                        className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 font-semibold transition"
+                      >
+                        💬 التواصل مع البائع / Contact Seller
+                      </button>
+                    </>
+                  ) : (
+                    /* Regular item - show all buttons */
+                    <>
+                      <button
+                        onClick={handleBuyNow}
+                        className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold transition"
+                      >
+                        💳 Buy Now
+                      </button>
+                      <button
+                        onClick={handleAddToCart}
+                        disabled={addingToCart}
+                        className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 font-semibold transition disabled:opacity-50"
+                      >
+                        {addingToCart ? 'Adding...' : '🛒 Add to Cart'}
+                      </button>
+                      {cartMessage && (
+                        <p className={`text-center text-sm ${cartMessage.includes('Added') ? 'text-green-600' : 'text-red-600'}`}>
+                          {cartMessage}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push('/login');
+                            return;
+                          }
+                          router.push(`/messages?userId=${item.seller?.id}&itemId=${item.id}`);
+                        }}
+                        className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
+                      >
+                        💬 Contact Seller
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push('/login');
+                            return;
+                          }
+                          router.push(`/barter/new?wantedItemId=${item.id}`);
+                        }}
+                        className="w-full border border-purple-600 text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 font-semibold transition"
+                      >
+                        🔁 Make Barter Offer
+                      </button>
+                    </>
                   )}
-                  <button
-                    onClick={() => {
-                      if (!user) {
-                        router.push('/login');
-                        return;
-                      }
-                      router.push(`/messages?userId=${item.seller?.id}&itemId=${item.id}`);
-                    }}
-                    className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
-                  >
-                    💬 Contact Seller
-                  </button>
-                  <button className="w-full border border-purple-600 text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 font-semibold transition">
-                    🔁 Make Barter Offer
-                  </button>
                 </div>
               )}
 

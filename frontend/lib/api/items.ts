@@ -20,6 +20,18 @@ export interface Item {
   promotionTier?: PromotionTier;
   promotedAt?: string;
   promotionExpiresAt?: string;
+  // Barter preferences - What the seller wants in exchange
+  desiredItemTitle?: string;
+  desiredItemDescription?: string;
+  desiredCategoryId?: string;
+  desiredKeywords?: string;
+  desiredValueMin?: number;
+  desiredValueMax?: number;
+  desiredCategory?: {
+    id: string;
+    nameEn: string;
+    nameAr: string;
+  };
   category?: {
     id: string;
     nameEn: string;
