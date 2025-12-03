@@ -148,8 +148,13 @@ export interface CreateInventoryItemInput {
   listingType: ListingType;
   images?: string[];
   categoryId?: string;
+  // Barter preferences - What user wants in exchange
+  desiredItemTitle?: string;
+  desiredItemDescription?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  desiredValueMin?: number;
+  desiredValueMax?: number;
   // Item condition
   condition?: ItemConditionValue;
   // Market & Location
@@ -396,7 +401,12 @@ export const createInventoryItem = async (
         estimatedValue: input.estimatedValue,
         category: resolvedCategoryId ? { connect: { id: resolvedCategoryId } } : undefined,
         desiredCategory: resolvedDesiredCategoryId ? { connect: { id: resolvedDesiredCategoryId } } : undefined,
+        // Barter preferences - What user wants in exchange
+        desiredItemTitle: input.desiredItemTitle || null,
+        desiredItemDescription: input.desiredItemDescription || null,
         desiredKeywords: input.desiredKeywords || null,
+        desiredValueMin: input.desiredValueMin || null,
+        desiredValueMax: input.desiredValueMax || null,
         images: input.images || [],
         // Market & Location
         marketType: (input.marketType as MarketType) || 'DISTRICT',
