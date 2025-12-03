@@ -1,25 +1,18 @@
 /**
  * Smart Matching Notification Service
  *
- * Core Concept: Match SUPPLY with DEMAND regardless of listing type
+ * Core Concept: Match SUPPLY with DEMAND for BARTER
  *
- * SUPPLY (العرض):
- * - Any Item with status='ACTIVE' (sale, auction, barter)
+ * When Ahmed lists "صنف1" for sale and wants "صنف2" in exchange:
+ * - His SUPPLY = صنف1
+ * - His DEMAND = صنف2
  *
- * DEMAND (الطلب):
- * - ItemRequest from barter offers (what user wants in exchange)
- * - ReverseAuction (what user wants to buy)
+ * When Sara lists "صنف2" for sale and wants "صنف1" in exchange:
+ * - Her SUPPLY = صنف2
+ * - Her DEMAND = صنف1
  *
- * When someone creates a barter offer:
- * 1. Their offered items → SUPPLY → matches others' DEMAND
- * 2. Their item requests → DEMAND → matches others' SUPPLY
- *
- * This creates two-way matching:
- * - Ahmed offers "شقة" (SUPPLY) and wants "سيارة" (DEMAND)
- * - Sara offers "سيارة" (SUPPLY) and wants "شقة" (DEMAND)
- * - Ahmed's SUPPLY matches Sara's DEMAND → Notify Sara
- * - Sara's SUPPLY matches Ahmed's DEMAND → Notify Ahmed
- * - Perfect barter match!
+ * Perfect Match! Ahmed's SUPPLY matches Sara's DEMAND AND vice versa.
+ * Both get ONE notification about the match.
  */
 
 import prisma from '../lib/prisma';
@@ -28,29 +21,237 @@ import { itemEvents, ItemCreatedPayload } from '../events/item.events';
 import { barterEvents, BarterOfferCreatedPayload } from '../events/barter.events';
 import { reverseAuctionEvents, ReverseAuctionCreatedPayload } from '../events/reverse-auction.events';
 
+// Track recently notified pairs to avoid duplicate notifications
+const recentlyNotifiedPairs = new Set<string>();
+
+const makeNotificationKey = (user1: string, user2: string, item1: string, item2: string): string => {
+  // Sort to ensure consistent key regardless of order
+  const users = [user1, user2].sort().join('-');
+  const items = [item1, item2].sort().join('-');
+  return `${users}:${items}`;
+};
+
+// Clear old notification keys periodically (every 5 minutes)
+setInterval(() => {
+  recentlyNotifiedPairs.clear();
+}, 5 * 60 * 1000);
+
 // ============================================
-// Core Matching Logic
+// Main Barter Matching Logic
 // ============================================
 
 /**
- * When a barter offer is created, perform two-way matching:
- * 1. Match offerer's SUPPLY (items) with others' DEMAND (requests)
- * 2. Match offerer's DEMAND (requests) with others' SUPPLY (items)
+ * When an item with barter preferences is created:
+ * 1. Find items that match what this user wants
+ * 2. Check if those item owners want what this user is offering
+ * 3. Send ONE clear notification to both parties
  */
 export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): Promise<void> => {
+  // For barter offers created from inventory, don't trigger - let item events handle it
+  if (!payload.offeredItemIds || payload.offeredItemIds.length === 0) {
+    console.log('[SmartMatching] Skipping barter offer without offered items (handled by item events)');
+    return;
+  }
+
+  // Original barter offer logic for standalone offers
+  await handleStandaloneBarterOffer(payload);
+};
+
+/**
+ * When an item is created with barter preferences, find matches
+ */
+export const notifyItemWithBarterMatches = async (itemId: string, sellerId: string): Promise<void> => {
   try {
-    if (!payload.isOpenOffer) return; // Only match open offers
+    const item = await prisma.item.findUnique({
+      where: { id: itemId },
+      include: {
+        category: { select: { id: true, nameAr: true } },
+        desiredCategory: { select: { id: true, nameAr: true } },
+        seller: { select: { id: true, fullName: true } },
+      },
+    });
+
+    if (!item) return;
+
+    const myName = item.seller?.fullName || 'مستخدم';
+    const myItem = item.title;
+    const myItemValue = item.estimatedValue.toLocaleString('ar-EG');
+    const myWantedText = item.desiredItemTitle || item.desiredCategory?.nameAr || 'سلعة';
+
+    console.log(`[SmartMatching] Looking for matches: ${myName} offers "${myItem}" and wants "${myWantedText}"`);
+
+    // Find items that match what I want (by category or title keyword)
+    const matchConditions: any = {
+      status: 'ACTIVE',
+      sellerId: { not: sellerId },
+    };
+
+    // Match by desired category
+    if (item.desiredCategoryId) {
+      matchConditions.categoryId = item.desiredCategoryId;
+    }
+
+    const potentialMatches = await prisma.item.findMany({
+      where: matchConditions,
+      include: {
+        category: { select: { id: true, nameAr: true } },
+        desiredCategory: { select: { id: true, nameAr: true } },
+        seller: { select: { id: true, fullName: true } },
+      },
+    });
+
+    // Also search by title keyword if desiredItemTitle is specified
+    let keywordMatches: typeof potentialMatches = [];
+    if (item.desiredItemTitle) {
+      const keywords = item.desiredItemTitle.split(/[\s,،]+/).filter(k => k.length > 2);
+      if (keywords.length > 0) {
+        keywordMatches = await prisma.item.findMany({
+          where: {
+            status: 'ACTIVE',
+            sellerId: { not: sellerId },
+            OR: keywords.map(keyword => ({
+              title: { contains: keyword, mode: 'insensitive' as const },
+            })),
+          },
+          include: {
+            category: { select: { id: true, nameAr: true } },
+            desiredCategory: { select: { id: true, nameAr: true } },
+            seller: { select: { id: true, fullName: true } },
+          },
+        });
+      }
+    }
+
+    // Combine and dedupe matches
+    const allMatches = [...potentialMatches];
+    for (const match of keywordMatches) {
+      if (!allMatches.find(m => m.id === match.id)) {
+        allMatches.push(match);
+      }
+    }
+
+    console.log(`[SmartMatching] Found ${allMatches.length} potential matches`);
+
+    // Check each potential match for two-way barter compatibility
+    for (const otherItem of allMatches) {
+      const notifKey = makeNotificationKey(sellerId, otherItem.sellerId, itemId, otherItem.id);
+
+      if (recentlyNotifiedPairs.has(notifKey)) {
+        console.log(`[SmartMatching] Skipping duplicate notification for pair`);
+        continue;
+      }
+
+      // Check if the other person wants what I'm offering
+      const theyWantMyItem = checkIfItemMatches(item, otherItem);
+
+      if (theyWantMyItem) {
+        // PERFECT BARTER MATCH!
+        recentlyNotifiedPairs.add(notifKey);
+
+        const theirName = otherItem.seller?.fullName || 'مستخدم';
+        const theirItem = otherItem.title;
+        const theirItemValue = otherItem.estimatedValue.toLocaleString('ar-EG');
+        const theirWantedText = otherItem.desiredItemTitle || otherItem.desiredCategory?.nameAr || 'سلعة';
+
+        console.log(`[SmartMatching] 🎯 PERFECT MATCH: ${myName} ↔ ${theirName}`);
+
+        // Notify the other user (the one who has what I want)
+        await createNotification({
+          userId: otherItem.sellerId,
+          type: 'BARTER_MATCH',
+          title: '🎯 تطابق مثالي للمقايضة!',
+          message: `${myName} يعرض "${myItem}" (${myItemValue} ج.م) مقابل "${myWantedText}" - لديك "${theirItem}"!`,
+          priority: 'HIGH',
+          entityType: 'ITEM',
+          entityId: itemId,
+          actionUrl: `/barter/initiate?offeredItem=${otherItem.id}&wantedItem=${itemId}`,
+          actionText: 'بدء المقايضة',
+          metadata: {
+            matchType: 'PERFECT_BARTER_MATCH',
+            myItemId: itemId,
+            myItemTitle: myItem,
+            theirItemId: otherItem.id,
+            theirItemTitle: theirItem,
+            initiatorId: sellerId,
+            initiatorName: myName,
+          },
+        });
+
+        console.log(`[SmartMatching] Notified ${theirName} about perfect match with ${myName}`);
+      } else {
+        // Partial match - they have what I want but may not want what I have
+        // Still notify them as they might be interested
+        const theirName = otherItem.seller?.fullName || 'مستخدم';
+        const theirItem = otherItem.title;
+        const theirItemValue = otherItem.estimatedValue.toLocaleString('ar-EG');
+
+        // Don't send if already notified
+        if (!recentlyNotifiedPairs.has(notifKey)) {
+          recentlyNotifiedPairs.add(notifKey);
+
+          await createNotification({
+            userId: otherItem.sellerId,
+            type: 'BARTER_MATCH',
+            title: '🔄 فرصة مقايضة جديدة',
+            message: `${myName} يبحث عن "${myWantedText}" ويعرض "${myItem}" (${myItemValue} ج.م) - لديك "${theirItem}"!`,
+            priority: 'MEDIUM',
+            entityType: 'ITEM',
+            entityId: itemId,
+            actionUrl: `/barter/initiate?offeredItem=${otherItem.id}&wantedItem=${itemId}`,
+            actionText: 'عرض التفاصيل',
+            metadata: {
+              matchType: 'PARTIAL_BARTER_MATCH',
+              myItemId: itemId,
+              theirItemId: otherItem.id,
+            },
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[SmartMatching] Error in notifyItemWithBarterMatches:', error);
+  }
+};
+
+/**
+ * Check if my item matches what the other person wants
+ */
+const checkIfItemMatches = (myItem: any, theirItem: any): boolean => {
+  // Check if they want my category
+  if (theirItem.desiredCategoryId && myItem.categoryId === theirItem.desiredCategoryId) {
+    return true;
+  }
+
+  // Check if they want my item by title keyword
+  if (theirItem.desiredItemTitle && myItem.title) {
+    const theirKeywords = theirItem.desiredItemTitle.toLowerCase().split(/[\s,،]+/).filter((k: string) => k.length > 2);
+    const myTitle = myItem.title.toLowerCase();
+
+    for (const keyword of theirKeywords) {
+      if (myTitle.includes(keyword)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
+/**
+ * Handle standalone barter offers (not from inventory)
+ */
+const handleStandaloneBarterOffer = async (payload: BarterOfferCreatedPayload): Promise<void> => {
+  try {
+    if (!payload.isOpenOffer) return;
 
     const { offerId, initiatorId, offeredItemIds, categoryIds } = payload;
 
-    // Get initiator info
     const initiator = await prisma.user.findUnique({
       where: { id: initiatorId },
       select: { fullName: true },
     });
     const initiatorName = initiator?.fullName || 'مستخدم';
 
-    // Get offered items details
     const offeredItems = await prisma.item.findMany({
       where: { id: { in: offeredItemIds } },
       include: { category: { select: { id: true, nameAr: true } } },
@@ -61,134 +262,20 @@ export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): P
     const offeredValueText = offeredValue.toLocaleString('ar-EG');
     const offeredItemsText = offeredItems.map(i => `"${i.title}"`).join(' و ');
 
-    // Get wanted categories (from ItemRequests)
-    const wantedCategoryIds = categoryIds || [];
-    const wantedCategories = await prisma.category.findMany({
-      where: { id: { in: wantedCategoryIds } },
-      select: { id: true, nameAr: true },
-    });
-    const wantedCategoryNames = wantedCategories.map(c => c.nameAr);
-
-    // Get item requests (DEMAND) for this barter offer to know what initiator wants
     const initiatorItemRequests = await prisma.itemRequest.findMany({
       where: { barterOfferId: offerId },
       include: { category: { select: { nameAr: true } } },
     });
 
-    // Build text for what the initiator is looking for
     const initiatorWantsText = initiatorItemRequests.length > 0
       ? initiatorItemRequests.map(r => r.description || r.category?.nameAr || 'سلعة').join(' أو ')
-      : wantedCategoryNames.length > 0
-        ? wantedCategoryNames.join(' أو ')
-        : 'سلعة مقابلة';
+      : 'سلعة مقابلة';
 
     const notifiedUsers = new Set<string>();
+    const wantedCategoryIds = categoryIds || [];
 
-    // ============================================
-    // PART 1: Match my SUPPLY with others' DEMAND
-    // Others want what I'm offering
-    // ============================================
-    console.log(`[SmartMatching] Checking who wants categories: ${offeredCategoryIds.join(', ')}`);
-
-    // 1A. Find ItemRequests (barter demands) that match my offered items
-    const matchingBarterDemands = await prisma.itemRequest.findMany({
-      where: {
-        OR: [
-          { categoryId: { in: offeredCategoryIds } },
-          { subcategoryId: { in: offeredCategoryIds } },
-          { subSubcategoryId: { in: offeredCategoryIds } },
-        ],
-        barterOffer: {
-          status: 'PENDING',
-          initiatorId: { not: initiatorId },
-        },
-      },
-      include: {
-        barterOffer: {
-          include: {
-            initiator: { select: { id: true, fullName: true } },
-          },
-        },
-        category: { select: { nameAr: true } },
-      },
-    });
-
-    for (const demand of matchingBarterDemands) {
-      const userId = demand.barterOffer.initiatorId;
-      if (notifiedUsers.has(userId)) continue;
-      notifiedUsers.add(userId);
-
-      // Use description if available, otherwise category name
-      const wantedItemText = demand.description || demand.category?.nameAr || 'سلعة';
-
-      await createNotification({
-        userId,
-        type: 'BARTER_MATCH',
-        title: '🎯 سلعة تطابق ما تبحث عنه!',
-        message: `${initiatorName} يعرض ${offeredItemsText} (${offeredValueText} ج.م) - أنت تبحث عن "${wantedItemText}" للمقايضة!`,
-        priority: 'HIGH',
-        entityType: 'BARTER_OFFER',
-        entityId: offerId,
-        actionUrl: `/barter/respond/${offerId}`,
-        actionText: 'عرض التفاصيل',
-        metadata: {
-          matchType: 'SUPPLY_TO_DEMAND',
-          offerId,
-          offeredItems: offeredItems.map(i => ({ id: i.id, title: i.title })),
-          demandId: demand.id,
-          demandDescription: demand.description,
-        },
-      });
-
-      console.log(`[SmartMatching] Notified ${userId}: my supply matches their barter demand for "${wantedItemText}"`);
-    }
-
-    // 1B. Find ReverseAuctions (purchase demands) that match my offered items
-    const matchingPurchaseDemands = await prisma.reverseAuction.findMany({
-      where: {
-        categoryId: { in: offeredCategoryIds },
-        status: 'ACTIVE',
-        endDate: { gt: new Date() },
-        buyerId: { not: initiatorId },
-      },
-      include: {
-        buyer: { select: { id: true, fullName: true } },
-        category: { select: { nameAr: true } },
-      },
-    });
-
-    for (const demand of matchingPurchaseDemands) {
-      if (notifiedUsers.has(demand.buyerId)) continue;
-      notifiedUsers.add(demand.buyerId);
-
-      await createNotification({
-        userId: demand.buyerId,
-        type: 'ITEM_AVAILABLE',
-        title: '💰 سلعة متاحة تطابق طلبك!',
-        message: `${initiatorName} يعرض ${offeredItemsText} (${offeredValueText} ج.م) - يطابق طلبك "${demand.title}"!`,
-        priority: 'HIGH',
-        entityType: 'BARTER_OFFER',
-        entityId: offerId,
-        actionUrl: `/barter/respond/${offerId}`,
-        actionText: 'عرض التفاصيل',
-        metadata: {
-          matchType: 'SUPPLY_TO_PURCHASE',
-          offerId,
-          auctionId: demand.id,
-        },
-      });
-
-      console.log(`[SmartMatching] Notified ${demand.buyerId}: my supply matches their purchase demand`);
-    }
-
-    // ============================================
-    // PART 2: Match my DEMAND with others' SUPPLY
-    // Others have what I'm looking for
-    // ============================================
-    console.log(`[SmartMatching] Checking who has categories: ${wantedCategoryIds.join(', ')}`);
-
+    // Find matching supply
     if (wantedCategoryIds.length > 0) {
-      // 2A. Find Items (supply) that match my wanted categories
       const matchingSupply = await prisma.item.findMany({
         where: {
           categoryId: { in: wantedCategoryIds },
@@ -201,7 +288,6 @@ export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): P
         },
       });
 
-      // Group by seller to avoid duplicate notifications
       const sellerItems: Record<string, typeof matchingSupply> = {};
       for (const item of matchingSupply) {
         if (!sellerItems[item.sellerId]) {
@@ -219,77 +305,33 @@ export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): P
         const itemsText = items.length > 1
           ? `"${firstItem.title}" و ${items.length - 1} سلع أخرى`
           : `"${firstItem.title}"`;
-        const itemValue = firstItem.estimatedValue.toLocaleString('ar-EG');
 
-        // Check if this seller also wants what I'm offering (perfect barter match!)
-        const sellerAlsoWantsMyItems = await prisma.itemRequest.findFirst({
-          where: {
-            OR: [
-              { categoryId: { in: offeredCategoryIds } },
-              { subcategoryId: { in: offeredCategoryIds } },
-            ],
-            barterOffer: {
-              status: 'PENDING',
-              initiatorId: sellerId,
-            },
+        await createNotification({
+          userId: sellerId,
+          type: 'BARTER_MATCH',
+          title: '🔄 فرصة مقايضة!',
+          message: `${initiatorName} يبحث عن "${initiatorWantsText}" - لديك ${itemsText}! يعرض مقابلها: ${offeredItemsText} (${offeredValueText} ج.م)`,
+          priority: 'MEDIUM',
+          entityType: 'BARTER_OFFER',
+          entityId: offerId,
+          actionUrl: `/barter/respond/${offerId}`,
+          actionText: 'عرض التفاصيل',
+          metadata: {
+            matchType: 'BARTER_OFFER_MATCH',
+            offerId,
           },
         });
-
-        if (sellerAlsoWantsMyItems) {
-          // Perfect match! Both want what the other has
-          await createNotification({
-            userId: sellerId,
-            type: 'BARTER_MATCH',
-            title: '🎯 تطابق مثالي للمقايضة!',
-            message: `${initiatorName} يعرض ${offeredItemsText} (${offeredValueText} ج.م) ويبحث عن "${initiatorWantsText}" - لديك ${itemsText}! تطابق مثالي!`,
-            priority: 'HIGH',
-            entityType: 'BARTER_OFFER',
-            entityId: offerId,
-            actionUrl: `/barter/respond/${offerId}`,
-            actionText: 'بدء المقايضة',
-            metadata: {
-              matchType: 'PERFECT_BARTER_MATCH',
-              offerId,
-              matchScore: 100,
-              matchedItems: items.map(i => ({ id: i.id, title: i.title })),
-              initiatorWants: initiatorWantsText,
-            },
-          });
-
-          console.log(`[SmartMatching] Perfect match! Notified ${sellerId} - wants "${initiatorWantsText}"`);
-        } else {
-          // Partial match - they have what I want
-          await createNotification({
-            userId: sellerId,
-            type: 'BARTER_MATCH',
-            title: '🔄 فرصة مقايضة!',
-            message: `${initiatorName} يبحث عن "${initiatorWantsText}" - لديك ${itemsText} (${itemValue} ج.م)! يعرض مقابلها: ${offeredItemsText}`,
-            priority: 'MEDIUM',
-            entityType: 'BARTER_OFFER',
-            entityId: offerId,
-            actionUrl: `/barter/respond/${offerId}`,
-            actionText: 'عرض التفاصيل',
-            metadata: {
-              matchType: 'DEMAND_TO_SUPPLY',
-              offerId,
-              matchedItems: items.map(i => ({ id: i.id, title: i.title })),
-              initiatorWants: initiatorWantsText,
-            },
-          });
-
-          console.log(`[SmartMatching] Notified ${sellerId}: my demand for "${initiatorWantsText}" matches their supply`);
-        }
       }
     }
 
-    console.log(`[SmartMatching] Total ${notifiedUsers.size} users notified for barter offer ${offerId}`);
+    console.log(`[SmartMatching] ${notifiedUsers.size} users notified for barter offer ${offerId}`);
   } catch (error) {
-    console.error('[SmartMatching] Error in notifyBarterMatches:', error);
+    console.error('[SmartMatching] Error in handleStandaloneBarterOffer:', error);
   }
 };
 
 /**
- * When an item is listed for direct sale, match with purchase demands
+ * When an item is listed for direct sale (no barter preferences)
  */
 export const notifySaleMatches = async (itemId: string, sellerId: string): Promise<void> => {
   try {
@@ -346,54 +388,6 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
       });
     }
 
-    // Find ItemRequests (barter demands) matching this item
-    const matchingBarterDemands = await prisma.itemRequest.findMany({
-      where: {
-        OR: [
-          { categoryId: item.categoryId },
-          { subcategoryId: item.categoryId },
-        ],
-        barterOffer: {
-          status: 'PENDING',
-          initiatorId: { not: sellerId },
-        },
-      },
-      include: {
-        barterOffer: {
-          include: {
-            initiator: { select: { id: true, fullName: true } },
-          },
-        },
-        category: { select: { nameAr: true } },
-      },
-    });
-
-    for (const demand of matchingBarterDemands) {
-      if (notifiedUsers.has(demand.barterOffer.initiatorId)) continue;
-      notifiedUsers.add(demand.barterOffer.initiatorId);
-
-      // Use description if available, otherwise category name
-      const wantedItemText = demand.description || demand.category?.nameAr || 'سلعة';
-
-      await createNotification({
-        userId: demand.barterOffer.initiatorId,
-        type: 'ITEM_AVAILABLE',
-        title: '✨ سلعة جديدة تطابق طلبك!',
-        message: `"${item.title}" بسعر ${priceText} ج.م - أنت تبحث عن "${wantedItemText}"!`,
-        priority: 'MEDIUM',
-        entityType: 'ITEM',
-        entityId: itemId,
-        actionUrl: `/items/${itemId}`,
-        actionText: 'عرض السلعة',
-        metadata: {
-          matchType: 'SALE_TO_BARTER_DEMAND',
-          itemId,
-          requestId: demand.id,
-          demandDescription: demand.description,
-        },
-      });
-    }
-
     console.log(`[SmartMatching] ${notifiedUsers.size} users notified for new sale item ${itemId}`);
   } catch (error) {
     console.error('[SmartMatching] Error in notifySaleMatches:', error);
@@ -401,7 +395,7 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
 };
 
 /**
- * When a purchase request (reverse auction) is created, match with supply
+ * When a purchase request (reverse auction) is created
  */
 export const notifyPurchaseRequestMatches = async (payload: ReverseAuctionCreatedPayload): Promise<void> => {
   try {
@@ -418,11 +412,9 @@ export const notifyPurchaseRequestMatches = async (payload: ReverseAuctionCreate
     });
 
     const buyerName = buyer?.fullName || 'مشتري';
-    const categoryName = category?.nameAr || 'سلعة';
     const budgetText = maxBudget ? `${maxBudget.toLocaleString('ar-EG')} ج.م` : 'غير محدد';
     const notifiedUsers = new Set<string>();
 
-    // Find Items (supply) matching this demand
     const matchingSupply = await prisma.item.findMany({
       where: {
         categoryId,
@@ -445,7 +437,7 @@ export const notifyPurchaseRequestMatches = async (payload: ReverseAuctionCreate
         userId: item.sellerId,
         type: 'PURCHASE_REQUEST_MATCH',
         title: '🛒 مشتري محتمل لسلعتك!',
-        message: `${buyerName} يبحث عن ${categoryName} "${title}" - لديك "${item.title}" (${priceText} ج.م)! الميزانية: ${budgetText}`,
+        message: `${buyerName} يبحث عن "${title}" - لديك "${item.title}" (${priceText} ج.م)! الميزانية: ${budgetText}`,
         priority: 'HIGH',
         entityType: 'REVERSE_AUCTION',
         entityId: auctionId,
@@ -466,155 +458,13 @@ export const notifyPurchaseRequestMatches = async (payload: ReverseAuctionCreate
 };
 
 // ============================================
-// Item with Barter Preferences: When someone lists an item and wants something specific
-// ============================================
-
-/**
- * When an item is listed with barter preferences (wants something specific in exchange),
- * match both:
- * 1. Their SUPPLY (the item they're offering) with others' DEMAND
- * 2. Their DEMAND (what they want) with others' SUPPLY
- */
-export const notifyItemWithBarterMatches = async (itemId: string, sellerId: string): Promise<void> => {
-  try {
-    const item = await prisma.item.findUnique({
-      where: { id: itemId },
-      include: {
-        category: { select: { id: true, nameAr: true } },
-        desiredCategory: { select: { id: true, nameAr: true } },
-        seller: { select: { fullName: true } },
-      },
-    });
-
-    if (!item) return;
-
-    const sellerName = item.seller?.fullName || 'مستخدم';
-    const offeredItemText = `"${item.title}"`;
-    const offeredValueText = item.estimatedValue.toLocaleString('ar-EG');
-
-    // What they want - use desiredItemTitle if available, otherwise category
-    const wantedText = item.desiredItemTitle || item.desiredCategory?.nameAr || 'سلعة للمقايضة';
-
-    const notifiedUsers = new Set<string>();
-
-    // PART 1: Match their SUPPLY with others' DEMAND
-    // Find users with ItemRequests (from barter offers) that match this item's category
-    if (item.categoryId) {
-      const matchingDemands = await prisma.itemRequest.findMany({
-        where: {
-          OR: [
-            { categoryId: item.categoryId },
-            { subcategoryId: item.categoryId },
-          ],
-          barterOffer: {
-            status: 'PENDING',
-            initiatorId: { not: sellerId },
-          },
-        },
-        include: {
-          barterOffer: {
-            include: {
-              initiator: { select: { id: true, fullName: true } },
-            },
-          },
-          category: { select: { nameAr: true } },
-        },
-      });
-
-      for (const demand of matchingDemands) {
-        const userId = demand.barterOffer.initiatorId;
-        if (notifiedUsers.has(userId)) continue;
-        notifiedUsers.add(userId);
-
-        const demandText = demand.description || demand.category?.nameAr || 'سلعة';
-
-        await createNotification({
-          userId,
-          type: 'BARTER_MATCH',
-          title: '🎯 سلعة تطابق ما تبحث عنه!',
-          message: `${sellerName} يعرض ${offeredItemText} (${offeredValueText} ج.م) - أنت تبحث عن "${demandText}"!`,
-          priority: 'HIGH',
-          entityType: 'ITEM',
-          entityId: itemId,
-          actionUrl: `/items/${itemId}`,
-          actionText: 'عرض السلعة',
-          metadata: {
-            matchType: 'ITEM_SUPPLY_TO_BARTER_DEMAND',
-            itemId,
-            demandId: demand.id,
-          },
-        });
-      }
-    }
-
-    // PART 2: Match their DEMAND with others' SUPPLY
-    // Find users who have items in the desired category
-    if (item.desiredCategoryId) {
-      const matchingSupply = await prisma.item.findMany({
-        where: {
-          categoryId: item.desiredCategoryId,
-          status: 'ACTIVE',
-          sellerId: { not: sellerId },
-        },
-        include: {
-          seller: { select: { id: true, fullName: true } },
-          category: { select: { nameAr: true } },
-        },
-      });
-
-      // Group by seller
-      const sellerItems: Record<string, typeof matchingSupply> = {};
-      for (const matchItem of matchingSupply) {
-        if (!sellerItems[matchItem.sellerId]) {
-          sellerItems[matchItem.sellerId] = [];
-        }
-        sellerItems[matchItem.sellerId].push(matchItem);
-      }
-
-      for (const otherSellerId of Object.keys(sellerItems)) {
-        if (notifiedUsers.has(otherSellerId)) continue;
-        notifiedUsers.add(otherSellerId);
-
-        const items = sellerItems[otherSellerId];
-        const firstItem = items[0];
-        const itemsText = items.length > 1
-          ? `"${firstItem.title}" و ${items.length - 1} سلع أخرى`
-          : `"${firstItem.title}"`;
-
-        await createNotification({
-          userId: otherSellerId,
-          type: 'BARTER_MATCH',
-          title: '🔄 فرصة مقايضة!',
-          message: `${sellerName} يبحث عن "${wantedText}" - لديك ${itemsText}! يعرض مقابلها: ${offeredItemText} (${offeredValueText} ج.م)`,
-          priority: 'MEDIUM',
-          entityType: 'ITEM',
-          entityId: itemId,
-          actionUrl: `/items/${itemId}`,
-          actionText: 'عرض التفاصيل',
-          metadata: {
-            matchType: 'ITEM_DEMAND_TO_SUPPLY',
-            itemId,
-            matchedItems: items.map(i => ({ id: i.id, title: i.title })),
-            wantedText,
-          },
-        });
-      }
-    }
-
-    console.log(`[SmartMatching] ${notifiedUsers.size} users notified for item with barter prefs ${itemId}`);
-  } catch (error) {
-    console.error('[SmartMatching] Error in notifyItemWithBarterMatches:', error);
-  }
-};
-
-// ============================================
 // Initialize Event Listeners
 // ============================================
 
 export const initSmartMatchingListeners = (): void => {
   console.log('[SmartMatching] Initializing smart matching listeners...');
 
-  // Listen for new barter offers
+  // Listen for new barter offers (standalone)
   barterEvents.onOfferCreated(async (payload: BarterOfferCreatedPayload) => {
     await notifyBarterMatches(payload);
   });
@@ -629,14 +479,11 @@ export const initSmartMatchingListeners = (): void => {
       },
     });
 
-    // Check if item has barter preferences
     const hasBarterPrefs = !!(item?.desiredCategoryId || item?.desiredItemTitle);
 
     if (hasBarterPrefs) {
-      // Item with barter preferences - match both supply and demand
       await notifyItemWithBarterMatches(payload.itemId, payload.userId);
     } else {
-      // Direct sale item - only match with purchase requests
       await notifySaleMatches(payload.itemId, payload.userId);
     }
   });
@@ -647,6 +494,4 @@ export const initSmartMatchingListeners = (): void => {
   });
 
   console.log('[SmartMatching] Smart matching listeners initialized ✅');
-  console.log('[SmartMatching] SUPPLY = Items (sale, auction, barter offered)');
-  console.log('[SmartMatching] DEMAND = ItemRequests (barter) + ReverseAuctions (purchase) + Item.desiredItemTitle');
 };
