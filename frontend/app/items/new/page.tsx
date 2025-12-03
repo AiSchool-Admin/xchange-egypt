@@ -29,6 +29,8 @@ export default function NewItemPage() {
     governorate: '',
     // Barter preferences
     enableBarter: false,
+    desiredItemTitle: '',
+    desiredItemDescription: '',
     desiredParentCategoryId: '',
     desiredCategoryId: '',
     desiredKeywords: '',
@@ -262,6 +264,12 @@ export default function NewItemPage() {
 
       // Add barter preferences if enabled
       if (formData.enableBarter) {
+        if (formData.desiredItemTitle) {
+          itemData.desiredItemTitle = formData.desiredItemTitle;
+        }
+        if (formData.desiredItemDescription) {
+          itemData.desiredItemDescription = formData.desiredItemDescription;
+        }
         if (formData.desiredCategoryId) {
           itemData.desiredCategoryId = formData.desiredCategoryId;
         }
@@ -571,6 +579,39 @@ export default function NewItemPage() {
                   <p className="text-sm text-green-800 mb-4">
                     ✨ Specify what you're looking for in exchange. Our smart matching system will find the best trades for you!
                   </p>
+
+                  {/* Desired Item Title */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      ماذا تريد في المقابل؟ / What do you want in exchange? <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="desiredItemTitle"
+                      value={formData.desiredItemTitle}
+                      onChange={handleChange}
+                      placeholder="e.g., سيارة سيدان موديل 2020 / Sedan car 2020 model"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-600 mt-1">
+                      أدخل اسم الصنف المطلوب بالتحديد / Enter the specific item name you want
+                    </p>
+                  </div>
+
+                  {/* Desired Item Description */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      وصف الصنف المطلوب / Desired Item Description
+                    </label>
+                    <textarea
+                      name="desiredItemDescription"
+                      value={formData.desiredItemDescription}
+                      onChange={handleChange}
+                      rows={3}
+                      placeholder="e.g., أريد سيارة سيدان بحالة جيدة، موديل 2018 أو أحدث / I want a sedan car in good condition, 2018 model or newer"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    />
+                  </div>
 
                   {/* Desired Category */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

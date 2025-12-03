@@ -56,6 +56,8 @@ interface CreateItemData {
   location?: string;
   governorate?: string;
   // Barter preferences
+  desiredItemTitle?: string;
+  desiredItemDescription?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
   desiredValueMin?: number;
@@ -166,6 +168,8 @@ export const createItem = async (
       governorate: arabicGovernorate,
       images: processedImages,
       // Barter preferences
+      desiredItemTitle: itemData.desiredItemTitle,
+      desiredItemDescription: itemData.desiredItemDescription,
       desiredCategoryId: itemData.desiredCategoryId,
       desiredKeywords: itemData.desiredKeywords,
       desiredValueMin: itemData.desiredValueMin,
@@ -192,6 +196,7 @@ export const createItem = async (
 
   // Emit item created event for real-time matching
   const hasBarterPreferences = !!(
+    itemData.desiredItemTitle ||
     itemData.desiredCategoryId ||
     itemData.desiredKeywords ||
     itemData.desiredValueMin ||

@@ -225,6 +225,8 @@ model Item {
 
   // Barter Preferences: What does the seller want in exchange?
   desiredCategoryId     String?   @map("desired_category_id")
+  desiredItemTitle      String?   @map("desired_item_title")       // Title of the wanted item (e.g., "سيارة سيدان")
+  desiredItemDescription String?  @map("desired_item_description") // Description of the wanted item
   desiredKeywords       String?   @map("desired_keywords") // Comma-separated keywords
   desiredValueMin       Float?    @map("desired_value_min") // Minimum acceptable value
   desiredValueMax       Float?    @map("desired_value_max") // Maximum acceptable value
