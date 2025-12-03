@@ -1041,3 +1041,117 @@ export const completeBarterExchange = async (
 
   return completedOffer;
 };
+
+/**
+ * Find if the current user has an item that matches what the target item's owner wants
+ * Used for direct barter completion when there's a known match
+ */
+export const findMyMatchingItemForBarter = async (
+  targetItemId: string,
+  currentUserId: string
+): Promise<{
+  myItem: {
+    id: string;
+    title: string;
+    estimatedValue: number;
+    images: { url: string; isPrimary: boolean }[];
+    category?: { id: string; nameEn: string; nameAr: string };
+  };
+  theirItem: {
+    id: string;
+    title: string;
+    estimatedValue: number;
+    images: { url: string; isPrimary: boolean }[];
+    category?: { id: string; nameEn: string; nameAr: string };
+    sellerId: string;
+    seller?: { id: string; fullName: string };
+    desiredItemTitle?: string | null;
+    desiredCategoryId?: string | null;
+    desiredCategory?: { id: string; nameEn: string; nameAr: string } | null;
+  };
+} | null> => {
+  // Get the target item (the one the user is viewing)
+  const targetItem = await prisma.item.findUnique({
+    where: { id: targetItemId },
+    include: {
+      category: { select: { id: true, nameEn: true, nameAr: true } },
+      desiredCategory: { select: { id: true, nameEn: true, nameAr: true } },
+      seller: { select: { id: true, fullName: true } },
+      images: { select: { url: true, isPrimary: true } },
+    },
+  });
+
+  if (!targetItem) {
+    return null;
+  }
+
+  // Don't match with own items
+  if (targetItem.sellerId === currentUserId) {
+    return null;
+  }
+
+  // If target item has no barter preferences, can't do direct match
+  if (!targetItem.desiredCategoryId && !targetItem.desiredItemTitle) {
+    return null;
+  }
+
+  // Find current user's items that match what target item owner wants
+  const myItems = await prisma.item.findMany({
+    where: {
+      sellerId: currentUserId,
+      status: 'ACTIVE',
+    },
+    include: {
+      category: { select: { id: true, nameEn: true, nameAr: true } },
+      images: { select: { url: true, isPrimary: true } },
+    },
+  });
+
+  // Check each of my items to see if it matches what they want
+  for (const myItem of myItems) {
+    let matches = false;
+
+    // Check if my item matches their desired category
+    if (targetItem.desiredCategoryId && myItem.categoryId === targetItem.desiredCategoryId) {
+      matches = true;
+    }
+
+    // Check if my item title matches their desired item title keywords
+    if (!matches && targetItem.desiredItemTitle && myItem.title) {
+      const theirKeywords = targetItem.desiredItemTitle.toLowerCase().split(/[\s,،]+/).filter(k => k.length > 2);
+      const myTitle = myItem.title.toLowerCase();
+
+      for (const keyword of theirKeywords) {
+        if (myTitle.includes(keyword)) {
+          matches = true;
+          break;
+        }
+      }
+    }
+
+    if (matches) {
+      return {
+        myItem: {
+          id: myItem.id,
+          title: myItem.title,
+          estimatedValue: myItem.estimatedValue,
+          images: myItem.images,
+          category: myItem.category || undefined,
+        },
+        theirItem: {
+          id: targetItem.id,
+          title: targetItem.title,
+          estimatedValue: targetItem.estimatedValue,
+          images: targetItem.images,
+          sellerId: targetItem.sellerId,
+          seller: targetItem.seller || undefined,
+          desiredItemTitle: targetItem.desiredItemTitle,
+          desiredCategoryId: targetItem.desiredCategoryId,
+          desiredCategory: targetItem.desiredCategory || undefined,
+        },
+      };
+    }
+  }
+
+  return null;
+};

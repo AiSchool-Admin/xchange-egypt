@@ -310,3 +310,31 @@ export const getMyBarterOffers = async (params?: {
   const response = await apiClient.get(`/barter/offers/my?${queryParams.toString()}`);
   return response.data;
 };
+
+// Find if current user has a matching item for barter with target item
+export interface BarterMatch {
+  myItem: {
+    id: string;
+    title: string;
+    estimatedValue: number;
+    images: { url: string; isPrimary: boolean }[];
+    category?: { id: string; nameEn: string; nameAr: string };
+  };
+  theirItem: {
+    id: string;
+    title: string;
+    estimatedValue: number;
+    images: { url: string; isPrimary: boolean }[];
+    category?: { id: string; nameEn: string; nameAr: string };
+    sellerId: string;
+    seller?: { id: string; fullName: string };
+    desiredItemTitle?: string | null;
+    desiredCategoryId?: string | null;
+    desiredCategory?: { id: string; nameEn: string; nameAr: string } | null;
+  };
+}
+
+export const findMyMatchingItem = async (itemId: string): Promise<{ success: boolean; data: BarterMatch | null }> => {
+  const response = await apiClient.get(`/barter/find-my-match/${itemId}`);
+  return response.data;
+};

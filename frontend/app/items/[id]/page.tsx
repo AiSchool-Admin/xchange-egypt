@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getItem, Item } from '@/lib/api/items';
 import { buyItem } from '@/lib/api/transactions';
+import { findMyMatchingItem, BarterMatch } from '@/lib/api/barter';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function ItemDetailsPage() {
@@ -32,11 +33,36 @@ export default function ItemDetailsPage() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [cartMessage, setCartMessage] = useState('');
 
+  // Barter Match State
+  const [barterMatch, setBarterMatch] = useState<BarterMatch | null>(null);
+  const [loadingMatch, setLoadingMatch] = useState(false);
+
   useEffect(() => {
     if (params.id) {
       loadItem(params.id as string);
     }
   }, [params.id]);
+
+  // Load barter match when item is loaded and user is authenticated
+  useEffect(() => {
+    if (item && user && (item.desiredItemTitle || item.desiredCategoryId) && item.seller?.id !== user.id) {
+      loadBarterMatch(item.id);
+    }
+  }, [item, user]);
+
+  const loadBarterMatch = async (itemId: string) => {
+    try {
+      setLoadingMatch(true);
+      const response = await findMyMatchingItem(itemId);
+      if (response.data) {
+        setBarterMatch(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading barter match:', err);
+    } finally {
+      setLoadingMatch(false);
+    }
+  };
 
   const loadItem = async (id: string) => {
     try {
@@ -295,21 +321,48 @@ export default function ItemDetailsPage() {
               {/* Action Buttons */}
               {!isOwner && item.status === 'ACTIVE' && (
                 <div className="space-y-3">
-                  {/* If item has barter preferences, only show Make Barter Offer */}
+                  {/* If item has barter preferences, show barter-specific options */}
                   {(item.desiredItemTitle || item.desiredCategoryId) ? (
                     <>
-                      <button
-                        onClick={() => {
-                          if (!user) {
-                            router.push('/login');
-                            return;
-                          }
-                          router.push(`/barter/new?wantedItemId=${item.id}`);
-                        }}
-                        className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
-                      >
-                        🔁 عرض مقايضة / Make Barter Offer
-                      </button>
+                      {/* If we found a matching item, show the direct completion button */}
+                      {barterMatch ? (
+                        <div className="space-y-3">
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-sm text-green-700 font-medium mb-1">
+                              🎯 لديك عنصر متطابق! / You have a matching item!
+                            </p>
+                            <p className="text-xs text-green-600">
+                              "{barterMatch.myItem.title}" تتوافق مع ما يبحث عنه البائع
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              router.push(`/barter/complete?theirItem=${item.id}&myItem=${barterMatch.myItem.id}`);
+                            }}
+                            className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold transition"
+                          >
+                            ✅ إتمام المقايضة / Complete Barter
+                          </button>
+                        </div>
+                      ) : loadingMatch ? (
+                        <div className="flex items-center justify-center py-3">
+                          <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mr-2"></div>
+                          <span className="text-gray-600 text-sm">جاري البحث عن تطابق...</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (!user) {
+                              router.push('/login');
+                              return;
+                            }
+                            router.push(`/barter/new?wantedItemId=${item.id}`);
+                          }}
+                          className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
+                        >
+                          🔁 عرض مقايضة / Make Barter Offer
+                        </button>
+                      )}
                       <button
                         onClick={() => {
                           if (!user) {
