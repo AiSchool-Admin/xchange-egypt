@@ -9,7 +9,6 @@ import { ItemType, ItemCondition, MarketType } from '@prisma/client';
 import prisma from '../lib/prisma';
 import * as proximityMatching from './proximity-matching.service';
 import { itemEvents } from '../events/item.events';
-import { barterEvents } from '../events/barter.events';
 
 // ============================================
 // Helper Functions
@@ -565,21 +564,10 @@ export const createInventoryItem = async (
       console.error('[Inventory] Error processing proximity matching for demand:', err);
     });
 
-    // Emit barter offer created event for smart matching notifications
-    barterEvents.emitOfferCreated({
-      offerId: offer.id,
-      initiatorId: userId,
-      recipientId: undefined,
-      isOpenOffer: true,
-      offeredItemIds: [],
-      categoryIds: resolvedDesiredCategoryId ? [resolvedDesiredCategoryId] : [],
-      governorate: input.governorate || undefined,
-      city: input.city || undefined,
-      district: input.district || undefined,
-      marketType: input.marketType || undefined,
-      timestamp: new Date(),
-    });
-    console.log(`[Inventory] BarterOffer created event emitted for demand ${offer.id}`);
+    // Note: We don't emit barterEvents here because:
+    // 1. DEMAND side doesn't have offered items
+    // 2. Smart matching for items with barter preferences is handled by itemEvents
+    // 3. This prevents duplicate notifications
 
     return {
       id: offer.id,

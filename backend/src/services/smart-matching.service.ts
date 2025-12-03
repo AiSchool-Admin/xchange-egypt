@@ -164,8 +164,8 @@ export const notifyItemWithBarterMatches = async (itemId: string, sellerId: stri
           priority: 'HIGH',
           entityType: 'ITEM',
           entityId: itemId,
-          actionUrl: `/barter/initiate?offeredItem=${otherItem.id}&wantedItem=${itemId}`,
-          actionText: 'بدء المقايضة',
+          actionUrl: `/items/${itemId}`,
+          actionText: 'عرض التفاصيل',
           metadata: {
             matchType: 'PERFECT_BARTER_MATCH',
             myItemId: itemId,
@@ -197,7 +197,7 @@ export const notifyItemWithBarterMatches = async (itemId: string, sellerId: stri
             priority: 'MEDIUM',
             entityType: 'ITEM',
             entityId: itemId,
-            actionUrl: `/barter/initiate?offeredItem=${otherItem.id}&wantedItem=${itemId}`,
+            actionUrl: `/items/${itemId}`,
             actionText: 'عرض التفاصيل',
             metadata: {
               matchType: 'PARTIAL_BARTER_MATCH',
