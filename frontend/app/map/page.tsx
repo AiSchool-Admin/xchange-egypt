@@ -93,7 +93,6 @@ export default function MapPage() {
 
       const loadedItems = itemsResponse.data?.items || [];
       setItems(loadedItems);
-      console.log('Loaded items:', loadedItems.length);
 
       if (loadedItems.length === 0 && !error) {
         setError('لا توجد أصناف متاحة حالياً');
@@ -106,25 +105,24 @@ export default function MapPage() {
     }
   };
 
-  // Get parent categories (no parent)
+  // Get parent categories (no parent) - these are already root nodes from tree API
   const parentCategories = useMemo(() => {
-    return categoryTree.filter(c => !c.parentId);
+    return categoryTree;
   }, [categoryTree]);
 
   // Get subcategories for selected parent
   const subCategories = useMemo(() => {
     if (!selectedParentCategory) return [];
-    const parent = categoryTree.find(c => c.id === selectedParentCategory);
+    const parent = parentCategories.find(c => c.id === selectedParentCategory);
     return parent?.children || [];
-  }, [categoryTree, selectedParentCategory]);
+  }, [parentCategories, selectedParentCategory]);
 
   // Get sub-subcategories for selected subcategory
   const subSubCategories = useMemo(() => {
     if (!selectedSubCategory) return [];
-    const parent = categoryTree.find(c => c.id === selectedParentCategory);
-    const sub = parent?.children?.find(c => c.id === selectedSubCategory);
+    const sub = subCategories.find(c => c.id === selectedSubCategory);
     return sub?.children || [];
-  }, [categoryTree, selectedParentCategory, selectedSubCategory]);
+  }, [subCategories, selectedSubCategory]);
 
   // Get all governorates from egyptLocations
   const allGovernorates = useMemo(() => getAllGovernorates(), []);

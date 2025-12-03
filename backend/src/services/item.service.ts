@@ -390,6 +390,7 @@ export const deleteItem = async (
 
 /**
  * Search items with filters and pagination
+ * When a category is selected, includes all items from that category AND its subcategories
  */
 export const searchItems = async (
   params: SearchItemsParams
@@ -426,8 +427,36 @@ export const searchItems = async (
     });
   }
 
+  // Category filter - include all subcategories (up to 3 levels deep)
   if (categoryId) {
-    where.categoryId = categoryId;
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+      include: {
+        children: {
+          select: {
+            id: true,
+            children: { select: { id: true } } // Level 3
+          }
+        }
+      }
+    });
+
+    if (category) {
+      // Collect all category IDs (parent + children + grandchildren)
+      const categoryIds: string[] = [category.id];
+      category.children.forEach(child => {
+        categoryIds.push(child.id);
+        child.children.forEach(grandchild => {
+          categoryIds.push(grandchild.id);
+        });
+      });
+
+      // Use IN query to include all subcategories
+      where.categoryId = { in: categoryIds };
+    } else {
+      // Category not found, use exact match (will return empty)
+      where.categoryId = categoryId;
+    }
   }
 
   if (sellerId) {
