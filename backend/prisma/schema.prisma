@@ -86,6 +86,12 @@ model User {
   orders                    Order[]
   pushSubscriptions         PushSubscription[]
 
+  // New innovative features relations
+  wallet                    Wallet?                   // محفظة XCoin
+  reputation                UserReputation?           // السمعة متعددة الأبعاد
+  userLevel                 UserLevel?                // المستوى والإنجازات
+  facilitatorProfile        Facilitator?              // ملف الوسيط المعتمد
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -1804,6 +1810,1001 @@ model BlockedUser {
   @@unique([userId, blockedUserId])
   @@index([userId])
   @@index([blockedUserId])
+}
+
+// ============================================
+// XCoin Wallet & Economy System
+// نظام عملة المنصة والاقتصاد الداخلي
+// ============================================
+
+model Wallet {
+  id              String      @id @default(uuid())
+  userId          String      @unique @map("user_id")
+
+  // Balances
+  balance         Float       @default(0)          // رصيد XCoin المتاح
+  frozenBalance   Float       @default(0) @map("frozen_balance")  // رصيد مجمد (في صفقات جارية)
+  lifetimeEarned  Float       @default(0) @map("lifetime_earned") // إجمالي ما تم كسبه
+  lifetimeSpent   Float       @default(0) @map("lifetime_spent")  // إجمالي ما تم إنفاقه
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    WalletTransaction[]
+
+  @@map("wallets")
+  @@index([userId])
+  @@index([balance])
+}
+
+enum WalletTransactionType {
+  // Earning (كسب)
+  REWARD_SIGNUP           // مكافأة التسجيل
+  REWARD_FIRST_DEAL       // مكافأة أول صفقة
+  REWARD_REFERRAL         // مكافأة الإحالة
+  REWARD_REVIEW           // مكافأة التقييم
+  REWARD_ACHIEVEMENT      // مكافأة إنجاز
+  REWARD_DAILY_LOGIN      // مكافأة الدخول اليومي
+  REWARD_CHALLENGE        // مكافأة تحدي
+  RECEIVED_FROM_USER      // مستلم من مستخدم آخر
+  REFUND                  // استرداد
+  ADMIN_CREDIT            // إضافة من الإدارة
+
+  // Spending (إنفاق)
+  PROMOTE_LISTING         // ترويج إعلان
+  UNLOCK_CONTACT          // فتح معلومات تواصل
+  BARTER_BALANCE          // موازنة فرق مقايضة
+  ESCROW_DEPOSIT          // إيداع في الضمان
+  SENT_TO_USER            // مرسل لمستخدم آخر
+  COMMISSION_FEE          // رسوم عمولة
+  ADMIN_DEBIT             // خصم من الإدارة
+
+  // Escrow (الضمان)
+  ESCROW_FREEZE           // تجميد للضمان
+  ESCROW_RELEASE          // تحرير من الضمان
+  ESCROW_REFUND           // استرداد من الضمان
+}
+
+enum WalletTransactionStatus {
+  PENDING       // قيد الانتظار
+  COMPLETED     // مكتمل
+  FAILED        // فشل
+  CANCELLED     // ملغي
+  REVERSED      // معكوس
+}
+
+model WalletTransaction {
+  id              String                    @id @default(uuid())
+  walletId        String                    @map("wallet_id")
+
+  // Transaction details
+  type            WalletTransactionType
+  amount          Float                     // موجب للإضافة، سالب للخصم
+  balanceBefore   Float                     @map("balance_before")
+  balanceAfter    Float                     @map("balance_after")
+
+  // Status
+  status          WalletTransactionStatus   @default(COMPLETED)
+
+  // Related entities
+  relatedUserId   String?                   @map("related_user_id")  // المستخدم الآخر في التحويل
+  relatedEntityType String?                 @map("related_entity_type") // 'item', 'barter', 'escrow'
+  relatedEntityId String?                   @map("related_entity_id")
+
+  // Description
+  description     String?
+  metadata        Json?
+
+  // Timestamps
+  createdAt       DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  wallet          Wallet                    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+  @@index([walletId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([relatedUserId])
+}
+
+// ============================================
+// Multi-Dimensional Reputation System
+// نظام السمعة متعدد الأبعاد
+// ============================================
+
+model UserReputation {
+  id              String      @id @default(uuid())
+  userId          String      @unique @map("user_id")
+
+  // Overall scores (0-100)
+  overallScore    Float       @default(50) @map("overall_score")
+  trustLevel      TrustLevel  @default(NEWCOMER) @map("trust_level")
+
+  // Dimension scores (0-100)
+  communicationScore    Float   @default(50) @map("communication_score")     // التواصل
+  reliabilityScore      Float   @default(50) @map("reliability_score")       // الموثوقية
+  itemAccuracyScore     Float   @default(50) @map("item_accuracy_score")     // دقة وصف الأصناف
+  deliverySpeedScore    Float   @default(50) @map("delivery_speed_score")    // سرعة التسليم
+  fairnessScore         Float   @default(50) @map("fairness_score")          // العدالة في التقييم
+  barterQualityScore    Float   @default(50) @map("barter_quality_score")    // جودة المقايضات
+
+  // Statistics
+  totalDeals            Int     @default(0) @map("total_deals")
+  successfulDeals       Int     @default(0) @map("successful_deals")
+  disputesInitiated     Int     @default(0) @map("disputes_initiated")
+  disputesLost          Int     @default(0) @map("disputes_lost")
+  refundsGiven          Int     @default(0) @map("refunds_given")
+
+  // Badges & Verification
+  badges                String[] @default([])  // ['VERIFIED_SELLER', 'FAST_SHIPPER', 'FAIR_TRADER']
+  verifiedSince         DateTime? @map("verified_since")
+
+  // Timestamps
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  lastCalculatedAt      DateTime? @map("last_calculated_at")
+
+  // Relations
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history               ReputationHistory[]
+
+  @@map("user_reputations")
+  @@index([userId])
+  @@index([overallScore])
+  @@index([trustLevel])
+}
+
+enum TrustLevel {
+  NEWCOMER        // جديد (0-20 صفقة)
+  BRONZE          // برونزي (21-50 صفقة)
+  SILVER          // فضي (51-100 صفقة)
+  GOLD            // ذهبي (101-250 صفقة)
+  PLATINUM        // بلاتيني (251-500 صفقة)
+  DIAMOND         // ماسي (500+ صفقة)
+  ELITE           // نخبوي (خاص بالتجار المميزين)
+}
+
+model ReputationHistory {
+  id              String      @id @default(uuid())
+  reputationId    String      @map("reputation_id")
+
+  // Score snapshot
+  overallScore    Float       @map("overall_score")
+  trustLevel      TrustLevel  @map("trust_level")
+
+  // Change reason
+  changeReason    String      @map("change_reason")
+  changeAmount    Float       @map("change_amount")  // +/- change
+
+  // Related entity
+  relatedEntityType String?   @map("related_entity_type")
+  relatedEntityId String?     @map("related_entity_id")
+
+  // Timestamp
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  reputation      UserReputation @relation(fields: [reputationId], references: [id], onDelete: Cascade)
+
+  @@map("reputation_history")
+  @@index([reputationId])
+  @@index([createdAt])
+}
+
+// ============================================
+// Smart Escrow & Dispute Resolution System
+// نظام الضمان الذكي وحل النزاعات
+// ============================================
+
+enum EscrowStatus {
+  CREATED         // تم إنشاؤه
+  FUNDED          // تم تمويله
+  PENDING_DELIVERY // في انتظار التسليم
+  DELIVERED       // تم التسليم
+  INSPECTION      // فترة الفحص
+  RELEASED        // تم تحريره
+  DISPUTED        // نزاع
+  REFUNDED        // مسترد
+  CANCELLED       // ملغي
+  EXPIRED         // منتهي الصلاحية
+}
+
+enum EscrowType {
+  SALE            // بيع
+  BARTER          // مقايضة
+  BARTER_CHAIN    // سلسلة مقايضة
+  SERVICE         // خدمة
+}
+
+model Escrow {
+  id              String        @id @default(uuid())
+
+  // Type
+  escrowType      EscrowType    @map("escrow_type")
+
+  // Parties
+  buyerId         String        @map("buyer_id")
+  sellerId        String        @map("seller_id")
+
+  // Amount
+  amount          Float                     // المبلغ بالجنيه أو XCoin
+  currency        String        @default("EGP")
+  xcoinAmount     Float?        @map("xcoin_amount")  // مبلغ XCoin إن وجد
+
+  // Related entities
+  transactionId   String?       @map("transaction_id")
+  barterOfferId   String?       @map("barter_offer_id")
+  barterChainId   String?       @map("barter_chain_id")
+  itemId          String?       @map("item_id")
+
+  // Status
+  status          EscrowStatus  @default(CREATED)
+
+  // Timeline
+  fundedAt        DateTime?     @map("funded_at")
+  deliveredAt     DateTime?     @map("delivered_at")
+  inspectionEndsAt DateTime?    @map("inspection_ends_at")  // نهاية فترة الفحص
+  releasedAt      DateTime?     @map("released_at")
+
+  // Auto-release
+  autoReleaseAfter Int          @default(48) @map("auto_release_after")  // ساعات بعد التسليم
+  autoRelease     Boolean       @default(true) @map("auto_release")
+
+  // Facilitator (if any)
+  facilitatorId   String?       @map("facilitator_id")
+  facilitatorFee  Float?        @map("facilitator_fee")
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  expiresAt       DateTime?     @map("expires_at")
+
+  // Relations
+  dispute         Dispute?
+  milestones      EscrowMilestone[]
+
+  @@map("escrows")
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([transactionId])
+  @@index([barterOfferId])
+  @@index([barterChainId])
+  @@index([facilitatorId])
+}
+
+model EscrowMilestone {
+  id              String      @id @default(uuid())
+  escrowId        String      @map("escrow_id")
+
+  // Milestone
+  milestone       String      // 'CREATED', 'FUNDED', 'SHIPPED', 'DELIVERED', etc.
+  description     String?
+
+  // Actor
+  actorId         String?     @map("actor_id")
+  actorType       String?     @map("actor_type")  // 'BUYER', 'SELLER', 'SYSTEM', 'FACILITATOR'
+
+  // Evidence
+  evidence        String[]    @default([])  // صور/ملفات إثبات
+
+  // Timestamp
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  escrow          Escrow      @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+
+  @@map("escrow_milestones")
+  @@index([escrowId])
+  @@index([milestone])
+}
+
+enum DisputeStatus {
+  OPEN            // مفتوح
+  UNDER_REVIEW    // قيد المراجعة
+  AWAITING_RESPONSE // في انتظار الرد
+  MEDIATION       // وساطة
+  ESCALATED       // مرفوع للإدارة
+  RESOLVED        // محلول
+  CLOSED          // مغلق
+}
+
+enum DisputeResolution {
+  BUYER_FAVORED       // لصالح المشتري (استرداد كامل)
+  SELLER_FAVORED      // لصالح البائع (تحرير الضمان)
+  PARTIAL_REFUND      // استرداد جزئي
+  MUTUAL_AGREEMENT    // اتفاق بين الطرفين
+  NO_RESOLUTION       // لم يتم الحل
+}
+
+model Dispute {
+  id              String            @id @default(uuid())
+  escrowId        String            @unique @map("escrow_id")
+
+  // Initiator
+  initiatorId     String            @map("initiator_id")
+  respondentId    String            @map("respondent_id")
+
+  // Dispute details
+  reason          DisputeReason
+  description     String
+  evidence        String[]          @default([])  // صور/ملفات إثبات
+
+  // Requested outcome
+  requestedAmount Float?            @map("requested_amount")
+  requestedOutcome String?          @map("requested_outcome")
+
+  // Status
+  status          DisputeStatus     @default(OPEN)
+
+  // Resolution
+  resolution      DisputeResolution?
+  resolutionAmount Float?           @map("resolution_amount")
+  resolutionNotes String?           @map("resolution_notes")
+  resolvedBy      String?           @map("resolved_by")
+  resolvedAt      DateTime?         @map("resolved_at")
+
+  // Mediator/Admin
+  assignedTo      String?           @map("assigned_to")
+  assignedAt      DateTime?         @map("assigned_at")
+
+  // Deadlines
+  responseDeadline DateTime?        @map("response_deadline")
+
+  // Timestamps
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  escrow          Escrow            @relation(fields: [escrowId], references: [id])
+  messages        DisputeMessage[]
+
+  @@map("disputes")
+  @@index([escrowId])
+  @@index([initiatorId])
+  @@index([respondentId])
+  @@index([status])
+  @@index([assignedTo])
+}
+
+enum DisputeReason {
+  ITEM_NOT_RECEIVED       // لم يتم استلام الصنف
+  ITEM_NOT_AS_DESCRIBED   // الصنف مختلف عن الوصف
+  ITEM_DAMAGED            // الصنف تالف
+  WRONG_ITEM              // صنف خاطئ
+  PARTIAL_DELIVERY        // تسليم جزئي
+  QUALITY_ISSUE           // مشكلة في الجودة
+  COUNTERFEIT             // مزيف
+  SELLER_NOT_RESPONDING   // البائع لا يرد
+  BUYER_NOT_RESPONDING    // المشتري لا يرد
+  PAYMENT_ISSUE           // مشكلة في الدفع
+  OTHER                   // أخرى
+}
+
+model DisputeMessage {
+  id              String      @id @default(uuid())
+  disputeId       String      @map("dispute_id")
+
+  // Sender
+  senderId        String      @map("sender_id")
+  senderRole      String      @map("sender_role")  // 'INITIATOR', 'RESPONDENT', 'MEDIATOR', 'ADMIN'
+
+  // Message
+  message         String
+  attachments     String[]    @default([])
+
+  // Visibility
+  isInternal      Boolean     @default(false) @map("is_internal")  // ملاحظات داخلية للإدارة
+
+  // Timestamp
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  dispute         Dispute     @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@map("dispute_messages")
+  @@index([disputeId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+// ============================================
+// Gamification & Achievements System
+// نظام التلعيب والإنجازات
+// ============================================
+
+model UserLevel {
+  id              String      @id @default(uuid())
+  userId          String      @unique @map("user_id")
+
+  // Level
+  level           Int         @default(1)
+  currentXP       Int         @default(0) @map("current_xp")
+  totalXP         Int         @default(0) @map("total_xp")
+  xpToNextLevel   Int         @default(100) @map("xp_to_next_level")
+
+  // Title
+  title           String      @default("مبتدئ")  // لقب المستوى
+
+  // Streaks
+  dailyLoginStreak    Int     @default(0) @map("daily_login_streak")
+  longestLoginStreak  Int     @default(0) @map("longest_login_streak")
+  lastLoginDate       DateTime? @map("last_login_date")
+
+  // Weekly stats
+  weeklyDeals         Int     @default(0) @map("weekly_deals")
+  weeklyXP            Int     @default(0) @map("weekly_xp")
+  weekStartDate       DateTime? @map("week_start_date")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievements    UserAchievement[]
+
+  @@map("user_levels")
+  @@index([userId])
+  @@index([level])
+  @@index([totalXP])
+}
+
+model Achievement {
+  id              String      @id @default(uuid())
+
+  // Basic info
+  code            String      @unique  // 'FIRST_DEAL', 'BARTER_MASTER', etc.
+  nameAr          String      @map("name_ar")
+  nameEn          String      @map("name_en")
+  descriptionAr   String      @map("description_ar")
+  descriptionEn   String      @map("description_en")
+
+  // Visual
+  icon            String      // رمز الإنجاز
+  badgeColor      String      @default("#FFD700") @map("badge_color")
+
+  // Category
+  category        AchievementCategory
+
+  // Requirements
+  requirement     Int         @default(1)  // عدد المرات المطلوبة
+  requirementType String      @map("requirement_type")  // 'DEALS', 'BARTERS', 'REVIEWS', etc.
+
+  // Rewards
+  xpReward        Int         @default(0) @map("xp_reward")
+  coinReward      Int         @default(0) @map("coin_reward")
+
+  // Rarity
+  rarity          AchievementRarity @default(COMMON)
+
+  // Status
+  isActive        Boolean     @default(true) @map("is_active")
+  isSecret        Boolean     @default(false) @map("is_secret")  // إنجاز سري
+
+  // Order
+  displayOrder    Int         @default(0) @map("display_order")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+  @@index([code])
+  @@index([category])
+  @@index([isActive])
+}
+
+enum AchievementCategory {
+  TRADING         // تداول
+  BARTER          // مقايضة
+  SOCIAL          // اجتماعي
+  REPUTATION      // سمعة
+  SPECIAL         // خاص
+  SEASONAL        // موسمي
+}
+
+enum AchievementRarity {
+  COMMON          // شائع
+  UNCOMMON        // غير شائع
+  RARE            // نادر
+  EPIC            // ملحمي
+  LEGENDARY       // أسطوري
+}
+
+model UserAchievement {
+  id              String      @id @default(uuid())
+  userLevelId     String      @map("user_level_id")
+  achievementId   String      @map("achievement_id")
+
+  // Progress
+  progress        Int         @default(0)
+  isCompleted     Boolean     @default(false) @map("is_completed")
+
+  // Completion
+  completedAt     DateTime?   @map("completed_at")
+  rewardsClaimed  Boolean     @default(false) @map("rewards_claimed")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  userLevel       UserLevel   @relation(fields: [userLevelId], references: [id], onDelete: Cascade)
+  achievement     Achievement @relation(fields: [achievementId], references: [id])
+
+  @@map("user_achievements")
+  @@unique([userLevelId, achievementId])
+  @@index([userLevelId])
+  @@index([achievementId])
+  @@index([isCompleted])
+}
+
+model Challenge {
+  id              String      @id @default(uuid())
+
+  // Basic info
+  nameAr          String      @map("name_ar")
+  nameEn          String      @map("name_en")
+  descriptionAr   String      @map("description_ar")
+  descriptionEn   String      @map("description_en")
+
+  // Type
+  challengeType   ChallengeType @map("challenge_type")
+
+  // Requirements
+  targetValue     Int         @map("target_value")  // الهدف المطلوب
+  targetType      String      @map("target_type")   // 'DEALS', 'BARTERS', 'XP', etc.
+
+  // Rewards
+  xpReward        Int         @default(0) @map("xp_reward")
+  coinReward      Int         @default(0) @map("coin_reward")
+  specialReward   String?     @map("special_reward")  // مكافأة خاصة
+
+  // Duration
+  startDate       DateTime    @map("start_date")
+  endDate         DateTime    @map("end_date")
+
+  // Status
+  isActive        Boolean     @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  participations  ChallengeParticipation[]
+
+  @@map("challenges")
+  @@index([challengeType])
+  @@index([isActive])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+enum ChallengeType {
+  DAILY           // يومي
+  WEEKLY          // أسبوعي
+  MONTHLY         // شهري
+  SPECIAL         // خاص
+}
+
+model ChallengeParticipation {
+  id              String      @id @default(uuid())
+  challengeId     String      @map("challenge_id")
+  userId          String      @map("user_id")
+
+  // Progress
+  currentValue    Int         @default(0) @map("current_value")
+  isCompleted     Boolean     @default(false) @map("is_completed")
+
+  // Completion
+  completedAt     DateTime?   @map("completed_at")
+  rewardsClaimed  Boolean     @default(false) @map("rewards_claimed")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  challenge       Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@map("challenge_participations")
+  @@unique([challengeId, userId])
+  @@index([challengeId])
+  @@index([userId])
+  @@index([isCompleted])
+}
+
+// ============================================
+// Collective Barter Pools
+// صناديق المقايضة الجماعية
+// ============================================
+
+enum BarterPoolStatus {
+  OPEN            // مفتوح للانضمام
+  MATCHING        // جاري البحث عن عرض
+  MATCHED         // تم المطابقة
+  NEGOTIATING     // جاري التفاوض
+  EXECUTING       // جاري التنفيذ
+  COMPLETED       // مكتمل
+  FAILED          // فشل
+  CANCELLED       // ملغي
+}
+
+model BarterPool {
+  id              String            @id @default(uuid())
+
+  // Basic info
+  title           String
+  description     String
+
+  // Target
+  targetCategoryId String?          @map("target_category_id")
+  targetDescription String          @map("target_description")
+  targetMinValue  Float             @map("target_min_value")
+  targetMaxValue  Float             @map("target_max_value")
+
+  // Pool value
+  currentValue    Float             @default(0) @map("current_value")
+  participantCount Int              @default(0) @map("participant_count")
+  maxParticipants Int               @default(10) @map("max_participants")
+
+  // Status
+  status          BarterPoolStatus  @default(OPEN)
+
+  // Creator
+  creatorId       String            @map("creator_id")
+
+  // Matched offer (when found)
+  matchedItemId   String?           @map("matched_item_id")
+  matchedSellerId String?           @map("matched_seller_id")
+  matchedValue    Float?            @map("matched_value")
+
+  // Deadline
+  deadline        DateTime
+
+  // Timestamps
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  completedAt     DateTime?         @map("completed_at")
+
+  // Relations
+  participants    BarterPoolParticipant[]
+
+  @@map("barter_pools")
+  @@index([status])
+  @@index([creatorId])
+  @@index([targetCategoryId])
+  @@index([deadline])
+}
+
+model BarterPoolParticipant {
+  id              String      @id @default(uuid())
+  poolId          String      @map("pool_id")
+  userId          String      @map("user_id")
+
+  // Contribution
+  itemId          String?     @map("item_id")       // الصنف المقدم
+  cashAmount      Float       @default(0) @map("cash_amount")  // مبلغ نقدي
+  xcoinAmount     Float       @default(0) @map("xcoin_amount") // مبلغ XCoin
+  totalValue      Float       @map("total_value")   // إجمالي المساهمة
+
+  // Share percentage
+  sharePercentage Float       @map("share_percentage")  // نسبة الحصة
+
+  // Status
+  isApproved      Boolean     @default(false) @map("is_approved")
+  approvedAt      DateTime?   @map("approved_at")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  pool            BarterPool  @relation(fields: [poolId], references: [id], onDelete: Cascade)
+
+  @@map("barter_pool_participants")
+  @@unique([poolId, userId])
+  @@index([poolId])
+  @@index([userId])
+}
+
+// ============================================
+// Certified Facilitators Network
+// شبكة الوسطاء المعتمدين
+// ============================================
+
+enum FacilitatorLevel {
+  BRONZE          // برونزي
+  SILVER          // فضي
+  GOLD            // ذهبي
+  PLATINUM        // بلاتيني
+}
+
+enum FacilitatorStatus {
+  PENDING         // قيد الموافقة
+  ACTIVE          // نشط
+  SUSPENDED       // موقوف
+  REVOKED         // ملغي
+}
+
+model Facilitator {
+  id              String              @id @default(uuid())
+  userId          String              @unique @map("user_id")
+
+  // Level & Status
+  level           FacilitatorLevel    @default(BRONZE)
+  status          FacilitatorStatus   @default(PENDING)
+
+  // Info
+  displayName     String              @map("display_name")
+  bio             String?
+  specializations String[]            @default([])  // ['سيارات', 'عقارات', 'إلكترونيات']
+
+  // Service areas
+  serviceAreas    String[]            @default([]) @map("service_areas")  // المحافظات
+
+  // Commission
+  commissionRate  Float               @default(0.03) @map("commission_rate")  // 3% default
+  minCommission   Float               @default(50) @map("min_commission")     // 50 جنيه حد أدنى
+
+  // Insurance
+  insuranceCoverage Float             @default(10000) @map("insurance_coverage")  // تغطية التأمين
+  insuranceBalance Float              @default(0) @map("insurance_balance")       // رصيد التأمين
+
+  // Statistics
+  totalDeals      Int                 @default(0) @map("total_deals")
+  successfulDeals Int                 @default(0) @map("successful_deals")
+  totalVolume     Float               @default(0) @map("total_volume")  // إجمالي قيمة الصفقات
+  avgRating       Float               @default(0) @map("avg_rating")
+
+  // Verification
+  verifiedAt      DateTime?           @map("verified_at")
+  verifiedBy      String?             @map("verified_by")
+
+  // Documents
+  idDocument      String?             @map("id_document")
+  commercialReg   String?             @map("commercial_reg")
+
+  // Availability
+  isAvailable     Boolean             @default(true) @map("is_available")
+  availabilitySchedule Json?          @map("availability_schedule")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  user            User                @relation(fields: [userId], references: [id])
+  assignments     FacilitatorAssignment[]
+  reviews         FacilitatorReview[]
+
+  @@map("facilitators")
+  @@index([userId])
+  @@index([level])
+  @@index([status])
+  @@index([isAvailable])
+}
+
+model FacilitatorAssignment {
+  id              String      @id @default(uuid())
+  facilitatorId   String      @map("facilitator_id")
+
+  // Assignment type
+  assignmentType  String      @map("assignment_type")  // 'ESCROW', 'BARTER_CHAIN', 'INSPECTION'
+
+  // Related entity
+  escrowId        String?     @map("escrow_id")
+  barterChainId   String?     @map("barter_chain_id")
+
+  // Parties
+  buyerId         String      @map("buyer_id")
+  sellerId        String      @map("seller_id")
+
+  // Status
+  status          String      @default("ASSIGNED")  // 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'
+
+  // Commission
+  commissionAmount Float      @map("commission_amount")
+  commissionPaid  Boolean     @default(false) @map("commission_paid")
+
+  // Notes
+  notes           String?
+  completionNotes String?     @map("completion_notes")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  completedAt     DateTime?   @map("completed_at")
+
+  // Relations
+  facilitator     Facilitator @relation(fields: [facilitatorId], references: [id])
+
+  @@map("facilitator_assignments")
+  @@index([facilitatorId])
+  @@index([escrowId])
+  @@index([barterChainId])
+  @@index([status])
+}
+
+model FacilitatorReview {
+  id              String      @id @default(uuid())
+  facilitatorId   String      @map("facilitator_id")
+  reviewerId      String      @map("reviewer_id")
+  assignmentId    String      @map("assignment_id")
+
+  // Rating
+  rating          Int         // 1-5
+
+  // Detailed ratings
+  professionalismRating Int   @map("professionalism_rating")  // 1-5
+  communicationRating   Int   @map("communication_rating")    // 1-5
+  speedRating           Int   @map("speed_rating")            // 1-5
+
+  // Review
+  comment         String?
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  facilitator     Facilitator @relation(fields: [facilitatorId], references: [id], onDelete: Cascade)
+
+  @@map("facilitator_reviews")
+  @@unique([assignmentId, reviewerId])
+  @@index([facilitatorId])
+  @@index([reviewerId])
+  @@index([rating])
+}
+
+// ============================================
+// Referral System
+// نظام الإحالات
+// ============================================
+
+model Referral {
+  id              String      @id @default(uuid())
+  referrerId      String      @map("referrer_id")
+  referredId      String      @unique @map("referred_id")  // المستخدم الجديد
+
+  // Referral code used
+  referralCode    String      @map("referral_code")
+
+  // Rewards
+  referrerReward  Float       @default(0) @map("referrer_reward")
+  referredReward  Float       @default(0) @map("referred_reward")
+
+  // Status
+  rewardsClaimed  Boolean     @default(false) @map("rewards_claimed")
+  claimedAt       DateTime?   @map("claimed_at")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("referrals")
+  @@index([referrerId])
+  @@index([referredId])
+  @@index([referralCode])
+}
+
+model ReferralCode {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+
+  // Code
+  code            String      @unique
+
+  // Stats
+  usageCount      Int         @default(0) @map("usage_count")
+  maxUsages       Int?        @map("max_usages")  // null = unlimited
+
+  // Rewards
+  referrerReward  Float       @default(100) @map("referrer_reward")  // XCoin للمحيل
+  referredReward  Float       @default(50) @map("referred_reward")   // XCoin للمحال
+
+  // Status
+  isActive        Boolean     @default(true) @map("is_active")
+
+  // Expiry
+  expiresAt       DateTime?   @map("expires_at")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("referral_codes")
+  @@index([userId])
+  @@index([code])
+  @@index([isActive])
+}
+
+// ============================================
+// Platform Analytics & Insights
+// تحليلات ورؤى المنصة
+// ============================================
+
+model MarketInsight {
+  id              String      @id @default(uuid())
+
+  // Period
+  periodType      String      @map("period_type")  // 'DAILY', 'WEEKLY', 'MONTHLY'
+  periodStart     DateTime    @map("period_start")
+  periodEnd       DateTime    @map("period_end")
+
+  // Category (optional, for category-specific insights)
+  categoryId      String?     @map("category_id")
+  governorate     String?
+
+  // Volume metrics
+  totalListings   Int         @default(0) @map("total_listings")
+  totalDeals      Int         @default(0) @map("total_deals")
+  totalBarters    Int         @default(0) @map("total_barters")
+  totalVolume     Float       @default(0) @map("total_volume")
+
+  // Price metrics
+  avgPrice        Float?      @map("avg_price")
+  minPrice        Float?      @map("min_price")
+  maxPrice        Float?      @map("max_price")
+  priceChange     Float?      @map("price_change")  // % change from previous period
+
+  // Demand metrics
+  totalDemand     Int         @default(0) @map("total_demand")
+  supplyDemandRatio Float?    @map("supply_demand_ratio")
+
+  // Engagement metrics
+  avgTimeToSell   Float?      @map("avg_time_to_sell")  // بالساعات
+  conversionRate  Float?      @map("conversion_rate")   // % من المشاهدات للصفقات
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("market_insights")
+  @@unique([periodType, periodStart, categoryId, governorate])
+  @@index([periodType])
+  @@index([periodStart])
+  @@index([categoryId])
+  @@index([governorate])
+}
+
+model XChangeIndex {
+  id              String      @id @default(uuid())
+
+  // Date
+  date            DateTime    @unique
+
+  // Index value
+  indexValue      Float       @map("index_value")
+  previousValue   Float?      @map("previous_value")
+  changePercent   Float?      @map("change_percent")
+
+  // Components
+  barterVolume    Float       @map("barter_volume")
+  directSaleVolume Float      @map("direct_sale_volume")
+  auctionVolume   Float       @map("auction_volume")
+
+  // Activity metrics
+  activeUsers     Int         @map("active_users")
+  newListings     Int         @map("new_listings")
+  completedDeals  Int         @map("completed_deals")
+
+  // Health metrics
+  successRate     Float       @map("success_rate")
+  avgDealTime     Float       @map("avg_deal_time")
+  disputeRate     Float       @map("dispute_rate")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("xchange_index")
+  @@index([date])
 }
 
 
