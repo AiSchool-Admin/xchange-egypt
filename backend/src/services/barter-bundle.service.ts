@@ -439,23 +439,6 @@ export const createBundleOffer = async (
     });
   }
 
-  // Also notify the initiator that their offer was created successfully
-  if (completeOffer) {
-    const recipientName = completeOffer.recipient?.fullName || 'المستخدم';
-    await createNotification({
-      userId: userId, // initiator
-      type: 'BARTER_OFFER_CREATED',
-      title: 'تم إنشاء عرض المقايضة',
-      message: recipientId
-        ? `تم إرسال عرض المقايضة إلى ${recipientName} بنجاح`
-        : 'تم إنشاء عرض المقايضة بنجاح وهو الآن مفتوح للجميع',
-      priority: 'MEDIUM',
-      entityType: 'BARTER_OFFER',
-      entityId: completeOffer.id,
-      actionUrl: `/barter/my-offers`,
-      actionText: 'عرض التفاصيل',
-    });
-  }
 
   return completeOffer;
 };
