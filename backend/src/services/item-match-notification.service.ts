@@ -243,15 +243,13 @@ const formatPrice = (price: number): string => {
 
 /**
  * Initialize event listeners for item matching notifications
+ *
+ * NOTE: This service is DEPRECATED. All smart matching notifications
+ * are now handled by smart-matching.service.ts to avoid duplicate notifications.
+ * DO NOT initialize this service.
  */
 export const initItemMatchNotifications = (): void => {
-  console.log('[ItemMatchNotification] Initializing item match notification service...');
-
-  // Listen for new items
-  itemEvents.onItemCreated(async (payload) => {
-    // Only trigger for items with barter preferences or in active categories
-    await notifyMatchingUsers(payload);
-  });
-
-  console.log('[ItemMatchNotification] Service initialized successfully');
+  console.log('[ItemMatchNotification] ⚠️ DEPRECATED - Use smart-matching.service.ts instead');
+  console.log('[ItemMatchNotification] This service is NOT being initialized to prevent duplicate notifications');
+  // DO NOT add event listeners here - smart-matching.service.ts handles all notifications
 };
