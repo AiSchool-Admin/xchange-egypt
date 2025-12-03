@@ -298,6 +298,9 @@ const handleStandaloneBarterOffer = async (payload: BarterOfferCreatedPayload): 
 
 /**
  * When an item is listed for direct sale (no barter preferences)
+ * Match against:
+ * 1. ReverseAuctions (reverse auction purchase demands)
+ * 2. BarterOffers with isOpenOffer=true (direct purchase demands)
  */
 export const notifySaleMatches = async (itemId: string, sellerId: string): Promise<void> => {
   try {
@@ -315,8 +318,8 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
     const sellerName = item.seller?.fullName || 'بائع';
     const notifiedUsers = new Set<string>();
 
-    // Find ReverseAuctions (purchase demands) matching this item
-    const matchingDemands = await prisma.reverseAuction.findMany({
+    // 1. Find ReverseAuctions (reverse auction purchase demands) matching this item
+    const matchingReverseAuctions = await prisma.reverseAuction.findMany({
       where: {
         categoryId: item.categoryId,
         status: 'ACTIVE',
@@ -332,7 +335,7 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
       },
     });
 
-    for (const demand of matchingDemands) {
+    for (const demand of matchingReverseAuctions) {
       if (notifiedUsers.has(demand.buyerId)) continue;
       notifiedUsers.add(demand.buyerId);
 
@@ -347,9 +350,62 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
         actionUrl: `/items/${itemId}`,
         actionText: 'عرض السلعة',
         metadata: {
-          matchType: 'SALE_TO_PURCHASE',
+          matchType: 'SALE_TO_REVERSE_AUCTION',
           itemId,
           auctionId: demand.id,
+        },
+      });
+    }
+
+    // 2. Find BarterOffers with isOpenOffer=true (direct purchase demands) matching this item
+    const matchingDemandOffers = await prisma.barterOffer.findMany({
+      where: {
+        isOpenOffer: true,
+        status: 'PENDING',
+        initiatorId: { not: sellerId },
+        expiresAt: { gt: new Date() },
+        itemRequests: {
+          some: {
+            OR: [
+              { categoryId: item.categoryId },
+              // Also match by keywords in title
+              ...(item.title ? item.title.split(/[\s,،]+/).filter(k => k.length > 2).map(keyword => ({
+                keywords: { has: keyword }
+              })) : [])
+            ]
+          }
+        }
+      },
+      include: {
+        initiator: { select: { id: true, fullName: true } },
+        itemRequests: { include: { category: true } },
+      },
+    });
+
+    for (const demand of matchingDemandOffers) {
+      if (notifiedUsers.has(demand.initiatorId)) continue;
+      notifiedUsers.add(demand.initiatorId);
+
+      const demandRequest = demand.itemRequests[0];
+      const demandTitle = demandRequest?.description || 'طلب شراء';
+      const budgetText = demandRequest?.maxPrice
+        ? `${demandRequest.maxPrice.toLocaleString('ar-EG')} ج.م`
+        : 'غير محدد';
+
+      await createNotification({
+        userId: demand.initiatorId,
+        type: 'ITEM_AVAILABLE',
+        title: '💰 سلعة جديدة تطابق طلبك!',
+        message: `"${item.title}" متاحة الآن بسعر ${priceText} ج.م - تطابق طلبك "${demandTitle}"!`,
+        priority: 'HIGH',
+        entityType: 'ITEM',
+        entityId: itemId,
+        actionUrl: `/items/${itemId}`,
+        actionText: 'عرض السلعة',
+        metadata: {
+          matchType: 'SALE_TO_DIRECT_PURCHASE',
+          itemId,
+          demandId: demand.id,
         },
       });
     }
@@ -357,6 +413,99 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
     console.log(`[SmartMatching] ${notifiedUsers.size} users notified for new sale item ${itemId}`);
   } catch (error) {
     console.error('[SmartMatching] Error in notifySaleMatches:', error);
+  }
+};
+
+/**
+ * When a direct purchase demand (BarterOffer with isOpenOffer=true) is created
+ * Notify supply item owners who have matching items
+ */
+export const notifyDirectPurchaseMatches = async (demandId: string, buyerId: string): Promise<void> => {
+  try {
+    const demand = await prisma.barterOffer.findUnique({
+      where: { id: demandId },
+      include: {
+        initiator: { select: { id: true, fullName: true } },
+        itemRequests: { include: { category: true } },
+      },
+    });
+
+    if (!demand || !demand.isOpenOffer) return;
+
+    const buyerName = demand.initiator?.fullName || 'مشتري';
+    const demandRequest = demand.itemRequests[0];
+
+    if (!demandRequest) return;
+
+    const demandTitle = demandRequest.description || 'سلعة';
+    const budgetText = demandRequest.maxPrice
+      ? `${demandRequest.maxPrice.toLocaleString('ar-EG')} ج.م`
+      : 'غير محدد';
+    const notifiedUsers = new Set<string>();
+
+    // Build search conditions for matching supply items
+    const orConditions: any[] = [];
+
+    // Match by category
+    if (demandRequest.categoryId) {
+      orConditions.push({ categoryId: demandRequest.categoryId });
+    }
+
+    // Match by keywords
+    if (demandRequest.keywords && demandRequest.keywords.length > 0) {
+      for (const keyword of demandRequest.keywords) {
+        if (keyword.length > 2) {
+          orConditions.push({ title: { contains: keyword, mode: 'insensitive' as const } });
+        }
+      }
+    }
+
+    if (orConditions.length === 0) return;
+
+    // Find matching supply items
+    const matchingSupply = await prisma.item.findMany({
+      where: {
+        status: 'ACTIVE',
+        sellerId: { not: buyerId },
+        OR: orConditions,
+        // Price range match if specified
+        ...(demandRequest.maxPrice && {
+          estimatedValue: { lte: demandRequest.maxPrice * 1.2 } // 20% tolerance
+        }),
+      },
+      include: {
+        seller: { select: { id: true, fullName: true } },
+        category: { select: { id: true, nameAr: true } },
+      },
+    });
+
+    for (const item of matchingSupply) {
+      if (notifiedUsers.has(item.sellerId)) continue;
+      notifiedUsers.add(item.sellerId);
+
+      const priceText = item.estimatedValue.toLocaleString('ar-EG');
+
+      await createNotification({
+        userId: item.sellerId,
+        type: 'PURCHASE_REQUEST_MATCH',
+        title: '🛒 مشتري يبحث عن سلعتك!',
+        message: `${buyerName} يبحث عن "${demandTitle}" - لديك "${item.title}" (${priceText} ج.م)! الميزانية: ${budgetText}`,
+        priority: 'HIGH',
+        entityType: 'BARTER_OFFER',
+        entityId: demandId,
+        actionUrl: `/items/${item.id}`,
+        actionText: 'عرض طلب الشراء',
+        metadata: {
+          matchType: 'DIRECT_PURCHASE_TO_SALE',
+          demandId,
+          itemId: item.id,
+        },
+      });
+    }
+
+    console.log(`[SmartMatching] ${notifiedUsers.size} sellers notified for new direct purchase demand ${demandId}`);
+  } catch (error) {
+    console.error('[SmartMatching] Error in notifyDirectPurchaseMatches:', error);
   }
 };
 

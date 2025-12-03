@@ -8,6 +8,7 @@
 import { ItemType, ItemCondition, MarketType } from '@prisma/client';
 import prisma from '../lib/prisma';
 import * as proximityMatching from './proximity-matching.service';
+import { notifyDirectPurchaseMatches } from './smart-matching.service';
 import { itemEvents } from '../events/item.events';
 
 // ============================================
@@ -564,10 +565,11 @@ export const createInventoryItem = async (
       console.error('[Inventory] Error processing proximity matching for demand:', err);
     });
 
-    // Note: We don't emit barterEvents here because:
-    // 1. DEMAND side doesn't have offered items
-    // 2. Smart matching for items with barter preferences is handled by itemEvents
-    // 3. This prevents duplicate notifications
+    // Trigger smart matching to notify supply owners about this new demand
+    notifyDirectPurchaseMatches(offer.id, userId).catch(err => {
+      console.error('[Inventory] Error notifying direct purchase matches:', err);
+    });
+    console.log(`[Inventory] Direct purchase demand created: ${offer.id}, triggering smart matching`);
 
     return {
       id: offer.id,
