@@ -1070,6 +1070,14 @@ export const findMyMatchingItemForBarter = async (
     desiredCategory?: { id: string; nameEn: string; nameAr: string } | null;
   };
 } | null> => {
+  // Helper to convert image URLs to the expected format
+  const formatImages = (imageUrls: string[]): { url: string; isPrimary: boolean }[] => {
+    return imageUrls.map((url, index) => ({
+      url,
+      isPrimary: index === 0,
+    }));
+  };
+
   // Get the target item (the one the user is viewing)
   const targetItem = await prisma.item.findUnique({
     where: { id: targetItemId },
@@ -1077,7 +1085,6 @@ export const findMyMatchingItemForBarter = async (
       category: { select: { id: true, nameEn: true, nameAr: true } },
       desiredCategory: { select: { id: true, nameEn: true, nameAr: true } },
       seller: { select: { id: true, fullName: true } },
-      images: { select: { url: true, isPrimary: true } },
     },
   });
 
@@ -1103,7 +1110,6 @@ export const findMyMatchingItemForBarter = async (
     },
     include: {
       category: { select: { id: true, nameEn: true, nameAr: true } },
-      images: { select: { url: true, isPrimary: true } },
     },
   });
 
@@ -1118,7 +1124,7 @@ export const findMyMatchingItemForBarter = async (
 
     // Check if my item title matches their desired item title keywords
     if (!matches && targetItem.desiredItemTitle && myItem.title) {
-      const theirKeywords = targetItem.desiredItemTitle.toLowerCase().split(/[\s,،]+/).filter(k => k.length > 2);
+      const theirKeywords = targetItem.desiredItemTitle.toLowerCase().split(/[\s,،]+/).filter((k: string) => k.length > 2);
       const myTitle = myItem.title.toLowerCase();
 
       for (const keyword of theirKeywords) {
@@ -1135,14 +1141,14 @@ export const findMyMatchingItemForBarter = async (
           id: myItem.id,
           title: myItem.title,
           estimatedValue: myItem.estimatedValue,
-          images: myItem.images,
+          images: formatImages(myItem.images),
           category: myItem.category || undefined,
         },
         theirItem: {
           id: targetItem.id,
           title: targetItem.title,
           estimatedValue: targetItem.estimatedValue,
-          images: targetItem.images,
+          images: formatImages(targetItem.images),
           sellerId: targetItem.sellerId,
           seller: targetItem.seller || undefined,
           desiredItemTitle: targetItem.desiredItemTitle,
