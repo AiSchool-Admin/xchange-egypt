@@ -5,7 +5,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { getItems, Item } from '@/lib/api/items';
 import { getCategories, getCategoryTree, Category } from '@/lib/api/categories';
-import { getGovernorateArabicName, EGYPT_CITIES } from '@/components/map/MapIcons';
+import { EGYPT, getAllGovernorates, getCitiesByGovernorate, getDistrictsByCity } from '@/lib/data/egyptLocations';
 
 // Dynamically import map component (no SSR)
 const ItemsMap = dynamic(
@@ -126,30 +126,46 @@ export default function MapPage() {
     return sub?.children || [];
   }, [categoryTree, selectedParentCategory, selectedSubCategory]);
 
-  // Get cities for selected governorate
+  // Get all governorates from egyptLocations
+  const allGovernorates = useMemo(() => getAllGovernorates(), []);
+
+  // Find governorate object by name (Arabic)
+  const findGovernorateByName = (name: string) => {
+    return allGovernorates.find(g => g.nameAr === name || g.nameEn === name || g.id === name);
+  };
+
+  // Get cities for selected governorate from egyptLocations
   const availableCities = useMemo(() => {
     if (!selectedGovernorate) return [];
-    // First try to get from predefined list
-    const predefinedCities = EGYPT_CITIES[selectedGovernorate] || [];
-    // Also get unique cities from items
-    const itemCities = [...new Set(
+    const gov = findGovernorateByName(selectedGovernorate);
+    if (gov) {
+      return gov.cities;
+    }
+    // Fallback: get cities from items if governorate not found in predefined list
+    return [...new Set(
       items
         .filter(i => i.governorate === selectedGovernorate && i.city)
         .map(i => i.city!)
-    )];
-    // Combine and dedupe
-    return [...new Set([...predefinedCities, ...itemCities])].sort();
-  }, [selectedGovernorate, items]);
+    )].map(name => ({ id: name, nameAr: name, nameEn: name, districts: [] }));
+  }, [selectedGovernorate, items, allGovernorates]);
 
-  // Get districts for selected city
+  // Get districts for selected city from egyptLocations
   const availableDistricts = useMemo(() => {
-    if (!selectedCity) return [];
+    if (!selectedGovernorate || !selectedCity) return [];
+    const gov = findGovernorateByName(selectedGovernorate);
+    if (gov) {
+      const city = gov.cities.find(c => c.nameAr === selectedCity || c.nameEn === selectedCity || c.id === selectedCity);
+      if (city) {
+        return city.districts;
+      }
+    }
+    // Fallback: get districts from items
     return [...new Set(
       items
         .filter(i => i.city === selectedCity && i.district)
         .map(i => i.district!)
-    )].sort();
-  }, [selectedCity, items]);
+    )].map(name => ({ id: name, nameAr: name, nameEn: name }));
+  }, [selectedGovernorate, selectedCity, items, allGovernorates]);
 
   // Filter items by selected location
   const filteredItems = useMemo(() => {
@@ -304,13 +320,14 @@ export default function MapPage() {
               className="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white min-w-[140px]"
             >
               <option value="">جميع المحافظات</option>
-              {Object.entries(itemsByGovernorate)
-                .sort((a, b) => b[1] - a[1])
-                .map(([gov, count]) => (
-                  <option key={gov} value={gov}>
-                    {getGovernorateArabicName(gov)} ({count})
+              {allGovernorates.map((gov) => {
+                const count = itemsByGovernorate[gov.nameAr] || 0;
+                return (
+                  <option key={gov.id} value={gov.nameAr}>
+                    {gov.nameAr} {count > 0 ? `(${count})` : ''}
                   </option>
-                ))}
+                );
+              })}
             </select>
 
             {/* City */}
@@ -322,7 +339,7 @@ export default function MapPage() {
               >
                 <option value="">جميع المدن</option>
                 {availableCities.map((city) => (
-                  <option key={city} value={city}>{city}</option>
+                  <option key={city.id} value={city.nameAr}>{city.nameAr}</option>
                 ))}
               </select>
             )}
@@ -336,7 +353,7 @@ export default function MapPage() {
               >
                 <option value="">جميع الأحياء</option>
                 {availableDistricts.map((district) => (
-                  <option key={district} value={district}>{district}</option>
+                  <option key={district.id} value={district.nameAr}>{district.nameAr}</option>
                 ))}
               </select>
             )}
@@ -414,7 +431,7 @@ export default function MapPage() {
                   )}
                   {selectedGovernorate && (
                     <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                      📍 {getGovernorateArabicName(selectedGovernorate)}
+                      📍 {selectedGovernorate}
                     </span>
                   )}
                   {selectedCity && (
@@ -444,38 +461,34 @@ export default function MapPage() {
                     <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                     <p className="text-gray-500 text-sm">جاري التحميل...</p>
                   </div>
-                ) : Object.keys(itemsByGovernorate).length === 0 ? (
-                  <div className="p-6 text-center text-gray-500">
-                    <div className="text-3xl mb-2">📍</div>
-                    <p className="text-sm mb-2">لا توجد إعلانات بمواقع محددة</p>
-                    <Link href="/inventory/add" className="text-emerald-600 text-sm font-medium hover:underline">
-                      أضف إعلان مع تحديد المحافظة
-                    </Link>
-                  </div>
                 ) : (
-                  Object.entries(itemsByGovernorate)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([gov, count]) => (
+                  allGovernorates.map((gov) => {
+                    const count = itemsByGovernorate[gov.nameAr] || 0;
+                    const isSelected = selectedGovernorate === gov.nameAr;
+                    return (
                       <button
-                        key={gov}
-                        onClick={() => handleGovernorateChange(gov === selectedGovernorate ? null : gov)}
+                        key={gov.id}
+                        onClick={() => handleGovernorateChange(isSelected ? null : gov.nameAr)}
                         className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition text-right border-b border-gray-50 last:border-0 ${
-                          selectedGovernorate === gov ? 'bg-emerald-50' : ''
+                          isSelected ? 'bg-emerald-50' : ''
                         }`}
                       >
-                        <span className={`font-medium flex items-center gap-2 ${selectedGovernorate === gov ? 'text-emerald-600' : 'text-gray-700'}`}>
-                          <span className={`w-2 h-2 rounded-full ${selectedGovernorate === gov ? 'bg-emerald-500' : 'bg-gray-300'}`}></span>
-                          {getGovernorateArabicName(gov)}
+                        <span className={`font-medium flex items-center gap-2 ${isSelected ? 'text-emerald-600' : 'text-gray-700'}`}>
+                          <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-500' : count > 0 ? 'bg-emerald-300' : 'bg-gray-200'}`}></span>
+                          {gov.nameAr}
                         </span>
-                        <span className={`text-sm px-2 py-0.5 rounded-full ${
-                          selectedGovernorate === gov
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {count}
-                        </span>
+                        {count > 0 && (
+                          <span className={`text-sm px-2 py-0.5 rounded-full ${
+                            isSelected
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {count}
+                          </span>
+                        )}
                       </button>
-                    ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -486,7 +499,7 @@ export default function MapPage() {
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-l from-blue-50 to-indigo-50">
                   <h2 className="font-bold text-gray-900 flex items-center gap-2">
                     <span>📦</span>
-                    إعلانات {selectedCity || getGovernorateArabicName(selectedGovernorate!)}
+                    إعلانات {selectedCity || selectedGovernorate}
                   </h2>
                   <span className="text-sm text-gray-500 bg-white px-2 py-1 rounded-full">
                     {filteredItems.length} إعلان
