@@ -345,6 +345,7 @@ model Listing {
   orderItems  OrderItem[]
   flashDeals  FlashDeal[]
   installmentPlans InstallmentPlan[]
+  groupBuys   GroupBuy[]
 
   @@map("listings")
   @@index([itemId])
@@ -3322,6 +3323,415 @@ model Installment {
   @@unique([planId, installmentNumber])
   @@index([planId])
   @@index([dueDate])
+  @@index([status])
+}
+
+// ============================================
+// Group Buying (Tawfir) System
+// نظام الشراء الجماعي (توفير)
+// ============================================
+
+enum GroupBuyStatus {
+  DRAFT           // مسودة
+  ACTIVE          // نشط
+  TARGET_REACHED  // تم الوصول للهدف
+  CONFIRMED       // مؤكد
+  COMPLETED       // مكتمل
+  FAILED          // فشل
+  CANCELLED       // ملغي
+}
+
+model GroupBuy {
+  id              String          @id @default(uuid())
+  listingId       String          @map("listing_id")
+  organizerId     String          @map("organizer_id")
+
+  // Product details
+  title           String
+  description     String?
+
+  // Pricing tiers
+  originalPrice   Float           @map("original_price")
+  targetQuantity  Int             @map("target_quantity")     // الحد الأدنى للمجموعة
+  maxQuantity     Int?            @map("max_quantity")        // الحد الأقصى
+  currentQuantity Int             @default(0) @map("current_quantity")
+
+  // Discount tiers (JSON array)
+  // [{ minQty: 10, discount: 10 }, { minQty: 20, discount: 15 }, ...]
+  discountTiers   Json            @map("discount_tiers")
+
+  // Current discount
+  currentDiscount Float           @default(0) @map("current_discount")
+  currentPrice    Float           @map("current_price")
+
+  // Timing
+  startDate       DateTime        @map("start_date")
+  endDate         DateTime        @map("end_date")
+
+  // Status
+  status          GroupBuyStatus  @default(DRAFT)
+
+  // Limits
+  maxPerUser      Int             @default(5) @map("max_per_user")
+
+  // Stats
+  participantCount Int            @default(0) @map("participant_count")
+  viewCount       Int             @default(0) @map("view_count")
+
+  // Timestamps
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  confirmedAt     DateTime?       @map("confirmed_at")
+  completedAt     DateTime?       @map("completed_at")
+
+  // Relations
+  listing         Listing         @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  participants    GroupBuyParticipant[]
+
+  @@map("group_buys")
+  @@index([listingId])
+  @@index([organizerId])
+  @@index([status])
+  @@index([endDate])
+}
+
+model GroupBuyParticipant {
+  id              String      @id @default(uuid())
+  groupBuyId      String      @map("group_buy_id")
+  userId          String      @map("user_id")
+
+  // Order details
+  quantity        Int         @default(1)
+  unitPrice       Float       @map("unit_price")     // السعر وقت الانضمام
+  totalPrice      Float       @map("total_price")
+
+  // Status
+  status          String      @default("JOINED")     // 'JOINED', 'PAID', 'CANCELLED', 'REFUNDED'
+
+  // Payment
+  paidAt          DateTime?   @map("paid_at")
+  paymentMethod   String?     @map("payment_method")
+  paymentRef      String?     @map("payment_ref")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  groupBuy        GroupBuy    @relation(fields: [groupBuyId], references: [id], onDelete: Cascade)
+
+  @@map("group_buy_participants")
+  @@unique([groupBuyId, userId])
+  @@index([groupBuyId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// Warranty & Insurance System
+// نظام الضمان والتأمين
+// ============================================
+
+enum WarrantyType {
+  SELLER_WARRANTY     // ضمان البائع
+  PLATFORM_WARRANTY   // ضمان المنصة
+  EXTENDED_WARRANTY   // ضمان ممتد
+  INSURANCE           // تأمين
+}
+
+enum WarrantyStatus {
+  ACTIVE              // نشط
+  EXPIRED             // منتهي
+  CLAIMED             // تم المطالبة
+  VOIDED              // ملغي
+}
+
+enum WarrantyClaimStatus {
+  PENDING             // قيد المراجعة
+  APPROVED            // مقبول
+  REJECTED            // مرفوض
+  IN_REPAIR           // جاري الإصلاح
+  REPLACED            // تم الاستبدال
+  REFUNDED            // تم الاسترداد
+  CLOSED              // مغلق
+}
+
+model Warranty {
+  id              String          @id @default(uuid())
+  transactionId   String          @map("transaction_id")
+  itemId          String          @map("item_id")
+  buyerId         String          @map("buyer_id")
+  sellerId        String          @map("seller_id")
+
+  // Warranty details
+  warrantyType    WarrantyType    @map("warranty_type")
+  title           String
+  description     String?
+
+  // Coverage
+  coverageDetails Json            @map("coverage_details")  // What's covered
+  exclusions      Json?                                      // What's not covered
+  maxClaimValue   Float?          @map("max_claim_value")
+
+  // Duration
+  startDate       DateTime        @map("start_date")
+  endDate         DateTime        @map("end_date")
+  durationMonths  Int             @map("duration_months")
+
+  // Pricing
+  price           Float           @default(0)   // For extended warranty
+  isPaid          Boolean         @default(true) @map("is_paid")
+
+  // Status
+  status          WarrantyStatus  @default(ACTIVE)
+
+  // Claims
+  claimsCount     Int             @default(0) @map("claims_count")
+  maxClaims       Int             @default(1) @map("max_claims")
+
+  // Documents
+  certificateUrl  String?         @map("certificate_url")
+  termsUrl        String?         @map("terms_url")
+
+  // Timestamps
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  claims          WarrantyClaim[]
+
+  @@map("warranties")
+  @@index([transactionId])
+  @@index([itemId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([endDate])
+}
+
+model WarrantyClaim {
+  id              String              @id @default(uuid())
+  warrantyId      String              @map("warranty_id")
+  claimantId      String              @map("claimant_id")
+
+  // Claim details
+  issueType       String              @map("issue_type")      // 'DEFECT', 'MALFUNCTION', 'DAMAGE'
+  issueDescription String             @map("issue_description")
+  evidenceUrls    String[]            @map("evidence_urls")   // صور/فيديو
+
+  // Status
+  status          WarrantyClaimStatus @default(PENDING)
+
+  // Resolution
+  resolutionType  String?             @map("resolution_type") // 'REPAIR', 'REPLACE', 'REFUND'
+  resolutionNotes String?             @map("resolution_notes")
+  resolvedAt      DateTime?           @map("resolved_at")
+  resolvedBy      String?             @map("resolved_by")
+
+  // Refund/Replacement
+  refundAmount    Float?              @map("refund_amount")
+  replacementItemId String?           @map("replacement_item_id")
+
+  // Communication
+  messages        Json?               // Array of messages
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  warranty        Warranty            @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
+
+  @@map("warranty_claims")
+  @@index([warrantyId])
+  @@index([claimantId])
+  @@index([status])
+}
+
+// ============================================
+// Seller Verification System
+// نظام التحقق من البائعين
+// ============================================
+
+enum VerificationLevel {
+  UNVERIFIED      // غير موثق
+  BASIC           // أساسي (بريد إلكتروني + هاتف)
+  VERIFIED        // موثق (هوية)
+  BUSINESS        // تجاري (سجل تجاري)
+  PREMIUM         // مميز (فحص شامل)
+  TRUSTED         // موثوق (شريك المنصة)
+}
+
+enum VerificationStatus {
+  PENDING         // قيد المراجعة
+  APPROVED        // مقبول
+  REJECTED        // مرفوض
+  EXPIRED         // منتهي
+  REVOKED         // ملغي
+}
+
+model SellerVerification {
+  id              String              @id @default(uuid())
+  userId          String              @map("user_id")
+
+  // Current level
+  currentLevel    VerificationLevel   @default(UNVERIFIED) @map("current_level")
+  requestedLevel  VerificationLevel   @map("requested_level")
+
+  // Status
+  status          VerificationStatus  @default(PENDING)
+
+  // Documents submitted
+  documents       Json                // Array of document info
+
+  // Identity verification
+  idType          String?             @map("id_type")         // 'NATIONAL_ID', 'PASSPORT'
+  idNumber        String?             @map("id_number")
+  idFrontUrl      String?             @map("id_front_url")
+  idBackUrl       String?             @map("id_back_url")
+  selfieUrl       String?             @map("selfie_url")
+
+  // Business verification
+  businessName    String?             @map("business_name")
+  commercialRegNo String?             @map("commercial_reg_no")
+  taxId           String?             @map("tax_id")
+  businessDocUrl  String?             @map("business_doc_url")
+
+  // Address verification
+  addressProofUrl String?             @map("address_proof_url")
+  verifiedAddress String?             @map("verified_address")
+
+  // Review
+  reviewedAt      DateTime?           @map("reviewed_at")
+  reviewedBy      String?             @map("reviewed_by")
+  reviewNotes     String?             @map("review_notes")
+  rejectionReason String?             @map("rejection_reason")
+
+  // Validity
+  validFrom       DateTime?           @map("valid_from")
+  validUntil      DateTime?           @map("valid_until")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  @@map("seller_verifications")
+  @@index([userId])
+  @@index([currentLevel])
+  @@index([status])
+  @@index([validUntil])
+}
+
+// Verification badges earned by users
+model VerificationBadge {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+
+  // Badge info
+  badgeType       String      @map("badge_type")     // 'ID_VERIFIED', 'PHONE_VERIFIED', 'ADDRESS_VERIFIED', 'BUSINESS_VERIFIED'
+  badgeName       String      @map("badge_name")
+  badgeNameAr     String      @map("badge_name_ar")
+  badgeIcon       String?     @map("badge_icon")
+
+  // Validity
+  earnedAt        DateTime    @default(now()) @map("earned_at")
+  expiresAt       DateTime?   @map("expires_at")
+  isActive        Boolean     @default(true) @map("is_active")
+
+  // Metadata
+  metadata        Json?
+
+  @@map("verification_badges")
+  @@unique([userId, badgeType])
+  @@index([userId])
+  @@index([badgeType])
+  @@index([isActive])
+}
+
+// ============================================
+// Product Authenticity System
+// نظام أصالة المنتجات
+// ============================================
+
+enum AuthenticityStatus {
+  PENDING         // قيد التحقق
+  VERIFIED        // أصلي موثق
+  SUSPICIOUS      // مشتبه به
+  COUNTERFEIT     // مقلد
+  INCONCLUSIVE    // غير حاسم
+}
+
+model ProductAuthenticity {
+  id              String              @id @default(uuid())
+  itemId          String              @unique @map("item_id")
+  sellerId        String              @map("seller_id")
+
+  // Request info
+  requestedAt     DateTime            @default(now()) @map("requested_at")
+  requestedBy     String              @map("requested_by")
+
+  // Status
+  status          AuthenticityStatus  @default(PENDING)
+
+  // Verification method
+  method          String              // 'SERIAL_CHECK', 'EXPERT_REVIEW', 'DOCUMENT_VERIFY', 'AI_ANALYSIS'
+
+  // Evidence submitted
+  serialNumber    String?             @map("serial_number")
+  purchaseReceipt String?             @map("purchase_receipt")
+  originalBox     Boolean             @default(false) @map("original_box")
+  warrantyCard    Boolean             @default(false) @map("warranty_card")
+  evidenceUrls    String[]            @map("evidence_urls")
+
+  // Verification result
+  verifiedAt      DateTime?           @map("verified_at")
+  verifiedBy      String?             @map("verified_by")    // User ID or 'SYSTEM'
+  verifierNotes   String?             @map("verifier_notes")
+  confidenceScore Float?              @map("confidence_score") // 0-100
+
+  // Certificate
+  certificateId   String?             @unique @map("certificate_id")
+  certificateUrl  String?             @map("certificate_url")
+  qrCode          String?             @map("qr_code")
+
+  // Display
+  showBadge       Boolean             @default(true) @map("show_badge")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  @@map("product_authenticity")
+  @@index([itemId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([certificateId])
+}
+
+// Authenticity reports from users
+model AuthenticityReport {
+  id              String      @id @default(uuid())
+  itemId          String      @map("item_id")
+  reporterId      String      @map("reporter_id")
+
+  // Report details
+  reportType      String      @map("report_type")     // 'COUNTERFEIT', 'MISREPRESENTED', 'SUSPICIOUS'
+  description     String
+  evidenceUrls    String[]    @map("evidence_urls")
+
+  // Status
+  status          String      @default("PENDING")     // 'PENDING', 'INVESTIGATING', 'RESOLVED', 'DISMISSED'
+  resolution      String?
+  resolvedAt      DateTime?   @map("resolved_at")
+  resolvedBy      String?     @map("resolved_by")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("authenticity_reports")
+  @@index([itemId])
+  @@index([reporterId])
   @@index([status])
 }
 
