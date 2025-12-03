@@ -64,18 +64,23 @@ export default function BarterCompletePage() {
     setSubmitting(true);
     setError('');
 
-    try {
-      await createBarterOffer({
-        offeredItemIds: [match.myItem.id],
-        requestedItemIds: [match.theirItem.id],
-        recipientId: match.theirItem.sellerId,
-        message: message || `مقايضة: "${match.myItem.title}" مقابل "${match.theirItem.title}"`,
-      });
+    const offerData = {
+      offeredItemIds: [match.myItem.id],
+      requestedItemIds: [match.theirItem.id],
+      recipientId: match.theirItem.sellerId,
+      message: message || `مقايضة: "${match.myItem.title}" مقابل "${match.theirItem.title}"`,
+    };
 
+    console.log('[BarterComplete] Creating offer with:', offerData);
+
+    try {
+      await createBarterOffer(offerData);
       setSuccess(true);
     } catch (err: any) {
-      console.error('Error creating barter offer:', err);
-      setError(err.response?.data?.message || 'فشل في إنشاء عرض المقايضة / Failed to create barter offer');
+      console.error('[BarterComplete] Error creating barter offer:', err);
+      console.error('[BarterComplete] Error response:', err.response?.data);
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'فشل في إنشاء عرض المقايضة / Failed to create barter offer';
+      setError(errorMsg);
     } finally {
       setSubmitting(false);
     }
