@@ -397,9 +397,12 @@ export const getBarterOfferById = async (
     throw new NotFoundError('Barter offer not found');
   }
 
-  // Only initiator or recipient can view the offer
-  if (offer.initiatorId !== userId && offer.recipientId !== userId) {
-    throw new ForbiddenError('You do not have permission to view this offer');
+  // For directed offers, only initiator or recipient can view
+  // For open offers (isOpenOffer = true), anyone can view
+  if (!offer.isOpenOffer) {
+    if (offer.initiatorId !== userId && offer.recipientId !== userId) {
+      throw new ForbiddenError('You do not have permission to view this offer');
+    }
   }
 
   return offer;
