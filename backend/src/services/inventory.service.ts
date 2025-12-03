@@ -174,8 +174,8 @@ export interface CreateInventoryItemInput {
 // ============================================
 
 // Helper to determine side from listingType
-const SUPPLY_LISTING_TYPES = ['DIRECT_SALE', 'AUCTION', 'BARTER'] as const;
-const DEMAND_LISTING_TYPES = ['DIRECT_BUY', 'REVERSE_AUCTION'] as const;
+const SUPPLY_LISTING_TYPES: ('DIRECT_SALE' | 'AUCTION' | 'BARTER')[] = ['DIRECT_SALE', 'AUCTION', 'BARTER'];
+const DEMAND_LISTING_TYPES: ('DIRECT_BUY' | 'REVERSE_AUCTION')[] = ['DIRECT_BUY', 'REVERSE_AUCTION'];
 
 const getSideFromListingType = (listingType: string): InventorySide => {
   return DEMAND_LISTING_TYPES.includes(listingType as any) ? 'DEMAND' : 'SUPPLY';
