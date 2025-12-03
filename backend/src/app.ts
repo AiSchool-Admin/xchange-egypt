@@ -46,11 +46,8 @@ import { initializeWebSocket, startRealtimeMatching } from './services/realtime-
 // Import chat WebSocket service
 import { attachChatEventHandlers } from './services/socket.service';
 
-// Import item match notification service
-import { initItemMatchNotifications } from './services/item-match-notification.service';
-
-// Import demand marketplace service
-import { initDemandMarketplaceListeners } from './services/demand-marketplace.service';
+// Import smart matching service (consolidated notification logic)
+import { initSmartMatchingListeners } from './services/smart-matching.service';
 
 // Initialize Express app
 const app: Application = express();
@@ -336,13 +333,9 @@ const startServer = async () => {
     startRealtimeMatching();
     console.log('✅ Real-time matching service started');
 
-    // Initialize item match notifications
-    initItemMatchNotifications();
-    console.log('✅ Item match notification service started');
-
-    // Initialize demand marketplace listeners for smart matching
-    initDemandMarketplaceListeners();
-    console.log('✅ Demand marketplace listeners initialized');
+    // Initialize smart matching listeners (consolidated notification logic)
+    initSmartMatchingListeners();
+    console.log('✅ Smart matching notification service started');
 
     // Start background jobs (kept for fallback and cleanup)
     if (env.server.nodeEnv === 'production') {

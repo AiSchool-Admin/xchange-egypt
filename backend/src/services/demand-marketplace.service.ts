@@ -20,10 +20,10 @@
  */
 
 import prisma from '../lib/prisma';
-import { itemEvents, ItemCreatedPayload } from '../events/item.events';
-import { barterEvents, BarterItemRequestCreatedPayload } from '../events/barter.events';
-import { reverseAuctionEvents, ReverseAuctionCreatedPayload } from '../events/reverse-auction.events';
 import { createNotification } from './notification.service';
+
+// NOTE: Event listeners have been moved to smart-matching.service.ts
+// The imports below are kept for backward compatibility with notification functions
 
 // ============================================
 // Types
@@ -486,100 +486,20 @@ export const notifyMatchingSupplyUsers = async (
 };
 
 // ============================================
-// Event Listeners for Smart Matching
+// Event Listeners - DISABLED
 // ============================================
 
 /**
  * Initialize demand marketplace event listeners
+ *
+ * NOTE: Notification listeners have been moved to smart-matching.service.ts
+ * to avoid duplicate notifications. This function is kept for backwards
+ * compatibility but does nothing.
  */
 export const initDemandMarketplaceListeners = (): void => {
-  // Listen for new items (supply side)
-  itemEvents.onItemCreated(async (payload: ItemCreatedPayload) => {
-    try {
-      // Get full item details
-      const item = await prisma.item.findUnique({
-        where: { id: payload.itemId },
-        include: { category: true },
-      });
-
-      if (!item) return;
-
-      await notifyMatchingDemandUsers({
-        id: item.id,
-        title: item.title,
-        sellerId: item.sellerId,
-        categoryId: item.categoryId || undefined,
-        estimatedValue: item.estimatedValue,
-        condition: item.condition || undefined,
-        governorate: item.governorate || undefined,
-        listingType: item.desiredCategoryId ? 'BARTER' : 'DIRECT_SALE',
-      });
-    } catch (error) {
-      console.error('Error notifying matching demand users:', error);
-    }
-  });
-
-  // Listen for new barter item requests (demand side)
-  barterEvents.onItemRequestCreated(async (payload: BarterItemRequestCreatedPayload) => {
-    try {
-      const demandItem: DemandItem = {
-        id: payload.requestId,
-        type: 'BARTER_REQUEST',
-        userId: payload.initiatorId,
-        title: payload.description?.substring(0, 100) || 'طلب مقايضة',
-        description: payload.description,
-        categoryId: payload.categoryId,
-        subcategoryId: payload.subcategoryId,
-        subSubcategoryId: payload.subSubcategoryId,
-        minPrice: payload.minPrice,
-        maxPrice: payload.maxPrice,
-        condition: payload.condition,
-        keywords: payload.keywords || [],
-        governorate: payload.governorate,
-        status: 'ACTIVE',
-        createdAt: payload.timestamp,
-        updatedAt: payload.timestamp,
-        barterOfferId: payload.offerId,
-      };
-
-      await notifyMatchingSupplyUsers(demandItem);
-    } catch (error) {
-      console.error('Error notifying matching supply users for barter:', error);
-    }
-  });
-
-  // Listen for new reverse auctions (demand side)
-  reverseAuctionEvents.onAuctionCreated(async (payload: ReverseAuctionCreatedPayload) => {
-    try {
-      const demandItem: DemandItem = {
-        id: payload.auctionId,
-        type: 'REVERSE_AUCTION',
-        userId: payload.buyerId,
-        title: payload.title,
-        description: payload.description || '',
-        categoryId: payload.categoryId,
-        minPrice: payload.targetPrice,
-        maxPrice: payload.maxBudget,
-        condition: payload.condition,
-        keywords: [],
-        governorate: payload.governorate,
-        city: payload.city,
-        district: payload.district,
-        marketType: payload.marketType,
-        status: 'ACTIVE',
-        createdAt: payload.startDate,
-        updatedAt: payload.startDate,
-        reverseAuctionId: payload.auctionId,
-        endDate: payload.endDate,
-      };
-
-      await notifyMatchingSupplyUsers(demandItem);
-    } catch (error) {
-      console.error('Error notifying matching supply users for reverse auction:', error);
-    }
-  });
-
-  console.log('✅ Demand marketplace listeners initialized');
+  // Notification listeners are now handled by smart-matching.service.ts
+  // This function is kept for backwards compatibility
+  console.log('[DemandMarketplace] Listeners disabled - using smart-matching.service.ts instead');
 };
 
 // ============================================
