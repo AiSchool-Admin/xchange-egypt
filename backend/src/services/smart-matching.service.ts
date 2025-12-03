@@ -69,6 +69,19 @@ export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): P
     });
     const wantedCategoryNames = wantedCategories.map(c => c.nameAr);
 
+    // Get item requests (DEMAND) for this barter offer to know what initiator wants
+    const initiatorItemRequests = await prisma.itemRequest.findMany({
+      where: { barterOfferId: offerId },
+      include: { category: { select: { nameAr: true } } },
+    });
+
+    // Build text for what the initiator is looking for
+    const initiatorWantsText = initiatorItemRequests.length > 0
+      ? initiatorItemRequests.map(r => r.description || r.category?.nameAr || 'سلعة').join(' أو ')
+      : wantedCategoryNames.length > 0
+        ? wantedCategoryNames.join(' أو ')
+        : 'سلعة مقابلة';
+
     const notifiedUsers = new Set<string>();
 
     // ============================================
@@ -105,13 +118,14 @@ export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): P
       if (notifiedUsers.has(userId)) continue;
       notifiedUsers.add(userId);
 
-      const categoryName = demand.category?.nameAr || 'سلعة';
+      // Use description if available, otherwise category name
+      const wantedItemText = demand.description || demand.category?.nameAr || 'سلعة';
 
       await createNotification({
         userId,
         type: 'BARTER_MATCH',
         title: '🎯 سلعة تطابق ما تبحث عنه!',
-        message: `${initiatorName} يعرض ${offeredItemsText} (${offeredValueText} ج.م) - أنت تبحث عن ${categoryName} للمقايضة!`,
+        message: `${initiatorName} يعرض ${offeredItemsText} (${offeredValueText} ج.م) - أنت تبحث عن "${wantedItemText}" للمقايضة!`,
         priority: 'HIGH',
         entityType: 'BARTER_OFFER',
         entityId: offerId,
@@ -122,10 +136,11 @@ export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): P
           offerId,
           offeredItems: offeredItems.map(i => ({ id: i.id, title: i.title })),
           demandId: demand.id,
+          demandDescription: demand.description,
         },
       });
 
-      console.log(`[SmartMatching] Notified ${userId}: my supply matches their barter demand`);
+      console.log(`[SmartMatching] Notified ${userId}: my supply matches their barter demand for "${wantedItemText}"`);
     }
 
     // 1B. Find ReverseAuctions (purchase demands) that match my offered items
@@ -226,7 +241,7 @@ export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): P
             userId: sellerId,
             type: 'BARTER_MATCH',
             title: '🎯 تطابق مثالي للمقايضة!',
-            message: `${initiatorName} يعرض ${offeredItemsText} (${offeredValueText} ج.م) ويبحث عن ${firstItem.category?.nameAr} - لديك ${itemsText}! تطابق مثالي!`,
+            message: `${initiatorName} يعرض ${offeredItemsText} (${offeredValueText} ج.م) ويبحث عن "${initiatorWantsText}" - لديك ${itemsText}! تطابق مثالي!`,
             priority: 'HIGH',
             entityType: 'BARTER_OFFER',
             entityId: offerId,
@@ -237,17 +252,18 @@ export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): P
               offerId,
               matchScore: 100,
               matchedItems: items.map(i => ({ id: i.id, title: i.title })),
+              initiatorWants: initiatorWantsText,
             },
           });
 
-          console.log(`[SmartMatching] Perfect match! Notified ${sellerId}`);
+          console.log(`[SmartMatching] Perfect match! Notified ${sellerId} - wants "${initiatorWantsText}"`);
         } else {
           // Partial match - they have what I want
           await createNotification({
             userId: sellerId,
             type: 'BARTER_MATCH',
             title: '🔄 فرصة مقايضة!',
-            message: `${initiatorName} يبحث عن ${firstItem.category?.nameAr} - لديك ${itemsText} (${itemValue} ج.م)! يعرض مقابلها: ${offeredItemsText}`,
+            message: `${initiatorName} يبحث عن "${initiatorWantsText}" - لديك ${itemsText} (${itemValue} ج.م)! يعرض مقابلها: ${offeredItemsText}`,
             priority: 'MEDIUM',
             entityType: 'BARTER_OFFER',
             entityId: offerId,
@@ -257,10 +273,11 @@ export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): P
               matchType: 'DEMAND_TO_SUPPLY',
               offerId,
               matchedItems: items.map(i => ({ id: i.id, title: i.title })),
+              initiatorWants: initiatorWantsText,
             },
           });
 
-          console.log(`[SmartMatching] Notified ${sellerId}: my demand matches their supply`);
+          console.log(`[SmartMatching] Notified ${sellerId}: my demand for "${initiatorWantsText}" matches their supply`);
         }
       }
     }
@@ -355,11 +372,14 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
       if (notifiedUsers.has(demand.barterOffer.initiatorId)) continue;
       notifiedUsers.add(demand.barterOffer.initiatorId);
 
+      // Use description if available, otherwise category name
+      const wantedItemText = demand.description || demand.category?.nameAr || 'سلعة';
+
       await createNotification({
         userId: demand.barterOffer.initiatorId,
         type: 'ITEM_AVAILABLE',
         title: '✨ سلعة جديدة تطابق طلبك!',
-        message: `"${item.title}" بسعر ${priceText} ج.م في ${item.category?.nameAr} - يطابق ما تبحث عنه!`,
+        message: `"${item.title}" بسعر ${priceText} ج.م - أنت تبحث عن "${wantedItemText}"!`,
         priority: 'MEDIUM',
         entityType: 'ITEM',
         entityId: itemId,
@@ -369,6 +389,7 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
           matchType: 'SALE_TO_BARTER_DEMAND',
           itemId,
           requestId: demand.id,
+          demandDescription: demand.description,
         },
       });
     }
