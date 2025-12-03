@@ -357,43 +357,42 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
       });
     }
 
-    // 2. Find BarterOffers with isOpenOffer=true (direct purchase demands) matching this item
-    const matchingDemandOffers = await prisma.barterOffer.findMany({
+    // 2. Find DEMAND items (DIRECT_BUY, REVERSE_AUCTION) in unified Item table
+    const keywordConditions = item.title
+      ? item.title.split(/[\s,،]+/).filter(k => k.length > 2).map(keyword => ({
+          desiredKeywords: { contains: keyword, mode: 'insensitive' as const }
+        }))
+      : [];
+
+    const matchingDemandItems = await prisma.item.findMany({
       where: {
-        isOpenOffer: true,
-        status: 'PENDING',
-        initiatorId: { not: sellerId },
-        expiresAt: { gt: new Date() },
-        itemRequests: {
-          some: {
-            OR: [
-              { categoryId: item.categoryId },
-              // Also match by keywords in title
-              ...(item.title ? item.title.split(/[\s,،]+/).filter(k => k.length > 2).map(keyword => ({
-                keywords: { has: keyword }
-              })) : [])
-            ]
-          }
-        }
+        status: 'ACTIVE',
+        listingType: { in: ['DIRECT_BUY', 'REVERSE_AUCTION'] },
+        sellerId: { not: sellerId },
+        OR: [
+          { categoryId: item.categoryId },
+          ...keywordConditions
+        ],
+        // Budget match - DEMAND item's max budget should cover the price
+        desiredValueMax: { gte: item.estimatedValue * 0.8 } // 20% tolerance
       },
       include: {
-        initiator: { select: { id: true, fullName: true } },
-        itemRequests: { include: { category: true } },
+        seller: { select: { id: true, fullName: true } },
+        category: { select: { id: true, nameAr: true } },
       },
     });
 
-    for (const demand of matchingDemandOffers) {
-      if (notifiedUsers.has(demand.initiatorId)) continue;
-      notifiedUsers.add(demand.initiatorId);
+    for (const demand of matchingDemandItems) {
+      if (notifiedUsers.has(demand.sellerId)) continue;
+      notifiedUsers.add(demand.sellerId);
 
-      const demandRequest = demand.itemRequests[0];
-      const demandTitle = demandRequest?.description || 'طلب شراء';
-      const budgetText = demandRequest?.maxPrice
-        ? `${demandRequest.maxPrice.toLocaleString('ar-EG')} ج.م`
+      const demandTitle = demand.title || 'طلب شراء';
+      const budgetText = demand.desiredValueMax
+        ? `${demand.desiredValueMax.toLocaleString('ar-EG')} ج.م`
         : 'غير محدد';
 
       await createNotification({
-        userId: demand.initiatorId,
+        userId: demand.sellerId,
         type: 'ITEM_AVAILABLE',
         title: '💰 سلعة جديدة تطابق طلبك!',
         message: `"${item.title}" متاحة الآن بسعر ${priceText} ج.م - تطابق طلبك "${demandTitle}"!`,
@@ -417,29 +416,27 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
 };
 
 /**
- * When a direct purchase demand (BarterOffer with isOpenOffer=true) is created
+ * When a direct purchase demand (Item with listingType DIRECT_BUY) is created
  * Notify supply item owners who have matching items
  */
 export const notifyDirectPurchaseMatches = async (demandId: string, buyerId: string): Promise<void> => {
   try {
-    const demand = await prisma.barterOffer.findUnique({
+    // Fetch DEMAND item from unified Item table
+    const demand = await prisma.item.findUnique({
       where: { id: demandId },
       include: {
-        initiator: { select: { id: true, fullName: true } },
-        itemRequests: { include: { category: true } },
+        seller: { select: { id: true, fullName: true } },
+        category: { select: { id: true, nameAr: true } },
       },
     });
 
-    if (!demand || !demand.isOpenOffer) return;
+    // Only process DEMAND items (DIRECT_BUY or REVERSE_AUCTION)
+    if (!demand || !['DIRECT_BUY', 'REVERSE_AUCTION'].includes(demand.listingType)) return;
 
-    const buyerName = demand.initiator?.fullName || 'مشتري';
-    const demandRequest = demand.itemRequests[0];
-
-    if (!demandRequest) return;
-
-    const demandTitle = demandRequest.description || 'سلعة';
-    const budgetText = demandRequest.maxPrice
-      ? `${demandRequest.maxPrice.toLocaleString('ar-EG')} ج.م`
+    const buyerName = demand.seller?.fullName || 'مشتري';
+    const demandTitle = demand.title || 'سلعة';
+    const budgetText = demand.desiredValueMax
+      ? `${demand.desiredValueMax.toLocaleString('ar-EG')} ج.م`
       : 'غير محدد';
     const notifiedUsers = new Set<string>();
 
@@ -447,30 +444,30 @@ export const notifyDirectPurchaseMatches = async (demandId: string, buyerId: str
     const orConditions: any[] = [];
 
     // Match by category
-    if (demandRequest.categoryId) {
-      orConditions.push({ categoryId: demandRequest.categoryId });
+    if (demand.categoryId) {
+      orConditions.push({ categoryId: demand.categoryId });
     }
 
     // Match by keywords
-    if (demandRequest.keywords && demandRequest.keywords.length > 0) {
-      for (const keyword of demandRequest.keywords) {
-        if (keyword.length > 2) {
-          orConditions.push({ title: { contains: keyword, mode: 'insensitive' as const } });
-        }
+    if (demand.desiredKeywords) {
+      const keywords = demand.desiredKeywords.split(',').map(k => k.trim()).filter(k => k.length > 2);
+      for (const keyword of keywords) {
+        orConditions.push({ title: { contains: keyword, mode: 'insensitive' as const } });
       }
     }
 
     if (orConditions.length === 0) return;
 
-    // Find matching supply items
+    // Find matching SUPPLY items
     const matchingSupply = await prisma.item.findMany({
       where: {
         status: 'ACTIVE',
+        listingType: { in: ['DIRECT_SALE', 'AUCTION', 'BARTER'] }, // Only SUPPLY types
         sellerId: { not: buyerId },
         OR: orConditions,
         // Price range match if specified
-        ...(demandRequest.maxPrice && {
-          estimatedValue: { lte: demandRequest.maxPrice * 1.2 } // 20% tolerance
+        ...(demand.desiredValueMax && {
+          estimatedValue: { lte: demand.desiredValueMax * 1.2 } // 20% tolerance
         }),
       },
       include: {
@@ -491,7 +488,7 @@ export const notifyDirectPurchaseMatches = async (demandId: string, buyerId: str
         title: '🛒 مشتري يبحث عن سلعتك!',
         message: `${buyerName} يبحث عن "${demandTitle}" - لديك "${item.title}" (${priceText} ج.م)! الميزانية: ${budgetText}`,
         priority: 'HIGH',
-        entityType: 'BARTER_OFFER',
+        entityType: 'ITEM',
         entityId: demandId,
         actionUrl: `/items/${item.id}`,
         actionText: 'عرض طلب الشراء',

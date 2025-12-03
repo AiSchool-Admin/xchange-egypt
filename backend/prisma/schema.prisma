@@ -200,6 +200,11 @@ model Item {
   // Item type classification
   itemType        ItemType      @default(GOOD) @map("item_type")
 
+  // Listing type - determines if this is SUPPLY or DEMAND
+  // SUPPLY: DIRECT_SALE, AUCTION, BARTER
+  // DEMAND: DIRECT_BUY, REVERSE_AUCTION
+  listingType     ListingType   @default(DIRECT_SALE) @map("listing_type")
+
   condition       ItemCondition
   estimatedValue  Float         @map("estimated_value") // In EGP
   images          String[]      // Array of image URLs
@@ -271,6 +276,9 @@ model Item {
   @@index([promotionTier])
   @@index([isFeatured, status])
   @@index([promotionExpiresAt])
+  @@index([listingType])
+  @@index([listingType, status])
+  @@index([listingType, categoryId])
 }
 
 // ============================================
@@ -282,6 +290,7 @@ enum ListingType {
   AUCTION
   REVERSE_AUCTION
   BARTER
+  DIRECT_BUY        // طلب شراء مباشر (DEMAND)
 }
 
 enum ListingStatus {
