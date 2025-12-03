@@ -616,7 +616,7 @@ async function checkLevelUpgrade(facilitatorId: string) {
   if (!facilitator) return;
 
   const levels: FacilitatorLevel[] = ['PLATINUM', 'GOLD', 'SILVER', 'BRONZE'];
-  let newLevel = FacilitatorLevel.BRONZE;
+  let newLevel: FacilitatorLevel = FacilitatorLevel.BRONZE;
 
   for (const level of levels) {
     const config = FACILITATOR_CONFIG.levels[level];

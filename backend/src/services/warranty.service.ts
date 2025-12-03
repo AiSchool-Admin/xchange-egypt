@@ -186,7 +186,7 @@ export async function createWarranty(params: CreateWarrantyParams) {
       warrantyType,
       title,
       description,
-      coverageDetails,
+      coverageDetails: JSON.parse(JSON.stringify(coverageDetails)),
       exclusions,
       maxClaimValue,
       durationMonths,
@@ -371,7 +371,7 @@ export async function fileClaim(params: CreateClaimParams) {
   }
 
   // Check coverage
-  const coverage = warranty.coverageDetails as CoverageDetails;
+  const coverage = warranty.coverageDetails as unknown as CoverageDetails;
   const issueTypeMap: Record<string, keyof CoverageDetails> = {
     'DEFECT': 'defects',
     'MALFUNCTION': 'malfunctions',

@@ -80,14 +80,14 @@ const SEASONAL_FACTORS: Record<number, Record<string, number>> = {
   2: { default: 1.0, electronics: 1.0 },
   3: { default: 1.0, fashion: 1.1 },       // الربيع
   4: { default: 1.05, vehicles: 1.1 },
-  5: { default: 1.0, default: 1.0 },
-  6: { default: 0.95, default: 0.95 },     // الصيف
-  7: { default: 0.9, default: 0.9 },
+  5: { default: 1.0 },
+  6: { default: 0.95 },                    // الصيف
+  7: { default: 0.9 },
   8: { default: 0.95, electronics: 1.15 }, // العودة للمدارس
   9: { default: 1.05, electronics: 1.2 },
-  10: { default: 1.0, default: 1.0 },
-  11: { default: 1.1, default: 1.1 },      // Black Friday
-  12: { default: 1.15, default: 1.15 },    // نهاية السنة
+  10: { default: 1.0 },
+  11: { default: 1.1 },                    // Black Friday
+  12: { default: 1.15 },                   // نهاية السنة
 };
 
 // ============================================
@@ -250,6 +250,7 @@ async function gatherHistoricalData(
     },
     select: {
       estimatedValue: true,
+      condition: true,
       createdAt: true,
     },
     take: 100,
@@ -275,7 +276,7 @@ async function gatherHistoricalData(
     // Normalize prices by condition
     items = items.map(item => ({
       ...item,
-      estimatedValue: normalizeByCondition(item.estimatedValue, item.condition as ItemCondition, condition),
+      estimatedValue: normalizeByCondition(item.estimatedValue, item.condition, condition),
     }));
   }
 
@@ -379,12 +380,12 @@ interface DemandAnalysis {
 async function analyzeDemandSupply(categoryId: string): Promise<DemandAnalysis> {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  // Count active supply
+  // Count active supply (DIRECT_SALE)
   const supplyCount = await prisma.item.count({
     where: {
       categoryId,
       status: 'ACTIVE',
-      listingType: 'SUPPLY',
+      listingType: 'DIRECT_SALE',
     },
   });
 
@@ -397,7 +398,7 @@ async function analyzeDemandSupply(categoryId: string): Promise<DemandAnalysis> 
       where: {
         categoryId,
         status: 'ACTIVE',
-        listingType: 'DEMAND',
+        listingType: 'DIRECT_BUY',
       },
     }),
   ]);
@@ -802,7 +803,7 @@ async function storePrediction(params: StorePredictionParams) {
       itemId: params.itemId,
       suggestedPrice: params.recommendations.find(r => r.type === 'VALUE')?.price,
       priceStrategy: 'VALUE',
-      recommendations: params.recommendations,
+      recommendations: JSON.parse(JSON.stringify(params.recommendations)),
       expiresAt,
     },
   });

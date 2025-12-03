@@ -11,7 +11,7 @@
 
 import prisma from '../config/database';
 import { AuthenticityStatus } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 // ============================================
 // Types
@@ -298,7 +298,7 @@ export async function submitExpertVerification(
 function generateCertificateId(): string {
   const prefix = 'XC';
   const timestamp = Date.now().toString(36).toUpperCase();
-  const random = uuidv4().split('-')[0].toUpperCase();
+  const random = crypto.randomBytes(4).toString('hex').toUpperCase();
   return `${prefix}-${timestamp}-${random}`;
 }
 

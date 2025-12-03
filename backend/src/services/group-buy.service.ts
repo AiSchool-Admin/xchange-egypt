@@ -432,7 +432,7 @@ async function updateGroupBuyPricing(groupBuyId: string) {
 
   if (!groupBuy) return;
 
-  const tiers = groupBuy.discountTiers as DiscountTier[];
+  const tiers = groupBuy.discountTiers as unknown as DiscountTier[];
 
   // Find applicable tier
   let applicableTier: DiscountTier | null = null;
@@ -683,7 +683,7 @@ export async function getStats(groupBuyId: string) {
 // ============================================
 
 function transformToDetails(groupBuy: any): GroupBuyDetails {
-  const tiers = groupBuy.discountTiers as DiscountTier[];
+  const tiers = groupBuy.discountTiers as unknown as DiscountTier[];
   const now = Date.now();
   const timeRemaining = Math.max(0, groupBuy.endDate.getTime() - now);
 

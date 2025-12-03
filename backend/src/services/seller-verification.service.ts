@@ -217,7 +217,7 @@ export async function submitVerificationRequest(
       currentLevel,
       requestedLevel,
       status: 'PENDING',
-      documents,
+      documents: JSON.parse(JSON.stringify(documents)),
       idType,
       idNumber,
       idFrontUrl,

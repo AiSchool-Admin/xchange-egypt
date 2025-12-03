@@ -252,9 +252,6 @@ export async function getFollowers(
       followingId: userId,
       isActive: true,
     },
-    include: {
-      // We need to do a raw query or separate query for follower details
-    },
     take: limit,
     skip: offset,
     orderBy: { createdAt: 'desc' },
