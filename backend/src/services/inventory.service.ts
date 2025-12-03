@@ -8,6 +8,8 @@
 import { ItemType, ItemCondition, MarketType } from '@prisma/client';
 import prisma from '../lib/prisma';
 import * as proximityMatching from './proximity-matching.service';
+import { itemEvents } from '../events/item.events';
+import { barterEvents } from '../events/barter.events';
 
 // ============================================
 // Helper Functions
@@ -461,6 +463,17 @@ export const createInventoryItem = async (
       console.error('[Inventory] Error processing proximity matching:', err);
     });
 
+    // Emit item created event for smart matching notifications
+    const hasBarterPreferences = !!(resolvedDesiredCategoryId || input.desiredItemTitle || input.desiredKeywords);
+    itemEvents.emitItemCreated({
+      itemId: item.id,
+      userId: userId,
+      categoryId: item.categoryId,
+      hasBarterPreferences,
+      timestamp: new Date(),
+    });
+    console.log(`[Inventory] Item created event emitted for ${item.id}, hasBarterPreferences: ${hasBarterPreferences}`);
+
     // For BARTER listings, also create a DEMAND entry for what user wants
     // هذا يضمن ظهور الصنف المطلوب في جانب الطلب
     let linkedDemandId: string | null = null;
@@ -551,6 +564,22 @@ export const createInventoryItem = async (
     proximityMatching.processNewDemandItem(offer.id).catch(err => {
       console.error('[Inventory] Error processing proximity matching for demand:', err);
     });
+
+    // Emit barter offer created event for smart matching notifications
+    barterEvents.emitOfferCreated({
+      offerId: offer.id,
+      initiatorId: userId,
+      recipientId: undefined,
+      isOpenOffer: true,
+      offeredItemIds: [],
+      categoryIds: resolvedDesiredCategoryId ? [resolvedDesiredCategoryId] : [],
+      governorate: input.governorate || undefined,
+      city: input.city || undefined,
+      district: input.district || undefined,
+      marketType: input.marketType || undefined,
+      timestamp: new Date(),
+    });
+    console.log(`[Inventory] BarterOffer created event emitted for demand ${offer.id}`);
 
     return {
       id: offer.id,
