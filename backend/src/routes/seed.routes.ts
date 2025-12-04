@@ -246,6 +246,7 @@ router.post('/seed-flash-deals', async (req, res) => {
           description: `Test product: ${product.title}`,
           condition: 'NEW',
           listingType: 'DIRECT_SALE',
+          estimatedValue: product.price,
           seller: { connect: { id: seller.id } },
           category: category ? { connect: { id: category.id } } : undefined,
         }
