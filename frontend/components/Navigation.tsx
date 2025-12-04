@@ -72,10 +72,11 @@ export default function Navigation() {
     { href: '/inventory', label: 'مخزوني', icon: '📦' },
     { href: '/items', label: 'السوق', icon: '🛒' },
     { href: '/luxury', label: 'سوق الفاخرة', icon: '👑' },
-    { href: '/promote', label: 'ترويج', icon: '⭐' },
-    { href: '/map', label: 'الخريطة', icon: '🗺️' },
+    { href: '/escrow', label: 'الضمان', icon: '🔒' },
+    { href: '/pools', label: 'الصناديق', icon: '🤝' },
+    { href: '/facilitators', label: 'الوسطاء', icon: '👔' },
+    { href: '/barter-chains', label: 'السلاسل', icon: '🔗' },
     { href: '/auctions', label: 'المزادات', icon: '🔨' },
-    { href: '/barter', label: 'المقايضة', icon: '🔄' },
     { href: '/messages', label: 'الرسائل', icon: '💬' },
   ];
 

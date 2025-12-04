@@ -36,6 +36,9 @@ import inventoryRoutes from './routes/inventory.routes';
 import locationsRoutes from './routes/locations.routes';
 import demandMarketplaceRoutes from './routes/demand-marketplace.routes';
 import flashDealsRoutes from './routes/flash-deals.routes';
+import escrowRoutes from './routes/escrow.routes';
+import barterPoolRoutes from './routes/barter-pool.routes';
+import facilitatorRoutes from './routes/facilitator.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -269,6 +272,15 @@ app.use('/api/v1/demand', demandMarketplaceRoutes);
 
 // Flash Deals
 app.use('/api/v1/flash-deals', flashDealsRoutes);
+
+// Escrow System (Smart Escrow & Disputes)
+app.use('/api/v1/escrow', escrowRoutes);
+
+// Barter Pools (Collective Barter)
+app.use('/api/v1/barter-pools', barterPoolRoutes);
+
+// Facilitators Network
+app.use('/api/v1/facilitators', facilitatorRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
