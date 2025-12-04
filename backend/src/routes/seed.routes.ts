@@ -199,6 +199,11 @@ router.post('/seed-categories', async (req, res) => {
  */
 router.post('/seed-flash-deals', async (req, res) => {
   try {
+    // First, clean up any existing test data
+    await prisma.flashDeal.deleteMany({
+      where: { title: { startsWith: 'عرض فلاش' } }
+    });
+
     // Get a seller user (or create one)
     let seller = await prisma.user.findFirst({
       where: { email: 'seller@test.com' }
@@ -324,6 +329,8 @@ router.post('/seed-flash-deals', async (req, res) => {
       success: false,
       message: 'Failed to seed flash deals',
       error: error.message,
+      details: error.code || error.meta || 'No additional details',
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 });
