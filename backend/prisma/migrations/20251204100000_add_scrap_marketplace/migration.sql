@@ -2,7 +2,28 @@
 -- سوق التوالف
 
 -- ============================================
--- 1. Create Scrap Marketplace Enums
+-- 1. Create MetalType Enum (Required by other tables)
+-- ============================================
+
+CREATE TYPE "MetalType" AS ENUM (
+    'COPPER',
+    'ALUMINUM',
+    'IRON',
+    'STEEL',
+    'BRASS',
+    'BRONZE',
+    'LEAD',
+    'ZINC',
+    'NICKEL',
+    'TIN',
+    'GOLD',
+    'SILVER',
+    'STAINLESS_STEEL',
+    'MIXED'
+);
+
+-- ============================================
+-- 2. Create Scrap Marketplace Enums
 -- ============================================
 
 -- Scrap Pricing Type
@@ -57,22 +78,25 @@ CREATE TYPE "ScrapDealerStatus" AS ENUM (
 );
 
 -- ============================================
--- 2. Add Scrap Fields to Items Table
+-- 3. Add Scrap Fields to Items Table
 -- ============================================
 
 ALTER TABLE "items" ADD COLUMN "is_scrap" BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE "items" ADD COLUMN "scrap_type" "ScrapType";
 ALTER TABLE "items" ADD COLUMN "scrap_condition" "ScrapCondition";
 ALTER TABLE "items" ADD COLUMN "scrap_pricing_type" "ScrapPricingType";
+ALTER TABLE "items" ADD COLUMN "weight_kg" DOUBLE PRECISION;
+ALTER TABLE "items" ADD COLUMN "metal_type" "MetalType";
 
 -- Add indexes
 CREATE INDEX "items_is_scrap_idx" ON "items"("is_scrap");
 CREATE INDEX "items_scrap_type_idx" ON "items"("scrap_type");
+CREATE INDEX "items_metal_type_idx" ON "items"("metal_type");
 CREATE INDEX "items_is_scrap_scrap_type_idx" ON "items"("is_scrap", "scrap_type");
 CREATE INDEX "items_is_scrap_status_idx" ON "items"("is_scrap", "status");
 
 -- ============================================
--- 3. Create Scrap Dealer Verifications Table
+-- 4. Create Scrap Dealer Verifications Table
 -- ============================================
 
 CREATE TABLE "scrap_dealer_verifications" (
@@ -139,7 +163,7 @@ ALTER TABLE "scrap_dealer_verifications" ADD CONSTRAINT "scrap_dealer_verificati
     FOREIGN KEY ("verified_by_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- ============================================
--- 4. Create Scrap Purchase Requests Table (Reverse Auction)
+-- 5. Create Scrap Purchase Requests Table (Reverse Auction)
 -- ============================================
 
 CREATE TABLE "scrap_purchase_requests" (
@@ -188,7 +212,7 @@ ALTER TABLE "scrap_purchase_requests" ADD CONSTRAINT "scrap_purchase_requests_bu
     FOREIGN KEY ("buyer_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- ============================================
--- 5. Create Scrap Seller Offers Table
+-- 6. Create Scrap Seller Offers Table
 -- ============================================
 
 CREATE TABLE "scrap_seller_offers" (
