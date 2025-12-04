@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { SocketProvider } from '@/lib/contexts/SocketContext';
 import Navigation from '@/components/Navigation';
+import FloatingAssistant from '@/components/FloatingAssistant';
 import PWAProvider from '@/components/pwa/PWAProvider';
 
 export const metadata: Metadata = {
@@ -39,6 +40,7 @@ export default function RootLayout({
             <PWAProvider>
               <Navigation />
               {children}
+              <FloatingAssistant />
             </PWAProvider>
           </SocketProvider>
         </AuthProvider>

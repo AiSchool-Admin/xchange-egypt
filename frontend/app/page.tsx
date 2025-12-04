@@ -436,32 +436,109 @@ function PublicLandingPage({ supplyItems, demandItems, featuredItems, loading, c
         </div>
       </section>
 
+      {/* Smart Features Showcase */}
+      <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <span className="inline-block px-4 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm font-medium mb-4">
+              مميزات حصرية
+            </span>
+            <h2 className="text-3xl font-bold mb-4">تجربة ذكية ومتطورة</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              نستخدم أحدث التقنيات لنوفر لك تجربة تسوق وبيع فريدة من نوعها
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Link href="/assistant" className="group">
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-purple-500/50 transition-all hover:-translate-y-2">
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                  🤖
+                </div>
+                <h3 className="text-lg font-bold mb-2">المساعد الذكي</h3>
+                <p className="text-gray-400 text-sm">
+                  تحدث مع مساعدنا الذكي للحصول على اقتراحات مخصصة وإجابات فورية
+                </p>
+              </div>
+            </Link>
+
+            <Link href="/sell-ai" className="group">
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-amber-500/50 transition-all hover:-translate-y-2">
+                <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                  ✨
+                </div>
+                <h3 className="text-lg font-bold mb-2">بيع بالـ AI</h3>
+                <p className="text-gray-400 text-sm">
+                  صور منتجك فقط والذكاء الاصطناعي يملأ كل البيانات تلقائياً
+                </p>
+              </div>
+            </Link>
+
+            <Link href="/wallet" className="group">
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-emerald-500/50 transition-all hover:-translate-y-2">
+                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                  💳
+                </div>
+                <h3 className="text-lg font-bold mb-2">محفظة XCoin</h3>
+                <p className="text-gray-400 text-sm">
+                  اربح نقاط على كل معاملة واستبدلها بمميزات حصرية
+                </p>
+              </div>
+            </Link>
+
+            <Link href="/exchange-points" className="group">
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-blue-500/50 transition-all hover:-translate-y-2">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+                  📍
+                </div>
+                <h3 className="text-lg font-bold mb-2">نقاط التبادل الآمنة</h3>
+                <p className="text-gray-400 text-sm">
+                  أماكن موثوقة ومراقبة للقاء وإتمام الصفقات بأمان
+                </p>
+              </div>
+            </Link>
+          </div>
+
+          <div className="mt-10 text-center">
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-teal-600 transition-all transform hover:scale-105"
+            >
+              ابدأ الآن مجاناً
+              <svg className="w-5 h-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* How it Works */}
       <section className="max-w-7xl mx-auto px-4 py-16">
         <h2 className="text-2xl font-bold text-gray-800 mb-10 text-center">كيف تستخدم المنصة؟</h2>
         <div className="grid md:grid-cols-4 gap-6">
-          <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 card-hover">
             <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
               📝
             </div>
             <h3 className="font-bold mb-2 text-gray-800">1. سجّل مجاناً</h3>
             <p className="text-gray-500 text-sm">أنشئ حسابك في ثوانٍ</p>
           </div>
-          <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 card-hover">
             <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
               📸
             </div>
             <h3 className="font-bold mb-2 text-gray-800">2. أضف إعلانك</h3>
             <p className="text-gray-500 text-sm">صور ووصف المنتج</p>
           </div>
-          <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 card-hover">
             <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
               🎯
             </div>
             <h3 className="font-bold mb-2 text-gray-800">3. نجد لك مشترين</h3>
             <p className="text-gray-500 text-sm">مطابقة ذكية تلقائية</p>
           </div>
-          <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100 card-hover">
             <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">
               🤝
             </div>
@@ -488,19 +565,34 @@ function PublicLandingPage({ supplyItems, demandItems, featuredItems, loading, c
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-10">
+      <footer className="bg-gray-900 text-gray-400 py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="text-white text-xl font-bold mb-4">Xchange</h3>
-              <p className="text-sm">منصة مصرية للإعلانات المبوبة والمقايضة</p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">🔄</span>
+                <h3 className="text-white text-xl font-bold">Xchange</h3>
+              </div>
+              <p className="text-sm mb-4">منصة مصرية للإعلانات المبوبة والمقايضة الذكية</p>
+              <div className="flex gap-3">
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors">
+                  📘
+                </a>
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors">
+                  📷
+                </a>
+                <a href="#" className="w-10 h-10 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-gray-700 transition-colors">
+                  🐦
+                </a>
+              </div>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-3">الفئات</h4>
-              <ul className="space-y-2 text-sm">
-                {DEFAULT_CATEGORIES.slice(0, 4).map(cat => (
+              <h4 className="text-white font-semibold mb-4">الفئات</h4>
+              <ul className="space-y-3 text-sm">
+                {DEFAULT_CATEGORIES.slice(0, 5).map(cat => (
                   <li key={cat.id}>
-                    <Link href={`/items?category=${cat.slug}`} className="hover:text-white transition-colors">
+                    <Link href={`/items?category=${cat.slug}`} className="hover:text-emerald-400 transition-colors flex items-center gap-2">
+                      <span>{cat.icon}</span>
                       {cat.nameAr}
                     </Link>
                   </li>
@@ -508,25 +600,58 @@ function PublicLandingPage({ supplyItems, demandItems, featuredItems, loading, c
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-3">روابط مهمة</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/items" className="hover:text-white transition-colors">تصفح الإعلانات</Link></li>
-                <li><Link href="/luxury" className="hover:text-white transition-colors">سوق السلع الفاخرة 👑</Link></li>
-                <li><Link href="/map" className="hover:text-white transition-colors">الخريطة التفاعلية 🗺️</Link></li>
-                <li><Link href="/promote" className="hover:text-white transition-colors">ترويج إعلانك ⭐</Link></li>
-                <li><Link href="/barter" className="hover:text-white transition-colors">المقايضة</Link></li>
+              <h4 className="text-white font-semibold mb-4">خدماتنا</h4>
+              <ul className="space-y-3 text-sm">
+                <li><Link href="/items" className="hover:text-emerald-400 transition-colors">تصفح الإعلانات</Link></li>
+                <li><Link href="/luxury" className="hover:text-emerald-400 transition-colors">سوق الفاخرة 👑</Link></li>
+                <li><Link href="/escrow" className="hover:text-emerald-400 transition-colors">نظام الضمان 🔒</Link></li>
+                <li><Link href="/auctions" className="hover:text-emerald-400 transition-colors">المزادات 🔨</Link></li>
+                <li><Link href="/barter" className="hover:text-emerald-400 transition-colors">المقايضة 🔄</Link></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-3">تواصل معنا</h4>
-              <ul className="space-y-2 text-sm">
-                <li>📧 support@xchange.eg</li>
-                <li>📱 +20 123 456 7890</li>
+              <h4 className="text-white font-semibold mb-4">مميزات ذكية</h4>
+              <ul className="space-y-3 text-sm">
+                <li><Link href="/assistant" className="hover:text-emerald-400 transition-colors">المساعد الذكي 🤖</Link></li>
+                <li><Link href="/sell-ai" className="hover:text-emerald-400 transition-colors">بيع بالـ AI ✨</Link></li>
+                <li><Link href="/wallet" className="hover:text-emerald-400 transition-colors">محفظة XCoin 💳</Link></li>
+                <li><Link href="/exchange-points" className="hover:text-emerald-400 transition-colors">نقاط التبادل 📍</Link></li>
+                <li><Link href="/saved-searches" className="hover:text-emerald-400 transition-colors">تنبيهات البحث 🔔</Link></li>
               </ul>
             </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">تواصل معنا</h4>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-center gap-2">
+                  <span>📧</span>
+                  support@xchange.eg
+                </li>
+                <li className="flex items-center gap-2">
+                  <span>📱</span>
+                  +20 123 456 7890
+                </li>
+                <li className="flex items-center gap-2">
+                  <span>📍</span>
+                  القاهرة، مصر
+                </li>
+              </ul>
+              <div className="mt-4">
+                <Link href="/exchange-points" className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-sm">
+                  عرض نقاط التبادل
+                  <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            </div>
           </div>
-          <div className="border-t border-gray-800 pt-6 text-center text-sm">
-            <p>© {new Date().getFullYear()} Xchange Egypt</p>
+          <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm">© {new Date().getFullYear()} Xchange Egypt. جميع الحقوق محفوظة.</p>
+            <div className="flex gap-6 text-sm">
+              <Link href="#" className="hover:text-white transition-colors">سياسة الخصوصية</Link>
+              <Link href="#" className="hover:text-white transition-colors">شروط الاستخدام</Link>
+              <Link href="#" className="hover:text-white transition-colors">الدعم</Link>
+            </div>
           </div>
         </div>
       </footer>
@@ -613,22 +738,58 @@ function UserDashboard({ user, supplyItems, demandItems, featuredItems, loading 
         </div>
       </section>
 
+      {/* Smart Features Quick Access */}
+      <section className="max-w-7xl mx-auto px-4 pb-6">
+        <div className="bg-gradient-to-l from-gray-900 to-gray-800 rounded-2xl p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white">مميزات ذكية</h2>
+            <span className="text-xs text-emerald-400 bg-emerald-500/20 px-3 py-1 rounded-full">جديد</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Link href="/sell-ai" className="bg-white/10 backdrop-blur rounded-xl p-4 hover:bg-white/20 transition-all group text-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center text-xl mx-auto mb-2 group-hover:scale-110 transition-transform">
+                ✨
+              </div>
+              <span className="font-medium text-white text-sm">بيع بالـ AI</span>
+            </Link>
+            <Link href="/wallet" className="bg-white/10 backdrop-blur rounded-xl p-4 hover:bg-white/20 transition-all group text-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-xl mx-auto mb-2 group-hover:scale-110 transition-transform">
+                💳
+              </div>
+              <span className="font-medium text-white text-sm">محفظتي</span>
+            </Link>
+            <Link href="/exchange-points" className="bg-white/10 backdrop-blur rounded-xl p-4 hover:bg-white/20 transition-all group text-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-xl mx-auto mb-2 group-hover:scale-110 transition-transform">
+                📍
+              </div>
+              <span className="font-medium text-white text-sm">نقاط التبادل</span>
+            </Link>
+            <Link href="/saved-searches" className="bg-white/10 backdrop-blur rounded-xl p-4 hover:bg-white/20 transition-all group text-center">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-xl mx-auto mb-2 group-hover:scale-110 transition-transform">
+                🔔
+              </div>
+              <span className="font-medium text-white text-sm">تنبيهاتي</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Quick Actions */}
       <section className="max-w-7xl mx-auto px-4 pb-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link href="/inventory" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-emerald-300 hover:shadow-md transition-all text-center">
+          <Link href="/inventory" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-emerald-300 hover:shadow-md transition-all text-center card-hover">
             <div className="text-3xl mb-2">📦</div>
             <span className="font-medium text-gray-700 text-sm">مخزوني</span>
           </Link>
-          <Link href="/inventory/add?side=SUPPLY" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-green-300 hover:shadow-md transition-all text-center">
+          <Link href="/inventory/add?side=SUPPLY" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-green-300 hover:shadow-md transition-all text-center card-hover">
             <div className="text-3xl mb-2">🏷️</div>
             <span className="font-medium text-gray-700 text-sm">عرض للبيع</span>
           </Link>
-          <Link href="/inventory/add?side=DEMAND" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all text-center">
+          <Link href="/inventory/add?side=DEMAND" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all text-center card-hover">
             <div className="text-3xl mb-2">🔍</div>
             <span className="font-medium text-gray-700 text-sm">طلب شراء</span>
           </Link>
-          <Link href="/messages" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-purple-300 hover:shadow-md transition-all text-center">
+          <Link href="/messages" className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 hover:border-purple-300 hover:shadow-md transition-all text-center card-hover">
             <div className="text-3xl mb-2">💬</div>
             <span className="font-medium text-gray-700 text-sm">الرسائل</span>
           </Link>
