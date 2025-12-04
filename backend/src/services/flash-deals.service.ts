@@ -833,10 +833,13 @@ function transformDealToDetails(deal: any): FlashDealWithDetails {
       item: {
         id: deal.listing.item.id,
         title: deal.listing.item.title,
-        images: deal.listing.item.images,
-        category: {
+        images: deal.listing.item.images || [],
+        category: deal.listing.item.category ? {
           nameAr: deal.listing.item.category.nameAr,
           nameEn: deal.listing.item.category.nameEn,
+        } : {
+          nameAr: 'عام',
+          nameEn: 'General',
         },
       },
       user: deal.listing.user,

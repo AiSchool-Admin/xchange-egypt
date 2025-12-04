@@ -237,11 +237,11 @@ router.post('/seed-flash-deals', async (req, res) => {
     // Create test listings
     const listings = [];
     const products = [
-      { title: 'iPhone 15 Pro Max 256GB', titleAr: 'آيفون 15 برو ماكس 256 جيجا', price: 65000 },
-      { title: 'Samsung Galaxy S24 Ultra', titleAr: 'سامسونج جالاكسي S24 ألترا', price: 55000 },
-      { title: 'MacBook Pro M3 14"', titleAr: 'ماك بوك برو M3 14 بوصة', price: 85000 },
-      { title: 'Sony PlayStation 5', titleAr: 'سوني بلايستيشن 5', price: 25000 },
-      { title: 'Apple Watch Ultra 2', titleAr: 'ساعة أبل ألترا 2', price: 42000 },
+      { title: 'iPhone 15 Pro Max 256GB', titleAr: 'آيفون 15 برو ماكس 256 جيجا', price: 65000, image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400' },
+      { title: 'Samsung Galaxy S24 Ultra', titleAr: 'سامسونج جالاكسي S24 ألترا', price: 55000, image: 'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400' },
+      { title: 'MacBook Pro M3 14"', titleAr: 'ماك بوك برو M3 14 بوصة', price: 85000, image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400' },
+      { title: 'Sony PlayStation 5', titleAr: 'سوني بلايستيشن 5', price: 25000, image: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400' },
+      { title: 'Apple Watch Ultra 2', titleAr: 'ساعة أبل ألترا 2', price: 42000, image: 'https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400' },
     ];
 
     for (const product of products) {
@@ -252,6 +252,7 @@ router.post('/seed-flash-deals', async (req, res) => {
           condition: 'NEW',
           listingType: 'DIRECT_SALE',
           estimatedValue: product.price,
+          images: [product.image],
           seller: { connect: { id: seller.id } },
           category: category ? { connect: { id: category.id } } : undefined,
         }
