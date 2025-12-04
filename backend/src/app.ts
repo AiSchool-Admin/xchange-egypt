@@ -39,6 +39,11 @@ import flashDealsRoutes from './routes/flash-deals.routes';
 import escrowRoutes from './routes/escrow.routes';
 import barterPoolRoutes from './routes/barter-pool.routes';
 import facilitatorRoutes from './routes/facilitator.routes';
+import aiAssistantRoutes from './routes/ai-assistant.routes';
+import aiListingRoutes from './routes/ai-listing.routes';
+import walletRoutes from './routes/wallet.routes';
+import exchangePointsRoutes from './routes/exchange-points.routes';
+import searchAlertsRoutes from './routes/search-alerts.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -281,6 +286,21 @@ app.use('/api/v1/barter-pools', barterPoolRoutes);
 
 // Facilitators Network
 app.use('/api/v1/facilitators', facilitatorRoutes);
+
+// AI Assistant
+app.use('/api/v1/ai-assistant', aiAssistantRoutes);
+
+// AI Listing (Sell with AI)
+app.use('/api/v1/ai-listing', aiListingRoutes);
+
+// XChange Wallet
+app.use('/api/v1/wallet', walletRoutes);
+
+// Exchange Points (Safe meetup locations)
+app.use('/api/v1/exchange-points', exchangePointsRoutes);
+
+// Search Alerts
+app.use('/api/v1/search-alerts', searchAlertsRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

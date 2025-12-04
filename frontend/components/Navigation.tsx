@@ -72,11 +72,14 @@ export default function Navigation() {
     { href: '/inventory', label: 'مخزوني', icon: '📦' },
     { href: '/items', label: 'السوق', icon: '🛒' },
     { href: '/luxury', label: 'سوق الفاخرة', icon: '👑' },
+    { href: '/wallet', label: 'المحفظة', icon: '💳' },
+    { href: '/exchange-points', label: 'نقاط التبادل', icon: '📍' },
     { href: '/escrow', label: 'الضمان', icon: '🔒' },
     { href: '/pools', label: 'الصناديق', icon: '🤝' },
     { href: '/facilitators', label: 'الوسطاء', icon: '👔' },
     { href: '/barter-chains', label: 'السلاسل', icon: '🔗' },
     { href: '/auctions', label: 'المزادات', icon: '🔨' },
+    { href: '/saved-searches', label: 'التنبيهات', icon: '🔍' },
     { href: '/messages', label: 'الرسائل', icon: '💬' },
   ];
 
@@ -133,6 +136,20 @@ export default function Navigation() {
           <div className="hidden md:flex items-center gap-3">
             {user ? (
               <>
+                <Link
+                  href="/assistant"
+                  className="px-3 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition flex items-center gap-1"
+                  title="المساعد الذكي"
+                >
+                  <span>🤖</span>
+                </Link>
+                <Link
+                  href="/sell-ai"
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-600 transition flex items-center gap-2"
+                >
+                  <span>✨</span>
+                  بيع بالـ AI
+                </Link>
                 <Link
                   href="/inventory/add"
                   className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition flex items-center gap-2"
@@ -208,12 +225,30 @@ export default function Navigation() {
           <div className="md:hidden py-4 border-t border-gray-200">
             <div className="space-y-1">
               {user && (
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <Link
+                    href="/sell-ai"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium text-center"
+                  >
+                    ✨ بيع بالـ AI
+                  </Link>
+                  <Link
+                    href="/inventory/add"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-3 bg-emerald-500 text-white rounded-lg font-medium text-center"
+                  >
+                    ➕ أضف إعلان
+                  </Link>
+                </div>
+              )}
+              {user && (
                 <Link
-                  href="/inventory/add"
+                  href="/assistant"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block px-4 py-3 bg-emerald-500 text-white rounded-lg font-medium mb-3 text-center"
+                  className="block px-4 py-3 bg-purple-500 text-white rounded-lg font-medium mb-3 text-center"
                 >
-                  ➕ أضف إعلان جديد
+                  🤖 المساعد الذكي
                 </Link>
               )}
 

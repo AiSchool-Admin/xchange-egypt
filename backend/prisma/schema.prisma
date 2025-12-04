@@ -3735,3 +3735,327 @@ model AuthenticityReport {
   @@index([status])
 }
 
+// ============================================
+// AI Assistant System
+// نظام المساعد الذكي
+// ============================================
+
+enum AIConversationStatus {
+  ACTIVE          // نشطة
+  CLOSED          // مغلقة
+  ARCHIVED        // مؤرشفة
+}
+
+enum AIMessageRole {
+  USER            // رسالة المستخدم
+  ASSISTANT       // رد المساعد
+  SYSTEM          // رسالة نظام
+}
+
+model AIConversation {
+  id              String                @id @default(uuid())
+  userId          String                @map("user_id")
+
+  // Conversation details
+  title           String?
+  context         String?               // barter, search, help
+  status          AIConversationStatus  @default(ACTIVE)
+
+  // Related entities
+  relatedItemId   String?               @map("related_item_id")
+  relatedOfferId  String?               @map("related_offer_id")
+
+  // Stats
+  messageCount    Int                   @default(0) @map("message_count")
+
+  // Timestamps
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  lastMessageAt   DateTime?             @map("last_message_at")
+
+  // Relations
+  messages        AIMessage[]
+
+  @@map("ai_conversations")
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AIMessage {
+  id              String          @id @default(uuid())
+  conversationId  String          @map("conversation_id")
+
+  // Message details
+  role            AIMessageRole
+  content         String          @db.Text
+  metadata        Json?
+
+  // AI-specific
+  model           String?
+  tokens          Int?
+  confidence      Float?
+
+  // Actions suggested
+  suggestedItems  String[]        @map("suggested_items")
+  suggestedAction String?         @map("suggested_action")
+
+  // Timestamps
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  conversation    AIConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("ai_messages")
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+// ============================================
+// AI Listing Generator
+// مولد الإعلانات بالذكاء الاصطناعي
+// ============================================
+
+model AIListingDraft {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+
+  // Source
+  sourceType      String      @map("source_type")   // IMAGE, VOICE, TEXT
+  sourceUrl       String?     @map("source_url")
+  sourceText      String?     @map("source_text")
+
+  // AI Generated content
+  generatedTitle  String?     @map("generated_title")
+  generatedDesc   String?     @map("generated_desc") @db.Text
+  generatedCategory String?   @map("generated_category")
+  generatedTags   String[]    @map("generated_tags")
+  estimatedPrice  Float?      @map("estimated_price")
+  confidence      Float?
+
+  // Detected attributes
+  detectedBrand   String?     @map("detected_brand")
+  detectedModel   String?     @map("detected_model")
+  detectedCondition String?   @map("detected_condition")
+  detectedColor   String?     @map("detected_color")
+
+  // Status
+  status          String      @default("DRAFT")     // DRAFT, PUBLISHED, DISCARDED
+  publishedItemId String?     @map("published_item_id")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("ai_listing_drafts")
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// Exchange Points System
+// نظام نقاط التبادل الآمنة
+// ============================================
+
+enum ExchangePointType {
+  XCHANGE_HUB     // مركز XChange
+  PARTNER_STORE   // متجر شريك
+  POLICE_STATION  // قسم شرطة
+  MALL            // مول تجاري
+  COFFEE_SHOP     // كافيه
+  BANK            // بنك
+}
+
+enum ExchangePointStatus {
+  ACTIVE
+  INACTIVE
+  TEMPORARILY_CLOSED
+  COMING_SOON
+}
+
+model ExchangePoint {
+  id              String              @id @default(uuid())
+
+  // Basic info
+  name            String
+  nameAr          String              @map("name_ar")
+  description     String?
+  descriptionAr   String?             @map("description_ar")
+  type            ExchangePointType
+
+  // Location
+  governorate     String
+  city            String
+  area            String?
+  address         String
+  addressAr       String?             @map("address_ar")
+  latitude        Float
+  longitude       Float
+  googleMapsUrl   String?             @map("google_maps_url")
+
+  // Contact
+  phone           String?
+  whatsapp        String?
+
+  // Working hours
+  workingHours    Json                @map("working_hours")
+  is24Hours       Boolean             @default(false) @map("is_24_hours")
+
+  // Facilities
+  hasParking      Boolean             @default(false) @map("has_parking")
+  hasCCTV         Boolean             @default(true) @map("has_cctv")
+  hasWifi         Boolean             @default(false) @map("has_wifi")
+  hasWaitingArea  Boolean             @default(true) @map("has_waiting_area")
+  hasInspection   Boolean             @default(false) @map("has_inspection")
+
+  // Media
+  images          String[]
+  coverImage      String?             @map("cover_image")
+
+  // Status
+  status          ExchangePointStatus @default(ACTIVE)
+  verifiedAt      DateTime?           @map("verified_at")
+
+  // Stats
+  totalExchanges  Int                 @default(0) @map("total_exchanges")
+  avgRating       Float               @default(0) @map("avg_rating")
+  ratingCount     Int                 @default(0) @map("rating_count")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  bookings        ExchangeBooking[]
+  reviews         ExchangePointReview[]
+
+  @@map("exchange_points")
+  @@index([governorate])
+  @@index([type])
+  @@index([status])
+  @@index([latitude, longitude])
+}
+
+enum ExchangeBookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model ExchangeBooking {
+  id              String                @id @default(uuid())
+  pointId         String                @map("point_id")
+
+  // Parties
+  user1Id         String                @map("user1_id")
+  user2Id         String                @map("user2_id")
+
+  // Related transaction
+  transactionType String                @map("transaction_type")
+  transactionId   String?               @map("transaction_id")
+  offerId         String?               @map("offer_id")
+
+  // Booking details
+  scheduledDate   DateTime              @map("scheduled_date")
+  scheduledTime   String                @map("scheduled_time")
+  duration        Int                   @default(30)
+
+  // Status
+  status          ExchangeBookingStatus @default(PENDING)
+  confirmedByUser1 Boolean              @default(false) @map("confirmed_by_user1")
+  confirmedByUser2 Boolean              @default(false) @map("confirmed_by_user2")
+
+  // Check-in
+  user1CheckedIn  DateTime?             @map("user1_checked_in")
+  user2CheckedIn  DateTime?             @map("user2_checked_in")
+
+  // Completion
+  completedAt     DateTime?             @map("completed_at")
+  completionNotes String?               @map("completion_notes")
+
+  // Cancellation
+  cancelledAt     DateTime?             @map("cancelled_at")
+  cancelledBy     String?               @map("cancelled_by")
+  cancelReason    String?               @map("cancel_reason")
+
+  // Timestamps
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  // Relations
+  point           ExchangePoint         @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@map("exchange_bookings")
+  @@index([pointId])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+model ExchangePointReview {
+  id              String        @id @default(uuid())
+  pointId         String        @map("point_id")
+  userId          String        @map("user_id")
+  bookingId       String?       @map("booking_id")
+
+  // Rating
+  rating          Int
+  safetyRating    Int?          @map("safety_rating")
+  cleanlinessRating Int?        @map("cleanliness_rating")
+  accessibilityRating Int?      @map("accessibility_rating")
+
+  // Review
+  comment         String?
+
+  // Timestamps
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  point           ExchangePoint @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@map("exchange_point_reviews")
+  @@unique([pointId, userId, bookingId])
+  @@index([pointId])
+  @@index([userId])
+}
+
+// ============================================
+// Search Alerts System
+// نظام تنبيهات البحث
+// ============================================
+
+model SearchAlert {
+  id              String      @id @default(uuid())
+  savedSearchId   String      @map("saved_search_id")
+  userId          String      @map("user_id")
+
+  // Alert settings
+  isActive        Boolean     @default(true) @map("is_active")
+  frequency       String      @default("INSTANT") // INSTANT, DAILY, WEEKLY
+
+  // Notification channels
+  notifyPush      Boolean     @default(true) @map("notify_push")
+  notifyEmail     Boolean     @default(false) @map("notify_email")
+  notifyWhatsapp  Boolean     @default(false) @map("notify_whatsapp")
+
+  // Stats
+  alertsSent      Int         @default(0) @map("alerts_sent")
+  lastAlertAt     DateTime?   @map("last_alert_at")
+  matchedItems    Int         @default(0) @map("matched_items")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("search_alerts")
+  @@unique([savedSearchId, userId])
+  @@index([userId])
+  @@index([isActive])
+}
+
