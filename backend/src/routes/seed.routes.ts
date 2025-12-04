@@ -5,7 +5,6 @@
 
 import { Router } from 'express';
 import prisma from '../lib/prisma';
-import { demoSeedService } from '../services/demo-seed.service';
 
 const router = Router();
 
@@ -339,40 +338,40 @@ router.post('/seed-flash-deals', async (req, res) => {
 
 /**
  * COMPREHENSIVE DEMO SEED
- * Seeds all data for investor presentation
- * بيانات العرض التوضيحي الشامل للمستثمرين
+ * Use the SQL script in prisma/seed-demo.sql via Supabase SQL Editor
+ * استخدم ملف SQL في prisma/seed-demo.sql عبر Supabase SQL Editor
  */
-router.post('/seed-demo', async (req, res) => {
-  try {
-    console.log('🚀 Starting comprehensive demo seed...');
-    const result = await demoSeedService.seedAll();
-
-    return res.json({
-      success: true,
-      message: '✅ تم إنشاء جميع بيانات العرض التوضيحي بنجاح',
-      data: result.data,
-      loginCredentials: {
-        message: 'يمكن تسجيل الدخول بأي من الحسابات التالية',
-        password: 'Demo@123',
-        users: [
-          { email: 'ahmed.hassan@demo.xchange.eg', role: 'تاجر إلكترونيات' },
-          { email: 'sara.mohamed@demo.xchange.eg', role: 'مستخدم عادي' },
-          { email: 'omar.ali@demo.xchange.eg', role: 'تاجر سيارات' },
-          { email: 'mohamed.ibrahim@demo.xchange.eg', role: 'تاجر ساعات فاخرة' },
-          { email: 'youssef.kamal@demo.xchange.eg', role: 'تاجر توالف' },
-          { email: 'khaled.mansour@demo.xchange.eg', role: 'وسيط معتمد' },
-        ]
-      }
-    });
-  } catch (error: any) {
-    console.error('❌ Demo seed error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'فشل في إنشاء بيانات العرض التوضيحي',
-      error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
-    });
-  }
+router.get('/seed-demo-info', async (_req, res) => {
+  return res.json({
+    success: true,
+    message: 'لإدخال بيانات العرض التوضيحي، استخدم ملف SQL في Supabase SQL Editor',
+    instructions: {
+      ar: [
+        '1. افتح Supabase Dashboard',
+        '2. اذهب إلى SQL Editor',
+        '3. انسخ محتوى الملف: backend/prisma/seed-demo.sql',
+        '4. الصقه وقم بتشغيله',
+      ],
+      en: [
+        '1. Open Supabase Dashboard',
+        '2. Go to SQL Editor',
+        '3. Copy contents of: backend/prisma/seed-demo.sql',
+        '4. Paste and run it',
+      ]
+    },
+    loginCredentials: {
+      message: 'بعد تشغيل SQL، يمكن تسجيل الدخول بأي من الحسابات التالية',
+      password: 'Demo@123',
+      users: [
+        { email: 'ahmed.hassan@demo.xchange.eg', role: 'تاجر إلكترونيات' },
+        { email: 'sara.mohamed@demo.xchange.eg', role: 'مستخدم عادي' },
+        { email: 'omar.ali@demo.xchange.eg', role: 'تاجر سيارات' },
+        { email: 'mohamed.ibrahim@demo.xchange.eg', role: 'تاجر ساعات فاخرة' },
+        { email: 'youssef.kamal@demo.xchange.eg', role: 'تاجر توالف' },
+        { email: 'khaled.mansour@demo.xchange.eg', role: 'وسيط معتمد' },
+      ]
+    }
+  });
 });
 
 /**
