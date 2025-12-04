@@ -26,10 +26,14 @@ VALUES
 ON CONFLICT (email) DO NOTHING;
 
 -- ============================================
--- 2. إنشاء الفئات
--- Create Categories
+-- 2. إنشاء الفئات (مع تحديث ID إذا كانت موجودة)
+-- Create Categories (update ID if exists)
 -- ============================================
 
+-- Delete existing demo categories if any
+DELETE FROM categories WHERE id LIKE 'cat-%';
+
+-- Insert categories with custom IDs
 INSERT INTO categories (id, name_en, name_ar, slug, icon, is_active, created_at, updated_at)
 VALUES
   ('cat-electronics', 'Electronics', 'الإلكترونيات', 'electronics', '📱', true, NOW(), NOW()),
@@ -38,7 +42,7 @@ VALUES
   ('cat-vehicles', 'Vehicles', 'المركبات', 'vehicles', '🚗', true, NOW(), NOW()),
   ('cat-luxury', 'Luxury', 'الفاخرة', 'luxury', '💎', true, NOW(), NOW()),
   ('cat-scrap', 'Scrap', 'التوالف', 'scrap', '♻️', true, NOW(), NOW())
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (slug) DO UPDATE SET id = EXCLUDED.id, name_en = EXCLUDED.name_en, name_ar = EXCLUDED.name_ar, icon = EXCLUDED.icon;
 
 -- ============================================
 -- 3. إنشاء المنتجات العادية
