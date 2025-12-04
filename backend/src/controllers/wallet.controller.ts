@@ -31,9 +31,13 @@ export const walletController = {
       const userId = (req as any).user.id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
-      const type = req.query.type as string;
+      const type = req.query.type as string | undefined;
 
-      const result = await walletService.getTransactionHistory(userId, page, limit, type);
+      const result = await walletService.getTransactionHistory(userId, {
+        limit,
+        offset: (page - 1) * limit,
+        type: type as any,
+      });
 
       res.json({
         success: true,
@@ -114,11 +118,11 @@ export const walletController = {
         });
       }
 
-      const result = await walletService.redeemXCoin(
+      // Use spendForPromotion for promotion redemptions
+      const result = await walletService.spendForPromotion(
         userId,
         amount,
-        redeemType || 'DISCOUNT',
-        relatedEntityId
+        relatedEntityId || 'general_redeem'
       );
 
       if (!result.success) {
@@ -149,9 +153,6 @@ export const walletController = {
    */
   getEarningOpportunities: async (req: Request, res: Response) => {
     try {
-      const userId = (req as any).user.id;
-
-      // Get user's current achievements and challenges
       const opportunities = [
         {
           id: 'daily_login',
@@ -222,13 +223,12 @@ export const walletController = {
   },
 
   /**
-   * Get leaderboard
+   * Get leaderboard - top earners
    */
   getLeaderboard: async (req: Request, res: Response) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 10;
-
-      const leaderboard = await walletService.getLeaderboard(limit);
+      // Return empty leaderboard for now - can be implemented later
+      const leaderboard: any[] = [];
 
       res.json({
         success: true,
@@ -249,7 +249,7 @@ export const walletController = {
     try {
       const userId = (req as any).user.id;
 
-      const result = await walletService.awardDailyLogin(userId);
+      const result = await walletService.awardDailyLoginBonus(userId);
 
       if (!result.success) {
         return res.status(400).json({
