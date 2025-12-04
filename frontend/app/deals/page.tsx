@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { getActiveDeals, getUpcomingDeals, claimDeal, FlashDeal } from '@/lib/api/deals';
+import { getActiveDeals, getUpcomingDeals, claimDeal, seedDemoDeals, FlashDeal } from '@/lib/api/deals';
 
 // Countdown Timer Component
 function CountdownTimer({ endTime }: { endTime: string }) {
@@ -133,6 +133,7 @@ export default function DealsPage() {
   const [upcomingDeals, setUpcomingDeals] = useState<FlashDeal[]>([]);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     fetchDeals();
@@ -152,6 +153,21 @@ export default function DealsPage() {
       console.error('Error fetching deals:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSeedDemo = async () => {
+    try {
+      setSeeding(true);
+      const result = await seedDemoDeals();
+      if (result.success) {
+        alert('تم إنشاء عروض تجريبية بنجاح!');
+        fetchDeals();
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'حدث خطأ أثناء إنشاء العروض');
+    } finally {
+      setSeeding(false);
     }
   };
 
@@ -224,7 +240,27 @@ export default function DealsPage() {
           <div className="text-center py-16 bg-white rounded-2xl">
             <span className="text-6xl mb-4 block">&#128564;</span>
             <h3 className="text-xl font-bold text-gray-800 mb-2">لا توجد عروض نشطة حالياً</h3>
-            <p className="text-gray-500">تابعنا للحصول على أحدث العروض</p>
+            <p className="text-gray-500 mb-6">تابعنا للحصول على أحدث العروض</p>
+
+            {/* Demo Data Button */}
+            <button
+              onClick={handleSeedDemo}
+              disabled={seeding}
+              className="bg-gradient-to-l from-purple-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:from-purple-700 hover:to-indigo-700 transition-all disabled:opacity-50"
+            >
+              {seeding ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  جاري الإنشاء...
+                </span>
+              ) : (
+                '🎯 إنشاء عروض تجريبية للاختبار'
+              )}
+            </button>
+            <p className="text-gray-400 text-sm mt-3">اضغط هنا لإنشاء بيانات تجريبية</p>
           </div>
         )}
       </section>

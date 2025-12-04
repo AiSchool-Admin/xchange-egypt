@@ -81,3 +81,9 @@ export const getMyClaims = async () => {
   const response = await apiClient.get('/flash-deals/my-claims');
   return response.data;
 };
+
+// Seed demo flash deals (for testing)
+export const seedDemoDeals = async () => {
+  const response = await apiClient.post('/seed/seed-flash-deals');
+  return response.data;
+};
