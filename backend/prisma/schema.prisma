@@ -4178,7 +4178,7 @@ model SearchAlert {
 // Scrap Dealer Verification
 model ScrapDealerVerification {
   id                  String              @id @default(uuid())
-  userId              String              @map("user_id")
+  userId              String              @unique @map("user_id")
   dealerType          ScrapDealerType     @map("dealer_type")
 
   // معلومات النشاط التجاري
