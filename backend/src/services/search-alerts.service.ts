@@ -130,7 +130,7 @@ export class SearchAlertsService {
     const filters = savedSearch.filters as any;
     const where: any = {
       status: 'ACTIVE',
-      userId: { not: userId }, // Exclude own items
+      sellerId: { not: userId }, // Exclude own items
     };
 
     if (savedSearch.query) {
@@ -145,7 +145,7 @@ export class SearchAlertsService {
     }
 
     if (filters.governorate) {
-      where.user = { governorate: filters.governorate };
+      where.seller = { governorate: filters.governorate };
     }
 
     if (filters.minPrice || filters.maxPrice) {
@@ -169,7 +169,7 @@ export class SearchAlertsService {
         where,
         include: {
           category: true,
-          user: {
+          seller: {
             select: {
               id: true,
               fullName: true,
@@ -289,7 +289,7 @@ export class SearchAlertsService {
   async checkAndSendAlerts(newItemId: string) {
     const newItem = await prisma.item.findUnique({
       where: { id: newItemId },
-      include: { category: true, user: true },
+      include: { category: true, seller: true },
     });
 
     if (!newItem || newItem.status !== 'ACTIVE') {
@@ -300,7 +300,7 @@ export class SearchAlertsService {
     const savedSearches = await prisma.savedSearch.findMany({
       where: {
         notifyOnNew: true,
-        userId: { not: newItem.userId }, // Don't notify item owner
+        userId: { not: newItem.sellerId }, // Don't notify item owner
       },
     });
 
@@ -337,7 +337,7 @@ export class SearchAlertsService {
       }
 
       // Check governorate
-      if (filters.governorate && newItem.user?.governorate !== filters.governorate) {
+      if (filters.governorate && newItem.seller?.governorate !== filters.governorate) {
         matches = false;
       }
 
@@ -375,7 +375,7 @@ export class SearchAlertsService {
       await prisma.notification.create({
         data: {
           userId: alert.userId,
-          type: 'MATCH_FOUND',
+          type: 'ITEM_AVAILABLE',
           title: '🔔 منتج جديد يطابق بحثك!',
           message: `تم إضافة "${newItem.title}" والذي يطابق أحد عمليات البحث المحفوظة لديك`,
           data: {
@@ -433,7 +433,7 @@ export class SearchAlertsService {
     const filters = savedSearch.filters as any;
     const where: any = {
       status: 'ACTIVE',
-      userId: { not: userId },
+      sellerId: { not: userId },
       createdAt: {
         gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
       },
@@ -455,7 +455,7 @@ export class SearchAlertsService {
       where,
       include: {
         category: true,
-        user: {
+        seller: {
           select: {
             id: true,
             fullName: true,

@@ -237,7 +237,7 @@ export class AIAssistantService {
           { description: { contains: searchQuery, mode: 'insensitive' } },
         ],
         status: 'ACTIVE',
-        userId: { not: userId },
+        sellerId: { not: userId },
       },
       take: 5,
       select: {
@@ -318,7 +318,7 @@ export class AIAssistantService {
   private async handleGeneralQuery(content: string, userId: string): Promise<AIResponse> {
     // Get user stats
     const [itemsCount, offersCount] = await Promise.all([
-      prisma.item.count({ where: { userId } }),
+      prisma.item.count({ where: { sellerId: userId } }),
       prisma.barterOffer.count({ where: { OR: [{ offerorId: userId }, { receiverId: userId }] } }),
     ]);
 
@@ -389,7 +389,7 @@ export class AIAssistantService {
     // Get user's recent searches and items
     const [recentItems, popularCategories] = await Promise.all([
       prisma.item.findMany({
-        where: { userId },
+        where: { sellerId: userId },
         select: { title: true, category: { select: { nameAr: true } } },
         take: 3,
         orderBy: { createdAt: 'desc' },

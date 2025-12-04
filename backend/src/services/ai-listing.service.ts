@@ -259,7 +259,7 @@ export class AIListingService {
     // Create item
     const item = await prisma.item.create({
       data: {
-        userId,
+        sellerId: userId,
         title: draft.generatedTitle || 'منتج جديد',
         description: draft.generatedDesc || '',
         categoryId: category?.id,
