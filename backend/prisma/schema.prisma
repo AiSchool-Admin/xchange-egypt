@@ -92,6 +92,12 @@ model User {
   userLevel                 UserLevel?                // المستوى والإنجازات
   facilitatorProfile        Facilitator?              // ملف الوسيط المعتمد
 
+  // سوق التوالف - Scrap Marketplace Relations
+  scrapDealerVerification   ScrapDealerVerification?  @relation("ScrapDealerUser")
+  scrapDealerVerifications  ScrapDealerVerification[] @relation("ScrapDealerVerifier")
+  scrapPurchaseRequests     ScrapPurchaseRequest[]    @relation("ScrapPurchaseBuyer")
+  scrapSellerOffers         ScrapSellerOffer[]        @relation("ScrapSellerOffers")
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -197,6 +203,85 @@ enum PromotionTier {
   PLATINUM      // Platinum tier - maximum visibility
 }
 
+// ============================================
+// سوق التوالف - Scrap Marketplace Enums
+// ============================================
+
+// طريقة التسعير
+enum ScrapPricingType {
+  PER_PIECE       // بالقطعة
+  PER_KG          // بالكيلو
+  PER_LOT         // بالجملة
+  REVERSE_AUCTION // مزاد عكسي
+}
+
+// حالة التوالف
+enum ScrapCondition {
+  TOTALLY_DAMAGED   // تالف بالكامل
+  NOT_WORKING       // لا يعمل
+  PARTIALLY_WORKING // يعمل جزئياً
+  WORKING_OLD       // قديم يعمل
+}
+
+// نوع المعدن
+enum MetalType {
+  COPPER          // نحاس
+  ALUMINUM        // ألومنيوم
+  IRON            // حديد
+  STEEL           // صلب
+  BRASS           // نحاس أصفر
+  BRONZE          // برونز
+  LEAD            // رصاص
+  ZINC            // زنك
+  NICKEL          // نيكل
+  TIN             // قصدير
+  GOLD            // ذهب
+  SILVER          // فضة
+  STAINLESS_STEEL // ستانلس ستيل
+  MIXED           // مخلوط
+}
+
+// نوع التوالف
+enum ScrapType {
+  ELECTRONICS       // إلكترونيات
+  HOME_APPLIANCES   // أجهزة منزلية
+  COMPUTERS         // كمبيوترات ولابتوبات
+  PHONES            // هواتف وتابلت
+  CABLES_WIRES      // كابلات وأسلاك
+  MOTORS            // موتورات
+  BATTERIES         // بطاريات
+  METAL_SCRAP       // خردة معادن
+  CAR_PARTS         // قطع غيار سيارات
+  FURNITURE_PARTS   // أجزاء أثاث
+  WOOD              // خشب
+  PLASTIC           // بلاستيك
+  TEXTILES          // منسوجات
+  PAPER             // ورق وكرتون
+  GLASS             // زجاج
+  CONSTRUCTION      // مواد بناء
+  INDUSTRIAL        // معدات صناعية
+  MEDICAL           // معدات طبية
+  OTHER             // أخرى
+}
+
+// نوع تاجر التوالف
+enum ScrapDealerType {
+  INDIVIDUAL_COLLECTOR  // جامع فردي
+  SCRAP_DEALER          // تاجر خردة
+  RECYCLING_COMPANY     // شركة إعادة تدوير
+  REPAIR_TECHNICIAN     // فني إصلاح
+  FACTORY               // مصنع
+  EXPORT_COMPANY        // شركة تصدير
+}
+
+// حالة تسجيل التاجر
+enum ScrapDealerStatus {
+  PENDING   // قيد المراجعة
+  APPROVED  // موافق عليه
+  REJECTED  // مرفوض
+  SUSPENDED // موقوف
+}
+
 model Item {
   id              String        @id @default(uuid())
   sellerId        String        @map("seller_id")
@@ -231,6 +316,26 @@ model Item {
   location        String?       // العنوان التفصيلي
   latitude        Float?
   longitude       Float?
+
+  // ============================================
+  // سوق التوالف - Scrap Marketplace Fields
+  // ============================================
+  isScrap             Boolean           @default(false) @map("is_scrap")
+  scrapType           ScrapType?        @map("scrap_type")
+  scrapCondition      ScrapCondition?   @map("scrap_condition")
+  scrapPricingType    ScrapPricingType? @map("scrap_pricing_type")
+
+  // للمعادن والوزن
+  weightKg            Float?            @map("weight_kg")
+  pricePerKg          Float?            @map("price_per_kg")
+  metalType           MetalType?        @map("metal_type")
+  metalPurity         Float?            @map("metal_purity")  // نسبة نقاء المعدن
+
+  // قابلية الإصلاح
+  isRepairable        Boolean?          @map("is_repairable")
+  repairCostEstimate  Float?            @map("repair_cost_estimate")
+  workingPartsDesc    String?           @map("working_parts_desc")
+  defectDescription   String?           @map("defect_description")
 
   // Specs (flexible JSON)
   specifications  Json?         @map("specifications")
@@ -267,6 +372,7 @@ model Item {
   participantsReceiving   BarterParticipant[]     @relation("ParticipantReceivingItem")
   reverseAuctionBids      ReverseAuctionBid[]     @relation("ReverseAuctionBidItem")
   inventoryLocks          InventoryLock[]         @relation("InventoryLocks")
+  scrapSellerOffers       ScrapSellerOffer[]      @relation("ScrapOfferItem")
 
   @@map("items")
   @@index([sellerId])
@@ -286,6 +392,11 @@ model Item {
   @@index([listingType])
   @@index([listingType, status])
   @@index([listingType, categoryId])
+  @@index([isScrap])
+  @@index([scrapType])
+  @@index([metalType])
+  @@index([isScrap, scrapType])
+  @@index([isScrap, status])
 }
 
 // ============================================
@@ -4057,5 +4168,181 @@ model SearchAlert {
   @@unique([savedSearchId, userId])
   @@index([userId])
   @@index([isActive])
+}
+
+// ============================================
+// سوق التوالف - Scrap Marketplace Models
+// ============================================
+
+// تحقق تجار التوالف
+// Scrap Dealer Verification
+model ScrapDealerVerification {
+  id                  String              @id @default(uuid())
+  userId              String              @map("user_id")
+  dealerType          ScrapDealerType     @map("dealer_type")
+
+  // معلومات النشاط التجاري
+  businessName        String?             @map("business_name")
+  commercialRegNo     String?             @map("commercial_reg_no")
+  taxCardNo           String?             @map("tax_card_no")
+  recyclingLicenseNo  String?             @map("recycling_license_no")
+
+  // الموقع
+  address             String?
+  governorate         String?
+  city                String?
+  latitude            Float?
+  longitude           Float?
+
+  // التخصص
+  specializations     ScrapType[]
+  acceptedMetals      MetalType[]         @map("accepted_metals")
+  minWeightKg         Float               @default(0) @map("min_weight_kg")
+  maxWeightKg         Float?              @map("max_weight_kg")
+
+  // التسعير والخدمات
+  priceList           Json?               @map("price_list")  // قائمة أسعار المعادن/المواد
+  offersPickup        Boolean             @default(false) @map("offers_pickup")
+  pickupFee           Float               @default(0) @map("pickup_fee")
+  pickupRadiusKm      Int                 @default(0) @map("pickup_radius_km")
+
+  // المستندات
+  idDocumentUrl       String?             @map("id_document_url")
+  commercialRegUrl    String?             @map("commercial_reg_url")
+  taxCardUrl          String?             @map("tax_card_url")
+  recyclingLicenseUrl String?             @map("recycling_license_url")
+  locationPhotos      String[]            @map("location_photos")
+
+  // التحقق والتقييم
+  status              ScrapDealerStatus   @default(PENDING)
+  isVerified          Boolean             @default(false) @map("is_verified")
+  verifiedAt          DateTime?           @map("verified_at")
+  verifiedById        String?             @map("verified_by_id")
+  rejectionReason     String?             @map("rejection_reason")
+
+  // الإحصائيات
+  rating              Float               @default(0)
+  totalReviews        Int                 @default(0) @map("total_reviews")
+  totalTransactions   Int                 @default(0) @map("total_transactions")
+  totalWeightBoughtKg Float               @default(0) @map("total_weight_bought_kg")
+
+  // Timestamps
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  user                User                @relation("ScrapDealerUser", fields: [userId], references: [id])
+  verifiedBy          User?               @relation("ScrapDealerVerifier", fields: [verifiedById], references: [id])
+
+  @@map("scrap_dealer_verifications")
+  @@index([userId])
+  @@index([governorate])
+  @@index([isVerified])
+  @@index([status])
+  @@index([dealerType])
+}
+
+// أسعار المعادن اليومية
+// Daily Metal Prices
+model MetalPrice {
+  id              String      @id @default(uuid())
+  metalType       MetalType   @map("metal_type")
+  pricePerKg      Float       @map("price_per_kg")
+  currency        String      @default("EGP")
+  source          String?     // مصدر السعر
+  date            DateTime    @db.Date
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("metal_prices")
+  @@unique([metalType, date])
+  @@index([date])
+  @@index([metalType])
+}
+
+// طلبات شراء التوالف (مزاد عكسي)
+// Scrap Purchase Requests (Reverse Auction)
+model ScrapPurchaseRequest {
+  id                  String              @id @default(uuid())
+  buyerId             String              @map("buyer_id")
+
+  // تفاصيل الطلب
+  title               String
+  description         String?
+  scrapType           ScrapType           @map("scrap_type")
+  metalType           MetalType?          @map("metal_type")
+  minWeightKg         Float?              @map("min_weight_kg")
+  maxWeightKg         Float?              @map("max_weight_kg")
+  scrapCondition      ScrapCondition?     @map("scrap_condition")
+
+  // السعر
+  offeredPricePerKg   Float?              @map("offered_price_per_kg")
+  offeredTotalPrice   Float?              @map("offered_total_price")
+  isNegotiable        Boolean             @default(true) @map("is_negotiable")
+
+  // الموقع والتوصيل
+  governorate         String?
+  city                String?
+  offersPickup        Boolean             @default(false) @map("offers_pickup")
+  pickupAddress       String?             @map("pickup_address")
+
+  // المدة
+  expiresAt           DateTime?           @map("expires_at")
+  status              String              @default("ACTIVE")
+
+  // الإحصائيات
+  viewsCount          Int                 @default(0) @map("views_count")
+  offersCount         Int                 @default(0) @map("offers_count")
+
+  // Timestamps
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  buyer               User                @relation("ScrapPurchaseBuyer", fields: [buyerId], references: [id])
+  sellerOffers        ScrapSellerOffer[]
+
+  @@map("scrap_purchase_requests")
+  @@index([buyerId])
+  @@index([status])
+  @@index([scrapType])
+  @@index([governorate])
+  @@index([expiresAt])
+}
+
+// عروض البائعين على طلبات الشراء
+// Seller Offers on Purchase Requests
+model ScrapSellerOffer {
+  id                  String              @id @default(uuid())
+  requestId           String              @map("request_id")
+  sellerId            String              @map("seller_id")
+  itemId              String?             @map("item_id")
+
+  // تفاصيل العرض
+  offeredWeightKg     Float               @map("offered_weight_kg")
+  offeredPricePerKg   Float?              @map("offered_price_per_kg")
+  offeredTotalPrice   Float               @map("offered_total_price")
+  message             String?
+  photos              String[]
+
+  // الحالة
+  status              String              @default("PENDING")
+  rejectionReason     String?             @map("rejection_reason")
+
+  // Timestamps
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  request             ScrapPurchaseRequest @relation(fields: [requestId], references: [id])
+  seller              User                @relation("ScrapSellerOffers", fields: [sellerId], references: [id])
+  item                Item?               @relation("ScrapOfferItem", fields: [itemId], references: [id])
+
+  @@map("scrap_seller_offers")
+  @@unique([requestId, sellerId])
+  @@index([requestId])
+  @@index([sellerId])
+  @@index([status])
 }
 

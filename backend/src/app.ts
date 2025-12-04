@@ -44,6 +44,7 @@ import aiListingRoutes from './routes/ai-listing.routes';
 import walletRoutes from './routes/wallet.routes';
 import exchangePointsRoutes from './routes/exchange-points.routes';
 import searchAlertsRoutes from './routes/search-alerts.routes';
+import scrapMarketplaceRoutes from './routes/scrap-marketplace.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -301,6 +302,9 @@ app.use('/api/v1/exchange-points', exchangePointsRoutes);
 
 // Search Alerts
 app.use('/api/v1/search-alerts', searchAlertsRoutes);
+
+// Scrap Marketplace routes - سوق التوالف
+app.use('/api/v1/scrap', scrapMarketplaceRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
