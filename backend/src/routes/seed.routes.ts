@@ -193,4 +193,146 @@ router.post('/seed-categories', async (req, res) => {
   }
 });
 
+/**
+ * TEMPORARY: Seed flash deals for testing
+ * DELETE THIS ROUTE AFTER USE!
+ */
+router.post('/seed-flash-deals', async (req, res) => {
+  try {
+    // Get a seller user (or create one)
+    let seller = await prisma.user.findFirst({
+      where: { email: 'seller@test.com' }
+    });
+
+    if (!seller) {
+      seller = await prisma.user.create({
+        data: {
+          email: 'seller@test.com',
+          password: '$2b$10$K7L1OJ45/4Y2nIvhRVpCe.FSmhDdWoXehVzJptJ/op0lSsvqNu9.m', // password123
+          firstName: 'محمد',
+          lastName: 'البائع',
+          phone: '+201012345678',
+          isVerified: true,
+        }
+      });
+    }
+
+    // Get a category
+    let category = await prisma.category.findFirst();
+    if (!category) {
+      category = await prisma.category.create({
+        data: {
+          nameEn: 'Electronics',
+          nameAr: 'الإلكترونيات',
+          slug: 'electronics',
+          isActive: true,
+        }
+      });
+    }
+
+    // Create test listings
+    const listings = [];
+    const products = [
+      { title: 'iPhone 15 Pro Max 256GB', titleAr: 'آيفون 15 برو ماكس 256 جيجا', price: 65000 },
+      { title: 'Samsung Galaxy S24 Ultra', titleAr: 'سامسونج جالاكسي S24 ألترا', price: 55000 },
+      { title: 'MacBook Pro M3 14"', titleAr: 'ماك بوك برو M3 14 بوصة', price: 85000 },
+      { title: 'Sony PlayStation 5', titleAr: 'سوني بلايستيشن 5', price: 25000 },
+      { title: 'Apple Watch Ultra 2', titleAr: 'ساعة أبل ألترا 2', price: 42000 },
+    ];
+
+    for (const product of products) {
+      const item = await prisma.item.create({
+        data: {
+          title: product.title,
+          description: `Test product: ${product.title}`,
+          condition: 'NEW',
+          ownerId: seller.id,
+          categoryId: category.id,
+          status: 'ACTIVE',
+        }
+      });
+
+      const listing = await prisma.listing.create({
+        data: {
+          type: 'DIRECT_SALE',
+          price: product.price,
+          isNegotiable: false,
+          status: 'ACTIVE',
+          sellerId: seller.id,
+          itemId: item.id,
+        }
+      });
+
+      listings.push({ ...listing, titleAr: product.titleAr, originalPrice: product.price });
+    }
+
+    // Create flash deals
+    const now = new Date();
+    const flashDeals = [];
+
+    for (let i = 0; i < listings.length; i++) {
+      const listing = listings[i];
+      const discountPercent = [30, 40, 50, 25, 35][i];
+      const discountedPrice = Math.round(listing.originalPrice * (1 - discountPercent / 100));
+
+      const deal = await prisma.flashDeal.create({
+        data: {
+          title: `Flash Deal ${i + 1}`,
+          titleAr: `عرض فلاش ${i + 1}: ${listing.titleAr}`,
+          description: `Amazing flash deal with ${discountPercent}% off!`,
+          listingId: listing.id,
+          sellerId: seller.id,
+          originalPrice: listing.originalPrice,
+          discountedPrice: discountedPrice,
+          discountPercentage: discountPercent,
+          quantity: 10,
+          claimedCount: Math.floor(Math.random() * 5),
+          startsAt: new Date(now.getTime() - 1000 * 60 * 30), // Started 30 min ago
+          endsAt: new Date(now.getTime() + 1000 * 60 * 60 * (i + 2)), // Ends in 2-6 hours
+          status: 'ACTIVE',
+        }
+      });
+
+      flashDeals.push(deal);
+    }
+
+    // Create one upcoming deal
+    const upcomingListing = listings[0];
+    await prisma.flashDeal.create({
+      data: {
+        title: 'Upcoming Flash Deal',
+        titleAr: 'عرض قادم: خصم 60% على أحدث الأجهزة',
+        description: 'Coming soon - the biggest flash deal yet!',
+        listingId: upcomingListing.id,
+        sellerId: seller.id,
+        originalPrice: upcomingListing.originalPrice,
+        discountedPrice: Math.round(upcomingListing.originalPrice * 0.4),
+        discountPercentage: 60,
+        quantity: 20,
+        claimedCount: 0,
+        startsAt: new Date(now.getTime() + 1000 * 60 * 60 * 24), // Starts tomorrow
+        endsAt: new Date(now.getTime() + 1000 * 60 * 60 * 48), // Ends in 2 days
+        status: 'SCHEDULED',
+      }
+    });
+
+    return res.json({
+      success: true,
+      message: `Successfully created ${flashDeals.length} active flash deals and 1 upcoming deal`,
+      data: {
+        activeDeals: flashDeals.length,
+        upcomingDeals: 1,
+        seller: { id: seller.id, email: seller.email }
+      },
+    });
+  } catch (error: any) {
+    console.error('Seed flash deals error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to seed flash deals',
+      error: error.message,
+    });
+  }
+});
+
 export default router;

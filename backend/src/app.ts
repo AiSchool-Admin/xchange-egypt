@@ -35,6 +35,7 @@ import aiRoutes from './routes/ai.routes';
 import inventoryRoutes from './routes/inventory.routes';
 import locationsRoutes from './routes/locations.routes';
 import demandMarketplaceRoutes from './routes/demand-marketplace.routes';
+import flashDealsRoutes from './routes/flash-deals.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -265,6 +266,9 @@ app.use('/api/v1/locations', locationsRoutes);
 
 // Demand Marketplace routes (unified demand items: barter requests + reverse auctions)
 app.use('/api/v1/demand', demandMarketplaceRoutes);
+
+// Flash Deals
+app.use('/api/v1/flash-deals', flashDealsRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
