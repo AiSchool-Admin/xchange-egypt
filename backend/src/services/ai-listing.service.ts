@@ -265,10 +265,8 @@ export class AIListingService {
         categoryId: category?.id,
         estimatedValue: draft.estimatedPrice || 0,
         images: draft.sourceUrl ? [draft.sourceUrl] : [],
-        tags: draft.generatedTags || [],
         condition: (draft.detectedCondition as any) || 'GOOD',
         status: 'ACTIVE',
-        type: 'PHYSICAL',
       },
     });
 

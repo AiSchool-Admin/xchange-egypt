@@ -378,8 +378,9 @@ export class SearchAlertsService {
           type: 'ITEM_AVAILABLE',
           title: '🔔 منتج جديد يطابق بحثك!',
           message: `تم إضافة "${newItem.title}" والذي يطابق أحد عمليات البحث المحفوظة لديك`,
-          data: {
-            itemId: newItem.id,
+          entityType: 'item',
+          entityId: newItem.id,
+          metadata: {
             alertId: alert.id,
           },
         },

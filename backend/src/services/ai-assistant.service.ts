@@ -319,7 +319,7 @@ export class AIAssistantService {
     // Get user stats
     const [itemsCount, offersCount] = await Promise.all([
       prisma.item.count({ where: { sellerId: userId } }),
-      prisma.barterOffer.count({ where: { OR: [{ offerorId: userId }, { receiverId: userId }] } }),
+      prisma.barterOffer.count({ where: { OR: [{ initiatorId: userId }, { recipientId: userId }] } }),
     ]);
 
     return {
