@@ -68,6 +68,7 @@ export default function Navigation() {
   };
 
   const navLinks = [
+    { href: '/deals', label: 'عروض فلاش', icon: '⚡' },
     { href: '/inventory', label: 'مخزوني', icon: '📦' },
     { href: '/items', label: 'السوق', icon: '🛒' },
     { href: '/luxury', label: 'سوق الفاخرة', icon: '👑' },
