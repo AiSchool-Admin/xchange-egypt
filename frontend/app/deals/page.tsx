@@ -101,7 +101,7 @@ function DealCard({ deal, onClaim }: { deal: FlashDeal; onClaim: (id: string) =>
         {/* Progress */}
         <div className="mb-3">
           <div className="flex justify-between text-sm text-gray-600 mb-1">
-            <span>تم الحجز: {deal.soldQuantity || 0}</span>
+            <span>تم الحجز: {(deal.soldQuantity || 0) + (deal.reservedQuantity || 0)}</span>
             <span>المتبقي: {deal.availableQuantity || 0}</span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
