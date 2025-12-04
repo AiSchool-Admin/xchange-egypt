@@ -5,6 +5,7 @@
 
 import { Router } from 'express';
 import prisma from '../lib/prisma';
+import { demoSeedService } from '../services/demo-seed.service';
 
 const router = Router();
 
@@ -332,6 +333,81 @@ router.post('/seed-flash-deals', async (req, res) => {
       error: error.message,
       details: error.code || error.meta || 'No additional details',
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+    });
+  }
+});
+
+/**
+ * COMPREHENSIVE DEMO SEED
+ * Seeds all data for investor presentation
+ * بيانات العرض التوضيحي الشامل للمستثمرين
+ */
+router.post('/seed-demo', async (req, res) => {
+  try {
+    console.log('🚀 Starting comprehensive demo seed...');
+    const result = await demoSeedService.seedAll();
+
+    return res.json({
+      success: true,
+      message: '✅ تم إنشاء جميع بيانات العرض التوضيحي بنجاح',
+      data: result.data,
+      loginCredentials: {
+        message: 'يمكن تسجيل الدخول بأي من الحسابات التالية',
+        password: 'Demo@123',
+        users: [
+          { email: 'ahmed.hassan@demo.xchange.eg', role: 'تاجر إلكترونيات' },
+          { email: 'sara.mohamed@demo.xchange.eg', role: 'مستخدم عادي' },
+          { email: 'omar.ali@demo.xchange.eg', role: 'تاجر سيارات' },
+          { email: 'mohamed.ibrahim@demo.xchange.eg', role: 'تاجر ساعات فاخرة' },
+          { email: 'youssef.kamal@demo.xchange.eg', role: 'تاجر توالف' },
+          { email: 'khaled.mansour@demo.xchange.eg', role: 'وسيط معتمد' },
+        ]
+      }
+    });
+  } catch (error: any) {
+    console.error('❌ Demo seed error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في إنشاء بيانات العرض التوضيحي',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+    });
+  }
+});
+
+/**
+ * CLEANUP DEMO DATA
+ * Removes all demo data
+ * حذف بيانات العرض التوضيحي
+ */
+router.delete('/cleanup-demo', async (req, res) => {
+  try {
+    // Delete in correct order to respect foreign keys
+    await prisma.review.deleteMany({ where: { reviewer: { email: { contains: '@demo.xchange.eg' } } } });
+    await prisma.walletTransaction.deleteMany({ where: { wallet: { user: { email: { contains: '@demo.xchange.eg' } } } } });
+    await prisma.wallet.deleteMany({ where: { user: { email: { contains: '@demo.xchange.eg' } } } });
+    await prisma.flashDeal.deleteMany({});
+    await prisma.escrowTransaction.deleteMany({ where: { buyer: { email: { contains: '@demo.xchange.eg' } } } });
+    await prisma.barterPoolParticipant.deleteMany({});
+    await prisma.barterPool.deleteMany({});
+    await prisma.facilitator.deleteMany({ where: { user: { email: { contains: '@demo.xchange.eg' } } } });
+    await prisma.scrapDealerVerification.deleteMany({ where: { user: { email: { contains: '@demo.xchange.eg' } } } });
+    await prisma.metalPrice.deleteMany({});
+    await prisma.listing.deleteMany({ where: { user: { email: { contains: '@demo.xchange.eg' } } } });
+    await prisma.item.deleteMany({ where: { seller: { email: { contains: '@demo.xchange.eg' } } } });
+    await prisma.exchangePoint.deleteMany({});
+    await prisma.user.deleteMany({ where: { email: { contains: '@demo.xchange.eg' } } });
+
+    return res.json({
+      success: true,
+      message: '✅ تم حذف جميع بيانات العرض التوضيحي',
+    });
+  } catch (error: any) {
+    console.error('Cleanup error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في حذف البيانات',
+      error: error.message,
     });
   }
 });
