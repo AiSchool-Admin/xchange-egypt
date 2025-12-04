@@ -50,7 +50,9 @@ function CountdownTimer({ endTime }: { endTime: string }) {
 
 // Deal Card Component
 function DealCard({ deal, onClaim }: { deal: FlashDeal; onClaim: (id: string) => void }) {
-  const progress = (deal.claimedCount / deal.quantity) * 100;
+  const progress = ((deal.soldQuantity + deal.reservedQuantity) / deal.totalQuantity) * 100;
+  const images = deal.listing?.item?.images || [];
+  const itemTitle = deal.listing?.item?.title || deal.title;
 
   return (
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-all">
@@ -60,15 +62,15 @@ function DealCard({ deal, onClaim }: { deal: FlashDeal; onClaim: (id: string) =>
           <span className="text-xl">&#9889;</span> عرض خاص
         </span>
         <span className="bg-white/20 px-2 py-0.5 rounded-full text-sm">
-          -{deal.discountPercentage}%
+          -{Math.round(deal.discountPercent)}%
         </span>
       </div>
 
       {/* Image */}
       <div className="relative h-48 bg-gray-100">
-        {deal.listing.images?.[0] ? (
+        {images[0] ? (
           <img
-            src={deal.listing.images[0]}
+            src={images[0]}
             alt={deal.title}
             className="w-full h-full object-cover"
           />
@@ -78,29 +80,29 @@ function DealCard({ deal, onClaim }: { deal: FlashDeal; onClaim: (id: string) =>
           </div>
         )}
         <div className="absolute top-3 left-3">
-          <CountdownTimer endTime={deal.endsAt} />
+          <CountdownTimer endTime={deal.endTime} />
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
-        <h3 className="font-bold text-gray-800 mb-2 line-clamp-2">{deal.titleAr || deal.title}</h3>
+        <h3 className="font-bold text-gray-800 mb-2 line-clamp-2">{itemTitle}</h3>
 
         {/* Price */}
         <div className="flex items-center gap-3 mb-3">
           <span className="text-2xl font-bold text-red-600">
-            {deal.discountedPrice.toLocaleString('ar-EG')} ج.م
+            {deal.dealPrice?.toLocaleString('ar-EG') || '0'} ج.م
           </span>
           <span className="text-gray-400 line-through text-sm">
-            {deal.originalPrice.toLocaleString('ar-EG')} ج.م
+            {deal.originalPrice?.toLocaleString('ar-EG') || '0'} ج.م
           </span>
         </div>
 
         {/* Progress */}
         <div className="mb-3">
           <div className="flex justify-between text-sm text-gray-600 mb-1">
-            <span>تم الحجز: {deal.claimedCount}</span>
-            <span>المتبقي: {deal.remainingCount}</span>
+            <span>تم الحجز: {deal.soldQuantity || 0}</span>
+            <span>المتبقي: {deal.availableQuantity || 0}</span>
           </div>
           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
             <div
@@ -113,14 +115,14 @@ function DealCard({ deal, onClaim }: { deal: FlashDeal; onClaim: (id: string) =>
         {/* Action */}
         <button
           onClick={() => onClaim(deal.id)}
-          disabled={deal.remainingCount === 0}
+          disabled={deal.availableQuantity === 0}
           className={`w-full py-3 rounded-xl font-bold text-white transition-all ${
-            deal.remainingCount > 0
+            deal.availableQuantity > 0
               ? 'bg-gradient-to-l from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600'
               : 'bg-gray-300 cursor-not-allowed'
           }`}
         >
-          {deal.remainingCount > 0 ? 'احجز الآن!' : 'نفذت الكمية'}
+          {deal.availableQuantity > 0 ? 'احجز الآن!' : 'نفذت الكمية'}
         </button>
       </div>
     </div>
@@ -279,35 +281,39 @@ export default function DealsPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {upcomingDeals.map((deal) => (
-              <div
-                key={deal.id}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 opacity-75"
-              >
-                <div className="bg-gradient-to-l from-blue-500 to-indigo-500 text-white py-2 px-4">
-                  <span className="font-bold">قريباً</span>
+            {upcomingDeals.map((deal) => {
+              const images = deal.listing?.item?.images || [];
+              const itemTitle = deal.listing?.item?.title || deal.title;
+              return (
+                <div
+                  key={deal.id}
+                  className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 opacity-75"
+                >
+                  <div className="bg-gradient-to-l from-blue-500 to-indigo-500 text-white py-2 px-4">
+                    <span className="font-bold">قريباً</span>
+                  </div>
+                  <div className="h-48 bg-gray-100">
+                    {images[0] ? (
+                      <img
+                        src={images[0]}
+                        alt={deal.title}
+                        className="w-full h-full object-cover grayscale"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-6xl opacity-20">
+                        &#128337;
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold text-gray-800 mb-2">{itemTitle}</h3>
+                    <p className="text-gray-500 text-sm">
+                      يبدأ: {new Date(deal.startTime).toLocaleDateString('ar-EG')}
+                    </p>
+                  </div>
                 </div>
-                <div className="h-48 bg-gray-100">
-                  {deal.listing.images?.[0] ? (
-                    <img
-                      src={deal.listing.images[0]}
-                      alt={deal.title}
-                      className="w-full h-full object-cover grayscale"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-6xl opacity-20">
-                      &#128337;
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-gray-800 mb-2">{deal.titleAr || deal.title}</h3>
-                  <p className="text-gray-500 text-sm">
-                    يبدأ: {new Date(deal.startsAt).toLocaleDateString('ar-EG')}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}

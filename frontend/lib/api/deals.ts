@@ -7,28 +7,33 @@ import apiClient from './client';
 export interface FlashDeal {
   id: string;
   title: string;
-  titleAr: string;
-  description: string;
-  descriptionAr: string;
+  description: string | null;
   originalPrice: number;
-  discountedPrice: number;
-  discountPercentage: number;
-  quantity: number;
-  claimedCount: number;
-  remainingCount: number;
-  startsAt: string;
-  endsAt: string;
-  status: 'SCHEDULED' | 'ACTIVE' | 'ENDED' | 'SOLD_OUT';
+  dealPrice: number;
+  discountPercent: number;
+  totalQuantity: number;
+  soldQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  maxPerUser: number;
+  startTime: string;
+  endTime: string;
+  timeRemaining: number;
+  status: 'SCHEDULED' | 'ACTIVE' | 'ENDED' | 'SOLD_OUT' | 'CANCELLED';
+  isFeatured: boolean;
   listing: {
     id: string;
-    title: string;
-    images: string[];
-    category: { nameAr: string };
-  };
-  seller: {
-    id: string;
-    fullName: string;
-    avatar?: string;
+    item: {
+      id: string;
+      title: string;
+      images: string[];
+      category: { nameAr: string; nameEn: string };
+    };
+    user: {
+      id: string;
+      fullName: string;
+      rating: number;
+    };
   };
 }
 
@@ -36,7 +41,7 @@ export interface FlashDealsResponse {
   success: boolean;
   data: {
     deals: FlashDeal[];
-    pagination: {
+    pagination?: {
       page: number;
       limit: number;
       total: number;
@@ -47,13 +52,29 @@ export interface FlashDealsResponse {
 // Get active flash deals
 export const getActiveDeals = async (): Promise<FlashDealsResponse> => {
   const response = await apiClient.get('/flash-deals/active');
-  return response.data;
+  // Handle both array response and object response
+  const data = response.data;
+  if (Array.isArray(data)) {
+    return { success: true, data: { deals: data } };
+  }
+  if (data.success !== undefined) {
+    return data;
+  }
+  return { success: true, data: { deals: data.deals || data || [] } };
 };
 
 // Get upcoming flash deals
 export const getUpcomingDeals = async (): Promise<FlashDealsResponse> => {
   const response = await apiClient.get('/flash-deals/upcoming');
-  return response.data;
+  // Handle both array response and object response
+  const data = response.data;
+  if (Array.isArray(data)) {
+    return { success: true, data: { deals: data } };
+  }
+  if (data.success !== undefined) {
+    return data;
+  }
+  return { success: true, data: { deals: data.deals || data || [] } };
 };
 
 // Get single deal
