@@ -285,6 +285,7 @@ router.post('/seed-flash-deals', async (req, res) => {
           soldQuantity: Math.floor(Math.random() * 5),
           startTime: new Date(now.getTime() - 1000 * 60 * 30), // Started 30 min ago
           endTime: new Date(now.getTime() + 1000 * 60 * 60 * (i + 2)), // Ends in 2-6 hours
+          status: 'ACTIVE', // Important: Set status to ACTIVE
         }
       });
 
