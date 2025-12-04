@@ -116,22 +116,10 @@ BEGIN
 END $$;
 
 -- ============================================
--- 6. إنشاء التقييمات (إذا كان الجدول موجود)
--- Create Reviews (if table exists)
+-- 6. التقييمات (تحتاج migration - تخطي حالياً)
+-- Reviews (needs migration - skipping for now)
 -- ============================================
-
-DO $$
-BEGIN
-  IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'reviews') THEN
-    INSERT INTO reviews (id, reviewer_id, reviewed_id, rating, comment, is_verified_purchase, created_at, updated_at)
-    VALUES
-      (gen_random_uuid()::text, 'demo-user-002', 'demo-user-001', 5, 'تجربة ممتازة مع أحمد! المنتج مطابق للوصف تماماً والتسليم كان في الموعد.', true, NOW() - INTERVAL '20 days', NOW()),
-      (gen_random_uuid()::text, 'demo-user-003', 'demo-user-001', 5, 'بائع محترف وأمين. الهاتف كان بحالة ممتازة كما وصفه.', true, NOW() - INTERVAL '15 days', NOW()),
-      (gen_random_uuid()::text, 'demo-user-001', 'demo-user-003', 5, 'عمر شخص محترم جداً، السيارة كانت فابريكا كما قال.', true, NOW() - INTERVAL '10 days', NOW()),
-      (gen_random_uuid()::text, 'demo-user-004', 'demo-user-005', 5, 'محمد خبير حقيقي في الساعات الفاخرة. سعر عادل جداً.', true, NOW() - INTERVAL '8 days', NOW())
-    ON CONFLICT DO NOTHING;
-  END IF;
-END $$;
+-- NOTE: Reviews table structure is different, skipping for now
 
 -- ============================================
 -- تم بنجاح! ✅
