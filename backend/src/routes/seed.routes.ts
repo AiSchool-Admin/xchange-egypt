@@ -245,9 +245,9 @@ router.post('/seed-flash-deals', async (req, res) => {
           title: product.title,
           description: `Test product: ${product.title}`,
           condition: 'NEW',
-          sellerId: seller.id,
-          categoryId: category.id,
           listingType: 'DIRECT_SALE',
+          seller: { connect: { id: seller.id } },
+          category: category ? { connect: { id: category.id } } : undefined,
         }
       });
 
@@ -255,8 +255,8 @@ router.post('/seed-flash-deals', async (req, res) => {
         data: {
           listingType: 'DIRECT_SALE',
           price: product.price,
-          userId: seller.id,
-          itemId: item.id,
+          user: { connect: { id: seller.id } },
+          item: { connect: { id: item.id } },
         }
       });
 
@@ -276,7 +276,7 @@ router.post('/seed-flash-deals', async (req, res) => {
         data: {
           title: `عرض فلاش ${i + 1}: ${listing.titleAr}`,
           description: `Amazing flash deal with ${discountPct}% off!`,
-          listingId: listing.id,
+          listing: { connect: { id: listing.id } },
           originalPrice: listing.originalPrice,
           dealPrice: dealPriceCalc,
           discountPercent: discountPct,
@@ -296,7 +296,7 @@ router.post('/seed-flash-deals', async (req, res) => {
       data: {
         title: 'عرض قادم: خصم 60% على أحدث الأجهزة',
         description: 'Coming soon - the biggest flash deal yet!',
-        listingId: upcomingListing.id,
+        listing: { connect: { id: upcomingListing.id } },
         originalPrice: upcomingListing.originalPrice,
         dealPrice: Math.round(upcomingListing.originalPrice * 0.4),
         discountPercent: 60,
