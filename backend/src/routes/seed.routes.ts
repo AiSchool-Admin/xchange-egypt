@@ -208,11 +208,10 @@ router.post('/seed-flash-deals', async (req, res) => {
       seller = await prisma.user.create({
         data: {
           email: 'seller@test.com',
-          password: '$2b$10$K7L1OJ45/4Y2nIvhRVpCe.FSmhDdWoXehVzJptJ/op0lSsvqNu9.m', // password123
-          firstName: 'محمد',
-          lastName: 'البائع',
+          passwordHash: '$2b$10$K7L1OJ45/4Y2nIvhRVpCe.FSmhDdWoXehVzJptJ/op0lSsvqNu9.m', // password123
+          fullName: 'محمد البائع',
           phone: '+201012345678',
-          isVerified: true,
+          emailVerified: true,
         }
       });
     }
@@ -246,19 +245,17 @@ router.post('/seed-flash-deals', async (req, res) => {
           title: product.title,
           description: `Test product: ${product.title}`,
           condition: 'NEW',
-          ownerId: seller.id,
+          sellerId: seller.id,
           categoryId: category.id,
-          status: 'ACTIVE',
+          listingType: 'DIRECT_SALE',
         }
       });
 
       const listing = await prisma.listing.create({
         data: {
-          type: 'DIRECT_SALE',
+          listingType: 'DIRECT_SALE',
           price: product.price,
-          isNegotiable: false,
-          status: 'ACTIVE',
-          sellerId: seller.id,
+          userId: seller.id,
           itemId: item.id,
         }
       });
@@ -272,24 +269,21 @@ router.post('/seed-flash-deals', async (req, res) => {
 
     for (let i = 0; i < listings.length; i++) {
       const listing = listings[i];
-      const discountPercent = [30, 40, 50, 25, 35][i];
-      const discountedPrice = Math.round(listing.originalPrice * (1 - discountPercent / 100));
+      const discountPct = [30, 40, 50, 25, 35][i];
+      const dealPriceCalc = Math.round(listing.originalPrice * (1 - discountPct / 100));
 
       const deal = await prisma.flashDeal.create({
         data: {
-          title: `Flash Deal ${i + 1}`,
-          titleAr: `عرض فلاش ${i + 1}: ${listing.titleAr}`,
-          description: `Amazing flash deal with ${discountPercent}% off!`,
+          title: `عرض فلاش ${i + 1}: ${listing.titleAr}`,
+          description: `Amazing flash deal with ${discountPct}% off!`,
           listingId: listing.id,
-          sellerId: seller.id,
           originalPrice: listing.originalPrice,
-          discountedPrice: discountedPrice,
-          discountPercentage: discountPercent,
-          quantity: 10,
-          claimedCount: Math.floor(Math.random() * 5),
-          startsAt: new Date(now.getTime() - 1000 * 60 * 30), // Started 30 min ago
-          endsAt: new Date(now.getTime() + 1000 * 60 * 60 * (i + 2)), // Ends in 2-6 hours
-          status: 'ACTIVE',
+          dealPrice: dealPriceCalc,
+          discountPercent: discountPct,
+          totalQuantity: 10,
+          soldQuantity: Math.floor(Math.random() * 5),
+          startTime: new Date(now.getTime() - 1000 * 60 * 30), // Started 30 min ago
+          endTime: new Date(now.getTime() + 1000 * 60 * 60 * (i + 2)), // Ends in 2-6 hours
         }
       });
 
@@ -300,19 +294,16 @@ router.post('/seed-flash-deals', async (req, res) => {
     const upcomingListing = listings[0];
     await prisma.flashDeal.create({
       data: {
-        title: 'Upcoming Flash Deal',
-        titleAr: 'عرض قادم: خصم 60% على أحدث الأجهزة',
+        title: 'عرض قادم: خصم 60% على أحدث الأجهزة',
         description: 'Coming soon - the biggest flash deal yet!',
         listingId: upcomingListing.id,
-        sellerId: seller.id,
         originalPrice: upcomingListing.originalPrice,
-        discountedPrice: Math.round(upcomingListing.originalPrice * 0.4),
-        discountPercentage: 60,
-        quantity: 20,
-        claimedCount: 0,
-        startsAt: new Date(now.getTime() + 1000 * 60 * 60 * 24), // Starts tomorrow
-        endsAt: new Date(now.getTime() + 1000 * 60 * 60 * 48), // Ends in 2 days
-        status: 'SCHEDULED',
+        dealPrice: Math.round(upcomingListing.originalPrice * 0.4),
+        discountPercent: 60,
+        totalQuantity: 20,
+        soldQuantity: 0,
+        startTime: new Date(now.getTime() + 1000 * 60 * 60 * 24), // Starts tomorrow
+        endTime: new Date(now.getTime() + 1000 * 60 * 60 * 48), // Ends in 2 days
       }
     });
 
