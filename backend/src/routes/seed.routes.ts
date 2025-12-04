@@ -386,7 +386,7 @@ router.delete('/cleanup-demo', async (req, res) => {
     await prisma.walletTransaction.deleteMany({ where: { wallet: { user: { email: { contains: '@demo.xchange.eg' } } } } });
     await prisma.wallet.deleteMany({ where: { user: { email: { contains: '@demo.xchange.eg' } } } });
     await prisma.flashDeal.deleteMany({});
-    await prisma.escrowTransaction.deleteMany({ where: { buyer: { email: { contains: '@demo.xchange.eg' } } } });
+    await prisma.escrow.deleteMany({ where: { buyer: { email: { contains: '@demo.xchange.eg' } } } });
     await prisma.barterPoolParticipant.deleteMany({});
     await prisma.barterPool.deleteMany({});
     await prisma.facilitator.deleteMany({ where: { user: { email: { contains: '@demo.xchange.eg' } } } });
