@@ -35,7 +35,7 @@ export const getUpcomingDeals = async (req: Request, res: Response, next: NextFu
 export const getDeal = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const deal = await flashDealsService.getDealById(id);
+    const deal = await flashDealsService.getFlashDeal(id);
     return successResponse(res, deal, 'Deal retrieved successfully');
   } catch (error) {
     next(error);
@@ -64,9 +64,8 @@ export const claimDeal = async (req: Request, res: Response, next: NextFunction)
 export const completeClaim = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { claimId } = req.params;
-    const { transactionId } = req.body;
     const userId = req.user!.id;
-    const result = await flashDealsService.completeClaim(claimId, userId, transactionId);
+    const result = await flashDealsService.completeClaim(claimId, userId);
     return successResponse(res, result, 'Claim completed successfully');
   } catch (error) {
     next(error);
