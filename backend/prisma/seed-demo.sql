@@ -86,18 +86,18 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
--- 5. إنشاء منتجات سوق التوالف
--- Create Scrap Items
+-- 5. إنشاء منتجات سوق التوالف (بدون أعمدة scrap - ستضاف لاحقاً بعد الـ migration)
+-- Create Scrap Items (without scrap columns - will be added after migration)
 -- ============================================
 
-INSERT INTO items (id, seller_id, title, description, condition, estimated_value, images, governorate, city, category_id, status, views, is_scrap, scrap_type, scrap_condition, metal_type, weight_kg, price_per_kg, scrap_pricing_type, is_repairable, repair_cost_estimate, listing_type, created_at, updated_at)
+INSERT INTO items (id, seller_id, title, description, condition, estimated_value, images, governorate, city, category_id, status, views, is_featured, promotion_tier, listing_type, created_at, updated_at)
 VALUES
-  ('scrap-001', 'demo-user-007', 'خردة نحاس نقي 50 كيلو', 'نحاس أحمر نقي من كابلات كهربائية، نظيف وجاهز للصهر. نسبة نقاء 99%.', 'POOR', 14000, ARRAY['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800'], 'الجيزة', 'الشيخ زايد', 'cat-scrap', 'ACTIVE', 89, true, 'CABLES_WIRES', 'TOTALLY_DAMAGED', 'COPPER', 50, 280, 'PER_KG', false, NULL, 'DIRECT_SALE', NOW(), NOW()),
-  ('scrap-002', 'demo-user-007', 'ثلاجة توشيبا تالفة للخردة', 'ثلاجة قديمة لا تعمل، صالحة للتفكيك واستخراج النحاس والألومنيوم. الموتور سليم.', 'POOR', 1500, ARRAY['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800'], 'القاهرة', 'شبرا', 'cat-scrap', 'ACTIVE', 45, true, 'HOME_APPLIANCES', 'NOT_WORKING', NULL, 80, NULL, 'PER_PIECE', true, 2500, 'DIRECT_SALE', NOW(), NOW()),
-  ('scrap-003', 'demo-user-007', 'موتور سيارة تويوتا للخردة', 'موتور تويوتا كورولا 2010، محتاج عمرة كاملة أو للخردة. الكتلة سليمة.', 'POOR', 3500, ARRAY['https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800'], 'الإسكندرية', 'برج العرب', 'cat-scrap', 'ACTIVE', 67, true, 'CAR_PARTS', 'NOT_WORKING', 'IRON', 150, NULL, 'PER_PIECE', true, 8000, 'DIRECT_SALE', NOW(), NOW()),
-  ('scrap-004', 'demo-user-007', 'ألومنيوم نوافذ قديمة 100 كيلو', 'ألومنيوم من نوافذ مفككة، نظيف من الزجاج والبلاستيك. جاهز للتدوير.', 'POOR', 8500, ARRAY['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800'], 'الدقهلية', 'المنصورة', 'cat-scrap', 'ACTIVE', 56, true, 'CONSTRUCTION', 'TOTALLY_DAMAGED', 'ALUMINUM', 100, 85, 'PER_KG', false, NULL, 'DIRECT_SALE', NOW(), NOW()),
-  ('scrap-005', 'demo-user-007', 'بطاريات سيارات مستعملة 20 قطعة', 'بطاريات 12 فولت مستعملة، بعضها يعمل (5 قطع)، معظمها للرصاص. إجمالي الوزن 400 كيلو.', 'POOR', 6000, ARRAY['https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800'], 'بورسعيد', 'بورسعيد', 'cat-scrap', 'ACTIVE', 78, true, 'BATTERIES', 'PARTIALLY_WORKING', 'LEAD', 400, NULL, 'PER_LOT', false, NULL, 'DIRECT_SALE', NOW(), NOW()),
-  ('scrap-006', 'demo-user-007', 'لابتوبات وكمبيوترات قديمة 15 جهاز', 'أجهزة كمبيوتر قديمة للخردة، تصلح لاستخراج المعادن الثمينة من اللوحات الإلكترونية.', 'POOR', 4500, ARRAY['https://images.unsplash.com/photo-1518770660439-4636190af475?w=800'], 'القاهرة', 'وسط البلد', 'cat-scrap', 'ACTIVE', 92, true, 'COMPUTERS', 'NOT_WORKING', NULL, 60, NULL, 'PER_LOT', false, NULL, 'DIRECT_SALE', NOW(), NOW())
+  ('scrap-001', 'demo-user-007', 'خردة نحاس نقي 50 كيلو', 'نحاس أحمر نقي من كابلات كهربائية، نظيف وجاهز للصهر. نسبة نقاء 99%.', 'POOR', 14000, ARRAY['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800'], 'الجيزة', 'الشيخ زايد', 'cat-scrap', 'ACTIVE', 89, false, 'BASIC', 'DIRECT_SALE', NOW(), NOW()),
+  ('scrap-002', 'demo-user-007', 'ثلاجة توشيبا تالفة للخردة', 'ثلاجة قديمة لا تعمل، صالحة للتفكيك واستخراج النحاس والألومنيوم. الموتور سليم.', 'POOR', 1500, ARRAY['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800'], 'القاهرة', 'شبرا', 'cat-scrap', 'ACTIVE', 45, false, 'BASIC', 'DIRECT_SALE', NOW(), NOW()),
+  ('scrap-003', 'demo-user-007', 'موتور سيارة تويوتا للخردة', 'موتور تويوتا كورولا 2010، محتاج عمرة كاملة أو للخردة. الكتلة سليمة.', 'POOR', 3500, ARRAY['https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=800'], 'الإسكندرية', 'برج العرب', 'cat-scrap', 'ACTIVE', 67, false, 'BASIC', 'DIRECT_SALE', NOW(), NOW()),
+  ('scrap-004', 'demo-user-007', 'ألومنيوم نوافذ قديمة 100 كيلو', 'ألومنيوم من نوافذ مفككة، نظيف من الزجاج والبلاستيك. جاهز للتدوير.', 'POOR', 8500, ARRAY['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800'], 'الدقهلية', 'المنصورة', 'cat-scrap', 'ACTIVE', 56, false, 'BASIC', 'DIRECT_SALE', NOW(), NOW()),
+  ('scrap-005', 'demo-user-007', 'بطاريات سيارات مستعملة 20 قطعة', 'بطاريات 12 فولت مستعملة، بعضها يعمل (5 قطع)، معظمها للرصاص. إجمالي الوزن 400 كيلو.', 'POOR', 6000, ARRAY['https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=800'], 'بورسعيد', 'بورسعيد', 'cat-scrap', 'ACTIVE', 78, false, 'BASIC', 'DIRECT_SALE', NOW(), NOW()),
+  ('scrap-006', 'demo-user-007', 'لابتوبات وكمبيوترات قديمة 15 جهاز', 'أجهزة كمبيوتر قديمة للخردة، تصلح لاستخراج المعادن الثمينة من اللوحات الإلكترونية.', 'POOR', 4500, ARRAY['https://images.unsplash.com/photo-1518770660439-4636190af475?w=800'], 'القاهرة', 'وسط البلد', 'cat-scrap', 'ACTIVE', 92, false, 'BASIC', 'DIRECT_SALE', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================
@@ -210,31 +210,11 @@ FROM wallets w
 WHERE w.id LIKE 'wallet-%';
 
 -- ============================================
--- 11. إنشاء تاجر التوالف المعتمد
--- Create Verified Scrap Dealer
+-- 11. تاجر التوالف وأسعار المعادن (ستضاف بعد migration)
+-- Scrap Dealer & Metal Prices (will be added after migration)
 -- ============================================
-
-INSERT INTO scrap_dealer_verifications (id, user_id, dealer_type, business_name, governorate, city, address, specializations, accepted_metals, offers_pickup, pickup_radius_km, pickup_fee, min_weight_kg, status, is_verified, verified_at, rating, total_reviews, total_transactions, total_weight_bought_kg, created_at, updated_at)
-VALUES
-  ('dealer-001', 'demo-user-007', 'SCRAP_DEALER', 'يوسف لتجارة الخردة والمعادن', 'الجيزة', 'الشيخ زايد', 'المنطقة الصناعية، الشيخ زايد', ARRAY['METAL_SCRAP', 'CABLES_WIRES', 'HOME_APPLIANCES', 'CAR_PARTS', 'BATTERIES']::scrap_type[], ARRAY['COPPER', 'ALUMINUM', 'IRON', 'STEEL', 'BRASS', 'LEAD']::metal_type[], true, 50, 100, 10, 'APPROVED', true, NOW(), 4.7, 156, 234, 12500, NOW(), NOW())
-ON CONFLICT (user_id) DO NOTHING;
-
--- ============================================
--- 12. إنشاء أسعار المعادن
--- Create Metal Prices
--- ============================================
-
-INSERT INTO metal_prices (id, metal_type, price_per_kg, currency, source, date, created_at)
-VALUES
-  (gen_random_uuid()::text, 'COPPER', 280, 'EGP', 'سوق الخردة المصري', CURRENT_DATE, NOW()),
-  (gen_random_uuid()::text, 'ALUMINUM', 85, 'EGP', 'سوق الخردة المصري', CURRENT_DATE, NOW()),
-  (gen_random_uuid()::text, 'IRON', 12, 'EGP', 'سوق الخردة المصري', CURRENT_DATE, NOW()),
-  (gen_random_uuid()::text, 'STEEL', 15, 'EGP', 'سوق الخردة المصري', CURRENT_DATE, NOW()),
-  (gen_random_uuid()::text, 'BRASS', 190, 'EGP', 'سوق الخردة المصري', CURRENT_DATE, NOW()),
-  (gen_random_uuid()::text, 'BRONZE', 210, 'EGP', 'سوق الخردة المصري', CURRENT_DATE, NOW()),
-  (gen_random_uuid()::text, 'LEAD', 48, 'EGP', 'سوق الخردة المصري', CURRENT_DATE, NOW()),
-  (gen_random_uuid()::text, 'STAINLESS_STEEL', 38, 'EGP', 'سوق الخردة المصري', CURRENT_DATE, NOW())
-ON CONFLICT DO NOTHING;
+-- NOTE: These tables don't exist yet. Run migration first, then add:
+-- scrap_dealer_verifications and metal_prices data
 
 -- ============================================
 -- 13. إنشاء الوسيط المعتمد
