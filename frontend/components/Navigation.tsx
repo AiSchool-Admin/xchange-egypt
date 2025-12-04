@@ -71,6 +71,7 @@ export default function Navigation() {
     { href: '/deals', label: 'عروض فلاش', icon: '⚡' },
     { href: '/inventory', label: 'مخزوني', icon: '📦' },
     { href: '/items', label: 'السوق', icon: '🛒' },
+    { href: '/scrap', label: 'سوق التوالف', icon: '♻️' },
     { href: '/luxury', label: 'سوق الفاخرة', icon: '👑' },
     { href: '/wallet', label: 'المحفظة', icon: '💳' },
     { href: '/exchange-points', label: 'نقاط التبادل', icon: '📍' },
