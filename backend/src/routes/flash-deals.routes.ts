@@ -69,6 +69,13 @@ router.post('/:id/claim', authenticate, flashDealsController.claimDeal);
 router.post('/claims/:claimId/complete', authenticate, flashDealsController.completeClaim);
 
 /**
+ * @route   DELETE /api/v1/flash-deals/claims/:claimId
+ * @desc    Cancel a claim
+ * @access  Private
+ */
+router.delete('/claims/:claimId', authenticate, flashDealsController.cancelClaim);
+
+/**
  * @route   DELETE /api/v1/flash-deals/:id
  * @desc    Cancel a flash deal
  * @access  Private (Seller only)

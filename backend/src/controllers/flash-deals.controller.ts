@@ -73,6 +73,21 @@ export const completeClaim = async (req: Request, res: Response, next: NextFunct
 };
 
 /**
+ * Cancel a claim
+ * DELETE /api/v1/flash-deals/claims/:claimId
+ */
+export const cancelClaim = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { claimId } = req.params;
+    const userId = req.user!.id;
+    const result = await flashDealsService.cancelClaim(claimId, userId);
+    return successResponse(res, result, 'Claim cancelled successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get my claims
  * GET /api/v1/flash-deals/my-claims
  */

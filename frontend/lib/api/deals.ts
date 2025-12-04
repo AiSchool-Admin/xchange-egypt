@@ -37,6 +37,27 @@ export interface FlashDeal {
   };
 }
 
+export interface FlashDealClaim {
+  id: string;
+  dealId: string;
+  userId: string;
+  quantity: number;
+  priceAtClaim: number;
+  status: 'CLAIMED' | 'PURCHASED' | 'EXPIRED' | 'CANCELLED';
+  expiresAt: string;
+  createdAt: string;
+  purchasedAt?: string;
+  deal: FlashDeal;
+}
+
+export interface ClaimResult {
+  success: boolean;
+  claimId?: string;
+  message: string;
+  messageAr: string;
+  expiresAt?: string;
+}
+
 export interface FlashDealsResponse {
   success: boolean;
   data: {
@@ -98,8 +119,19 @@ export const completeClaim = async (claimId: string, transactionId: string) => {
 };
 
 // Get my claims
-export const getMyClaims = async () => {
+export const getMyClaims = async (): Promise<FlashDealClaim[]> => {
   const response = await apiClient.get('/flash-deals/my-claims');
+  // Handle various response formats
+  const data = response.data;
+  if (Array.isArray(data)) return data;
+  if (data.claims) return data.claims;
+  if (data.data) return Array.isArray(data.data) ? data.data : data.data.claims || [];
+  return [];
+};
+
+// Cancel a claim
+export const cancelClaim = async (claimId: string): Promise<{ success: boolean }> => {
+  const response = await apiClient.delete(`/flash-deals/claims/${claimId}`);
   return response.data;
 };
 
