@@ -29,15 +29,10 @@ export default function Navigation() {
   // Listen for real-time notifications
   useEffect(() => {
     const handleMatchNotification = (notification: any) => {
-      // Update unread count
       setUnreadCount(prev => prev + 1);
-
-      // Show toast notification
       const score = Math.round(notification.averageMatchScore * 100);
-      setToastMessage(`New match found! ${score}% compatibility`);
+      setToastMessage(`تم العثور على مطابقة! نسبة التوافق ${score}%`);
       setShowToast(true);
-
-      // Auto-hide toast after 5 seconds
       setTimeout(() => setShowToast(false), 5000);
     };
 
@@ -73,23 +68,32 @@ export default function Navigation() {
   };
 
   const navLinks = [
-    { href: '/inventory', label: 'My Inventory', icon: '📦' },
-    { href: '/items', label: 'Marketplace', icon: '🛒' },
-    { href: '/auctions', label: 'Auctions', icon: '🔨' },
-    { href: '/barter', label: 'Barter', icon: '🔄' },
-    { href: '/messages', label: 'Messages', icon: '💬' },
+    { href: '/deals', label: 'عروض فلاش', icon: '⚡' },
+    { href: '/inventory', label: 'مخزوني', icon: '📦' },
+    { href: '/items', label: 'السوق', icon: '🛒' },
+    { href: '/scrap', label: 'سوق التوالف', icon: '♻️' },
+    { href: '/luxury', label: 'سوق الفاخرة', icon: '👑' },
+    { href: '/wallet', label: 'المحفظة', icon: '💳' },
+    { href: '/exchange-points', label: 'نقاط التبادل', icon: '📍' },
+    { href: '/escrow', label: 'الضمان', icon: '🔒' },
+    { href: '/pools', label: 'الصناديق', icon: '🤝' },
+    { href: '/facilitators', label: 'الوسطاء', icon: '👔' },
+    { href: '/barter-chains', label: 'السلاسل', icon: '🔗' },
+    { href: '/auctions', label: 'المزادات', icon: '🔨' },
+    { href: '/saved-searches', label: 'التنبيهات', icon: '🔍' },
+    { href: '/messages', label: 'الرسائل', icon: '💬' },
   ];
 
   const isActive = (href: string) => pathname.startsWith(href);
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm" dir="rtl">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 font-bold text-xl">
             <span className="text-2xl">🔄</span>
-            <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-l from-emerald-600 to-teal-600 bg-clip-text text-transparent">
               Xchange
             </span>
           </Link>
@@ -102,11 +106,11 @@ export default function Navigation() {
                 href={link.href}
                 className={`px-4 py-2 rounded-lg font-medium transition ${
                   isActive(link.href)
-                    ? 'bg-purple-50 text-purple-700'
+                    ? 'bg-emerald-50 text-emerald-700'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <span className="mr-1">{link.icon}</span>
+                <span className="ml-1">{link.icon}</span>
                 {link.label}
               </Link>
             ))}
@@ -115,14 +119,14 @@ export default function Navigation() {
               href="/notifications"
               className={`relative px-4 py-2 rounded-lg font-medium transition ${
                 isActive('/notifications')
-                  ? 'bg-purple-50 text-purple-700'
+                  ? 'bg-emerald-50 text-emerald-700'
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <span className="mr-1">🔔</span>
-              Notifications
+              <span className="ml-1">🔔</span>
+              الإشعارات
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
+                <span className="absolute -top-1 -left-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -134,18 +138,29 @@ export default function Navigation() {
             {user ? (
               <>
                 <Link
-                  href="/dashboard"
-                  className={`px-4 py-2 rounded-lg font-medium transition ${
-                    pathname === '/dashboard'
-                      ? 'bg-purple-50 text-purple-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  href="/assistant"
+                  className="px-3 py-2 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition flex items-center gap-1"
+                  title="المساعد الذكي"
                 >
-                  Dashboard
+                  <span>🤖</span>
+                </Link>
+                <Link
+                  href="/sell-ai"
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium hover:from-amber-600 hover:to-orange-600 transition flex items-center gap-2"
+                >
+                  <span>✨</span>
+                  بيع بالـ AI
+                </Link>
+                <Link
+                  href="/inventory/add"
+                  className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition flex items-center gap-2"
+                >
+                  <span>➕</span>
+                  أضف إعلان
                 </Link>
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg">
-                  <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
-                    {user.fullName?.charAt(0).toUpperCase() || 'U'}
+                  <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                    {user.fullName?.charAt(0).toUpperCase() || 'م'}
                   </div>
                   <span className="text-sm font-medium text-gray-700">
                     {user.fullName}
@@ -155,7 +170,7 @@ export default function Navigation() {
                   onClick={handleLogout}
                   className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition"
                 >
-                  Logout
+                  خروج
                 </button>
               </>
             ) : (
@@ -164,13 +179,13 @@ export default function Navigation() {
                   href="/login"
                   className="px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition"
                 >
-                  Login
+                  تسجيل الدخول
                 </Link>
                 <Link
                   href="/register"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition"
+                  className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition"
                 >
-                  Sign Up
+                  إنشاء حساب
                 </Link>
               </>
             )}
@@ -210,6 +225,34 @@ export default function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-200">
             <div className="space-y-1">
+              {user && (
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <Link
+                    href="/sell-ai"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg font-medium text-center"
+                  >
+                    ✨ بيع بالـ AI
+                  </Link>
+                  <Link
+                    href="/inventory/add"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="px-4 py-3 bg-emerald-500 text-white rounded-lg font-medium text-center"
+                  >
+                    ➕ أضف إعلان
+                  </Link>
+                </div>
+              )}
+              {user && (
+                <Link
+                  href="/assistant"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block px-4 py-3 bg-purple-500 text-white rounded-lg font-medium mb-3 text-center"
+                >
+                  🤖 المساعد الذكي
+                </Link>
+              )}
+
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -217,27 +260,28 @@ export default function Navigation() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`block px-4 py-2 rounded-lg font-medium transition ${
                     isActive(link.href)
-                      ? 'bg-purple-50 text-purple-700'
+                      ? 'bg-emerald-50 text-emerald-700'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <span className="mr-2">{link.icon}</span>
+                  <span className="ml-2">{link.icon}</span>
                   {link.label}
                 </Link>
               ))}
+
               {/* Notifications with badge - Mobile */}
               <Link
                 href="/notifications"
                 onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center justify-between px-4 py-2 rounded-lg font-medium transition ${
                   isActive('/notifications')
-                    ? 'bg-purple-50 text-purple-700'
+                    ? 'bg-emerald-50 text-emerald-700'
                     : 'text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <span>
-                  <span className="mr-2">🔔</span>
-                  Notifications
+                  <span className="ml-2">🔔</span>
+                  الإشعارات
                 </span>
                 {unreadCount > 0 && (
                   <span className="bg-red-500 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center px-1">
@@ -246,50 +290,44 @@ export default function Navigation() {
                 )}
               </Link>
 
-              {user ? (
-                <>
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-4 py-2 rounded-lg font-medium transition ${
-                      pathname === '/dashboard'
-                        ? 'bg-purple-50 text-purple-700'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    Dashboard
-                  </Link>
-                  <div className="px-4 py-2 text-sm text-gray-600">
-                    Signed in as <span className="font-medium">{user.fullName}</span>
+              <div className="border-t border-gray-200 my-3 pt-3">
+                {user ? (
+                  <>
+                    <div className="px-4 py-2 text-sm text-gray-600 flex items-center gap-2">
+                      <div className="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                        {user.fullName?.charAt(0).toUpperCase() || 'م'}
+                      </div>
+                      <span className="font-medium">{user.fullName}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-right px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium transition"
+                    >
+                      🚪 تسجيل الخروج
+                    </button>
+                  </>
+                ) : (
+                  <div className="space-y-2 px-4">
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition text-center border border-gray-200"
+                    >
+                      تسجيل الدخول
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block py-2 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition text-center"
+                    >
+                      إنشاء حساب جديد
+                    </Link>
                   </div>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition"
-                  >
-                    Logout
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-2 text-gray-700 hover:bg-gray-50 rounded-lg font-medium transition"
-                  >
-                    Login
-                  </Link>
-                  <Link
-                    href="/register"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -297,16 +335,16 @@ export default function Navigation() {
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed bottom-4 right-4 z-50 animate-slide-up">
-          <div className="bg-green-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3">
+        <div className="fixed bottom-4 left-4 z-50 animate-slide-up" dir="rtl">
+          <div className="bg-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3">
             <span className="text-2xl">🎯</span>
             <div>
-              <p className="font-semibold">Match Found!</p>
-              <p className="text-sm text-green-100">{toastMessage}</p>
+              <p className="font-bold">تم العثور على مطابقة!</p>
+              <p className="text-sm text-emerald-100">{toastMessage}</p>
             </div>
             <button
               onClick={() => setShowToast(false)}
-              className="ml-4 text-green-200 hover:text-white"
+              className="mr-4 text-emerald-200 hover:text-white"
             >
               ✕
             </button>

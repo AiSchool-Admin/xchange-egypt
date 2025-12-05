@@ -153,6 +153,39 @@ const categories = [
       { nameAr: 'خدمات أخرى', nameEn: 'Other Services', slug: 'other-services', order: 4 },
     ],
   },
+  // Luxury Categories for high-end items
+  {
+    nameAr: 'سلع فاخرة',
+    nameEn: 'Luxury Goods',
+    slug: 'luxury',
+    description: 'منتجات فاخرة وعالية القيمة',
+    icon: '👑',
+    order: 11,
+    subcategories: [
+      { nameAr: 'ساعات فاخرة', nameEn: 'Luxury Watches', slug: 'luxury-watches', order: 1 },
+      { nameAr: 'مجوهرات', nameEn: 'Jewelry', slug: 'jewelry', order: 2 },
+      { nameAr: 'حقائب فاخرة', nameEn: 'Luxury Bags', slug: 'luxury-bags', order: 3 },
+      { nameAr: 'عطور أصلية', nameEn: 'Perfumes', slug: 'perfumes', order: 4 },
+      { nameAr: 'نظارات شمسية', nameEn: 'Sunglasses', slug: 'sunglasses', order: 5 },
+      { nameAr: 'أقلام فاخرة', nameEn: 'Luxury Pens', slug: 'luxury-pens', order: 6 },
+    ],
+  },
+  {
+    nameAr: 'فنون ومقتنيات',
+    nameEn: 'Art & Collectibles',
+    slug: 'art-collectibles',
+    description: 'لوحات فنية وتحف ومقتنيات نادرة',
+    icon: '🖼️',
+    order: 12,
+    subcategories: [
+      { nameAr: 'لوحات فنية', nameEn: 'Paintings', slug: 'paintings', order: 1 },
+      { nameAr: 'تحف أثرية', nameEn: 'Antiques', slug: 'antiques', order: 2 },
+      { nameAr: 'منحوتات', nameEn: 'Sculptures', slug: 'sculptures', order: 3 },
+      { nameAr: 'عملات ومسكوكات', nameEn: 'Coins & Currency', slug: 'coins-currency', order: 4 },
+      { nameAr: 'طوابع', nameEn: 'Stamps', slug: 'stamps', order: 5 },
+      { nameAr: 'مقتنيات رياضية', nameEn: 'Sports Memorabilia', slug: 'sports-memorabilia', order: 6 },
+    ],
+  },
 ];
 
 async function seedCategories() {

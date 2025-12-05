@@ -304,7 +304,7 @@ export default function AuctionsPage() {
 
                             <div className="flex items-center justify-between text-sm text-gray-600">
                               <span>{auction.bidCount} bid{auction.bidCount !== 1 ? 's' : ''}</span>
-                              <span>{auction.item.category.nameEn}</span>
+                              {auction.item.category && <span>{auction.item.category.nameEn}</span>}
                             </div>
                           </div>
                         </div>

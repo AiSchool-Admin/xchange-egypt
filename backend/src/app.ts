@@ -34,6 +34,18 @@ import pushRoutes from './routes/push.routes';
 import aiRoutes from './routes/ai.routes';
 import inventoryRoutes from './routes/inventory.routes';
 import locationsRoutes from './routes/locations.routes';
+import demandMarketplaceRoutes from './routes/demand-marketplace.routes';
+import flashDealsRoutes from './routes/flash-deals.routes';
+import escrowRoutes from './routes/escrow.routes';
+import barterPoolRoutes from './routes/barter-pool.routes';
+import facilitatorRoutes from './routes/facilitator.routes';
+import aiAssistantRoutes from './routes/ai-assistant.routes';
+import aiListingRoutes from './routes/ai-listing.routes';
+import walletRoutes from './routes/wallet.routes';
+import exchangePointsRoutes from './routes/exchange-points.routes';
+import searchAlertsRoutes from './routes/search-alerts.routes';
+import scrapMarketplaceRoutes from './routes/scrap-marketplace.routes';
+import matchingRoutes from './routes/matching.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -44,6 +56,12 @@ import { initializeWebSocket, startRealtimeMatching } from './services/realtime-
 
 // Import chat WebSocket service
 import { attachChatEventHandlers } from './services/socket.service';
+
+// Import smart matching service (consolidated notification logic)
+import { initSmartMatchingListeners } from './services/smart-matching.service';
+
+// Import unified matching service (improved matching orchestrator)
+import { initUnifiedMatching } from './services/unified-matching.service';
 
 // Initialize Express app
 const app: Application = express();
@@ -259,6 +277,42 @@ app.use('/api/v1/inventory', inventoryRoutes);
 // Locations routes (Egyptian governorates, cities, districts)
 app.use('/api/v1/locations', locationsRoutes);
 
+// Demand Marketplace routes (unified demand items: barter requests + reverse auctions)
+app.use('/api/v1/demand', demandMarketplaceRoutes);
+
+// Flash Deals
+app.use('/api/v1/flash-deals', flashDealsRoutes);
+
+// Escrow System (Smart Escrow & Disputes)
+app.use('/api/v1/escrow', escrowRoutes);
+
+// Barter Pools (Collective Barter)
+app.use('/api/v1/barter-pools', barterPoolRoutes);
+
+// Facilitators Network
+app.use('/api/v1/facilitators', facilitatorRoutes);
+
+// AI Assistant
+app.use('/api/v1/ai-assistant', aiAssistantRoutes);
+
+// AI Listing (Sell with AI)
+app.use('/api/v1/ai-listing', aiListingRoutes);
+
+// XChange Wallet
+app.use('/api/v1/wallet', walletRoutes);
+
+// Exchange Points (Safe meetup locations)
+app.use('/api/v1/exchange-points', exchangePointsRoutes);
+
+// Search Alerts
+app.use('/api/v1/search-alerts', searchAlertsRoutes);
+
+// Scrap Marketplace routes - سوق التوالف
+app.use('/api/v1/scrap', scrapMarketplaceRoutes);
+
+// Matching routes - نظام المطابقة الذكية
+app.use('/api/v1/matching', matchingRoutes);
+
 // 404 handler
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
@@ -325,6 +379,14 @@ const startServer = async () => {
     // Start real-time matching service
     startRealtimeMatching();
     console.log('✅ Real-time matching service started');
+
+    // Initialize smart matching listeners (legacy - kept for backwards compatibility)
+    initSmartMatchingListeners();
+    console.log('✅ Smart matching notification service started');
+
+    // Initialize unified matching service (improved orchestrator with geographic priority)
+    initUnifiedMatching(io);
+    console.log('✅ Unified matching service started');
 
     // Start background jobs (kept for fallback and cleanup)
     if (env.server.nodeEnv === 'production') {

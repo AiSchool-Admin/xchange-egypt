@@ -740,7 +740,7 @@ export const notifyProximityMatch = async (
       entityType: match.type === 'SUPPLY_TO_DEMAND' ? 'Item' : 'BarterOffer',
       entityId: match.matchedItem.id,
       actionUrl: match.type === 'SUPPLY_TO_DEMAND'
-        ? `/barter/offers/${match.matchedItem.id}`
+        ? `/barter/respond/${match.matchedItem.id}`
         : `/items/${match.matchedItem.id}`,
       metadata: {
         matchId: match.id,

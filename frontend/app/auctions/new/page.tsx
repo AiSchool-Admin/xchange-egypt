@@ -13,7 +13,7 @@ interface MyItem {
   description: string;
   price?: number;
   images: Array<{ url: string; isPrimary: boolean }>;
-  category: { nameEn: string };
+  category?: { nameEn: string; nameAr?: string };
 }
 
 export default function CreateAuctionPage() {
@@ -184,7 +184,7 @@ export default function CreateAuctionPage() {
                   <option value="">Choose an item...</option>
                   {myItems.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.title} ({item.category.nameEn})
+                      {item.title}{item.category ? ` (${item.category.nameEn})` : ''}
                     </option>
                   ))}
                 </select>

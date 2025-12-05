@@ -1,5 +1,7 @@
 import apiClient from './client';
 
+export type PromotionTier = 'BASIC' | 'FEATURED' | 'PREMIUM' | 'GOLD' | 'PLATINUM';
+
 export interface Item {
   id: string;
   title: string;
@@ -9,18 +11,40 @@ export interface Item {
   estimatedValue?: number;
   location?: string;
   governorate?: string;
-  status: 'DRAFT' | 'ACTIVE' | 'SOLD' | 'TRADED' | 'ARCHIVED'; // Updated to match database ItemStatus enum
+  city?: string;
+  district?: string;
+  status: 'DRAFT' | 'ACTIVE' | 'SOLD' | 'TRADED' | 'ARCHIVED';
   images: Array<{ id: string; url: string; isPrimary: boolean }>;
-  category: {
+  // Featured/Promotion fields
+  isFeatured?: boolean;
+  promotionTier?: PromotionTier;
+  promotedAt?: string;
+  promotionExpiresAt?: string;
+  // Barter preferences - What the seller wants in exchange
+  desiredItemTitle?: string;
+  desiredItemDescription?: string;
+  desiredCategoryId?: string;
+  desiredKeywords?: string;
+  desiredValueMin?: number;
+  desiredValueMax?: number;
+  desiredCategory?: {
     id: string;
     nameEn: string;
     nameAr: string;
   };
-  seller: {
+  category?: {
+    id: string;
+    nameEn: string;
+    nameAr: string;
+    slug?: string;
+  };
+  seller?: {
     id: string;
     fullName: string;
-    email: string;
-    userType: string;
+    email?: string;
+    userType?: string;
+    avatar?: string;
+    businessName?: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -73,6 +97,11 @@ export const getItems = async (params?: {
   maxPrice?: number;
   search?: string;
   status?: string;
+  sellerId?: string;
+  // Location filters
+  governorate?: string;
+  city?: string;
+  district?: string;
 }): Promise<ItemsResponse> => {
   const queryParams = new URLSearchParams();
 
@@ -84,6 +113,11 @@ export const getItems = async (params?: {
   if (params?.maxPrice) queryParams.append('maxPrice', params.maxPrice.toString());
   if (params?.search) queryParams.append('search', params.search);
   if (params?.status) queryParams.append('status', params.status);
+  if (params?.sellerId) queryParams.append('sellerId', params.sellerId);
+  // Location params
+  if (params?.governorate) queryParams.append('governorate', params.governorate);
+  if (params?.city) queryParams.append('city', params.city);
+  if (params?.district) queryParams.append('district', params.district);
 
   const response = await apiClient.get(`/items/search?${queryParams.toString()}`);
   return response.data;
@@ -116,5 +150,70 @@ export const deleteItem = async (id: string): Promise<{ success: boolean }> => {
 // Get user's items
 export const getMyItems = async (): Promise<ItemsResponse> => {
   const response = await apiClient.get('/items/my');
+  return response.data;
+};
+
+// Featured items response
+export interface FeaturedItemsResponse {
+  success: boolean;
+  data: {
+    items: Item[];
+  };
+}
+
+// Get featured items
+export const getFeaturedItems = async (params?: {
+  limit?: number;
+  categoryId?: string;
+  governorate?: string;
+  minTier?: PromotionTier;
+}): Promise<FeaturedItemsResponse> => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  if (params?.categoryId) queryParams.append('categoryId', params.categoryId);
+  if (params?.governorate) queryParams.append('governorate', params.governorate);
+  if (params?.minTier) queryParams.append('minTier', params.minTier);
+
+  const response = await apiClient.get(`/items/featured?${queryParams.toString()}`);
+  return response.data;
+};
+
+// Get luxury items (high-value items)
+export const getLuxuryItems = async (params?: {
+  limit?: number;
+  minPrice?: number;
+  categoryId?: string;
+  governorate?: string;
+  sortBy?: 'price_high' | 'price_low' | 'recent';
+}): Promise<FeaturedItemsResponse> => {
+  const queryParams = new URLSearchParams();
+
+  if (params?.limit) queryParams.append('limit', params.limit.toString());
+  if (params?.minPrice) queryParams.append('minPrice', params.minPrice.toString());
+  if (params?.categoryId) queryParams.append('categoryId', params.categoryId);
+  if (params?.governorate) queryParams.append('governorate', params.governorate);
+  if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+
+  const response = await apiClient.get(`/items/luxury?${queryParams.toString()}`);
+  return response.data;
+};
+
+// Promote an item
+export const promoteItem = async (
+  itemId: string,
+  tier: PromotionTier,
+  durationDays?: number
+): Promise<ItemResponse> => {
+  const response = await apiClient.post(`/items/${itemId}/promote`, {
+    tier,
+    durationDays,
+  });
+  return response.data;
+};
+
+// Remove promotion from an item
+export const removePromotion = async (itemId: string): Promise<ItemResponse> => {
+  const response = await apiClient.delete(`/items/${itemId}/promote`);
   return response.data;
 };

@@ -86,6 +86,18 @@ model User {
   orders                    Order[]
   pushSubscriptions         PushSubscription[]
 
+  // New innovative features relations
+  wallet                    Wallet?                   // محفظة XCoin
+  reputation                UserReputation?           // السمعة متعددة الأبعاد
+  userLevel                 UserLevel?                // المستوى والإنجازات
+  facilitatorProfile        Facilitator?              // ملف الوسيط المعتمد
+
+  // سوق التوالف - Scrap Marketplace Relations
+  scrapDealerVerification   ScrapDealerVerification?  @relation("ScrapDealerUser")
+  scrapDealerVerifications  ScrapDealerVerification[] @relation("ScrapDealerVerifier")
+  scrapPurchaseRequests     ScrapPurchaseRequest[]    @relation("ScrapPurchaseBuyer")
+  scrapSellerOffers         ScrapSellerOffer[]        @relation("ScrapSellerOffers")
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -135,6 +147,7 @@ model Category {
   reverseAuctions  ReverseAuction[]
   wishListItems    WishListItem[]
   itemRequests     ItemRequest[]
+  pricePredictions PricePrediction[]
 
   @@map("categories")
   @@index([slug])
@@ -181,6 +194,94 @@ enum MarketType {
   NATIONAL      // السوق الشامل - كل مصر
 }
 
+// Promotion/Featured tiers
+enum PromotionTier {
+  BASIC         // Free listing
+  FEATURED      // Featured/highlighted listing
+  PREMIUM       // Premium listing with more visibility
+  GOLD          // Gold tier - high visibility
+  PLATINUM      // Platinum tier - maximum visibility
+}
+
+// ============================================
+// سوق التوالف - Scrap Marketplace Enums
+// ============================================
+
+// طريقة التسعير
+enum ScrapPricingType {
+  PER_PIECE       // بالقطعة
+  PER_KG          // بالكيلو
+  PER_LOT         // بالجملة
+  REVERSE_AUCTION // مزاد عكسي
+}
+
+// حالة التوالف
+enum ScrapCondition {
+  TOTALLY_DAMAGED   // تالف بالكامل
+  NOT_WORKING       // لا يعمل
+  PARTIALLY_WORKING // يعمل جزئياً
+  WORKING_OLD       // قديم يعمل
+}
+
+// نوع المعدن
+enum MetalType {
+  COPPER          // نحاس
+  ALUMINUM        // ألومنيوم
+  IRON            // حديد
+  STEEL           // صلب
+  BRASS           // نحاس أصفر
+  BRONZE          // برونز
+  LEAD            // رصاص
+  ZINC            // زنك
+  NICKEL          // نيكل
+  TIN             // قصدير
+  GOLD            // ذهب
+  SILVER          // فضة
+  STAINLESS_STEEL // ستانلس ستيل
+  MIXED           // مخلوط
+}
+
+// نوع التوالف
+enum ScrapType {
+  ELECTRONICS       // إلكترونيات
+  HOME_APPLIANCES   // أجهزة منزلية
+  COMPUTERS         // كمبيوترات ولابتوبات
+  PHONES            // هواتف وتابلت
+  CABLES_WIRES      // كابلات وأسلاك
+  MOTORS            // موتورات
+  BATTERIES         // بطاريات
+  METAL_SCRAP       // خردة معادن
+  CAR_PARTS         // قطع غيار سيارات
+  FURNITURE_PARTS   // أجزاء أثاث
+  WOOD              // خشب
+  PLASTIC           // بلاستيك
+  TEXTILES          // منسوجات
+  PAPER             // ورق وكرتون
+  GLASS             // زجاج
+  CONSTRUCTION      // مواد بناء
+  INDUSTRIAL        // معدات صناعية
+  MEDICAL           // معدات طبية
+  OTHER             // أخرى
+}
+
+// نوع تاجر التوالف
+enum ScrapDealerType {
+  INDIVIDUAL_COLLECTOR  // جامع فردي
+  SCRAP_DEALER          // تاجر خردة
+  RECYCLING_COMPANY     // شركة إعادة تدوير
+  REPAIR_TECHNICIAN     // فني إصلاح
+  FACTORY               // مصنع
+  EXPORT_COMPANY        // شركة تصدير
+}
+
+// حالة تسجيل التاجر
+enum ScrapDealerStatus {
+  PENDING   // قيد المراجعة
+  APPROVED  // موافق عليه
+  REJECTED  // مرفوض
+  SUSPENDED // موقوف
+}
+
 model Item {
   id              String        @id @default(uuid())
   sellerId        String        @map("seller_id")
@@ -191,7 +292,12 @@ model Item {
   // Item type classification
   itemType        ItemType      @default(GOOD) @map("item_type")
 
-  condition       ItemCondition @default(GOOD)
+  // Listing type - determines if this is SUPPLY or DEMAND
+  // SUPPLY: DIRECT_SALE, AUCTION, BARTER
+  // DEMAND: DIRECT_BUY, REVERSE_AUCTION
+  listingType     ListingType   @default(DIRECT_SALE) @map("listing_type")
+
+  condition       ItemCondition
   estimatedValue  Float         @map("estimated_value") // In EGP
   images          String[]      // Array of image URLs
 
@@ -211,11 +317,33 @@ model Item {
   latitude        Float?
   longitude       Float?
 
+  // ============================================
+  // سوق التوالف - Scrap Marketplace Fields
+  // ============================================
+  isScrap             Boolean           @default(false) @map("is_scrap")
+  scrapType           ScrapType?        @map("scrap_type")
+  scrapCondition      ScrapCondition?   @map("scrap_condition")
+  scrapPricingType    ScrapPricingType? @map("scrap_pricing_type")
+
+  // للمعادن والوزن
+  weightKg            Float?            @map("weight_kg")
+  pricePerKg          Float?            @map("price_per_kg")
+  metalType           MetalType?        @map("metal_type")
+  metalPurity         Float?            @map("metal_purity")  // نسبة نقاء المعدن
+
+  // قابلية الإصلاح
+  isRepairable        Boolean?          @map("is_repairable")
+  repairCostEstimate  Float?            @map("repair_cost_estimate")
+  workingPartsDesc    String?           @map("working_parts_desc")
+  defectDescription   String?           @map("defect_description")
+
   // Specs (flexible JSON)
   specifications  Json?         @map("specifications")
 
   // Barter Preferences: What does the seller want in exchange?
   desiredCategoryId     String?   @map("desired_category_id")
+  desiredItemTitle      String?   @map("desired_item_title")       // Title of the wanted item (e.g., "سيارة سيدان")
+  desiredItemDescription String?  @map("desired_item_description") // Description of the wanted item
   desiredKeywords       String?   @map("desired_keywords") // Comma-separated keywords
   desiredValueMin       Float?    @map("desired_value_min") // Minimum acceptable value
   desiredValueMax       Float?    @map("desired_value_max") // Maximum acceptable value
@@ -223,6 +351,12 @@ model Item {
   // Status
   status          ItemStatus    @default(ACTIVE)
   views           Int           @default(0)
+
+  // Featured/Promotion fields
+  isFeatured          Boolean       @default(false) @map("is_featured")
+  promotionTier       PromotionTier @default(BASIC) @map("promotion_tier")
+  promotedAt          DateTime?     @map("promoted_at")
+  promotionExpiresAt  DateTime?     @map("promotion_expires_at")
 
   // Timestamps
   createdAt       DateTime      @default(now()) @map("created_at")
@@ -238,6 +372,7 @@ model Item {
   participantsReceiving   BarterParticipant[]     @relation("ParticipantReceivingItem")
   reverseAuctionBids      ReverseAuctionBid[]     @relation("ReverseAuctionBidItem")
   inventoryLocks          InventoryLock[]         @relation("InventoryLocks")
+  scrapSellerOffers       ScrapSellerOffer[]      @relation("ScrapOfferItem")
 
   @@map("items")
   @@index([sellerId])
@@ -250,6 +385,18 @@ model Item {
   @@index([governorate])
   @@index([marketType, governorate])
   @@index([marketType, status])
+  @@index([isFeatured])
+  @@index([promotionTier])
+  @@index([isFeatured, status])
+  @@index([promotionExpiresAt])
+  @@index([listingType])
+  @@index([listingType, status])
+  @@index([listingType, categoryId])
+  @@index([isScrap])
+  @@index([scrapType])
+  @@index([metalType])
+  @@index([isScrap, scrapType])
+  @@index([isScrap, status])
 }
 
 // ============================================
@@ -261,6 +408,7 @@ enum ListingType {
   AUCTION
   REVERSE_AUCTION
   BARTER
+  DIRECT_BUY        // طلب شراء مباشر (DEMAND)
 }
 
 enum ListingStatus {
@@ -306,6 +454,9 @@ model Listing {
   transactions Transaction[]
   cartItems   CartItem[]
   orderItems  OrderItem[]
+  flashDeals  FlashDeal[]
+  installmentPlans InstallmentPlan[]
+  groupBuys   GroupBuy[]
 
   @@map("listings")
   @@index([itemId])
@@ -483,6 +634,9 @@ model BarterOffer {
   expiresAt         DateTime?          @map("expires_at")
   isOpenOffer       Boolean            @default(false) @map("is_open_offer")  // Open to anyone
 
+  // Link to supply item (for barter - links demand to the supply item)
+  linkedItemId      String?            @map("linked_item_id")
+
   // Market Type & Location (for Demand items)
   marketType        MarketType         @default(DISTRICT) @map("market_type")
   governorate       String?            // المحافظة
@@ -511,6 +665,7 @@ model BarterOffer {
   @@index([marketType])
   @@index([governorate])
   @@index([marketType, isOpenOffer])
+  @@index([linkedItemId])
 }
 
 // Abstract item request for barter (when user doesn't want specific items)
@@ -1772,4 +1927,2422 @@ model BlockedUser {
   @@index([blockedUserId])
 }
 
+// ============================================
+// XCoin Wallet & Economy System
+// نظام عملة المنصة والاقتصاد الداخلي
+// ============================================
+
+model Wallet {
+  id              String      @id @default(uuid())
+  userId          String      @unique @map("user_id")
+
+  // Balances
+  balance         Float       @default(0)          // رصيد XCoin المتاح
+  frozenBalance   Float       @default(0) @map("frozen_balance")  // رصيد مجمد (في صفقات جارية)
+  lifetimeEarned  Float       @default(0) @map("lifetime_earned") // إجمالي ما تم كسبه
+  lifetimeSpent   Float       @default(0) @map("lifetime_spent")  // إجمالي ما تم إنفاقه
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions    WalletTransaction[]
+
+  @@map("wallets")
+  @@index([userId])
+  @@index([balance])
+}
+
+enum WalletTransactionType {
+  // Earning (كسب)
+  REWARD_SIGNUP           // مكافأة التسجيل
+  REWARD_FIRST_DEAL       // مكافأة أول صفقة
+  REWARD_REFERRAL         // مكافأة الإحالة
+  REWARD_REVIEW           // مكافأة التقييم
+  REWARD_ACHIEVEMENT      // مكافأة إنجاز
+  REWARD_DAILY_LOGIN      // مكافأة الدخول اليومي
+  REWARD_CHALLENGE        // مكافأة تحدي
+  RECEIVED_FROM_USER      // مستلم من مستخدم آخر
+  REFUND                  // استرداد
+  ADMIN_CREDIT            // إضافة من الإدارة
+
+  // Spending (إنفاق)
+  PROMOTE_LISTING         // ترويج إعلان
+  UNLOCK_CONTACT          // فتح معلومات تواصل
+  BARTER_BALANCE          // موازنة فرق مقايضة
+  ESCROW_DEPOSIT          // إيداع في الضمان
+  SENT_TO_USER            // مرسل لمستخدم آخر
+  COMMISSION_FEE          // رسوم عمولة
+  ADMIN_DEBIT             // خصم من الإدارة
+
+  // Escrow (الضمان)
+  ESCROW_FREEZE           // تجميد للضمان
+  ESCROW_RELEASE          // تحرير من الضمان
+  ESCROW_REFUND           // استرداد من الضمان
+}
+
+enum WalletTransactionStatus {
+  PENDING       // قيد الانتظار
+  COMPLETED     // مكتمل
+  FAILED        // فشل
+  CANCELLED     // ملغي
+  REVERSED      // معكوس
+}
+
+model WalletTransaction {
+  id              String                    @id @default(uuid())
+  walletId        String                    @map("wallet_id")
+
+  // Transaction details
+  type            WalletTransactionType
+  amount          Float                     // موجب للإضافة، سالب للخصم
+  balanceBefore   Float                     @map("balance_before")
+  balanceAfter    Float                     @map("balance_after")
+
+  // Status
+  status          WalletTransactionStatus   @default(COMPLETED)
+
+  // Related entities
+  relatedUserId   String?                   @map("related_user_id")  // المستخدم الآخر في التحويل
+  relatedEntityType String?                 @map("related_entity_type") // 'item', 'barter', 'escrow'
+  relatedEntityId String?                   @map("related_entity_id")
+
+  // Description
+  description     String?
+  metadata        Json?
+
+  // Timestamps
+  createdAt       DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  wallet          Wallet                    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@map("wallet_transactions")
+  @@index([walletId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([relatedUserId])
+}
+
+// ============================================
+// Multi-Dimensional Reputation System
+// نظام السمعة متعدد الأبعاد
+// ============================================
+
+model UserReputation {
+  id              String      @id @default(uuid())
+  userId          String      @unique @map("user_id")
+
+  // Overall scores (0-100)
+  overallScore    Float       @default(50) @map("overall_score")
+  trustLevel      TrustLevel  @default(NEWCOMER) @map("trust_level")
+
+  // Dimension scores (0-100)
+  communicationScore    Float   @default(50) @map("communication_score")     // التواصل
+  reliabilityScore      Float   @default(50) @map("reliability_score")       // الموثوقية
+  itemAccuracyScore     Float   @default(50) @map("item_accuracy_score")     // دقة وصف الأصناف
+  deliverySpeedScore    Float   @default(50) @map("delivery_speed_score")    // سرعة التسليم
+  fairnessScore         Float   @default(50) @map("fairness_score")          // العدالة في التقييم
+  barterQualityScore    Float   @default(50) @map("barter_quality_score")    // جودة المقايضات
+
+  // Statistics
+  totalDeals            Int     @default(0) @map("total_deals")
+  successfulDeals       Int     @default(0) @map("successful_deals")
+  disputesInitiated     Int     @default(0) @map("disputes_initiated")
+  disputesLost          Int     @default(0) @map("disputes_lost")
+  refundsGiven          Int     @default(0) @map("refunds_given")
+
+  // Badges & Verification
+  badges                String[] @default([])  // ['VERIFIED_SELLER', 'FAST_SHIPPER', 'FAIR_TRADER']
+  verifiedSince         DateTime? @map("verified_since")
+
+  // Timestamps
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  lastCalculatedAt      DateTime? @map("last_calculated_at")
+
+  // Relations
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history               ReputationHistory[]
+
+  @@map("user_reputations")
+  @@index([userId])
+  @@index([overallScore])
+  @@index([trustLevel])
+}
+
+enum TrustLevel {
+  NEWCOMER        // جديد (0-20 صفقة)
+  BRONZE          // برونزي (21-50 صفقة)
+  SILVER          // فضي (51-100 صفقة)
+  GOLD            // ذهبي (101-250 صفقة)
+  PLATINUM        // بلاتيني (251-500 صفقة)
+  DIAMOND         // ماسي (500+ صفقة)
+  ELITE           // نخبوي (خاص بالتجار المميزين)
+}
+
+model ReputationHistory {
+  id              String      @id @default(uuid())
+  reputationId    String      @map("reputation_id")
+
+  // Score snapshot
+  overallScore    Float       @map("overall_score")
+  trustLevel      TrustLevel  @map("trust_level")
+
+  // Change reason
+  changeReason    String      @map("change_reason")
+  changeAmount    Float       @map("change_amount")  // +/- change
+
+  // Related entity
+  relatedEntityType String?   @map("related_entity_type")
+  relatedEntityId String?     @map("related_entity_id")
+
+  // Timestamp
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  reputation      UserReputation @relation(fields: [reputationId], references: [id], onDelete: Cascade)
+
+  @@map("reputation_history")
+  @@index([reputationId])
+  @@index([createdAt])
+}
+
+// ============================================
+// Smart Escrow & Dispute Resolution System
+// نظام الضمان الذكي وحل النزاعات
+// ============================================
+
+enum EscrowStatus {
+  CREATED         // تم إنشاؤه
+  FUNDED          // تم تمويله
+  PENDING_DELIVERY // في انتظار التسليم
+  DELIVERED       // تم التسليم
+  INSPECTION      // فترة الفحص
+  RELEASED        // تم تحريره
+  DISPUTED        // نزاع
+  REFUNDED        // مسترد
+  CANCELLED       // ملغي
+  EXPIRED         // منتهي الصلاحية
+}
+
+enum EscrowType {
+  SALE            // بيع
+  BARTER          // مقايضة
+  BARTER_CHAIN    // سلسلة مقايضة
+  SERVICE         // خدمة
+}
+
+model Escrow {
+  id              String        @id @default(uuid())
+
+  // Type
+  escrowType      EscrowType    @map("escrow_type")
+
+  // Parties
+  buyerId         String        @map("buyer_id")
+  sellerId        String        @map("seller_id")
+
+  // Amount
+  amount          Float                     // المبلغ بالجنيه أو XCoin
+  currency        String        @default("EGP")
+  xcoinAmount     Float?        @map("xcoin_amount")  // مبلغ XCoin إن وجد
+
+  // Related entities
+  transactionId   String?       @map("transaction_id")
+  barterOfferId   String?       @map("barter_offer_id")
+  barterChainId   String?       @map("barter_chain_id")
+  itemId          String?       @map("item_id")
+
+  // Status
+  status          EscrowStatus  @default(CREATED)
+
+  // Timeline
+  fundedAt        DateTime?     @map("funded_at")
+  deliveredAt     DateTime?     @map("delivered_at")
+  inspectionEndsAt DateTime?    @map("inspection_ends_at")  // نهاية فترة الفحص
+  releasedAt      DateTime?     @map("released_at")
+
+  // Auto-release
+  autoReleaseAfter Int          @default(48) @map("auto_release_after")  // ساعات بعد التسليم
+  autoRelease     Boolean       @default(true) @map("auto_release")
+
+  // Facilitator (if any)
+  facilitatorId   String?       @map("facilitator_id")
+  facilitatorFee  Float?        @map("facilitator_fee")
+
+  // Notes
+  notes           String?
+
+  // Timestamps
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  expiresAt       DateTime?     @map("expires_at")
+
+  // Relations
+  dispute         Dispute?
+  milestones      EscrowMilestone[]
+
+  @@map("escrows")
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([transactionId])
+  @@index([barterOfferId])
+  @@index([barterChainId])
+  @@index([facilitatorId])
+}
+
+model EscrowMilestone {
+  id              String      @id @default(uuid())
+  escrowId        String      @map("escrow_id")
+
+  // Milestone
+  milestone       String      // 'CREATED', 'FUNDED', 'SHIPPED', 'DELIVERED', etc.
+  description     String?
+
+  // Actor
+  actorId         String?     @map("actor_id")
+  actorType       String?     @map("actor_type")  // 'BUYER', 'SELLER', 'SYSTEM', 'FACILITATOR'
+
+  // Evidence
+  evidence        String[]    @default([])  // صور/ملفات إثبات
+
+  // Timestamp
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  escrow          Escrow      @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+
+  @@map("escrow_milestones")
+  @@index([escrowId])
+  @@index([milestone])
+}
+
+enum DisputeStatus {
+  OPEN            // مفتوح
+  UNDER_REVIEW    // قيد المراجعة
+  AWAITING_RESPONSE // في انتظار الرد
+  MEDIATION       // وساطة
+  ESCALATED       // مرفوع للإدارة
+  RESOLVED        // محلول
+  CLOSED          // مغلق
+}
+
+enum DisputeResolution {
+  BUYER_FAVORED       // لصالح المشتري (استرداد كامل)
+  SELLER_FAVORED      // لصالح البائع (تحرير الضمان)
+  PARTIAL_REFUND      // استرداد جزئي
+  MUTUAL_AGREEMENT    // اتفاق بين الطرفين
+  NO_RESOLUTION       // لم يتم الحل
+}
+
+model Dispute {
+  id              String            @id @default(uuid())
+  escrowId        String            @unique @map("escrow_id")
+
+  // Initiator
+  initiatorId     String            @map("initiator_id")
+  respondentId    String            @map("respondent_id")
+
+  // Dispute details
+  reason          DisputeReason
+  description     String
+  evidence        String[]          @default([])  // صور/ملفات إثبات
+
+  // Requested outcome
+  requestedAmount Float?            @map("requested_amount")
+  requestedOutcome String?          @map("requested_outcome")
+
+  // Status
+  status          DisputeStatus     @default(OPEN)
+
+  // Resolution
+  resolution      DisputeResolution?
+  resolutionAmount Float?           @map("resolution_amount")
+  resolutionNotes String?           @map("resolution_notes")
+  resolvedBy      String?           @map("resolved_by")
+  resolvedAt      DateTime?         @map("resolved_at")
+
+  // Mediator/Admin
+  assignedTo      String?           @map("assigned_to")
+  assignedAt      DateTime?         @map("assigned_at")
+
+  // Deadlines
+  responseDeadline DateTime?        @map("response_deadline")
+
+  // Timestamps
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  escrow          Escrow            @relation(fields: [escrowId], references: [id])
+  messages        DisputeMessage[]
+
+  @@map("disputes")
+  @@index([escrowId])
+  @@index([initiatorId])
+  @@index([respondentId])
+  @@index([status])
+  @@index([assignedTo])
+}
+
+enum DisputeReason {
+  ITEM_NOT_RECEIVED       // لم يتم استلام الصنف
+  ITEM_NOT_AS_DESCRIBED   // الصنف مختلف عن الوصف
+  ITEM_DAMAGED            // الصنف تالف
+  WRONG_ITEM              // صنف خاطئ
+  PARTIAL_DELIVERY        // تسليم جزئي
+  QUALITY_ISSUE           // مشكلة في الجودة
+  COUNTERFEIT             // مزيف
+  SELLER_NOT_RESPONDING   // البائع لا يرد
+  BUYER_NOT_RESPONDING    // المشتري لا يرد
+  PAYMENT_ISSUE           // مشكلة في الدفع
+  OTHER                   // أخرى
+}
+
+model DisputeMessage {
+  id              String      @id @default(uuid())
+  disputeId       String      @map("dispute_id")
+
+  // Sender
+  senderId        String      @map("sender_id")
+  senderRole      String      @map("sender_role")  // 'INITIATOR', 'RESPONDENT', 'MEDIATOR', 'ADMIN'
+
+  // Message
+  message         String
+  attachments     String[]    @default([])
+
+  // Visibility
+  isInternal      Boolean     @default(false) @map("is_internal")  // ملاحظات داخلية للإدارة
+
+  // Timestamp
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  dispute         Dispute     @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@map("dispute_messages")
+  @@index([disputeId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+// ============================================
+// Gamification & Achievements System
+// نظام التلعيب والإنجازات
+// ============================================
+
+model UserLevel {
+  id              String      @id @default(uuid())
+  userId          String      @unique @map("user_id")
+
+  // Level
+  level           Int         @default(1)
+  currentXP       Int         @default(0) @map("current_xp")
+  totalXP         Int         @default(0) @map("total_xp")
+  xpToNextLevel   Int         @default(100) @map("xp_to_next_level")
+
+  // Title
+  title           String      @default("مبتدئ")  // لقب المستوى
+
+  // Streaks
+  dailyLoginStreak    Int     @default(0) @map("daily_login_streak")
+  longestLoginStreak  Int     @default(0) @map("longest_login_streak")
+  lastLoginDate       DateTime? @map("last_login_date")
+
+  // Weekly stats
+  weeklyDeals         Int     @default(0) @map("weekly_deals")
+  weeklyXP            Int     @default(0) @map("weekly_xp")
+  weekStartDate       DateTime? @map("week_start_date")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievements    UserAchievement[]
+
+  @@map("user_levels")
+  @@index([userId])
+  @@index([level])
+  @@index([totalXP])
+}
+
+model Achievement {
+  id              String      @id @default(uuid())
+
+  // Basic info
+  code            String      @unique  // 'FIRST_DEAL', 'BARTER_MASTER', etc.
+  nameAr          String      @map("name_ar")
+  nameEn          String      @map("name_en")
+  descriptionAr   String      @map("description_ar")
+  descriptionEn   String      @map("description_en")
+
+  // Visual
+  icon            String      // رمز الإنجاز
+  badgeColor      String      @default("#FFD700") @map("badge_color")
+
+  // Category
+  category        AchievementCategory
+
+  // Requirements
+  requirement     Int         @default(1)  // عدد المرات المطلوبة
+  requirementType String      @map("requirement_type")  // 'DEALS', 'BARTERS', 'REVIEWS', etc.
+
+  // Rewards
+  xpReward        Int         @default(0) @map("xp_reward")
+  coinReward      Int         @default(0) @map("coin_reward")
+
+  // Rarity
+  rarity          AchievementRarity @default(COMMON)
+
+  // Status
+  isActive        Boolean     @default(true) @map("is_active")
+  isSecret        Boolean     @default(false) @map("is_secret")  // إنجاز سري
+
+  // Order
+  displayOrder    Int         @default(0) @map("display_order")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+  @@index([code])
+  @@index([category])
+  @@index([isActive])
+}
+
+enum AchievementCategory {
+  TRADING         // تداول
+  BARTER          // مقايضة
+  SOCIAL          // اجتماعي
+  REPUTATION      // سمعة
+  SPECIAL         // خاص
+  SEASONAL        // موسمي
+}
+
+enum AchievementRarity {
+  COMMON          // شائع
+  UNCOMMON        // غير شائع
+  RARE            // نادر
+  EPIC            // ملحمي
+  LEGENDARY       // أسطوري
+}
+
+model UserAchievement {
+  id              String      @id @default(uuid())
+  userLevelId     String      @map("user_level_id")
+  achievementId   String      @map("achievement_id")
+
+  // Progress
+  progress        Int         @default(0)
+  isCompleted     Boolean     @default(false) @map("is_completed")
+
+  // Completion
+  completedAt     DateTime?   @map("completed_at")
+  rewardsClaimed  Boolean     @default(false) @map("rewards_claimed")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  userLevel       UserLevel   @relation(fields: [userLevelId], references: [id], onDelete: Cascade)
+  achievement     Achievement @relation(fields: [achievementId], references: [id])
+
+  @@map("user_achievements")
+  @@unique([userLevelId, achievementId])
+  @@index([userLevelId])
+  @@index([achievementId])
+  @@index([isCompleted])
+}
+
+model Challenge {
+  id              String      @id @default(uuid())
+
+  // Basic info
+  nameAr          String      @map("name_ar")
+  nameEn          String      @map("name_en")
+  descriptionAr   String      @map("description_ar")
+  descriptionEn   String      @map("description_en")
+
+  // Type
+  challengeType   ChallengeType @map("challenge_type")
+
+  // Requirements
+  targetValue     Int         @map("target_value")  // الهدف المطلوب
+  targetType      String      @map("target_type")   // 'DEALS', 'BARTERS', 'XP', etc.
+
+  // Rewards
+  xpReward        Int         @default(0) @map("xp_reward")
+  coinReward      Int         @default(0) @map("coin_reward")
+  specialReward   String?     @map("special_reward")  // مكافأة خاصة
+
+  // Duration
+  startDate       DateTime    @map("start_date")
+  endDate         DateTime    @map("end_date")
+
+  // Status
+  isActive        Boolean     @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  participations  ChallengeParticipation[]
+
+  @@map("challenges")
+  @@index([challengeType])
+  @@index([isActive])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+enum ChallengeType {
+  DAILY           // يومي
+  WEEKLY          // أسبوعي
+  MONTHLY         // شهري
+  SPECIAL         // خاص
+}
+
+model ChallengeParticipation {
+  id              String      @id @default(uuid())
+  challengeId     String      @map("challenge_id")
+  userId          String      @map("user_id")
+
+  // Progress
+  currentValue    Int         @default(0) @map("current_value")
+  isCompleted     Boolean     @default(false) @map("is_completed")
+
+  // Completion
+  completedAt     DateTime?   @map("completed_at")
+  rewardsClaimed  Boolean     @default(false) @map("rewards_claimed")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  challenge       Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@map("challenge_participations")
+  @@unique([challengeId, userId])
+  @@index([challengeId])
+  @@index([userId])
+  @@index([isCompleted])
+}
+
+// ============================================
+// Collective Barter Pools
+// صناديق المقايضة الجماعية
+// ============================================
+
+enum BarterPoolStatus {
+  OPEN            // مفتوح للانضمام
+  MATCHING        // جاري البحث عن عرض
+  MATCHED         // تم المطابقة
+  NEGOTIATING     // جاري التفاوض
+  EXECUTING       // جاري التنفيذ
+  COMPLETED       // مكتمل
+  FAILED          // فشل
+  CANCELLED       // ملغي
+}
+
+model BarterPool {
+  id              String            @id @default(uuid())
+
+  // Basic info
+  title           String
+  description     String
+
+  // Target
+  targetCategoryId String?          @map("target_category_id")
+  targetDescription String          @map("target_description")
+  targetMinValue  Float             @map("target_min_value")
+  targetMaxValue  Float             @map("target_max_value")
+
+  // Pool value
+  currentValue    Float             @default(0) @map("current_value")
+  participantCount Int              @default(0) @map("participant_count")
+  maxParticipants Int               @default(10) @map("max_participants")
+
+  // Status
+  status          BarterPoolStatus  @default(OPEN)
+
+  // Creator
+  creatorId       String            @map("creator_id")
+
+  // Matched offer (when found)
+  matchedItemId   String?           @map("matched_item_id")
+  matchedSellerId String?           @map("matched_seller_id")
+  matchedValue    Float?            @map("matched_value")
+
+  // Deadline
+  deadline        DateTime
+
+  // Timestamps
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  completedAt     DateTime?         @map("completed_at")
+
+  // Relations
+  participants    BarterPoolParticipant[]
+
+  @@map("barter_pools")
+  @@index([status])
+  @@index([creatorId])
+  @@index([targetCategoryId])
+  @@index([deadline])
+}
+
+model BarterPoolParticipant {
+  id              String      @id @default(uuid())
+  poolId          String      @map("pool_id")
+  userId          String      @map("user_id")
+
+  // Contribution
+  itemId          String?     @map("item_id")       // الصنف المقدم
+  cashAmount      Float       @default(0) @map("cash_amount")  // مبلغ نقدي
+  xcoinAmount     Float       @default(0) @map("xcoin_amount") // مبلغ XCoin
+  totalValue      Float       @map("total_value")   // إجمالي المساهمة
+
+  // Share percentage
+  sharePercentage Float       @map("share_percentage")  // نسبة الحصة
+
+  // Status
+  isApproved      Boolean     @default(false) @map("is_approved")
+  approvedAt      DateTime?   @map("approved_at")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  pool            BarterPool  @relation(fields: [poolId], references: [id], onDelete: Cascade)
+
+  @@map("barter_pool_participants")
+  @@unique([poolId, userId])
+  @@index([poolId])
+  @@index([userId])
+}
+
+// ============================================
+// Certified Facilitators Network
+// شبكة الوسطاء المعتمدين
+// ============================================
+
+enum FacilitatorLevel {
+  BRONZE          // برونزي
+  SILVER          // فضي
+  GOLD            // ذهبي
+  PLATINUM        // بلاتيني
+}
+
+enum FacilitatorStatus {
+  PENDING         // قيد الموافقة
+  ACTIVE          // نشط
+  SUSPENDED       // موقوف
+  REVOKED         // ملغي
+}
+
+model Facilitator {
+  id              String              @id @default(uuid())
+  userId          String              @unique @map("user_id")
+
+  // Level & Status
+  level           FacilitatorLevel    @default(BRONZE)
+  status          FacilitatorStatus   @default(PENDING)
+
+  // Info
+  displayName     String              @map("display_name")
+  bio             String?
+  specializations String[]            @default([])  // ['سيارات', 'عقارات', 'إلكترونيات']
+
+  // Service areas
+  serviceAreas    String[]            @default([]) @map("service_areas")  // المحافظات
+
+  // Commission
+  commissionRate  Float               @default(0.03) @map("commission_rate")  // 3% default
+  minCommission   Float               @default(50) @map("min_commission")     // 50 جنيه حد أدنى
+
+  // Insurance
+  insuranceCoverage Float             @default(10000) @map("insurance_coverage")  // تغطية التأمين
+  insuranceBalance Float              @default(0) @map("insurance_balance")       // رصيد التأمين
+
+  // Statistics
+  totalDeals      Int                 @default(0) @map("total_deals")
+  successfulDeals Int                 @default(0) @map("successful_deals")
+  totalVolume     Float               @default(0) @map("total_volume")  // إجمالي قيمة الصفقات
+  avgRating       Float               @default(0) @map("avg_rating")
+
+  // Verification
+  verifiedAt      DateTime?           @map("verified_at")
+  verifiedBy      String?             @map("verified_by")
+
+  // Documents
+  idDocument      String?             @map("id_document")
+  commercialReg   String?             @map("commercial_reg")
+
+  // Availability
+  isAvailable     Boolean             @default(true) @map("is_available")
+  availabilitySchedule Json?          @map("availability_schedule")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  user            User                @relation(fields: [userId], references: [id])
+  assignments     FacilitatorAssignment[]
+  reviews         FacilitatorReview[]
+
+  @@map("facilitators")
+  @@index([userId])
+  @@index([level])
+  @@index([status])
+  @@index([isAvailable])
+}
+
+model FacilitatorAssignment {
+  id              String      @id @default(uuid())
+  facilitatorId   String      @map("facilitator_id")
+
+  // Assignment type
+  assignmentType  String      @map("assignment_type")  // 'ESCROW', 'BARTER_CHAIN', 'INSPECTION'
+
+  // Related entity
+  escrowId        String?     @map("escrow_id")
+  barterChainId   String?     @map("barter_chain_id")
+
+  // Parties
+  buyerId         String      @map("buyer_id")
+  sellerId        String      @map("seller_id")
+
+  // Status
+  status          String      @default("ASSIGNED")  // 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'
+
+  // Commission
+  commissionAmount Float      @map("commission_amount")
+  commissionPaid  Boolean     @default(false) @map("commission_paid")
+
+  // Notes
+  notes           String?
+  completionNotes String?     @map("completion_notes")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  completedAt     DateTime?   @map("completed_at")
+
+  // Relations
+  facilitator     Facilitator @relation(fields: [facilitatorId], references: [id])
+
+  @@map("facilitator_assignments")
+  @@index([facilitatorId])
+  @@index([escrowId])
+  @@index([barterChainId])
+  @@index([status])
+}
+
+model FacilitatorReview {
+  id              String      @id @default(uuid())
+  facilitatorId   String      @map("facilitator_id")
+  reviewerId      String      @map("reviewer_id")
+  assignmentId    String      @map("assignment_id")
+
+  // Rating
+  rating          Int         // 1-5
+
+  // Detailed ratings
+  professionalismRating Int   @map("professionalism_rating")  // 1-5
+  communicationRating   Int   @map("communication_rating")    // 1-5
+  speedRating           Int   @map("speed_rating")            // 1-5
+
+  // Review
+  comment         String?
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  facilitator     Facilitator @relation(fields: [facilitatorId], references: [id], onDelete: Cascade)
+
+  @@map("facilitator_reviews")
+  @@unique([assignmentId, reviewerId])
+  @@index([facilitatorId])
+  @@index([reviewerId])
+  @@index([rating])
+}
+
+// ============================================
+// Referral System
+// نظام الإحالات
+// ============================================
+
+model Referral {
+  id              String      @id @default(uuid())
+  referrerId      String      @map("referrer_id")
+  referredId      String      @unique @map("referred_id")  // المستخدم الجديد
+
+  // Referral code used
+  referralCode    String      @map("referral_code")
+
+  // Rewards
+  referrerReward  Float       @default(0) @map("referrer_reward")
+  referredReward  Float       @default(0) @map("referred_reward")
+
+  // Status
+  rewardsClaimed  Boolean     @default(false) @map("rewards_claimed")
+  claimedAt       DateTime?   @map("claimed_at")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("referrals")
+  @@index([referrerId])
+  @@index([referredId])
+  @@index([referralCode])
+}
+
+model ReferralCode {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+
+  // Code
+  code            String      @unique
+
+  // Stats
+  usageCount      Int         @default(0) @map("usage_count")
+  maxUsages       Int?        @map("max_usages")  // null = unlimited
+
+  // Rewards
+  referrerReward  Float       @default(100) @map("referrer_reward")  // XCoin للمحيل
+  referredReward  Float       @default(50) @map("referred_reward")   // XCoin للمحال
+
+  // Status
+  isActive        Boolean     @default(true) @map("is_active")
+
+  // Expiry
+  expiresAt       DateTime?   @map("expires_at")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("referral_codes")
+  @@index([userId])
+  @@index([code])
+  @@index([isActive])
+}
+
+// ============================================
+// Platform Analytics & Insights
+// تحليلات ورؤى المنصة
+// ============================================
+
+model MarketInsight {
+  id              String      @id @default(uuid())
+
+  // Period
+  periodType      String      @map("period_type")  // 'DAILY', 'WEEKLY', 'MONTHLY'
+  periodStart     DateTime    @map("period_start")
+  periodEnd       DateTime    @map("period_end")
+
+  // Category (optional, for category-specific insights)
+  categoryId      String?     @map("category_id")
+  governorate     String?
+
+  // Volume metrics
+  totalListings   Int         @default(0) @map("total_listings")
+  totalDeals      Int         @default(0) @map("total_deals")
+  totalBarters    Int         @default(0) @map("total_barters")
+  totalVolume     Float       @default(0) @map("total_volume")
+
+  // Price metrics
+  avgPrice        Float?      @map("avg_price")
+  minPrice        Float?      @map("min_price")
+  maxPrice        Float?      @map("max_price")
+  priceChange     Float?      @map("price_change")  // % change from previous period
+
+  // Demand metrics
+  totalDemand     Int         @default(0) @map("total_demand")
+  supplyDemandRatio Float?    @map("supply_demand_ratio")
+
+  // Engagement metrics
+  avgTimeToSell   Float?      @map("avg_time_to_sell")  // بالساعات
+  conversionRate  Float?      @map("conversion_rate")   // % من المشاهدات للصفقات
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("market_insights")
+  @@unique([periodType, periodStart, categoryId, governorate])
+  @@index([periodType])
+  @@index([periodStart])
+  @@index([categoryId])
+  @@index([governorate])
+}
+
+model XChangeIndex {
+  id              String      @id @default(uuid())
+
+  // Date
+  date            DateTime    @unique
+
+  // Index value
+  indexValue      Float       @map("index_value")
+  previousValue   Float?      @map("previous_value")
+  changePercent   Float?      @map("change_percent")
+
+  // Components
+  barterVolume    Float       @map("barter_volume")
+  directSaleVolume Float      @map("direct_sale_volume")
+  auctionVolume   Float       @map("auction_volume")
+
+  // Activity metrics
+  activeUsers     Int         @map("active_users")
+  newListings     Int         @map("new_listings")
+  completedDeals  Int         @map("completed_deals")
+
+  // Health metrics
+  successRate     Float       @map("success_rate")
+  avgDealTime     Float       @map("avg_deal_time")
+  disputeRate     Float       @map("dispute_rate")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("xchange_index")
+  @@index([date])
+}
+
+// ============================================
+// AI Price Prediction System
+// نظام التنبؤ بالأسعار بالذكاء الاصطناعي
+// ============================================
+
+model PricePrediction {
+  id              String      @id @default(uuid())
+
+  // Item details
+  categoryId      String      @map("category_id")
+  condition       ItemCondition
+  title           String?
+  description     String?
+
+  // Prediction results
+  predictedPrice  Float       @map("predicted_price")
+  confidenceScore Float       @map("confidence_score")  // 0-100
+  priceRangeMin   Float       @map("price_range_min")
+  priceRangeMax   Float       @map("price_range_max")
+
+  // Prediction factors
+  marketTrend     String?     @map("market_trend")      // 'UP', 'DOWN', 'STABLE'
+  demandLevel     String?     @map("demand_level")      // 'HIGH', 'MEDIUM', 'LOW'
+  seasonalFactor  Float?      @map("seasonal_factor")   // -1 to +1
+  competitionLevel String?    @map("competition_level") // 'HIGH', 'MEDIUM', 'LOW'
+
+  // Data sources
+  sampleSize      Int         @map("sample_size")
+  dataQuality     String      @map("data_quality")      // 'EXCELLENT', 'GOOD', 'LIMITED'
+  modelVersion    String      @map("model_version")
+
+  // Recommendations
+  suggestedPrice  Float?      @map("suggested_price")
+  priceStrategy   String?     @map("price_strategy")    // 'COMPETITIVE', 'PREMIUM', 'VALUE'
+  recommendations Json?
+
+  // User who requested
+  userId          String?     @map("user_id")
+  itemId          String?     @map("item_id")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  expiresAt       DateTime    @map("expires_at")  // Prediction validity
+
+  // Relations
+  category        Category    @relation(fields: [categoryId], references: [id])
+
+  @@map("price_predictions")
+  @@index([categoryId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model PriceHistory {
+  id              String      @id @default(uuid())
+
+  // Category
+  categoryId      String      @map("category_id")
+  condition       ItemCondition?
+
+  // Date
+  date            DateTime    @db.Date
+  periodType      String      @default("DAILY") @map("period_type")  // 'DAILY', 'WEEKLY', 'MONTHLY'
+
+  // Price statistics
+  avgPrice        Float       @map("avg_price")
+  minPrice        Float       @map("min_price")
+  maxPrice        Float       @map("max_price")
+  medianPrice     Float       @map("median_price")
+
+  // Volume
+  sampleCount     Int         @map("sample_count")
+  totalVolume     Float       @map("total_volume")
+
+  // Trends
+  priceChange     Float?      @map("price_change")      // % change from previous period
+  volumeChange    Float?      @map("volume_change")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("price_history")
+  @@unique([categoryId, condition, date, periodType])
+  @@index([categoryId])
+  @@index([date])
+  @@index([periodType])
+}
+
+// ============================================
+// Subscription Plans System
+// نظام خطط الاشتراك
+// ============================================
+
+enum SubscriptionTier {
+  FREE            // مجاني
+  BASIC           // أساسي
+  PROFESSIONAL    // محترف
+  BUSINESS        // تجاري
+  ENTERPRISE      // مؤسسي
+}
+
+enum SubscriptionStatus {
+  ACTIVE          // نشط
+  CANCELLED       // ملغي
+  EXPIRED         // منتهي
+  PAUSED          // متوقف مؤقتاً
+  PENDING         // قيد الانتظار
+}
+
+model SubscriptionPlan {
+  id              String            @id @default(uuid())
+
+  // Plan info
+  tier            SubscriptionTier  @unique
+  name            String
+  nameAr          String            @map("name_ar")
+  description     String
+  descriptionAr   String            @map("description_ar")
+
+  // Pricing
+  monthlyPrice    Float             @map("monthly_price")
+  yearlyPrice     Float             @map("yearly_price")
+  currency        String            @default("EGP")
+
+  // Features (JSON for flexibility)
+  features        Json              // Array of features
+
+  // Limits
+  maxListings     Int?              @map("max_listings")      // عدد الإعلانات
+  maxImages       Int               @default(5) @map("max_images")  // صور لكل إعلان
+  featuredListings Int              @default(0) @map("featured_listings") // إعلانات مميزة
+  boostCredits    Int               @default(0) @map("boost_credits")  // رصيد رفع الإعلانات
+  prioritySupport Boolean           @default(false) @map("priority_support")
+  analyticsAccess Boolean           @default(false) @map("analytics_access")
+  apiAccess       Boolean           @default(false) @map("api_access")
+  customBranding  Boolean           @default(false) @map("custom_branding")
+
+  // XCoin benefits
+  xcoinMultiplier Float             @default(1) @map("xcoin_multiplier")  // مضاعف مكافآت XCoin
+  monthlyXcoin    Int               @default(0) @map("monthly_xcoin")     // XCoin شهري مجاني
+
+  // Status
+  isActive        Boolean           @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  subscriptions   UserSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model UserSubscription {
+  id              String              @id @default(uuid())
+  userId          String              @map("user_id")
+  planId          String              @map("plan_id")
+
+  // Status
+  status          SubscriptionStatus  @default(PENDING)
+
+  // Billing
+  billingCycle    String              @default("MONTHLY") @map("billing_cycle") // 'MONTHLY', 'YEARLY'
+  currentPrice    Float               @map("current_price")
+  currency        String              @default("EGP")
+
+  // Dates
+  startDate       DateTime            @map("start_date")
+  endDate         DateTime            @map("end_date")
+  cancelledAt     DateTime?           @map("cancelled_at")
+  pausedAt        DateTime?           @map("paused_at")
+
+  // Usage tracking
+  listingsUsed    Int                 @default(0) @map("listings_used")
+  boostsUsed      Int                 @default(0) @map("boosts_used")
+  featuredUsed    Int                 @default(0) @map("featured_used")
+
+  // Payment
+  paymentMethod   String?             @map("payment_method")
+  lastPaymentAt   DateTime?           @map("last_payment_at")
+  nextPaymentAt   DateTime?           @map("next_payment_at")
+
+  // Auto-renewal
+  autoRenew       Boolean             @default(true) @map("auto_renew")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  plan            SubscriptionPlan    @relation(fields: [planId], references: [id])
+
+  @@map("user_subscriptions")
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@index([endDate])
+}
+
+// ============================================
+// Flash Deals System
+// نظام العروض الخاطفة
+// ============================================
+
+enum FlashDealStatus {
+  SCHEDULED       // مجدول
+  ACTIVE          // نشط
+  ENDED           // انتهى
+  SOLD_OUT        // نفذت الكمية
+  CANCELLED       // ملغي
+}
+
+model FlashDeal {
+  id              String            @id @default(uuid())
+  listingId       String            @map("listing_id")
+
+  // Deal info
+  title           String
+  description     String?
+
+  // Pricing
+  originalPrice   Float             @map("original_price")
+  dealPrice       Float             @map("deal_price")
+  discountPercent Float             @map("discount_percent")
+
+  // Timing
+  startTime       DateTime          @map("start_time")
+  endTime         DateTime          @map("end_time")
+
+  // Stock
+  totalQuantity   Int               @map("total_quantity")
+  soldQuantity    Int               @default(0) @map("sold_quantity")
+  reservedQuantity Int              @default(0) @map("reserved_quantity")
+
+  // Limits
+  maxPerUser      Int               @default(1) @map("max_per_user")
+
+  // Status
+  status          FlashDealStatus   @default(SCHEDULED)
+
+  // Priority/Visibility
+  priority        Int               @default(0)
+  isFeatured      Boolean           @default(false) @map("is_featured")
+
+  // Statistics
+  viewCount       Int               @default(0) @map("view_count")
+  clickCount      Int               @default(0) @map("click_count")
+  conversionRate  Float?            @map("conversion_rate")
+
+  // Timestamps
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  listing         Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  claims          FlashDealClaim[]
+
+  @@map("flash_deals")
+  @@index([listingId])
+  @@index([status])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([isFeatured])
+}
+
+model FlashDealClaim {
+  id              String      @id @default(uuid())
+  dealId          String      @map("deal_id")
+  userId          String      @map("user_id")
+
+  // Claim details
+  quantity        Int         @default(1)
+  priceAtClaim    Float       @map("price_at_claim")
+
+  // Status
+  status          String      @default("CLAIMED")  // 'CLAIMED', 'PURCHASED', 'EXPIRED', 'CANCELLED'
+
+  // Reservation expires
+  expiresAt       DateTime    @map("expires_at")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  purchasedAt     DateTime?   @map("purchased_at")
+
+  // Relations
+  deal            FlashDeal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@map("flash_deal_claims")
+  @@unique([dealId, userId])
+  @@index([dealId])
+  @@index([userId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+// ============================================
+// Smart Wishlist with Price Alerts
+// قائمة الرغبات الذكية مع تنبيهات الأسعار
+// ============================================
+
+model PriceAlert {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+
+  // Target (one of these)
+  itemId          String?     @map("item_id")         // تتبع منتج معين
+  categoryId      String?     @map("category_id")     // تتبع فئة
+  searchQuery     String?     @map("search_query")    // تتبع بحث
+
+  // Alert conditions
+  targetPrice     Float?      @map("target_price")    // سعر مستهدف
+  priceDropPercent Float?     @map("price_drop_percent") // نسبة انخفاض
+  alertOnNew      Boolean     @default(true) @map("alert_on_new")  // تنبيه عند إضافة جديد
+
+  // Additional filters
+  minCondition    ItemCondition? @map("min_condition")
+  maxPrice        Float?      @map("max_price")
+  governorate     String?
+
+  // Notification preferences
+  emailAlert      Boolean     @default(true) @map("email_alert")
+  pushAlert       Boolean     @default(true) @map("push_alert")
+  smsAlert        Boolean     @default(false) @map("sms_alert")
+
+  // Status
+  isActive        Boolean     @default(true) @map("is_active")
+  lastTriggeredAt DateTime?   @map("last_triggered_at")
+  triggerCount    Int         @default(0) @map("trigger_count")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  expiresAt       DateTime?   @map("expires_at")
+
+  @@map("price_alerts")
+  @@index([userId])
+  @@index([itemId])
+  @@index([categoryId])
+  @@index([isActive])
+}
+
+// ============================================
+// Social Features - Follow System
+// الميزات الاجتماعية - نظام المتابعة
+// ============================================
+
+model UserFollow {
+  id              String      @id @default(uuid())
+  followerId      String      @map("follower_id")     // المتابِع
+  followingId     String      @map("following_id")    // المتابَع
+
+  // Status
+  isActive        Boolean     @default(true) @map("is_active")
+
+  // Notification preferences
+  notifyNewItems  Boolean     @default(true) @map("notify_new_items")
+  notifyDeals     Boolean     @default(true) @map("notify_deals")
+  notifyActivity  Boolean     @default(false) @map("notify_activity")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("user_follows")
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@index([isActive])
+}
+
+model ActivityFeed {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")         // صاحب النشاط
+
+  // Activity type
+  activityType    String      @map("activity_type")   // 'NEW_LISTING', 'PRICE_DROP', 'DEAL_COMPLETED', 'REVIEW_RECEIVED', 'LEVEL_UP'
+
+  // Related entity
+  entityType      String      @map("entity_type")     // 'ITEM', 'LISTING', 'REVIEW', 'ACHIEVEMENT'
+  entityId        String      @map("entity_id")
+
+  // Activity details
+  title           String
+  description     String?
+  imageUrl        String?     @map("image_url")
+  metadata        Json?
+
+  // Privacy
+  isPublic        Boolean     @default(true) @map("is_public")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("activity_feeds")
+  @@index([userId])
+  @@index([activityType])
+  @@index([createdAt])
+  @@index([isPublic])
+}
+
+// ============================================
+// Installment Payment System
+// نظام الدفع بالتقسيط
+// ============================================
+
+enum InstallmentPlanStatus {
+  DRAFT           // مسودة
+  ACTIVE          // نشط
+  COMPLETED       // مكتمل
+  DEFAULTED       // متعثر
+  CANCELLED       // ملغي
+}
+
+enum InstallmentStatus {
+  PENDING         // قيد الانتظار
+  PAID            // مدفوع
+  LATE            // متأخر
+  DEFAULTED       // متعثر
+  WAIVED          // معفى
+}
+
+model InstallmentPlan {
+  id              String                @id @default(uuid())
+  transactionId   String?               @map("transaction_id")
+  listingId       String                @map("listing_id")
+  buyerId         String                @map("buyer_id")
+  sellerId        String                @map("seller_id")
+
+  // Plan details
+  totalAmount     Float                 @map("total_amount")
+  downPayment     Float                 @map("down_payment")
+  remainingAmount Float                 @map("remaining_amount")
+  numberOfInstallments Int              @map("number_of_installments")
+  installmentAmount Float               @map("installment_amount")
+
+  // Interest/Fees
+  interestRate    Float                 @default(0) @map("interest_rate")  // نسبة الفائدة
+  adminFee        Float                 @default(0) @map("admin_fee")      // رسوم إدارية
+  lateFee         Float                 @default(0) @map("late_fee")       // رسوم تأخير
+
+  // Schedule
+  startDate       DateTime              @map("start_date")
+  endDate         DateTime              @map("end_date")
+  paymentDay      Int                   @default(1) @map("payment_day")    // يوم الدفع من الشهر
+
+  // Status
+  status          InstallmentPlanStatus @default(DRAFT)
+  paidInstallments Int                  @default(0) @map("paid_installments")
+  totalPaid       Float                 @default(0) @map("total_paid")
+  missedPayments  Int                   @default(0) @map("missed_payments")
+
+  // Approval
+  sellerApproved  Boolean               @default(false) @map("seller_approved")
+  sellerApprovedAt DateTime?            @map("seller_approved_at")
+
+  // Collateral/Guarantor (optional)
+  hasGuarantor    Boolean               @default(false) @map("has_guarantor")
+  guarantorInfo   Json?                 @map("guarantor_info")
+
+  // Timestamps
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  completedAt     DateTime?             @map("completed_at")
+
+  // Relations
+  listing         Listing               @relation(fields: [listingId], references: [id])
+  installments    Installment[]
+
+  @@map("installment_plans")
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([listingId])
+  @@index([status])
+}
+
+model Installment {
+  id              String            @id @default(uuid())
+  planId          String            @map("plan_id")
+
+  // Installment details
+  installmentNumber Int             @map("installment_number")
+  amount          Float
+  dueDate         DateTime          @map("due_date")
+
+  // Payment
+  paidAmount      Float?            @map("paid_amount")
+  paidAt          DateTime?         @map("paid_at")
+  paymentMethod   String?           @map("payment_method")
+  paymentReference String?          @map("payment_reference")
+
+  // Late fees
+  lateFeeApplied  Float             @default(0) @map("late_fee_applied")
+  daysLate        Int               @default(0) @map("days_late")
+
+  // Status
+  status          InstallmentStatus @default(PENDING)
+
+  // Reminders
+  remindersSent   Int               @default(0) @map("reminders_sent")
+  lastReminderAt  DateTime?         @map("last_reminder_at")
+
+  // Timestamps
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  plan            InstallmentPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("installments")
+  @@unique([planId, installmentNumber])
+  @@index([planId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+// ============================================
+// Group Buying (Tawfir) System
+// نظام الشراء الجماعي (توفير)
+// ============================================
+
+enum GroupBuyStatus {
+  DRAFT           // مسودة
+  ACTIVE          // نشط
+  TARGET_REACHED  // تم الوصول للهدف
+  CONFIRMED       // مؤكد
+  COMPLETED       // مكتمل
+  FAILED          // فشل
+  CANCELLED       // ملغي
+}
+
+model GroupBuy {
+  id              String          @id @default(uuid())
+  listingId       String          @map("listing_id")
+  organizerId     String          @map("organizer_id")
+
+  // Product details
+  title           String
+  description     String?
+
+  // Pricing tiers
+  originalPrice   Float           @map("original_price")
+  targetQuantity  Int             @map("target_quantity")     // الحد الأدنى للمجموعة
+  maxQuantity     Int?            @map("max_quantity")        // الحد الأقصى
+  currentQuantity Int             @default(0) @map("current_quantity")
+
+  // Discount tiers (JSON array)
+  // [{ minQty: 10, discount: 10 }, { minQty: 20, discount: 15 }, ...]
+  discountTiers   Json            @map("discount_tiers")
+
+  // Current discount
+  currentDiscount Float           @default(0) @map("current_discount")
+  currentPrice    Float           @map("current_price")
+
+  // Timing
+  startDate       DateTime        @map("start_date")
+  endDate         DateTime        @map("end_date")
+
+  // Status
+  status          GroupBuyStatus  @default(DRAFT)
+
+  // Limits
+  maxPerUser      Int             @default(5) @map("max_per_user")
+
+  // Stats
+  participantCount Int            @default(0) @map("participant_count")
+  viewCount       Int             @default(0) @map("view_count")
+
+  // Timestamps
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  confirmedAt     DateTime?       @map("confirmed_at")
+  completedAt     DateTime?       @map("completed_at")
+
+  // Relations
+  listing         Listing         @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  participants    GroupBuyParticipant[]
+
+  @@map("group_buys")
+  @@index([listingId])
+  @@index([organizerId])
+  @@index([status])
+  @@index([endDate])
+}
+
+model GroupBuyParticipant {
+  id              String      @id @default(uuid())
+  groupBuyId      String      @map("group_buy_id")
+  userId          String      @map("user_id")
+
+  // Order details
+  quantity        Int         @default(1)
+  unitPrice       Float       @map("unit_price")     // السعر وقت الانضمام
+  totalPrice      Float       @map("total_price")
+
+  // Status
+  status          String      @default("JOINED")     // 'JOINED', 'PAID', 'CANCELLED', 'REFUNDED'
+
+  // Payment
+  paidAt          DateTime?   @map("paid_at")
+  paymentMethod   String?     @map("payment_method")
+  paymentRef      String?     @map("payment_ref")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  groupBuy        GroupBuy    @relation(fields: [groupBuyId], references: [id], onDelete: Cascade)
+
+  @@map("group_buy_participants")
+  @@unique([groupBuyId, userId])
+  @@index([groupBuyId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// Warranty & Insurance System
+// نظام الضمان والتأمين
+// ============================================
+
+enum WarrantyType {
+  SELLER_WARRANTY     // ضمان البائع
+  PLATFORM_WARRANTY   // ضمان المنصة
+  EXTENDED_WARRANTY   // ضمان ممتد
+  INSURANCE           // تأمين
+}
+
+enum WarrantyStatus {
+  ACTIVE              // نشط
+  EXPIRED             // منتهي
+  CLAIMED             // تم المطالبة
+  VOIDED              // ملغي
+}
+
+enum WarrantyClaimStatus {
+  PENDING             // قيد المراجعة
+  APPROVED            // مقبول
+  REJECTED            // مرفوض
+  IN_REPAIR           // جاري الإصلاح
+  REPLACED            // تم الاستبدال
+  REFUNDED            // تم الاسترداد
+  CLOSED              // مغلق
+}
+
+model Warranty {
+  id              String          @id @default(uuid())
+  transactionId   String          @map("transaction_id")
+  itemId          String          @map("item_id")
+  buyerId         String          @map("buyer_id")
+  sellerId        String          @map("seller_id")
+
+  // Warranty details
+  warrantyType    WarrantyType    @map("warranty_type")
+  title           String
+  description     String?
+
+  // Coverage
+  coverageDetails Json            @map("coverage_details")  // What's covered
+  exclusions      Json?                                      // What's not covered
+  maxClaimValue   Float?          @map("max_claim_value")
+
+  // Duration
+  startDate       DateTime        @map("start_date")
+  endDate         DateTime        @map("end_date")
+  durationMonths  Int             @map("duration_months")
+
+  // Pricing
+  price           Float           @default(0)   // For extended warranty
+  isPaid          Boolean         @default(true) @map("is_paid")
+
+  // Status
+  status          WarrantyStatus  @default(ACTIVE)
+
+  // Claims
+  claimsCount     Int             @default(0) @map("claims_count")
+  maxClaims       Int             @default(1) @map("max_claims")
+
+  // Documents
+  certificateUrl  String?         @map("certificate_url")
+  termsUrl        String?         @map("terms_url")
+
+  // Timestamps
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  claims          WarrantyClaim[]
+
+  @@map("warranties")
+  @@index([transactionId])
+  @@index([itemId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([endDate])
+}
+
+model WarrantyClaim {
+  id              String              @id @default(uuid())
+  warrantyId      String              @map("warranty_id")
+  claimantId      String              @map("claimant_id")
+
+  // Claim details
+  issueType       String              @map("issue_type")      // 'DEFECT', 'MALFUNCTION', 'DAMAGE'
+  issueDescription String             @map("issue_description")
+  evidenceUrls    String[]            @map("evidence_urls")   // صور/فيديو
+
+  // Status
+  status          WarrantyClaimStatus @default(PENDING)
+
+  // Resolution
+  resolutionType  String?             @map("resolution_type") // 'REPAIR', 'REPLACE', 'REFUND'
+  resolutionNotes String?             @map("resolution_notes")
+  resolvedAt      DateTime?           @map("resolved_at")
+  resolvedBy      String?             @map("resolved_by")
+
+  // Refund/Replacement
+  refundAmount    Float?              @map("refund_amount")
+  replacementItemId String?           @map("replacement_item_id")
+
+  // Communication
+  messages        Json?               // Array of messages
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  warranty        Warranty            @relation(fields: [warrantyId], references: [id], onDelete: Cascade)
+
+  @@map("warranty_claims")
+  @@index([warrantyId])
+  @@index([claimantId])
+  @@index([status])
+}
+
+// ============================================
+// Seller Verification System
+// نظام التحقق من البائعين
+// ============================================
+
+enum VerificationLevel {
+  UNVERIFIED      // غير موثق
+  BASIC           // أساسي (بريد إلكتروني + هاتف)
+  VERIFIED        // موثق (هوية)
+  BUSINESS        // تجاري (سجل تجاري)
+  PREMIUM         // مميز (فحص شامل)
+  TRUSTED         // موثوق (شريك المنصة)
+}
+
+enum VerificationStatus {
+  PENDING         // قيد المراجعة
+  APPROVED        // مقبول
+  REJECTED        // مرفوض
+  EXPIRED         // منتهي
+  REVOKED         // ملغي
+}
+
+model SellerVerification {
+  id              String              @id @default(uuid())
+  userId          String              @map("user_id")
+
+  // Current level
+  currentLevel    VerificationLevel   @default(UNVERIFIED) @map("current_level")
+  requestedLevel  VerificationLevel   @map("requested_level")
+
+  // Status
+  status          VerificationStatus  @default(PENDING)
+
+  // Documents submitted
+  documents       Json                // Array of document info
+
+  // Identity verification
+  idType          String?             @map("id_type")         // 'NATIONAL_ID', 'PASSPORT'
+  idNumber        String?             @map("id_number")
+  idFrontUrl      String?             @map("id_front_url")
+  idBackUrl       String?             @map("id_back_url")
+  selfieUrl       String?             @map("selfie_url")
+
+  // Business verification
+  businessName    String?             @map("business_name")
+  commercialRegNo String?             @map("commercial_reg_no")
+  taxId           String?             @map("tax_id")
+  businessDocUrl  String?             @map("business_doc_url")
+
+  // Address verification
+  addressProofUrl String?             @map("address_proof_url")
+  verifiedAddress String?             @map("verified_address")
+
+  // Review
+  reviewedAt      DateTime?           @map("reviewed_at")
+  reviewedBy      String?             @map("reviewed_by")
+  reviewNotes     String?             @map("review_notes")
+  rejectionReason String?             @map("rejection_reason")
+
+  // Validity
+  validFrom       DateTime?           @map("valid_from")
+  validUntil      DateTime?           @map("valid_until")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  @@map("seller_verifications")
+  @@index([userId])
+  @@index([currentLevel])
+  @@index([status])
+  @@index([validUntil])
+}
+
+// Verification badges earned by users
+model VerificationBadge {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+
+  // Badge info
+  badgeType       String      @map("badge_type")     // 'ID_VERIFIED', 'PHONE_VERIFIED', 'ADDRESS_VERIFIED', 'BUSINESS_VERIFIED'
+  badgeName       String      @map("badge_name")
+  badgeNameAr     String      @map("badge_name_ar")
+  badgeIcon       String?     @map("badge_icon")
+
+  // Validity
+  earnedAt        DateTime    @default(now()) @map("earned_at")
+  expiresAt       DateTime?   @map("expires_at")
+  isActive        Boolean     @default(true) @map("is_active")
+
+  // Metadata
+  metadata        Json?
+
+  @@map("verification_badges")
+  @@unique([userId, badgeType])
+  @@index([userId])
+  @@index([badgeType])
+  @@index([isActive])
+}
+
+// ============================================
+// Product Authenticity System
+// نظام أصالة المنتجات
+// ============================================
+
+enum AuthenticityStatus {
+  PENDING         // قيد التحقق
+  VERIFIED        // أصلي موثق
+  SUSPICIOUS      // مشتبه به
+  COUNTERFEIT     // مقلد
+  INCONCLUSIVE    // غير حاسم
+}
+
+model ProductAuthenticity {
+  id              String              @id @default(uuid())
+  itemId          String              @unique @map("item_id")
+  sellerId        String              @map("seller_id")
+
+  // Request info
+  requestedAt     DateTime            @default(now()) @map("requested_at")
+  requestedBy     String              @map("requested_by")
+
+  // Status
+  status          AuthenticityStatus  @default(PENDING)
+
+  // Verification method
+  method          String              // 'SERIAL_CHECK', 'EXPERT_REVIEW', 'DOCUMENT_VERIFY', 'AI_ANALYSIS'
+
+  // Evidence submitted
+  serialNumber    String?             @map("serial_number")
+  purchaseReceipt String?             @map("purchase_receipt")
+  originalBox     Boolean             @default(false) @map("original_box")
+  warrantyCard    Boolean             @default(false) @map("warranty_card")
+  evidenceUrls    String[]            @map("evidence_urls")
+
+  // Verification result
+  verifiedAt      DateTime?           @map("verified_at")
+  verifiedBy      String?             @map("verified_by")    // User ID or 'SYSTEM'
+  verifierNotes   String?             @map("verifier_notes")
+  confidenceScore Float?              @map("confidence_score") // 0-100
+
+  // Certificate
+  certificateId   String?             @unique @map("certificate_id")
+  certificateUrl  String?             @map("certificate_url")
+  qrCode          String?             @map("qr_code")
+
+  // Display
+  showBadge       Boolean             @default(true) @map("show_badge")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  @@map("product_authenticity")
+  @@index([itemId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([certificateId])
+}
+
+// Authenticity reports from users
+model AuthenticityReport {
+  id              String      @id @default(uuid())
+  itemId          String      @map("item_id")
+  reporterId      String      @map("reporter_id")
+
+  // Report details
+  reportType      String      @map("report_type")     // 'COUNTERFEIT', 'MISREPRESENTED', 'SUSPICIOUS'
+  description     String
+  evidenceUrls    String[]    @map("evidence_urls")
+
+  // Status
+  status          String      @default("PENDING")     // 'PENDING', 'INVESTIGATING', 'RESOLVED', 'DISMISSED'
+  resolution      String?
+  resolvedAt      DateTime?   @map("resolved_at")
+  resolvedBy      String?     @map("resolved_by")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("authenticity_reports")
+  @@index([itemId])
+  @@index([reporterId])
+  @@index([status])
+}
+
+// ============================================
+// AI Assistant System
+// نظام المساعد الذكي
+// ============================================
+
+enum AIConversationStatus {
+  ACTIVE          // نشطة
+  CLOSED          // مغلقة
+  ARCHIVED        // مؤرشفة
+}
+
+enum AIMessageRole {
+  USER            // رسالة المستخدم
+  ASSISTANT       // رد المساعد
+  SYSTEM          // رسالة نظام
+}
+
+model AIConversation {
+  id              String                @id @default(uuid())
+  userId          String                @map("user_id")
+
+  // Conversation details
+  title           String?
+  context         String?               // barter, search, help
+  status          AIConversationStatus  @default(ACTIVE)
+
+  // Related entities
+  relatedItemId   String?               @map("related_item_id")
+  relatedOfferId  String?               @map("related_offer_id")
+
+  // Stats
+  messageCount    Int                   @default(0) @map("message_count")
+
+  // Timestamps
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  lastMessageAt   DateTime?             @map("last_message_at")
+
+  // Relations
+  messages        AIMessage[]
+
+  @@map("ai_conversations")
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AIMessage {
+  id              String          @id @default(uuid())
+  conversationId  String          @map("conversation_id")
+
+  // Message details
+  role            AIMessageRole
+  content         String          @db.Text
+  metadata        Json?
+
+  // AI-specific
+  model           String?
+  tokens          Int?
+  confidence      Float?
+
+  // Actions suggested
+  suggestedItems  String[]        @map("suggested_items")
+  suggestedAction String?         @map("suggested_action")
+
+  // Timestamps
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  conversation    AIConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("ai_messages")
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+// ============================================
+// AI Listing Generator
+// مولد الإعلانات بالذكاء الاصطناعي
+// ============================================
+
+model AIListingDraft {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+
+  // Source
+  sourceType      String      @map("source_type")   // IMAGE, VOICE, TEXT
+  sourceUrl       String?     @map("source_url")
+  sourceText      String?     @map("source_text")
+
+  // AI Generated content
+  generatedTitle  String?     @map("generated_title")
+  generatedDesc   String?     @map("generated_desc") @db.Text
+  generatedCategory String?   @map("generated_category")
+  generatedTags   String[]    @map("generated_tags")
+  estimatedPrice  Float?      @map("estimated_price")
+  confidence      Float?
+
+  // Detected attributes
+  detectedBrand   String?     @map("detected_brand")
+  detectedModel   String?     @map("detected_model")
+  detectedCondition String?   @map("detected_condition")
+  detectedColor   String?     @map("detected_color")
+
+  // Status
+  status          String      @default("DRAFT")     // DRAFT, PUBLISHED, DISCARDED
+  publishedItemId String?     @map("published_item_id")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("ai_listing_drafts")
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// Exchange Points System
+// نظام نقاط التبادل الآمنة
+// ============================================
+
+enum ExchangePointType {
+  XCHANGE_HUB     // مركز XChange
+  PARTNER_STORE   // متجر شريك
+  POLICE_STATION  // قسم شرطة
+  MALL            // مول تجاري
+  COFFEE_SHOP     // كافيه
+  BANK            // بنك
+}
+
+enum ExchangePointStatus {
+  ACTIVE
+  INACTIVE
+  TEMPORARILY_CLOSED
+  COMING_SOON
+}
+
+model ExchangePoint {
+  id              String              @id @default(uuid())
+
+  // Basic info
+  name            String
+  nameAr          String              @map("name_ar")
+  description     String?
+  descriptionAr   String?             @map("description_ar")
+  type            ExchangePointType
+
+  // Location
+  governorate     String
+  city            String
+  area            String?
+  address         String
+  addressAr       String?             @map("address_ar")
+  latitude        Float
+  longitude       Float
+  googleMapsUrl   String?             @map("google_maps_url")
+
+  // Contact
+  phone           String?
+  whatsapp        String?
+
+  // Working hours
+  workingHours    Json                @map("working_hours")
+  is24Hours       Boolean             @default(false) @map("is_24_hours")
+
+  // Facilities
+  hasParking      Boolean             @default(false) @map("has_parking")
+  hasCCTV         Boolean             @default(true) @map("has_cctv")
+  hasWifi         Boolean             @default(false) @map("has_wifi")
+  hasWaitingArea  Boolean             @default(true) @map("has_waiting_area")
+  hasInspection   Boolean             @default(false) @map("has_inspection")
+
+  // Media
+  images          String[]
+  coverImage      String?             @map("cover_image")
+
+  // Status
+  status          ExchangePointStatus @default(ACTIVE)
+  verifiedAt      DateTime?           @map("verified_at")
+
+  // Stats
+  totalExchanges  Int                 @default(0) @map("total_exchanges")
+  avgRating       Float               @default(0) @map("avg_rating")
+  ratingCount     Int                 @default(0) @map("rating_count")
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  bookings        ExchangeBooking[]
+  reviews         ExchangePointReview[]
+
+  @@map("exchange_points")
+  @@index([governorate])
+  @@index([type])
+  @@index([status])
+  @@index([latitude, longitude])
+}
+
+enum ExchangeBookingStatus {
+  PENDING
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model ExchangeBooking {
+  id              String                @id @default(uuid())
+  pointId         String                @map("point_id")
+
+  // Parties
+  user1Id         String                @map("user1_id")
+  user2Id         String                @map("user2_id")
+
+  // Related transaction
+  transactionType String                @map("transaction_type")
+  transactionId   String?               @map("transaction_id")
+  offerId         String?               @map("offer_id")
+
+  // Booking details
+  scheduledDate   DateTime              @map("scheduled_date")
+  scheduledTime   String                @map("scheduled_time")
+  duration        Int                   @default(30)
+
+  // Status
+  status          ExchangeBookingStatus @default(PENDING)
+  confirmedByUser1 Boolean              @default(false) @map("confirmed_by_user1")
+  confirmedByUser2 Boolean              @default(false) @map("confirmed_by_user2")
+
+  // Check-in
+  user1CheckedIn  DateTime?             @map("user1_checked_in")
+  user2CheckedIn  DateTime?             @map("user2_checked_in")
+
+  // Completion
+  completedAt     DateTime?             @map("completed_at")
+  completionNotes String?               @map("completion_notes")
+
+  // Cancellation
+  cancelledAt     DateTime?             @map("cancelled_at")
+  cancelledBy     String?               @map("cancelled_by")
+  cancelReason    String?               @map("cancel_reason")
+
+  // Timestamps
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  // Relations
+  point           ExchangePoint         @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@map("exchange_bookings")
+  @@index([pointId])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+model ExchangePointReview {
+  id              String        @id @default(uuid())
+  pointId         String        @map("point_id")
+  userId          String        @map("user_id")
+  bookingId       String?       @map("booking_id")
+
+  // Rating
+  rating          Int
+  safetyRating    Int?          @map("safety_rating")
+  cleanlinessRating Int?        @map("cleanliness_rating")
+  accessibilityRating Int?      @map("accessibility_rating")
+
+  // Review
+  comment         String?
+
+  // Timestamps
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  point           ExchangePoint @relation(fields: [pointId], references: [id], onDelete: Cascade)
+
+  @@map("exchange_point_reviews")
+  @@unique([pointId, userId, bookingId])
+  @@index([pointId])
+  @@index([userId])
+}
+
+// ============================================
+// Search Alerts System
+// نظام تنبيهات البحث
+// ============================================
+
+model SearchAlert {
+  id              String      @id @default(uuid())
+  savedSearchId   String      @map("saved_search_id")
+  userId          String      @map("user_id")
+
+  // Alert settings
+  isActive        Boolean     @default(true) @map("is_active")
+  frequency       String      @default("INSTANT") // INSTANT, DAILY, WEEKLY
+
+  // Notification channels
+  notifyPush      Boolean     @default(true) @map("notify_push")
+  notifyEmail     Boolean     @default(false) @map("notify_email")
+  notifyWhatsapp  Boolean     @default(false) @map("notify_whatsapp")
+
+  // Stats
+  alertsSent      Int         @default(0) @map("alerts_sent")
+  lastAlertAt     DateTime?   @map("last_alert_at")
+  matchedItems    Int         @default(0) @map("matched_items")
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  @@map("search_alerts")
+  @@unique([savedSearchId, userId])
+  @@index([userId])
+  @@index([isActive])
+}
+
+// ============================================
+// سوق التوالف - Scrap Marketplace Models
+// ============================================
+
+// تحقق تجار التوالف
+// Scrap Dealer Verification
+model ScrapDealerVerification {
+  id                  String              @id @default(uuid())
+  userId              String              @unique @map("user_id")
+  dealerType          ScrapDealerType     @map("dealer_type")
+
+  // معلومات النشاط التجاري
+  businessName        String?             @map("business_name")
+  commercialRegNo     String?             @map("commercial_reg_no")
+  taxCardNo           String?             @map("tax_card_no")
+  recyclingLicenseNo  String?             @map("recycling_license_no")
+
+  // الموقع
+  address             String?
+  governorate         String?
+  city                String?
+  latitude            Float?
+  longitude           Float?
+
+  // التخصص
+  specializations     ScrapType[]
+  acceptedMetals      MetalType[]         @map("accepted_metals")
+  minWeightKg         Float               @default(0) @map("min_weight_kg")
+  maxWeightKg         Float?              @map("max_weight_kg")
+
+  // التسعير والخدمات
+  priceList           Json?               @map("price_list")  // قائمة أسعار المعادن/المواد
+  offersPickup        Boolean             @default(false) @map("offers_pickup")
+  pickupFee           Float               @default(0) @map("pickup_fee")
+  pickupRadiusKm      Int                 @default(0) @map("pickup_radius_km")
+
+  // المستندات
+  idDocumentUrl       String?             @map("id_document_url")
+  commercialRegUrl    String?             @map("commercial_reg_url")
+  taxCardUrl          String?             @map("tax_card_url")
+  recyclingLicenseUrl String?             @map("recycling_license_url")
+  locationPhotos      String[]            @map("location_photos")
+
+  // التحقق والتقييم
+  status              ScrapDealerStatus   @default(PENDING)
+  isVerified          Boolean             @default(false) @map("is_verified")
+  verifiedAt          DateTime?           @map("verified_at")
+  verifiedById        String?             @map("verified_by_id")
+  rejectionReason     String?             @map("rejection_reason")
+
+  // الإحصائيات
+  rating              Float               @default(0)
+  totalReviews        Int                 @default(0) @map("total_reviews")
+  totalTransactions   Int                 @default(0) @map("total_transactions")
+  totalWeightBoughtKg Float               @default(0) @map("total_weight_bought_kg")
+
+  // Timestamps
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  user                User                @relation("ScrapDealerUser", fields: [userId], references: [id])
+  verifiedBy          User?               @relation("ScrapDealerVerifier", fields: [verifiedById], references: [id])
+
+  @@map("scrap_dealer_verifications")
+  @@index([userId])
+  @@index([governorate])
+  @@index([isVerified])
+  @@index([status])
+  @@index([dealerType])
+}
+
+// أسعار المعادن اليومية
+// Daily Metal Prices
+model MetalPrice {
+  id              String      @id @default(uuid())
+  metalType       MetalType   @map("metal_type")
+  pricePerKg      Float       @map("price_per_kg")
+  currency        String      @default("EGP")
+  source          String?     // مصدر السعر
+  date            DateTime    @db.Date
+
+  // Timestamps
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  @@map("metal_prices")
+  @@unique([metalType, date])
+  @@index([date])
+  @@index([metalType])
+}
+
+// طلبات شراء التوالف (مزاد عكسي)
+// Scrap Purchase Requests (Reverse Auction)
+model ScrapPurchaseRequest {
+  id                  String              @id @default(uuid())
+  buyerId             String              @map("buyer_id")
+
+  // تفاصيل الطلب
+  title               String
+  description         String?
+  scrapType           ScrapType           @map("scrap_type")
+  metalType           MetalType?          @map("metal_type")
+  minWeightKg         Float?              @map("min_weight_kg")
+  maxWeightKg         Float?              @map("max_weight_kg")
+  scrapCondition      ScrapCondition?     @map("scrap_condition")
+
+  // السعر
+  offeredPricePerKg   Float?              @map("offered_price_per_kg")
+  offeredTotalPrice   Float?              @map("offered_total_price")
+  isNegotiable        Boolean             @default(true) @map("is_negotiable")
+
+  // الموقع والتوصيل
+  governorate         String?
+  city                String?
+  offersPickup        Boolean             @default(false) @map("offers_pickup")
+  pickupAddress       String?             @map("pickup_address")
+
+  // المدة
+  expiresAt           DateTime?           @map("expires_at")
+  status              String              @default("ACTIVE")
+
+  // الإحصائيات
+  viewsCount          Int                 @default(0) @map("views_count")
+  offersCount         Int                 @default(0) @map("offers_count")
+
+  // Timestamps
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  buyer               User                @relation("ScrapPurchaseBuyer", fields: [buyerId], references: [id])
+  sellerOffers        ScrapSellerOffer[]
+
+  @@map("scrap_purchase_requests")
+  @@index([buyerId])
+  @@index([status])
+  @@index([scrapType])
+  @@index([governorate])
+  @@index([expiresAt])
+}
+
+// عروض البائعين على طلبات الشراء
+// Seller Offers on Purchase Requests
+model ScrapSellerOffer {
+  id                  String              @id @default(uuid())
+  requestId           String              @map("request_id")
+  sellerId            String              @map("seller_id")
+  itemId              String?             @map("item_id")
+
+  // تفاصيل العرض
+  offeredWeightKg     Float               @map("offered_weight_kg")
+  offeredPricePerKg   Float?              @map("offered_price_per_kg")
+  offeredTotalPrice   Float               @map("offered_total_price")
+  message             String?
+  photos              String[]
+
+  // الحالة
+  status              String              @default("PENDING")
+  rejectionReason     String?             @map("rejection_reason")
+
+  // Timestamps
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  request             ScrapPurchaseRequest @relation(fields: [requestId], references: [id])
+  seller              User                @relation("ScrapSellerOffers", fields: [sellerId], references: [id])
+  item                Item?               @relation("ScrapOfferItem", fields: [itemId], references: [id])
+
+  @@map("scrap_seller_offers")
+  @@unique([requestId, sellerId])
+  @@index([requestId])
+  @@index([sellerId])
+  @@index([status])
+}
 

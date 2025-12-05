@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getItem, Item } from '@/lib/api/items';
 import { buyItem } from '@/lib/api/transactions';
+import { findMyMatchingItem, BarterMatch } from '@/lib/api/barter';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function ItemDetailsPage() {
@@ -32,11 +33,36 @@ export default function ItemDetailsPage() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [cartMessage, setCartMessage] = useState('');
 
+  // Barter Match State
+  const [barterMatch, setBarterMatch] = useState<BarterMatch | null>(null);
+  const [loadingMatch, setLoadingMatch] = useState(false);
+
   useEffect(() => {
     if (params.id) {
       loadItem(params.id as string);
     }
   }, [params.id]);
+
+  // Load barter match when item is loaded and user is authenticated
+  useEffect(() => {
+    if (item && user && (item.desiredItemTitle || item.desiredCategoryId) && item.seller?.id !== user.id) {
+      loadBarterMatch(item.id);
+    }
+  }, [item, user]);
+
+  const loadBarterMatch = async (itemId: string) => {
+    try {
+      setLoadingMatch(true);
+      const response = await findMyMatchingItem(itemId);
+      if (response.data) {
+        setBarterMatch(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading barter match:', err);
+    } finally {
+      setLoadingMatch(false);
+    }
+  };
 
   const loadItem = async (id: string) => {
     try {
@@ -161,7 +187,7 @@ export default function ItemDetailsPage() {
   }
 
   const images = item.images && item.images.length > 0 ? item.images : [];
-  const isOwner = user?.id === item.seller.id;
+  const isOwner = user?.id === item.seller?.id;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -275,42 +301,128 @@ export default function ItemDetailsPage() {
                 )}
               </div>
 
+              {/* Barter Preferences - What seller wants */}
+              {(item.desiredItemTitle || item.desiredCategoryId) && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-700 font-semibold mb-2">🔄 للمقايضة فقط / For Barter Only</p>
+                  <p className="text-amber-800 font-medium">يبحث عن / Looking for:</p>
+                  {item.desiredItemTitle && (
+                    <p className="text-amber-900 font-semibold text-lg">🎯 {item.desiredItemTitle}</p>
+                  )}
+                  {item.desiredItemDescription && (
+                    <p className="text-amber-700 text-sm mt-1">{item.desiredItemDescription}</p>
+                  )}
+                  {item.desiredCategory && (
+                    <p className="text-amber-700 text-sm">📂 {item.desiredCategory.nameAr || item.desiredCategory.nameEn}</p>
+                  )}
+                </div>
+              )}
+
               {/* Action Buttons */}
               {!isOwner && item.status === 'ACTIVE' && (
                 <div className="space-y-3">
-                  <button
-                    onClick={handleBuyNow}
-                    className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold transition"
-                  >
-                    💳 Buy Now
-                  </button>
-                  <button
-                    onClick={handleAddToCart}
-                    disabled={addingToCart}
-                    className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 font-semibold transition disabled:opacity-50"
-                  >
-                    {addingToCart ? 'Adding...' : '🛒 Add to Cart'}
-                  </button>
-                  {cartMessage && (
-                    <p className={`text-center text-sm ${cartMessage.includes('Added') ? 'text-green-600' : 'text-red-600'}`}>
-                      {cartMessage}
-                    </p>
+                  {/* If item has barter preferences, show barter-specific options */}
+                  {(item.desiredItemTitle || item.desiredCategoryId) ? (
+                    <>
+                      {/* If we found a matching item, show the direct completion button */}
+                      {barterMatch ? (
+                        <div className="space-y-3">
+                          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-sm text-green-700 font-medium mb-1">
+                              🎯 لديك عنصر متطابق! / You have a matching item!
+                            </p>
+                            <p className="text-xs text-green-600">
+                              "{barterMatch.myItem.title}" تتوافق مع ما يبحث عنه البائع
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              router.push(`/barter/complete?theirItem=${item.id}&myItem=${barterMatch.myItem.id}`);
+                            }}
+                            className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold transition"
+                          >
+                            ✅ إتمام المقايضة / Complete Barter
+                          </button>
+                        </div>
+                      ) : loadingMatch ? (
+                        <div className="flex items-center justify-center py-3">
+                          <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mr-2"></div>
+                          <span className="text-gray-600 text-sm">جاري البحث عن تطابق...</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            if (!user) {
+                              router.push('/login');
+                              return;
+                            }
+                            router.push(`/barter/new?wantedItemId=${item.id}`);
+                          }}
+                          className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
+                        >
+                          🔁 عرض مقايضة / Make Barter Offer
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push('/login');
+                            return;
+                          }
+                          router.push(`/messages?userId=${item.seller?.id}&itemId=${item.id}`);
+                        }}
+                        className="w-full border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 font-semibold transition"
+                      >
+                        💬 التواصل مع البائع / Contact Seller
+                      </button>
+                    </>
+                  ) : (
+                    /* Regular item - show all buttons */
+                    <>
+                      <button
+                        onClick={handleBuyNow}
+                        className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold transition"
+                      >
+                        💳 Buy Now
+                      </button>
+                      <button
+                        onClick={handleAddToCart}
+                        disabled={addingToCart}
+                        className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 font-semibold transition disabled:opacity-50"
+                      >
+                        {addingToCart ? 'Adding...' : '🛒 Add to Cart'}
+                      </button>
+                      {cartMessage && (
+                        <p className={`text-center text-sm ${cartMessage.includes('Added') ? 'text-green-600' : 'text-red-600'}`}>
+                          {cartMessage}
+                        </p>
+                      )}
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push('/login');
+                            return;
+                          }
+                          router.push(`/messages?userId=${item.seller?.id}&itemId=${item.id}`);
+                        }}
+                        className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
+                      >
+                        💬 Contact Seller
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (!user) {
+                            router.push('/login');
+                            return;
+                          }
+                          router.push(`/barter/new?wantedItemId=${item.id}`);
+                        }}
+                        className="w-full border border-purple-600 text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 font-semibold transition"
+                      >
+                        🔁 Make Barter Offer
+                      </button>
+                    </>
                   )}
-                  <button
-                    onClick={() => {
-                      if (!user) {
-                        router.push('/login');
-                        return;
-                      }
-                      router.push(`/messages?userId=${item.seller.id}&itemId=${item.id}`);
-                    }}
-                    className="w-full bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-semibold transition"
-                  >
-                    💬 Contact Seller
-                  </button>
-                  <button className="w-full border border-purple-600 text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 font-semibold transition">
-                    🔁 Make Barter Offer
-                  </button>
                 </div>
               )}
 
@@ -335,26 +447,28 @@ export default function ItemDetailsPage() {
               )}
 
               {/* Seller Info */}
-              <div className="mt-6 pt-6 border-t">
-                <h3 className="font-semibold mb-3">Seller Information</h3>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold text-lg">
-                    {item.seller.fullName.charAt(0)}
+              {item.seller && (
+                <div className="mt-6 pt-6 border-t">
+                  <h3 className="font-semibold mb-3">Seller Information</h3>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold text-lg">
+                      {item.seller.fullName?.charAt(0) || 'U'}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold">{item.seller.fullName || 'Unknown'}</p>
+                      <p className="text-sm text-gray-600">
+                        {item.seller.userType === 'BUSINESS' ? 'Business' : 'Individual'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-semibold">{item.seller.fullName}</p>
-                    <p className="text-sm text-gray-600">
-                      {item.seller.userType === 'BUSINESS' ? 'Business' : 'Individual'}
-                    </p>
-                  </div>
+                  <Link
+                    href={`/users/${item.seller.id}`}
+                    className="mt-3 block text-center text-purple-600 hover:text-purple-700 font-semibold"
+                  >
+                    View Profile →
+                  </Link>
                 </div>
-                <Link
-                  href={`/users/${item.seller.id}`}
-                  className="mt-3 block text-center text-purple-600 hover:text-purple-700 font-semibold"
-                >
-                  View Profile →
-                </Link>
-              </div>
+              )}
 
               {/* Safety Tips */}
               <div className="mt-6 pt-6 border-t">

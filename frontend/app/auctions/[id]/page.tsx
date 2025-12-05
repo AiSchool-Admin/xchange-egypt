@@ -159,7 +159,7 @@ export default function AuctionDetailsPage() {
   const isEnded = new Date(auction.endTime) < new Date();
   const hasStarted = new Date(auction.startTime) < new Date();
   const isActive = hasStarted && !isEnded;
-  const isSeller = user?.id === auction.item.seller.id;
+  const isSeller = user?.id === auction.item.seller?.id;
   const minBid = auction.currentPrice + 10;
 
   return (
@@ -245,9 +245,11 @@ export default function AuctionDetailsPage() {
               </h1>
 
               <div className="flex items-center gap-4 mb-6">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                  {auction.item.category.nameEn}
-                </span>
+                {auction.item.category && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                    {auction.item.category.nameEn}
+                  </span>
+                )}
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                   {auction.item.condition}
                 </span>
@@ -286,8 +288,8 @@ export default function AuctionDetailsPage() {
 
               <div className="border-t pt-6 mt-6">
                 <h2 className="text-lg font-semibold mb-2">Seller</h2>
-                <p className="text-gray-700">{auction.item.seller.fullName}</p>
-                <p className="text-sm text-gray-600 capitalize">{auction.item.seller.userType}</p>
+                <p className="text-gray-700">{auction.item.seller?.fullName || 'Unknown'}</p>
+                <p className="text-sm text-gray-600 capitalize">{auction.item.seller?.userType || 'Individual'}</p>
               </div>
             </div>
 

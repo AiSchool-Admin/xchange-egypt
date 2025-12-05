@@ -286,7 +286,7 @@ export default function BarterPage() {
 
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-gray-600">{item.condition}</span>
-                              <span className="text-gray-600">{item.category.nameEn}</span>
+                              {item.category && <span className="text-gray-600">{item.category.nameEn}</span>}
                             </div>
 
                             <div className="pt-2 border-t">

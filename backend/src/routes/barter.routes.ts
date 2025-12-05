@@ -173,6 +173,17 @@ router.get(
   barterController.findBarterMatches
 );
 
+/**
+ * Find if current user has an item that matches what target item owner wants
+ * GET /api/v1/barter/find-my-match/:itemId
+ * Returns the user's matching item for direct barter completion
+ */
+router.get(
+  '/find-my-match/:itemId',
+  authenticate,
+  barterController.findMyMatchingItem
+);
+
 // ============================================
 // Multi-Party Smart Barter Chains
 // ============================================

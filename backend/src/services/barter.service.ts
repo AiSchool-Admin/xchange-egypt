@@ -2,6 +2,7 @@ import { BarterOfferStatus, ItemCondition } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { createNotification } from './notification.service';
 import prisma from '../lib/prisma';
+import { barterEvents } from '../events/barter.events';
 
 // Types
 interface CreateBarterOfferData {
@@ -90,6 +91,7 @@ export const createBarterOffer = async (
   }
 
   let offeredBundleValue = offeredCashAmount;
+  let offeredItemsDetails: { title: string; estimatedValue: number }[] = [];
 
   if (offeredItemIds && offeredItemIds.length > 0) {
     // Verify offered items exist and belong to initiator
@@ -121,6 +123,12 @@ export const createBarterOffer = async (
 
     // Calculate offered bundle value including items
     offeredBundleValue += offeredItems.reduce((sum, item) => sum + item.estimatedValue, 0);
+
+    // Store item details for notification
+    offeredItemsDetails = offeredItems.map(item => ({
+      title: item.title,
+      estimatedValue: item.estimatedValue,
+    }));
   }
 
   // Build preference sets data if provided
@@ -232,6 +240,72 @@ export const createBarterOffer = async (
     },
   });
 
+  // Send notification to recipient (if specified)
+  if (barterOffer && recipientId) {
+    // Build item details for notification
+    const itemsText = offeredItemsDetails.length > 0
+      ? offeredItemsDetails.map(item => `"${item.title}" (${item.estimatedValue.toLocaleString('ar-EG')} ج.م)`).join(' و ')
+      : '';
+    const totalValue = offeredBundleValue.toLocaleString('ar-EG');
+
+    await createNotification({
+      userId: recipientId,
+      type: 'BARTER_OFFER_RECEIVED',
+      title: 'عرض مقايضة جديد 🔄',
+      message: itemsText
+        ? `${barterOffer.initiator?.fullName || 'مستخدم'} يعرض عليك: ${itemsText} - إجمالي القيمة: ${totalValue} ج.م`
+        : `${barterOffer.initiator?.fullName || 'مستخدم'} أرسل لك عرض مقايضة بقيمة ${totalValue} ج.م`,
+      priority: 'HIGH',
+      entityType: 'BARTER_OFFER',
+      entityId: barterOffer.id,
+      actionUrl: `/barter/respond/${barterOffer.id}`,
+      actionText: 'عرض العرض',
+      metadata: {
+        offeredItems: offeredItemsDetails,
+        totalValue: offeredBundleValue,
+        initiatorName: barterOffer.initiator?.fullName,
+      },
+    });
+  }
+
+  // Emit barter offer created event for smart matching
+  if (barterOffer) {
+    barterEvents.emitOfferCreated({
+      offerId: barterOffer.id,
+      initiatorId: barterOffer.initiatorId,
+      recipientId: barterOffer.recipientId || undefined,
+      isOpenOffer: barterOffer.isOpenOffer,
+      offeredItemIds: barterOffer.offeredItemIds,
+      categoryIds: barterOffer.itemRequests?.map(r => r.categoryId).filter(Boolean) as string[] || [],
+      governorate: barterOffer.governorate || undefined,
+      city: barterOffer.city || undefined,
+      district: barterOffer.district || undefined,
+      marketType: barterOffer.marketType || undefined,
+      timestamp: new Date(),
+    });
+
+    // Emit events for each item request (demand side matching)
+    if (barterOffer.itemRequests && barterOffer.itemRequests.length > 0) {
+      for (const request of barterOffer.itemRequests) {
+        barterEvents.emitItemRequestCreated({
+          requestId: request.id,
+          offerId: barterOffer.id,
+          initiatorId: barterOffer.initiatorId,
+          description: request.description,
+          categoryId: request.categoryId || undefined,
+          subcategoryId: request.subcategoryId || undefined,
+          subSubcategoryId: request.subSubcategoryId || undefined,
+          minPrice: request.minPrice || undefined,
+          maxPrice: request.maxPrice || undefined,
+          condition: request.condition || undefined,
+          keywords: request.keywords || [],
+          governorate: barterOffer.governorate || undefined,
+          timestamp: new Date(),
+        });
+      }
+    }
+  }
+
   return barterOffer;
 };
 
@@ -298,9 +372,12 @@ export const getBarterOfferById = async (
     throw new NotFoundError('Barter offer not found');
   }
 
-  // Only initiator or recipient can view the offer
-  if (offer.initiatorId !== userId && offer.recipientId !== userId) {
-    throw new ForbiddenError('You do not have permission to view this offer');
+  // For directed offers, only initiator or recipient can view
+  // For open offers (isOpenOffer = true), anyone can view
+  if (!offer.isOpenOffer) {
+    if (offer.initiatorId !== userId && offer.recipientId !== userId) {
+      throw new ForbiddenError('You do not have permission to view this offer');
+    }
   }
 
   return offer;
@@ -561,6 +638,19 @@ export const createCounterOffer = async (
         },
       },
     },
+  });
+
+  // Send notification to initiator about the counter offer
+  await createNotification({
+    userId: counterOffer.initiatorId,
+    type: 'BARTER_COUNTER_OFFER',
+    title: 'عرض مضاد جديد',
+    message: `${counterOffer.recipient?.fullName || 'المستخدم'} أرسل لك عرضاً مضاداً`,
+    priority: 'HIGH',
+    entityType: 'BARTER_OFFER',
+    entityId: counterOffer.id,
+    actionUrl: `/barter/respond/${counterOffer.id}`,
+    actionText: 'عرض العرض المضاد',
   });
 
   return counterOffer;
@@ -925,4 +1015,124 @@ export const completeBarterExchange = async (
   // TODO: Update item status to TRADED
 
   return completedOffer;
+};
+
+/**
+ * Find if the current user has an item that matches what the target item's owner wants
+ * Used for direct barter completion when there's a known match
+ */
+export const findMyMatchingItemForBarter = async (
+  targetItemId: string,
+  currentUserId: string
+): Promise<{
+  myItem: {
+    id: string;
+    title: string;
+    estimatedValue: number;
+    images: { url: string; isPrimary: boolean }[];
+    category?: { id: string; nameEn: string; nameAr: string };
+  };
+  theirItem: {
+    id: string;
+    title: string;
+    estimatedValue: number;
+    images: { url: string; isPrimary: boolean }[];
+    category?: { id: string; nameEn: string; nameAr: string };
+    sellerId: string;
+    seller?: { id: string; fullName: string };
+    desiredItemTitle?: string | null;
+    desiredCategoryId?: string | null;
+    desiredCategory?: { id: string; nameEn: string; nameAr: string } | null;
+  };
+} | null> => {
+  // Helper to convert image URLs to the expected format
+  const formatImages = (imageUrls: string[]): { url: string; isPrimary: boolean }[] => {
+    return imageUrls.map((url, index) => ({
+      url,
+      isPrimary: index === 0,
+    }));
+  };
+
+  // Get the target item (the one the user is viewing)
+  const targetItem = await prisma.item.findUnique({
+    where: { id: targetItemId },
+    include: {
+      category: { select: { id: true, nameEn: true, nameAr: true } },
+      desiredCategory: { select: { id: true, nameEn: true, nameAr: true } },
+      seller: { select: { id: true, fullName: true } },
+    },
+  });
+
+  if (!targetItem) {
+    return null;
+  }
+
+  // Don't match with own items
+  if (targetItem.sellerId === currentUserId) {
+    return null;
+  }
+
+  // If target item has no barter preferences, can't do direct match
+  if (!targetItem.desiredCategoryId && !targetItem.desiredItemTitle) {
+    return null;
+  }
+
+  // Find current user's items that match what target item owner wants
+  const myItems = await prisma.item.findMany({
+    where: {
+      sellerId: currentUserId,
+      status: 'ACTIVE',
+    },
+    include: {
+      category: { select: { id: true, nameEn: true, nameAr: true } },
+    },
+  });
+
+  // Check each of my items to see if it matches what they want
+  for (const myItem of myItems) {
+    let matches = false;
+
+    // Check if my item matches their desired category
+    if (targetItem.desiredCategoryId && myItem.categoryId === targetItem.desiredCategoryId) {
+      matches = true;
+    }
+
+    // Check if my item title matches their desired item title keywords
+    if (!matches && targetItem.desiredItemTitle && myItem.title) {
+      const theirKeywords = targetItem.desiredItemTitle.toLowerCase().split(/[\s,،]+/).filter((k: string) => k.length > 2);
+      const myTitle = myItem.title.toLowerCase();
+
+      for (const keyword of theirKeywords) {
+        if (myTitle.includes(keyword)) {
+          matches = true;
+          break;
+        }
+      }
+    }
+
+    if (matches) {
+      return {
+        myItem: {
+          id: myItem.id,
+          title: myItem.title,
+          estimatedValue: myItem.estimatedValue,
+          images: formatImages(myItem.images),
+          category: myItem.category || undefined,
+        },
+        theirItem: {
+          id: targetItem.id,
+          title: targetItem.title,
+          estimatedValue: targetItem.estimatedValue,
+          images: formatImages(targetItem.images),
+          sellerId: targetItem.sellerId,
+          seller: targetItem.seller || undefined,
+          desiredItemTitle: targetItem.desiredItemTitle,
+          desiredCategoryId: targetItem.desiredCategoryId,
+          desiredCategory: targetItem.desiredCategory || undefined,
+        },
+      };
+    }
+  }
+
+  return null;
 };

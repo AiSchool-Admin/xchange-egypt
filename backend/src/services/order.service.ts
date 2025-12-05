@@ -1,6 +1,7 @@
 import { OrderStatus } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { clearCart, getCart } from './cart.service';
+import { createNotification } from './notification.service';
 import prisma from '../lib/prisma';
 
 // Egyptian governorates for shipping calculations
@@ -210,6 +211,38 @@ export const createOrder = async (
   // Clear cart
   await clearCart(userId);
 
+  // Send notification to buyer confirming order
+  await createNotification({
+    userId: userId,
+    type: 'TRANSACTION_PAYMENT_RECEIVED',
+    title: 'تم إنشاء طلبك بنجاح',
+    message: `تم إنشاء طلبك رقم ${order.orderNumber} وهو قيد المعالجة`,
+    priority: 'HIGH',
+    entityType: 'ORDER',
+    entityId: order.id,
+    actionUrl: `/dashboard/orders/${order.id}`,
+    actionText: 'عرض الطلب',
+  });
+
+  // Send notifications to all sellers
+  const sellerIds = [...new Set(order.items.map(item => item.sellerId))];
+  for (const sellerId of sellerIds) {
+    const sellerItems = order.items.filter(item => item.sellerId === sellerId);
+    const itemTitles = sellerItems.map(item => item.listing.item.title).join('، ');
+
+    await createNotification({
+      userId: sellerId,
+      type: 'ITEM_SOLD',
+      title: 'تم بيع سلعتك! 🎉',
+      message: `تم بيع: ${itemTitles}`,
+      priority: 'HIGH',
+      entityType: 'ORDER',
+      entityId: order.id,
+      actionUrl: `/dashboard/orders`,
+      actionText: 'عرض الطلبات',
+    });
+  }
+
   return order;
 };
 
@@ -334,7 +367,7 @@ export const updateOrderStatus = async (
     updateData.deliveredAt = new Date();
   }
 
-  return prisma.order.update({
+  const updatedOrder = await prisma.order.update({
     where: { id: orderId },
     data: updateData,
     include: {
@@ -350,6 +383,42 @@ export const updateOrderStatus = async (
       shippingAddress: true,
     },
   });
+
+  // Send notifications based on status change
+  const notificationMessages: Record<string, { title: string; message: string; type: string }> = {
+    [OrderStatus.PAID]: {
+      title: 'تم تأكيد الدفع',
+      message: `تم تأكيد دفع طلبك رقم ${updatedOrder.orderNumber}`,
+      type: 'TRANSACTION_PAYMENT_RECEIVED',
+    },
+    [OrderStatus.SHIPPED]: {
+      title: 'تم شحن طلبك 🚚',
+      message: `طلبك رقم ${updatedOrder.orderNumber} في الطريق إليك`,
+      type: 'TRANSACTION_SHIPPED',
+    },
+    [OrderStatus.DELIVERED]: {
+      title: 'تم التوصيل ✅',
+      message: `تم توصيل طلبك رقم ${updatedOrder.orderNumber} بنجاح`,
+      type: 'TRANSACTION_DELIVERED',
+    },
+  };
+
+  const notification = notificationMessages[status];
+  if (notification) {
+    await createNotification({
+      userId: updatedOrder.userId,
+      type: notification.type as any,
+      title: notification.title,
+      message: notification.message,
+      priority: 'HIGH',
+      entityType: 'ORDER',
+      entityId: updatedOrder.id,
+      actionUrl: `/dashboard/orders/${updatedOrder.id}`,
+      actionText: 'عرض الطلب',
+    });
+  }
+
+  return updatedOrder;
 };
 
 /**
