@@ -67,12 +67,12 @@ export const seedTestData = async () => {
   // Create a test category
   const category = await db.category.create({
     data: {
-      name_en: 'Test Electronics',
-      name_ar: 'إلكترونيات تجريبية',
+      nameEn: 'Test Electronics',
+      nameAr: 'إلكترونيات تجريبية',
       slug: 'test-electronics',
       icon: '📱',
       level: 1,
-      is_active: true,
+      isActive: true,
     },
   });
 
