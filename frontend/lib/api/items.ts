@@ -104,6 +104,9 @@ export const getItems = async (params?: {
   governorate?: string;
   city?: string;
   district?: string;
+  // Sorting
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }): Promise<ItemsResponse> => {
   const queryParams = new URLSearchParams();
 
@@ -121,6 +124,9 @@ export const getItems = async (params?: {
   if (params?.governorate) queryParams.append('governorate', params.governorate);
   if (params?.city) queryParams.append('city', params.city);
   if (params?.district) queryParams.append('district', params.district);
+  // Sorting params
+  if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+  if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
   const response = await apiClient.get(`/items/search?${queryParams.toString()}`);
   return response.data;
