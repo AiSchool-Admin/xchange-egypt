@@ -191,7 +191,7 @@ model Item {
   // Item type classification
   itemType        ItemType      @default(GOOD) @map("item_type")
 
-  condition       ItemCondition
+  condition       ItemCondition @default(GOOD)
   estimatedValue  Float         @map("estimated_value") // In EGP
   images          String[]      // Array of image URLs
 

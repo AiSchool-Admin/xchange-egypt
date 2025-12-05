@@ -217,7 +217,7 @@ Instead of rebuilding the entire graph on every event:
        "title": "iPhone 13",
        "description": "Like new condition",
        "categoryId": "...",
-       "condition": "EXCELLENT",
+       "condition": "LIKE_NEW",
        "estimatedValue": 5000,
        "desiredCategoryId": "...",
        "desiredKeywords": "laptop macbook"

@@ -120,7 +120,7 @@ Content-Type: application/json
 
 {
   "categoryId": "smartphone-category-id",
-  "condition": "EXCELLENT",
+  "condition": "LIKE_NEW",
   "title": "iPhone 14 Pro",
   "description": "256GB, barely used"
 }
