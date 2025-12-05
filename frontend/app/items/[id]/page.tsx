@@ -150,8 +150,8 @@ export default function ItemDetailsPage() {
 
   // Load similar items
   useEffect(() => {
-    if (item?.categoryId) {
-      loadSimilarItems(item.categoryId, item.id);
+    if (item?.category?.id) {
+      loadSimilarItems(item.category.id, item.id);
     }
   }, [item]);
 
@@ -917,7 +917,7 @@ export default function ItemDetailsPage() {
                 منتجات مشابهة
               </h2>
               <Link
-                href={`/items?categoryId=${item.categoryId}`}
+                href={`/items?categoryId=${item.category?.id}`}
                 className="text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
               >
                 عرض الكل
