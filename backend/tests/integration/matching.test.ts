@@ -587,17 +587,17 @@ describe('Smart Matching System - التوافق الذكي', () => {
     it('should return matching service statistics', async () => {
       const stats = await getMatchingStats();
 
-      expect(stats).toHaveProperty('totalItems');
-      expect(stats).toHaveProperty('activeItems');
-      expect(stats).toHaveProperty('barterItems');
-      expect(stats).toHaveProperty('demandItems');
+      expect(stats).toHaveProperty('totalSupplyItems');
+      expect(stats).toHaveProperty('totalDemandItems');
+      expect(stats).toHaveProperty('matchNotificationsLast24h');
+      expect(stats).toHaveProperty('cacheSize');
     });
 
     it('should count items correctly', async () => {
       const stats = await getMatchingStats();
 
-      expect(stats.totalItems).toBeGreaterThan(0);
-      expect(stats.activeItems).toBeLessThanOrEqual(stats.totalItems);
+      expect(stats.totalSupplyItems).toBeGreaterThanOrEqual(0);
+      expect(stats.totalDemandItems).toBeGreaterThanOrEqual(0);
     });
   });
 

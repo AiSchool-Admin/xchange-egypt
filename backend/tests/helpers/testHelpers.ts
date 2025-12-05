@@ -5,8 +5,11 @@
 
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { PrismaClient, UserType, UserStatus } from '@prisma/client';
 import { getTestDb } from './testDb';
+
+// Type definitions for user enums
+type UserType = 'INDIVIDUAL' | 'BUSINESS' | 'ADMIN';
+type UserStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'BANNED';
 
 /**
  * Generate a test JWT token

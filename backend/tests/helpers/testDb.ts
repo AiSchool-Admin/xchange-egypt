@@ -34,11 +34,11 @@ export const cleanDatabase = async () => {
   await db.$executeRawUnsafe('SET session_replication_role = replica;');
 
   // Get all table names
-  const tables = await db.$queryRawUnsafe<Array<{ tablename: string }>>(`
+  const tables = (await db.$queryRawUnsafe(`
     SELECT tablename FROM pg_tables
     WHERE schemaname = 'public'
     AND tablename != '_prisma_migrations'
-  `);
+  `)) as Array<{ tablename: string }>;
 
   // Truncate all tables
   for (const { tablename } of tables) {
