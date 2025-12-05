@@ -94,6 +94,7 @@ export const getItems = async (params?: {
   limit?: number;
   categoryId?: string;
   condition?: string;
+  listingType?: string;
   minPrice?: number;
   maxPrice?: number;
   search?: string;
@@ -110,6 +111,7 @@ export const getItems = async (params?: {
   if (params?.limit) queryParams.append('limit', params.limit.toString());
   if (params?.categoryId) queryParams.append('categoryId', params.categoryId);
   if (params?.condition) queryParams.append('condition', params.condition);
+  if (params?.listingType) queryParams.append('listingType', params.listingType);
   if (params?.minPrice) queryParams.append('minPrice', params.minPrice.toString());
   if (params?.maxPrice) queryParams.append('maxPrice', params.maxPrice.toString());
   if (params?.search) queryParams.append('search', params.search);
