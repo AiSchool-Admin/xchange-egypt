@@ -297,7 +297,7 @@ model Item {
   // DEMAND: DIRECT_BUY, REVERSE_AUCTION
   listingType     ListingType   @default(DIRECT_SALE) @map("listing_type")
 
-  condition       ItemCondition
+  condition       ItemCondition @default(GOOD)
   estimatedValue  Float         @map("estimated_value") // In EGP
   images          String[]      // Array of image URLs
 

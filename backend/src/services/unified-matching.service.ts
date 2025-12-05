@@ -329,8 +329,8 @@ const findDemandMatches = async (supplyItem: any): Promise<MatchResult[]> => {
       category: auction.category,
       estimatedValue: auction.maxBudget || 0,
       desiredValueMax: auction.maxBudget,
-      governorate: auction.governorate || null,
-      city: auction.city || null,
+      governorate: auction.location || null,  // ReverseAuction uses 'location' field
+      city: null,  // ReverseAuction doesn't have separate city field
       district: null,
       latitude: null,
       longitude: null,
@@ -1012,7 +1012,7 @@ export const getMatchingStats = async () => {
     prisma.item.count({ where: { status: 'ACTIVE', listingType: { in: ['DIRECT_BUY', 'REVERSE_AUCTION'] } } }),
     prisma.notification.count({
       where: {
-        type: { in: ['BARTER_MATCH', 'ITEM_AVAILABLE', 'PURCHASE_REQUEST_MATCH'] },
+        type: { in: ['BARTER_MATCH', 'ITEM_AVAILABLE'] },
         createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
       },
     }),

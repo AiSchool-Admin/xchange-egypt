@@ -96,17 +96,18 @@ export const runProactiveMatching = async (): Promise<number> => {
     }
 
     // 3. Process pending barter offers (legacy support)
+    // Note: offeredItemIds is a String[] array, not a relation
     const pendingOffers = await prisma.barterOffer.findMany({
       where: {
         status: 'PENDING',
         isOpenOffer: true,
         expiresAt: { gt: new Date() },
-        offeredItems: { some: {} },
+        offeredItemIds: { isEmpty: false },
       },
       select: {
         id: true,
         initiatorId: true,
-        offeredItems: { select: { id: true } },
+        offeredItemIds: true,
       },
       take: 30,
     });
@@ -114,15 +115,15 @@ export const runProactiveMatching = async (): Promise<number> => {
     console.log(`[BarterMatcherJob] Found ${pendingOffers.length} pending barter offers to check`);
 
     for (const offer of pendingOffers) {
-      for (const offeredItem of offer.offeredItems) {
-        if (recentlyProcessed.has(offeredItem.id)) continue;
-        recentlyProcessed.add(offeredItem.id);
+      for (const offeredItemId of offer.offeredItemIds) {
+        if (recentlyProcessed.has(offeredItemId)) continue;
+        recentlyProcessed.add(offeredItemId);
 
         try {
-          const matches = await processNewItem(offeredItem.id, offer.initiatorId);
+          const matches = await processNewItem(offeredItemId, offer.initiatorId);
           notificationCount += matches.length;
         } catch (error) {
-          console.error(`[BarterMatcherJob] Error processing offer item ${offeredItem.id}:`, error);
+          console.error(`[BarterMatcherJob] Error processing offer item ${offeredItemId}:`, error);
         }
       }
     }
