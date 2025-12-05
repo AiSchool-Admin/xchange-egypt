@@ -6,7 +6,7 @@ export interface Item {
   id: string;
   title: string;
   description: string;
-  condition: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
+  condition: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR' | 'FOR_PARTS' | 'DAMAGED' | 'SCRAP';
   price?: number;
   estimatedValue?: number;
   location?: string;
@@ -14,6 +14,7 @@ export interface Item {
   city?: string;
   district?: string;
   status: 'DRAFT' | 'ACTIVE' | 'SOLD' | 'TRADED' | 'ARCHIVED';
+  listingType?: 'DIRECT_SALE' | 'AUCTION' | 'BARTER' | 'DIRECT_BUY' | 'REVERSE_AUCTION';
   images: Array<{ id: string; url: string; isPrimary: boolean }>;
   // Featured/Promotion fields
   isFeatured?: boolean;
