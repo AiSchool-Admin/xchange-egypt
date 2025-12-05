@@ -45,6 +45,7 @@ import walletRoutes from './routes/wallet.routes';
 import exchangePointsRoutes from './routes/exchange-points.routes';
 import searchAlertsRoutes from './routes/search-alerts.routes';
 import scrapMarketplaceRoutes from './routes/scrap-marketplace.routes';
+import matchingRoutes from './routes/matching.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -58,6 +59,9 @@ import { attachChatEventHandlers } from './services/socket.service';
 
 // Import smart matching service (consolidated notification logic)
 import { initSmartMatchingListeners } from './services/smart-matching.service';
+
+// Import unified matching service (improved matching orchestrator)
+import { initUnifiedMatching } from './services/unified-matching.service';
 
 // Initialize Express app
 const app: Application = express();
@@ -306,6 +310,9 @@ app.use('/api/v1/search-alerts', searchAlertsRoutes);
 // Scrap Marketplace routes - سوق التوالف
 app.use('/api/v1/scrap', scrapMarketplaceRoutes);
 
+// Matching routes - نظام المطابقة الذكية
+app.use('/api/v1/matching', matchingRoutes);
+
 // 404 handler
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
@@ -373,9 +380,13 @@ const startServer = async () => {
     startRealtimeMatching();
     console.log('✅ Real-time matching service started');
 
-    // Initialize smart matching listeners (consolidated notification logic)
+    // Initialize smart matching listeners (legacy - kept for backwards compatibility)
     initSmartMatchingListeners();
     console.log('✅ Smart matching notification service started');
+
+    // Initialize unified matching service (improved orchestrator with geographic priority)
+    initUnifiedMatching(io);
+    console.log('✅ Unified matching service started');
 
     // Start background jobs (kept for fallback and cleanup)
     if (env.server.nodeEnv === 'production') {
