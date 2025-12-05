@@ -232,7 +232,7 @@ export default function ItemCard({
             )}
 
             {/* Listing Type Badge */}
-            {listingType !== 'DIRECT_SALE' && (
+            {listingType && listingType !== 'DIRECT_SALE' && listingInfo && (
               <span className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-medium text-white ${listingInfo.color}`}>
                 {listingInfo.icon}
               </span>
@@ -385,7 +385,7 @@ export default function ItemCard({
           )}
 
           {/* Listing Type Badge (for non-sale items) */}
-          {listingType !== 'DIRECT_SALE' && (
+          {listingType && listingType !== 'DIRECT_SALE' && listingInfo && (
             <span className={`absolute top-2 right-12 px-2 py-1 rounded-full text-xs font-medium text-white ${listingInfo.color}`}>
               {listingInfo.icon} {listingInfo.label}
             </span>
