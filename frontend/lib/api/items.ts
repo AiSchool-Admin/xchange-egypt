@@ -100,6 +100,7 @@ export const getItems = async (params?: {
   search?: string;
   status?: string;
   sellerId?: string;
+  featured?: boolean;
   // Location filters
   governorate?: string;
   city?: string;
@@ -120,6 +121,7 @@ export const getItems = async (params?: {
   if (params?.search) queryParams.append('search', params.search);
   if (params?.status) queryParams.append('status', params.status);
   if (params?.sellerId) queryParams.append('sellerId', params.sellerId);
+  if (params?.featured !== undefined) queryParams.append('featured', params.featured.toString());
   // Location params
   if (params?.governorate) queryParams.append('governorate', params.governorate);
   if (params?.city) queryParams.append('city', params.city);
