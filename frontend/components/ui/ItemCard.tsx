@@ -158,21 +158,29 @@ export default function ItemCard({
   // Get primary image
   const getImageUrl = (): string => {
     if (!images || images.length === 0) return '';
-    const firstImage = images[0];
+
+    // Filter out null/undefined values
+    const validImages = images.filter((img): img is string | { url: string; isPrimary?: boolean } =>
+      img !== null && img !== undefined
+    );
+
+    if (validImages.length === 0) return '';
+
+    const firstImage = validImages[0];
     if (typeof firstImage === 'string') return firstImage;
 
     // Find primary image or use first
-    const primaryImage = images.find(
+    const primaryImage = validImages.find(
       (img): img is { url: string; isPrimary?: boolean } =>
-        typeof img !== 'string' && img.isPrimary === true
+        typeof img !== 'string' && img?.isPrimary === true
     );
-    return primaryImage?.url || (typeof firstImage === 'string' ? firstImage : firstImage.url);
+    return primaryImage?.url || (typeof firstImage === 'string' ? firstImage : firstImage?.url || '');
   };
 
   const imageUrl = getImageUrl();
-  const imageCount = images?.length || 0;
+  const imageCount = images?.filter(img => img !== null && img !== undefined)?.length || 0;
   const conditionInfo = condition ? CONDITIONS[condition] : null;
-  const listingInfo = LISTING_TYPES[listingType];
+  const listingInfo = listingType ? LISTING_TYPES[listingType] : null;
   const displayLocation = location || governorate || '';
 
   // Handle favorite toggle
