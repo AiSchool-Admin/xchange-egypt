@@ -8,6 +8,7 @@ import { getCategories, Category } from '@/lib/api/categories';
 import LocationSelector, { LocationSelection } from '@/components/LocationSelector';
 import { getLocationLabel, getGovernorateNameAr, getCityNameAr, getDistrictNameAr } from '@/lib/data/egyptLocations';
 import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 // ============================================
 // Constants
@@ -40,6 +41,7 @@ const SORT_OPTIONS = [
 export default function ItemsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user: currentUser } = useAuth();
 
   // URL params
   const categorySlug = searchParams.get('category');
@@ -47,6 +49,10 @@ export default function ItemsPage() {
   const governorateParam = searchParams.get('governorate');
   const cityParam = searchParams.get('city');
   const districtParam = searchParams.get('district');
+  const userParam = searchParams.get('user');
+
+  // Check if viewing own items
+  const isMyItems = userParam === 'me';
 
   // State
   const [items, setItems] = useState<Item[]>([]);
@@ -117,8 +123,10 @@ export default function ItemsPage() {
 
   // Load items when filters change
   useEffect(() => {
+    // For "my items", wait for user to be loaded
+    if (isMyItems && !currentUser) return;
     loadItems();
-  }, [page, selectedCategory, selectedCondition, selectedListingType, debouncedMinPrice, debouncedMaxPrice, debouncedSearch, location, sortBy]);
+  }, [page, selectedCategory, selectedCondition, selectedListingType, debouncedMinPrice, debouncedMaxPrice, debouncedSearch, location, sortBy, isMyItems, currentUser]);
 
   const loadCategories = async () => {
     try {
@@ -161,7 +169,8 @@ export default function ItemsPage() {
         minPrice: debouncedMinPrice ? parseFloat(debouncedMinPrice) : undefined,
         maxPrice: debouncedMaxPrice ? parseFloat(debouncedMaxPrice) : undefined,
         search: debouncedSearch || undefined,
-        status: 'ACTIVE',
+        status: isMyItems ? undefined : 'ACTIVE', // Show all statuses for own items
+        sellerId: isMyItems && currentUser ? currentUser.id : undefined,
         governorate: governorateFilter,
         city: cityFilter,
         district: districtFilter,
@@ -201,6 +210,9 @@ export default function ItemsPage() {
   };
 
   const getCategoryName = () => {
+    if (isMyItems) {
+      return '📦 منتجاتي';
+    }
     if (selectedCategory) {
       const category = categories.find(cat => cat.id === selectedCategory);
       return category?.nameAr || 'السوق';
