@@ -192,11 +192,13 @@ export default function ActivityDashboardPage() {
     try {
       // Get user's reverse auctions directly using buyerId filter
       const response = await apiClient.get(`/reverse-auctions?buyerId=${user?.id}`);
-      const myAuctions = response.data.data?.auctions || response.data.data || [];
+
+      // Backend returns { data: { items: [...], pagination: {...} } }
+      const myAuctions = response.data?.data?.items || response.data?.data?.auctions || [];
       setReverseAuctions(myAuctions);
       setStats(s => ({ ...s, reverseAuctions: myAuctions.length }));
-    } catch (err) {
-      console.error('Error loading reverse auctions:', err);
+    } catch (err: any) {
+      console.error('Error loading reverse auctions:', err.response?.data || err.message || err);
     }
   };
 
