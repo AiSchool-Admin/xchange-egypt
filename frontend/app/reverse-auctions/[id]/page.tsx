@@ -113,8 +113,13 @@ export default function ReverseAuctionDetailsPage() {
     try {
       setLoading(true);
       const response = await apiClient.get(`/reverse-auctions/${auctionId}`);
-      setAuction(response.data.data);
+      console.log('Reverse auction response:', response.data);
+      const auctionData = response.data.data;
+      console.log('Auction data:', auctionData);
+      console.log('Bids:', auctionData?.bids);
+      setAuction(auctionData);
     } catch (err: any) {
+      console.error('Error loading auction:', err.response?.data || err);
       setError(err.response?.data?.message || 'فشل في تحميل المناقصة');
     } finally {
       setLoading(false);
@@ -379,7 +384,7 @@ export default function ReverseAuctionDetailsPage() {
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
-                  <p className="text-2xl font-bold text-orange-600">{auction.totalBids}</p>
+                  <p className="text-2xl font-bold text-orange-600">{auction.bids?.length || 0}</p>
                   <p className="text-xs text-gray-500">عرض</p>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-3 text-center">
