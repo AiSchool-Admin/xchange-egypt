@@ -177,12 +177,14 @@ export default function ActivityDashboardPage() {
         apiClient.get('/barter/offers/my?type=sent'),
         apiClient.get('/barter/offers/my?type=received'),
       ]);
-      const sent = sentRes.data.data?.offers || sentRes.data.data || [];
-      const received = receivedRes.data.data?.offers || receivedRes.data.data || [];
-      setSentBarterOffers(sent);
-      setReceivedBarterOffers(received);
-      setBarterOffers([...sent, ...received]);
-      setStats(s => ({ ...s, barterOffers: sent.length + received.length }));
+      // Backend returns { items: [...], pagination: {...} }
+      const sent = sentRes.data.data?.items || sentRes.data.data?.offers || [];
+      const received = receivedRes.data.data?.items || receivedRes.data.data?.offers || [];
+      setSentBarterOffers(Array.isArray(sent) ? sent : []);
+      setReceivedBarterOffers(Array.isArray(received) ? received : []);
+      const allOffers = [...(Array.isArray(sent) ? sent : []), ...(Array.isArray(received) ? received : [])];
+      setBarterOffers(allOffers);
+      setStats(s => ({ ...s, barterOffers: allOffers.length }));
     } catch (err) {
       console.error('Error loading barter offers:', err);
     }

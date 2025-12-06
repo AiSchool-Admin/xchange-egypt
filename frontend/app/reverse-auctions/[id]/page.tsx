@@ -342,7 +342,7 @@ export default function ReverseAuctionDetailsPage() {
                       </div>
 
                       {/* Award button for buyer */}
-                      {isBuyer && isActive && bid.status === 'ACTIVE' && (
+                      {isBuyer && isActive && ['ACTIVE', 'WINNING', 'OUTBID'].includes(bid.status) && (
                         <button
                           onClick={() => handleAwardBid(bid.id)}
                           className="mt-3 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm"
