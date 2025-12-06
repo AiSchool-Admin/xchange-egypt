@@ -99,7 +99,7 @@ ON CONFLICT (email) DO UPDATE SET
 -- =====================================================
 
 -- Items for User 1 (أحمد التاجر - Direct Sales)
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -109,13 +109,15 @@ SELECT
   'NEW',
   75000,
   'DIRECT_SALE',
+  'GOOD',
   'Cairo',
   'ACTIVE',
+  '{}',
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test1@xchange.eg';
 
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -125,13 +127,15 @@ SELECT
   'NEW',
   55000,
   'DIRECT_SALE',
+  'GOOD',
   'Cairo',
   'ACTIVE',
+  '{}',
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test1@xchange.eg';
 
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -141,14 +145,16 @@ SELECT
   'NEW',
   12000,
   'DIRECT_SALE',
+  'GOOD',
   'Cairo',
   'ACTIVE',
+  '{}',
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test1@xchange.eg';
 
 -- Items for User 2 (سارة المقايضة - Barter)
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, desired_item_title, desired_item_description, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, desired_item_title, desired_item_description, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -158,15 +164,17 @@ SELECT
   'LIKE_NEW',
   25000,
   'BARTER',
+  'GOOD',
   'Alexandria',
   'ACTIVE',
+  '{}',
   'طاولة سفرة 6 أشخاص',
   'طاولة سفرة خشب زان مع 6 كراسي',
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test2@xchange.eg';
 
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, desired_item_title, desired_item_description, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, desired_item_title, desired_item_description, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -176,8 +184,10 @@ SELECT
   'LIKE_NEW',
   60000,
   'BARTER',
+  'GOOD',
   'Alexandria',
   'ACTIVE',
+  '{}',
   'آيفون 15 برو أو أحدث',
   'آيفون 15 برو أو برو ماكس بحالة جيدة',
   NOW(),
@@ -185,7 +195,7 @@ SELECT
 FROM users u WHERE u.email = 'test2@xchange.eg';
 
 -- Items for User 3 (محمد المزادات - Auctions)
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -195,13 +205,15 @@ SELECT
   'LIKE_NEW',
   1500000,
   'AUCTION',
+  'GOOD',
   'Giza',
   'ACTIVE',
+  '{}',
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test3@xchange.eg';
 
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -211,14 +223,16 @@ SELECT
   'LIKE_NEW',
   120000,
   'AUCTION',
+  'GOOD',
   'Giza',
   'ACTIVE',
+  '{}',
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test3@xchange.eg';
 
 -- Items for User 4 (فاطمة الخردة - Scrap)
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, is_scrap, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -228,13 +242,16 @@ SELECT
   'POOR',
   15000,
   'DIRECT_SALE',
+  'GOOD',
   'Cairo',
   'ACTIVE',
+  '{}',
+  true,
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test4@xchange.eg';
 
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, is_scrap, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -244,14 +261,17 @@ SELECT
   'POOR',
   8000,
   'DIRECT_SALE',
+  'GOOD',
   'Cairo',
   'ACTIVE',
+  '{}',
+  true,
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test4@xchange.eg';
 
 -- Items for User 5 (كريم الفاخر - Luxury)
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -261,13 +281,15 @@ SELECT
   'LIKE_NEW',
   850000,
   'DIRECT_SALE',
+  'GOOD',
   'Cairo',
   'ACTIVE',
+  '{}',
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test5@xchange.eg';
 
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, governorate, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   u.id,
@@ -277,8 +299,10 @@ SELECT
   'LIKE_NEW',
   1200000,
   'DIRECT_SALE',
+  'GOOD',
   'Cairo',
   'ACTIVE',
+  '{}',
   NOW(),
   NOW()
 FROM users u WHERE u.email = 'test5@xchange.eg';
