@@ -138,12 +138,13 @@ LIMIT 1;
 -- =====================================================
 
 -- Barter Offer 1: test2 offers Sofa to test6 for Real Estate exchange
-INSERT INTO barter_offers (id, initiator_id, recipient_id, status, offered_bundle_value, requested_cash_amount, market_type, governorate, message, created_at, updated_at)
+INSERT INTO barter_offers (id, initiator_id, recipient_id, status, offered_item_ids, offered_bundle_value, requested_cash_amount, market_type, governorate, notes, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test6@xchange.eg'),
   'PENDING',
+  ARRAY[(SELECT i.id FROM items i JOIN users u ON i.seller_id = u.id WHERE u.email = 'test2@xchange.eg' AND i.title LIKE '%أريكة%' LIMIT 1)],
   25000,
   0,
   'GOVERNORATE',
@@ -154,27 +155,30 @@ SELECT
 WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test2@xchange.eg');
 
 -- Barter Offer 2: test7 offers Dior bags to test9 for Antiques
-INSERT INTO barter_offers (id, initiator_id, recipient_id, status, offered_bundle_value, market_type, governorate, message, created_at, updated_at)
+INSERT INTO barter_offers (id, initiator_id, recipient_id, status, offered_item_ids, offered_bundle_value, market_type, governorate, notes, created_at, updated_at, responded_at)
 SELECT
   gen_random_uuid(),
   (SELECT id FROM users WHERE email = 'test7@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test9@xchange.eg'),
   'ACCEPTED',
+  ARRAY[(SELECT i.id FROM items i JOIN users u ON i.seller_id = u.id WHERE u.email = 'test7@xchange.eg' AND i.title LIKE '%ديور%' LIMIT 1)],
   120000,
   'NATIONAL',
   'Cairo',
   'أقايض حقائب ديور بالطقم الأنتيك الصيني - صفقة رائعة للطرفين',
   NOW() - INTERVAL '5 days',
+  NOW() - INTERVAL '2 days',
   NOW() - INTERVAL '2 days'
 WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test7@xchange.eg');
 
 -- Barter Offer 3: test10 offers Ping Pong table to test2 for Samsung
-INSERT INTO barter_offers (id, initiator_id, recipient_id, status, offered_bundle_value, offered_cash_amount, market_type, governorate, message, created_at, updated_at)
+INSERT INTO barter_offers (id, initiator_id, recipient_id, status, offered_item_ids, offered_bundle_value, offered_cash_amount, market_type, governorate, notes, created_at, updated_at)
 SELECT
   gen_random_uuid(),
   (SELECT id FROM users WHERE email = 'test10@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   'PENDING',
+  ARRAY[(SELECT i.id FROM items i JOIN users u ON i.seller_id = u.id WHERE u.email = 'test10@xchange.eg' AND i.title LIKE '%بينج بونج%' LIMIT 1)],
   15000,
   45000,
   'GOVERNORATE',
@@ -184,13 +188,14 @@ SELECT
   NOW()
 WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test10@xchange.eg');
 
--- Barter Offer 4: Completed barter between test2 and test9
-INSERT INTO barter_offers (id, initiator_id, recipient_id, status, offered_bundle_value, market_type, governorate, message, created_at, updated_at, completed_at)
+-- Barter Offer 4: Completed barter between test9 and test2
+INSERT INTO barter_offers (id, initiator_id, recipient_id, status, offered_item_ids, offered_bundle_value, market_type, governorate, notes, created_at, updated_at, responded_at)
 SELECT
   gen_random_uuid(),
   (SELECT id FROM users WHERE email = 'test9@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   'COMPLETED',
+  ARRAY[(SELECT i.id FROM items i JOIN users u ON i.seller_id = u.id WHERE u.email = 'test9@xchange.eg' AND i.title LIKE '%أنتيك%' LIMIT 1)],
   45000,
   'NATIONAL',
   'Alexandria',
