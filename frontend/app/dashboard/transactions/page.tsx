@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import apiClient from '@/lib/api/client';
 
@@ -59,6 +59,7 @@ const TRANSACTION_TYPE_LABELS: Record<string, string> = {
 export default function TransactionsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -76,6 +77,31 @@ export default function TransactionsPage() {
       fetchTransactions();
     }
   }, [user, activeTab]);
+
+  // Auto-select transaction from URL parameter
+  useEffect(() => {
+    const selectedId = searchParams.get('selected');
+    if (selectedId && transactions.length > 0) {
+      const tx = transactions.find(t => t.id === selectedId);
+      if (tx) {
+        setSelectedTransaction(tx);
+      } else {
+        // Transaction not in current list, try to load it
+        loadTransactionById(selectedId);
+      }
+    }
+  }, [searchParams, transactions]);
+
+  const loadTransactionById = async (id: string) => {
+    try {
+      const response = await apiClient.get(`/transactions/${id}`);
+      if (response.data.data) {
+        setSelectedTransaction(response.data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load transaction:', err);
+    }
+  };
 
   const fetchTransactions = async () => {
     try {
@@ -122,6 +148,67 @@ export default function TransactionsPage() {
   const getMyRole = (transaction: Transaction) => {
     if (!user) return '';
     return transaction.buyer?.id === user.id ? 'مشتري' : 'بائع';
+  };
+
+  const isSeller = (transaction: Transaction) => transaction.seller?.id === user?.id;
+  const isBuyer = (transaction: Transaction) => transaction.buyer?.id === user?.id;
+
+  // Action handlers
+  const handleConfirmPayment = async (transactionId: string) => {
+    try {
+      await apiClient.post(`/transactions/${transactionId}/confirm-payment`);
+      fetchTransactions();
+      if (selectedTransaction?.id === transactionId) {
+        const response = await apiClient.get(`/transactions/${transactionId}`);
+        setSelectedTransaction(response.data.data);
+      }
+    } catch (err: any) {
+      console.error('Failed to confirm payment:', err);
+      alert(err.response?.data?.message || 'فشل في تأكيد الدفع');
+    }
+  };
+
+  const handleMarkAsShipped = async (transactionId: string) => {
+    try {
+      await apiClient.post(`/transactions/${transactionId}/ship`);
+      fetchTransactions();
+      if (selectedTransaction?.id === transactionId) {
+        const response = await apiClient.get(`/transactions/${transactionId}`);
+        setSelectedTransaction(response.data.data);
+      }
+    } catch (err: any) {
+      console.error('Failed to mark as shipped:', err);
+      alert(err.response?.data?.message || 'فشل في تحديث حالة الشحن');
+    }
+  };
+
+  const handleMarkAsDelivered = async (transactionId: string) => {
+    try {
+      await apiClient.post(`/transactions/${transactionId}/deliver`);
+      fetchTransactions();
+      if (selectedTransaction?.id === transactionId) {
+        const response = await apiClient.get(`/transactions/${transactionId}`);
+        setSelectedTransaction(response.data.data);
+      }
+    } catch (err: any) {
+      console.error('Failed to mark as delivered:', err);
+      alert(err.response?.data?.message || 'فشل في تأكيد التسليم');
+    }
+  };
+
+  const handleCancelTransaction = async (transactionId: string) => {
+    if (!confirm('هل أنت متأكد من إلغاء هذه المعاملة؟')) return;
+    try {
+      await apiClient.post(`/transactions/${transactionId}/cancel`);
+      fetchTransactions();
+      if (selectedTransaction?.id === transactionId) {
+        const response = await apiClient.get(`/transactions/${transactionId}`);
+        setSelectedTransaction(response.data.data);
+      }
+    } catch (err: any) {
+      console.error('Failed to cancel transaction:', err);
+      alert(err.response?.data?.message || 'فشل في إلغاء المعاملة');
+    }
   };
 
   if (authLoading || !user) {
@@ -377,7 +464,7 @@ export default function TransactionsPage() {
                   </div>
 
                   {/* Dates */}
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-sm mb-4 pb-4 border-b">
                     <div className="flex justify-between">
                       <span className="text-gray-600">تاريخ الإنشاء</span>
                       <span>{new Date(selectedTransaction.createdAt).toLocaleString('ar-EG')}</span>
@@ -386,6 +473,101 @@ export default function TransactionsPage() {
                       <div className="flex justify-between">
                         <span className="text-gray-600">تاريخ الإكمال</span>
                         <span>{new Date(selectedTransaction.completedAt).toLocaleString('ar-EG')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-gray-700">الإجراءات المتاحة</h3>
+
+                    {/* Seller: Mark as Shipped */}
+                    {isSeller(selectedTransaction) &&
+                     selectedTransaction.paymentStatus === 'COMPLETED' &&
+                     selectedTransaction.deliveryStatus === 'PENDING' && (
+                      <button
+                        onClick={() => handleMarkAsShipped(selectedTransaction.id)}
+                        className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span>🚚</span>
+                        تم الشحن
+                      </button>
+                    )}
+
+                    {/* Buyer: Confirm Payment */}
+                    {isBuyer(selectedTransaction) &&
+                     selectedTransaction.paymentStatus === 'PENDING' && (
+                      <button
+                        onClick={() => handleConfirmPayment(selectedTransaction.id)}
+                        className="w-full py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span>💳</span>
+                        تأكيد الدفع
+                      </button>
+                    )}
+
+                    {/* Buyer: Confirm Delivery */}
+                    {isBuyer(selectedTransaction) &&
+                     selectedTransaction.deliveryStatus === 'SHIPPED' && (
+                      <button
+                        onClick={() => handleMarkAsDelivered(selectedTransaction.id)}
+                        className="w-full py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span>✅</span>
+                        تأكيد الاستلام
+                      </button>
+                    )}
+
+                    {/* Cancel - available for both if not completed/cancelled */}
+                    {selectedTransaction.deliveryStatus !== 'DELIVERED' &&
+                     selectedTransaction.deliveryStatus !== 'CANCELLED' && (
+                      <button
+                        onClick={() => handleCancelTransaction(selectedTransaction.id)}
+                        className="w-full py-3 px-4 bg-red-100 text-red-700 border border-red-300 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span>❌</span>
+                        إلغاء المعاملة
+                      </button>
+                    )}
+
+                    {/* Show message if no actions available */}
+                    {selectedTransaction.deliveryStatus === 'DELIVERED' && (
+                      <div className="text-center py-4 bg-green-50 rounded-lg text-green-700">
+                        <span className="text-2xl block mb-2">✅</span>
+                        تم إكمال هذه المعاملة بنجاح
+                      </div>
+                    )}
+
+                    {selectedTransaction.deliveryStatus === 'CANCELLED' && (
+                      <div className="text-center py-4 bg-red-50 rounded-lg text-red-700">
+                        <span className="text-2xl block mb-2">❌</span>
+                        تم إلغاء هذه المعاملة
+                      </div>
+                    )}
+
+                    {/* Waiting for other party messages */}
+                    {isSeller(selectedTransaction) &&
+                     selectedTransaction.paymentStatus === 'PENDING' && (
+                      <div className="text-center py-3 bg-yellow-50 rounded-lg text-yellow-700">
+                        <span className="text-xl block mb-1">⏳</span>
+                        في انتظار تأكيد الدفع من المشتري
+                      </div>
+                    )}
+
+                    {isBuyer(selectedTransaction) &&
+                     selectedTransaction.paymentStatus === 'COMPLETED' &&
+                     selectedTransaction.deliveryStatus === 'PENDING' && (
+                      <div className="text-center py-3 bg-yellow-50 rounded-lg text-yellow-700">
+                        <span className="text-xl block mb-1">⏳</span>
+                        في انتظار شحن المنتج من البائع
+                      </div>
+                    )}
+
+                    {isSeller(selectedTransaction) &&
+                     selectedTransaction.deliveryStatus === 'SHIPPED' && (
+                      <div className="text-center py-3 bg-blue-50 rounded-lg text-blue-700">
+                        <span className="text-xl block mb-1">🚚</span>
+                        تم الشحن - في انتظار تأكيد الاستلام من المشتري
                       </div>
                     )}
                   </div>

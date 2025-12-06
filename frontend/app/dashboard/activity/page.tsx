@@ -344,9 +344,10 @@ export default function ActivityDashboardPage() {
                   {transactions.slice(0, activeTab === 'all' ? 3 : 10).map((tx: any) => {
                     const isSeller = tx.sellerId === user?.id;
                     return (
-                      <div
+                      <Link
                         key={tx.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:border-primary-300 transition"
+                        href={`/dashboard/transactions?selected=${tx.id}`}
+                        className="flex items-center justify-between p-4 border rounded-lg hover:border-primary-300 hover:bg-gray-50 transition cursor-pointer"
                       >
                         <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -368,7 +369,7 @@ export default function ActivityDashboardPage() {
                             {getStatusLabel(tx.deliveryStatus)}
                           </span>
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
