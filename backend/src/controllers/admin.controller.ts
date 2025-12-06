@@ -204,8 +204,7 @@ export const seedReverseAuctionBids = async (
     // Find sellers (users who are not the buyer)
     const sellers = await prisma.user.findMany({
       where: {
-        id: { not: auction.buyerId },
-        isActive: true
+        id: { not: auction.buyerId }
       },
       take: 3
     });
