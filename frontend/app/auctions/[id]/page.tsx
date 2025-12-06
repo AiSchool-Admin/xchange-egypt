@@ -307,7 +307,7 @@ export default function AuctionDetailsPage() {
 
               <div className="border-t pt-6 mt-6">
                 <h2 className="text-lg font-semibold mb-2">Seller</h2>
-                <p className="text-gray-700">{item.seller?.fullName || item.seller?.businessName || 'Unknown'}</p>
+                <p className="text-gray-700">{item.seller?.fullName || (item.seller as any)?.businessName || 'Unknown'}</p>
                 <p className="text-sm text-gray-600 capitalize">{item.seller?.userType || 'Individual'}</p>
               </div>
             </div>
