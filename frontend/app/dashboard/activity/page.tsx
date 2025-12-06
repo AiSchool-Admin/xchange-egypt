@@ -432,7 +432,7 @@ export default function ActivityDashboardPage() {
                       {myBids.slice(0, activeTab === 'all' ? 2 : 6).map((bid: any) => (
                         <Link
                           key={bid.id}
-                          href={`/auctions/${bid.auctionId}`}
+                          href={`/auctions/${bid.auction?.id || bid.auctionId}`}
                           className="flex gap-4 p-4 border rounded-lg hover:border-indigo-300 transition"
                         >
                           <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🎯</div>
