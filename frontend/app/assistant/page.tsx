@@ -88,6 +88,7 @@ export default function AssistantPage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -101,21 +102,24 @@ export default function AssistantPage() {
 
   const fetchConversationsAndAutoStart = async () => {
     try {
+      setError(null);
       const response = await getConversations();
       const existingConversations = response.data?.conversations || [];
       setConversations(existingConversations);
 
       // Auto-start a new conversation if there are no existing ones
       if (existingConversations.length === 0) {
-        await handleNewConversation();
+        await startNewConversation();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching conversations:', error);
+      setError(error.response?.data?.message || 'حدث خطأ في تحميل المحادثات');
       // Try to create a new conversation even if fetching failed
       try {
-        await handleNewConversation();
-      } catch (createError) {
+        await startNewConversation();
+      } catch (createError: any) {
         console.error('Error creating conversation:', createError);
+        setError(createError.response?.data?.message || 'حدث خطأ في إنشاء محادثة جديدة');
       }
     } finally {
       setLoading(false);
@@ -135,19 +139,33 @@ export default function AssistantPage() {
     }
   };
 
-  const handleNewConversation = async () => {
+  const startNewConversation = async () => {
     try {
+      setError(null);
       setLoading(true);
       const response = await createConversation();
       const newConversation = response.data?.conversation;
       if (newConversation) {
-        setConversations([newConversation, ...conversations]);
+        // Use functional update to avoid stale state
+        setConversations(prev => [newConversation, ...prev]);
         await loadConversation(newConversation.id);
+      } else {
+        throw new Error('لم يتم إنشاء المحادثة');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating conversation:', error);
+      setError(error.response?.data?.message || error.message || 'حدث خطأ في إنشاء محادثة جديدة');
+      throw error;
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleNewConversation = async () => {
+    try {
+      await startNewConversation();
+    } catch (error) {
+      // Error already handled in startNewConversation
     }
   };
 
@@ -370,6 +388,17 @@ export default function AssistantPage() {
                   <p className="text-gray-600 mb-6">
                     أنا المساعد الذكي في XChange. يمكنني مساعدتك في:
                   </p>
+                  {error && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                      <p className="text-sm">{error}</p>
+                      <button
+                        onClick={() => setError(null)}
+                        className="text-xs mt-2 text-red-500 hover:text-red-700"
+                      >
+                        إخفاء
+                      </button>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     {[
                       { icon: '🔍', text: 'البحث عن منتجات' },
@@ -385,9 +414,10 @@ export default function AssistantPage() {
                   </div>
                   <button
                     onClick={handleNewConversation}
-                    className="mt-6 px-6 py-3 bg-gradient-to-l from-emerald-500 to-teal-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-teal-600"
+                    disabled={loading}
+                    className="mt-6 px-6 py-3 bg-gradient-to-l from-emerald-500 to-teal-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    ابدأ محادثة جديدة
+                    {loading ? 'جاري التحميل...' : 'ابدأ محادثة جديدة'}
                   </button>
                 </div>
               </div>
