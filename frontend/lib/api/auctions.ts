@@ -52,7 +52,7 @@ export interface CreateAuctionData {
 }
 
 export interface PlaceBidData {
-  amount: number;
+  bidAmount: number;
 }
 
 export interface AuctionsResponse {

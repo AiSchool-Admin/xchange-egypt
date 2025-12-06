@@ -94,11 +94,11 @@ export default function AuctionDetailsPage() {
     setBidError('');
 
     try {
-      await placeBid(auctionId, { amount: parseFloat(bidAmount) });
+      await placeBid(auctionId, { bidAmount: parseFloat(bidAmount) });
       await loadAuction(); // Reload to show new bid
       setBidAmount((parseFloat(bidAmount) + 10).toString()); // Increment for next bid
     } catch (err: any) {
-      setBidError(err.response?.data?.message || 'Failed to place bid');
+      setBidError(err.response?.data?.message || 'فشل في تقديم المزايدة');
     } finally {
       setBidding(false);
     }
@@ -362,13 +362,13 @@ export default function AuctionDetailsPage() {
 
               {/* Current Price */}
               <div className="mb-6">
-                <p className="text-sm text-gray-600 mb-1">Current Bid</p>
+                <p className="text-sm text-gray-600 mb-1">المزايدة الحالية</p>
                 <p className="text-4xl font-bold text-purple-600">
-                  {auction.currentPrice.toLocaleString()} EGP
+                  {auction.currentPrice.toLocaleString()} ج.م
                 </p>
                 {isActive && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Minimum bid: {minBid.toLocaleString()} EGP
+                    الحد الأدنى للمزايدة: {minBid.toLocaleString()} ج.م
                   </p>
                 )}
               </div>
@@ -376,9 +376,9 @@ export default function AuctionDetailsPage() {
               {/* Buy Now Price */}
               {auction.buyNowPrice && isActive && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-gray-700 mb-1">Or Buy It Now</p>
+                  <p className="text-sm text-gray-700 mb-1">أو اشتري الآن</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {auction.buyNowPrice.toLocaleString()} EGP
+                    {auction.buyNowPrice.toLocaleString()} ج.م
                   </p>
                 </div>
               )}
@@ -389,7 +389,7 @@ export default function AuctionDetailsPage() {
                   <form onSubmit={handlePlaceBid} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Your Bid Amount (EGP)
+                        قيمة مزايدتك (ج.م)
                       </label>
                       <input
                         type="number"
@@ -414,7 +414,7 @@ export default function AuctionDetailsPage() {
                       disabled={bidding}
                       className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {bidding ? 'Placing Bid...' : 'Place Bid'}
+                      {bidding ? 'جاري تقديم المزايدة...' : 'تقديم مزايدة'}
                     </button>
                   </form>
 
@@ -424,16 +424,16 @@ export default function AuctionDetailsPage() {
                       disabled={buying}
                       className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {buying ? 'Processing...' : 'Buy Now'}
+                      {buying ? 'جاري المعالجة...' : 'اشتري الآن'}
                     </button>
                   )}
 
                   {!user && (
                     <p className="text-sm text-center text-gray-600">
                       <Link href="/login" className="text-purple-600 hover:text-purple-700">
-                        Sign in
+                        سجل دخول
                       </Link>{' '}
-                      to place bids
+                      للمزايدة
                     </p>
                   )}
                 </div>
