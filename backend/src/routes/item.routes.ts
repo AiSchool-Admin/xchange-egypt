@@ -48,6 +48,26 @@ router.get(
   itemController.getCategoryItems
 );
 
+/**
+ * Get featured items
+ * GET /api/v1/items/featured
+ * Query params: limit, categoryId, governorate, minTier
+ */
+router.get(
+  '/featured',
+  itemController.getFeaturedItems
+);
+
+/**
+ * Get luxury items (high-value items)
+ * GET /api/v1/items/luxury
+ * Query params: limit, minPrice, categoryId, governorate, sortBy
+ */
+router.get(
+  '/luxury',
+  itemController.getLuxuryItems
+);
+
 // Protected routes (require authentication)
 
 /**
@@ -126,6 +146,27 @@ router.delete(
   authenticate,
   validate(updateItemImagesSchema),
   itemController.removeItemImages
+);
+
+/**
+ * Promote an item
+ * POST /api/v1/items/:id/promote
+ * Body: { tier: 'FEATURED' | 'PREMIUM' | 'GOLD' | 'PLATINUM', durationDays?: number }
+ */
+router.post(
+  '/:id/promote',
+  authenticate,
+  itemController.promoteItem
+);
+
+/**
+ * Remove promotion from an item
+ * DELETE /api/v1/items/:id/promote
+ */
+router.delete(
+  '/:id/promote',
+  authenticate,
+  itemController.removePromotion
 );
 
 export default router;

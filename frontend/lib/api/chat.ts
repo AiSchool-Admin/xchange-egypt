@@ -4,18 +4,18 @@ export interface Message {
   id: string;
   conversationId: string;
   senderId: string;
-  recipientId: string;
+  recipientId?: string;
   content: string;
-  type: 'TEXT' | 'IMAGE' | 'FILE' | 'ITEM' | 'OFFER' | 'SYSTEM';
-  attachments: string[];
+  type?: 'TEXT' | 'IMAGE' | 'FILE' | 'ITEM' | 'OFFER' | 'SYSTEM';
+  attachments?: string[];
   itemId?: string;
   offerId?: string;
-  isRead: boolean;
+  isRead?: boolean;
   readAt?: string;
-  isEdited: boolean;
+  isEdited?: boolean;
   editedAt?: string;
-  isDeleted: boolean;
-  status: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+  isDeleted?: boolean;
+  status?: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
   createdAt: string;
 }
 
@@ -34,6 +34,11 @@ export interface Conversation {
     fullName: string;
     avatar?: string;
     userType: string;
+  };
+  item?: {
+    id: string;
+    title: string;
+    images?: Array<{ id: string; url: string; isPrimary: boolean }>;
   };
   unreadCount: number;
   messages?: Message[];

@@ -278,3 +278,104 @@ export const removeItemImages = async (
     next(error);
   }
 };
+
+/**
+ * Get featured items
+ * GET /api/v1/items/featured
+ */
+export const getFeaturedItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { limit, categoryId, governorate, minTier } = req.query;
+
+    const items = await itemService.getFeaturedItems({
+      limit: limit ? parseInt(limit as string, 10) : undefined,
+      categoryId: categoryId as string | undefined,
+      governorate: governorate as string | undefined,
+      minTier: minTier as any,
+    });
+
+    return successResponse(res, { items }, 'Featured items retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get luxury items (high-value items)
+ * GET /api/v1/items/luxury
+ */
+export const getLuxuryItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { limit, minPrice, categoryId, governorate, sortBy } = req.query;
+
+    const items = await itemService.getLuxuryItems({
+      limit: limit ? parseInt(limit as string, 10) : undefined,
+      minPrice: minPrice ? parseFloat(minPrice as string) : undefined,
+      categoryId: categoryId as string | undefined,
+      governorate: governorate as string | undefined,
+      sortBy: sortBy as 'price_high' | 'price_low' | 'recent' | undefined,
+    });
+
+    return successResponse(res, { items }, 'Luxury items retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Promote an item
+ * POST /api/v1/items/:id/promote
+ */
+export const promoteItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+    const { tier, durationDays } = req.body;
+
+    if (!tier) {
+      throw new BadRequestError('Promotion tier is required');
+    }
+
+    const item = await itemService.promoteItem(id, userId, {
+      tier,
+      durationDays: durationDays ? parseInt(durationDays, 10) : undefined,
+    });
+
+    return successResponse(res, item, 'Item promoted successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Remove promotion from an item
+ * DELETE /api/v1/items/:id/promote
+ */
+export const removePromotion = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+
+    const item = await itemService.removePromotion(id, userId);
+
+    return successResponse(res, item, 'Promotion removed successfully');
+  } catch (error) {
+    next(error);
+  }
+};

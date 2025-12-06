@@ -10,6 +10,7 @@
 import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
+import { reverseAuctionEvents } from '../events/reverse-auction.events';
 
 // ============================================
 // Types & Interfaces
@@ -153,6 +154,22 @@ export const createReverseAuction = async (
     },
   });
 
+  // Emit event for smart matching (notify sellers with matching items)
+  reverseAuctionEvents.emitAuctionCreated({
+    auctionId: reverseAuction.id,
+    buyerId: reverseAuction.buyerId,
+    title: reverseAuction.title,
+    description: reverseAuction.description || '',
+    categoryId: reverseAuction.categoryId,
+    condition: reverseAuction.condition || undefined,
+    targetPrice: reverseAuction.targetPrice || undefined,
+    maxBudget: reverseAuction.maxBudget || undefined,
+    governorate: reverseAuction.location || undefined, // ReverseAuction uses location field
+    startDate: reverseAuction.startDate,
+    endDate: reverseAuction.endDate,
+    timestamp: new Date(),
+  });
+
   return reverseAuction;
 };
 
@@ -167,17 +184,19 @@ export const getReverseAuctions = async (
     minBudget?: number;
     maxBudget?: number;
     location?: string;
+    buyerId?: string;
     page?: number;
     limit?: number;
   } = {}
 ): Promise<any> => {
   const {
-    status = 'ACTIVE',
+    status,
     categoryId,
     condition,
     minBudget,
     maxBudget,
     location,
+    buyerId,
     page = 1,
     limit = 20,
   } = filters;
@@ -185,9 +204,19 @@ export const getReverseAuctions = async (
   const skip = (page - 1) * limit;
 
   // Build where clause
-  const where: Prisma.ReverseAuctionWhereInput = {
-    status: status as any,
-  };
+  const where: Prisma.ReverseAuctionWhereInput = {};
+
+  // Only filter by status if provided, otherwise show all for user's own auctions
+  if (status) {
+    where.status = status as any;
+  } else if (!buyerId) {
+    // Default to ACTIVE only when not filtering by buyerId
+    where.status = 'ACTIVE';
+  }
+
+  if (buyerId) {
+    where.buyerId = buyerId;
+  }
 
   if (categoryId) {
     where.categoryId = categoryId;

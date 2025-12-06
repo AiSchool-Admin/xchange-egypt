@@ -1,515 +1,711 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getLatestItems, PublicItem, MarketType, MARKET_CONFIG } from '@/lib/api/inventory';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { getItems, Item } from '@/lib/api/items';
+import { getCategories, Category } from '@/lib/api/categories';
+import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
 
-// Market Tabs Component
-function MarketTabs({
-  selectedMarket,
-  onSelect
-}: {
-  selectedMarket: MarketType | null;
-  onSelect: (market: MarketType | null) => void;
-}) {
-  const markets = [
-    { id: null as MarketType | null, nameAr: 'الكل', nameEn: 'All', icon: '🌍', color: 'gray' },
-    { ...MARKET_CONFIG.DISTRICT, id: 'DISTRICT' as MarketType | null },
-    { ...MARKET_CONFIG.CITY, id: 'CITY' as MarketType | null },
-    { ...MARKET_CONFIG.GOVERNORATE, id: 'GOVERNORATE' as MarketType | null },
-    { ...MARKET_CONFIG.NATIONAL, id: 'NATIONAL' as MarketType | null },
-  ];
+// ============================================
+// Category Icons Mapping
+// ============================================
+const CATEGORY_ICONS: Record<string, { icon: string; gradient: string }> = {
+  'electronics': { icon: '📱', gradient: 'from-blue-500 to-blue-600' },
+  'vehicles': { icon: '🚗', gradient: 'from-purple-500 to-purple-600' },
+  'real-estate': { icon: '🏠', gradient: 'from-emerald-500 to-emerald-600' },
+  'fashion': { icon: '👕', gradient: 'from-pink-500 to-pink-600' },
+  'furniture': { icon: '🛋️', gradient: 'from-amber-500 to-amber-600' },
+  'home-garden': { icon: '🏡', gradient: 'from-green-500 to-green-600' },
+  'home-appliances': { icon: '🏡', gradient: 'from-orange-500 to-orange-600' },
+  'sports': { icon: '⚽', gradient: 'from-teal-500 to-teal-600' },
+  'sports-hobbies': { icon: '⚽', gradient: 'from-teal-500 to-teal-600' },
+  'books': { icon: '📚', gradient: 'from-indigo-500 to-indigo-600' },
+  'books-media': { icon: '📚', gradient: 'from-indigo-500 to-indigo-600' },
+  'gaming': { icon: '🎮', gradient: 'from-red-500 to-red-600' },
+  'services': { icon: '💼', gradient: 'from-violet-500 to-violet-600' },
+  'raw-materials': { icon: '🧱', gradient: 'from-gray-500 to-gray-600' },
+  'default': { icon: '📦', gradient: 'from-gray-500 to-gray-600' },
+};
 
-  return (
-    <div className="flex flex-wrap justify-center gap-2 mb-8">
-      {markets.map((market) => (
-        <button
-          key={market.id || 'all'}
-          onClick={() => onSelect(market.id)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
-            selectedMarket === market.id
-              ? market.id === 'DISTRICT' ? 'bg-green-500 text-white'
-              : market.id === 'CITY' ? 'bg-blue-500 text-white'
-              : market.id === 'GOVERNORATE' ? 'bg-purple-500 text-white'
-              : market.id === 'NATIONAL' ? 'bg-amber-500 text-white'
-              : 'bg-gray-800 text-white'
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-          }`}
-        >
-          <span>{market.icon}</span>
-          <span>{market.nameAr}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
+// ============================================
+// Stats Data
+// ============================================
+const STATS = [
+  { value: '50K+', label: 'منتج نشط', icon: '📦' },
+  { value: '25K+', label: 'مستخدم موثوق', icon: '👥' },
+  { value: '100K+', label: 'صفقة ناجحة', icon: '✅' },
+  { value: '27', label: 'محافظة', icon: '🗺️' },
+];
 
-// Item Card Component for both Supply and Demand
-function ItemCard({ item, type }: { item: PublicItem; type: 'supply' | 'demand' }) {
-  const isSupply = type === 'supply';
+// ============================================
+// Features Data
+// ============================================
+const FEATURES = [
+  {
+    icon: '🤖',
+    title: 'بيع بالذكاء الصناعي',
+    description: 'صور منتجك واحصل على إعلان جاهز',
+    href: '/sell-ai',
+    gradient: 'from-amber-500 to-orange-500',
+  },
+  {
+    icon: '🔄',
+    title: 'المقايضة الذكية',
+    description: 'بادل منتجاتك بما تحتاجه',
+    href: '/barter',
+    gradient: 'from-blue-500 to-indigo-500',
+  },
+  {
+    icon: '🔒',
+    title: 'نظام الضمان',
+    description: 'صفقات آمنة 100%',
+    href: '/escrow',
+    gradient: 'from-emerald-500 to-teal-500',
+  },
+  {
+    icon: '🔨',
+    title: 'المزادات',
+    description: 'مزادات حية على أفضل المنتجات',
+    href: '/auctions',
+    gradient: 'from-purple-500 to-purple-600',
+  },
+];
 
-  // Format price in Egyptian Pounds
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ar-EG', {
-      style: 'currency',
-      currency: 'EGP',
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
+// ============================================
+// Main Home Component
+// ============================================
+export default function HomePage() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
 
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
-    if (diffHours < 24) return `منذ ${diffHours} ساعة`;
-    if (diffDays < 7) return `منذ ${diffDays} يوم`;
-    return date.toLocaleDateString('ar-EG');
-  };
-
-  return (
-    <div className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 border-t-4 ${
-      isSupply ? 'border-green-500' : 'border-blue-500'
-    }`}>
-      {/* Image or placeholder */}
-      <div className="relative h-48 bg-gray-100">
-        {item.images && item.images.length > 0 ? (
-          <img
-            src={item.images[0]}
-            alt={item.title}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className={`w-full h-full flex items-center justify-center ${
-            isSupply ? 'bg-green-50' : 'bg-blue-50'
-          }`}>
-            <span className="text-6xl">
-              {isSupply ? '📦' : '🔍'}
-            </span>
-          </div>
-        )}
-        {/* Badge */}
-        <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold text-white ${
-          isSupply ? 'bg-green-500' : 'bg-blue-500'
-        }`}>
-          {isSupply ? 'عرض' : 'طلب'}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="p-4">
-        <h3 className="font-bold text-lg text-gray-800 mb-2 line-clamp-2" dir="auto">
-          {item.title}
-        </h3>
-
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2" dir="auto">
-          {item.description}
-        </p>
-
-        {/* Price */}
-        <div className="flex items-center justify-between mb-3">
-          <span className={`text-lg font-bold ${isSupply ? 'text-green-600' : 'text-blue-600'}`}>
-            {isSupply
-              ? formatPrice(item.estimatedValue)
-              : item.minValue && item.maxValue
-                ? `${formatPrice(item.minValue)} - ${formatPrice(item.maxValue)}`
-                : formatPrice(item.estimatedValue)
-            }
-          </span>
-          {item.category && (
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
-              {item.category.nameAr}
-            </span>
-          )}
-        </div>
-
-        {/* Location & User */}
-        <div className="flex items-center justify-between text-xs text-gray-500 border-t pt-3">
-          <div className="flex items-center gap-1">
-            {item.user.avatar ? (
-              <img src={item.user.avatar} alt="" className="w-5 h-5 rounded-full" />
-            ) : (
-              <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-xs">👤</span>
-              </div>
-            )}
-            <span>{item.user.name}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            {item.location || item.user.governorate ? (
-              <>
-                <span>📍</span>
-                <span>{item.location || item.user.governorate}</span>
-              </>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Time */}
-        <div className="text-xs text-gray-400 mt-2 text-left">
-          {formatDate(item.createdAt)}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Section Header Component
-function SectionHeader({
-  title,
-  subtitle,
-  icon,
-  color
-}: {
-  title: string;
-  subtitle: string;
-  icon: string;
-  color: 'green' | 'blue'
-}) {
-  return (
-    <div className="text-center mb-8">
-      <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full ${
-        color === 'green' ? 'bg-green-100' : 'bg-blue-100'
-      } mb-4`}>
-        <span className="text-3xl">{icon}</span>
-        <h2 className={`text-2xl font-bold ${
-          color === 'green' ? 'text-green-700' : 'text-blue-700'
-        }`}>
-          {title}
-        </h2>
-      </div>
-      <p className="text-gray-600">{subtitle}</p>
-    </div>
-  );
-}
-
-// Empty State Component
-function EmptyState({ type }: { type: 'supply' | 'demand' }) {
-  const isSupply = type === 'supply';
-  return (
-    <div className={`col-span-full text-center py-12 rounded-xl ${
-      isSupply ? 'bg-green-50' : 'bg-blue-50'
-    }`}>
-      <span className="text-5xl mb-4 block">{isSupply ? '📦' : '🔍'}</span>
-      <p className="text-gray-600 mb-4">
-        {isSupply
-          ? 'لا توجد عروض حالياً. كن أول من يضيف عرضاً!'
-          : 'لا توجد طلبات حالياً. كن أول من يضيف طلباً!'
-        }
-      </p>
-      <Link
-        href="/inventory/add"
-        className={`inline-block px-6 py-2 rounded-lg text-white font-semibold ${
-          isSupply ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'
-        }`}
-      >
-        {isSupply ? 'أضف عرضك الأول' : 'أضف طلبك الأول'}
-      </Link>
-    </div>
-  );
-}
-
-export default function Home() {
-  const [supplyItems, setSupplyItems] = useState<PublicItem[]>([]);
-  const [demandItems, setDemandItems] = useState<PublicItem[]>([]);
+  // State
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [featuredItems, setFeaturedItems] = useState<Item[]>([]);
+  const [latestItems, setLatestItems] = useState<Item[]>([]);
+  const [barterItems, setBarterItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedMarket, setSelectedMarket] = useState<MarketType | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
+  // Load data on mount
   useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        setLoading(true);
-        const response = await getLatestItems({
-          limit: 8,
-          marketType: selectedMarket || undefined,
-        });
-        if (response.success) {
-          setSupplyItems(response.data.supply);
-          setDemandItems(response.data.demand);
-        }
-      } catch (err: any) {
-        console.error('Failed to fetch items:', err);
-        // Don't show error - just show empty state
-        setError(null);
-      } finally {
-        setLoading(false);
-      }
-    };
+    loadData();
+  }, []);
 
-    fetchItems();
-  }, [selectedMarket]);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+
+      // Load all data in parallel
+      const [categoriesRes, featuredRes, latestRes, barterRes] = await Promise.all([
+        getCategories().catch(() => ({ data: [] })),
+        getItems({ limit: 4, featured: true, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 8, status: 'ACTIVE', sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 4, listingType: 'BARTER', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+      ]);
+
+      setCategories(categoriesRes.data || []);
+      setFeaturedItems(featuredRes.data?.items || []);
+      setLatestItems(latestRes.data?.items || []);
+      setBarterItems(barterRes.data?.items || []);
+    } catch (error) {
+      console.error('Failed to load home data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/items?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const getCategoryIcon = (slug: string) => {
+    return CATEGORY_ICONS[slug] || CATEGORY_ICONS.default;
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white" dir="rtl">
-      {/* Hero Section */}
-      <header className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 text-white">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
-        <div className="relative max-w-7xl mx-auto px-4 py-16 sm:py-24">
-          <div className="text-center">
-            <h1 className="text-5xl sm:text-6xl font-bold mb-4">
-              Xchange
+    <div className="min-h-screen bg-gray-50" dir="rtl">
+      {/* ============================================
+          Hero Section
+          ============================================ */}
+      <section className="relative bg-gradient-to-br from-primary-600 via-primary-500 to-teal-500 overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
+          <div className="text-center max-w-3xl mx-auto">
+            {/* Main Heading */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+              اشتري، بيع، أو بادل
+              <span className="block text-primary-100">بكل سهولة وأمان</span>
             </h1>
-            <p className="text-2xl sm:text-3xl mb-2 text-primary-100">
-              منصة التبادل والمقايضة في مصر
-            </p>
-            <p className="text-lg text-primary-200 mb-8 max-w-2xl mx-auto">
-              اعرض ما لديك، اطلب ما تريد - نظام ذكي للمطابقة بين العروض والطلبات
+
+            {/* Subtitle */}
+            <p className="text-lg md:text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
+              منصة XChange هي السوق الأول في مصر للتجارة الذكية والمقايضة.
+              جديد، مستعمل، أو تالف - كل شيء له قيمة هنا.
             </p>
 
-            {/* Quick Stats */}
-            <div className="flex flex-wrap justify-center gap-8 mb-10">
-              <div className="text-center">
-                <div className="text-4xl font-bold">{supplyItems.length}+</div>
-                <div className="text-primary-200">عروض نشطة</div>
+            {/* Search Bar */}
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
+              <div className="flex bg-white rounded-2xl shadow-xl overflow-hidden">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="ابحث عن أي شيء... موبايل، سيارة، أثاث"
+                  className="flex-1 px-6 py-4 text-gray-700 outline-none text-lg"
+                />
+                <button
+                  type="submit"
+                  className="px-8 py-4 bg-primary-500 text-white font-semibold hover:bg-primary-600 transition-colors flex items-center gap-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <span className="hidden sm:inline">بحث</span>
+                </button>
               </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold">{demandItems.length}+</div>
-                <div className="text-primary-200">طلبات نشطة</div>
-              </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold">27</div>
-                <div className="text-primary-200">محافظة</div>
-              </div>
+            </form>
+
+            {/* Quick Actions */}
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link
+                href={user ? '/inventory/add' : '/register'}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-600 rounded-xl font-semibold hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl"
+              >
+                <span>➕</span>
+                أضف إعلان مجاني
+              </Link>
+              <Link
+                href="/sell-ai"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
+              >
+                <span>✨</span>
+                بيع بالذكاء الصناعي
+              </Link>
             </div>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/inventory/add"
-                className="px-8 py-4 bg-white text-primary-600 rounded-xl hover:bg-primary-50 transition-colors font-bold text-lg shadow-lg"
-              >
-                ➕ أضف عرضك أو طلبك
-              </Link>
-              <Link
-                href="/login"
-                className="px-8 py-4 bg-primary-700 text-white rounded-xl hover:bg-primary-800 transition-colors font-semibold text-lg border-2 border-primary-400"
-              >
-                تسجيل الدخول
-              </Link>
+            {/* Trust Badges */}
+            <div className="mt-12 flex flex-wrap justify-center gap-6 text-white/80 text-sm">
+              <span className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-300" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                إعلانات مجانية
+              </span>
+              <span className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-300" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                دفع آمن
+              </span>
+              <span className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-300" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ضمان الصفقات
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Wave decoration */}
+        {/* Wave Divider */}
         <div className="absolute bottom-0 left-0 right-0">
           <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="rgb(249 250 251)"/>
+            <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="#f9fafb"/>
           </svg>
         </div>
-      </header>
-
-      {/* How it Works */}
-      <section className="max-w-7xl mx-auto px-4 py-16">
-        <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">كيف يعمل النظام؟</h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          <div className="text-center p-6 rounded-xl bg-white shadow-md">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">📦</span>
-            </div>
-            <h3 className="text-xl font-bold mb-2 text-gray-800">1. أضف ما لديك</h3>
-            <p className="text-gray-600">
-              سجل المنتجات أو الخدمات التي تريد بيعها أو مبادلتها
-            </p>
-          </div>
-          <div className="text-center p-6 rounded-xl bg-white shadow-md">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🔍</span>
-            </div>
-            <h3 className="text-xl font-bold mb-2 text-gray-800">2. حدد ما تريد</h3>
-            <p className="text-gray-600">
-              أخبرنا ما تبحث عنه وسنجد لك أفضل المطابقات
-            </p>
-          </div>
-          <div className="text-center p-6 rounded-xl bg-white shadow-md">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🤝</span>
-            </div>
-            <h3 className="text-xl font-bold mb-2 text-gray-800">3. أتمم الصفقة</h3>
-            <p className="text-gray-600">
-              تواصل مع الطرف الآخر وأتمم عملية التبادل بأمان
-            </p>
-          </div>
-        </div>
       </section>
 
-      {/* Market Selection Tabs */}
-      <section className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">اختر السوق</h2>
-          <p className="text-gray-600">تصفح العروض والطلبات حسب نطاق السوق</p>
-        </div>
-        <MarketTabs selectedMarket={selectedMarket} onSelect={setSelectedMarket} />
-
-        {/* Selected market info */}
-        {selectedMarket && (
-          <div className={`text-center p-4 rounded-xl mb-4 ${
-            selectedMarket === 'DISTRICT' ? 'bg-green-50 text-green-800' :
-            selectedMarket === 'CITY' ? 'bg-blue-50 text-blue-800' :
-            selectedMarket === 'GOVERNORATE' ? 'bg-purple-50 text-purple-800' :
-            'bg-amber-50 text-amber-800'
-          }`}>
-            <span className="text-2xl mr-2">{MARKET_CONFIG[selectedMarket].icon}</span>
-            <span className="font-bold">{MARKET_CONFIG[selectedMarket].nameAr}</span>
-            <span className="mx-2">-</span>
-            <span>{MARKET_CONFIG[selectedMarket].description}</span>
-          </div>
-        )}
-      </section>
-
-      {/* Latest Offers (Supply) Section */}
-      <section className="max-w-7xl mx-auto px-4 py-12 border-t border-gray-100">
-        <SectionHeader
-          title="أحدث العروض"
-          subtitle="منتجات وخدمات معروضة للبيع أو المقايضة"
-          icon="📦"
-          color="green"
-        />
-
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
-                <div className="h-48 bg-gray-200"></div>
-                <div className="p-4">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
-                </div>
+      {/* ============================================
+          Stats Section
+          ============================================ */}
+      <section className="relative -mt-8 z-10">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
+            {STATS.map((stat, index) => (
+              <div key={index} className="text-center">
+                <div className="text-3xl mb-2">{stat.icon}</div>
+                <div className="text-2xl md:text-3xl font-bold text-gray-900">{stat.value}</div>
+                <div className="text-sm text-gray-500">{stat.label}</div>
               </div>
             ))}
           </div>
-        ) : supplyItems.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {supplyItems.map((item) => (
-              <ItemCard key={item.id} item={item} type="supply" />
-            ))}
-          </div>
-        ) : (
-          <EmptyState type="supply" />
-        )}
+        </div>
+      </section>
 
-        {supplyItems.length > 0 && (
-          <div className="text-center mt-8">
+      {/* ============================================
+          Categories Section
+          ============================================ */}
+      <section className="py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">تصفح الفئات</h2>
+              <p className="text-gray-500 mt-1">اكتشف آلاف المنتجات في كل فئة</p>
+            </div>
             <Link
               href="/items"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors font-semibold"
+              className="hidden md:flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
             >
-              عرض كل العروض
-              <span>←</span>
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
           </div>
-        )}
+
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
+            {loading ? (
+              // Skeleton loading
+              Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="text-center">
+                  <div className="w-16 h-16 mx-auto bg-gray-200 rounded-2xl animate-shimmer mb-2" />
+                  <div className="h-3 bg-gray-200 rounded w-16 mx-auto animate-shimmer" />
+                </div>
+              ))
+            ) : (
+              categories.slice(0, 8).map((category) => {
+                const { icon, gradient } = getCategoryIcon(category.slug);
+                return (
+                  <Link
+                    key={category.id}
+                    href={`/items?category=${category.slug}`}
+                    className="text-center group"
+                  >
+                    <div className={`w-16 h-16 mx-auto bg-gradient-to-br ${gradient} rounded-2xl flex items-center justify-center text-2xl shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 mb-2`}>
+                      {icon}
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 group-hover:text-primary-600 transition-colors">
+                      {category.nameAr}
+                    </span>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </div>
       </section>
 
-      {/* Latest Requests (Demand) Section */}
-      <section className="max-w-7xl mx-auto px-4 py-12 bg-blue-50/50">
-        <SectionHeader
-          title="أحدث الطلبات"
-          subtitle="مستخدمون يبحثون عن منتجات أو خدمات معينة"
-          icon="🔍"
-          color="blue"
-        />
-
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-white rounded-xl shadow-md overflow-hidden animate-pulse">
-                <div className="h-48 bg-gray-200"></div>
-                <div className="p-4">
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+      {/* ============================================
+          Featured Items Section
+          ============================================ */}
+      {featuredItems.length > 0 && (
+        <section className="py-12 md:py-16 bg-gradient-to-b from-amber-50/50 to-transparent">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">⭐</span>
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900">إعلانات مميزة</h2>
+                  <p className="text-gray-500 mt-1">أفضل العروض المختارة لك</p>
                 </div>
               </div>
-            ))}
-          </div>
-        ) : demandItems.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {demandItems.map((item) => (
-              <ItemCard key={item.id} item={item} type="demand" />
-            ))}
-          </div>
-        ) : (
-          <EmptyState type="demand" />
-        )}
+              <Link
+                href="/items?featured=true"
+                className="hidden md:flex items-center gap-2 text-amber-600 hover:text-amber-700 font-medium"
+              >
+                عرض الكل
+                <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
 
-        {demandItems.length > 0 && (
-          <div className="text-center mt-8">
-            <Link
-              href="/barter/open-offers"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors font-semibold"
-            >
-              عرض كل الطلبات
-              <span>←</span>
-            </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType={item.listingType as any}
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  isFeatured={true}
+                  promotionTier={(item as any).promotionTier || 'PREMIUM'}
+                  createdAt={item.createdAt}
+                />
+              ))}
+            </div>
           </div>
-        )}
+        </section>
+      )}
+
+      {/* ============================================
+          Features Section
+          ============================================ */}
+      <section className="py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">ميزات ذكية لتجربة أفضل</h2>
+            <p className="text-gray-500 mt-2">تقنيات متقدمة لجعل البيع والشراء أسهل من أي وقت</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {FEATURES.map((feature, index) => (
+              <Link
+                key={index}
+                href={feature.href}
+                className="group relative bg-white rounded-2xl p-6 shadow-card hover:shadow-card-hover transition-all duration-300 border border-gray-100 overflow-hidden"
+              >
+                {/* Gradient Background on Hover */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+
+                <div className="relative">
+                  <div className={`w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-xl flex items-center justify-center text-2xl mb-4 shadow-lg`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    {feature.description}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-16">
-        <div className="max-w-4xl mx-auto text-center px-4">
-          <h2 className="text-3xl font-bold mb-4">ابدأ الآن مجاناً!</h2>
-          <p className="text-xl text-primary-100 mb-8">
-            سجل حسابك وابدأ في عرض منتجاتك أو البحث عما تحتاج
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      {/* ============================================
+          Latest Items Section
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gray-100/50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">أحدث الإعلانات</h2>
+              <p className="text-gray-500 mt-1">اكتشف آخر المنتجات المضافة</p>
+            </div>
             <Link
-              href="/register"
-              className="px-8 py-4 bg-white text-primary-600 rounded-xl hover:bg-primary-50 transition-colors font-bold text-lg"
+              href="/items"
+              className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl text-primary-600 hover:bg-primary-50 font-medium shadow-sm transition-colors"
             >
-              إنشاء حساب جديد
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
             </Link>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {loading ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <ItemCardSkeleton key={i} />
+              ))
+            ) : latestItems.length > 0 ? (
+              latestItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType={item.listingType as any}
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  createdAt={item.createdAt}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12 bg-white rounded-2xl">
+                <div className="text-6xl mb-4">📦</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد منتجات حتى الآن</h3>
+                <p className="text-gray-500 mb-4">كن أول من يضيف منتج على المنصة!</p>
+                <Link
+                  href={user ? '/inventory/add' : '/register'}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors"
+                >
+                  <span>➕</span>
+                  أضف إعلان الآن
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================
+          Barter Section
+          ============================================ */}
+      {barterItems.length > 0 && (
+        <section className="py-12 md:py-16">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl p-8 md:p-12 relative overflow-hidden">
+              {/* Background Pattern */}
+              <div className="absolute inset-0 opacity-10">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl" />
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl" />
+              </div>
+
+              <div className="relative">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl">🔄</span>
+                    <div>
+                      <h2 className="text-2xl md:text-3xl font-bold text-white">المقايضة الذكية</h2>
+                      <p className="text-blue-100 mt-1">بادل ما لديك بما تريد</p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/barter"
+                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-white font-medium hover:bg-white/30 transition-colors"
+                  >
+                    اكتشف المزيد
+                    <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {barterItems.map((item) => (
+                    <ItemCard
+                      key={item.id}
+                      id={item.id}
+                      title={item.title}
+                      price={item.estimatedValue || 0}
+                      images={item.images?.map(img => img.url) || []}
+                      condition={item.condition}
+                      governorate={item.governorate}
+                      listingType="BARTER"
+                      variant="compact"
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-8 flex justify-center md:hidden">
+                  <Link
+                    href="/barter"
+                    className="flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-colors"
+                  >
+                    اكتشف المزيد
+                    <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ============================================
+          Markets Section
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gray-100/50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900">أسواق متخصصة</h2>
+            <p className="text-gray-500 mt-2">اكتشف أسواقنا المتنوعة لكل احتياج</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Auctions Market */}
             <Link
-              href="/inventory/add"
-              className="px-8 py-4 bg-primary-800 text-white rounded-xl hover:bg-primary-900 transition-colors font-semibold text-lg border-2 border-primary-400"
+              href="/auctions"
+              className="group relative bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-6 overflow-hidden"
             >
-              أضف أول عرض لك
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
+              <div className="relative text-white">
+                <span className="text-4xl mb-4 block">🔨</span>
+                <h3 className="text-xl font-bold mb-2">المزادات</h3>
+                <p className="text-purple-100 text-sm mb-4">
+                  شارك في مزادات حية واحصل على أفضل الصفقات
+                </p>
+                <span className="inline-flex items-center gap-2 text-sm font-medium">
+                  اكتشف المزادات
+                  <svg className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </div>
+            </Link>
+
+            {/* Scrap Market */}
+            <Link
+              href="/scrap"
+              className="group relative bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
+              <div className="relative text-white">
+                <span className="text-4xl mb-4 block">♻️</span>
+                <h3 className="text-xl font-bold mb-2">سوق التوالف</h3>
+                <p className="text-emerald-100 text-sm mb-4">
+                  بيع وشراء الخردة والمواد القابلة للتدوير
+                </p>
+                <span className="inline-flex items-center gap-2 text-sm font-medium">
+                  تصفح السوق
+                  <svg className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </div>
+            </Link>
+
+            {/* Luxury Market */}
+            <Link
+              href="/luxury"
+              className="group relative bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
+              <div className="relative text-white">
+                <span className="text-4xl mb-4 block">👑</span>
+                <h3 className="text-xl font-bold mb-2">السوق الفاخر</h3>
+                <p className="text-amber-100 text-sm mb-4">
+                  منتجات راقية وماركات عالمية موثوقة
+                </p>
+                <span className="inline-flex items-center gap-2 text-sm font-medium">
+                  تسوق الآن
+                  <svg className="w-4 h-4 rotate-180 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </div>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
+      {/* ============================================
+          CTA Section
+          ============================================ */}
+      <section className="py-16 md:py-24">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="bg-gradient-to-br from-primary-500 to-teal-500 rounded-3xl p-8 md:p-16 text-center relative overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-0 left-1/4 w-64 h-64 bg-white rounded-full blur-3xl" />
+              <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
+            </div>
+
+            <div className="relative">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
+                جاهز تبدأ؟
+              </h2>
+              <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
+                انضم لآلاف المستخدمين واستفد من أفضل منصة للتجارة في مصر
+              </p>
+
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Link
+                  href={user ? '/inventory/add' : '/register'}
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-primary-600 rounded-xl font-bold text-lg hover:bg-primary-50 transition-all shadow-xl hover:shadow-2xl"
+                >
+                  {user ? (
+                    <>
+                      <span>➕</span>
+                      أضف إعلانك الآن
+                    </>
+                  ) : (
+                    <>
+                      <span>🚀</span>
+                      إنشاء حساب مجاني
+                    </>
+                  )}
+                </Link>
+                <Link
+                  href="/items"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/20 backdrop-blur-sm text-white rounded-xl font-bold text-lg hover:bg-white/30 transition-all border border-white/30"
+                >
+                  <span>🛒</span>
+                  تصفح المنتجات
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================
+          Footer
+          ============================================ */}
       <footer className="bg-gray-900 text-gray-400 py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="text-white text-xl font-bold mb-4">Xchange</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
+            {/* Brand */}
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
+                  <span className="text-white text-xl">🔄</span>
+                </div>
+                <span className="text-xl font-bold text-white">XChange</span>
+              </div>
               <p className="text-sm">
-                منصة مصرية للتبادل والمقايضة الذكية. نربط بين من يملك ومن يحتاج.
+                منصة التجارة الذكية الأولى في مصر. بيع، اشتري، أو بادل بكل سهولة وأمان.
               </p>
             </div>
+
+            {/* Quick Links */}
             <div>
               <h4 className="text-white font-semibold mb-4">روابط سريعة</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/items" className="hover:text-white">تصفح العروض</Link></li>
-                <li><Link href="/barter" className="hover:text-white">المقايضة</Link></li>
-                <li><Link href="/auctions" className="hover:text-white">المزادات</Link></li>
+                <li><Link href="/items" className="hover:text-white transition-colors">تصفح المنتجات</Link></li>
+                <li><Link href="/barter" className="hover:text-white transition-colors">المقايضة</Link></li>
+                <li><Link href="/auctions" className="hover:text-white transition-colors">المزادات</Link></li>
+                <li><Link href="/scrap" className="hover:text-white transition-colors">سوق التوالف</Link></li>
               </ul>
             </div>
+
+            {/* Services */}
             <div>
-              <h4 className="text-white font-semibold mb-4">الحساب</h4>
+              <h4 className="text-white font-semibold mb-4">خدماتنا</h4>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/login" className="hover:text-white">تسجيل الدخول</Link></li>
-                <li><Link href="/register" className="hover:text-white">إنشاء حساب</Link></li>
-                <li><Link href="/dashboard" className="hover:text-white">لوحة التحكم</Link></li>
+                <li><Link href="/sell-ai" className="hover:text-white transition-colors">البيع بالذكاء الصناعي</Link></li>
+                <li><Link href="/escrow" className="hover:text-white transition-colors">نظام الضمان</Link></li>
+                <li><Link href="/exchange-points" className="hover:text-white transition-colors">نقاط التبادل</Link></li>
+                <li><Link href="/wallet" className="hover:text-white transition-colors">المحفظة</Link></li>
               </ul>
             </div>
+
+            {/* Support */}
             <div>
-              <h4 className="text-white font-semibold mb-4">تواصل معنا</h4>
+              <h4 className="text-white font-semibold mb-4">الدعم</h4>
               <ul className="space-y-2 text-sm">
-                <li>📧 support@xchange.eg</li>
-                <li>📱 +20 123 456 7890</li>
+                <li><Link href="/help" className="hover:text-white transition-colors">مركز المساعدة</Link></li>
+                <li><Link href="/safety" className="hover:text-white transition-colors">نصائح الأمان</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">الشروط والأحكام</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">سياسة الخصوصية</Link></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            <p>© {new Date().getFullYear()} Xchange Egypt. جميع الحقوق محفوظة.</p>
+
+          <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm">
+              © 2024 XChange Egypt. جميع الحقوق محفوظة.
+            </p>
+            <div className="flex items-center gap-4">
+              <span className="text-sm">تابعنا:</span>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                </svg>
+              </a>
+              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                </svg>
+              </a>
+            </div>
           </div>
         </div>
       </footer>

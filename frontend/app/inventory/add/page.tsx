@@ -52,7 +52,9 @@ interface FormData {
   // Auction specific
   startingBid: string;
   auctionDuration: string;
-  // Barter specific
+  // Barter specific - What you want in exchange
+  desiredItemTitle: string;
+  desiredItemDescription: string;
   desiredCategoryLevel1: string;
   desiredCategoryLevel2: string;
   desiredCategoryLevel3: string;
@@ -101,6 +103,8 @@ function AddInventoryContent() {
     images: [],
     startingBid: '',
     auctionDuration: '7',
+    desiredItemTitle: '',
+    desiredItemDescription: '',
     desiredCategoryLevel1: '',
     desiredCategoryLevel2: '',
     desiredCategoryLevel3: '',
@@ -512,6 +516,8 @@ function AddInventoryContent() {
         images: formData.images,
         categoryId: formData.selectedCategoryId || undefined,
         condition: formData.condition,
+        desiredItemTitle: formData.desiredItemTitle || undefined,
+        desiredItemDescription: formData.desiredItemDescription || undefined,
         desiredCategoryId: formData.desiredCategoryId || undefined,
         desiredKeywords: formData.desiredKeywords || undefined,
         desiredValueMin: formData.desiredValueMin ? parseInt(formData.desiredValueMin) : undefined,
@@ -1202,6 +1208,39 @@ function AddInventoryContent() {
               <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg max-w-xl mx-auto text-left">
                 <h3 className="font-bold text-gray-800 mb-4">ماذا تريد في المقابل؟ / What do you want in exchange?</h3>
                 <div className="space-y-4">
+                  {/* Desired Item Title */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      اسم الصنف المطلوب / Desired Item Title *
+                    </label>
+                    <input
+                      type="text"
+                      name="desiredItemTitle"
+                      value={formData.desiredItemTitle}
+                      onChange={handleChange}
+                      placeholder="مثال: سيارة سيدان، لابتوب ماك بوك، آيفون 14 / e.g., Sedan car, MacBook laptop, iPhone 14"
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      حدد بالضبط ما تبحث عنه للمقايضة / Specify exactly what you're looking for in exchange
+                    </p>
+                  </div>
+
+                  {/* Desired Item Description */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      وصف الصنف المطلوب / Desired Item Description
+                    </label>
+                    <textarea
+                      name="desiredItemDescription"
+                      value={formData.desiredItemDescription}
+                      onChange={handleChange}
+                      placeholder="صف المواصفات المطلوبة بالتفصيل... / Describe the desired specifications in detail..."
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none resize-none"
+                    />
+                  </div>
+
                   {/* 3-Level Desired Category Selection */}
                   <div className="space-y-3">
                     <label className="block text-sm font-semibold text-gray-700">
@@ -1434,9 +1473,19 @@ function AddInventoryContent() {
                   )}
                 </div>
 
-                {formData.listingType === 'barter' && (formData.desiredKeywords || formData.desiredCategoryId) && (
+                {formData.listingType === 'barter' && (formData.desiredItemTitle || formData.desiredKeywords || formData.desiredCategoryId) && (
                   <div className="mt-4 p-4 bg-green-50 rounded-xl">
                     <div className="text-sm text-green-700 font-medium mb-2">أبحث عن / Looking for:</div>
+                    {formData.desiredItemTitle && (
+                      <div className="text-green-800 mb-1 font-semibold">
+                        🎯 {formData.desiredItemTitle}
+                      </div>
+                    )}
+                    {formData.desiredItemDescription && (
+                      <div className="text-green-700 text-sm mb-2">
+                        {formData.desiredItemDescription}
+                      </div>
+                    )}
                     {formData.desiredCategoryId && (
                       <div className="text-green-800 mb-1">
                         📂 {getCategoryDisplayName(formData.desiredCategoryId)}

@@ -34,11 +34,11 @@ export const cleanDatabase = async () => {
   await db.$executeRawUnsafe('SET session_replication_role = replica;');
 
   // Get all table names
-  const tables = await db.$queryRawUnsafe<Array<{ tablename: string }>>(`
+  const tables = (await db.$queryRawUnsafe(`
     SELECT tablename FROM pg_tables
     WHERE schemaname = 'public'
     AND tablename != '_prisma_migrations'
-  `);
+  `)) as Array<{ tablename: string }>;
 
   // Truncate all tables
   for (const { tablename } of tables) {
@@ -67,12 +67,12 @@ export const seedTestData = async () => {
   // Create a test category
   const category = await db.category.create({
     data: {
-      name_en: 'Test Electronics',
-      name_ar: 'إلكترونيات تجريبية',
+      nameEn: 'Test Electronics',
+      nameAr: 'إلكترونيات تجريبية',
       slug: 'test-electronics',
       icon: '📱',
       level: 1,
-      is_active: true,
+      isActive: true,
     },
   });
 

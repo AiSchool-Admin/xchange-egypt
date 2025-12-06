@@ -3,16 +3,30 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { useSocket } from '@/lib/contexts/SocketContext';
-import { ImageUpload } from '@/components/ui/ImageUpload';
 import { useRouter } from 'next/navigation';
+import apiClient from '@/lib/api/client';
+
+interface DashboardStats {
+  items: number;
+  sales: number;
+  purchases: number;
+  pendingOffers: number;
+  activeAuctions: number;
+  activeBids: number;
+}
 
 export default function DashboardPage() {
   const { user, loading, logout } = useAuth();
-  const { connected, sendMessage, onMessage, offMessage } = useSocket();
-  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const [uploadError, setUploadError] = useState('');
   const router = useRouter();
+  const [stats, setStats] = useState<DashboardStats>({
+    items: 0,
+    sales: 0,
+    purchases: 0,
+    pendingOffers: 0,
+    activeAuctions: 0,
+    activeBids: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -21,22 +35,45 @@ export default function DashboardPage() {
   }, [user, loading, router]);
 
   useEffect(() => {
-    // Listen for incoming messages
-    const handleNewMessage = (message: any) => {
-      console.log('New message received:', message);
-    };
+    if (user) {
+      loadStats();
+    }
+  }, [user]);
 
-    onMessage(handleNewMessage);
+  const loadStats = async () => {
+    setLoadingStats(true);
+    try {
+      const [itemsRes, salesRes, purchasesRes, barterRes, auctionsRes, bidsRes] = await Promise.all([
+        apiClient.get('/items/my?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
+        apiClient.get('/transactions/my?role=seller&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
+        apiClient.get('/transactions/my?role=buyer&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
+        apiClient.get('/barter/offers/my?type=received&status=PENDING&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
+        apiClient.get('/auctions/my?limit=1').catch(() => ({ data: { data: [] } })),
+        apiClient.get('/auctions/my-bids?limit=1').catch(() => ({ data: { data: [] } })),
+      ]);
 
-    return () => {
-      offMessage(handleNewMessage);
-    };
-  }, [onMessage, offMessage]);
+      setStats({
+        items: itemsRes.data.data?.pagination?.total || itemsRes.data.data?.items?.length || 0,
+        sales: salesRes.data.data?.pagination?.total || salesRes.data.data?.transactions?.length || 0,
+        purchases: purchasesRes.data.data?.pagination?.total || purchasesRes.data.data?.transactions?.length || 0,
+        pendingOffers: barterRes.data.data?.pagination?.total || barterRes.data.data?.offers?.length || 0,
+        activeAuctions: Array.isArray(auctionsRes.data.data) ? auctionsRes.data.data.length : 0,
+        activeBids: Array.isArray(bidsRes.data.data) ? bidsRes.data.data.length : 0,
+      });
+    } catch (err) {
+      console.error('Error loading stats:', err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+          <div className="text-xl text-gray-600">جاري التحميل...</div>
+        </div>
       </div>
     );
   }
@@ -45,331 +82,381 @@ export default function DashboardPage() {
     return null;
   }
 
-  const handleUploadComplete = (urls: string[]) => {
-    setUploadedImages((prev) => [...prev, ...urls]);
-    setUploadError('');
-    console.log('Images uploaded:', urls);
-  };
-
-  const handleUploadError = (error: string) => {
-    setUploadError(error);
-    console.error('Upload error:', error);
-  };
-
   const handleLogout = async () => {
     await logout();
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100" dir="rtl">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <header className="bg-gradient-to-l from-primary-600 via-primary-700 to-teal-600 text-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-primary-600">Xchange Dashboard</h1>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              Logout
-            </button>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl backdrop-blur-sm">
+                {user.avatar ? (
+                  <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  '👤'
+                )}
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">مرحباً، {user.fullName}</h1>
+                <p className="text-primary-100 text-sm">{user.email}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/"
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors backdrop-blur-sm"
+              >
+                الصفحة الرئيسية
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-white/10 hover:bg-red-500/80 rounded-lg transition-colors backdrop-blur-sm"
+              >
+                تسجيل الخروج
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Welcome Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-2">Welcome, {user.fullName}! 👋</h2>
-          <p className="text-gray-600 mb-4">{user.email}</p>
-
-          <div className="flex gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm text-gray-600">
-                WebSocket: {connected ? 'Connected' : 'Disconnected'}
-              </span>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">📦</span>
+              <span className="text-2xl font-bold text-primary-600">{loadingStats ? '...' : stats.items}</span>
             </div>
-
-            <div className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-              {user.userType}
+            <p className="text-sm text-gray-600">منتجاتي</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">💵</span>
+              <span className="text-2xl font-bold text-green-600">{loadingStats ? '...' : stats.sales}</span>
             </div>
+            <p className="text-sm text-gray-600">مبيعاتي</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">🛒</span>
+              <span className="text-2xl font-bold text-blue-600">{loadingStats ? '...' : stats.purchases}</span>
+            </div>
+            <p className="text-sm text-gray-600">مشترياتي</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">🔔</span>
+              <span className="text-2xl font-bold text-orange-600">{loadingStats ? '...' : stats.pendingOffers}</span>
+            </div>
+            <p className="text-sm text-gray-600">عروض جديدة</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">🔨</span>
+              <span className="text-2xl font-bold text-purple-600">{loadingStats ? '...' : stats.activeAuctions}</span>
+            </div>
+            <p className="text-sm text-gray-600">مزاداتي</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-2xl">🎯</span>
+              <span className="text-2xl font-bold text-indigo-600">{loadingStats ? '...' : stats.activeBids}</span>
+            </div>
+            <p className="text-sm text-gray-600">مزايداتي</p>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Image Upload Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-xl font-bold mb-4">📸 Image Upload</h3>
-            <p className="text-gray-600 mb-4">
-              Upload images to test the image upload functionality
-            </p>
+        {/* Main CTA */}
+        <div className="bg-gradient-to-l from-primary-600 to-teal-600 rounded-2xl p-6 mb-8 text-white shadow-xl">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">نشاطي التجاري الكامل</h2>
+              <p className="text-primary-100">استعرض جميع منتجاتك ومعاملاتك ومزاداتك ومقايضاتك في مكان واحد</p>
+            </div>
+            <Link
+              href="/dashboard/activity"
+              className="px-8 py-4 bg-white text-primary-600 rounded-xl hover:bg-gray-100 transition-all font-bold flex items-center gap-3 shadow-lg whitespace-nowrap"
+            >
+              <span className="text-2xl">📊</span>
+              عرض النشاط التجاري
+            </Link>
+          </div>
+        </div>
 
-            <ImageUpload
-              multiple={true}
-              category="items"
-              onUploadComplete={handleUploadComplete}
-              onUploadError={handleUploadError}
-              maxFiles={5}
-              className="mb-4"
-            />
+        {/* Quick Actions */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Add New Item */}
+          <Link
+            href="/items/new"
+            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border-2 border-transparent hover:border-primary-200"
+          >
+            <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+              ➕
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">أضف منتج جديد</h3>
+            <p className="text-sm text-gray-500">أضف منتجاتك للبيع أو المقايضة أو المزاد</p>
+          </Link>
 
-            {uploadError && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                {uploadError}
-              </div>
-            )}
+          {/* Browse Items */}
+          <Link
+            href="/items"
+            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-200"
+          >
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+              🛍️
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">تصفح المنتجات</h3>
+            <p className="text-sm text-gray-500">استكشف آلاف المنتجات المتاحة</p>
+          </Link>
 
-            {uploadedImages.length > 0 && (
-              <div className="mt-4">
-                <h4 className="font-semibold mb-2">Uploaded Images:</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {uploadedImages.map((url, index) => (
-                    <div key={index} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                      <img
-                        src={url}
-                        alt={`Uploaded ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
+          {/* Auctions */}
+          <Link
+            href="/auctions"
+            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border-2 border-transparent hover:border-indigo-200"
+          >
+            <div className="w-16 h-16 bg-gradient-to-br from-indigo-100 to-indigo-200 rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+              🔨
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">المزادات</h3>
+            <p className="text-sm text-gray-500">شارك في المزادات واربح صفقات رائعة</p>
+          </Link>
+
+          {/* Barter */}
+          <Link
+            href="/barter"
+            className="group bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all border-2 border-transparent hover:border-teal-200"
+          >
+            <div className="w-16 h-16 bg-gradient-to-br from-teal-100 to-teal-200 rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:scale-110 transition-transform">
+              🔄
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">المقايضة</h3>
+            <p className="text-sm text-gray-500">بادل منتجاتك بدون حاجة للمال</p>
+          </Link>
+        </div>
+
+        {/* My Activity Sections */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* My Items & Listings */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-l from-purple-500 to-purple-600 px-6 py-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>📦</span> منتجاتي وإعلاناتي
+              </h3>
+            </div>
+            <div className="p-4 space-y-3">
+              <Link
+                href="/items?user=me"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">📦</div>
+                  <span className="font-medium">منتجاتي</span>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* WebSocket Chat Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h3 className="text-xl font-bold mb-4">💬 Real-time Chat</h3>
-            <p className="text-gray-600 mb-4">
-              WebSocket connection is {connected ? 'active' : 'inactive'}
-            </p>
-
-            {connected ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-green-800 text-sm">
-                    ✅ Connected to WebSocket server
-                  </p>
-                  <p className="text-green-700 text-xs mt-1">
-                    You can now send and receive real-time messages
-                  </p>
+                <span className="text-gray-400">←</span>
+              </Link>
+              <Link
+                href="/items/new"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">➕</div>
+                  <span className="font-medium">إضافة منتج جديد</span>
                 </div>
-
-                <button
-                  onClick={() => sendMessage('test-conversation-id', 'Hello from frontend!')}
-                  className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                  Send Test Message
-                </button>
-              </div>
-            ) : (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800 text-sm">
-                  ⚠️ WebSocket not connected
-                </p>
-                <p className="text-yellow-700 text-xs mt-1">
-                  Check your network connection and backend server
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* API Status Section */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-          <h3 className="text-xl font-bold mb-4">🔌 API Connection</h3>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="font-medium">Backend URL:</span>
-              <code className="text-sm text-primary-600">
-                {process.env.NEXT_PUBLIC_API_URL}
-              </code>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="font-medium">WebSocket URL:</span>
-              <code className="text-sm text-primary-600">
-                {process.env.NEXT_PUBLIC_WS_URL}
-              </code>
-            </div>
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="font-medium">Authentication:</span>
-              <span className="text-green-600 font-medium">✅ Active</span>
+                <span className="text-gray-400">←</span>
+              </Link>
+              <Link
+                href="/auctions/new"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">🔨</div>
+                  <span className="font-medium">إنشاء مزاد جديد</span>
+                </div>
+                <span className="text-gray-400">←</span>
+              </Link>
             </div>
           </div>
-        </div>
 
-        {/* Platform Features */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-          <h3 className="text-xl font-bold mb-6">🚀 Platform Features</h3>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link
-              href="/items"
-              className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg hover:shadow-md transition-all text-center border-2 border-purple-200"
-            >
-              <div className="text-3xl mb-3">📦</div>
-              <div className="font-bold text-purple-900 text-lg mb-1">Items Marketplace</div>
-              <div className="text-sm text-purple-700 mb-3">Buy & sell used goods</div>
-              <div className="flex gap-2 justify-center text-xs">
-                <Link
-                  href="/items"
-                  className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Browse
-                </Link>
-                <Link
-                  href="/items/new"
-                  className="px-3 py-1 bg-white text-purple-600 border border-purple-600 rounded hover:bg-purple-50"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  List Item
-                </Link>
-              </div>
-            </Link>
-
-            <Link
-              href="/auctions"
-              className="p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg hover:shadow-md transition-all text-center border-2 border-indigo-200"
-            >
-              <div className="text-3xl mb-3">🔨</div>
-              <div className="font-bold text-indigo-900 text-lg mb-1">Live Auctions</div>
-              <div className="text-sm text-indigo-700 mb-3">Bid & win great deals</div>
-              <div className="flex gap-2 justify-center text-xs">
-                <Link
-                  href="/auctions"
-                  className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Browse
-                </Link>
-                <Link
-                  href="/auctions/new"
-                  className="px-3 py-1 bg-white text-indigo-600 border border-indigo-600 rounded hover:bg-indigo-50"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Start Auction
-                </Link>
-              </div>
-            </Link>
-
-            <Link
-              href="/barter"
-              className="p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-lg hover:shadow-md transition-all text-center border-2 border-green-200"
-            >
-              <div className="text-3xl mb-3">🔄</div>
-              <div className="font-bold text-green-900 text-lg mb-1">Barter & Exchange</div>
-              <div className="text-sm text-green-700 mb-3">Trade without money</div>
-              <div className="flex gap-2 justify-center text-xs">
-                <Link
-                  href="/barter"
-                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Browse
-                </Link>
-                <Link
-                  href="/barter/new"
-                  className="px-3 py-1 bg-white text-green-600 border border-green-600 rounded hover:bg-green-50"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Make Offer
-                </Link>
-              </div>
-            </Link>
-          </div>
-        </div>
-
-        {/* Shopping */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-          <h3 className="text-xl font-bold mb-4">🛍️ Shopping</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Link
-              href="/cart"
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-orange-300 hover:bg-orange-50 transition-all"
-            >
-              <div className="text-2xl mb-2">🛒</div>
-              <div className="font-semibold text-gray-900">My Cart</div>
-              <div className="text-xs text-gray-600">View cart and checkout</div>
-            </Link>
-            <Link
-              href="/dashboard/orders"
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all"
-            >
-              <div className="text-2xl mb-2">📋</div>
-              <div className="font-semibold text-gray-900">My Orders</div>
-              <div className="text-xs text-gray-600">Track your orders</div>
-            </Link>
-          </div>
-        </div>
-
-        {/* My Activity */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-          <h3 className="text-xl font-bold mb-4">📊 My Activity</h3>
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <Link
-              href="/items?user=me"
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-all"
-            >
-              <div className="text-2xl mb-2">📦</div>
-              <div className="font-semibold text-gray-900">My Items</div>
-              <div className="text-xs text-gray-600">View your listings</div>
-            </Link>
-            <Link
-              href="/auctions?user=me"
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-300 hover:bg-indigo-50 transition-all"
-            >
-              <div className="text-2xl mb-2">🔨</div>
-              <div className="font-semibold text-gray-900">My Auctions</div>
-              <div className="text-xs text-gray-600">Manage your auctions</div>
-            </Link>
-            <Link
-              href="/barter/my-offers"
-              className="p-4 border-2 border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all"
-            >
-              <div className="text-2xl mb-2">🔄</div>
-              <div className="font-semibold text-gray-900">My Barter Offers</div>
-              <div className="text-xs text-gray-600">Track your trades</div>
-            </Link>
-          </div>
-        </div>
-
-        {/* System Status */}
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
-          <h3 className="text-xl font-bold mb-4">🔧 System Status</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <a
-              href={`${process.env.NEXT_PUBLIC_WS_URL}/health`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="text-2xl">🏥</div>
-                <div>
-                  <div className="font-semibold text-blue-900">Backend Health</div>
-                  <div className="text-xs text-blue-700">Check server status</div>
+          {/* My Transactions */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-l from-green-500 to-green-600 px-6 py-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>💰</span> معاملاتي المالية
+              </h3>
+            </div>
+            <div className="p-4 space-y-3">
+              <Link
+                href="/dashboard/transactions"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-green-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">💵</div>
+                  <span className="font-medium">مبيعاتي ومشترياتي</span>
                 </div>
-              </div>
-            </a>
-            <a
-              href={`${process.env.NEXT_PUBLIC_API_URL}/docs`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                <div className="text-2xl">📚</div>
-                <div>
-                  <div className="font-semibold text-blue-900">API Documentation</div>
-                  <div className="text-xs text-blue-700">View API endpoints</div>
+                <span className="text-gray-400">←</span>
+              </Link>
+              <Link
+                href="/cart"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-green-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">🛒</div>
+                  <span className="font-medium">سلة التسوق</span>
                 </div>
-              </div>
-            </a>
+                <span className="text-gray-400">←</span>
+              </Link>
+              <Link
+                href="/dashboard/orders"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-green-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">📋</div>
+                  <span className="font-medium">طلباتي</span>
+                </div>
+                <span className="text-gray-400">←</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Auctions & Bids */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-l from-indigo-500 to-indigo-600 px-6 py-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>🔨</span> المزادات والمزايدات
+              </h3>
+            </div>
+            <div className="p-4 space-y-3">
+              <Link
+                href="/auctions"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-indigo-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">🔨</div>
+                  <span className="font-medium">المزادات النشطة</span>
+                </div>
+                <span className="text-gray-400">←</span>
+              </Link>
+              <Link
+                href="/dashboard/activity"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-indigo-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">🎯</div>
+                  <span className="font-medium">مزايداتي</span>
+                </div>
+                <span className="text-gray-400">←</span>
+              </Link>
+              <Link
+                href="/reverse-auctions"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-indigo-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">📉</div>
+                  <span className="font-medium">المناقصات</span>
+                </div>
+                <span className="text-gray-400">←</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Barter & Exchange */}
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-gradient-to-l from-teal-500 to-teal-600 px-6 py-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>🔄</span> المقايضة والتبادل
+              </h3>
+            </div>
+            <div className="p-4 space-y-3">
+              <Link
+                href="/barter/my-offers"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-teal-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">📥</div>
+                  <div>
+                    <span className="font-medium">عروض المقايضة</span>
+                    {stats.pendingOffers > 0 && (
+                      <span className="mr-2 px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
+                        {stats.pendingOffers} جديد
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-gray-400">←</span>
+              </Link>
+              <Link
+                href="/barter"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-teal-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">🔍</div>
+                  <span className="font-medium">البحث عن مقايضات</span>
+                </div>
+                <span className="text-gray-400">←</span>
+              </Link>
+              <Link
+                href="/barter/new"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-teal-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">➕</div>
+                  <span className="font-medium">إنشاء عرض مقايضة</span>
+                </div>
+                <span className="text-gray-400">←</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Help Section */}
+        <div className="bg-white rounded-2xl shadow-sm p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span>💡</span> كيف تستخدم XChange؟
+          </h3>
+          <div className="grid md:grid-cols-4 gap-4">
+            <div className="text-center p-4 rounded-xl bg-gray-50">
+              <div className="text-3xl mb-2">1️⃣</div>
+              <h4 className="font-semibold mb-1">أضف منتجاتك</h4>
+              <p className="text-sm text-gray-500">صوّر منتجاتك وأضفها للمنصة</p>
+            </div>
+            <div className="text-center p-4 rounded-xl bg-gray-50">
+              <div className="text-3xl mb-2">2️⃣</div>
+              <h4 className="font-semibold mb-1">اختر طريقة البيع</h4>
+              <p className="text-sm text-gray-500">بيع مباشر، مزاد، أو مقايضة</p>
+            </div>
+            <div className="text-center p-4 rounded-xl bg-gray-50">
+              <div className="text-3xl mb-2">3️⃣</div>
+              <h4 className="font-semibold mb-1">تواصل مع المشترين</h4>
+              <p className="text-sm text-gray-500">استقبل العروض وتفاوض</p>
+            </div>
+            <div className="text-center p-4 rounded-xl bg-gray-50">
+              <div className="text-3xl mb-2">4️⃣</div>
+              <h4 className="font-semibold mb-1">أتمم الصفقة</h4>
+              <p className="text-sm text-gray-500">سلّم المنتج واستلم المقابل</p>
+            </div>
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t mt-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-gray-500 text-sm">
+              © 2024 XChange - منصة التبادل التجاري الأولى في مصر
+            </p>
+            <div className="flex gap-4 text-sm">
+              <Link href="/about" className="text-gray-500 hover:text-primary-600">عن المنصة</Link>
+              <Link href="/contact" className="text-gray-500 hover:text-primary-600">تواصل معنا</Link>
+              <Link href="/terms" className="text-gray-500 hover:text-primary-600">الشروط والأحكام</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

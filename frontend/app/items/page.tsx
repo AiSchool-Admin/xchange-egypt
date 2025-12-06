@@ -1,35 +1,108 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { getItems, Item } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
+import LocationSelector, { LocationSelection } from '@/components/LocationSelector';
+import { getLocationLabel, getGovernorateNameAr, getCityNameAr, getDistrictNameAr } from '@/lib/data/egyptLocations';
+import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
+// ============================================
+// Constants
+// ============================================
+const CONDITIONS = [
+  { value: 'NEW', label: 'جديد', icon: '✨' },
+  { value: 'LIKE_NEW', label: 'شبه جديد', icon: '🌟' },
+  { value: 'GOOD', label: 'جيد', icon: '👍' },
+  { value: 'FAIR', label: 'مقبول', icon: '👌' },
+  { value: 'POOR', label: 'مستعمل', icon: '📦' },
+];
+
+const LISTING_TYPES = [
+  { value: '', label: 'الكل', icon: '🛒' },
+  { value: 'DIRECT_SALE', label: 'للبيع', icon: '🏷️' },
+  { value: 'BARTER', label: 'للمقايضة', icon: '🔄' },
+  { value: 'AUCTION', label: 'مزاد', icon: '🔨' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'createdAt:desc', label: 'الأحدث' },
+  { value: 'createdAt:asc', label: 'الأقدم' },
+  { value: 'estimatedValue:asc', label: 'السعر: الأقل' },
+  { value: 'estimatedValue:desc', label: 'السعر: الأعلى' },
+];
+
+// ============================================
+// Main Component
+// ============================================
 export default function ItemsPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user: currentUser } = useAuth();
+
+  // URL params
+  const categorySlug = searchParams.get('category');
+  const searchQuery = searchParams.get('search');
+  const governorateParam = searchParams.get('governorate');
+  const cityParam = searchParams.get('city');
+  const districtParam = searchParams.get('district');
+  const userParam = searchParams.get('user');
+
+  // Check if viewing own items
+  const isMyItems = userParam === 'me';
+
+  // State
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   // Filters
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [search, setSearch] = useState(searchQuery || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery || '');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
+  const [selectedListingType, setSelectedListingType] = useState('');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [debouncedMinPrice, setDebouncedMinPrice] = useState('');
   const [debouncedMaxPrice, setDebouncedMaxPrice] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt:desc');
+
+  // Location
+  const [location, setLocation] = useState<LocationSelection>({
+    scope: governorateParam ? (cityParam ? (districtParam ? 'DISTRICT' : 'CITY') : 'GOVERNORATE') : 'NATIONAL',
+    governorateId: governorateParam || undefined,
+    cityId: cityParam || undefined,
+    districtId: districtParam || undefined,
+  });
+
+  // View
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showFilters, setShowFilters] = useState(false);
 
   // Pagination
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
+  // Load categories on mount
   useEffect(() => {
     loadCategories();
   }, []);
 
-  // Debounce search input (auto-search as user types)
+  // Set category from URL
+  useEffect(() => {
+    if (categorySlug && categories.length > 0) {
+      const category = categories.find(cat => cat.slug === categorySlug);
+      if (category) setSelectedCategory(category.id);
+    }
+  }, [categorySlug, categories]);
+
+  // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -38,7 +111,7 @@ export default function ItemsPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Debounce price inputs
+  // Debounce price
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedMinPrice(minPrice);
@@ -50,14 +123,16 @@ export default function ItemsPage() {
 
   // Load items when filters change
   useEffect(() => {
+    // For "my items", wait for user to be loaded
+    if (isMyItems && !currentUser) return;
     loadItems();
-  }, [page, selectedCategory, selectedCondition, debouncedMinPrice, debouncedMaxPrice, debouncedSearch]);
+  }, [page, selectedCategory, selectedCondition, selectedListingType, debouncedMinPrice, debouncedMaxPrice, debouncedSearch, location, sortBy, isMyItems, currentUser]);
 
   const loadCategories = async () => {
     try {
       const response = await getCategories();
       setCategories(response.data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Failed to load categories:', err);
     }
   };
@@ -65,21 +140,49 @@ export default function ItemsPage() {
   const loadItems = async () => {
     try {
       setLoading(true);
+      setError('');
+
+      // Build location filters
+      let governorateFilter: string | undefined;
+      let cityFilter: string | undefined;
+      let districtFilter: string | undefined;
+
+      if (location.governorateId) {
+        governorateFilter = getGovernorateNameAr(location.governorateId);
+        if (location.cityId) {
+          cityFilter = getCityNameAr(location.governorateId, location.cityId);
+          if (location.districtId) {
+            districtFilter = getDistrictNameAr(location.governorateId, location.cityId, location.districtId);
+          }
+        }
+      }
+
+      // Parse sort
+      const [sortField, sortOrder] = sortBy.split(':');
+
       const response = await getItems({
         page,
         limit: 12,
         categoryId: selectedCategory || undefined,
         condition: selectedCondition || undefined,
+        listingType: selectedListingType || undefined,
         minPrice: debouncedMinPrice ? parseFloat(debouncedMinPrice) : undefined,
         maxPrice: debouncedMaxPrice ? parseFloat(debouncedMaxPrice) : undefined,
         search: debouncedSearch || undefined,
-        status: 'ACTIVE',
+        status: isMyItems ? undefined : 'ACTIVE', // Show all statuses for own items
+        sellerId: isMyItems && currentUser ? currentUser.id : undefined,
+        governorate: governorateFilter,
+        city: cityFilter,
+        district: districtFilter,
+        sortBy: sortField,
+        sortOrder: sortOrder as 'asc' | 'desc',
       });
 
       setItems(response.data.items);
       setTotalPages(response.data.pagination.totalPages);
+      setTotalItems(response.data.pagination.total);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load items');
+      setError(err.response?.data?.message || 'فشل في تحميل المنتجات');
     } finally {
       setLoading(false);
     }
@@ -90,236 +193,390 @@ export default function ItemsPage() {
     setDebouncedSearch('');
     setSelectedCategory('');
     setSelectedCondition('');
+    setSelectedListingType('');
     setMinPrice('');
     setMaxPrice('');
     setDebouncedMinPrice('');
     setDebouncedMaxPrice('');
+    setLocation({ scope: 'NATIONAL' });
+    setSortBy('createdAt:desc');
+    setPage(1);
+    router.push('/items');
+  };
+
+  const handleLocationChange = (newLocation: LocationSelection) => {
+    setLocation(newLocation);
     setPage(1);
   };
 
+  const getCategoryName = () => {
+    if (isMyItems) {
+      return '📦 منتجاتي';
+    }
+    if (selectedCategory) {
+      const category = categories.find(cat => cat.id === selectedCategory);
+      return category?.nameAr || 'السوق';
+    }
+    return 'السوق';
+  };
+
+  const locationLabel = getLocationLabel(location.governorateId, location.cityId, location.districtId);
+
+  const hasActiveFilters = selectedCategory || selectedCondition || selectedListingType || debouncedSearch || debouncedMinPrice || debouncedMaxPrice || location.governorateId;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
+      {/* ============================================
+          Header
+          ============================================ */}
+      <div className="bg-gradient-to-l from-primary-600 to-teal-600 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Marketplace</h1>
-              <p className="text-gray-600 mt-1">Browse and buy used items</p>
+              <h1 className="text-3xl font-bold">{getCategoryName()}</h1>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-primary-100">
+                  {totalItems > 0 ? `${totalItems.toLocaleString('ar-EG')} منتج متاح` : 'تصفح المنتجات'}
+                </span>
+                {location.governorateId && (
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                    📍 {locationLabel}
+                  </span>
+                )}
+              </div>
             </div>
             <Link
-              href="/items/new"
-              className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition font-semibold"
+              href="/inventory/add"
+              className="bg-white text-primary-600 px-6 py-3 rounded-xl hover:bg-primary-50 transition font-bold flex items-center gap-2 shadow-lg"
             >
-              + Sell an Item
+              <span>➕</span>
+              أضف إعلان جديد
             </Link>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Filters Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Filters</h2>
-                <button
-                  onClick={clearFilters}
-                  className="text-sm text-purple-600 hover:text-purple-700"
-                >
-                  Clear All
-                </button>
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* ============================================
+            Top Bar - Search & Sort
+            ============================================ */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="ابحث عن المنتجات..."
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-primary-500 focus:bg-white transition-all outline-none"
+              />
+              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+
+            {/* Filter Toggle - Mobile */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="md:hidden flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 rounded-xl font-medium"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              الفلاتر
+              {hasActiveFilters && (
+                <span className="w-2 h-2 bg-primary-500 rounded-full" />
+              )}
+            </button>
+
+            {/* Sort */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-primary-500 outline-none font-medium min-w-[150px]"
+            >
+              {SORT_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+
+            {/* View Toggle */}
+            <div className="hidden md:flex bg-gray-100 rounded-xl p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* ============================================
+              Filters Sidebar
+              ============================================ */}
+          <div className={`lg:col-span-1 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+            <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-20 space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-bold text-gray-900">🔍 الفلاتر</h2>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    مسح الكل
+                  </button>
+                )}
               </div>
 
-              {/* Search - Auto-search as user types */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Search
-                </label>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search items..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              {/* Location */}
+              <div className="pb-6 border-b border-gray-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">📍 الموقع</label>
+                <LocationSelector
+                  value={location}
+                  onChange={handleLocationChange}
                 />
-                <p className="text-xs text-gray-500 mt-1">Results update as you type</p>
               </div>
 
-              {/* Category Filter */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
-                </label>
+              {/* Category */}
+              <div className="pb-6 border-b border-gray-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">📂 الفئة</label>
                 <select
                   value={selectedCategory}
-                  onChange={(e) => {
-                    setSelectedCategory(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
                 >
-                  <option value="">All Categories</option>
+                  <option value="">جميع الفئات</option>
                   {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.nameEn}
-                    </option>
+                    <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Condition Filter */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Condition
-                </label>
-                <select
-                  value={selectedCondition}
-                  onChange={(e) => {
-                    setSelectedCondition(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                >
-                  <option value="">Any Condition</option>
-                  <option value="NEW">New</option>
-                  <option value="LIKE_NEW">Like New</option>
-                  <option value="GOOD">Good</option>
-                  <option value="FAIR">Fair</option>
-                  <option value="POOR">Poor</option>
-                </select>
+              {/* Listing Type */}
+              <div className="pb-6 border-b border-gray-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">🏷️ نوع الإعلان</label>
+                <div className="flex flex-wrap gap-2">
+                  {LISTING_TYPES.map(type => (
+                    <button
+                      key={type.value}
+                      onClick={() => { setSelectedListingType(type.value); setPage(1); }}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        selectedListingType === type.value
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {type.icon} {type.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Condition */}
+              <div className="pb-6 border-b border-gray-100">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">📊 الحالة</label>
+                <div className="space-y-2">
+                  {CONDITIONS.map(cond => (
+                    <label key={cond.value} className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="condition"
+                        value={cond.value}
+                        checked={selectedCondition === cond.value}
+                        onChange={(e) => { setSelectedCondition(e.target.value); setPage(1); }}
+                        className="w-4 h-4 text-primary-500 focus:ring-primary-500"
+                      />
+                      <span className="text-gray-700 group-hover:text-primary-600 transition-colors">
+                        {cond.icon} {cond.label}
+                      </span>
+                    </label>
+                  ))}
+                  {selectedCondition && (
+                    <button
+                      onClick={() => { setSelectedCondition(''); setPage(1); }}
+                      className="text-sm text-primary-600 hover:text-primary-700"
+                    >
+                      مسح الاختيار
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Price Range */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price Range (EGP)
-                </label>
-                <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">💰 السعر (ج.م)</label>
+                <div className="grid grid-cols-2 gap-3">
                   <input
                     type="number"
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
-                    placeholder="Min"
+                    placeholder="من"
                     min="0"
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
                   />
                   <input
                     type="number"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
-                    placeholder="Max"
+                    placeholder="إلى"
                     min="0"
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Filters update automatically</p>
               </div>
+
+              {/* Active Filters Summary */}
+              {hasActiveFilters && (
+                <div className="pt-4 border-t border-gray-100">
+                  <p className="text-sm font-medium text-gray-700 mb-3">الفلاتر النشطة:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {location.governorateId && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                        📍 {locationLabel}
+                        <button onClick={() => handleLocationChange({ scope: 'NATIONAL' })} className="hover:text-blue-900">×</button>
+                      </span>
+                    )}
+                    {selectedCategory && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm">
+                        {categories.find(c => c.id === selectedCategory)?.nameAr}
+                        <button onClick={() => setSelectedCategory('')} className="hover:text-primary-900">×</button>
+                      </span>
+                    )}
+                    {selectedCondition && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm">
+                        {CONDITIONS.find(c => c.value === selectedCondition)?.label}
+                        <button onClick={() => setSelectedCondition('')} className="hover:text-primary-900">×</button>
+                      </span>
+                    )}
+                    {selectedListingType && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
+                        {LISTING_TYPES.find(t => t.value === selectedListingType)?.label}
+                        <button onClick={() => setSelectedListingType('')} className="hover:text-amber-900">×</button>
+                      </span>
+                    )}
+                    {debouncedSearch && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                        "{debouncedSearch}"
+                        <button onClick={() => { setSearch(''); setDebouncedSearch(''); }} className="hover:text-gray-900">×</button>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Items Grid */}
+          {/* ============================================
+              Items Grid
+              ============================================ */}
           <div className="lg:col-span-3">
             {loading ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                <p className="mt-4 text-gray-600">Loading items...</p>
+              <div className={`grid gap-4 md:gap-6 ${viewMode === 'grid' ? 'grid-cols-2 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <ItemCardSkeleton key={i} variant={viewMode === 'list' ? 'horizontal' : 'default'} />
+                ))}
               </div>
             ) : error ? (
-              <div className="text-center py-12">
-                <p className="text-red-600">{error}</p>
+              <div className="text-center py-16 bg-white rounded-2xl">
+                <div className="text-6xl mb-4">😔</div>
+                <p className="text-red-600 text-lg mb-4">{error}</p>
                 <button
                   onClick={loadItems}
-                  className="mt-4 text-purple-600 hover:text-purple-700"
+                  className="px-6 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors"
                 >
-                  Try Again
+                  حاول مرة أخرى
                 </button>
               </div>
             ) : items.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg">
-                <p className="text-gray-600 text-lg">No items found</p>
-                <p className="text-gray-500 mt-2">Try adjusting your filters</p>
+              <div className="text-center py-16 bg-white rounded-2xl">
+                <div className="text-6xl mb-4">📭</div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد منتجات</h3>
+                <p className="text-gray-500 mb-6">
+                  {hasActiveFilters
+                    ? 'جرب تعديل الفلاتر أو البحث عن شيء آخر'
+                    : 'كن أول من يضيف منتج!'}
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="px-6 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors"
+                  >
+                    مسح الفلاتر
+                  </button>
+                )}
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {/* Results count */}
+                <div className="mb-4 flex justify-between items-center text-sm text-gray-600">
+                  <span>
+                    عرض {items.length} من {totalItems.toLocaleString('ar-EG')} منتج
+                  </span>
+                </div>
+
+                {/* Items */}
+                <div className={`grid gap-4 md:gap-6 ${viewMode === 'grid' ? 'grid-cols-2 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
                   {items.map((item) => (
-                    <Link
+                    <ItemCard
                       key={item.id}
-                      href={`/items/${item.id}`}
-                      className="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden group"
-                    >
-                      {/* Image */}
-                      <div className="relative h-48 bg-gray-200">
-                        {item.images && item.images.length > 0 ? (
-                          <img
-                            src={item.images.find((img) => img.isPrimary)?.url || item.images[0]?.url}
-                            alt={item.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
-                            <span className="text-4xl">📦</span>
-                          </div>
-                        )}
-                        <div className="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-semibold text-gray-700">
-                          {item.condition.replace('_', ' ')}
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="p-4">
-                        <h3 className="font-semibold text-gray-900 line-clamp-1 group-hover:text-purple-600 transition">
-                          {item.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 line-clamp-2 mt-1">
-                          {item.description}
-                        </p>
-
-                        <div className="mt-3 flex items-center justify-between">
-                          <div>
-                            {item.estimatedValue ? (
-                              <p className="text-xl font-bold text-purple-600">
-                                {item.estimatedValue.toLocaleString()} EGP
-                              </p>
-                            ) : (
-                              <p className="text-sm text-gray-500">Contact for price</p>
-                            )}
-                          </div>
-                          <span className="text-xs text-gray-500">{item.category.nameEn}</span>
-                        </div>
-
-                        <div className="mt-3 pt-3 border-t flex items-center justify-between text-sm">
-                          <span className="text-gray-600 truncate">By {item.seller.fullName}</span>
-                          <span className="text-green-600 font-medium">Buy Now</span>
-                        </div>
-                      </div>
-                    </Link>
+                      id={item.id}
+                      title={item.title}
+                      price={item.estimatedValue || 0}
+                      images={item.images?.map(img => img.url) || []}
+                      condition={item.condition}
+                      governorate={item.governorate}
+                      listingType={item.listingType as any}
+                      category={item.category?.nameAr}
+                      seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                      createdAt={item.createdAt}
+                      variant={viewMode === 'list' ? 'horizontal' : 'default'}
+                    />
                   ))}
                 </div>
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="mt-8 flex justify-center gap-2">
+                  <div className="mt-10 flex justify-center gap-2">
                     <button
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
                       disabled={page === 1}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
                     >
-                      Previous
+                      السابق
                     </button>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                        const pageNum = i + 1;
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (page <= 3) {
+                          pageNum = i + 1;
+                        } else if (page >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = page - 2 + i;
+                        }
                         return (
                           <button
                             key={pageNum}
                             onClick={() => setPage(pageNum)}
-                            className={`px-4 py-2 rounded-lg ${
+                            className={`w-10 h-10 rounded-xl font-medium transition ${
                               page === pageNum
-                                ? 'bg-purple-600 text-white'
-                                : 'border border-gray-300 hover:bg-gray-50'
+                                ? 'bg-primary-500 text-white'
+                                : 'bg-white border border-gray-200 hover:bg-gray-50'
                             }`}
                           >
                             {pageNum}
@@ -330,9 +587,9 @@ export default function ItemsPage() {
                     <button
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                       disabled={page === totalPages}
-                      className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
                     >
-                      Next
+                      التالي
                     </button>
                   </div>
                 )}

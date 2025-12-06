@@ -88,7 +88,7 @@ curl -X POST http://localhost:5000/api/v1/ai/categorize/batch \
 ```json
 {
   "categoryId": "<smartphones-category-id>",
-  "condition": "EXCELLENT",
+  "condition": "LIKE_NEW",
   "title": "iPhone 14 Pro",
   "description": "256GB, barely used, no scratches"
 }
@@ -100,7 +100,7 @@ curl -X POST http://localhost:5000/api/v1/ai/estimate-price \
   -H "Content-Type: application/json" \
   -d '{
     "categoryId": "category-uuid-here",
-    "condition": "EXCELLENT",
+    "condition": "LIKE_NEW",
     "title": "iPhone 14 Pro",
     "description": "256GB"
   }'
@@ -126,7 +126,7 @@ curl -X POST http://localhost:5000/api/v1/ai/estimate-price \
 **✅ Success Criteria**:
 - Confidence > 60% (with enough data)
 - Price within reasonable market range
-- Condition affects price (NEW > EXCELLENT > GOOD)
+- Condition affects price (NEW > LIKE_NEW > GOOD)
 
 ---
 

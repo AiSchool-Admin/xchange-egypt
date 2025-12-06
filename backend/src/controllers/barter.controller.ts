@@ -314,3 +314,25 @@ export const getSmartMatches = async (
     next(error);
   }
 };
+
+/**
+ * Find if current user has an item that matches what the target item's owner wants
+ * GET /api/v1/barter/find-my-match/:itemId
+ * Returns the user's matching item (if any) for direct barter completion
+ */
+export const findMyMatchingItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { itemId } = req.params;
+    const userId = req.user!.id;
+
+    const match = await barterService.findMyMatchingItemForBarter(itemId, userId);
+
+    return successResponse(res, match, match ? 'Matching item found' : 'No matching item found');
+  } catch (error) {
+    next(error);
+  }
+};

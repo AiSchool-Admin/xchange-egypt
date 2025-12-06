@@ -50,6 +50,7 @@ export const getReverseAuctions = async (
       minBudget: req.query.minBudget ? parseFloat(req.query.minBudget as string) : undefined,
       maxBudget: req.query.maxBudget ? parseFloat(req.query.maxBudget as string) : undefined,
       location: req.query.location as string | undefined,
+      buyerId: req.query.buyerId as string | undefined,
       page: req.query.page ? parseInt(req.query.page as string) : 1,
       limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
     };

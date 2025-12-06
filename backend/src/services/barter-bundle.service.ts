@@ -233,6 +233,8 @@ export const createBundleOffer = async (
   userId: string,
   input: CreateBundleOfferInput
 ): Promise<any> => {
+  console.log('[createBundleOffer] Starting with input:', JSON.stringify(input, null, 2));
+
   const {
     offeredItemIds = [],
     preferenceSets = [],
@@ -325,25 +327,49 @@ export const createBundleOffer = async (
   const defaultExpiry = new Date();
   defaultExpiry.setDate(defaultExpiry.getDate() + 14);
 
-  // Create barter offer
-  const barterOffer = await prisma.barterOffer.create({
-    data: {
-      initiatorId: userId,
-      recipientId: isOpenOffer ? null : recipientId,
-      offeredItemIds,
-      offeredBundleValue,
-      offeredCashAmount,
-      requestedCashAmount,
-      notes,
-      expiresAt: expiresAt || defaultExpiry,
-      isOpenOffer: isOpenOffer || (itemRequests.length > 0),
-      status: 'PENDING',
-    },
+  console.log('[createBundleOffer] Creating barter offer with:', {
+    userId,
+    recipientId: isOpenOffer ? null : recipientId,
+    offeredItemIds,
+    offeredBundleValue,
+    offeredCashAmount,
+    requestedCashAmount,
+    isOpenOffer: isOpenOffer || (itemRequests.length > 0),
+    preferenceSetsCount: preferenceSets.length,
   });
+
+  // Create barter offer
+  let barterOffer;
+  try {
+    barterOffer = await prisma.barterOffer.create({
+      data: {
+        initiatorId: userId,
+        recipientId: isOpenOffer ? null : recipientId,
+        offeredItemIds,
+        offeredBundleValue,
+        offeredCashAmount,
+        requestedCashAmount,
+        notes,
+        expiresAt: expiresAt || defaultExpiry,
+        isOpenOffer: isOpenOffer || (itemRequests.length > 0),
+        status: 'PENDING',
+      },
+    });
+    console.log('[createBundleOffer] Created barter offer:', barterOffer.id);
+  } catch (error: any) {
+    console.error('[createBundleOffer] Error creating barter offer:', error.message, error.stack);
+    throw error;
+  }
 
   // Create preference sets (if any)
   if (preferenceSets.length > 0) {
-    await createPreferenceSets(barterOffer.id, offeredBundleValue, preferenceSets);
+    try {
+      await createPreferenceSets(barterOffer.id, offeredBundleValue, preferenceSets);
+      console.log('[createBundleOffer] Created preference sets');
+    } catch (error: any) {
+      console.error('[createBundleOffer] Error creating preference sets:', error.message, error.stack);
+      throw error;
+    }
   }
 
   // Create item requests (for description-based requests)
@@ -412,6 +438,7 @@ export const createBundleOffer = async (
       actionText: 'View Offer',
     });
   }
+
 
   return completeOffer;
 };

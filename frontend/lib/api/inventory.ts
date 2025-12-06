@@ -70,6 +70,9 @@ export interface InventoryItem {
   status: 'ACTIVE' | 'PENDING' | 'MATCHED' | 'COMPLETED' | 'CANCELLED';
   images: string[];
   categoryId?: string;
+  // Barter preferences - What the user wants in exchange
+  desiredItemTitle?: string;
+  desiredItemDescription?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
   // Market & Location
@@ -112,8 +115,14 @@ export interface CreateInventoryItemInput {
   listingType: ListingType;
   images?: string[];
   categoryId?: string;
+  condition?: string;
+  // Barter preferences - What the user wants in exchange
+  desiredItemTitle?: string;
+  desiredItemDescription?: string;
   desiredCategoryId?: string;
   desiredKeywords?: string;
+  desiredValueMin?: number;
+  desiredValueMax?: number;
   // Market & Location
   marketType?: MarketType;
   governorate?: string;

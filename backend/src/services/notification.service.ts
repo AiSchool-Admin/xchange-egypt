@@ -148,10 +148,7 @@ export const getUserNotifications = async (
       where,
       skip,
       take: limit,
-      orderBy: [
-        { priority: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: { createdAt: 'desc' }, // Sort by newest first
     }),
   ]);
 

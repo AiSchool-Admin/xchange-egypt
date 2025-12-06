@@ -5,8 +5,11 @@
 
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { PrismaClient, UserType, UserStatus } from '@prisma/client';
 import { getTestDb } from './testDb';
+
+// Type definitions for user enums
+type UserType = 'INDIVIDUAL' | 'BUSINESS' | 'ADMIN';
+type UserStatus = 'PENDING' | 'ACTIVE' | 'SUSPENDED' | 'BANNED';
 
 /**
  * Generate a test JWT token
@@ -32,13 +35,16 @@ export const createTestUser = async (overrides: any = {}) => {
 
   const defaultData = {
     email: `test-${Date.now()}@example.com`,
-    password_hash: await bcrypt.hash('Test123!@#', 10),
-    full_name: 'Test User',
+    passwordHash: await bcrypt.hash('Test123!@#', 10),
+    fullName: 'Test User',
     phone: '+201234567890',
-    user_type: 'INDIVIDUAL' as UserType,
+    userType: 'INDIVIDUAL' as UserType,
     status: 'ACTIVE' as UserStatus,
-    email_verified: true,
-    phone_verified: true,
+    emailVerified: true,
+    phoneVerified: true,
+    governorate: overrides.governorate || null,
+    city: overrides.city || null,
+    district: overrides.district || null,
     ...overrides,
   };
 
@@ -69,12 +75,12 @@ export const createTestCategory = async (overrides: any = {}) => {
 
   const category = await db.category.create({
     data: {
-      name_en: `Test Category ${Date.now()}`,
-      name_ar: `فئة تجريبية ${Date.now()}`,
+      nameEn: `Test Category ${Date.now()}`,
+      nameAr: `فئة تجريبية ${Date.now()}`,
       slug: `test-category-${Date.now()}`,
       icon: '📦',
       level: 1,
-      is_active: true,
+      isActive: true,
       ...overrides,
     },
   });
@@ -90,17 +96,88 @@ export const createTestItem = async (userId: string, categoryId: string, overrid
 
   const item = await db.item.create({
     data: {
-      user_id: userId,
-      category_id: categoryId,
+      sellerId: userId,
+      categoryId: categoryId,
       title: `Test Item ${Date.now()}`,
       description: 'Test item description',
-      condition: 'NEW',
-      estimated_value: 1000,
-      quantity: 1,
-      unit: 'piece',
-      location_city: 'Cairo',
-      location_area: 'Nasr City',
-      is_active: true,
+      condition: 'GOOD',
+      estimatedValue: 1000,
+      listingType: 'DIRECT_SALE',
+      images: [],
+      governorate: overrides.governorate || 'القاهرة',
+      city: overrides.city || 'مدينة نصر',
+      district: overrides.district || 'الحي الأول',
+      status: 'ACTIVE',
+      ...overrides,
+    },
+  });
+
+  return item;
+};
+
+/**
+ * Create test barter item with preferences
+ */
+export const createTestBarterItem = async (
+  userId: string,
+  categoryId: string,
+  desiredCategoryId: string,
+  overrides: any = {}
+) => {
+  const db = getTestDb();
+
+  const item = await db.item.create({
+    data: {
+      sellerId: userId,
+      categoryId: categoryId,
+      title: `Test Barter Item ${Date.now()}`,
+      description: 'Test barter item for exchange',
+      condition: 'GOOD',
+      estimatedValue: 5000,
+      listingType: 'BARTER',
+      images: [],
+      governorate: overrides.governorate || 'القاهرة',
+      city: overrides.city || 'مدينة نصر',
+      district: overrides.district || 'الحي الأول',
+      desiredCategoryId: desiredCategoryId,
+      desiredItemTitle: overrides.desiredItemTitle || null,
+      desiredKeywords: overrides.desiredKeywords || null,
+      desiredValueMin: overrides.desiredValueMin || null,
+      desiredValueMax: overrides.desiredValueMax || null,
+      status: 'ACTIVE',
+      ...overrides,
+    },
+  });
+
+  return item;
+};
+
+/**
+ * Create test demand item (DIRECT_BUY)
+ */
+export const createTestDemandItem = async (
+  userId: string,
+  categoryId: string,
+  overrides: any = {}
+) => {
+  const db = getTestDb();
+
+  const item = await db.item.create({
+    data: {
+      sellerId: userId,
+      categoryId: categoryId,
+      title: `مطلوب: ${overrides.title || 'Test Item'}`,
+      description: overrides.description || 'Looking for this item',
+      condition: 'GOOD',
+      estimatedValue: overrides.estimatedValue || 5000,
+      listingType: 'DIRECT_BUY',
+      images: [],
+      governorate: overrides.governorate || 'القاهرة',
+      city: overrides.city || 'مدينة نصر',
+      district: overrides.district || 'الحي الأول',
+      desiredKeywords: overrides.desiredKeywords || null,
+      desiredValueMax: overrides.desiredValueMax || null,
+      status: 'ACTIVE',
       ...overrides,
     },
   });
