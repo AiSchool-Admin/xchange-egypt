@@ -182,7 +182,7 @@ export default function AuctionDetailsPage() {
   const minBid = auction.currentPrice + 10;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -190,7 +190,7 @@ export default function AuctionDetailsPage() {
             href="/auctions"
             className="text-purple-600 hover:text-purple-700 flex items-center gap-2"
           >
-            ← Back to Auctions
+            → العودة للمزادات
           </Link>
         </div>
       </div>
@@ -274,48 +274,48 @@ export default function AuctionDetailsPage() {
                 </span>
               </div>
 
-              <h2 className="text-lg font-semibold mb-2">Description</h2>
+              <h2 className="text-lg font-semibold mb-2">الوصف</h2>
               <p className="text-gray-700 whitespace-pre-wrap mb-6">
                 {item.description}
               </p>
 
               <div className="border-t pt-6">
-                <h2 className="text-lg font-semibold mb-4">Auction Details</h2>
+                <h2 className="text-lg font-semibold mb-4">تفاصيل المزاد</h2>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600">Starting Price</p>
-                    <p className="font-semibold">{auction.startingPrice.toLocaleString()} EGP</p>
+                    <p className="text-gray-600">السعر الابتدائي</p>
+                    <p className="font-semibold">{auction.startingPrice.toLocaleString()} ج.م</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Total Bids</p>
-                    <p className="font-semibold">{auction.bidCount} bids</p>
+                    <p className="text-gray-600">عدد المزايدات</p>
+                    <p className="font-semibold">{auction.bidCount} مزايدة</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Started</p>
+                    <p className="text-gray-600">بدأ في</p>
                     <p className="font-semibold">
-                      {new Date(auction.startTime).toLocaleString()}
+                      {new Date(auction.startTime).toLocaleString('ar-EG')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Ends</p>
+                    <p className="text-gray-600">ينتهي في</p>
                     <p className="font-semibold">
-                      {new Date(auction.endTime).toLocaleString()}
+                      {new Date(auction.endTime).toLocaleString('ar-EG')}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="border-t pt-6 mt-6">
-                <h2 className="text-lg font-semibold mb-2">Seller</h2>
-                <p className="text-gray-700">{item.seller?.fullName || (item.seller as any)?.businessName || 'Unknown'}</p>
-                <p className="text-sm text-gray-600 capitalize">{item.seller?.userType || 'Individual'}</p>
+                <h2 className="text-lg font-semibold mb-2">البائع</h2>
+                <p className="text-gray-700">{item.seller?.fullName || (item.seller as any)?.businessName || 'غير معروف'}</p>
+                <p className="text-sm text-gray-600 capitalize">{item.seller?.userType === 'BUSINESS' ? 'تاجر' : 'فرد'}</p>
               </div>
             </div>
 
             {/* Bid History */}
             {auction.bids && auction.bids.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4">Bid History</h2>
+                <h2 className="text-lg font-semibold mb-4">سجل المزايدات</h2>
                 <div className="space-y-3">
                   {auction.bids.slice(0, 10).map((bid, index) => (
                     <div
@@ -328,17 +328,17 @@ export default function AuctionDetailsPage() {
                         <p className="font-semibold text-gray-900">
                           {bid.bidder.fullName}
                           {index === 0 && (
-                            <span className="ml-2 text-xs text-green-600 font-normal">
-                              (Leading)
+                            <span className="mr-2 text-xs text-green-600 font-normal">
+                              (الأعلى)
                             </span>
                           )}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {new Date(bid.createdAt).toLocaleString()}
+                          {new Date(bid.createdAt).toLocaleString('ar-EG')}
                         </p>
                       </div>
                       <p className="text-lg font-bold text-purple-600">
-                        {bid.amount.toLocaleString()} EGP
+                        {bid.amount.toLocaleString()} ج.م
                       </p>
                     </div>
                   ))}
@@ -352,8 +352,8 @@ export default function AuctionDetailsPage() {
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
               {/* Countdown */}
               {isActive && (
-                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg p-4 mb-6 text-center">
-                  <p className="text-sm font-medium mb-1">Time Remaining</p>
+                <div className="bg-gradient-to-l from-purple-600 to-indigo-600 text-white rounded-lg p-4 mb-6 text-center">
+                  <p className="text-sm font-medium mb-1">الوقت المتبقي</p>
                   <p className="text-3xl font-bold">
                     <CountdownTimer endTime={auction.endTime} />
                   </p>
@@ -443,7 +443,7 @@ export default function AuctionDetailsPage() {
               {isSeller && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800 font-medium">
-                    This is your auction
+                    هذا مزادك الخاص
                   </p>
                 </div>
               )}
@@ -452,11 +452,11 @@ export default function AuctionDetailsPage() {
               {isEnded && (
                 <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
                   <p className="text-center font-semibold text-gray-700">
-                    Auction Ended
+                    انتهى المزاد
                   </p>
                   {auction.winnerId && (
                     <p className="text-sm text-center text-gray-600 mt-2">
-                      Winner: {auction.bids?.[0]?.bidder.fullName}
+                      الفائز: {auction.bids?.[0]?.bidder.fullName}
                     </p>
                   )}
                 </div>
@@ -466,10 +466,10 @@ export default function AuctionDetailsPage() {
               {!hasStarted && (
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-center font-semibold text-yellow-800">
-                    Auction Starting Soon
+                    المزاد يبدأ قريباً
                   </p>
                   <p className="text-sm text-center text-yellow-700 mt-2">
-                    Starts: {new Date(auction.startTime).toLocaleString()}
+                    يبدأ في: {new Date(auction.startTime).toLocaleString('ar-EG')}
                   </p>
                 </div>
               )}
