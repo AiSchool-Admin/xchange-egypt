@@ -1517,6 +1517,16 @@ enum NotificationType {
   TRANSACTION_SHIPPED          // Item shipped
   TRANSACTION_DELIVERED        // Item delivered
 
+  // Order notifications
+  ORDER_RECEIVED               // New order received (for seller)
+  ORDER_CONFIRMED              // Order confirmed (for buyer)
+  ORDER_SHIPPED                // Order shipped (for buyer)
+  ORDER_DELIVERED              // Order delivered
+  ORDER_COMPLETED              // Order completed successfully
+  ORDER_CANCELLED              // Order cancelled
+  PAYMENT_RECEIVED             // Payment received by seller
+  PAYMENT_CONFIRMED            // Payment confirmed for buyer
+
   // User notifications
   USER_WELCOME                 // Welcome email
   USER_EMAIL_VERIFICATION      // Verify email
