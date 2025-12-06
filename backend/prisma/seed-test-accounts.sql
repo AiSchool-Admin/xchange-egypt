@@ -17,7 +17,7 @@ VALUES
   (
     gen_random_uuid(),
     'test1@xchange.eg',
-    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMvzTakPxh5HzTQoRh.1aZuVXYJKdGK',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
     'أحمد التاجر',
     '+201111111111',
     'BUSINESS',
@@ -32,7 +32,7 @@ VALUES
   (
     gen_random_uuid(),
     'test2@xchange.eg',
-    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMvzTakPxh5HzTQoRh.1aZuVXYJKdGK',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
     'سارة المقايضة',
     '+201222222222',
     'INDIVIDUAL',
@@ -47,7 +47,7 @@ VALUES
   (
     gen_random_uuid(),
     'test3@xchange.eg',
-    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMvzTakPxh5HzTQoRh.1aZuVXYJKdGK',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
     'محمد المزادات',
     '+201333333333',
     'INDIVIDUAL',
@@ -62,7 +62,7 @@ VALUES
   (
     gen_random_uuid(),
     'test4@xchange.eg',
-    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMvzTakPxh5HzTQoRh.1aZuVXYJKdGK',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
     'فاطمة الخردة',
     '+201444444444',
     'BUSINESS',
@@ -77,7 +77,7 @@ VALUES
   (
     gen_random_uuid(),
     'test5@xchange.eg',
-    '$2b$10$8K1p/a0dL1LXMIgoEDFrwOfMvzTakPxh5HzTQoRh.1aZuVXYJKdGK',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
     'كريم الفاخر',
     '+201555555555',
     'INDIVIDUAL',
