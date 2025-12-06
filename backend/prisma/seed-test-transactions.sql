@@ -386,7 +386,256 @@ WHERE i.title LIKE '%BMW X5%'
 LIMIT 1;
 
 -- =====================================================
--- STEP 6: UPDATE USER RATINGS & STATS
+-- STEP 6: DIRECT BUY REQUESTS (طلبات شراء مباشر)
+-- =====================================================
+-- These are items where buyers are looking to purchase specific items
+
+-- Direct Buy 1: test5 wants to buy a specific car
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  (SELECT id FROM users WHERE email = 'test5@xchange.eg'),
+  (SELECT id FROM categories LIMIT 1),
+  'مطلوب: بورش 911 موديل 2022 أو أحدث',
+  'أبحث عن بورش 911 كاريرا أو تيربو، موديل 2022 أو أحدث، أي لون. مستعد للدفع الفوري.',
+  'LIKE_NEW',
+  5000000,
+  'DIRECT_BUY',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  NOW() - INTERVAL '2 days',
+  NOW()
+WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test5@xchange.eg');
+
+-- Direct Buy 2: test6 wants office furniture
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  (SELECT id FROM users WHERE email = 'test6@xchange.eg'),
+  (SELECT id FROM categories LIMIT 1),
+  'مطلوب: أثاث مكتبي كامل لشركة',
+  'أبحث عن أثاث مكتبي كامل (20 مكتب + كراسي + خزائن). جديد أو مستعمل بحالة جيدة.',
+  'GOOD',
+  150000,
+  'DIRECT_BUY',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  NOW() - INTERVAL '3 days',
+  NOW()
+WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test6@xchange.eg');
+
+-- Direct Buy 3: test7 wants designer bags collection
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  (SELECT id FROM users WHERE email = 'test7@xchange.eg'),
+  (SELECT id FROM categories LIMIT 1),
+  'مطلوب: حقائب شانيل كلاسيك فلاب',
+  'أبحث عن حقيبة شانيل كلاسيك فلاب، مقاس ميديم أو لارج، لون أسود أو بيج. أصلية فقط.',
+  'LIKE_NEW',
+  250000,
+  'DIRECT_BUY',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  NOW() - INTERVAL '1 day',
+  NOW()
+WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test7@xchange.eg');
+
+-- =====================================================
+-- STEP 7: REVERSE AUCTIONS (مناقصات)
+-- =====================================================
+-- Buyers post what they want, sellers compete with lower prices
+
+-- Reverse Auction 1: test1 wants bulk electronics
+INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, location, max_budget, target_price, start_date, end_date, status, total_bids, unique_bidders, lowest_bid, views, public_notes, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  (SELECT id FROM users WHERE email = 'test1@xchange.eg'),
+  'مطلوب: 50 جهاز لابتوب للشركة',
+  'مطلوب 50 جهاز لابتوب للشركة، مواصفات: Core i5 أو أعلى، 8GB RAM، 256GB SSD. جديد أو مستعمل بحالة ممتازة.',
+  (SELECT id FROM categories LIMIT 1),
+  'GOOD',
+  50,
+  'Cairo',
+  750000,
+  600000,
+  NOW() - INTERVAL '5 days',
+  NOW() + INTERVAL '10 days',
+  'ACTIVE',
+  4,
+  3,
+  580000,
+  89,
+  'نحتاج التوريد خلال أسبوعين من ترسية المناقصة',
+  NOW() - INTERVAL '5 days',
+  NOW()
+WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test1@xchange.eg');
+
+-- Reverse Auction 2: test4 wants scrap metals in bulk
+INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, location, max_budget, target_price, start_date, end_date, status, total_bids, unique_bidders, lowest_bid, views, public_notes, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  (SELECT id FROM users WHERE email = 'test4@xchange.eg'),
+  'مطلوب: 500 كيلو نحاس خردة',
+  'مطلوب شراء 500 كيلو نحاس أصفر خردة نظيف. السعر للكيلو. التوريد في شبرا.',
+  (SELECT id FROM categories LIMIT 1),
+  'POOR',
+  500,
+  'Cairo',
+  175000,
+  150000,
+  NOW() - INTERVAL '3 days',
+  NOW() + INTERVAL '7 days',
+  'ACTIVE',
+  5,
+  4,
+  145000,
+  56,
+  'الدفع فوري عند التسليم والوزن',
+  NOW() - INTERVAL '3 days',
+  NOW()
+WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test4@xchange.eg');
+
+-- Reverse Auction 3: test8 wants car parts
+INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, location, max_budget, target_price, start_date, end_date, status, total_bids, unique_bidders, lowest_bid, views, public_notes, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  (SELECT id FROM users WHERE email = 'test8@xchange.eg'),
+  'مطلوب: قطع غيار BMW أصلية',
+  'مطلوب قطع غيار أصلية لـ BMW X5 2020: فلتر زيت، فلتر هواء، تيل فرامل أمامي وخلفي.',
+  (SELECT id FROM categories LIMIT 1),
+  'NEW',
+  1,
+  'Giza',
+  25000,
+  18000,
+  NOW() - INTERVAL '2 days',
+  NOW() + INTERVAL '5 days',
+  'ACTIVE',
+  3,
+  3,
+  19500,
+  34,
+  'يجب أن تكون القطع أصلية 100% مع فاتورة',
+  NOW() - INTERVAL '2 days',
+  NOW()
+WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test8@xchange.eg');
+
+-- Reverse Auction 4: Completed - test10 wanted gym equipment (awarded)
+INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, location, max_budget, target_price, start_date, end_date, status, total_bids, unique_bidders, lowest_bid, views, winner_id, public_notes, created_at, updated_at, awarded_at)
+SELECT
+  gen_random_uuid(),
+  (SELECT id FROM users WHERE email = 'test10@xchange.eg'),
+  'مطلوب: أجهزة جيم كاملة',
+  'مطلوب تجهيز صالة جيم صغيرة: 5 أجهزة مشي، 3 دراجات ثابتة، أوزان حرة.',
+  (SELECT id FROM categories LIMIT 1),
+  'GOOD',
+  1,
+  'Cairo',
+  200000,
+  150000,
+  NOW() - INTERVAL '15 days',
+  NOW() - INTERVAL '5 days',
+  'AWARDED',
+  8,
+  5,
+  135000,
+  124,
+  (SELECT id FROM users WHERE email = 'test4@xchange.eg'),
+  'التركيب والتوصيل على حساب البائع',
+  NOW() - INTERVAL '15 days',
+  NOW() - INTERVAL '5 days',
+  NOW() - INTERVAL '5 days'
+WHERE EXISTS (SELECT 1 FROM users WHERE email = 'test10@xchange.eg');
+
+-- =====================================================
+-- STEP 8: REVERSE AUCTION BIDS (عروض المناقصات)
+-- =====================================================
+
+-- Bids on Laptop reverse auction
+INSERT INTO reverse_auction_bids (id, reverse_auction_id, seller_id, bid_amount, item_condition, delivery_option, delivery_days, delivery_cost, warranty_days, notes, status, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  ra.id,
+  (SELECT id FROM users WHERE email = 'test3@xchange.eg'),
+  620000,
+  'GOOD',
+  'DELIVERY',
+  7,
+  0,
+  90,
+  'لدينا 50 جهاز Dell Latitude متاحين، مستعملين بحالة ممتازة',
+  'ACTIVE',
+  NOW() - INTERVAL '4 days',
+  NOW()
+FROM reverse_auctions ra
+WHERE ra.title LIKE '%لابتوب%'
+LIMIT 1;
+
+INSERT INTO reverse_auction_bids (id, reverse_auction_id, seller_id, bid_amount, item_condition, delivery_option, delivery_days, delivery_cost, warranty_days, notes, status, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  ra.id,
+  (SELECT id FROM users WHERE email = 'test8@xchange.eg'),
+  580000,
+  'LIKE_NEW',
+  'DELIVERY',
+  5,
+  0,
+  180,
+  'أجهزة HP ProBook جديدة من المصنع مباشرة، ضمان 6 شهور',
+  'ACTIVE',
+  NOW() - INTERVAL '2 days',
+  NOW()
+FROM reverse_auctions ra
+WHERE ra.title LIKE '%لابتوب%'
+LIMIT 1;
+
+-- Bids on Copper scrap reverse auction
+INSERT INTO reverse_auction_bids (id, reverse_auction_id, seller_id, bid_amount, item_condition, delivery_option, delivery_days, delivery_cost, notes, status, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  ra.id,
+  (SELECT id FROM users WHERE email = 'test9@xchange.eg'),
+  155000,
+  'POOR',
+  'PICKUP',
+  1,
+  0,
+  'نحاس نظيف 100%، الكمية متاحة للمعاينة',
+  'ACTIVE',
+  NOW() - INTERVAL '2 days',
+  NOW()
+FROM reverse_auctions ra
+WHERE ra.title LIKE '%نحاس%'
+LIMIT 1;
+
+INSERT INTO reverse_auction_bids (id, reverse_auction_id, seller_id, bid_amount, item_condition, delivery_option, delivery_days, delivery_cost, notes, status, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  ra.id,
+  (SELECT id FROM users WHERE email = 'test3@xchange.eg'),
+  145000,
+  'POOR',
+  'DELIVERY',
+  2,
+  500,
+  'توصيل مجاني لشبرا، النحاس نظيف ومفرز',
+  'ACTIVE',
+  NOW() - INTERVAL '1 day',
+  NOW()
+FROM reverse_auctions ra
+WHERE ra.title LIKE '%نحاس%'
+LIMIT 1;
+
+-- =====================================================
+-- STEP 9: UPDATE USER RATINGS & STATS
 -- =====================================================
 
 -- Update ratings for active sellers
@@ -417,6 +666,13 @@ JOIN users u ON b.initiator_id = u.id WHERE u.email LIKE 'test%@xchange.eg';
 SELECT '✅ Auctions Created:' as status, COUNT(*) as count FROM auctions;
 
 SELECT '✅ Auction Bids Created:' as status, COUNT(*) as count FROM auction_bids;
+
+SELECT '✅ Direct Buy Requests:' as status, COUNT(*) as count FROM items
+WHERE listing_type = 'DIRECT_BUY';
+
+SELECT '✅ Reverse Auctions:' as status, COUNT(*) as count FROM reverse_auctions;
+
+SELECT '✅ Reverse Auction Bids:' as status, COUNT(*) as count FROM reverse_auction_bids;
 
 -- =====================================================
 -- TRANSACTION SUMMARY
@@ -454,6 +710,27 @@ SELECT '✅ Auction Bids Created:' as status, COUNT(*) as count FROM auction_bid
 -- │ test8   │ BMW X5 2022             │ 2,500,000 │ 2,850,000 │ 5 bids    │
 -- │ test9   │ Antique Pocket Watch    │ 150,000   │ 175,000   │ 4 bids    │
 -- │ test3   │ Sony A7IV (COMPLETED)   │ 80,000    │ 115,000   │ Winner:5  │
+-- └─────────┴─────────────────────────┴───────────┴───────────┴───────────┘
+--
+-- ┌────────────────────────────────────────────────────────────────────────┐
+-- │                 DIRECT BUY REQUESTS (طلبات شراء مباشر)                 │
+-- ├─────────┬─────────────────────────────────────┬───────────────────────┤
+-- │ Buyer   │ Looking For                         │ Budget                │
+-- ├─────────┼─────────────────────────────────────┼───────────────────────┤
+-- │ test5   │ Porsche 911 2022+                   │ 5,000,000 EGP         │
+-- │ test6   │ Office Furniture (20 desks)         │ 150,000 EGP           │
+-- │ test7   │ Chanel Classic Flap Bag             │ 250,000 EGP           │
+-- └─────────┴─────────────────────────────────────┴───────────────────────┘
+--
+-- ┌────────────────────────────────────────────────────────────────────────┐
+-- │                    REVERSE AUCTIONS (مناقصات)                          │
+-- ├─────────┬─────────────────────────┬───────────┬───────────┬───────────┤
+-- │ Buyer   │ Request                 │ Budget    │ Lowest    │ Status    │
+-- ├─────────┼─────────────────────────┼───────────┼───────────┼───────────┤
+-- │ test1   │ 50 Laptops for Company  │ 750,000   │ 580,000   │ ACTIVE    │
+-- │ test4   │ 500kg Copper Scrap      │ 175,000   │ 145,000   │ ACTIVE    │
+-- │ test8   │ BMW X5 Spare Parts      │ 25,000    │ 19,500    │ ACTIVE    │
+-- │ test10  │ Gym Equipment (AWARDED) │ 200,000   │ 135,000   │ AWARDED   │
 -- └─────────┴─────────────────────────┴───────────┴───────────┴───────────┘
 --
 -- =====================================================
