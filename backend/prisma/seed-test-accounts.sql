@@ -4,7 +4,10 @@
 -- Password for ALL accounts: Test@1234
 -- =====================================================
 
--- Clear existing test users (if any)
+-- Clear existing test data (items first due to foreign key)
+DELETE FROM items WHERE seller_id IN (
+  SELECT id FROM users WHERE email LIKE 'test%@xchange.eg'
+);
 DELETE FROM users WHERE email LIKE 'test%@xchange.eg';
 
 -- =====================================================
