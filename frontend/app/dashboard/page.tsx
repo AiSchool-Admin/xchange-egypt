@@ -284,7 +284,7 @@ export default function DashboardPage() {
         {/* Shopping */}
         <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
           <h3 className="text-xl font-bold mb-4">🛍️ Shopping</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <Link
               href="/cart"
               className="p-4 border-2 border-gray-200 rounded-lg hover:border-orange-300 hover:bg-orange-50 transition-all"
@@ -300,6 +300,14 @@ export default function DashboardPage() {
               <div className="text-2xl mb-2">📋</div>
               <div className="font-semibold text-gray-900">My Orders</div>
               <div className="text-xs text-gray-600">Track your orders</div>
+            </Link>
+            <Link
+              href="/dashboard/transactions"
+              className="p-4 border-2 border-gray-200 rounded-lg hover:border-emerald-300 hover:bg-emerald-50 transition-all"
+            >
+              <div className="text-2xl mb-2">💰</div>
+              <div className="font-semibold text-gray-900">My Transactions</div>
+              <div className="text-xs text-gray-600">Sales & Purchases</div>
             </Link>
           </div>
         </div>
