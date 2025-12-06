@@ -121,8 +121,9 @@ export default function ActivityDashboardPage() {
 
   const loadItems = async () => {
     try {
-      const response = await apiClient.get(`/items?sellerId=${user?.id}&limit=50`);
-      const data = response.data.data?.items || [];
+      // Use /items/my endpoint which returns authenticated user's items
+      const response = await apiClient.get('/items/my?limit=50');
+      const data = response.data.data?.items || response.data.data || [];
       setItems(data);
       setStats(s => ({ ...s, items: data.length }));
     } catch (err) {
@@ -169,8 +170,9 @@ export default function ActivityDashboardPage() {
 
   const loadBarterOffers = async () => {
     try {
-      const response = await apiClient.get('/barter/my-offers');
-      const data = response.data.data || [];
+      // Correct endpoint is /barter/offers/my
+      const response = await apiClient.get('/barter/offers/my');
+      const data = response.data.data?.offers || response.data.data || [];
       setBarterOffers(data);
       setStats(s => ({ ...s, barterOffers: data.length }));
     } catch (err) {
