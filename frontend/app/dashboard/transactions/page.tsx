@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import apiClient from '@/lib/api/client';
 
 interface Transaction {
   id: string;
@@ -80,30 +81,24 @@ export default function TransactionsPage() {
     try {
       setLoading(true);
       setError('');
-      const token = localStorage.getItem('token');
 
-      let url = `${process.env.NEXT_PUBLIC_API_URL}/transactions/my`;
+      let url = '/transactions/my';
       if (activeTab === 'sales') {
         url += '?role=seller';
       } else if (activeTab === 'purchases') {
         url += '?role=buyer';
       }
 
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTransactions(data.data?.transactions || data.data || []);
+      const response = await apiClient.get(url);
+      const data = response.data;
+      setTransactions(data.data?.transactions || data.data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch transactions:', err);
+      if (err.response?.status === 401) {
+        setError('يرجى تسجيل الدخول مرة أخرى');
       } else {
         setError('فشل في تحميل المعاملات');
       }
-    } catch (err) {
-      console.error('Failed to fetch transactions:', err);
-      setError('فشل في تحميل المعاملات');
     } finally {
       setLoading(false);
     }
