@@ -1,5 +1,5 @@
 -- =====================================================
--- 5 TEST ACCOUNTS FOR XCHANGE PLATFORM (Supabase)
+-- 10 TEST ACCOUNTS FOR XCHANGE PLATFORM (Supabase)
 -- =====================================================
 -- Password for ALL accounts: Test@1234
 -- =====================================================
@@ -8,7 +8,7 @@
 DELETE FROM users WHERE email LIKE 'test%@xchange.eg';
 
 -- =====================================================
--- CREATE 5 TEST USERS
+-- CREATE 10 TEST USERS
 -- =====================================================
 -- Password hash for "Test@1234" (bcrypt, 10 rounds)
 
@@ -85,6 +85,81 @@ VALUES
     'Cairo',
     'Zamalek',
     '5 شارع البرازيل، الزمالك',
+    true,
+    NOW(),
+    NOW()
+  ),
+  (
+    gen_random_uuid(),
+    'test6@xchange.eg',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
+    'عمر العقارات',
+    '+201666666666',
+    'BUSINESS',
+    'شركة عمر للعقارات',
+    'Cairo',
+    'New Cairo',
+    '45 شارع التسعين، التجمع الخامس',
+    true,
+    NOW(),
+    NOW()
+  ),
+  (
+    gen_random_uuid(),
+    'test7@xchange.eg',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
+    'نورا الموضة',
+    '+201777777777',
+    'BUSINESS',
+    'بوتيك نورا للأزياء',
+    'Cairo',
+    'Maadi',
+    '12 شارع 9، المعادي',
+    true,
+    NOW(),
+    NOW()
+  ),
+  (
+    gen_random_uuid(),
+    'test8@xchange.eg',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
+    'حسن السيارات',
+    '+201888888888',
+    'BUSINESS',
+    'معرض حسن للسيارات',
+    'Giza',
+    '6th of October',
+    'المحور المركزي، الحي السابع',
+    true,
+    NOW(),
+    NOW()
+  ),
+  (
+    gen_random_uuid(),
+    'test9@xchange.eg',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
+    'منى المقتنيات',
+    '+201999999999',
+    'INDIVIDUAL',
+    NULL,
+    'Alexandria',
+    'Montaza',
+    '8 شارع الجيش، المنتزه',
+    true,
+    NOW(),
+    NOW()
+  ),
+  (
+    gen_random_uuid(),
+    'test10@xchange.eg',
+    '$2b$10$EtbvwUriPSY3T0q4UvusJO1uqm2fLiGXBqQzAG3s7VTpS5MywFOYK',
+    'يوسف الرياضة',
+    '+201010101010',
+    'BUSINESS',
+    'سبورتس زون',
+    'Cairo',
+    'Heliopolis',
+    '30 شارع الحجاز، مصر الجديدة',
     true,
     NOW(),
     NOW()
@@ -307,6 +382,271 @@ SELECT
   NOW()
 FROM users u WHERE u.email = 'test5@xchange.eg';
 
+-- Items for User 6 (عمر العقارات - Real Estate)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, desired_item_title, desired_item_description, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'شقة 150م² بالتجمع الخامس للمقايضة',
+  'شقة 150 متر مربع، 3 غرف، 2 حمام، تشطيب سوبر لوكس. أبحث عن مقايضة بسيارة + فرق نقدي.',
+  'LIKE_NEW',
+  3500000,
+  'BARTER',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  'سيارة حديثة + فرق نقدي',
+  'سيارة موديل 2022 أو أحدث + فرق نقدي',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test6@xchange.eg';
+
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'محل تجاري 80م² بمول تجاري',
+  'محل تجاري 80 متر مربع في مول تجاري راقي، واجهة زجاجية، تكييف مركزي.',
+  'NEW',
+  2800000,
+  'DIRECT_SALE',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test6@xchange.eg';
+
+-- Items for User 7 (نورا الموضة - Fashion)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'فستان سهرة شانيل أصلي',
+  'فستان سهرة شانيل أصلي، مقاس M، لون أسود كلاسيكي. تم ارتداؤه مرة واحدة فقط.',
+  'LIKE_NEW',
+  85000,
+  'DIRECT_SALE',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test7@xchange.eg';
+
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'حذاء لوبوتان أحمر أصلي',
+  'حذاء كريستيان لوبوتان أصلي، كعب عالي، مقاس 38، لون أحمر مميز.',
+  'LIKE_NEW',
+  25000,
+  'DIRECT_SALE',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test7@xchange.eg';
+
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, desired_item_title, desired_item_description, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'مجموعة حقائب ديور للمقايضة',
+  'مجموعة من 3 حقائب ديور أصلية بحالات مختلفة. أقايضها بحقيبة لويس فيتون.',
+  'GOOD',
+  120000,
+  'BARTER',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  'حقيبة لويس فيتون',
+  'حقيبة لويس فيتون نيفرفول أو سبيدي',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test7@xchange.eg';
+
+-- Items for User 8 (حسن السيارات - Cars Auction)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'BMW X5 موديل 2022 - مزاد',
+  'بي إم دبليو X5 موديل 2022، 25,000 كم، فل أوبشن، لون أبيض. المزاد يبدأ من 2,500,000 جنيه.',
+  'LIKE_NEW',
+  3200000,
+  'AUCTION',
+  'GOOD',
+  'Giza',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test8@xchange.eg';
+
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'تويوتا كورولا 2023 - مزاد',
+  'تويوتا كورولا هايبرد 2023، 10,000 كم، لون فضي. المزاد يبدأ من 850,000 جنيه.',
+  'NEW',
+  1100000,
+  'AUCTION',
+  'GOOD',
+  'Giza',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test8@xchange.eg';
+
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'هيونداي توسان 2021 للبيع',
+  'هيونداي توسان 2021، 35,000 كم، فبريكا، تكييف ديجيتال، شاشة.',
+  'GOOD',
+  750000,
+  'DIRECT_SALE',
+  'GOOD',
+  'Giza',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test8@xchange.eg';
+
+-- Items for User 9 (منى المقتنيات - Collectibles/Antiques)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, desired_item_title, desired_item_description, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'طقم أنتيك صيني قديم للمقايضة',
+  'طقم شاي صيني أنتيك من القرن 19، 12 قطعة، حالة ممتازة. أبحث عن لوحات فنية.',
+  'GOOD',
+  45000,
+  'BARTER',
+  'GOOD',
+  'Alexandria',
+  'ACTIVE',
+  '{}',
+  'لوحات فنية أصلية',
+  'لوحات زيتية أو مائية لفنانين معروفين',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test9@xchange.eg';
+
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'ساعة جيب ذهبية أنتيك - مزاد',
+  'ساعة جيب ذهبية سويسرية من عام 1920، تعمل بشكل ممتاز، مع السلسلة الأصلية.',
+  'GOOD',
+  180000,
+  'AUCTION',
+  'GOOD',
+  'Alexandria',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test9@xchange.eg';
+
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'عملات مصرية قديمة - مجموعة نادرة',
+  'مجموعة عملات مصرية من عهد الملك فاروق، 25 قطعة متنوعة.',
+  'GOOD',
+  35000,
+  'DIRECT_SALE',
+  'GOOD',
+  'Alexandria',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test9@xchange.eg';
+
+-- Items for User 10 (يوسف الرياضة - Sports Equipment)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'جهاز مشي كهربائي احترافي',
+  'جهاز مشي Technogym احترافي، سرعة حتى 20 كم/ساعة، شاشة LCD.',
+  'LIKE_NEW',
+  45000,
+  'DIRECT_SALE',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test10@xchange.eg';
+
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'دراجة هوائية Trek Madone',
+  'دراجة Trek Madone SLR، كربون فايبر، مقاس 56، مكونات Shimano Ultegra.',
+  'LIKE_NEW',
+  85000,
+  'DIRECT_SALE',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test10@xchange.eg';
+
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, listing_type, item_type, governorate, status, images, desired_item_title, desired_item_description, created_at, updated_at)
+SELECT
+  gen_random_uuid(),
+  u.id,
+  (SELECT id FROM categories LIMIT 1),
+  'طاولة بينج بونج أولمبية للمقايضة',
+  'طاولة بينج بونج Butterfly أولمبية، حالة ممتازة. أقايضها بأجهزة رياضية أخرى.',
+  'GOOD',
+  15000,
+  'BARTER',
+  'GOOD',
+  'Cairo',
+  'ACTIVE',
+  '{}',
+  'أجهزة رياضية',
+  'دمبلز أو أثقال أو جهاز متعدد',
+  NOW(),
+  NOW()
+FROM users u WHERE u.email = 'test10@xchange.eg';
+
 -- =====================================================
 -- VERIFY CREATED DATA
 -- =====================================================
@@ -324,18 +664,24 @@ JOIN users u ON i.seller_id = u.id
 WHERE u.email LIKE 'test%@xchange.eg';
 
 -- =====================================================
--- LOGIN CREDENTIALS
+-- LOGIN CREDENTIALS (10 TEST ACCOUNTS)
 -- =====================================================
 --
--- ┌─────────────────────────┬──────────────────┬───────────────┐
--- │ Email                   │ Name             │ Market        │
--- ├─────────────────────────┼──────────────────┼───────────────┤
--- │ test1@xchange.eg        │ أحمد التاجر      │ Direct Sales  │
--- │ test2@xchange.eg        │ سارة المقايضة    │ Barter        │
--- │ test3@xchange.eg        │ محمد المزادات    │ Auctions      │
--- │ test4@xchange.eg        │ فاطمة الخردة     │ Scrap Market  │
--- │ test5@xchange.eg        │ كريم الفاخر      │ Luxury        │
--- └─────────────────────────┴──────────────────┴───────────────┘
+-- ┌─────────────────────────┬──────────────────┬───────────────┬─────────────┐
+-- │ Email                   │ Name             │ Market        │ Items       │
+-- ├─────────────────────────┼──────────────────┼───────────────┼─────────────┤
+-- │ test1@xchange.eg        │ أحمد التاجر      │ Electronics   │ 3 منتجات    │
+-- │ test2@xchange.eg        │ سارة المقايضة    │ Barter        │ 2 منتجات    │
+-- │ test3@xchange.eg        │ محمد المزادات    │ Auctions      │ 2 منتجات    │
+-- │ test4@xchange.eg        │ فاطمة الخردة     │ Scrap Market  │ 2 منتجات    │
+-- │ test5@xchange.eg        │ كريم الفاخر      │ Luxury        │ 2 منتجات    │
+-- │ test6@xchange.eg        │ عمر العقارات     │ Real Estate   │ 2 منتجات    │
+-- │ test7@xchange.eg        │ نورا الموضة      │ Fashion       │ 3 منتجات    │
+-- │ test8@xchange.eg        │ حسن السيارات     │ Cars/Auction  │ 3 منتجات    │
+-- │ test9@xchange.eg        │ منى المقتنيات    │ Collectibles  │ 3 منتجات    │
+-- │ test10@xchange.eg       │ يوسف الرياضة     │ Sports        │ 3 منتجات    │
+-- └─────────────────────────┴──────────────────┴───────────────┴─────────────┘
 --
 -- Password for ALL: Test@1234
+-- Total Items: 25 items across all market types
 -- =====================================================
