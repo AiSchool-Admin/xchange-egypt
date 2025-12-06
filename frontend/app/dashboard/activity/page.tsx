@@ -87,6 +87,8 @@ export default function ActivityDashboardPage() {
   const [auctions, setAuctions] = useState<any[]>([]);
   const [myBids, setMyBids] = useState<any[]>([]);
   const [barterOffers, setBarterOffers] = useState<any[]>([]);
+  const [sentBarterOffers, setSentBarterOffers] = useState<any[]>([]);
+  const [receivedBarterOffers, setReceivedBarterOffers] = useState<any[]>([]);
   const [reverseAuctions, setReverseAuctions] = useState<any[]>([]);
 
   useEffect(() => {
@@ -170,11 +172,17 @@ export default function ActivityDashboardPage() {
 
   const loadBarterOffers = async () => {
     try {
-      // Correct endpoint is /barter/offers/my
-      const response = await apiClient.get('/barter/offers/my');
-      const data = response.data.data?.offers || response.data.data || [];
-      setBarterOffers(data);
-      setStats(s => ({ ...s, barterOffers: data.length }));
+      // Load sent and received offers separately
+      const [sentRes, receivedRes] = await Promise.all([
+        apiClient.get('/barter/offers/my?type=sent'),
+        apiClient.get('/barter/offers/my?type=received'),
+      ]);
+      const sent = sentRes.data.data?.offers || sentRes.data.data || [];
+      const received = receivedRes.data.data?.offers || receivedRes.data.data || [];
+      setSentBarterOffers(sent);
+      setReceivedBarterOffers(received);
+      setBarterOffers([...sent, ...received]);
+      setStats(s => ({ ...s, barterOffers: sent.length + received.length }));
     } catch (err) {
       console.error('Error loading barter offers:', err);
     }
@@ -442,7 +450,7 @@ export default function ActivityDashboardPage() {
             )}
 
             {/* Barter Section */}
-            {(activeTab === 'all' || activeTab === 'barter') && barterOffers.length > 0 && (
+            {(activeTab === 'all' || activeTab === 'barter') && (receivedBarterOffers.length > 0 || sentBarterOffers.length > 0) && (
               <div className="bg-white rounded-xl shadow-sm p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-xl font-bold">🔄 عروض المقايضة ({barterOffers.length})</h2>
@@ -450,32 +458,96 @@ export default function ActivityDashboardPage() {
                     عرض الكل ←
                   </Link>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {barterOffers.slice(0, activeTab === 'all' ? 2 : 6).map((offer: any) => {
-                    const isInitiator = offer.initiatorId === user?.id;
-                    return (
-                      <div
-                        key={offer.id}
-                        className="flex gap-4 p-4 border rounded-lg hover:border-teal-300 transition"
-                      >
-                        <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-xl">
-                          {isInitiator ? '📤' : '📥'}
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium">
-                            {isInitiator ? 'عرض مرسل' : 'عرض مستلم'}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {isInitiator ? `إلى: ${offer.recipient?.fullName}` : `من: ${offer.initiator?.fullName}`}
-                          </p>
-                          <span className={`inline-block px-2 py-0.5 rounded text-xs mt-1 ${getStatusColor(offer.status)}`}>
-                            {getStatusLabel(offer.status)}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+
+                {/* Received Offers - Important! */}
+                {receivedBarterOffers.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <span className="w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-sm">📥</span>
+                      عروض واردة ({receivedBarterOffers.length})
+                      {receivedBarterOffers.filter((o: any) => o.status === 'PENDING').length > 0 && (
+                        <span className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
+                          {receivedBarterOffers.filter((o: any) => o.status === 'PENDING').length} جديد
+                        </span>
+                      )}
+                    </h3>
+                    <div className="grid gap-3">
+                      {receivedBarterOffers.slice(0, activeTab === 'all' ? 2 : 6).map((offer: any) => {
+                        const offeredItems = offer.preferenceSets?.[0]?.items || [];
+                        const itemTitle = offeredItems[0]?.item?.title || 'منتج';
+                        return (
+                          <Link
+                            key={offer.id}
+                            href={`/barter/respond/${offer.id}`}
+                            className="flex gap-4 p-4 border-2 border-orange-200 bg-orange-50 rounded-lg hover:border-orange-400 transition"
+                          >
+                            <div className="w-14 h-14 bg-white rounded-lg overflow-hidden flex-shrink-0 border">
+                              {offeredItems[0]?.item?.images?.[0]?.url ? (
+                                <img src={offeredItems[0].item.images[0].url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-2xl">🔄</div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-orange-800 truncate">{itemTitle}</p>
+                              <p className="text-sm text-gray-600">
+                                من: <span className="font-medium">{offer.initiator?.fullName}</span>
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className={`inline-block px-2 py-0.5 rounded text-xs ${getStatusColor(offer.status)}`}>
+                                  {getStatusLabel(offer.status)}
+                                </span>
+                                {offer.status === 'PENDING' && (
+                                  <span className="text-xs text-orange-600 font-medium">← اضغط للرد</span>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sent Offers */}
+                {sentBarterOffers.length > 0 && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <span className="w-6 h-6 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center text-sm">📤</span>
+                      عروض صادرة ({sentBarterOffers.length})
+                    </h3>
+                    <div className="grid gap-3">
+                      {sentBarterOffers.slice(0, activeTab === 'all' ? 2 : 6).map((offer: any) => {
+                        const offeredItems = offer.preferenceSets?.[0]?.items || [];
+                        const itemTitle = offeredItems[0]?.item?.title || 'منتج';
+                        return (
+                          <Link
+                            key={offer.id}
+                            href={`/barter/respond/${offer.id}`}
+                            className="flex gap-4 p-4 border rounded-lg hover:border-teal-300 hover:bg-gray-50 transition"
+                          >
+                            <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                              {offeredItems[0]?.item?.images?.[0]?.url ? (
+                                <img src={offeredItems[0].item.images[0].url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-2xl">🔄</div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{itemTitle}</p>
+                              <p className="text-sm text-gray-600">
+                                إلى: <span className="font-medium">{offer.recipient?.fullName}</span>
+                              </p>
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs mt-1 ${getStatusColor(offer.status)}`}>
+                                {getStatusLabel(offer.status)}
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
