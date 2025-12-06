@@ -19,23 +19,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
-          cache-dependency-path: 'backend/pnpm-lock.yaml'
 
       - name: Install dependencies (Backend)
         run: |
           cd backend
-          pnpm install --frozen-lockfile --ignore-scripts
-          pnpm rebuild @prisma/client prisma
+          npm install --legacy-peer-deps
 
       - name: Generate Prisma Client
         env:
@@ -58,7 +50,7 @@ jobs:
         continue-on-error: true
         run: |
           cd backend
-          pnpm run build
+          npm run build
 
       # TODO: Add tests when ready
       # - name: Test Backend
