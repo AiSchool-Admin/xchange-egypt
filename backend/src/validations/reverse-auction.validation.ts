@@ -133,6 +133,7 @@ export const getReverseAuctionsSchema = z.object({
     status: reverseAuctionStatusSchema.optional(),
     categoryId: z.string().uuid('Invalid category ID').optional(),
     condition: itemConditionSchema.optional(),
+    buyerId: z.string().uuid('Invalid buyer ID').optional(),
     minBudget: z
       .string()
       .transform((val) => parseFloat(val))
