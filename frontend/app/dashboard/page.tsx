@@ -81,20 +81,29 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-          <h2 className="text-2xl font-bold mb-2">Welcome, {user.fullName}! 👋</h2>
-          <p className="text-gray-600 mb-4">{user.email}</p>
-
-          <div className="flex gap-4 items-center">
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              <span className="text-sm text-gray-600">
-                WebSocket: {connected ? 'Connected' : 'Disconnected'}
-              </span>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Welcome, {user.fullName}! 👋</h2>
+              <p className="text-gray-600 mb-4">{user.email}</p>
+              <div className="flex gap-4 items-center">
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <span className="text-sm text-gray-600">
+                    WebSocket: {connected ? 'Connected' : 'Disconnected'}
+                  </span>
+                </div>
+                <div className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
+                  {user.userType}
+                </div>
+              </div>
             </div>
-
-            <div className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
-              {user.userType}
-            </div>
+            <Link
+              href="/dashboard/activity"
+              className="px-6 py-3 bg-gradient-to-r from-primary-600 to-teal-600 text-white rounded-xl hover:from-primary-700 hover:to-teal-700 transition-all font-bold flex items-center gap-2 shadow-lg"
+            >
+              <span>📊</span>
+              نشاطي التجاري
+            </Link>
           </div>
         </div>
 
