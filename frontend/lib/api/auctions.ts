@@ -31,7 +31,8 @@ export interface Auction {
   };
   bids?: Array<{
     id: string;
-    amount: number;
+    bidAmount: number;
+    amount?: number; // Legacy support
     createdAt: string;
     bidder: {
       id: string;

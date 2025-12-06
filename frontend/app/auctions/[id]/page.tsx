@@ -72,8 +72,9 @@ export default function AuctionDetailsPage() {
       setAuction(response.data);
 
       // Set default bid amount to minimum increment
-      if (!bidAmount && response.data.currentPrice) {
-        setBidAmount((response.data.currentPrice + 10).toString());
+      if (!bidAmount) {
+        const price = response.data.currentPrice || response.data.startingPrice || 0;
+        setBidAmount((price + 10).toString());
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'فشل في تحميل المزاد');
@@ -90,15 +91,23 @@ export default function AuctionDetailsPage() {
       return;
     }
 
+    const bidValue = parseFloat(bidAmount);
+    if (isNaN(bidValue) || bidValue <= 0) {
+      setBidError('الرجاء إدخال قيمة مزايدة صحيحة');
+      return;
+    }
+
     setBidding(true);
     setBidError('');
 
     try {
-      await placeBid(auctionId, { bidAmount: parseFloat(bidAmount) });
+      await placeBid(auctionId, { bidAmount: bidValue });
       await loadAuction(); // Reload to show new bid
-      setBidAmount((parseFloat(bidAmount) + 10).toString()); // Increment for next bid
+      setBidAmount((bidValue + 10).toString()); // Increment for next bid
     } catch (err: any) {
-      setBidError(err.response?.data?.message || 'فشل في تقديم المزايدة');
+      console.error('Bid error:', err.response?.data || err);
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'فشل في تقديم المزايدة';
+      setBidError(errorMessage);
     } finally {
       setBidding(false);
     }
@@ -339,7 +348,7 @@ export default function AuctionDetailsPage() {
                         </p>
                       </div>
                       <p className="text-lg font-bold text-purple-600">
-                        {(bid.amount || 0).toLocaleString()} ج.م
+                        {(bid.bidAmount || bid.amount || 0).toLocaleString()} ج.م
                       </p>
                     </div>
                   ))}
