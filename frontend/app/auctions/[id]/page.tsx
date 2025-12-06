@@ -59,6 +59,11 @@ export default function AuctionDetailsPage() {
   const auctionId = params.id as string;
 
   useEffect(() => {
+    if (!auctionId || auctionId === 'undefined') {
+      setError('معرف المزاد غير صالح');
+      setLoading(false);
+      return;
+    }
     loadAuction();
     // Refresh auction data every 5 seconds for live updates
     const interval = setInterval(loadAuction, 5000);
@@ -66,6 +71,9 @@ export default function AuctionDetailsPage() {
   }, [auctionId]);
 
   const loadAuction = async () => {
+    if (!auctionId || auctionId === 'undefined') {
+      return;
+    }
     try {
       setLoading(true);
       const response = await getAuction(auctionId);
