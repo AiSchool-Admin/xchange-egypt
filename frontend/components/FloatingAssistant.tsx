@@ -109,13 +109,14 @@ export default function FloatingAssistant() {
           setIsOpen(!isOpen);
           setShowTooltip(false);
         }}
-        className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl transition-all transform hover:scale-110 ${
+        className={`flex items-center gap-2 px-4 h-14 rounded-full shadow-lg transition-all transform hover:scale-105 ${
           isOpen
-            ? 'bg-gray-700 text-white rotate-45'
+            ? 'bg-gray-700 text-white'
             : 'bg-gradient-to-br from-purple-500 to-purple-600 text-white animate-float'
         }`}
       >
-        {isOpen ? '✕' : '🤖'}
+        <span className="text-2xl">{isOpen ? '✕' : '🤖'}</span>
+        {!isOpen && <span className="font-bold text-sm">المساعد الذكي</span>}
       </button>
     </div>
   );

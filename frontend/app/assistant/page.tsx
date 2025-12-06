@@ -92,27 +92,39 @@ export default function AssistantPage() {
 
   useEffect(() => {
     if (user) {
-      fetchConversations();
+      fetchConversationsAndAutoStart();
       fetchSuggestions();
     } else {
       setLoading(false);
     }
   }, [user]);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const fetchConversations = async () => {
+  const fetchConversationsAndAutoStart = async () => {
     try {
       const response = await getConversations();
-      setConversations(response.data?.conversations || []);
+      const existingConversations = response.data?.conversations || [];
+      setConversations(existingConversations);
+
+      // Auto-start a new conversation if there are no existing ones
+      if (existingConversations.length === 0) {
+        await handleNewConversation();
+      }
     } catch (error) {
       console.error('Error fetching conversations:', error);
+      // Try to create a new conversation even if fetching failed
+      try {
+        await handleNewConversation();
+      } catch (createError) {
+        console.error('Error creating conversation:', createError);
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const fetchSuggestions = async () => {
     try {
