@@ -182,10 +182,9 @@ export default function ActivityDashboardPage() {
 
   const loadReverseAuctions = async () => {
     try {
-      // Get all reverse auctions and filter by buyer
-      const response = await apiClient.get('/reverse-auctions');
-      const allAuctions = response.data.data?.auctions || response.data.data || [];
-      const myAuctions = allAuctions.filter((a: any) => a.buyerId === user?.id);
+      // Get user's reverse auctions directly using buyerId filter
+      const response = await apiClient.get(`/reverse-auctions?buyerId=${user?.id}`);
+      const myAuctions = response.data.data?.auctions || response.data.data || [];
       setReverseAuctions(myAuctions);
       setStats(s => ({ ...s, reverseAuctions: myAuctions.length }));
     } catch (err) {

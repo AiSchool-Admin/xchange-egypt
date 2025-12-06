@@ -184,17 +184,19 @@ export const getReverseAuctions = async (
     minBudget?: number;
     maxBudget?: number;
     location?: string;
+    buyerId?: string;
     page?: number;
     limit?: number;
   } = {}
 ): Promise<any> => {
   const {
-    status = 'ACTIVE',
+    status,
     categoryId,
     condition,
     minBudget,
     maxBudget,
     location,
+    buyerId,
     page = 1,
     limit = 20,
   } = filters;
@@ -202,9 +204,19 @@ export const getReverseAuctions = async (
   const skip = (page - 1) * limit;
 
   // Build where clause
-  const where: Prisma.ReverseAuctionWhereInput = {
-    status: status as any,
-  };
+  const where: Prisma.ReverseAuctionWhereInput = {};
+
+  // Only filter by status if provided, otherwise show all for user's own auctions
+  if (status) {
+    where.status = status as any;
+  } else if (!buyerId) {
+    // Default to ACTIVE only when not filtering by buyerId
+    where.status = 'ACTIVE';
+  }
+
+  if (buyerId) {
+    where.buyerId = buyerId;
+  }
 
   if (categoryId) {
     where.categoryId = categoryId;
