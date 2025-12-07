@@ -127,6 +127,9 @@ export default function AuctionDetailsPage() {
 
       if (typeof responseData?.message === 'string') {
         errorMessage = responseData.message;
+      } else if (typeof responseData?.error?.message === 'string') {
+        // Backend returns { success: false, error: { message: "..." } }
+        errorMessage = responseData.error.message;
       } else if (typeof responseData?.error === 'string') {
         errorMessage = responseData.error;
       } else if (typeof responseData === 'string') {

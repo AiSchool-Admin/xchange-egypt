@@ -370,7 +370,9 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
   }
 
   // 5. Create bid in a transaction
-  const result = await prisma.$transaction(async (tx) => {
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
     // Mark previous bids as OUTBID
     await tx.auctionBid.updateMany({
       where: {
@@ -437,7 +439,19 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
     }
 
     return newBid;
-  });
+    });
+  } catch (dbError: any) {
+    console.error('Database error during bid placement:', {
+      auctionId,
+      userId,
+      bidAmount: actualBidAmount,
+      listingId: auction.listingId,
+      error: dbError.message,
+      code: dbError.code,
+      meta: dbError.meta,
+    });
+    throw new AppError(`فشل في تسجيل المزايدة: ${dbError.message}`, 500);
+  }
 
   // Get auction details for notifications
   const auctionDetails = await prisma.auction.findUnique({
