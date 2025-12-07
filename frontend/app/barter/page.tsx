@@ -54,8 +54,9 @@ export default function BarterPage() {
       });
 
       // Handle different response formats safely
-      const items = response?.data?.items || response?.items || [];
-      const pagination = response?.data?.pagination || response?.pagination || { totalPages: 1 };
+      const responseData = response as any;
+      const items = responseData?.data?.items || responseData?.items || [];
+      const pagination = responseData?.data?.pagination || responseData?.pagination || { totalPages: 1 };
 
       setItems(items);
       setTotalPages(pagination.totalPages || 1);
