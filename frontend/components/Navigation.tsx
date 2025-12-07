@@ -219,7 +219,7 @@ export default function Navigation() {
               className="hidden md:flex flex-1 max-w-xl relative"
             >
               <div className={`w-full flex items-center bg-gray-50 rounded-xl border-2 transition-all duration-200 ${
-                searchFocused ? 'border-primary-500 bg-white shadow-lg' : 'border-transparent'
+                searchFocused ? 'border-primary-500 bg-white shadow-lg' : 'border-gray-200'
               }`}>
                 <input
                   ref={searchInputRef}
@@ -233,7 +233,7 @@ export default function Navigation() {
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2.5 text-gray-400 hover:text-primary-600 transition-colors"
+                  className="px-4 py-2.5 bg-primary-500 text-white rounded-l-xl hover:bg-primary-600 transition-colors"
                 >
                   <Icons.Search />
                 </button>
