@@ -171,48 +171,16 @@ export class AIAssistantService {
 
   /**
    * Generate AI response based on user input
+   * Uses Gemini AI for ALL queries (no fallback to rule-based responses)
    */
   private async generateResponse(
     content: string,
     userId: string,
     context?: string | null
   ): Promise<AIResponse> {
-    const lowerContent = content.toLowerCase();
-
-    // Check for SIMPLE intents only (exact matches for basic interactions)
-    // These are quick responses that don't need AI
-    const simplePatterns = {
-      greeting: ['مرحبا', 'السلام عليكم', 'هاي', 'صباح الخير', 'مساء الخير', 'اهلا', 'hi', 'hello'],
-      barter: ['مقايضة', 'تبادل', 'بادل'],
-      create: ['إنشاء إعلان', 'انشاء اعلان', 'أضف إعلان', 'اضف اعلان', 'إعلان جديد'],
-    };
-
-    // Check for simple greetings (exact or near-exact match)
-    if (simplePatterns.greeting.some(p => lowerContent === p || lowerContent.startsWith(p + ' '))) {
-      return AI_RESPONSES.greeting;
-    }
-
-    // Check for explicit barter request
-    if (simplePatterns.barter.some(p => lowerContent.includes(p)) && content.length < 30) {
-      return AI_RESPONSES.barter;
-    }
-
-    // Check for explicit create intent
-    if (simplePatterns.create.some(p => lowerContent.includes(p))) {
-      return {
-        message: 'رائع! لإنشاء إعلان جديد، يمكنك:\n\n📸 **الطريقة السريعة**: استخدم ميزة "بيع بالـ AI" - فقط صور المنتج وسأملأ باقي البيانات!\n\n✍️ **الطريقة التقليدية**: اذهب إلى "إضافة إعلان" واملأ البيانات يدوياً\n\nأيهما تفضل؟',
-        suggestedAction: 'create_listing',
-        confidence: 0.9,
-      };
-    }
-
-    // Check for product search (starts with search keywords)
-    const searchStarters = ['أبحث عن', 'ابحث عن', 'أريد شراء', 'اريد شراء', 'محتاج', 'عايز'];
-    if (searchStarters.some(p => lowerContent.startsWith(p))) {
-      return await this.handleSearchIntent(content, userId);
-    }
-
-    // For ALL other queries (including complex questions), try Gemini first
+    // GEMINI-ONLY MODE: Send all queries directly to Gemini
+    // This allows for natural, intelligent responses to any question
+    console.log('[AI Assistant] Processing query with Gemini-only mode:', content.substring(0, 50));
     return await this.handleGeneralQuery(content, userId);
   }
 
@@ -325,7 +293,10 @@ export class AIAssistantService {
       prisma.user.findUnique({ where: { id: userId }, select: { fullName: true } }),
     ]);
 
-    // Try Gemini AI first (if available and configured)
+    // Try Gemini AI (required in Gemini-only mode)
+    const geminiStats = geminiService.getUsageStats();
+    console.log('[AI Assistant] Gemini stats:', JSON.stringify(geminiStats));
+
     const geminiAvailable = geminiService.isAvailable();
     console.log('[AI Assistant] Gemini available:', geminiAvailable);
 
@@ -374,11 +345,11 @@ export class AIAssistantService {
       }
     }
 
-    // Fallback to rule-based response
-    console.log('[AI Assistant] Using fallback response');
+    // Gemini unavailable - show error message
+    console.log('[AI Assistant] Gemini unavailable, showing error');
     return {
-      message: `أنا هنا للمساعدة! 🤖\n\n📊 **إحصائياتك**:\n• منتجاتك: ${itemsCount}\n• عروض المقايضة: ${offersCount}\n\nماذا تريد أن تفعل؟\n• اكتب "بحث" للبحث عن منتجات\n• اكتب "مقايضة" لإنشاء عرض\n• اكتب "مساعدة" لمزيد من الخيارات`,
-      confidence: 0.7,
+      message: `⚠️ **عذراً، خدمة الذكاء الاصطناعي غير متاحة حالياً**\n\nيرجى التحقق من:\n• إعداد GOOGLE_AI_API_KEY في Railway\n• صحة مفتاح API\n\n_هذه الرسالة تظهر لأن المساعد يعمل بوضع Gemini فقط_`,
+      confidence: 0.1,
     };
   }
 
