@@ -133,8 +133,11 @@ export default function HomePage() {
       setLatestItems(latestRes.data?.items || []);
       setSaleItems(saleRes.data?.items || []);
       setWantedItems(wantedRes.data?.items || []);
-      setActiveAuctions(auctionsRes.data?.auctions || auctionsRes.data?.data || []);
-      setActiveTenders(tendersRes.data?.data?.reverseAuctions || tendersRes.data?.data || []);
+      // Handle different response formats safely
+      const auctionsData = auctionsRes as any;
+      setActiveAuctions(auctionsData.data?.auctions || auctionsData.data?.data || []);
+      const tendersData = tendersRes as any;
+      setActiveTenders(tendersData.data?.data?.reverseAuctions || tendersData.data?.data || []);
     } catch (error) {
       console.error('Failed to load home data:', error);
     } finally {
