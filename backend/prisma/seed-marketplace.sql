@@ -407,7 +407,7 @@ VALUES (
     'El-Manshia',
     'DIRECT_SALE',
     true,
-    'CAR_PARTS',
+    'METAL_SCRAP',
     'PARTIALLY_WORKING',
     false,
     'الموتور، الجيربوكس، الأبواب الخلفية، المقاعد',
