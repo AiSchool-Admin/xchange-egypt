@@ -43,6 +43,7 @@ export default function BarterPage() {
   const loadItems = async () => {
     try {
       setLoading(true);
+      setError('');
       const response = await getBarterItems({
         page,
         limit: 12,
@@ -52,10 +53,15 @@ export default function BarterPage() {
         search: searchQuery || undefined,
       });
 
-      setItems(response.data.items);
-      setTotalPages(response.data.pagination.totalPages);
+      // Handle different response formats safely
+      const items = response?.data?.items || response?.items || [];
+      const pagination = response?.data?.pagination || response?.pagination || { totalPages: 1 };
+
+      setItems(items);
+      setTotalPages(pagination.totalPages || 1);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load items');
+      console.error('Barter items error:', err);
+      setError(err.response?.data?.message || err.message || 'فشل في تحميل المنتجات');
     } finally {
       setLoading(false);
     }

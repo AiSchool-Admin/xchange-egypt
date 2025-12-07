@@ -471,6 +471,17 @@ export default function Navigation() {
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center justify-center gap-1 py-2 overflow-x-auto scrollbar-hide">
               <Link
+                href="/items"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/items')
+                    ? 'bg-primary-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>🛒</span>
+                السوق العام
+              </Link>
+              <Link
                 href="/auctions"
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
                   isActive('/auctions')
@@ -515,7 +526,7 @@ export default function Navigation() {
                 سوق التوالف
               </Link>
               <Link
-                href="/barter/my-offers"
+                href="/barter"
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
                   isActive('/barter')
                     ? 'bg-orange-500 text-white'
