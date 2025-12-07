@@ -64,16 +64,16 @@ class GeminiService {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       this.model = genAI.getGenerativeModel({
-        model: 'gemini-2.0-flash', // Updated model name
+        model: 'gemini-1.5-flash-latest', // Free tier model - correct name
         generationConfig: {
           temperature: 0.7,
           topP: 0.8,
           topK: 40,
-          maxOutputTokens: 500, // Keep responses short to save tokens
+          maxOutputTokens: 500,
         },
       });
       this.isConfigured = true;
-      console.log('[Gemini] Service initialized successfully with model: gemini-2.0-flash');
+      console.log('[Gemini] Service initialized successfully with model: gemini-1.5-flash-latest');
       return true;
     } catch (error: any) {
       console.error('[Gemini] Failed to initialize:', error.message);
