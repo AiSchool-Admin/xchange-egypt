@@ -1507,6 +1507,11 @@ enum NotificationType {
   BARTER_OFFER_EXPIRED         // Offer expired
   BARTER_MATCH                 // Automatic match found
 
+  // Matching notifications
+  PURCHASE_REQUEST_MATCH       // Buyer looking for your item
+  SALE_TO_DEMAND               // Your item matches a demand
+  DEMAND_TO_SUPPLY             // Supply matches your demand
+
   // Item notifications
   ITEM_SOLD                    // Your item sold
   ITEM_PRICE_DROP              // Wishlist item price dropped
