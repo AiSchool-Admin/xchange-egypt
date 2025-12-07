@@ -464,6 +464,72 @@ export default function Navigation() {
           </div>
         </div>
 
+        {/* ============================================
+            Specialized Markets Quick Navigation Bar
+            ============================================ */}
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-center gap-1 py-2 overflow-x-auto scrollbar-hide">
+              <Link
+                href="/auctions"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/auctions')
+                    ? 'bg-amber-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>🔨</span>
+                المزادات
+              </Link>
+              <Link
+                href="/reverse-auctions"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/reverse-auctions')
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>📋</span>
+                المناقصات
+              </Link>
+              <Link
+                href="/luxury"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/luxury')
+                    ? 'bg-purple-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>👑</span>
+                سوق الفاخر
+              </Link>
+              <Link
+                href="/scrap"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/scrap')
+                    ? 'bg-green-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>♻️</span>
+                سوق التوالف
+              </Link>
+              <Link
+                href="/barter/my-offers"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/barter')
+                    ? 'bg-orange-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>🔄</span>
+                المقايضات
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
         {/* Mobile Menu Drawer */}
         {mobileMenuOpen && (
           <div className="lg:hidden fixed inset-0 top-[120px] bg-white z-40 overflow-y-auto animate-fade-in">
