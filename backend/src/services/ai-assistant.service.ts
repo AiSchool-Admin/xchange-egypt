@@ -179,42 +179,41 @@ export class AIAssistantService {
   ): Promise<AIResponse> {
     const lowerContent = content.toLowerCase();
 
-    // Detect intent
-    let intent = 'general';
-    for (const [key, patterns] of Object.entries(KEYWORD_PATTERNS)) {
-      if (patterns.some(pattern => lowerContent.includes(pattern))) {
-        intent = key;
-        break;
-      }
+    // Check for SIMPLE intents only (exact matches for basic interactions)
+    // These are quick responses that don't need AI
+    const simplePatterns = {
+      greeting: ['مرحبا', 'السلام عليكم', 'هاي', 'صباح الخير', 'مساء الخير', 'اهلا', 'hi', 'hello'],
+      barter: ['مقايضة', 'تبادل', 'بادل'],
+      create: ['إنشاء إعلان', 'انشاء اعلان', 'أضف إعلان', 'اضف اعلان', 'إعلان جديد'],
+    };
+
+    // Check for simple greetings (exact or near-exact match)
+    if (simplePatterns.greeting.some(p => lowerContent === p || lowerContent.startsWith(p + ' '))) {
+      return AI_RESPONSES.greeting;
     }
 
-    // Handle different intents
-    switch (intent) {
-      case 'greeting':
-        return AI_RESPONSES.greeting;
-
-      case 'search':
-        return await this.handleSearchIntent(content, userId);
-
-      case 'barter':
-        return AI_RESPONSES.barter;
-
-      case 'price':
-        return await this.handlePriceIntent(content);
-
-      case 'help':
-        return AI_RESPONSES.help;
-
-      case 'create':
-        return {
-          message: 'رائع! لإنشاء إعلان جديد، يمكنك:\n\n📸 **الطريقة السريعة**: استخدم ميزة "بيع بالـ AI" - فقط صور المنتج وسأملأ باقي البيانات!\n\n✍️ **الطريقة التقليدية**: اذهب إلى "إضافة إعلان" واملأ البيانات يدوياً\n\nأيهما تفضل؟',
-          suggestedAction: 'create_listing',
-          confidence: 0.9,
-        };
-
-      default:
-        return await this.handleGeneralQuery(content, userId);
+    // Check for explicit barter request
+    if (simplePatterns.barter.some(p => lowerContent.includes(p)) && content.length < 30) {
+      return AI_RESPONSES.barter;
     }
+
+    // Check for explicit create intent
+    if (simplePatterns.create.some(p => lowerContent.includes(p))) {
+      return {
+        message: 'رائع! لإنشاء إعلان جديد، يمكنك:\n\n📸 **الطريقة السريعة**: استخدم ميزة "بيع بالـ AI" - فقط صور المنتج وسأملأ باقي البيانات!\n\n✍️ **الطريقة التقليدية**: اذهب إلى "إضافة إعلان" واملأ البيانات يدوياً\n\nأيهما تفضل؟',
+        suggestedAction: 'create_listing',
+        confidence: 0.9,
+      };
+    }
+
+    // Check for product search (starts with search keywords)
+    const searchStarters = ['أبحث عن', 'ابحث عن', 'أريد شراء', 'اريد شراء', 'محتاج', 'عايز'];
+    if (searchStarters.some(p => lowerContent.startsWith(p))) {
+      return await this.handleSearchIntent(content, userId);
+    }
+
+    // For ALL other queries (including complex questions), try Gemini first
+    return await this.handleGeneralQuery(content, userId);
   }
 
   /**
@@ -317,6 +316,8 @@ export class AIAssistantService {
    * Handle general queries - uses Gemini AI when available
    */
   private async handleGeneralQuery(content: string, userId: string): Promise<AIResponse> {
+    console.log('[AI Assistant] handleGeneralQuery called with:', content.substring(0, 50));
+
     // Get user stats for context
     const [itemsCount, offersCount, user] = await Promise.all([
       prisma.item.count({ where: { sellerId: userId } }),
@@ -325,8 +326,13 @@ export class AIAssistantService {
     ]);
 
     // Try Gemini AI first (if available and configured)
-    if (geminiService.isAvailable()) {
+    const geminiAvailable = geminiService.isAvailable();
+    console.log('[AI Assistant] Gemini available:', geminiAvailable);
+
+    if (geminiAvailable) {
       try {
+        console.log('[AI Assistant] Calling Gemini...');
+
         // Get recent conversation history for context
         const recentMessages = await prisma.aIMessage.findMany({
           where: {
@@ -346,7 +352,10 @@ export class AIAssistantService {
           })),
         });
 
+        console.log('[AI Assistant] Gemini response:', geminiResponse ? 'success' : 'null');
+
         if (geminiResponse) {
+          console.log('[AI Assistant] Using Gemini response');
           return {
             message: geminiResponse,
             confidence: 0.9,
@@ -358,6 +367,7 @@ export class AIAssistantService {
     }
 
     // Fallback to rule-based response
+    console.log('[AI Assistant] Using fallback response');
     return {
       message: `أنا هنا للمساعدة! 🤖\n\n📊 **إحصائياتك**:\n• منتجاتك: ${itemsCount}\n• عروض المقايضة: ${offersCount}\n\nماذا تريد أن تفعل؟\n• اكتب "بحث" للبحث عن منتجات\n• اكتب "مقايضة" لإنشاء عرض\n• اكتب "مساعدة" لمزيد من الخيارات`,
       confidence: 0.7,
