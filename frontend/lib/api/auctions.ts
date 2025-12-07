@@ -7,6 +7,7 @@ export interface Auction {
   currentPrice: number;
   reservePrice?: number;
   buyNowPrice?: number;
+  minBidIncrement?: number;
   startTime: string;
   endTime: string;
   status: 'PENDING' | 'ACTIVE' | 'ENDED' | 'CANCELLED';
