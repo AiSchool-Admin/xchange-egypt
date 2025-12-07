@@ -3,58 +3,54 @@
 -- Run this in Supabase SQL Editor
 -- ============================================
 
--- First, let's get the user IDs we need
+-- First, let's get the user IDs and category IDs we need
 DO $$
 DECLARE
-    ahmed_id UUID;
-    fatma_id UUID;
-    khaled_id UUID;
-    mona_id UUID;
-    omar_id UUID;
-    tech_store_id UUID;
-    furniture_hub_id UUID;
-    auto_parts_id UUID;
-    green_cycle_id UUID;
+    ahmed_id TEXT;
+    fatma_id TEXT;
+    khaled_id TEXT;
+    mona_id TEXT;
+    omar_id TEXT;
+    tech_store_id TEXT;
+    furniture_hub_id TEXT;
+    auto_parts_id TEXT;
+    green_cycle_id TEXT;
 
-    electronics_id UUID;
-    mobile_phones_id UUID;
-    computers_id UUID;
-    cameras_id UUID;
-    furniture_id UUID;
-    bedroom_id UUID;
-    living_room_id UUID;
-    vehicles_id UUID;
-    cars_id UUID;
-    home_appliances_id UUID;
-    fashion_id UUID;
-
-    item_id UUID;
-    listing_id UUID;
-    auction_id UUID;
+    electronics_id TEXT;
+    mobile_phones_id TEXT;
+    computers_id TEXT;
+    cameras_id TEXT;
+    furniture_id TEXT;
+    bedroom_id TEXT;
+    living_room_id TEXT;
+    vehicles_id TEXT;
+    cars_id TEXT;
+    home_appliances_id TEXT;
+    fashion_id TEXT;
 BEGIN
     -- Get user IDs
-    SELECT id INTO ahmed_id FROM users WHERE email = 'ahmed.mohamed@example.com';
-    SELECT id INTO fatma_id FROM users WHERE email = 'fatma.ali@example.com';
-    SELECT id INTO khaled_id FROM users WHERE email = 'khaled.hassan@example.com';
-    SELECT id INTO mona_id FROM users WHERE email = 'mona.ibrahim@example.com';
-    SELECT id INTO omar_id FROM users WHERE email = 'omar.saeed@example.com';
-    SELECT id INTO tech_store_id FROM users WHERE email = 'contact@techstore.eg';
-    SELECT id INTO furniture_hub_id FROM users WHERE email = 'info@furniturehub.eg';
-    SELECT id INTO auto_parts_id FROM users WHERE email = 'sales@autoparts.eg';
-    SELECT id INTO green_cycle_id FROM users WHERE email = 'support@greencycle.eg';
+    SELECT id::TEXT INTO ahmed_id FROM users WHERE email = 'ahmed.mohamed@example.com';
+    SELECT id::TEXT INTO fatma_id FROM users WHERE email = 'fatma.ali@example.com';
+    SELECT id::TEXT INTO khaled_id FROM users WHERE email = 'khaled.hassan@example.com';
+    SELECT id::TEXT INTO mona_id FROM users WHERE email = 'mona.ibrahim@example.com';
+    SELECT id::TEXT INTO omar_id FROM users WHERE email = 'omar.saeed@example.com';
+    SELECT id::TEXT INTO tech_store_id FROM users WHERE email = 'contact@techstore.eg';
+    SELECT id::TEXT INTO furniture_hub_id FROM users WHERE email = 'info@furniturehub.eg';
+    SELECT id::TEXT INTO auto_parts_id FROM users WHERE email = 'sales@autoparts.eg';
+    SELECT id::TEXT INTO green_cycle_id FROM users WHERE email = 'support@greencycle.eg';
 
     -- Get category IDs
-    SELECT id INTO electronics_id FROM categories WHERE slug = 'electronics';
-    SELECT id INTO mobile_phones_id FROM categories WHERE slug = 'mobile-phones';
-    SELECT id INTO computers_id FROM categories WHERE slug = 'computers';
-    SELECT id INTO cameras_id FROM categories WHERE slug = 'cameras';
-    SELECT id INTO furniture_id FROM categories WHERE slug = 'furniture';
-    SELECT id INTO bedroom_id FROM categories WHERE slug = 'bedroom';
-    SELECT id INTO living_room_id FROM categories WHERE slug = 'living-room';
-    SELECT id INTO vehicles_id FROM categories WHERE slug = 'vehicles';
-    SELECT id INTO cars_id FROM categories WHERE slug = 'cars';
-    SELECT id INTO home_appliances_id FROM categories WHERE slug = 'home-appliances';
-    SELECT id INTO fashion_id FROM categories WHERE slug = 'fashion';
+    SELECT id::TEXT INTO electronics_id FROM categories WHERE slug = 'electronics';
+    SELECT id::TEXT INTO mobile_phones_id FROM categories WHERE slug = 'mobile-phones';
+    SELECT id::TEXT INTO computers_id FROM categories WHERE slug = 'computers';
+    SELECT id::TEXT INTO cameras_id FROM categories WHERE slug = 'cameras';
+    SELECT id::TEXT INTO furniture_id FROM categories WHERE slug = 'furniture';
+    SELECT id::TEXT INTO bedroom_id FROM categories WHERE slug = 'bedroom';
+    SELECT id::TEXT INTO living_room_id FROM categories WHERE slug = 'living-room';
+    SELECT id::TEXT INTO vehicles_id FROM categories WHERE slug = 'vehicles';
+    SELECT id::TEXT INTO cars_id FROM categories WHERE slug = 'cars';
+    SELECT id::TEXT INTO home_appliances_id FROM categories WHERE slug = 'home-appliances';
+    SELECT id::TEXT INTO fashion_id FROM categories WHERE slug = 'fashion';
 
     -- Use electronics as fallback
     IF mobile_phones_id IS NULL THEN mobile_phones_id := electronics_id; END IF;
@@ -66,7 +62,18 @@ BEGIN
     IF home_appliances_id IS NULL THEN home_appliances_id := electronics_id; END IF;
     IF fashion_id IS NULL THEN fashion_id := electronics_id; END IF;
 
+    -- Check if we have the required data
+    IF ahmed_id IS NULL THEN
+        RAISE EXCEPTION 'User ahmed.mohamed@example.com not found. Please seed users first.';
+    END IF;
+
+    IF electronics_id IS NULL THEN
+        RAISE EXCEPTION 'Category electronics not found. Please seed categories first.';
+    END IF;
+
     RAISE NOTICE 'Starting marketplace data seeding...';
+    RAISE NOTICE 'Ahmed ID: %', ahmed_id;
+    RAISE NOTICE 'Electronics ID: %', electronics_id;
 
     -- ============================================
     -- 1. DIRECT SALE ITEMS (اصناف البيع المباشر)
@@ -76,7 +83,7 @@ BEGIN
     -- iPhone 15 Pro Max
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         tech_store_id,
         mobile_phones_id,
         'iPhone 15 Pro Max 256GB - جديد بالكرتونة',
@@ -97,7 +104,7 @@ BEGIN
     -- Samsung Galaxy S24 Ultra
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         tech_store_id,
         mobile_phones_id,
         'Samsung Galaxy S24 Ultra 512GB',
@@ -118,7 +125,7 @@ BEGIN
     -- MacBook Pro M3
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         ahmed_id,
         computers_id,
         'MacBook Pro 14" M3 Pro - حالة ممتازة',
@@ -139,7 +146,7 @@ BEGIN
     -- PlayStation 5
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         tech_store_id,
         electronics_id,
         'PlayStation 5 + 2 Controllers + 3 Games',
@@ -158,7 +165,7 @@ BEGIN
     -- Canon Camera
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         fatma_id,
         cameras_id,
         'Canon EOS R6 Mark II + عدسة 24-105mm',
@@ -179,7 +186,7 @@ BEGIN
     -- AirPods Pro
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         tech_store_id,
         electronics_id,
         'Apple AirPods Pro 2 - جديد بالضمان',
@@ -198,7 +205,7 @@ BEGIN
     -- LG OLED TV
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         tech_store_id,
         electronics_id,
         'LG OLED 65" C3 Smart TV 4K',
@@ -219,7 +226,7 @@ BEGIN
     -- Leather Sofa Set
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         furniture_hub_id,
         living_room_id,
         'طقم كنب مودرن 7 مقاعد - جلد إيطالي',
@@ -240,7 +247,7 @@ BEGIN
     -- Bedroom Set
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         furniture_hub_id,
         bedroom_id,
         'غرفة نوم كاملة خشب زان طبيعي',
@@ -261,7 +268,7 @@ BEGIN
     -- Dining Table
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         furniture_hub_id,
         furniture_id,
         'سفرة 8 كراسي خشب أوك أمريكي',
@@ -280,7 +287,7 @@ BEGIN
     -- Samsung Refrigerator
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         mona_id,
         home_appliances_id,
         'ثلاجة سامسونج 28 قدم - French Door',
@@ -299,7 +306,7 @@ BEGIN
     -- LG Washer
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         mona_id,
         home_appliances_id,
         'غسالة LG 12 كيلو - AI Direct Drive',
@@ -318,7 +325,7 @@ BEGIN
     -- Toyota Camry
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         khaled_id,
         cars_id,
         'Toyota Camry 2023 - فبريكة بالكامل',
@@ -345,7 +352,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         ahmed_id,
         cars_id,
         'مطلوب: BMW X5 2020 أو أحدث',
@@ -363,7 +370,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         fatma_id,
         mobile_phones_id,
         'مطلوب: iPhone 15 Pro Max بسعر معقول',
@@ -381,7 +388,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         mona_id,
         furniture_id,
         'مطلوب: غرفة نوم أطفال كاملة',
@@ -399,7 +406,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         khaled_id,
         computers_id,
         'مطلوب: MacBook Pro M2/M3 للبرمجة',
@@ -417,7 +424,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         omar_id,
         home_appliances_id,
         'مطلوب: تكييف 2.25 حصان انفرتر',
@@ -442,7 +449,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, desired_item_title, desired_value_min, desired_value_max, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         ahmed_id,
         mobile_phones_id,
         'iPhone 13 Pro للمقايضة بـ Samsung S24',
@@ -463,7 +470,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, desired_item_title, desired_value_min, desired_value_max, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         fatma_id,
         furniture_id,
         'كنبة جلد إيطالي للمقايضة بغرفة سفرة',
@@ -484,7 +491,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, desired_item_title, desired_value_min, desired_value_max, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         omar_id,
         electronics_id,
         'PS5 + ألعاب للمقايضة بـ Nintendo Switch',
@@ -505,7 +512,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, desired_item_title, desired_value_min, desired_value_max, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         khaled_id,
         cameras_id,
         'كاميرا Canon للمقايضة بدرون DJI',
@@ -533,7 +540,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, scrap_type, scrap_condition, scrap_pricing_type, weight_kg, price_per_kg, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         COALESCE(green_cycle_id, ahmed_id),
         electronics_id,
         'خردة إلكترونيات - لوحات كمبيوتر',
@@ -557,7 +564,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, scrap_type, scrap_condition, is_repairable, working_parts_desc, defect_description, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         COALESCE(auto_parts_id, khaled_id),
         vehicles_id,
         'سيارة تالفة للبيع كقطع غيار',
@@ -581,7 +588,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, scrap_type, scrap_condition, scrap_pricing_type, weight_kg, price_per_kg, metal_type, metal_purity, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         COALESCE(green_cycle_id, omar_id),
         electronics_id,
         'كابلات نحاس - 100 كيلو',
@@ -607,7 +614,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, scrap_type, scrap_condition, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         COALESCE(green_cycle_id, mona_id),
         home_appliances_id,
         'أجهزة منزلية تالفة للتدوير',
@@ -628,7 +635,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, scrap_type, scrap_condition, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         COALESCE(auto_parts_id, khaled_id),
         vehicles_id,
         'بطاريات سيارات مستعملة - 20 قطعة',
@@ -656,7 +663,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         fatma_id,
         fashion_id,
         'ساعة Rolex Submariner أصلية',
@@ -676,7 +683,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         mona_id,
         fashion_id,
         'حقيبة Louis Vuitton Neverfull MM',
@@ -696,7 +703,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         tech_store_id,
         fashion_id,
         'ساعة Omega Seamaster Professional',
@@ -716,7 +723,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         fatma_id,
         fashion_id,
         'طقم مجوهرات ذهب عيار 21',
@@ -736,7 +743,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         khaled_id,
         cars_id,
         'Mercedes-Benz S-Class 2023',
@@ -756,7 +763,7 @@ BEGIN
 
     INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         omar_id,
         fashion_id,
         'حقيبة Hermès Birkin 30 - نادرة',
@@ -783,7 +790,7 @@ BEGIN
 
     INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, max_budget, location, status, start_time, end_time, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         ahmed_id,
         'مناقصة: 10 لابتوبات للشركة',
         'نبحث عن 10 لابتوبات للموظفين. المواصفات المطلوبة: Core i5 أو أعلى، 16GB RAM، 512GB SSD، شاشة 15 بوصة. نقبل ماركات Dell, HP, Lenovo.',
@@ -801,7 +808,7 @@ BEGIN
 
     INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, max_budget, location, status, start_time, end_time, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         furniture_hub_id,
         'مناقصة: أثاث مكتبي لـ 20 موظف',
         'نحتاج أثاث مكتبي كامل لـ 20 موظف: مكاتب + كراسي مريحة + أدراج. التسليم خلال أسبوعين. نرحب بعروض المصنعين والموردين.',
@@ -819,7 +826,7 @@ BEGIN
 
     INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, max_budget, location, status, start_time, end_time, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         tech_store_id,
         'مناقصة: شاشات عرض للمحل',
         'نبحث عن 5 شاشات عرض تجارية مقاس 55 بوصة أو أكبر، دقة 4K، مناسبة للعمل المتواصل. نفضل ماركات LG أو Samsung التجارية.',
@@ -837,7 +844,7 @@ BEGIN
 
     INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, max_budget, location, status, start_time, end_time, created_at, updated_at)
     VALUES (
-        gen_random_uuid(),
+        gen_random_uuid()::TEXT,
         mona_id,
         'مناقصة: تجهيز مطبخ كامل',
         'أبحث عن عروض لتجهيز مطبخ كامل: ثلاجة + بوتاجاز + غسالة أطباق + ميكروويف + خلاط. أفضل الأجهزة الموفرة للطاقة.',
