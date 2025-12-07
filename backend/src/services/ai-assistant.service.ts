@@ -1,8 +1,9 @@
 import prisma from '../lib/prisma';
+import { geminiService } from './gemini.service';
 
 // ============================================
 // AI Assistant Service
-// نظام المساعد الذكي
+// نظام المساعد الذكي - مع تكامل Gemini AI
 // ============================================
 
 interface AIResponse {
@@ -313,15 +314,50 @@ export class AIAssistantService {
   }
 
   /**
-   * Handle general queries
+   * Handle general queries - uses Gemini AI when available
    */
   private async handleGeneralQuery(content: string, userId: string): Promise<AIResponse> {
-    // Get user stats
-    const [itemsCount, offersCount] = await Promise.all([
+    // Get user stats for context
+    const [itemsCount, offersCount, user] = await Promise.all([
       prisma.item.count({ where: { sellerId: userId } }),
       prisma.barterOffer.count({ where: { OR: [{ initiatorId: userId }, { recipientId: userId }] } }),
+      prisma.user.findUnique({ where: { id: userId }, select: { fullName: true } }),
     ]);
 
+    // Try Gemini AI first (if available and configured)
+    if (geminiService.isAvailable()) {
+      try {
+        // Get recent conversation history for context
+        const recentMessages = await prisma.aIMessage.findMany({
+          where: {
+            conversation: { userId },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 4,
+          select: { role: true, content: true },
+        });
+
+        const geminiResponse = await geminiService.generateResponse(content, {
+          userName: user?.fullName,
+          userItemsCount: itemsCount,
+          conversationHistory: recentMessages.reverse().map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+        });
+
+        if (geminiResponse) {
+          return {
+            message: geminiResponse,
+            confidence: 0.9,
+          };
+        }
+      } catch (error) {
+        console.error('[AI Assistant] Gemini error, falling back to rule-based:', error);
+      }
+    }
+
+    // Fallback to rule-based response
     return {
       message: `أنا هنا للمساعدة! 🤖\n\n📊 **إحصائياتك**:\n• منتجاتك: ${itemsCount}\n• عروض المقايضة: ${offersCount}\n\nماذا تريد أن تفعل؟\n• اكتب "بحث" للبحث عن منتجات\n• اكتب "مقايضة" لإنشاء عرض\n• اكتب "مساعدة" لمزيد من الخيارات`,
       confidence: 0.7,
