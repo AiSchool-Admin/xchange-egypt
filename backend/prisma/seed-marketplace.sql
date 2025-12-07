@@ -1,13 +1,13 @@
 -- ============================================
 -- XChange Egypt - Marketplace Seed Data
--- يستخدم المستخدمين والفئات الموجودة فعلاً
+-- Uses existing users and categories from the database
 -- ============================================
 
 -- ============================================
 -- 1. DIRECT SALE ITEMS (اصناف البيع المباشر)
 -- ============================================
 
--- iPhone 15 Pro Max - أحمد التاجر
+-- iPhone 15 Pro Max
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -28,7 +28,7 @@ VALUES (
     NOW()
 );
 
--- Samsung Galaxy S24 Ultra - أحمد التاجر
+-- Samsung Galaxy S24 Ultra
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -49,7 +49,7 @@ VALUES (
     NOW()
 );
 
--- MacBook Pro M3 - أحمد التاجر
+-- MacBook Pro M3
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -70,7 +70,7 @@ VALUES (
     NOW()
 );
 
--- PlayStation 5 - أحمد التاجر
+-- PlayStation 5
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -89,7 +89,7 @@ VALUES (
     NOW()
 );
 
--- Canon Camera - سارة المقايضة
+-- Canon Camera
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -110,7 +110,7 @@ VALUES (
     NOW()
 );
 
--- LG OLED TV - أحمد التاجر
+-- LG OLED TV
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -131,7 +131,7 @@ VALUES (
     NOW()
 );
 
--- Leather Sofa Set - أحمد التاجر
+-- Leather Sofa Set
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -152,7 +152,7 @@ VALUES (
     NOW()
 );
 
--- Bedroom Set - أحمد التاجر
+-- Bedroom Set
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -173,7 +173,7 @@ VALUES (
     NOW()
 );
 
--- Samsung Refrigerator - منى المقتنيات
+-- Samsung Refrigerator
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -192,7 +192,7 @@ VALUES (
     NOW()
 );
 
--- Toyota Camry - حسن السيارات
+-- Toyota Camry
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -217,7 +217,7 @@ VALUES (
 -- 2. WANTED/DIRECT BUY ITEMS (مطلوب للشراء)
 -- ============================================
 
--- مطلوب BMW - عمر العقارات
+-- مطلوب BMW
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -236,7 +236,7 @@ VALUES (
     NOW()
 );
 
--- مطلوب iPhone - نورا الموضة
+-- مطلوب iPhone
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -255,7 +255,7 @@ VALUES (
     NOW()
 );
 
--- مطلوب غرفة نوم - منى المقتنيات
+-- مطلوب غرفة نوم
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -274,7 +274,7 @@ VALUES (
     NOW()
 );
 
--- مطلوب MacBook - يوسف الرياضة
+-- مطلوب MacBook
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -297,7 +297,7 @@ VALUES (
 -- 3. BARTER ITEMS (للمقايضة)
 -- ============================================
 
--- iPhone للمقايضة - سارة المقايضة
+-- iPhone للمقايضة
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, desired_item_title, desired_value_min, desired_value_max, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -319,7 +319,7 @@ VALUES (
     NOW()
 );
 
--- كنبة للمقايضة - سارة المقايضة
+-- كنبة للمقايضة
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, desired_item_title, desired_value_min, desired_value_max, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -341,7 +341,7 @@ VALUES (
     NOW()
 );
 
--- PS5 للمقايضة - سارة المقايضة
+-- PS5 للمقايضة
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, desired_item_title, desired_value_min, desired_value_max, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -364,17 +364,17 @@ VALUES (
 );
 
 -- ============================================
--- 4. SCRAP ITEMS (سوق التوالف) - فاطمة الخردة
+-- 4. SCRAP ITEMS (سوق التوالف) - Basic fields only
 -- ============================================
 
 -- خردة إلكترونيات
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, weight_kg, price_per_kg, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
     'fc397ec4-baad-442e-b870-bfa4f453405d',
     'cat-electronics',
     'خردة إلكترونيات - لوحات كمبيوتر',
-    '50 كيلو لوحات إلكترونية من كمبيوترات قديمة. تحتوي على معادن ثمينة (ذهب، فضة، نحاس). مناسبة لشركات إعادة التدوير.',
+    '50 كيلو لوحات إلكترونية من كمبيوترات قديمة. تحتوي على معادن ثمينة (ذهب، فضة، نحاس). مناسبة لشركات إعادة التدوير. السعر 300 جنيه للكيلو.',
     'POOR',
     15000,
     ARRAY['https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=800&q=80', 'https://images.unsplash.com/photo-1591243315780-978fd00ff9db?w=800&q=80'],
@@ -382,15 +382,13 @@ VALUES (
     'New Cairo',
     'DIRECT_SALE',
     true,
-    50,
-    300,
     'ACTIVE',
     NOW(),
     NOW()
 );
 
 -- سيارة تالفة
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, is_repairable, working_parts_desc, defect_description, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
     'fc397ec4-baad-442e-b870-bfa4f453405d',
@@ -404,22 +402,19 @@ VALUES (
     'El-Manshia',
     'DIRECT_SALE',
     true,
-    false,
-    'الموتور، الجيربوكس، الأبواب الخلفية، المقاعد',
-    'الجزء الأمامي كامل تالف من الحادث',
     'ACTIVE',
     NOW(),
     NOW()
 );
 
 -- كابلات نحاس
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, weight_kg, price_per_kg, metal_purity, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
     'fc397ec4-baad-442e-b870-bfa4f453405d',
     'cat-electronics',
     'كابلات نحاس - 100 كيلو',
-    '100 كيلو كابلات نحاسية من مشاريع كهرباء. النحاس نقي بنسبة 95%. السعر قابل للتفاوض للكميات الكبيرة.',
+    '100 كيلو كابلات نحاسية من مشاريع كهرباء. النحاس نقي بنسبة 95%. السعر 350 جنيه للكيلو قابل للتفاوض للكميات الكبيرة.',
     'FAIR',
     35000,
     ARRAY['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80', 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=800&q=80'],
@@ -427,9 +422,6 @@ VALUES (
     'New Cairo',
     'DIRECT_SALE',
     true,
-    100,
-    350,
-    95,
     'ACTIVE',
     NOW(),
     NOW()
@@ -456,7 +448,7 @@ VALUES (
 );
 
 -- ============================================
--- 5. LUXURY ITEMS (السوق الفاخر) - كريم الفاخر
+-- 5. LUXURY ITEMS (السوق الفاخر)
 -- ============================================
 
 -- ساعة Rolex
@@ -543,7 +535,7 @@ VALUES (
     NOW()
 );
 
--- Mercedes S-Class - حسن السيارات
+-- Mercedes S-Class
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
@@ -564,13 +556,13 @@ VALUES (
     NOW()
 );
 
--- حقيبة Hermès
+-- حقيبة Hermes
 INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_featured, promotion_tier, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
     '84696012-b58d-49c0-a940-173078de15c3',
     '516cbe98-eb69-4d5c-a0e1-021c3a3aa608',
-    'حقيبة Hermès Birkin 30 - نادرة',
+    'حقيبة Hermes Birkin 30 - نادرة',
     'حقيبة هيرميس بيركن 30 سم، جلد Togo لون أسود مع إكسسوارات ذهبية. الحقيبة أصلية 100% مع شهادة الأصالة. نادرة ومحدودة.',
     'LIKE_NEW',
     1200000,
@@ -586,7 +578,7 @@ VALUES (
 );
 
 -- ============================================
--- 6. REVERSE AUCTIONS (المناقصات) - محمد المزادات
+-- 6. REVERSE AUCTIONS (المناقصات)
 -- ============================================
 
 INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, max_budget, location, status, start_date, end_date, created_at, updated_at)
@@ -662,13 +654,13 @@ VALUES (
 );
 
 -- ============================================
--- ✅ DONE!
+-- DONE!
 -- ============================================
--- 📊 Summary:
---    💰 Direct Sale Items: 10
---    🔍 Wanted Items: 4
---    🔄 Barter Items: 3
---    ♻️ Scrap Items: 4
---    👑 Luxury Items: 6
---    📋 Reverse Auctions: 4
---    🎉 Total: 31 items
+-- Summary:
+--    Direct Sale Items: 10
+--    Wanted Items: 4
+--    Barter Items: 3
+--    Scrap Items: 4
+--    Luxury Items: 6
+--    Reverse Auctions: 4
+--    Total: 31 items
