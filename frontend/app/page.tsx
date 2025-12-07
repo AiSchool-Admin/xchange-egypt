@@ -122,8 +122,8 @@ export default function HomePage() {
         getCategories().catch(() => ({ data: [] })),
         getItems({ limit: 4, featured: true, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 8, status: 'ACTIVE', sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => ({ data: { items: [] } })),
-        getItems({ limit: 4, listingType: 'SALE', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
-        getItems({ limit: 4, listingType: 'WANTED', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 4, listingType: 'DIRECT_SALE', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 4, listingType: 'DIRECT_BUY', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getAuctions({ limit: 4, status: 'ACTIVE' }).catch(() => ({ data: { auctions: [] } })),
         apiClient.get('/reverse-auctions?status=ACTIVE&limit=4').catch(() => ({ data: { data: [] } })),
       ]);
@@ -415,7 +415,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
@@ -600,7 +600,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType="DIRECT_SALE"
@@ -654,7 +654,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType="DIRECT_BUY"
@@ -746,7 +746,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
