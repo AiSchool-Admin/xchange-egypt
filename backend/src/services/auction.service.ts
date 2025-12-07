@@ -304,6 +304,15 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
     throw new AppError('Auction not found', 404);
   }
 
+  // Validate listing and item exist (data integrity check)
+  if (!auction.listing) {
+    throw new AppError('Auction listing not found - data integrity issue', 500);
+  }
+
+  if (!auction.listing.item) {
+    throw new AppError('Auction item not found - data integrity issue', 500);
+  }
+
   // 2. Validate auction status and timing
   if (auction.status !== AuctionStatus.ACTIVE) {
     throw new AppError('Auction is not active', 400);
@@ -446,7 +455,7 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
     },
   });
 
-  if (auctionDetails) {
+  if (auctionDetails?.listing?.item) {
     const itemTitle = auctionDetails.listing.item.title;
     const sellerId = auctionDetails.listing.item.sellerId;
 
