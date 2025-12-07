@@ -114,7 +114,25 @@ export default function AuctionDetailsPage() {
       setBidAmount((bidValue + 10).toString()); // Increment for next bid
     } catch (err: any) {
       console.error('Bid error:', err.response?.data || err);
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || 'فشل في تقديم المزايدة';
+
+      // Handle 401 Unauthorized
+      if (err.response?.status === 401) {
+        setBidError('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.');
+        return;
+      }
+
+      // Safely extract error message (ensure it's a string)
+      let errorMessage = 'فشل في تقديم المزايدة';
+      const responseData = err.response?.data;
+
+      if (typeof responseData?.message === 'string') {
+        errorMessage = responseData.message;
+      } else if (typeof responseData?.error === 'string') {
+        errorMessage = responseData.error;
+      } else if (typeof responseData === 'string') {
+        errorMessage = responseData;
+      }
+
       setBidError(errorMessage);
     } finally {
       setBidding(false);
