@@ -82,7 +82,8 @@ export default function AuctionDetailsPage() {
       // Set default bid amount to minimum increment
       if (!bidAmount) {
         const price = response.data.currentPrice || response.data.startingPrice || 0;
-        setBidAmount((price + 10).toString());
+        const increment = response.data.minBidIncrement || 10;
+        setBidAmount((price + increment).toString());
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'فشل في تحميل المزاد');
@@ -111,7 +112,7 @@ export default function AuctionDetailsPage() {
     try {
       await placeBid(auctionId, { bidAmount: bidValue });
       await loadAuction(); // Reload to show new bid
-      setBidAmount((bidValue + 10).toString()); // Increment for next bid
+      setBidAmount((bidValue + (auction?.minBidIncrement || 10)).toString()); // Increment for next bid
     } catch (err: any) {
       console.error('Bid error:', err.response?.data || err);
 
@@ -218,7 +219,8 @@ export default function AuctionDetailsPage() {
   const isActive = hasStarted && !isEnded;
   const isSeller = user?.id === item.seller?.id;
   const currentPrice = auction.currentPrice || auction.startingPrice || 0;
-  const minBid = currentPrice + 10;
+  const minBidIncrement = auction.minBidIncrement || 10;
+  const minBid = currentPrice + minBidIncrement;
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
