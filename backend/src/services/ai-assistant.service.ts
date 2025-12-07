@@ -333,23 +333,29 @@ export class AIAssistantService {
       try {
         console.log('[AI Assistant] Calling Gemini...');
 
-        // Get recent conversation history for context
-        const recentMessages = await prisma.aIMessage.findMany({
-          where: {
-            conversation: { userId },
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 4,
-          select: { role: true, content: true },
-        });
+        // Try to get recent conversation history (may fail if table doesn't exist)
+        let conversationHistory: Array<{ role: string; content: string }> = [];
+        try {
+          const recentMessages = await prisma.aIMessage.findMany({
+            where: {
+              conversation: { userId },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 4,
+            select: { role: true, content: true },
+          });
+          conversationHistory = recentMessages.reverse().map(m => ({
+            role: m.role,
+            content: m.content,
+          }));
+        } catch (msgError) {
+          console.log('[AI Assistant] Could not fetch message history, proceeding without it');
+        }
 
         const geminiResponse = await geminiService.generateResponse(content, {
           userName: user?.fullName,
           userItemsCount: itemsCount,
-          conversationHistory: recentMessages.reverse().map(m => ({
-            role: m.role,
-            content: m.content,
-          })),
+          conversationHistory,
         });
 
         console.log('[AI Assistant] Gemini response:', geminiResponse ? 'success' : 'null');
@@ -360,6 +366,8 @@ export class AIAssistantService {
             message: geminiResponse,
             confidence: 0.9,
           };
+        } else {
+          console.log('[AI Assistant] Gemini returned null, using fallback');
         }
       } catch (error) {
         console.error('[AI Assistant] Gemini error, falling back to rule-based:', error);
