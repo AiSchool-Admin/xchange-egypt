@@ -463,9 +463,9 @@ export default function HomePage() {
                   className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden group"
                 >
                   <div className="relative h-48">
-                    {auction.listing?.item?.images?.[0]?.url ? (
+                    {auction.listing?.item?.images?.[0] ? (
                       <img
-                        src={auction.listing.item.images[0].url}
+                        src={typeof auction.listing.item.images[0] === 'string' ? auction.listing.item.images[0] : auction.listing.item.images[0].url}
                         alt={auction.listing?.item?.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       />
