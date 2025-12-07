@@ -40,16 +40,25 @@ class GeminiService {
   private readonly MINUTE_MS = 60 * 1000;
 
   constructor() {
-    this.initialize();
+    // Delay initialization to ensure env vars are loaded
+    setTimeout(() => this.initialize(), 100);
   }
 
-  private initialize() {
+  /**
+   * Initialize or re-initialize the service
+   * Can be called manually to retry after env vars are updated
+   */
+  initialize() {
     const apiKey = process.env.GOOGLE_AI_API_KEY;
+
+    console.log('[Gemini] Attempting initialization...');
+    console.log('[Gemini] API Key present:', !!apiKey);
+    console.log('[Gemini] API Key length:', apiKey?.length || 0);
 
     if (!apiKey) {
       console.log('[Gemini] API key not configured - using fallback mode');
       this.isConfigured = false;
-      return;
+      return false;
     }
 
     try {
@@ -64,10 +73,22 @@ class GeminiService {
         },
       });
       this.isConfigured = true;
-      console.log('[Gemini] Service initialized successfully');
-    } catch (error) {
-      console.error('[Gemini] Failed to initialize:', error);
+      console.log('[Gemini] Service initialized successfully with model: gemini-1.5-flash');
+      return true;
+    } catch (error: any) {
+      console.error('[Gemini] Failed to initialize:', error.message);
       this.isConfigured = false;
+      return false;
+    }
+  }
+
+  /**
+   * Ensure initialized - call this before using the service
+   */
+  ensureInitialized() {
+    if (!this.isConfigured && process.env.GOOGLE_AI_API_KEY) {
+      console.log('[Gemini] Re-initializing...');
+      this.initialize();
     }
   }
 
@@ -90,6 +111,8 @@ class GeminiService {
    * Check if Gemini is available and configured
    */
   isAvailable(): boolean {
+    // Try to initialize if not configured but API key exists
+    this.ensureInitialized();
     return this.isConfigured && this.checkRateLimit();
   }
 
