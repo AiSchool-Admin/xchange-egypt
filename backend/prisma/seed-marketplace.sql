@@ -368,7 +368,7 @@ VALUES (
 -- ============================================
 
 -- خردة إلكترونيات
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, scrap_type, scrap_condition, scrap_pricing_type, weight_kg, price_per_kg, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, weight_kg, price_per_kg, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
     'fc397ec4-baad-442e-b870-bfa4f453405d',
@@ -382,9 +382,6 @@ VALUES (
     'New Cairo',
     'DIRECT_SALE',
     true,
-    'ELECTRONICS',
-    'NOT_WORKING',
-    'PER_KG',
     50,
     300,
     'ACTIVE',
@@ -393,7 +390,7 @@ VALUES (
 );
 
 -- سيارة تالفة
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, scrap_type, scrap_condition, is_repairable, working_parts_desc, defect_description, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, is_repairable, working_parts_desc, defect_description, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
     'fc397ec4-baad-442e-b870-bfa4f453405d',
@@ -407,8 +404,6 @@ VALUES (
     'El-Manshia',
     'DIRECT_SALE',
     true,
-    'METAL_SCRAP',
-    'PARTIALLY_WORKING',
     false,
     'الموتور، الجيربوكس، الأبواب الخلفية، المقاعد',
     'الجزء الأمامي كامل تالف من الحادث',
@@ -418,7 +413,7 @@ VALUES (
 );
 
 -- كابلات نحاس
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, scrap_type, scrap_condition, scrap_pricing_type, weight_kg, price_per_kg, metal_type, metal_purity, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, weight_kg, price_per_kg, metal_purity, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
     'fc397ec4-baad-442e-b870-bfa4f453405d',
@@ -432,12 +427,8 @@ VALUES (
     'New Cairo',
     'DIRECT_SALE',
     true,
-    'CABLES_WIRES',
-    'NOT_WORKING',
-    'PER_KG',
     100,
     350,
-    'COPPER',
     95,
     'ACTIVE',
     NOW(),
@@ -445,7 +436,7 @@ VALUES (
 );
 
 -- أجهزة منزلية تالفة
-INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, scrap_type, scrap_condition, status, created_at, updated_at)
+INSERT INTO items (id, seller_id, category_id, title, description, condition, estimated_value, images, governorate, city, listing_type, is_scrap, status, created_at, updated_at)
 VALUES (
     gen_random_uuid(),
     'fc397ec4-baad-442e-b870-bfa4f453405d',
@@ -459,8 +450,6 @@ VALUES (
     'Heliopolis',
     'DIRECT_SALE',
     true,
-    'HOME_APPLIANCES',
-    'TOTALLY_DAMAGED',
     'ACTIVE',
     NOW(),
     NOW()
