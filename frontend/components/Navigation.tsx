@@ -530,10 +530,10 @@ export default function Navigation() {
         </div>
       </nav>
 
-        {/* Mobile Menu Drawer */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 top-[120px] bg-white z-40 overflow-y-auto animate-fade-in">
-            <div className="p-4 space-y-4">
+      {/* Mobile Menu Drawer */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 top-[120px] bg-white z-40 overflow-y-auto animate-fade-in">
+          <div className="p-4 space-y-4">
               {/* Quick Actions */}
               {user && (
                 <div className="grid grid-cols-2 gap-3">
@@ -665,7 +665,6 @@ export default function Navigation() {
             </div>
           </div>
         )}
-      </nav>
 
       {/* ============================================
           Mobile Bottom Navigation Bar
