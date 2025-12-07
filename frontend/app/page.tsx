@@ -89,6 +89,7 @@ export default function HomePage() {
   const [latestItems, setLatestItems] = useState<Item[]>([]);
   const [saleItems, setSaleItems] = useState<Item[]>([]);
   const [wantedItems, setWantedItems] = useState<Item[]>([]);
+  const [barterItems, setBarterItems] = useState<Item[]>([]);
   const [activeAuctions, setActiveAuctions] = useState<any[]>([]);
   const [activeTenders, setActiveTenders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,12 +119,13 @@ export default function HomePage() {
       setLoading(true);
 
       // Load all data in parallel
-      const [categoriesRes, featuredRes, latestRes, saleRes, wantedRes, auctionsRes, tendersRes] = await Promise.all([
+      const [categoriesRes, featuredRes, latestRes, saleRes, wantedRes, barterRes, auctionsRes, tendersRes] = await Promise.all([
         getCategories().catch(() => ({ data: [] })),
         getItems({ limit: 4, featured: true, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 8, status: 'ACTIVE', sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 4, listingType: 'DIRECT_SALE', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 4, listingType: 'DIRECT_BUY', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 4, listingType: 'BARTER', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getAuctions({ limit: 4, status: 'ACTIVE' }).catch(() => ({ data: { auctions: [] } })),
         apiClient.get('/reverse-auctions?status=ACTIVE&limit=4').catch(() => ({ data: { data: [] } })),
       ]);
@@ -133,6 +135,7 @@ export default function HomePage() {
       setLatestItems(latestRes.data?.items || []);
       setSaleItems(saleRes.data?.items || []);
       setWantedItems(wantedRes.data?.items || []);
+      setBarterItems(barterRes.data?.items || []);
       // Handle different response formats safely
       const auctionsData = auctionsRes as any;
       setActiveAuctions(auctionsData.data?.auctions || auctionsData.data?.data || []);
@@ -670,6 +673,60 @@ export default function HomePage() {
               <p className="text-gray-500 mb-4">أخبرنا ماذا تبحث عنه</p>
               <Link href="/inventory/add?type=WANTED" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors">
                 أضف طلب شراء
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Barter Section (المقايضة)
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-teal-50 to-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🔄</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">للمقايضة</h2>
+                <p className="text-gray-500 mt-1">بادل منتجاتك مع الآخرين بدون نقود</p>
+              </div>
+            </div>
+            <Link
+              href="/items?listingType=BARTER"
+              className="hidden md:flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {barterItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {barterItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType="BARTER"
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  createdAt={item.createdAt}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <div className="text-6xl mb-4">🔄</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد عروض مقايضة</h3>
+              <p className="text-gray-500 mb-4">اعرض منتجك للمقايضة مع منتج آخر</p>
+              <Link href="/inventory/add?type=BARTER" className="inline-flex items-center gap-2 px-6 py-3 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-colors">
+                أضف عرض مقايضة
               </Link>
             </div>
           )}
