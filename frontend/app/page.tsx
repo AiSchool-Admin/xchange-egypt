@@ -603,7 +603,7 @@ export default function HomePage() {
                   images={item.images?.map(img => img.url) || []}
                   condition={item.condition}
                   governorate={item.governorate}
-                  listingType="SALE"
+                  listingType="DIRECT_SALE"
                   seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
                   createdAt={item.createdAt}
                 />
@@ -657,7 +657,7 @@ export default function HomePage() {
                   images={item.images?.map(img => img.url) || []}
                   condition={item.condition}
                   governorate={item.governorate}
-                  listingType="WANTED"
+                  listingType="DIRECT_BUY"
                   seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
                   createdAt={item.createdAt}
                 />
