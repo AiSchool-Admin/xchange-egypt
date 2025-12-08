@@ -61,6 +61,22 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
     </svg>
   ),
+  Cart: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  ),
+  Globe: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+    </svg>
+  ),
+  MapPin: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  ),
 };
 
 // ============================================
@@ -112,13 +128,24 @@ export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [language, setLanguage] = useState<'ar' | 'en'>('ar');
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const [locationMenuOpen, setLocationMenuOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState({
+    governorate: 'كل مصر',
+    city: '',
+    district: ''
+  });
 
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const languageMenuRef = useRef<HTMLDivElement>(null);
+  const locationMenuRef = useRef<HTMLDivElement>(null);
 
   // Fetch unread count
   useEffect(() => {
@@ -143,11 +170,17 @@ export default function Navigation() {
     return () => offMatchFound(handleMatchNotification);
   }, [onMatchFound, offMatchFound]);
 
-  // Close mega menu on outside click
+  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (megaMenuRef.current && !megaMenuRef.current.contains(event.target as Node)) {
         setMegaMenuOpen(false);
+      }
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target as Node)) {
+        setLanguageMenuOpen(false);
+      }
+      if (locationMenuRef.current && !locationMenuRef.current.contains(event.target as Node)) {
+        setLocationMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -373,7 +406,92 @@ export default function Navigation() {
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {/* Location Selector */}
+              <div className="relative hidden md:block" ref={locationMenuRef}>
+                <button
+                  onClick={() => setLocationMenuOpen(!locationMenuOpen)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  <Icons.MapPin />
+                  <span className="text-sm font-medium max-w-[100px] truncate">
+                    {selectedLocation.city || selectedLocation.governorate}
+                  </span>
+                  <Icons.ChevronDown />
+                </button>
+
+                {locationMenuOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                    <div className="p-3 bg-gray-50 border-b border-gray-100">
+                      <span className="font-bold text-gray-800">اختر موقعك</span>
+                    </div>
+                    <div className="p-2">
+                      <button
+                        onClick={() => { setSelectedLocation({ governorate: 'كل مصر', city: '', district: '' }); setLocationMenuOpen(false); }}
+                        className={`w-full text-right p-3 rounded-xl transition-colors ${selectedLocation.governorate === 'كل مصر' ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
+                      >
+                        🇪🇬 كل مصر
+                      </button>
+                      {['القاهرة', 'الإسكندرية', 'الجيزة', 'الدقهلية', 'الشرقية'].map((gov) => (
+                        <button
+                          key={gov}
+                          onClick={() => { setSelectedLocation({ governorate: gov, city: '', district: '' }); setLocationMenuOpen(false); }}
+                          className={`w-full text-right p-3 rounded-xl transition-colors ${selectedLocation.governorate === gov ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
+                        >
+                          📍 {gov}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="p-3 bg-gray-50 border-t border-gray-100">
+                      <Link href="/location" className="text-sm text-primary-600 hover:underline" onClick={() => setLocationMenuOpen(false)}>
+                        المزيد من المحافظات ←
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Language Switcher */}
+              <div className="relative" ref={languageMenuRef}>
+                <button
+                  onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
+                  className="flex items-center gap-1 px-2.5 py-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  <Icons.Globe />
+                  <span className="text-sm font-medium">{language === 'ar' ? 'ع' : 'EN'}</span>
+                </button>
+
+                {languageMenuOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-36 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                    <button
+                      onClick={() => { setLanguage('ar'); setLanguageMenuOpen(false); }}
+                      className={`w-full text-right px-4 py-3 transition-colors flex items-center gap-2 ${language === 'ar' ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
+                    >
+                      <span>🇪🇬</span> العربية
+                    </button>
+                    <button
+                      onClick={() => { setLanguage('en'); setLanguageMenuOpen(false); }}
+                      className={`w-full text-right px-4 py-3 transition-colors flex items-center gap-2 ${language === 'en' ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
+                    >
+                      <span>🇬🇧</span> English
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Shopping Cart */}
+              <Link
+                href="/cart"
+                className="relative p-2.5 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+              >
+                <Icons.Cart />
+                {cartCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-primary-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </Link>
+
               {user ? (
                 <>
                   {/* Notifications */}
