@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { getItems, Item } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
+import { getAuctions, Auction } from '@/lib/api/auctions';
+import apiClient from '@/lib/api/client';
 import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
 
 // ============================================
@@ -28,16 +30,6 @@ const CATEGORY_ICONS: Record<string, { icon: string; gradient: string }> = {
   'raw-materials': { icon: '🧱', gradient: 'from-gray-500 to-gray-600' },
   'default': { icon: '📦', gradient: 'from-gray-500 to-gray-600' },
 };
-
-// ============================================
-// Stats Data
-// ============================================
-const STATS = [
-  { value: '50K+', label: 'منتج نشط', icon: '📦' },
-  { value: '25K+', label: 'مستخدم موثوق', icon: '👥' },
-  { value: '100K+', label: 'صفقة ناجحة', icon: '✅' },
-  { value: '27', label: 'محافظة', icon: '🗺️' },
-];
 
 // ============================================
 // Features Data
@@ -79,14 +71,98 @@ const FEATURES = [
 export default function HomePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
   // State
   const [categories, setCategories] = useState<Category[]>([]);
   const [featuredItems, setFeaturedItems] = useState<Item[]>([]);
   const [latestItems, setLatestItems] = useState<Item[]>([]);
+  const [saleItems, setSaleItems] = useState<Item[]>([]);
+  const [wantedItems, setWantedItems] = useState<Item[]>([]);
   const [barterItems, setBarterItems] = useState<Item[]>([]);
+  const [scrapItems, setScrapItems] = useState<Item[]>([]);
+  const [luxuryItems, setLuxuryItems] = useState<Item[]>([]);
+  const [activeAuctions, setActiveAuctions] = useState<any[]>([]);
+  const [activeTenders, setActiveTenders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [hoveredSubcategory, setHoveredSubcategory] = useState<string | null>(null);
+  const [hoveredQuickCategory, setHoveredQuickCategory] = useState<string | null>(null);
+  const [hoveredQuickSubcategory, setHoveredQuickSubcategory] = useState<string | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Hero slides data
+  const heroSlides = [
+    {
+      id: 'main',
+      title: 'اشتري، بيع، أو بادل',
+      subtitle: 'بكل سهولة وأمان',
+      description: 'منصة XChange هي السوق الأول في مصر للتجارة الذكية والمقايضة. جديد، مستعمل، أو تالف - كل شيء له قيمة هنا.',
+      gradient: 'from-primary-600 via-primary-500 to-teal-500',
+      icon: '🔄',
+      href: '/items',
+    },
+    {
+      id: 'flash',
+      title: 'عروض فلاش',
+      subtitle: 'خصومات تصل إلى 70%',
+      description: 'اغتنم الفرصة! عروض حصرية لفترة محدودة على أفضل المنتجات. سارع قبل انتهاء العرض.',
+      gradient: 'from-red-600 via-orange-500 to-amber-500',
+      icon: '⚡',
+      badge: 'عرض محدود',
+      href: '/deals',
+    },
+    {
+      id: 'barter',
+      title: 'بادل بدون نقود',
+      subtitle: 'المقايضة الذكية',
+      description: 'لديك شيء لا تحتاجه؟ بادله بشيء تريده! نظام مقايضة ذكي يجد لك أفضل الصفقات.',
+      gradient: 'from-blue-600 via-indigo-500 to-purple-500',
+      icon: '🔁',
+      href: '/barter',
+    },
+    {
+      id: 'auction',
+      title: 'المزادات الحية',
+      subtitle: 'زايد واربح',
+      description: 'شارك في مزادات حقيقية على منتجات مميزة. اعثر على صفقات لا تُصدق!',
+      gradient: 'from-purple-600 via-purple-500 to-pink-500',
+      icon: '🔨',
+      href: '/auctions',
+    },
+  ];
+
+  // Auto-rotate slides
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 5000); // Change slide every 5 seconds
+    return () => clearInterval(interval);
+  }, [heroSlides.length]);
+
+  // Quick categories with their parent IDs for fetching subcategories
+  const quickCategories = [
+    { slug: 'electronics', parentId: 'cat-electronics', name: 'إلكترونيات', icon: '📱' },
+    { slug: 'vehicles', parentId: 'cat-vehicles', name: 'سيارات', icon: '🚗' },
+    { slug: 'furniture', parentId: 'cat-furniture', name: 'أثاث', icon: '🛋️' },
+    { slug: 'fashion', parentId: 'cat-fashion', name: 'ملابس', icon: '👕' },
+    { slug: 'home-appliances', parentId: 'cat-home-appliances', name: 'أجهزة منزلية', icon: '🏠' },
+  ];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setCategoryDropdownOpen(false);
+        setExpandedCategory(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Load data on mount
   useEffect(() => {
@@ -98,23 +174,44 @@ export default function HomePage() {
       setLoading(true);
 
       // Load all data in parallel
-      const [categoriesRes, featuredRes, latestRes, barterRes] = await Promise.all([
+      const [categoriesRes, featuredRes, latestRes, saleRes, wantedRes, barterRes, scrapRes, luxuryRes, auctionsRes, tendersRes] = await Promise.all([
         getCategories().catch(() => ({ data: [] })),
         getItems({ limit: 4, featured: true, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 8, status: 'ACTIVE', sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 4, listingType: 'DIRECT_SALE', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 4, listingType: 'DIRECT_BUY', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 4, listingType: 'BARTER', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 4, isScrap: true, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 4, categoryId: '516cbe98-eb69-4d5c-a0e1-021c3a3aa608', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+        getAuctions({ limit: 4, status: 'ACTIVE' }).catch(() => ({ data: { auctions: [] } })),
+        apiClient.get('/reverse-auctions?status=ACTIVE&limit=4').catch(() => ({ data: { data: [] } })),
       ]);
 
       setCategories(categoriesRes.data || []);
       setFeaturedItems(featuredRes.data?.items || []);
       setLatestItems(latestRes.data?.items || []);
+      setSaleItems(saleRes.data?.items || []);
+      setWantedItems(wantedRes.data?.items || []);
       setBarterItems(barterRes.data?.items || []);
+      setScrapItems(scrapRes.data?.items || []);
+      setLuxuryItems(luxuryRes.data?.items || []);
+      // Handle different response formats safely
+      const auctionsData = auctionsRes as any;
+      setActiveAuctions(auctionsData.data?.auctions || auctionsData.data?.data || []);
+      const tendersData = tendersRes as any;
+      setActiveTenders(tendersData.data?.data?.items || tendersData.data?.items || []);
     } catch (error) {
       console.error('Failed to load home data:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Get parent categories (categories without parent)
+  const parentCategories = categories.filter(c => !c.parentId);
+
+  // Get subcategories for a parent
+  const getSubcategories = (parentId: string) => categories.filter(c => c.parentId === parentId);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,31 +227,93 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* ============================================
-          Hero Section
+          Hero Section with Dynamic Slides
           ============================================ */}
-      <section className="relative bg-gradient-to-br from-primary-600 via-primary-500 to-teal-500 overflow-hidden">
+      <section className={`relative bg-gradient-to-br ${heroSlides[currentSlide].gradient} overflow-hidden transition-all duration-700`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 py-12 md:py-16">
           <div className="text-center max-w-3xl mx-auto">
-            {/* Main Heading */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              اشتري، بيع، أو بادل
-              <span className="block text-primary-100">بكل سهولة وأمان</span>
-            </h1>
+            {/* Dynamic Content with Animation */}
+            <div className="relative min-h-[160px] md:min-h-[180px] overflow-hidden pb-8">
+              {heroSlides.map((slide, index) => (
+                <Link
+                  key={slide.id}
+                  href={slide.href}
+                  className={`absolute inset-0 transition-all duration-700 ease-in-out cursor-pointer block ${
+                    index === currentSlide
+                      ? 'opacity-100 translate-x-0'
+                      : index < currentSlide
+                        ? 'opacity-0 -translate-x-full pointer-events-none'
+                        : 'opacity-0 translate-x-full pointer-events-none'
+                  }`}
+                >
+                  {/* Badge for special slides */}
+                  {slide.badge && (
+                    <div className="mb-2">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-bold animate-pulse">
+                        <span>{slide.icon}</span>
+                        {slide.badge}
+                      </span>
+                    </div>
+                  )}
 
-            {/* Subtitle */}
-            <p className="text-lg md:text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-              منصة XChange هي السوق الأول في مصر للتجارة الذكية والمقايضة.
-              جديد، مستعمل، أو تالف - كل شيء له قيمة هنا.
-            </p>
+                  {/* Main Heading */}
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 leading-tight hover:scale-105 transition-transform">
+                    <span className="inline-block">{slide.icon}</span> {slide.title}
+                    <span className="block text-white/90 text-xl md:text-2xl lg:text-3xl mt-1">{slide.subtitle}</span>
+                  </h1>
 
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
+                  {/* Subtitle */}
+                  <p className="text-sm md:text-base text-white/80 max-w-2xl mx-auto">
+                    {slide.description}
+                  </p>
+                </Link>
+              ))}
+
+              {/* Navigation Arrows - Clear Direction */}
+              <button
+                onClick={(e) => { e.preventDefault(); setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length); }}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 p-2 text-white hover:text-white/80 transition-all z-10 group"
+                aria-label="السابق"
+              >
+                <svg className="w-8 h-8 md:w-10 md:h-10 drop-shadow-lg group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                </svg>
+              </button>
+              <button
+                onClick={(e) => { e.preventDefault(); setCurrentSlide((prev) => (prev + 1) % heroSlides.length); }}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 p-2 text-white hover:text-white/80 transition-all z-10 group"
+                aria-label="التالي"
+              >
+                <svg className="w-8 h-8 md:w-10 md:h-10 drop-shadow-lg group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
+                </svg>
+              </button>
+
+              {/* Slide Indicators - Inside slide area at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-3 pb-2 z-10">
+                {heroSlides.map((slide, index) => (
+                  <button
+                    key={slide.id}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrentSlide(index); }}
+                    className={`transition-all duration-300 rounded-full ${
+                      index === currentSlide
+                        ? 'w-10 h-3 bg-white shadow-lg'
+                        : 'w-3 h-3 bg-white/40 hover:bg-white/60'
+                    }`}
+                    aria-label={`انتقل إلى ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Search Bar - Fixed/Static */}
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-6">
               <div className="flex bg-white rounded-2xl shadow-xl overflow-hidden">
                 <input
                   type="text"
@@ -175,22 +334,81 @@ export default function HomePage() {
               </div>
             </form>
 
-            {/* Quick Actions */}
+            {/* Quick Actions - Context Aware */}
             <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                href={user ? '/inventory/add' : '/register'}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-600 rounded-xl font-semibold hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl"
-              >
-                <span>➕</span>
-                أضف إعلان مجاني
-              </Link>
-              <Link
-                href="/sell-ai"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
-              >
-                <span>✨</span>
-                بيع بالذكاء الصناعي
-              </Link>
+              {currentSlide === 1 ? (
+                // Flash deals slide - show deals link
+                <>
+                  <Link
+                    href="/deals"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-red-600 rounded-xl font-semibold hover:bg-red-50 transition-all shadow-lg hover:shadow-xl animate-pulse"
+                  >
+                    <span>⚡</span>
+                    تصفح العروض الآن
+                  </Link>
+                  <Link
+                    href="/items"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
+                  >
+                    <span>🛒</span>
+                    تصفح المنتجات
+                  </Link>
+                </>
+              ) : currentSlide === 2 ? (
+                // Barter slide
+                <>
+                  <Link
+                    href="/barter"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl"
+                  >
+                    <span>🔁</span>
+                    ابدأ المقايضة
+                  </Link>
+                  <Link
+                    href={user ? '/inventory/add' : '/register'}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
+                  >
+                    <span>➕</span>
+                    أضف منتج للمقايضة
+                  </Link>
+                </>
+              ) : currentSlide === 3 ? (
+                // Auctions slide
+                <>
+                  <Link
+                    href="/auctions"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl"
+                  >
+                    <span>🔨</span>
+                    شارك في المزادات
+                  </Link>
+                  <Link
+                    href="/auctions/create"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
+                  >
+                    <span>➕</span>
+                    أنشئ مزادك
+                  </Link>
+                </>
+              ) : (
+                // Default main slide
+                <>
+                  <Link
+                    href={user ? '/inventory/add' : '/register'}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-600 rounded-xl font-semibold hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl"
+                  >
+                    <span>➕</span>
+                    أضف إعلان مجاني
+                  </Link>
+                  <Link
+                    href="/sell-ai"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
+                  >
+                    <span>✨</span>
+                    بيع بالذكاء الصناعي
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Trust Badges */}
@@ -226,71 +444,258 @@ export default function HomePage() {
       </section>
 
       {/* ============================================
-          Stats Section
+          Categories Mega Menu Section
           ============================================ */}
-      <section className="relative -mt-8 z-10">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
-            {STATS.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl mb-2">{stat.icon}</div>
-                <div className="text-2xl md:text-3xl font-bold text-gray-900">{stat.value}</div>
-                <div className="text-sm text-gray-500">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================
-          Categories Section
-          ============================================ */}
-      <section className="py-12 md:py-16">
+      <section className="py-6 bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">تصفح الفئات</h2>
-              <p className="text-gray-500 mt-1">اكتشف آلاف المنتجات في كل فئة</p>
-            </div>
-            <Link
-              href="/items"
-              className="hidden md:flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
+          <div className="flex items-center gap-6">
+            {/* Categories Mega Menu */}
+            <div
+              className="relative"
+              ref={categoryDropdownRef}
+              onMouseLeave={() => {
+                setCategoryDropdownOpen(false);
+                setHoveredCategory(null);
+                setHoveredSubcategory(null);
+              }}
             >
-              عرض الكل
-              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
+              <button
+                onMouseEnter={() => setCategoryDropdownOpen(true)}
+                className="flex items-center gap-2 px-5 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-all shadow-lg"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                <span>كل الفئات</span>
+                <svg className={`w-4 h-4 transition-transform ${categoryDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
 
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-4">
-            {loading ? (
-              // Skeleton loading
-              Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="text-center">
-                  <div className="w-16 h-16 mx-auto bg-gray-200 rounded-2xl animate-shimmer mb-2" />
-                  <div className="h-3 bg-gray-200 rounded w-16 mx-auto animate-shimmer" />
-                </div>
-              ))
-            ) : (
-              categories.slice(0, 8).map((category) => {
-                const { icon, gradient } = getCategoryIcon(category.slug);
-                return (
-                  <Link
-                    key={category.id}
-                    href={`/items?category=${category.slug}`}
-                    className="text-center group"
-                  >
-                    <div className={`w-16 h-16 mx-auto bg-gradient-to-br ${gradient} rounded-2xl flex items-center justify-center text-2xl shadow-lg group-hover:shadow-xl group-hover:scale-105 transition-all duration-300 mb-2`}>
-                      {icon}
+              {/* Mega Menu */}
+              {categoryDropdownOpen && (
+                <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 flex">
+                  {/* Main Categories Column */}
+                  <div className="w-64 bg-gray-50 border-l border-gray-100">
+                    <div className="p-3 border-b border-gray-100 bg-white">
+                      <span className="font-bold text-gray-800">الفئات الرئيسية</span>
                     </div>
-                    <span className="text-sm font-medium text-gray-700 group-hover:text-primary-600 transition-colors">
-                      {category.nameAr}
-                    </span>
-                  </Link>
+                    <div className="max-h-[60vh] overflow-y-auto">
+                      {parentCategories.map((category) => {
+                        const { icon, gradient } = getCategoryIcon(category.slug);
+                        const subcategories = getSubcategories(category.id);
+                        const isHovered = hoveredCategory === category.id;
+
+                        return (
+                          <div
+                            key={category.id}
+                            className={`flex items-center justify-between p-3 cursor-pointer transition-colors ${isHovered ? 'bg-primary-50 border-r-4 border-primary-500' : 'hover:bg-gray-100'}`}
+                            onMouseEnter={() => {
+                              setHoveredCategory(category.id);
+                              setHoveredSubcategory(null);
+                            }}
+                          >
+                            <Link
+                              href={`/items?category=${category.slug}`}
+                              className="flex items-center gap-3 flex-1"
+                              onClick={() => setCategoryDropdownOpen(false)}
+                            >
+                              <div className={`w-9 h-9 bg-gradient-to-br ${gradient} rounded-lg flex items-center justify-center text-base`}>
+                                {icon}
+                              </div>
+                              <span className={`font-medium ${isHovered ? 'text-primary-600' : 'text-gray-700'}`}>{category.nameAr}</span>
+                            </Link>
+                            {subcategories.length > 0 && (
+                              <svg className={`w-4 h-4 ${isHovered ? 'text-primary-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                              </svg>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Subcategories Column */}
+                  {hoveredCategory && getSubcategories(hoveredCategory).length > 0 && (
+                    <div className="w-56 border-l border-gray-100">
+                      <div className="p-3 border-b border-gray-100 bg-primary-50">
+                        <span className="font-bold text-primary-700">الفئات الفرعية</span>
+                      </div>
+                      <div className="max-h-[60vh] overflow-y-auto">
+                        <Link
+                          href={`/items?category=${parentCategories.find(c => c.id === hoveredCategory)?.slug}`}
+                          className="block p-3 text-sm text-primary-600 font-medium hover:bg-primary-50 transition-colors border-b border-gray-50"
+                          onClick={() => setCategoryDropdownOpen(false)}
+                        >
+                          عرض الكل ←
+                        </Link>
+                        {getSubcategories(hoveredCategory).map((sub) => {
+                          const subSubcategories = getSubcategories(sub.id);
+                          const isSubHovered = hoveredSubcategory === sub.id;
+
+                          return (
+                            <div
+                              key={sub.id}
+                              className={`flex items-center justify-between p-3 cursor-pointer transition-colors ${isSubHovered ? 'bg-primary-50' : 'hover:bg-gray-50'}`}
+                              onMouseEnter={() => setHoveredSubcategory(sub.id)}
+                            >
+                              <Link
+                                href={`/items?category=${sub.slug}`}
+                                className={`flex-1 text-sm ${isSubHovered ? 'text-primary-600 font-medium' : 'text-gray-600'}`}
+                                onClick={() => setCategoryDropdownOpen(false)}
+                              >
+                                {sub.nameAr}
+                              </Link>
+                              {subSubcategories.length > 0 && (
+                                <svg className={`w-3 h-3 ${isSubHovered ? 'text-primary-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sub-subcategories Column */}
+                  {hoveredSubcategory && getSubcategories(hoveredSubcategory).length > 0 && (
+                    <div className="w-52 border-l border-gray-100">
+                      <div className="p-3 border-b border-gray-100 bg-gray-50">
+                        <span className="font-bold text-gray-700">تفاصيل أكثر</span>
+                      </div>
+                      <div className="max-h-[60vh] overflow-y-auto">
+                        {getSubcategories(hoveredSubcategory).map((subSub) => (
+                          <Link
+                            key={subSub.id}
+                            href={`/items?category=${subSub.slug}`}
+                            className="block p-3 text-sm text-gray-600 hover:text-primary-600 hover:bg-gray-50 transition-colors"
+                            onClick={() => setCategoryDropdownOpen(false)}
+                          >
+                            {subSub.nameAr}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Important Categories Quick Links with Hover Mega Menu */}
+            <div className="hidden md:flex items-center gap-2 flex-1">
+              {quickCategories.map((cat) => {
+                const subcats = getSubcategories(cat.parentId);
+                const isHovered = hoveredQuickCategory === cat.parentId;
+
+                return (
+                  <div
+                    key={cat.slug}
+                    className="relative"
+                    onMouseEnter={() => setHoveredQuickCategory(cat.parentId)}
+                    onMouseLeave={() => setHoveredQuickCategory(null)}
+                  >
+                    <Link
+                      href={`/items?category=${cat.slug}`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm ${
+                        isHovered ? 'bg-primary-50 text-primary-600' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span>{cat.icon}</span>
+                      <span>{cat.name}</span>
+                      {subcats.length > 0 && (
+                        <svg className={`w-3 h-3 transition-transform ${isHovered ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
+                    </Link>
+
+                    {/* Horizontal Mega Menu */}
+                    {isHovered && subcats.length > 0 && (
+                      <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 min-w-[500px]">
+                        {/* Header */}
+                        <div className="p-3 bg-gradient-to-l from-primary-50 to-white border-b border-gray-100 flex items-center justify-between">
+                          <Link
+                            href={`/items?category=${cat.slug}`}
+                            className="text-sm font-bold text-primary-700 hover:underline flex items-center gap-2"
+                          >
+                            <span>{cat.icon}</span>
+                            تصفح كل {cat.name}
+                          </Link>
+                          <span className="text-xs text-gray-400">{subcats.length} فئة فرعية</span>
+                        </div>
+
+                        {/* Subcategories in Horizontal Grid */}
+                        <div className="p-4">
+                          <div className="flex gap-8">
+                            {subcats.slice(0, 4).map((sub) => {
+                              const subSubcats = getSubcategories(sub.id);
+
+                              return (
+                                <div key={sub.id} className="min-w-[120px]">
+                                  {/* Subcategory Title */}
+                                  <Link
+                                    href={`/items?category=${sub.slug}`}
+                                    className="block font-bold text-gray-800 hover:text-primary-600 transition-colors text-sm border-b-2 border-primary-200 pb-2 mb-2"
+                                  >
+                                    {sub.nameAr}
+                                  </Link>
+
+                                  {/* Sub-subcategories */}
+                                  <div className="space-y-1.5">
+                                    {subSubcats.length > 0 ? (
+                                      <>
+                                        {subSubcats.slice(0, 5).map((subSub) => (
+                                          <Link
+                                            key={subSub.id}
+                                            href={`/items?category=${subSub.slug}`}
+                                            className="block text-xs text-gray-500 hover:text-primary-600 hover:pr-1 transition-all"
+                                          >
+                                            {subSub.nameAr}
+                                          </Link>
+                                        ))}
+                                        {subSubcats.length > 5 && (
+                                          <Link
+                                            href={`/items?category=${sub.slug}`}
+                                            className="block text-xs text-primary-500 font-medium hover:text-primary-700"
+                                          >
+                                            + {subSubcats.length - 5} المزيد
+                                          </Link>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <Link
+                                        href={`/items?category=${sub.slug}`}
+                                        className="block text-xs text-primary-500 hover:text-primary-700"
+                                      >
+                                        عرض المنتجات ←
+                                      </Link>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* More categories link */}
+                          {subcats.length > 4 && (
+                            <div className="mt-4 pt-3 border-t border-gray-100">
+                              <Link
+                                href={`/items?category=${cat.slug}`}
+                                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                              >
+                                عرض كل الفئات ({subcats.length}) ←
+                              </Link>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
-              })
-            )}
+              })}
+            </div>
           </div>
         </div>
       </section>
@@ -327,7 +732,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
@@ -343,9 +748,417 @@ export default function HomePage() {
       )}
 
       {/* ============================================
-          Features Section
+          Current Auctions Section
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-purple-50/50 to-transparent">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🔨</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">المزادات الحالية</h2>
+                <p className="text-gray-500 mt-1">شارك في المزادات واحصل على أفضل الصفقات</p>
+              </div>
+            </div>
+            <Link
+              href="/auctions"
+              className="hidden md:flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {activeAuctions.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {activeAuctions.map((auction: any) => (
+                <Link
+                  key={auction.id}
+                  href={`/auctions/${auction.id}`}
+                  className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden group"
+                >
+                  <div className="relative h-48">
+                    {auction.listing?.item?.images?.[0] ? (
+                      <img
+                        src={typeof auction.listing.item.images[0] === 'string' ? auction.listing.item.images[0] : auction.listing.item.images[0].url}
+                        alt={auction.listing?.item?.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-purple-100 flex items-center justify-center text-4xl">🔨</div>
+                    )}
+                    <div className="absolute top-2 right-2 bg-purple-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                      مزاد نشط
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold text-gray-900 line-clamp-1 mb-2">{auction.listing?.item?.title || 'مزاد'}</h3>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="text-xs text-gray-500">السعر الحالي</div>
+                        <div className="text-lg font-bold text-purple-600">{(auction.currentPrice || 0).toLocaleString()} ج.م</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs text-gray-500">عدد المزايدات</div>
+                        <div className="font-bold text-gray-700">{auction.bidCount || 0}</div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <div className="text-6xl mb-4">🔨</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد مزادات حالية</h3>
+              <p className="text-gray-500 mb-4">تحقق لاحقاً للعثور على مزادات جديدة</p>
+              <Link href="/auctions" className="inline-flex items-center gap-2 px-6 py-3 bg-purple-500 text-white rounded-xl font-semibold hover:bg-purple-600 transition-colors">
+                استعرض المزادات
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Current Tenders Section (Reverse Auctions)
           ============================================ */}
       <section className="py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">📋</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">المناقصات الحالية</h2>
+                <p className="text-gray-500 mt-1">طلبات شراء تبحث عن أفضل عرض</p>
+              </div>
+            </div>
+            <Link
+              href="/reverse-auctions"
+              className="hidden md:flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {activeTenders.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {activeTenders.map((tender: any) => (
+                <Link
+                  key={tender.id}
+                  href={`/reverse-auctions/${tender.id}`}
+                  className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden p-5 border-2 border-transparent hover:border-blue-200"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">مناقصة نشطة</span>
+                    <span className="text-sm text-gray-500">{tender.bidsCount || 0} عرض</span>
+                  </div>
+                  <h3 className="font-bold text-gray-900 line-clamp-2 mb-3">{tender.title}</h3>
+                  <p className="text-sm text-gray-500 line-clamp-2 mb-4">{tender.description}</p>
+                  <div className="flex justify-between items-center pt-3 border-t">
+                    <div>
+                      <div className="text-xs text-gray-500">الميزانية</div>
+                      <div className="font-bold text-blue-600">{(tender.maxBudget || 0).toLocaleString()} ج.م</div>
+                    </div>
+                    <button className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors">
+                      قدم عرضك
+                    </button>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <div className="text-6xl mb-4">📋</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد مناقصات حالية</h3>
+              <p className="text-gray-500 mb-4">أنشئ طلب شراء ودع البائعين يتنافسون</p>
+              <Link href="/reverse-auctions" className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:bg-blue-600 transition-colors">
+                إنشاء طلب شراء
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Sales Section (للبيع)
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-green-50/50 to-transparent">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">💰</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">إعلانات للبيع</h2>
+                <p className="text-gray-500 mt-1">منتجات معروضة للبيع المباشر</p>
+              </div>
+            </div>
+            <Link
+              href="/items?listingType=SALE"
+              className="hidden md:flex items-center gap-2 text-green-600 hover:text-green-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {saleItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {saleItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType="DIRECT_SALE"
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  createdAt={item.createdAt}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <div className="text-6xl mb-4">💰</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد منتجات للبيع</h3>
+              <p className="text-gray-500 mb-4">كن أول من يبيع على المنصة</p>
+              <Link href="/inventory/add" className="inline-flex items-center gap-2 px-6 py-3 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 transition-colors">
+                أضف إعلان للبيع
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Wanted Section (مطلوب للشراء)
+          ============================================ */}
+      <section className="py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🔍</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">مطلوب للشراء</h2>
+                <p className="text-gray-500 mt-1">أشخاص يبحثون عن منتجات معينة</p>
+              </div>
+            </div>
+            <Link
+              href="/items?listingType=WANTED"
+              className="hidden md:flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {wantedItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {wantedItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType="DIRECT_BUY"
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  createdAt={item.createdAt}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <div className="text-6xl mb-4">🔍</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد طلبات شراء</h3>
+              <p className="text-gray-500 mb-4">أخبرنا ماذا تبحث عنه</p>
+              <Link href="/inventory/add?type=WANTED" className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors">
+                أضف طلب شراء
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Barter Section (المقايضة)
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-teal-50 to-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🔄</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">للمقايضة</h2>
+                <p className="text-gray-500 mt-1">بادل منتجاتك مع الآخرين بدون نقود</p>
+              </div>
+            </div>
+            <Link
+              href="/items?listingType=BARTER"
+              className="hidden md:flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {barterItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {barterItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType="BARTER"
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  createdAt={item.createdAt}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <div className="text-6xl mb-4">🔄</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد عروض مقايضة</h3>
+              <p className="text-gray-500 mb-4">اعرض منتجك للمقايضة مع منتج آخر</p>
+              <Link href="/inventory/add?type=BARTER" className="inline-flex items-center gap-2 px-6 py-3 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition-colors">
+                أضف عرض مقايضة
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Scrap Section (سوق التوالف)
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-amber-50 to-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">♻️</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">سوق التوالف</h2>
+                <p className="text-gray-500 mt-1">خردة ومواد قابلة لإعادة التدوير</p>
+              </div>
+            </div>
+            <Link
+              href="/scrap"
+              className="hidden md:flex items-center gap-2 text-amber-600 hover:text-amber-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {scrapItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {scrapItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType={item.listingType as any}
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  createdAt={item.createdAt}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <div className="text-6xl mb-4">♻️</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد توالف حالياً</h3>
+              <p className="text-gray-500 mb-4">اعرض المواد القابلة لإعادة التدوير</p>
+              <Link href="/inventory/add?isScrap=true" className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition-colors">
+                أضف منتج للتوالف
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Luxury Section (السلع الفاخرة)
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-purple-50 to-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">💎</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">السلع الفاخرة</h2>
+                <p className="text-gray-500 mt-1">ساعات وحقائب ومجوهرات أصلية</p>
+              </div>
+            </div>
+            <Link
+              href="/items?categoryId=516cbe98-eb69-4d5c-a0e1-021c3a3aa608"
+              className="hidden md:flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {luxuryItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {luxuryItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType={item.listingType as any}
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  createdAt={item.createdAt}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <div className="text-6xl mb-4">💎</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد سلع فاخرة حالياً</h3>
+              <p className="text-gray-500 mb-4">اعرض ساعاتك وحقائبك ومجوهراتك الأصلية</p>
+              <Link href="/inventory/add?categoryId=516cbe98-eb69-4d5c-a0e1-021c3a3aa608" className="inline-flex items-center gap-2 px-6 py-3 bg-purple-500 text-white rounded-xl font-semibold hover:bg-purple-600 transition-colors">
+                أضف منتج فاخر
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Features Section
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gray-100/50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-900">ميزات ذكية لتجربة أفضل</h2>
@@ -412,7 +1225,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
@@ -438,71 +1251,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============================================
-          Barter Section
-          ============================================ */}
-      {barterItems.length > 0 && (
-        <section className="py-12 md:py-16">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl p-8 md:p-12 relative overflow-hidden">
-              {/* Background Pattern */}
-              <div className="absolute inset-0 opacity-10">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full blur-3xl" />
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl" />
-              </div>
-
-              <div className="relative">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-3">
-                    <span className="text-4xl">🔄</span>
-                    <div>
-                      <h2 className="text-2xl md:text-3xl font-bold text-white">المقايضة الذكية</h2>
-                      <p className="text-blue-100 mt-1">بادل ما لديك بما تريد</p>
-                    </div>
-                  </div>
-                  <Link
-                    href="/barter"
-                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-white font-medium hover:bg-white/30 transition-colors"
-                  >
-                    اكتشف المزيد
-                    <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {barterItems.map((item) => (
-                    <ItemCard
-                      key={item.id}
-                      id={item.id}
-                      title={item.title}
-                      price={item.estimatedValue || 0}
-                      images={item.images?.map(img => img.url) || []}
-                      condition={item.condition}
-                      governorate={item.governorate}
-                      listingType="BARTER"
-                      variant="compact"
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-8 flex justify-center md:hidden">
-                  <Link
-                    href="/barter"
-                    className="flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-colors"
-                  >
-                    اكتشف المزيد
-                    <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* ============================================
           Markets Section

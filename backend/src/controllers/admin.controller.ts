@@ -178,6 +178,139 @@ export const populateGovernorates = async (
 };
 
 /**
+ * Seed test bids for a reverse auction
+ * POST /api/v1/admin/seed-reverse-auction-bids
+ */
+export const seedReverseAuctionBids = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    console.log('[Admin] Seeding reverse auction bids...');
+
+    // Find the active reverse auction
+    const auction = await prisma.reverseAuction.findFirst({
+      where: { status: 'ACTIVE' },
+      include: { buyer: true }
+    });
+
+    if (!auction) {
+      return successResponse(res, { error: 'No active reverse auction found' }, 'No auction to seed');
+    }
+
+    console.log(`[Admin] Found auction: ${auction.title} (buyer: ${auction.buyer.fullName})`);
+
+    // Find sellers (users who are not the buyer)
+    const sellers = await prisma.user.findMany({
+      where: {
+        id: { not: auction.buyerId }
+      },
+      take: 3
+    });
+
+    if (sellers.length === 0) {
+      return successResponse(res, { error: 'No sellers available' }, 'No sellers to create bids');
+    }
+
+    // Create bids from different sellers
+    const maxBudget = auction.maxBudget || 5000;
+    const bidAmounts = [
+      Math.round(maxBudget * 0.9),  // 90% of budget
+      Math.round(maxBudget * 0.84), // 84% of budget
+      Math.round(maxBudget * 0.76), // 76% of budget (lowest)
+    ];
+    const conditions: Array<'GOOD' | 'LIKE_NEW' | 'NEW'> = ['GOOD', 'LIKE_NEW', 'NEW'];
+    const createdBids: any[] = [];
+
+    for (let i = 0; i < Math.min(sellers.length, 3); i++) {
+      const seller = sellers[i];
+      const bidAmount = bidAmounts[i];
+
+      // Check if this seller already has a bid
+      const existingBid = await prisma.reverseAuctionBid.findFirst({
+        where: {
+          reverseAuctionId: auction.id,
+          sellerId: seller.id
+        }
+      });
+
+      if (existingBid) {
+        console.log(`[Admin] Seller ${seller.fullName} already has a bid`);
+        continue;
+      }
+
+      // Determine status based on bid amount (lowest is WINNING)
+      const isLowest = i === Math.min(sellers.length, 3) - 1;
+
+      const bid = await prisma.reverseAuctionBid.create({
+        data: {
+          reverseAuctionId: auction.id,
+          sellerId: seller.id,
+          bidAmount: bidAmount,
+          itemCondition: conditions[i],
+          itemDescription: `عرض من ${seller.fullName} - ${auction.title} بحالة ${conditions[i] === 'NEW' ? 'جديدة' : conditions[i] === 'LIKE_NEW' ? 'شبه جديدة' : 'جيدة'}`,
+          deliveryOption: 'DELIVERY',
+          deliveryDays: 3 + i,
+          deliveryCost: 50 + (i * 25),
+          status: isLowest ? 'WINNING' : 'OUTBID',
+          notes: `عرض تنافسي - التسليم خلال ${3 + i} أيام`
+        },
+        include: {
+          seller: {
+            select: { id: true, fullName: true }
+          }
+        }
+      });
+
+      createdBids.push({
+        id: bid.id,
+        seller: bid.seller.fullName,
+        amount: bidAmount,
+        status: bid.status
+      });
+
+      console.log(`[Admin] Created bid from ${seller.fullName}: ${bidAmount} EGP (${bid.status})`);
+    }
+
+    // Update auction stats
+    const activeBids = await prisma.reverseAuctionBid.findMany({
+      where: {
+        reverseAuctionId: auction.id,
+        status: { notIn: ['WITHDRAWN'] }
+      }
+    });
+
+    const lowestBid = Math.min(...activeBids.map(b => b.bidAmount));
+    const uniqueSellers = new Set(activeBids.map(b => b.sellerId)).size;
+
+    await prisma.reverseAuction.update({
+      where: { id: auction.id },
+      data: {
+        totalBids: activeBids.length,
+        uniqueBidders: uniqueSellers,
+        lowestBid: lowestBid
+      }
+    });
+
+    console.log(`[Admin] Auction updated: ${activeBids.length} bids, lowest: ${lowestBid} EGP`);
+
+    return successResponse(res, {
+      auction: {
+        id: auction.id,
+        title: auction.title,
+        totalBids: activeBids.length,
+        lowestBid
+      },
+      bidsCreated: createdBids
+    }, 'Test bids created successfully');
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Run retroactive matching for all existing items
  * POST /api/v1/admin/retroactive-matching
  */

@@ -1507,6 +1507,11 @@ enum NotificationType {
   BARTER_OFFER_EXPIRED         // Offer expired
   BARTER_MATCH                 // Automatic match found
 
+  // Matching notifications
+  PURCHASE_REQUEST_MATCH       // Buyer looking for your item
+  SALE_TO_DEMAND               // Your item matches a demand
+  DEMAND_TO_SUPPLY             // Supply matches your demand
+
   // Item notifications
   ITEM_SOLD                    // Your item sold
   ITEM_PRICE_DROP              // Wishlist item price dropped
@@ -1516,6 +1521,16 @@ enum NotificationType {
   TRANSACTION_PAYMENT_RECEIVED // Payment received
   TRANSACTION_SHIPPED          // Item shipped
   TRANSACTION_DELIVERED        // Item delivered
+
+  // Order notifications
+  ORDER_RECEIVED               // New order received (for seller)
+  ORDER_CONFIRMED              // Order confirmed (for buyer)
+  ORDER_SHIPPED                // Order shipped (for buyer)
+  ORDER_DELIVERED              // Order delivered
+  ORDER_COMPLETED              // Order completed successfully
+  ORDER_CANCELLED              // Order cancelled
+  PAYMENT_RECEIVED             // Payment received by seller
+  PAYMENT_CONFIRMED            // Payment confirmed for buyer
 
   // User notifications
   USER_WELCOME                 // Welcome email

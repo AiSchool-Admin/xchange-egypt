@@ -304,6 +304,15 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
     throw new AppError('Auction not found', 404);
   }
 
+  // Validate listing and item exist (data integrity check)
+  if (!auction.listing) {
+    throw new AppError('Auction listing not found - data integrity issue', 500);
+  }
+
+  if (!auction.listing.item) {
+    throw new AppError('Auction item not found - data integrity issue', 500);
+  }
+
   // 2. Validate auction status and timing
   if (auction.status !== AuctionStatus.ACTIVE) {
     throw new AppError('Auction is not active', 400);
@@ -361,7 +370,9 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
   }
 
   // 5. Create bid in a transaction
-  const result = await prisma.$transaction(async (tx) => {
+  let result;
+  try {
+    result = await prisma.$transaction(async (tx) => {
     // Mark previous bids as OUTBID
     await tx.auctionBid.updateMany({
       where: {
@@ -428,7 +439,19 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
     }
 
     return newBid;
-  });
+    });
+  } catch (dbError: any) {
+    console.error('Database error during bid placement:', {
+      auctionId,
+      userId,
+      bidAmount: actualBidAmount,
+      listingId: auction.listingId,
+      error: dbError.message,
+      code: dbError.code,
+      meta: dbError.meta,
+    });
+    throw new AppError(`فشل في تسجيل المزايدة: ${dbError.message}`, 500);
+  }
 
   // Get auction details for notifications
   const auctionDetails = await prisma.auction.findUnique({
@@ -446,7 +469,7 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
     },
   });
 
-  if (auctionDetails) {
+  if (auctionDetails?.listing?.item) {
     const itemTitle = auctionDetails.listing.item.title;
     const sellerId = auctionDetails.listing.item.sellerId;
 

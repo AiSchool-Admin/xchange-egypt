@@ -85,6 +85,10 @@ interface SearchItemsParams {
   minPrice?: number;
   maxPrice?: number;
   status?: string;
+  // Listing type filter
+  listingType?: string;
+  // Scrap filter
+  isScrap?: boolean;
   // Featured/promotion filters
   isFeatured?: boolean;
   promotionTier?: PromotionTier;
@@ -406,6 +410,8 @@ export const searchItems = async (
     minPrice,
     maxPrice,
     status,
+    listingType,
+    isScrap,
     isFeatured,
     promotionTier,
     page = 1,
@@ -517,6 +523,16 @@ export const searchItems = async (
   // Status filtering
   if (status) {
     where.status = status;
+  }
+
+  // Listing type filtering
+  if (listingType) {
+    where.listingType = listingType;
+  }
+
+  // Scrap items filtering
+  if (isScrap !== undefined) {
+    where.isScrap = isScrap;
   }
 
   // Featured filtering

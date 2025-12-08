@@ -1,8 +1,33 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { aiAssistantController } from '../controllers/ai-assistant.controller';
 import { authenticate } from '../middleware/auth';
+import { geminiService } from '../services/gemini.service';
 
 const router = Router();
+
+// Gemini status check (no auth required for debugging)
+router.get('/gemini-status', (_req: Request, res: Response) => {
+  const stats = geminiService.getUsageStats();
+  res.json({
+    success: true,
+    data: {
+      ...stats,
+      apiKeyConfigured: !!process.env.GOOGLE_AI_API_KEY,
+      apiKeyPrefix: process.env.GOOGLE_AI_API_KEY?.substring(0, 10) + '...',
+    },
+  });
+});
+
+// Force re-initialize Gemini
+router.post('/gemini-reinit', (_req: Request, res: Response) => {
+  const result = geminiService.initialize();
+  const stats = geminiService.getUsageStats();
+  res.json({
+    success: result,
+    message: result ? 'Gemini re-initialized successfully' : 'Failed to initialize Gemini',
+    data: stats,
+  });
+});
 
 // All routes require authentication
 router.use(authenticate);

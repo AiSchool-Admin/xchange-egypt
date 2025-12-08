@@ -40,4 +40,18 @@ router.post(
   adminController.runRetroactiveMatching
 );
 
+/**
+ * Seed test bids for reverse auctions
+ * POST /api/v1/admin/seed-reverse-auction-bids
+ *
+ * Creates 3 test bids from different sellers for the active reverse auction.
+ * Useful for testing the award functionality.
+ *
+ * Note: No auth required for testing convenience
+ */
+router.post(
+  '/seed-reverse-auction-bids',
+  adminController.seedReverseAuctionBids
+);
+
 export default router;

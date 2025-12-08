@@ -10,6 +10,7 @@ export interface BarterItem {
   category: {
     id: string;
     nameEn: string;
+    nameAr?: string;
   };
   seller: {
     id: string;
