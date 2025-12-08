@@ -449,14 +449,8 @@ export default function HomePage() {
                   <div
                     key={cat.slug}
                     className="relative"
-                    onMouseEnter={() => {
-                      setHoveredQuickCategory(cat.parentId);
-                      setHoveredQuickSubcategory(null);
-                    }}
-                    onMouseLeave={() => {
-                      setHoveredQuickCategory(null);
-                      setHoveredQuickSubcategory(null);
-                    }}
+                    onMouseEnter={() => setHoveredQuickCategory(cat.parentId)}
+                    onMouseLeave={() => setHoveredQuickCategory(null)}
                   >
                     <Link
                       href={`/items?category=${cat.slug}`}
@@ -473,65 +467,85 @@ export default function HomePage() {
                       )}
                     </Link>
 
-                    {/* Hover Dropdown */}
+                    {/* Horizontal Mega Menu */}
                     {isHovered && subcats.length > 0 && (
-                      <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 flex">
-                        {/* Subcategories */}
-                        <div className="w-48 border-l border-gray-100">
-                          <div className="p-2 bg-primary-50 border-b border-gray-100">
-                            <Link
-                              href={`/items?category=${cat.slug}`}
-                              className="text-sm font-bold text-primary-700 hover:underline"
-                            >
-                              كل {cat.name} ←
-                            </Link>
-                          </div>
-                          <div className="max-h-[300px] overflow-y-auto">
-                            {subcats.map((sub) => {
+                      <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 min-w-[500px]">
+                        {/* Header */}
+                        <div className="p-3 bg-gradient-to-l from-primary-50 to-white border-b border-gray-100 flex items-center justify-between">
+                          <Link
+                            href={`/items?category=${cat.slug}`}
+                            className="text-sm font-bold text-primary-700 hover:underline flex items-center gap-2"
+                          >
+                            <span>{cat.icon}</span>
+                            تصفح كل {cat.name}
+                          </Link>
+                          <span className="text-xs text-gray-400">{subcats.length} فئة فرعية</span>
+                        </div>
+
+                        {/* Subcategories in Horizontal Grid */}
+                        <div className="p-4">
+                          <div className="flex gap-8">
+                            {subcats.slice(0, 4).map((sub) => {
                               const subSubcats = getSubcategories(sub.id);
-                              const isSubHovered = hoveredQuickSubcategory === sub.id;
 
                               return (
-                                <div
-                                  key={sub.id}
-                                  className={`flex items-center justify-between px-3 py-2.5 cursor-pointer transition-colors text-sm ${
-                                    isSubHovered ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50 text-gray-700'
-                                  }`}
-                                  onMouseEnter={() => setHoveredQuickSubcategory(sub.id)}
-                                >
-                                  <Link href={`/items?category=${sub.slug}`} className="flex-1">
+                                <div key={sub.id} className="min-w-[120px]">
+                                  {/* Subcategory Title */}
+                                  <Link
+                                    href={`/items?category=${sub.slug}`}
+                                    className="block font-bold text-gray-800 hover:text-primary-600 transition-colors text-sm border-b-2 border-primary-200 pb-2 mb-2"
+                                  >
                                     {sub.nameAr}
                                   </Link>
-                                  {subSubcats.length > 0 && (
-                                    <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                  )}
+
+                                  {/* Sub-subcategories */}
+                                  <div className="space-y-1.5">
+                                    {subSubcats.length > 0 ? (
+                                      <>
+                                        {subSubcats.slice(0, 5).map((subSub) => (
+                                          <Link
+                                            key={subSub.id}
+                                            href={`/items?category=${subSub.slug}`}
+                                            className="block text-xs text-gray-500 hover:text-primary-600 hover:pr-1 transition-all"
+                                          >
+                                            {subSub.nameAr}
+                                          </Link>
+                                        ))}
+                                        {subSubcats.length > 5 && (
+                                          <Link
+                                            href={`/items?category=${sub.slug}`}
+                                            className="block text-xs text-primary-500 font-medium hover:text-primary-700"
+                                          >
+                                            + {subSubcats.length - 5} المزيد
+                                          </Link>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <Link
+                                        href={`/items?category=${sub.slug}`}
+                                        className="block text-xs text-primary-500 hover:text-primary-700"
+                                      >
+                                        عرض المنتجات ←
+                                      </Link>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
                           </div>
-                        </div>
 
-                        {/* Sub-subcategories */}
-                        {hoveredQuickSubcategory && getSubcategories(hoveredQuickSubcategory).length > 0 && (
-                          <div className="w-44 border-l border-gray-100 bg-gray-50">
-                            <div className="p-2 bg-gray-100 border-b border-gray-200">
-                              <span className="text-xs font-bold text-gray-600">التفاصيل</span>
+                          {/* More categories link */}
+                          {subcats.length > 4 && (
+                            <div className="mt-4 pt-3 border-t border-gray-100">
+                              <Link
+                                href={`/items?category=${cat.slug}`}
+                                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                              >
+                                عرض كل الفئات ({subcats.length}) ←
+                              </Link>
                             </div>
-                            <div className="max-h-[300px] overflow-y-auto">
-                              {getSubcategories(hoveredQuickSubcategory).map((subSub) => (
-                                <Link
-                                  key={subSub.id}
-                                  href={`/items?category=${subSub.slug}`}
-                                  className="block px-3 py-2 text-sm text-gray-600 hover:text-primary-600 hover:bg-white transition-colors"
-                                >
-                                  {subSub.nameAr}
-                                </Link>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
