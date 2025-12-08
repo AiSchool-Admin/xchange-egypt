@@ -76,42 +76,51 @@ export default function BarterPage() {
     setPage(1);
   };
 
+  // Condition translations
+  const conditionAr: Record<string, string> = {
+    'NEW': 'جديد',
+    'LIKE_NEW': 'كالجديد',
+    'GOOD': 'جيد',
+    'FAIR': 'مقبول',
+    'POOR': 'ضعيف',
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
+      <div className="bg-gradient-to-r from-teal-600 to-green-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="text-4xl font-bold">🔄 Barter & Exchange</h1>
+              <h1 className="text-3xl md:text-4xl font-bold">🔄 سوق المقايضة</h1>
               <p className="text-green-100 mt-2">
-                Trade items directly without money!
+                بادل منتجاتك مع الآخرين بدون نقود!
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Link
                 href="/barter/chains"
-                className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-lg hover:bg-opacity-30 transition font-semibold"
+                className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition font-semibold text-sm"
               >
-                🔗 Smart Chains
+                🔗 سلاسل المقايضة
               </Link>
               <Link
                 href="/barter/open-offers"
-                className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-lg hover:bg-opacity-30 transition font-semibold"
+                className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition font-semibold text-sm"
               >
-                Open Offers
+                العروض المفتوحة
               </Link>
               <Link
                 href="/barter/my-offers"
-                className="bg-white bg-opacity-20 text-white px-6 py-3 rounded-lg hover:bg-opacity-30 transition font-semibold"
+                className="bg-white bg-opacity-20 text-white px-4 py-2 rounded-lg hover:bg-opacity-30 transition font-semibold text-sm"
               >
-                My Offers
+                عروضي
               </Link>
               <Link
                 href="/barter/new"
-                className="bg-white text-green-600 px-6 py-3 rounded-lg hover:bg-green-50 transition font-semibold shadow-lg"
+                className="bg-white text-teal-600 px-4 py-2 rounded-lg hover:bg-teal-50 transition font-semibold shadow-lg text-sm"
               >
-                + Make Offer
+                + أضف عرض مقايضة
               </Link>
             </div>
           </div>
@@ -122,21 +131,21 @@ export default function BarterPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Filters Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-20">
+            <div className="bg-white rounded-xl shadow-sm p-6 sticky top-20">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Filters</h2>
+                <h2 className="text-lg font-bold text-gray-800">تصفية النتائج</h2>
                 <button
                   onClick={clearFilters}
-                  className="text-sm text-green-600 hover:text-green-700"
+                  className="text-sm text-teal-600 hover:text-teal-700"
                 >
-                  Clear All
+                  مسح الكل
                 </button>
               </div>
 
               {/* Search */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Search
+                  البحث
                 </label>
                 <input
                   type="text"
@@ -145,15 +154,15 @@ export default function BarterPage() {
                     setSearchQuery(e.target.value);
                     setPage(1);
                   }}
-                  placeholder="Search items..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="ابحث عن منتج..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 />
               </div>
 
               {/* Category Filter */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category
+                  الفئة
                 </label>
                 <select
                   value={selectedCategory}
@@ -161,12 +170,12 @@ export default function BarterPage() {
                     setSelectedCategory(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                 >
-                  <option value="">All Categories</option>
+                  <option value="">كل الفئات</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.nameEn}
+                      {cat.nameAr || cat.nameEn}
                     </option>
                   ))}
                 </select>
@@ -175,36 +184,36 @@ export default function BarterPage() {
               {/* Value Range */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estimated Value (EGP)
+                  القيمة التقديرية (جنيه)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
                     value={minValue}
                     onChange={(e) => setMinValue(e.target.value)}
-                    placeholder="Min"
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="من"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                   <input
                     type="number"
                     value={maxValue}
                     onChange={(e) => setMaxValue(e.target.value)}
-                    placeholder="Max"
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    placeholder="إلى"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
               {/* Info Box */}
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <h3 className="font-semibold text-green-900 text-sm mb-2">
-                  How It Works
+              <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl">
+                <h3 className="font-bold text-teal-900 text-sm mb-2">
+                  كيف تعمل المقايضة؟
                 </h3>
-                <ul className="text-xs text-green-800 space-y-1">
-                  <li>• Browse items available for trade</li>
-                  <li>• Make offers with your items</li>
-                  <li>• Negotiate and finalize deals</li>
-                  <li>• No money needed!</li>
+                <ul className="text-xs text-teal-800 space-y-1">
+                  <li>• تصفح المنتجات المعروضة للمقايضة</li>
+                  <li>• قدم عرضاً بمنتجك مقابل منتج آخر</li>
+                  <li>• تفاوض مع صاحب المنتج</li>
+                  <li>• أتم الصفقة بدون نقود!</li>
                 </ul>
               </div>
             </div>
@@ -214,39 +223,48 @@ export default function BarterPage() {
           <div className="lg:col-span-3">
             {loading ? (
               <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-                <p className="mt-4 text-gray-600">Loading items...</p>
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+                <p className="mt-4 text-gray-600">جاري تحميل المنتجات...</p>
               </div>
             ) : error ? (
               <div className="text-center py-12">
                 <p className="text-red-600">{error}</p>
                 <button
                   onClick={loadItems}
-                  className="mt-4 text-green-600 hover:text-green-700"
+                  className="mt-4 text-teal-600 hover:text-teal-700"
                 >
-                  Try Again
+                  حاول مرة أخرى
                 </button>
               </div>
             ) : items.length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-lg">
-                <p className="text-gray-600 text-lg">No items found for barter</p>
+              <div className="text-center py-12 bg-white rounded-xl">
+                <div className="text-6xl mb-4">🔄</div>
+                <p className="text-gray-800 text-xl font-bold">لا توجد منتجات للمقايضة</p>
                 <p className="text-gray-500 mt-2">
-                  Try adjusting your filters or check back later!
+                  جرب تغيير الفلاتر أو عُد لاحقاً!
                 </p>
+                <Link
+                  href="/barter/new"
+                  className="inline-block mt-4 px-6 py-3 bg-teal-500 text-white rounded-xl font-semibold hover:bg-teal-600 transition"
+                >
+                  أضف منتجك للمقايضة
+                </Link>
               </div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {items.map((item) => {
                     const primaryImage =
-                      item.images?.find((img) => img.isPrimary)?.url ||
-                      item.images?.[0]?.url;
+                      typeof item.images?.[0] === 'string'
+                        ? item.images[0]
+                        : item.images?.find((img: any) => img.isPrimary)?.url ||
+                          (item.images?.[0] as any)?.url;
 
                     return (
                       <Link
                         key={item.id}
                         href={`/barter/items/${item.id}`}
-                        className="bg-white rounded-lg shadow-sm hover:shadow-md transition overflow-hidden group"
+                        className="bg-white rounded-xl shadow-sm hover:shadow-md transition overflow-hidden group"
                       >
                         {/* Image */}
                         <div className="relative h-48 bg-gray-200">
@@ -263,16 +281,16 @@ export default function BarterPage() {
                           )}
 
                           {/* Badge */}
-                          <div className="absolute top-2 right-2">
-                            <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                              Available
+                          <div className="absolute top-2 left-2">
+                            <span className="bg-teal-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                              متاح للمقايضة
                             </span>
                           </div>
                         </div>
 
                         {/* Content */}
                         <div className="p-4">
-                          <h3 className="font-semibold text-gray-900 line-clamp-1 group-hover:text-green-600 transition">
+                          <h3 className="font-bold text-gray-900 line-clamp-1 group-hover:text-teal-600 transition">
                             {item.title}
                           </h3>
                           <p className="text-sm text-gray-600 line-clamp-2 mt-1">
@@ -283,22 +301,22 @@ export default function BarterPage() {
                             {item.estimatedValue && (
                               <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-600">
-                                  Est. Value:
+                                  القيمة التقديرية:
                                 </span>
-                                <span className="text-lg font-bold text-green-600">
-                                  {item.estimatedValue.toLocaleString()} EGP
+                                <span className="text-lg font-bold text-teal-600">
+                                  {item.estimatedValue.toLocaleString()} ج.م
                                 </span>
                               </div>
                             )}
 
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-gray-600">{item.condition}</span>
-                              {item.category && <span className="text-gray-600">{item.category.nameEn}</span>}
+                              <span className="text-gray-600">{conditionAr[item.condition] || item.condition}</span>
+                              {item.category && <span className="text-gray-500">{item.category.nameAr || item.category.nameEn}</span>}
                             </div>
 
                             <div className="pt-2 border-t">
                               <p className="text-xs text-gray-600">
-                                By {item.seller?.fullName || 'Unknown'}
+                                بواسطة {item.seller?.fullName || 'مستخدم'}
                               </p>
                             </div>
                           </div>
@@ -316,32 +334,17 @@ export default function BarterPage() {
                       disabled={page === 1}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Previous
+                      السابق
                     </button>
-                    <div className="flex items-center gap-2">
-                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                        const pageNum = i + 1;
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setPage(pageNum)}
-                            className={`px-4 py-2 rounded-lg ${
-                              page === pageNum
-                                ? 'bg-green-600 text-white'
-                                : 'border border-gray-300 hover:bg-gray-50'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <span className="px-4 py-2 bg-teal-50 text-teal-700 rounded-lg font-medium">
+                      {page} من {totalPages}
+                    </span>
                     <button
                       onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                       disabled={page === totalPages}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Next
+                      التالي
                     </button>
                   </div>
                 )}

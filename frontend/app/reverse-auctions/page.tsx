@@ -10,16 +10,18 @@ interface ReverseAuction {
   id: string;
   title: string;
   description: string;
-  targetPrice: number;
+  maxBudget: number;
   status: string;
-  startTime: string;
-  endTime: string;
-  bidsCount: number;
+  startDate: string;
+  endDate: string;
+  _count?: {
+    bids: number;
+  };
   lowestBid?: number;
   buyer: {
     id: string;
     fullName: string;
-    businessName?: string;
+    avatar?: string;
   };
 }
 
@@ -42,12 +44,14 @@ export default function ReverseAuctionsPage() {
       // Load my reverse auctions (as buyer)
       if (user) {
         const myResponse = await apiClient.get(`/reverse-auctions?buyerId=${user.id}`);
-        setReverseAuctions(myResponse.data.data?.reverseAuctions || myResponse.data.data || []);
+        const myData = myResponse.data.data || myResponse.data || {};
+        setReverseAuctions(myData.items || myData.reverseAuctions || []);
       }
 
       // Load all active reverse auctions (for sellers to bid on)
       const allResponse = await apiClient.get('/reverse-auctions?status=ACTIVE');
-      setAllReverseAuctions(allResponse.data.data?.reverseAuctions || allResponse.data.data || []);
+      const allData = allResponse.data.data || allResponse.data || {};
+      setAllReverseAuctions(allData.items || allData.reverseAuctions || []);
     } catch (err: any) {
       console.error('Error loading reverse auctions:', err);
       setError('فشل في تحميل البيانات');
@@ -69,8 +73,8 @@ export default function ReverseAuctionsPage() {
     return <span className={`px-2 py-1 rounded-full text-xs font-medium ${config.color}`}>{config.text}</span>;
   };
 
-  const isEnded = (endTime: string) => new Date(endTime) < new Date();
-  const hasStarted = (startTime: string) => new Date(startTime) < new Date();
+  const isEnded = (endDate: string) => new Date(endDate) < new Date();
+  const hasStarted = (startDate: string) => new Date(startDate) < new Date();
 
   if (loading) {
     return (
@@ -163,11 +167,11 @@ export default function ReverseAuctionsPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-500">السعر المستهدف:</span>
-                        <span className="font-bold text-purple-600">{ra.targetPrice?.toLocaleString()} ج.م</span>
+                        <span className="font-bold text-purple-600">{ra.maxBudget?.toLocaleString()} ج.م</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">عدد العروض:</span>
-                        <span className="font-medium">{ra.bidsCount || 0}</span>
+                        <span className="font-medium">{ra._count?.bids || 0}</span>
                       </div>
                       {ra.lowestBid && (
                         <div className="flex justify-between">
@@ -177,10 +181,10 @@ export default function ReverseAuctionsPage() {
                       )}
                     </div>
                     <div className="mt-4 pt-4 border-t text-xs text-gray-500">
-                      {ra.status === 'ACTIVE' && !isEnded(ra.endTime) ? (
-                        <span className="text-green-600">ينتهي: {new Date(ra.endTime).toLocaleDateString('ar-EG')}</span>
+                      {ra.status === 'ACTIVE' && !isEnded(ra.endDate) ? (
+                        <span className="text-green-600">ينتهي: {new Date(ra.endDate).toLocaleDateString('ar-EG')}</span>
                       ) : (
-                        <span>انتهى: {new Date(ra.endTime).toLocaleDateString('ar-EG')}</span>
+                        <span>انتهى: {new Date(ra.endDate).toLocaleDateString('ar-EG')}</span>
                       )}
                     </div>
                   </Link>
@@ -214,15 +218,15 @@ export default function ReverseAuctionsPage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-500">الميزانية:</span>
-                        <span className="font-bold text-purple-600">{ra.targetPrice?.toLocaleString()} ج.م</span>
+                        <span className="font-bold text-purple-600">{ra.maxBudget?.toLocaleString()} ج.م</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">المشتري:</span>
-                        <span className="font-medium">{ra.buyer?.businessName || ra.buyer?.fullName}</span>
+                        <span className="font-medium">{ra.buyer?.fullName}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">العروض:</span>
-                        <span className="font-medium">{ra.bidsCount || 0} عرض</span>
+                        <span className="font-medium">{ra._count?.bids || 0} عرض</span>
                       </div>
                     </div>
                     <div className="mt-4 pt-4 border-t">
