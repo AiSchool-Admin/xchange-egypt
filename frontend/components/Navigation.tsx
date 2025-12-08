@@ -61,6 +61,22 @@ const Icons = {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
     </svg>
   ),
+  Cart: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+    </svg>
+  ),
+  Globe: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+    </svg>
+  ),
+  MapPin: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  ),
 };
 
 // ============================================
@@ -100,6 +116,308 @@ const megaMenuData = {
 };
 
 // ============================================
+// Noon-Style Categories Mega Menu Data
+// ============================================
+const categoriesData = [
+  {
+    id: 'electronics',
+    name: 'الإلكترونيات',
+    icon: '💻',
+    color: 'from-blue-500 to-blue-600',
+    href: '/items?category=electronics-computers',
+    subcategories: [
+      {
+        title: 'الموبايلات',
+        items: [
+          { name: 'آيفون', href: '/items?category=mobile-phones&brand=apple' },
+          { name: 'سامسونج', href: '/items?category=mobile-phones&brand=samsung' },
+          { name: 'شاومي', href: '/items?category=mobile-phones&brand=xiaomi' },
+          { name: 'أوبو', href: '/items?category=mobile-phones&brand=oppo' },
+          { name: 'اكسسوارات الموبايل', href: '/items?category=mobile-accessories' },
+        ]
+      },
+      {
+        title: 'الكمبيوتر',
+        items: [
+          { name: 'لابتوب', href: '/items?category=laptops' },
+          { name: 'كمبيوتر مكتبي', href: '/items?category=desktop-computers' },
+          { name: 'شاشات', href: '/items?category=monitors' },
+          { name: 'قطع كمبيوتر', href: '/items?category=computer-components' },
+          { name: 'اكسسوارات', href: '/items?category=computer-accessories' },
+        ]
+      },
+      {
+        title: 'الألعاب',
+        items: [
+          { name: 'بلايستيشن', href: '/items?category=gaming&brand=playstation' },
+          { name: 'إكس بوكس', href: '/items?category=gaming&brand=xbox' },
+          { name: 'نينتندو', href: '/items?category=gaming&brand=nintendo' },
+          { name: 'ألعاب فيديو', href: '/items?category=video-games' },
+        ]
+      },
+    ],
+    promoImage: '/images/categories/electronics-promo.jpg',
+    brands: ['Apple', 'Samsung', 'Sony', 'HP', 'Dell', 'Lenovo']
+  },
+  {
+    id: 'fashion-women',
+    name: 'أزياء النساء',
+    icon: '👗',
+    color: 'from-pink-500 to-rose-500',
+    href: '/items?category=womens-fashion',
+    subcategories: [
+      {
+        title: 'الملابس',
+        items: [
+          { name: 'فساتين', href: '/items?category=womens-dresses' },
+          { name: 'بلوزات', href: '/items?category=womens-tops' },
+          { name: 'بناطيل', href: '/items?category=womens-pants' },
+          { name: 'جاكيتات', href: '/items?category=womens-jackets' },
+          { name: 'عبايات', href: '/items?category=abayas' },
+        ]
+      },
+      {
+        title: 'الأحذية',
+        items: [
+          { name: 'كعب عالي', href: '/items?category=womens-heels' },
+          { name: 'صنادل', href: '/items?category=womens-sandals' },
+          { name: 'أحذية رياضية', href: '/items?category=womens-sneakers' },
+          { name: 'بوت', href: '/items?category=womens-boots' },
+        ]
+      },
+      {
+        title: 'الحقائب',
+        items: [
+          { name: 'حقائب يد', href: '/items?category=handbags' },
+          { name: 'حقائب كتف', href: '/items?category=shoulder-bags' },
+          { name: 'محافظ', href: '/items?category=womens-wallets' },
+        ]
+      },
+    ],
+    promoImage: '/images/categories/fashion-women-promo.jpg',
+    brands: ['Zara', 'H&M', 'LC Waikiki', 'Defacto', 'Trendyol']
+  },
+  {
+    id: 'fashion-men',
+    name: 'أزياء الرجال',
+    icon: '👔',
+    color: 'from-slate-600 to-slate-700',
+    href: '/items?category=mens-fashion',
+    subcategories: [
+      {
+        title: 'الملابس',
+        items: [
+          { name: 'قمصان', href: '/items?category=mens-shirts' },
+          { name: 'تيشيرتات', href: '/items?category=mens-tshirts' },
+          { name: 'بناطيل', href: '/items?category=mens-pants' },
+          { name: 'جاكيتات', href: '/items?category=mens-jackets' },
+          { name: 'بدل', href: '/items?category=mens-suits' },
+        ]
+      },
+      {
+        title: 'الأحذية',
+        items: [
+          { name: 'أحذية رسمية', href: '/items?category=mens-formal-shoes' },
+          { name: 'أحذية رياضية', href: '/items?category=mens-sneakers' },
+          { name: 'صنادل', href: '/items?category=mens-sandals' },
+        ]
+      },
+      {
+        title: 'الإكسسوارات',
+        items: [
+          { name: 'ساعات', href: '/items?category=mens-watches' },
+          { name: 'أحزمة', href: '/items?category=mens-belts' },
+          { name: 'محافظ', href: '/items?category=mens-wallets' },
+          { name: 'نظارات', href: '/items?category=mens-sunglasses' },
+        ]
+      },
+    ],
+    promoImage: '/images/categories/fashion-men-promo.jpg',
+    brands: ['Nike', 'Adidas', 'Puma', 'Activ', 'Town Team']
+  },
+  {
+    id: 'home',
+    name: 'المنزل والأثاث',
+    icon: '🏠',
+    color: 'from-amber-500 to-orange-500',
+    href: '/items?category=home-garden',
+    subcategories: [
+      {
+        title: 'الأثاث',
+        items: [
+          { name: 'غرف نوم', href: '/items?category=bedroom-furniture' },
+          { name: 'غرف معيشة', href: '/items?category=living-room' },
+          { name: 'سفرة وطاولات', href: '/items?category=dining-furniture' },
+          { name: 'مكاتب', href: '/items?category=office-furniture' },
+        ]
+      },
+      {
+        title: 'الأجهزة المنزلية',
+        items: [
+          { name: 'ثلاجات', href: '/items?category=refrigerators' },
+          { name: 'غسالات', href: '/items?category=washing-machines' },
+          { name: 'تكييفات', href: '/items?category=air-conditioners' },
+          { name: 'مطبخ', href: '/items?category=kitchen-appliances' },
+        ]
+      },
+      {
+        title: 'الديكور',
+        items: [
+          { name: 'إضاءة', href: '/items?category=lighting' },
+          { name: 'سجاد', href: '/items?category=rugs' },
+          { name: 'ستائر', href: '/items?category=curtains' },
+        ]
+      },
+    ],
+    promoImage: '/images/categories/home-promo.jpg',
+    brands: ['IKEA', 'Mobica', 'Istikbal', 'Toshiba', 'Samsung']
+  },
+  {
+    id: 'vehicles',
+    name: 'السيارات',
+    icon: '🚗',
+    color: 'from-red-500 to-red-600',
+    href: '/items?category=vehicles',
+    subcategories: [
+      {
+        title: 'أنواع السيارات',
+        items: [
+          { name: 'سيارات ملاكي', href: '/items?category=passenger-cars' },
+          { name: 'سيارات SUV', href: '/items?category=suv' },
+          { name: 'ميكروباص', href: '/items?category=microbus' },
+          { name: 'نصف نقل', href: '/items?category=pickup' },
+        ]
+      },
+      {
+        title: 'قطع الغيار',
+        items: [
+          { name: 'محركات', href: '/items?category=car-engines' },
+          { name: 'فرامل', href: '/items?category=car-brakes' },
+          { name: 'إطارات', href: '/items?category=tires' },
+          { name: 'بطاريات', href: '/items?category=car-batteries' },
+        ]
+      },
+      {
+        title: 'الدراجات',
+        items: [
+          { name: 'موتوسيكلات', href: '/items?category=motorcycles' },
+          { name: 'سكوتر', href: '/items?category=scooters' },
+          { name: 'دراجات هوائية', href: '/items?category=bicycles' },
+        ]
+      },
+    ],
+    promoImage: '/images/categories/vehicles-promo.jpg',
+    brands: ['Toyota', 'Hyundai', 'Chevrolet', 'Nissan', 'BMW']
+  },
+  {
+    id: 'beauty',
+    name: 'الجمال والعناية',
+    icon: '💄',
+    color: 'from-purple-500 to-purple-600',
+    href: '/items?category=health-beauty',
+    subcategories: [
+      {
+        title: 'المكياج',
+        items: [
+          { name: 'الوجه', href: '/items?category=face-makeup' },
+          { name: 'العيون', href: '/items?category=eye-makeup' },
+          { name: 'الشفاه', href: '/items?category=lip-makeup' },
+          { name: 'الأظافر', href: '/items?category=nail-care' },
+        ]
+      },
+      {
+        title: 'العناية بالبشرة',
+        items: [
+          { name: 'كريمات', href: '/items?category=skin-creams' },
+          { name: 'سيروم', href: '/items?category=serums' },
+          { name: 'واقي شمس', href: '/items?category=sunscreen' },
+        ]
+      },
+      {
+        title: 'العطور',
+        items: [
+          { name: 'عطور نسائية', href: '/items?category=womens-perfumes' },
+          { name: 'عطور رجالية', href: '/items?category=mens-perfumes' },
+          { name: 'بخور وعود', href: '/items?category=oud' },
+        ]
+      },
+    ],
+    promoImage: '/images/categories/beauty-promo.jpg',
+    brands: ['Maybelline', 'L\'Oreal', 'MAC', 'NYX', 'Nivea']
+  },
+  {
+    id: 'kids',
+    name: 'الأطفال',
+    icon: '👶',
+    color: 'from-cyan-500 to-teal-500',
+    href: '/items?category=baby-kids',
+    subcategories: [
+      {
+        title: 'ملابس الأطفال',
+        items: [
+          { name: 'أولاد', href: '/items?category=boys-clothing' },
+          { name: 'بنات', href: '/items?category=girls-clothing' },
+          { name: 'رضع', href: '/items?category=baby-clothing' },
+        ]
+      },
+      {
+        title: 'الألعاب',
+        items: [
+          { name: 'ألعاب تعليمية', href: '/items?category=educational-toys' },
+          { name: 'عرائس ودمى', href: '/items?category=dolls' },
+          { name: 'ألعاب خارجية', href: '/items?category=outdoor-toys' },
+        ]
+      },
+      {
+        title: 'مستلزمات',
+        items: [
+          { name: 'عربات أطفال', href: '/items?category=strollers' },
+          { name: 'كراسي سيارة', href: '/items?category=car-seats' },
+          { name: 'أسرة أطفال', href: '/items?category=baby-beds' },
+        ]
+      },
+    ],
+    promoImage: '/images/categories/kids-promo.jpg',
+    brands: ['Carter\'s', 'LC Waikiki Kids', 'Mothercare', 'Chicco']
+  },
+  {
+    id: 'sports',
+    name: 'الرياضة',
+    icon: '⚽',
+    color: 'from-green-500 to-emerald-500',
+    href: '/items?category=sports-outdoors',
+    subcategories: [
+      {
+        title: 'الملابس الرياضية',
+        items: [
+          { name: 'تيشيرتات رياضية', href: '/items?category=sports-tshirts' },
+          { name: 'شورتات', href: '/items?category=sports-shorts' },
+          { name: 'ترينج', href: '/items?category=tracksuits' },
+        ]
+      },
+      {
+        title: 'المعدات',
+        items: [
+          { name: 'أجهزة رياضية', href: '/items?category=gym-equipment' },
+          { name: 'كرة قدم', href: '/items?category=football' },
+          { name: 'تنس', href: '/items?category=tennis' },
+        ]
+      },
+      {
+        title: 'الأحذية الرياضية',
+        items: [
+          { name: 'جري', href: '/items?category=running-shoes' },
+          { name: 'كرة قدم', href: '/items?category=football-shoes' },
+          { name: 'كاجوال', href: '/items?category=casual-sneakers' },
+        ]
+      },
+    ],
+    promoImage: '/images/categories/sports-promo.jpg',
+    brands: ['Nike', 'Adidas', 'Puma', 'Under Armour', 'Reebok']
+  },
+];
+
+// ============================================
 // Main Navigation Component
 // ============================================
 export default function Navigation() {
@@ -112,13 +430,27 @@ export default function Navigation() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [language, setLanguage] = useState<'ar' | 'en'>('ar');
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
+  const [locationMenuOpen, setLocationMenuOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState({
+    governorate: 'كل مصر',
+    city: '',
+    district: ''
+  });
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const categoryMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const megaMenuRef = useRef<HTMLDivElement>(null);
+  const categoryBarRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const languageMenuRef = useRef<HTMLDivElement>(null);
+  const locationMenuRef = useRef<HTMLDivElement>(null);
 
   // Fetch unread count
   useEffect(() => {
@@ -143,11 +475,17 @@ export default function Navigation() {
     return () => offMatchFound(handleMatchNotification);
   }, [onMatchFound, offMatchFound]);
 
-  // Close mega menu on outside click
+  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (megaMenuRef.current && !megaMenuRef.current.contains(event.target as Node)) {
         setMegaMenuOpen(false);
+      }
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target as Node)) {
+        setLanguageMenuOpen(false);
+      }
+      if (locationMenuRef.current && !locationMenuRef.current.contains(event.target as Node)) {
+        setLocationMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -195,6 +533,32 @@ export default function Navigation() {
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
 
+  // Category hover handlers with delay
+  const handleCategoryMouseEnter = (categoryId: string) => {
+    if (categoryMenuTimeoutRef.current) {
+      clearTimeout(categoryMenuTimeoutRef.current);
+    }
+    setHoveredCategory(categoryId);
+  };
+
+  const handleCategoryMouseLeave = () => {
+    categoryMenuTimeoutRef.current = setTimeout(() => {
+      setHoveredCategory(null);
+    }, 150);
+  };
+
+  const handleMegaMenuMouseEnter = () => {
+    if (categoryMenuTimeoutRef.current) {
+      clearTimeout(categoryMenuTimeoutRef.current);
+    }
+  };
+
+  const handleMegaMenuMouseLeave = () => {
+    categoryMenuTimeoutRef.current = setTimeout(() => {
+      setHoveredCategory(null);
+    }, 150);
+  };
+
   return (
     <>
       {/* ============================================
@@ -219,7 +583,7 @@ export default function Navigation() {
               className="hidden md:flex flex-1 max-w-xl relative"
             >
               <div className={`w-full flex items-center bg-gray-50 rounded-xl border-2 transition-all duration-200 ${
-                searchFocused ? 'border-primary-500 bg-white shadow-lg' : 'border-transparent'
+                searchFocused ? 'border-primary-500 bg-white shadow-lg' : 'border-gray-200'
               }`}>
                 <input
                   ref={searchInputRef}
@@ -233,7 +597,7 @@ export default function Navigation() {
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2.5 text-gray-400 hover:text-primary-600 transition-colors"
+                  className="px-4 py-2.5 bg-primary-500 text-white rounded-l-xl hover:bg-primary-600 transition-colors"
                 >
                   <Icons.Search />
                 </button>
@@ -358,22 +722,96 @@ export default function Navigation() {
                 )}
               </div>
 
-              {/* Direct Links */}
-              <Link
-                href="/deals"
-                className={`px-4 py-2 rounded-xl font-medium transition-all ${
-                  isActive('/deals')
-                    ? 'bg-amber-50 text-amber-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <span className="ml-1">⚡</span>
-                عروض
-              </Link>
+            {/* Direct Links - Removed عروض per user request */}
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {/* Location Selector */}
+              <div className="relative hidden md:block" ref={locationMenuRef}>
+                <button
+                  onClick={() => setLocationMenuOpen(!locationMenuOpen)}
+                  className="flex items-center gap-1.5 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  <Icons.MapPin />
+                  <span className="text-sm font-medium max-w-[100px] truncate">
+                    {selectedLocation.city || selectedLocation.governorate}
+                  </span>
+                  <Icons.ChevronDown />
+                </button>
+
+                {locationMenuOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                    <div className="p-3 bg-gray-50 border-b border-gray-100">
+                      <span className="font-bold text-gray-800">اختر موقعك</span>
+                    </div>
+                    <div className="p-2">
+                      <button
+                        onClick={() => { setSelectedLocation({ governorate: 'كل مصر', city: '', district: '' }); setLocationMenuOpen(false); }}
+                        className={`w-full text-right p-3 rounded-xl transition-colors ${selectedLocation.governorate === 'كل مصر' ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
+                      >
+                        🇪🇬 كل مصر
+                      </button>
+                      {['القاهرة', 'الإسكندرية', 'الجيزة', 'الدقهلية', 'الشرقية'].map((gov) => (
+                        <button
+                          key={gov}
+                          onClick={() => { setSelectedLocation({ governorate: gov, city: '', district: '' }); setLocationMenuOpen(false); }}
+                          className={`w-full text-right p-3 rounded-xl transition-colors ${selectedLocation.governorate === gov ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
+                        >
+                          📍 {gov}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="p-3 bg-gray-50 border-t border-gray-100">
+                      <Link href="/location" className="text-sm text-primary-600 hover:underline" onClick={() => setLocationMenuOpen(false)}>
+                        المزيد من المحافظات ←
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Language Switcher */}
+              <div className="relative" ref={languageMenuRef}>
+                <button
+                  onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
+                  className="flex items-center gap-1 px-2.5 py-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+                >
+                  <Icons.Globe />
+                  <span className="text-sm font-medium">{language === 'ar' ? 'ع' : 'EN'}</span>
+                </button>
+
+                {languageMenuOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-36 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                    <button
+                      onClick={() => { setLanguage('ar'); setLanguageMenuOpen(false); }}
+                      className={`w-full text-right px-4 py-3 transition-colors flex items-center gap-2 ${language === 'ar' ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
+                    >
+                      <span>🇪🇬</span> العربية
+                    </button>
+                    <button
+                      onClick={() => { setLanguage('en'); setLanguageMenuOpen(false); }}
+                      className={`w-full text-right px-4 py-3 transition-colors flex items-center gap-2 ${language === 'en' ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
+                    >
+                      <span>🇬🇧</span> English
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Shopping Cart */}
+              <Link
+                href="/cart"
+                className="relative p-2.5 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
+              >
+                <Icons.Cart />
+                {cartCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] bg-primary-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </Link>
+
               {user ? (
                 <>
                   {/* Notifications */}
@@ -464,10 +902,214 @@ export default function Navigation() {
           </div>
         </div>
 
-        {/* Mobile Menu Drawer */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden fixed inset-0 top-[120px] bg-white z-40 overflow-y-auto animate-fade-in">
-            <div className="p-4 space-y-4">
+        {/* ============================================
+            Noon-Style Categories Navigation Bar
+            ============================================ */}
+        <div className="hidden lg:block bg-white border-t border-gray-100 relative" ref={categoryBarRef}>
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center gap-1 py-1 overflow-x-auto scrollbar-hide">
+              {/* All Categories Button */}
+              <button
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-lg font-medium text-sm whitespace-nowrap transition-all hover:bg-primary-600"
+                onClick={() => router.push('/items')}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                كل الفئات
+              </button>
+
+              {/* Category Links */}
+              {categoriesData.map((category) => (
+                <div
+                  key={category.id}
+                  className="relative"
+                  onMouseEnter={() => handleCategoryMouseEnter(category.id)}
+                  onMouseLeave={handleCategoryMouseLeave}
+                >
+                  <Link
+                    href={category.href}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                      hoveredCategory === category.id
+                        ? 'bg-gray-100 text-primary-600'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span>{category.icon}</span>
+                    {category.name}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Category Mega Menu Dropdown */}
+          {hoveredCategory && (
+            <div
+              className="absolute top-full left-0 right-0 bg-white shadow-2xl border-t border-gray-100 z-50 animate-fade-in-down"
+              onMouseEnter={handleMegaMenuMouseEnter}
+              onMouseLeave={handleMegaMenuMouseLeave}
+            >
+              <div className="max-w-7xl mx-auto px-4 py-6">
+                {categoriesData.filter(c => c.id === hoveredCategory).map((category) => (
+                  <div key={category.id} className="flex gap-8">
+                    {/* Promo Image Section */}
+                    <div className="w-64 flex-shrink-0">
+                      <div className={`h-48 bg-gradient-to-br ${category.color} rounded-2xl flex items-center justify-center overflow-hidden relative`}>
+                        <div className="absolute inset-0 bg-black/10" />
+                        <div className="relative z-10 text-center text-white p-4">
+                          <span className="text-5xl mb-3 block">{category.icon}</span>
+                          <h3 className="text-xl font-bold">{category.name}</h3>
+                          <Link
+                            href={category.href}
+                            className="inline-block mt-3 px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm hover:bg-white/30 transition-all"
+                          >
+                            تصفح الكل
+                          </Link>
+                        </div>
+                      </div>
+                      {/* Brands Section */}
+                      <div className="mt-4">
+                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">ماركات مميزة</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {category.brands.slice(0, 5).map((brand) => (
+                            <span
+                              key={brand}
+                              className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium hover:bg-gray-200 cursor-pointer transition-colors"
+                            >
+                              {brand}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Subcategories Grid */}
+                    <div className="flex-1 grid grid-cols-3 gap-8">
+                      {category.subcategories.map((subcat) => (
+                        <div key={subcat.title}>
+                          <h4 className="font-bold text-gray-900 mb-3 pb-2 border-b border-gray-100">
+                            {subcat.title}
+                          </h4>
+                          <ul className="space-y-2">
+                            {subcat.items.map((item) => (
+                              <li key={item.name}>
+                                <Link
+                                  href={item.href}
+                                  className="text-gray-600 hover:text-primary-600 hover:pr-2 transition-all text-sm block"
+                                >
+                                  {item.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Categories Scroll - Simplified */}
+        <div className="lg:hidden bg-white border-t border-gray-100">
+          <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto scrollbar-hide">
+            {categoriesData.slice(0, 6).map((category) => (
+              <Link
+                key={category.id}
+                href={category.href}
+                className="flex flex-col items-center gap-1 px-3 py-2 bg-gray-50 rounded-xl min-w-[70px] hover:bg-gray-100 transition-colors"
+              >
+                <span className="text-xl">{category.icon}</span>
+                <span className="text-xs text-gray-700 font-medium whitespace-nowrap">{category.name.split(' ')[0]}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* ============================================
+            Specialized Markets Quick Navigation Bar
+            ============================================ */}
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-center gap-1 py-2 overflow-x-auto scrollbar-hide">
+              <Link
+                href="/items"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/items')
+                    ? 'bg-primary-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>🛒</span>
+                السوق العام
+              </Link>
+              <Link
+                href="/auctions"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/auctions')
+                    ? 'bg-amber-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>🔨</span>
+                المزادات
+              </Link>
+              <Link
+                href="/reverse-auctions"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/reverse-auctions')
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>📋</span>
+                المناقصات
+              </Link>
+              <Link
+                href="/luxury"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/luxury')
+                    ? 'bg-purple-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>👑</span>
+                سوق الفاخر
+              </Link>
+              <Link
+                href="/scrap"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/scrap')
+                    ? 'bg-green-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>♻️</span>
+                سوق التوالف
+              </Link>
+              <Link
+                href="/barter"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/barter')
+                    ? 'bg-orange-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>🔄</span>
+                المقايضات
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Menu Drawer */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 top-[120px] bg-white z-40 overflow-y-auto animate-fade-in">
+          <div className="p-4 space-y-4">
               {/* Quick Actions */}
               {user && (
                 <div className="grid grid-cols-2 gap-3">
@@ -599,7 +1241,6 @@ export default function Navigation() {
             </div>
           </div>
         )}
-      </nav>
 
       {/* ============================================
           Mobile Bottom Navigation Bar
