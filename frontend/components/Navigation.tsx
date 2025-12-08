@@ -1036,19 +1036,20 @@ export default function Navigation() {
             </div>
           </div>
 
-          {/* Category Mega Menu Dropdown */}
+          {/* Category Mega Menu Dropdown - Compact */}
           {hoveredCategory && (
             <div
-              className="absolute top-full left-0 right-0 bg-white shadow-xl border-t border-gray-100 z-50"
+              className="absolute top-full right-4 bg-white shadow-xl border border-gray-200 rounded-lg z-50 mt-1"
+              style={{ minWidth: '600px', maxWidth: '700px' }}
               onMouseEnter={handleMegaMenuMouseEnter}
               onMouseLeave={handleMegaMenuMouseLeave}
             >
-              <div className="max-w-7xl mx-auto px-4 py-4">
+              <div className="p-4">
                 {categoriesData.filter(c => c.id === hoveredCategory).map((category) => (
                   <div key={category.id}>
                     {/* Category Header */}
-                    <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
-                      <span className="text-lg">{category.icon}</span>
+                    <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+                      <span>{category.icon}</span>
                       <Link
                         href={category.href}
                         className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1"
@@ -1060,14 +1061,14 @@ export default function Navigation() {
                       </Link>
                     </div>
 
-                    {/* Subcategories Grid - Compact Layout like Noon */}
-                    <div className="grid grid-cols-4 gap-x-12 gap-y-1">
+                    {/* Subcategories Grid - Compact Layout */}
+                    <div className="flex gap-6">
                       {category.subcategories.map((subcat) => (
-                        <div key={subcat.title} className="mb-4">
-                          <h4 className="font-bold text-gray-900 mb-2 text-sm">
+                        <div key={subcat.title} className="min-w-[120px]">
+                          <h4 className="font-bold text-gray-900 mb-1.5 text-sm">
                             {subcat.title}
                           </h4>
-                          <ul className="space-y-1">
+                          <ul className="space-y-0.5">
                             {subcat.items.map((item) => (
                               <li key={item.name}>
                                 <Link
@@ -1122,6 +1123,82 @@ export default function Navigation() {
                 <span className="text-xs text-gray-700 font-medium whitespace-nowrap">{category.name.split(' ')[0]}</span>
               </Link>
             ))}
+          </div>
+        </div>
+
+        {/* ============================================
+            Specialized Markets Quick Navigation Bar
+            ============================================ */}
+        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-center gap-1 py-2 overflow-x-auto scrollbar-hide">
+              <Link
+                href="/items"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/items')
+                    ? 'bg-primary-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>🛒</span>
+                السوق العام
+              </Link>
+              <Link
+                href="/auctions"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/auctions')
+                    ? 'bg-amber-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>🔨</span>
+                المزادات
+              </Link>
+              <Link
+                href="/reverse-auctions"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/reverse-auctions')
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>📋</span>
+                المناقصات
+              </Link>
+              <Link
+                href="/luxury"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/luxury')
+                    ? 'bg-purple-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>👑</span>
+                سوق الفاخر
+              </Link>
+              <Link
+                href="/scrap"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/scrap')
+                    ? 'bg-green-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>♻️</span>
+                سوق التوالف
+              </Link>
+              <Link
+                href="/barter"
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                  isActive('/barter')
+                    ? 'bg-orange-500 text-white'
+                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <span>🔄</span>
+                المقايضات
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
