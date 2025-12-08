@@ -89,6 +89,8 @@ const CHARITIES = [
     color: 'from-green-500 to-emerald-600',
     totalDonations: 2500000,
     donorsCount: 15420,
+    acceptsInKind: true,
+    inKindCategories: ['ملابس', 'أثاث', 'أجهزة منزلية', 'طعام'],
   },
   {
     id: 'charity-2',
@@ -98,6 +100,8 @@ const CHARITIES = [
     color: 'from-amber-500 to-orange-600',
     totalDonations: 1850000,
     donorsCount: 12300,
+    acceptsInKind: true,
+    inKindCategories: ['طعام', 'مواد غذائية'],
   },
   {
     id: 'charity-3',
@@ -107,6 +111,8 @@ const CHARITIES = [
     color: 'from-red-500 to-pink-600',
     totalDonations: 980000,
     donorsCount: 8750,
+    acceptsInKind: true,
+    inKindCategories: ['أدوية', 'مستلزمات طبية', 'ملابس أطفال'],
   },
   {
     id: 'charity-4',
@@ -116,7 +122,21 @@ const CHARITIES = [
     color: 'from-purple-500 to-violet-600',
     totalDonations: 1250000,
     donorsCount: 9800,
+    acceptsInKind: true,
+    inKindCategories: ['ملابس', 'أثاث', 'كتب', 'ألعاب أطفال', 'أجهزة إلكترونية'],
   },
+];
+
+// ============================================
+// Recently Viewed Items (Mock)
+// ============================================
+const RECENTLY_VIEWED = [
+  { id: 'rv-1', title: 'آيفون 13 برو', price: 28000, image: '📱', category: 'موبايلات' },
+  { id: 'rv-2', title: 'لابتوب HP Pavilion', price: 18500, image: '💻', category: 'لابتوب' },
+  { id: 'rv-3', title: 'سيارة هيونداي النترا', price: 450000, image: '🚗', category: 'سيارات' },
+  { id: 'rv-4', title: 'ساعة أبل واتش SE', price: 8500, image: '⌚', category: 'ساعات' },
+  { id: 'rv-5', title: 'سماعات سوني WH-1000', price: 6500, image: '🎧', category: 'إلكترونيات' },
+  { id: 'rv-6', title: 'كاميرا كانون EOS', price: 22000, image: '📷', category: 'كاميرات' },
 ];
 
 // ============================================
@@ -193,6 +213,8 @@ export default function HomePage() {
   const [donationModalOpen, setDonationModalOpen] = useState(false);
   const [selectedCharity, setSelectedCharity] = useState<typeof CHARITIES[0] | null>(null);
   const [donationAmount, setDonationAmount] = useState<number | null>(null);
+  const [donationType, setDonationType] = useState<'money' | 'inkind'>('money');
+  const [inKindDescription, setInKindDescription] = useState('');
 
   // Hero slides data
   const heroSlides = [
@@ -684,6 +706,120 @@ export default function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================
+          Promotional Category Banners
+          ============================================ */}
+      <section className="py-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Electronics Banner */}
+            <Link
+              href="/items?category=electronics"
+              className="relative group overflow-hidden rounded-2xl aspect-[4/3]"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-700" />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+              <div className="relative h-full p-4 flex flex-col justify-between text-white">
+                <div>
+                  <span className="text-4xl md:text-5xl">📱</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg md:text-xl mb-1">إلكترونيات</h3>
+                  <p className="text-white/80 text-xs md:text-sm">خصم حتى 40%</p>
+                </div>
+              </div>
+              <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                عرض
+              </div>
+            </Link>
+
+            {/* Vehicles Banner */}
+            <Link
+              href="/items?category=vehicles"
+              className="relative group overflow-hidden rounded-2xl aspect-[4/3]"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-900" />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+              <div className="relative h-full p-4 flex flex-col justify-between text-white">
+                <div>
+                  <span className="text-4xl md:text-5xl">🚗</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg md:text-xl mb-1">سيارات</h3>
+                  <p className="text-white/80 text-xs md:text-sm">أفضل الأسعار</p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Fashion Banner */}
+            <Link
+              href="/items?category=fashion-women"
+              className="relative group overflow-hidden rounded-2xl aspect-[4/3]"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 to-rose-600" />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+              <div className="relative h-full p-4 flex flex-col justify-between text-white">
+                <div>
+                  <span className="text-4xl md:text-5xl">👗</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg md:text-xl mb-1">أزياء نسائية</h3>
+                  <p className="text-white/80 text-xs md:text-sm">تشكيلة جديدة</p>
+                </div>
+              </div>
+              <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                جديد
+              </div>
+            </Link>
+
+            {/* Home Banner */}
+            <Link
+              href="/items?category=home"
+              className="relative group overflow-hidden rounded-2xl aspect-[4/3]"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-600" />
+              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
+              <div className="relative h-full p-4 flex flex-col justify-between text-white">
+                <div>
+                  <span className="text-4xl md:text-5xl">🏠</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg md:text-xl mb-1">المنزل والحديقة</h3>
+                  <p className="text-white/80 text-xs md:text-sm">خصم 30%</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          {/* Large Promo Banners */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            {/* Free Shipping Banner */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-500 to-teal-500 p-6 md:p-8">
+              <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+              <div className="relative flex items-center gap-4">
+                <span className="text-5xl md:text-6xl">🚚</span>
+                <div className="text-white">
+                  <h3 className="font-bold text-xl md:text-2xl mb-1">شحن مجاني</h3>
+                  <p className="text-white/80 text-sm md:text-base">على الطلبات أكثر من 500 ج.م</p>
+                </div>
+              </div>
+            </div>
+
+            {/* New User Discount Banner */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 p-6 md:p-8">
+              <div className="absolute bottom-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
+              <div className="relative flex items-center gap-4">
+                <span className="text-5xl md:text-6xl">🎁</span>
+                <div className="text-white">
+                  <h3 className="font-bold text-xl md:text-2xl mb-1">مستخدم جديد؟</h3>
+                  <p className="text-white/80 text-sm md:text-base">احصل على خصم 15% على أول طلب</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1181,6 +1317,46 @@ export default function HomePage() {
       </section>
 
       {/* ============================================
+          Recently Viewed Section
+          ============================================ */}
+      <section className="py-8 bg-white border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🕐</span>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">شاهدته مؤخراً</h2>
+                <p className="text-gray-500 text-sm">المنتجات التي قمت بمشاهدتها</p>
+              </div>
+            </div>
+            <button className="text-primary-600 text-sm font-medium hover:underline">
+              مسح السجل
+            </button>
+          </div>
+
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {RECENTLY_VIEWED.map((item) => (
+              <Link
+                key={item.id}
+                href={`/items/${item.id}`}
+                className="flex-shrink-0 w-40 bg-gray-50 rounded-xl p-3 hover:bg-gray-100 transition-colors group"
+              >
+                <div className="w-full h-24 bg-white rounded-lg flex items-center justify-center mb-2">
+                  <span className="text-4xl group-hover:scale-110 transition-transform">{item.image}</span>
+                </div>
+                <h3 className="font-medium text-gray-900 text-sm line-clamp-1 mb-1">{item.title}</h3>
+                <div className="flex items-center justify-between">
+                  <span className="text-primary-600 font-bold text-sm">{item.price.toLocaleString()}</span>
+                  <span className="text-gray-400 text-xs">ج.م</span>
+                </div>
+                <span className="text-gray-400 text-xs">{item.category}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================
           Latest Items Section
           ============================================ */}
       <section className="py-12 md:py-16 bg-gray-100/50">
@@ -1438,17 +1614,17 @@ export default function HomePage() {
       </section>
 
       {/* ============================================
-          Donation Modal
+          Donation Modal - Enhanced with In-Kind Donations
           ============================================ */}
       {donationModalOpen && selectedCharity && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setDonationModalOpen(false)}>
           <div
-            className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl animate-fade-in-up"
+            className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl animate-fade-in-up max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className={`bg-gradient-to-r ${selectedCharity.color} p-6 text-white`}>
-              <div className="flex items-center justify-between mb-4">
+            <div className={`bg-gradient-to-r ${selectedCharity.color} p-6 text-white sticky top-0`}>
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <span className="text-4xl">{selectedCharity.logo}</span>
                   <div>
@@ -1469,67 +1645,190 @@ export default function HomePage() {
 
             {/* Modal Body */}
             <div className="p-6">
-              <h4 className="font-bold text-gray-900 mb-4">اختر مبلغ التبرع</h4>
-
-              {/* Quick Amounts */}
-              <div className="grid grid-cols-4 gap-3 mb-4">
-                {[10, 25, 50, 100].map((amount) => (
+              {/* Donation Type Selector */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">نوع التبرع</label>
+                <div className="grid grid-cols-2 gap-3">
                   <button
-                    key={amount}
-                    onClick={() => setDonationAmount(amount)}
-                    className={`py-3 rounded-xl font-bold transition-all ${
-                      donationAmount === amount
+                    onClick={() => setDonationType('money')}
+                    className={`flex items-center justify-center gap-2 p-4 rounded-xl font-medium transition-all ${
+                      donationType === 'money'
                         ? 'bg-emerald-500 text-white shadow-lg'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {amount}
+                    <span className="text-2xl">💵</span>
+                    <div className="text-right">
+                      <div className="font-bold">تبرع مالي</div>
+                      <div className={`text-xs ${donationType === 'money' ? 'text-emerald-100' : 'text-gray-500'}`}>نقدي أو إلكتروني</div>
+                    </div>
                   </button>
-                ))}
-              </div>
-
-              {/* Custom Amount Input */}
-              <div className="mb-6">
-                <label className="block text-sm text-gray-600 mb-2">أو أدخل مبلغ آخر</label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    placeholder="أدخل المبلغ"
-                    value={donationAmount || ''}
-                    onChange={(e) => setDonationAmount(Number(e.target.value) || null)}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
-                  />
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">ج.م</span>
-                </div>
-              </div>
-
-              {/* Payment Methods */}
-              <div className="mb-6">
-                <label className="block text-sm text-gray-600 mb-3">طريقة الدفع</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button className="flex items-center justify-center gap-2 p-3 border-2 border-emerald-500 bg-emerald-50 rounded-xl text-emerald-700 font-medium">
-                    <span>💳</span>
-                    بطاقة ائتمان
-                  </button>
-                  <button className="flex items-center justify-center gap-2 p-3 border-2 border-gray-200 rounded-xl text-gray-600 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
-                    <span>📱</span>
-                    محفظة إلكترونية
+                  <button
+                    onClick={() => setDonationType('inkind')}
+                    className={`flex items-center justify-center gap-2 p-4 rounded-xl font-medium transition-all ${
+                      donationType === 'inkind'
+                        ? 'bg-amber-500 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <span className="text-2xl">📦</span>
+                    <div className="text-right">
+                      <div className="font-bold">تبرع عيني</div>
+                      <div className={`text-xs ${donationType === 'inkind' ? 'text-amber-100' : 'text-gray-500'}`}>ملابس، أثاث، طعام</div>
+                    </div>
                   </button>
                 </div>
               </div>
 
-              {/* Donate Button */}
-              <button
-                disabled={!donationAmount || donationAmount <= 0}
-                className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
-              >
-                <span>💝</span>
-                تبرع بـ {donationAmount || 0} ج.م
-              </button>
+              {/* Monetary Donation Section */}
+              {donationType === 'money' && (
+                <>
+                  <h4 className="font-bold text-gray-900 mb-4">اختر مبلغ التبرع</h4>
+
+                  {/* Quick Amounts */}
+                  <div className="grid grid-cols-4 gap-3 mb-4">
+                    {[10, 25, 50, 100].map((amount) => (
+                      <button
+                        key={amount}
+                        onClick={() => setDonationAmount(amount)}
+                        className={`py-3 rounded-xl font-bold transition-all ${
+                          donationAmount === amount
+                            ? 'bg-emerald-500 text-white shadow-lg'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        {amount}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom Amount Input */}
+                  <div className="mb-6">
+                    <label className="block text-sm text-gray-600 mb-2">أو أدخل مبلغ آخر</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="أدخل المبلغ"
+                        value={donationAmount || ''}
+                        onChange={(e) => setDonationAmount(Number(e.target.value) || null)}
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                      />
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">ج.م</span>
+                    </div>
+                  </div>
+
+                  {/* Payment Methods */}
+                  <div className="mb-6">
+                    <label className="block text-sm text-gray-600 mb-3">طريقة الدفع</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button className="flex items-center justify-center gap-2 p-3 border-2 border-emerald-500 bg-emerald-50 rounded-xl text-emerald-700 font-medium">
+                        <span>💳</span>
+                        بطاقة ائتمان
+                      </button>
+                      <button className="flex items-center justify-center gap-2 p-3 border-2 border-gray-200 rounded-xl text-gray-600 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
+                        <span>📱</span>
+                        محفظة إلكترونية
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Donate Button */}
+                  <button
+                    disabled={!donationAmount || donationAmount <= 0}
+                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>💝</span>
+                    تبرع بـ {donationAmount || 0} ج.م
+                  </button>
+                </>
+              )}
+
+              {/* In-Kind Donation Section */}
+              {donationType === 'inkind' && (
+                <>
+                  <h4 className="font-bold text-gray-900 mb-4">تبرع بأغراضك</h4>
+
+                  {/* Accepted Categories */}
+                  <div className="mb-4">
+                    <label className="block text-sm text-gray-600 mb-2">الفئات المقبولة من هذه الجمعية:</label>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCharity.inKindCategories?.map((cat) => (
+                        <span key={cat} className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Item Description */}
+                  <div className="mb-4">
+                    <label className="block text-sm text-gray-600 mb-2">وصف التبرع العيني</label>
+                    <textarea
+                      placeholder="مثال: 10 قطع ملابس أطفال بحالة جيدة، أو ثلاجة صغيرة تعمل..."
+                      value={inKindDescription}
+                      onChange={(e) => setInKindDescription(e.target.value)}
+                      rows={3}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none"
+                    />
+                  </div>
+
+                  {/* Upload Images Option */}
+                  <div className="mb-4">
+                    <label className="block text-sm text-gray-600 mb-2">صور التبرع (اختياري)</label>
+                    <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-amber-500 transition-colors cursor-pointer">
+                      <span className="text-4xl block mb-2">📷</span>
+                      <p className="text-sm text-gray-500">اضغط لرفع صور الأغراض</p>
+                      <p className="text-xs text-gray-400 mt-1">PNG, JPG حتى 5MB</p>
+                    </div>
+                  </div>
+
+                  {/* Pickup Options */}
+                  <div className="mb-6">
+                    <label className="block text-sm text-gray-600 mb-3">طريقة التسليم</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="radio" name="delivery" defaultChecked className="w-4 h-4 text-amber-500" />
+                        <span className="text-xl">🏠</span>
+                        <div>
+                          <div className="font-medium text-gray-900">استلام من المنزل</div>
+                          <div className="text-xs text-gray-500">سيتم التواصل معك لتحديد موعد</div>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="radio" name="delivery" className="w-4 h-4 text-amber-500" />
+                        <span className="text-xl">📍</span>
+                        <div>
+                          <div className="font-medium text-gray-900">التوصيل لمقر الجمعية</div>
+                          <div className="text-xs text-gray-500">عنوان المقر سيظهر بعد التأكيد</div>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input type="radio" name="delivery" className="w-4 h-4 text-amber-500" />
+                        <span className="text-xl">🔄</span>
+                        <div>
+                          <div className="font-medium text-gray-900">نقطة تبادل XChange</div>
+                          <div className="text-xs text-gray-500">تسليم في أقرب نقطة تبادل</div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Submit In-Kind Donation */}
+                  <button
+                    disabled={!inKindDescription.trim()}
+                    className="w-full py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>📦</span>
+                    تأكيد التبرع العيني
+                  </button>
+                </>
+              )}
 
               {/* Trust Note */}
               <p className="text-center text-xs text-gray-500 mt-4">
-                🔒 جميع التبرعات آمنة ومشفرة • يتم تحويل 100% للجمعية مباشرة
+                {donationType === 'money'
+                  ? '🔒 جميع التبرعات آمنة ومشفرة • يتم تحويل 100% للجمعية مباشرة'
+                  : '✅ سيتم مراجعة التبرع والتواصل معك خلال 24 ساعة'}
               </p>
             </div>
           </div>

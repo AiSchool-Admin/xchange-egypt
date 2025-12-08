@@ -527,6 +527,20 @@ export default function Navigation() {
   const [toastMessage, setToastMessage] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([
+    'آيفون 14 برو',
+    'سيارات مستعملة',
+    'شقق للإيجار',
+    'لابتوب جيمنج',
+  ]);
+  const [trendingSearches] = useState<string[]>([
+    'بلايستيشن 5',
+    'آيفون 15',
+    'سيارة هيونداي',
+    'ساعة أبل',
+    'ايباد برو',
+  ]);
   const [language, setLanguage] = useState<'ar' | 'en'>('ar');
   const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [locationMenuOpen, setLocationMenuOpen] = useState(false);
@@ -592,6 +606,37 @@ export default function Navigation() {
     setMobileMenuOpen(false);
     setMegaMenuOpen(false);
   }, [pathname]);
+
+  // Generate search suggestions based on query
+  useEffect(() => {
+    if (searchQuery.length >= 2) {
+      // Mock suggestions - in production, this would call an API
+      const allSuggestions = [
+        'آيفون 14 برو ماكس',
+        'آيفون 15 برو',
+        'آيفون 13',
+        'سامسونج جالاكسي S23',
+        'سامسونج جالاكسي نوت',
+        'لابتوب ماك بوك',
+        'لابتوب HP',
+        'لابتوب Dell',
+        'سيارة تويوتا كورولا',
+        'سيارة هيونداي النترا',
+        'شقة للإيجار القاهرة',
+        'شقة للبيع الإسكندرية',
+        'بلايستيشن 5',
+        'اكس بوكس سيريس',
+        'ساعة أبل واتش',
+        'سماعات ايربودز',
+      ];
+      const filtered = allSuggestions.filter(s =>
+        s.includes(searchQuery) || searchQuery.split(' ').some(word => s.includes(word))
+      ).slice(0, 5);
+      setSearchSuggestions(filtered);
+    } else {
+      setSearchSuggestions([]);
+    }
+  }, [searchQuery]);
 
   const fetchUnreadCount = async () => {
     try {
@@ -690,7 +735,7 @@ export default function Navigation() {
               </span>
             </Link>
 
-            {/* Search Bar - Desktop */}
+            {/* Search Bar - Desktop with Suggestions */}
             <form
               onSubmit={handleSearch}
               className="hidden md:flex flex-1 max-w-xl relative"
@@ -704,7 +749,7 @@ export default function Navigation() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
                   placeholder="ابحث عن منتجات، سيارات، موبايلات..."
                   className="w-full px-4 py-2.5 bg-transparent outline-none text-gray-700 placeholder-gray-400"
                 />
@@ -715,6 +760,83 @@ export default function Navigation() {
                   <Icons.Search />
                 </button>
               </div>
+
+              {/* Search Suggestions Dropdown */}
+              {searchFocused && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
+                  {/* Search Suggestions */}
+                  {searchQuery.length >= 2 && searchSuggestions.length > 0 && (
+                    <div className="p-3 border-b border-gray-100">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">اقتراحات البحث</h4>
+                      {searchSuggestions.map((suggestion, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery(suggestion);
+                            router.push(`/items?q=${encodeURIComponent(suggestion)}`);
+                          }}
+                          className="w-full text-right flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <span className="text-gray-400">🔍</span>
+                          <span className="text-gray-700">{suggestion}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Recent Searches */}
+                  {searchQuery.length < 2 && recentSearches.length > 0 && (
+                    <div className="p-3 border-b border-gray-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-bold text-gray-400 uppercase">عمليات البحث الأخيرة</h4>
+                        <button
+                          type="button"
+                          onClick={() => setRecentSearches([])}
+                          className="text-xs text-primary-600 hover:underline"
+                        >
+                          مسح الكل
+                        </button>
+                      </div>
+                      {recentSearches.map((search, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery(search);
+                            router.push(`/items?q=${encodeURIComponent(search)}`);
+                          }}
+                          className="w-full text-right flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <span className="text-gray-400">🕐</span>
+                          <span className="text-gray-700">{search}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Trending Searches */}
+                  <div className="p-3">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">الأكثر بحثاً</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {trendingSearches.map((trend, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery(trend);
+                            router.push(`/items?q=${encodeURIComponent(trend)}`);
+                          }}
+                          className="px-3 py-1.5 bg-gray-100 hover:bg-primary-100 hover:text-primary-600 rounded-full text-sm text-gray-600 transition-colors flex items-center gap-1"
+                        >
+                          <span>🔥</span>
+                          {trend}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </form>
 
             {/* Navigation Links - Desktop */}
