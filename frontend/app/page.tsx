@@ -91,6 +91,7 @@ export default function HomePage() {
   const [wantedItems, setWantedItems] = useState<Item[]>([]);
   const [barterItems, setBarterItems] = useState<Item[]>([]);
   const [scrapItems, setScrapItems] = useState<Item[]>([]);
+  const [luxuryItems, setLuxuryItems] = useState<Item[]>([]);
   const [activeAuctions, setActiveAuctions] = useState<any[]>([]);
   const [activeTenders, setActiveTenders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,7 +121,7 @@ export default function HomePage() {
       setLoading(true);
 
       // Load all data in parallel
-      const [categoriesRes, featuredRes, latestRes, saleRes, wantedRes, barterRes, scrapRes, auctionsRes, tendersRes] = await Promise.all([
+      const [categoriesRes, featuredRes, latestRes, saleRes, wantedRes, barterRes, scrapRes, luxuryRes, auctionsRes, tendersRes] = await Promise.all([
         getCategories().catch(() => ({ data: [] })),
         getItems({ limit: 4, featured: true, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 8, status: 'ACTIVE', sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => ({ data: { items: [] } })),
@@ -128,6 +129,7 @@ export default function HomePage() {
         getItems({ limit: 4, listingType: 'DIRECT_BUY', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 4, listingType: 'BARTER', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 4, isScrap: true, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
+        getItems({ limit: 4, categoryId: '516cbe98-eb69-4d5c-a0e1-021c3a3aa608', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getAuctions({ limit: 4, status: 'ACTIVE' }).catch(() => ({ data: { auctions: [] } })),
         apiClient.get('/reverse-auctions?status=ACTIVE&limit=4').catch(() => ({ data: { data: [] } })),
       ]);
@@ -139,6 +141,7 @@ export default function HomePage() {
       setWantedItems(wantedRes.data?.items || []);
       setBarterItems(barterRes.data?.items || []);
       setScrapItems(scrapRes.data?.items || []);
+      setLuxuryItems(luxuryRes.data?.items || []);
       // Handle different response formats safely
       const auctionsData = auctionsRes as any;
       setActiveAuctions(auctionsData.data?.auctions || auctionsData.data?.data || []);
@@ -784,6 +787,60 @@ export default function HomePage() {
               <p className="text-gray-500 mb-4">اعرض المواد القابلة لإعادة التدوير</p>
               <Link href="/inventory/add?isScrap=true" className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-xl font-semibold hover:bg-amber-600 transition-colors">
                 أضف منتج للتوالف
+              </Link>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Luxury Section (السلع الفاخرة)
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-purple-50 to-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">💎</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">السلع الفاخرة</h2>
+                <p className="text-gray-500 mt-1">ساعات وحقائب ومجوهرات أصلية</p>
+              </div>
+            </div>
+            <Link
+              href="/items?categoryId=516cbe98-eb69-4d5c-a0e1-021c3a3aa608"
+              className="hidden md:flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {luxuryItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {luxuryItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType={item.listingType as any}
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  createdAt={item.createdAt}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl">
+              <div className="text-6xl mb-4">💎</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد سلع فاخرة حالياً</h3>
+              <p className="text-gray-500 mb-4">اعرض ساعاتك وحقائبك ومجوهراتك الأصلية</p>
+              <Link href="/inventory/add?categoryId=516cbe98-eb69-4d5c-a0e1-021c3a3aa608" className="inline-flex items-center gap-2 px-6 py-3 bg-purple-500 text-white rounded-xl font-semibold hover:bg-purple-600 transition-colors">
+                أضف منتج فاخر
               </Link>
             </div>
           )}

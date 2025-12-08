@@ -138,6 +138,8 @@ export const searchItems = async (
       limit: req.query.limit ? parseInt(req.query.limit as string, 10) : undefined,
       minPrice: req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined,
       maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined,
+      isScrap: req.query.isScrap === 'true' ? true : req.query.isScrap === 'false' ? false : undefined,
+      featured: req.query.featured === 'true' ? true : req.query.featured === 'false' ? false : undefined,
     };
 
     const result = await itemService.searchItems(params);
