@@ -245,14 +245,16 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
           <div className="text-center max-w-3xl mx-auto">
             {/* Dynamic Content with Animation */}
-            <div className="relative min-h-[200px] md:min-h-[220px]">
+            <div className="relative min-h-[200px] md:min-h-[220px] overflow-hidden">
               {heroSlides.map((slide, index) => (
                 <div
                   key={slide.id}
-                  className={`absolute inset-0 transition-all duration-500 ${
+                  className={`absolute inset-0 transition-all duration-700 ease-in-out ${
                     index === currentSlide
-                      ? 'opacity-100 translate-y-0'
-                      : 'opacity-0 translate-y-4 pointer-events-none'
+                      ? 'opacity-100 translate-x-0'
+                      : index < currentSlide
+                        ? 'opacity-0 -translate-x-full'
+                        : 'opacity-0 translate-x-full'
                   }`}
                 >
                   {/* Badge for special slides */}
