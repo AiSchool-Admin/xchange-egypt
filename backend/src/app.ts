@@ -191,12 +191,35 @@ app.get('/', (_req: Request, res: Response) => {
 });
 
 // Health check
-app.get('/health', (_req: Request, res: Response) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: env.server.nodeEnv,
-  });
+app.get('/health', async (_req: Request, res: Response) => {
+  try {
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+
+    res.status(200).json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: env.server.nodeEnv,
+      version: '1.0.0',
+      services: {
+        database: 'connected',
+        api: 'running'
+      },
+      uptime: process.uptime()
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      environment: env.server.nodeEnv,
+      version: '1.0.0',
+      services: {
+        database: 'disconnected',
+        api: 'running'
+      },
+      error: 'Database connection failed'
+    });
+  }
 });
 
 // API v1 routes
