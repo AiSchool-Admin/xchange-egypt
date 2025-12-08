@@ -246,10 +246,10 @@ export default function HomePage() {
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 py-12 md:py-16">
           <div className="text-center max-w-3xl mx-auto">
             {/* Dynamic Content with Animation */}
-            <div className="relative min-h-[200px] md:min-h-[220px] overflow-hidden">
+            <div className="relative min-h-[160px] md:min-h-[180px] overflow-hidden">
               {heroSlides.map((slide, index) => (
                 <Link
                   key={slide.id}
@@ -264,8 +264,8 @@ export default function HomePage() {
                 >
                   {/* Badge for special slides */}
                   {slide.badge && (
-                    <div className="mb-4">
-                      <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-bold animate-pulse">
+                    <div className="mb-3">
+                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-bold animate-pulse">
                         <span>{slide.icon}</span>
                         {slide.badge}
                       </span>
@@ -273,21 +273,41 @@ export default function HomePage() {
                   )}
 
                   {/* Main Heading */}
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight hover:scale-105 transition-transform">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight hover:scale-105 transition-transform">
                     <span className="inline-block">{slide.icon}</span> {slide.title}
-                    <span className="block text-white/90">{slide.subtitle}</span>
+                    <span className="block text-white/90 text-2xl md:text-3xl lg:text-4xl mt-1">{slide.subtitle}</span>
                   </h1>
 
                   {/* Subtitle */}
-                  <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto">
+                  <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto">
                     {slide.description}
                   </p>
                 </Link>
               ))}
+
+              {/* Navigation Arrows */}
+              <button
+                onClick={() => setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-8 w-10 h-10 md:w-12 md:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all z-10"
+                aria-label="Previous slide"
+              >
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setCurrentSlide((prev) => (prev + 1) % heroSlides.length)}
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-8 w-10 h-10 md:w-12 md:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all z-10"
+                aria-label="Next slide"
+              >
+                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
             </div>
 
-            {/* Slide Indicators */}
-            <div className="flex justify-center gap-2 mb-8">
+            {/* Slide Indicators - Above Search Bar */}
+            <div className="flex justify-center gap-2 mb-6 mt-4">
               {heroSlides.map((slide, index) => (
                 <button
                   key={slide.id}
@@ -303,7 +323,7 @@ export default function HomePage() {
             </div>
 
             {/* Search Bar - Fixed/Static */}
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
+            <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-6">
               <div className="flex bg-white rounded-2xl shadow-xl overflow-hidden">
                 <input
                   type="text"
