@@ -143,7 +143,7 @@ export default function HomePage() {
       const auctionsData = auctionsRes as any;
       setActiveAuctions(auctionsData.data?.auctions || auctionsData.data?.data || []);
       const tendersData = tendersRes as any;
-      setActiveTenders(tendersData.data?.data?.reverseAuctions || tendersData.data?.data || []);
+      setActiveTenders(tendersData.data?.data?.items || tendersData.data?.items || []);
     } catch (error) {
       console.error('Failed to load home data:', error);
     } finally {
