@@ -536,10 +536,13 @@ export default function Navigation() {
     district: ''
   });
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [hoveredCategoryPosition, setHoveredCategoryPosition] = useState<number>(0);
   const categoryMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const megaMenuRef = useRef<HTMLDivElement>(null);
   const categoryBarRef = useRef<HTMLDivElement>(null);
+  const categoriesScrollRef = useRef<HTMLDivElement>(null);
+  const categoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
   const languageMenuRef = useRef<HTMLDivElement>(null);
   const locationMenuRef = useRef<HTMLDivElement>(null);
@@ -631,6 +634,24 @@ export default function Navigation() {
       clearTimeout(categoryMenuTimeoutRef.current);
     }
     setHoveredCategory(categoryId);
+
+    // Calculate position for mega menu
+    const categoryElement = categoryRefs.current[categoryId];
+    const containerElement = categoryBarRef.current;
+    if (categoryElement && containerElement) {
+      const categoryRect = categoryElement.getBoundingClientRect();
+      const containerRect = containerElement.getBoundingClientRect();
+      // Calculate right offset from container's right edge (for RTL)
+      const rightOffset = containerRect.right - categoryRect.right;
+      setHoveredCategoryPosition(rightOffset);
+    }
+  };
+
+  // Scroll categories to the left (for RTL - shows more categories)
+  const handleScrollCategories = () => {
+    if (categoriesScrollRef.current) {
+      categoriesScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
   };
 
   const handleCategoryMouseLeave = () => {
@@ -1001,17 +1022,21 @@ export default function Navigation() {
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center gap-0 py-1">
               {/* Category Links with Scroll */}
-              <div className="flex-1 flex items-center gap-0 overflow-x-auto scrollbar-hide">
+              <div
+                ref={categoriesScrollRef}
+                className="flex-1 flex items-center gap-0 overflow-x-auto scrollbar-hide"
+              >
                 {categoriesData.map((category) => (
                   <div
                     key={category.id}
+                    ref={(el) => { categoryRefs.current[category.id] = el; }}
                     className="relative flex-shrink-0"
                     onMouseEnter={() => handleCategoryMouseEnter(category.id)}
                     onMouseLeave={handleCategoryMouseLeave}
                   >
                     <Link
                       href={category.href}
-                      className={`flex items-center gap-1.5 px-4 py-2.5 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${
+                      className={`flex items-center gap-1.5 px-4 py-2.5 font-bold text-sm whitespace-nowrap transition-all border-b-2 ${
                         hoveredCategory === category.id
                           ? 'text-primary-600 border-primary-500'
                           : 'text-gray-700 hover:text-primary-600 border-transparent'
@@ -1027,8 +1052,11 @@ export default function Navigation() {
                 ))}
               </div>
 
-              {/* Scroll Arrow */}
-              <button className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 transition-colors">
+              {/* Scroll Arrow - Functional */}
+              <button
+                onClick={handleScrollCategories}
+                className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
@@ -1039,8 +1067,12 @@ export default function Navigation() {
           {/* Category Mega Menu Dropdown - Compact */}
           {hoveredCategory && (
             <div
-              className="absolute top-full right-4 bg-white shadow-xl border border-gray-200 rounded-lg z-50 mt-1"
-              style={{ minWidth: '600px', maxWidth: '700px' }}
+              className="absolute top-full bg-white shadow-xl border border-gray-200 rounded-lg z-50 mt-1"
+              style={{
+                minWidth: '600px',
+                maxWidth: '700px',
+                right: `${Math.max(16, hoveredCategoryPosition)}px`
+              }}
               onMouseEnter={handleMegaMenuMouseEnter}
               onMouseLeave={handleMegaMenuMouseLeave}
             >
