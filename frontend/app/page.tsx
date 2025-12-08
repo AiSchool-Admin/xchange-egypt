@@ -249,7 +249,7 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4 py-12 md:py-16">
           <div className="text-center max-w-3xl mx-auto">
             {/* Dynamic Content with Animation */}
-            <div className="relative min-h-[160px] md:min-h-[180px] overflow-hidden">
+            <div className="relative min-h-[140px] md:min-h-[160px] overflow-hidden">
               {heroSlides.map((slide, index) => (
                 <Link
                   key={slide.id}
@@ -264,8 +264,8 @@ export default function HomePage() {
                 >
                   {/* Badge for special slides */}
                   {slide.badge && (
-                    <div className="mb-3">
-                      <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-bold animate-pulse">
+                    <div className="mb-2">
+                      <span className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-bold animate-pulse">
                         <span>{slide.icon}</span>
                         {slide.badge}
                       </span>
@@ -273,51 +273,51 @@ export default function HomePage() {
                   )}
 
                   {/* Main Heading */}
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight hover:scale-105 transition-transform">
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 leading-tight hover:scale-105 transition-transform">
                     <span className="inline-block">{slide.icon}</span> {slide.title}
-                    <span className="block text-white/90 text-2xl md:text-3xl lg:text-4xl mt-1">{slide.subtitle}</span>
+                    <span className="block text-white/90 text-xl md:text-2xl lg:text-3xl mt-1">{slide.subtitle}</span>
                   </h1>
 
                   {/* Subtitle */}
-                  <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto">
+                  <p className="text-sm md:text-base text-white/80 max-w-2xl mx-auto">
                     {slide.description}
                   </p>
                 </Link>
               ))}
 
-              {/* Navigation Arrows */}
+              {/* Navigation Arrows - Clear Direction */}
               <button
                 onClick={() => setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
-                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 md:translate-x-8 w-10 h-10 md:w-12 md:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all z-10"
-                aria-label="Previous slide"
+                className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 p-2 text-white hover:text-white/80 transition-all z-10 group"
+                aria-label="السابق"
               >
-                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <svg className="w-8 h-8 md:w-10 md:h-10 drop-shadow-lg group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
                 </svg>
               </button>
               <button
                 onClick={() => setCurrentSlide((prev) => (prev + 1) % heroSlides.length)}
-                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 md:-translate-x-8 w-10 h-10 md:w-12 md:h-12 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-all z-10"
-                aria-label="Next slide"
+                className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 p-2 text-white hover:text-white/80 transition-all z-10 group"
+                aria-label="التالي"
               >
-                <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg className="w-8 h-8 md:w-10 md:h-10 drop-shadow-lg group-hover:scale-110 transition-transform" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
                 </svg>
               </button>
             </div>
 
-            {/* Slide Indicators - Above Search Bar */}
-            <div className="flex justify-center gap-2 mb-6 mt-4">
+            {/* Slide Indicators */}
+            <div className="flex justify-center gap-3 my-4">
               {heroSlides.map((slide, index) => (
                 <button
                   key={slide.id}
                   onClick={() => setCurrentSlide(index)}
                   className={`transition-all duration-300 rounded-full ${
                     index === currentSlide
-                      ? 'w-8 h-2 bg-white'
-                      : 'w-2 h-2 bg-white/40 hover:bg-white/60'
+                      ? 'w-10 h-3 bg-white shadow-lg'
+                      : 'w-3 h-3 bg-white/40 hover:bg-white/60'
                   }`}
-                  aria-label={`Go to slide ${index + 1}`}
+                  aria-label={`انتقل إلى ${index + 1}`}
                 />
               ))}
             </div>
