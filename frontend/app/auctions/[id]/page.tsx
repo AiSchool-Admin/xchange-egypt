@@ -21,14 +21,14 @@ const CountdownTimer: React.FC<{ endTime: string }> = ({ endTime }) => {
         const seconds = Math.floor((difference / 1000) % 60);
 
         if (days > 0) {
-          setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+          setTimeLeft(`${days} يوم ${hours} ساعة ${minutes} دقيقة`);
         } else if (hours > 0) {
-          setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+          setTimeLeft(`${hours} س ${minutes} د ${seconds} ث`);
         } else {
-          setTimeLeft(`${minutes}m ${seconds}s`);
+          setTimeLeft(`${minutes} د ${seconds} ث`);
         }
       } else {
-        setTimeLeft('Ended');
+        setTimeLeft('انتهى');
       }
     };
 
@@ -59,6 +59,11 @@ export default function AuctionDetailsPage() {
   const auctionId = params.id as string;
 
   useEffect(() => {
+    if (!auctionId || auctionId === 'undefined') {
+      setError('معرف المزاد غير صالح');
+      setLoading(false);
+      return;
+    }
     loadAuction();
     // Refresh auction data every 5 seconds for live updates
     const interval = setInterval(loadAuction, 5000);
@@ -66,17 +71,22 @@ export default function AuctionDetailsPage() {
   }, [auctionId]);
 
   const loadAuction = async () => {
+    if (!auctionId || auctionId === 'undefined') {
+      return;
+    }
     try {
       setLoading(true);
       const response = await getAuction(auctionId);
       setAuction(response.data);
 
       // Set default bid amount to minimum increment
-      if (!bidAmount && response.data.currentPrice) {
-        setBidAmount((response.data.currentPrice + 10).toString());
+      if (!bidAmount) {
+        const price = response.data.currentPrice || response.data.startingPrice || 0;
+        const increment = response.data.minBidIncrement || 10;
+        setBidAmount((price + increment).toString());
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load auction');
+      setError(err.response?.data?.message || 'فشل في تحميل المزاد');
     } finally {
       setLoading(false);
     }
@@ -90,15 +100,44 @@ export default function AuctionDetailsPage() {
       return;
     }
 
+    const bidValue = parseFloat(bidAmount);
+    if (isNaN(bidValue) || bidValue <= 0) {
+      setBidError('الرجاء إدخال قيمة مزايدة صحيحة');
+      return;
+    }
+
     setBidding(true);
     setBidError('');
 
     try {
-      await placeBid(auctionId, { amount: parseFloat(bidAmount) });
+      await placeBid(auctionId, { bidAmount: bidValue });
       await loadAuction(); // Reload to show new bid
-      setBidAmount((parseFloat(bidAmount) + 10).toString()); // Increment for next bid
+      setBidAmount((bidValue + (auction?.minBidIncrement || 10)).toString()); // Increment for next bid
     } catch (err: any) {
-      setBidError(err.response?.data?.message || 'Failed to place bid');
+      console.error('Bid error:', err.response?.data || err);
+
+      // Handle 401 Unauthorized
+      if (err.response?.status === 401) {
+        setBidError('انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.');
+        return;
+      }
+
+      // Safely extract error message (ensure it's a string)
+      let errorMessage = 'فشل في تقديم المزايدة';
+      const responseData = err.response?.data;
+
+      if (typeof responseData?.message === 'string') {
+        errorMessage = responseData.message;
+      } else if (typeof responseData?.error?.message === 'string') {
+        // Backend returns { success: false, error: { message: "..." } }
+        errorMessage = responseData.error.message;
+      } else if (typeof responseData?.error === 'string') {
+        errorMessage = responseData.error;
+      } else if (typeof responseData === 'string') {
+        errorMessage = responseData;
+      }
+
+      setBidError(errorMessage);
     } finally {
       setBidding(false);
     }
@@ -110,7 +149,7 @@ export default function AuctionDetailsPage() {
       return;
     }
 
-    if (!confirm('Are you sure you want to buy this item now?')) {
+    if (!confirm('هل أنت متأكد من شراء هذا المنتج الآن؟')) {
       return;
     }
 
@@ -119,9 +158,9 @@ export default function AuctionDetailsPage() {
     try {
       await buyNow(auctionId);
       await loadAuction();
-      alert('Congratulations! You won the auction!');
+      alert('مبروك! لقد فزت بالمزاد!');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to buy now');
+      alert(err.response?.data?.message || 'فشل في الشراء الفوري');
     } finally {
       setBuying(false);
     }
@@ -132,7 +171,7 @@ export default function AuctionDetailsPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600">Loading auction...</p>
+          <p className="mt-4 text-gray-600">جاري تحميل المزاد...</p>
         </div>
       </div>
     );
@@ -140,14 +179,14 @@ export default function AuctionDetailsPage() {
 
   if (error && !auction) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="rtl">
         <div className="text-center">
           <p className="text-red-600 text-lg">{error}</p>
           <button
             onClick={() => router.push('/auctions')}
             className="mt-4 text-purple-600 hover:text-purple-700"
           >
-            ← Back to Auctions
+            → العودة للمزادات
           </button>
         </div>
       </div>
@@ -179,10 +218,12 @@ export default function AuctionDetailsPage() {
   const hasStarted = new Date(auction.startTime) < new Date();
   const isActive = hasStarted && !isEnded;
   const isSeller = user?.id === item.seller?.id;
-  const minBid = auction.currentPrice + 10;
+  const currentPrice = auction.currentPrice || auction.startingPrice || 0;
+  const minBidIncrement = auction.minBidIncrement || 10;
+  const minBid = currentPrice + minBidIncrement;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -190,7 +231,7 @@ export default function AuctionDetailsPage() {
             href="/auctions"
             className="text-purple-600 hover:text-purple-700 flex items-center gap-2"
           >
-            ← Back to Auctions
+            → العودة للمزادات
           </Link>
         </div>
       </div>
@@ -219,15 +260,15 @@ export default function AuctionDetailsPage() {
                 <div className="absolute top-4 right-4">
                   {isEnded ? (
                     <span className="bg-gray-800 text-white px-4 py-2 rounded-full text-sm font-semibold">
-                      Ended
+                      منتهي
                     </span>
                   ) : !hasStarted ? (
                     <span className="bg-yellow-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
-                      Starting Soon
+                      قريباً
                     </span>
                   ) : (
                     <span className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold animate-pulse">
-                      • Live Auction
+                      • مباشر
                     </span>
                   )}
                 </div>
@@ -274,48 +315,48 @@ export default function AuctionDetailsPage() {
                 </span>
               </div>
 
-              <h2 className="text-lg font-semibold mb-2">Description</h2>
+              <h2 className="text-lg font-semibold mb-2">الوصف</h2>
               <p className="text-gray-700 whitespace-pre-wrap mb-6">
                 {item.description}
               </p>
 
               <div className="border-t pt-6">
-                <h2 className="text-lg font-semibold mb-4">Auction Details</h2>
+                <h2 className="text-lg font-semibold mb-4">تفاصيل المزاد</h2>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600">Starting Price</p>
-                    <p className="font-semibold">{auction.startingPrice.toLocaleString()} EGP</p>
+                    <p className="text-gray-600">السعر الابتدائي</p>
+                    <p className="font-semibold">{(auction.startingPrice || 0).toLocaleString()} ج.م</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Total Bids</p>
-                    <p className="font-semibold">{auction.bidCount} bids</p>
+                    <p className="text-gray-600">عدد المزايدات</p>
+                    <p className="font-semibold">{auction.bidCount || 0} مزايدة</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Started</p>
+                    <p className="text-gray-600">بدأ في</p>
                     <p className="font-semibold">
-                      {new Date(auction.startTime).toLocaleString()}
+                      {auction.startTime ? new Date(auction.startTime).toLocaleString('ar-EG') : '-'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Ends</p>
+                    <p className="text-gray-600">ينتهي في</p>
                     <p className="font-semibold">
-                      {new Date(auction.endTime).toLocaleString()}
+                      {auction.endTime ? new Date(auction.endTime).toLocaleString('ar-EG') : '-'}
                     </p>
                   </div>
                 </div>
               </div>
 
               <div className="border-t pt-6 mt-6">
-                <h2 className="text-lg font-semibold mb-2">Seller</h2>
-                <p className="text-gray-700">{item.seller?.fullName || (item.seller as any)?.businessName || 'Unknown'}</p>
-                <p className="text-sm text-gray-600 capitalize">{item.seller?.userType || 'Individual'}</p>
+                <h2 className="text-lg font-semibold mb-2">البائع</h2>
+                <p className="text-gray-700">{item.seller?.fullName || (item.seller as any)?.businessName || 'غير معروف'}</p>
+                <p className="text-sm text-gray-600 capitalize">{item.seller?.userType === 'BUSINESS' ? 'تاجر' : 'فرد'}</p>
               </div>
             </div>
 
             {/* Bid History */}
             {auction.bids && auction.bids.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-lg font-semibold mb-4">Bid History</h2>
+                <h2 className="text-lg font-semibold mb-4">سجل المزايدات</h2>
                 <div className="space-y-3">
                   {auction.bids.slice(0, 10).map((bid, index) => (
                     <div
@@ -328,17 +369,17 @@ export default function AuctionDetailsPage() {
                         <p className="font-semibold text-gray-900">
                           {bid.bidder.fullName}
                           {index === 0 && (
-                            <span className="ml-2 text-xs text-green-600 font-normal">
-                              (Leading)
+                            <span className="mr-2 text-xs text-green-600 font-normal">
+                              (الأعلى)
                             </span>
                           )}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {new Date(bid.createdAt).toLocaleString()}
+                          {new Date(bid.createdAt).toLocaleString('ar-EG')}
                         </p>
                       </div>
                       <p className="text-lg font-bold text-purple-600">
-                        {bid.amount.toLocaleString()} EGP
+                        {(bid.bidAmount || bid.amount || 0).toLocaleString()} ج.م
                       </p>
                     </div>
                   ))}
@@ -352,8 +393,8 @@ export default function AuctionDetailsPage() {
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
               {/* Countdown */}
               {isActive && (
-                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg p-4 mb-6 text-center">
-                  <p className="text-sm font-medium mb-1">Time Remaining</p>
+                <div className="bg-gradient-to-l from-purple-600 to-indigo-600 text-white rounded-lg p-4 mb-6 text-center">
+                  <p className="text-sm font-medium mb-1">الوقت المتبقي</p>
                   <p className="text-3xl font-bold">
                     <CountdownTimer endTime={auction.endTime} />
                   </p>
@@ -362,13 +403,13 @@ export default function AuctionDetailsPage() {
 
               {/* Current Price */}
               <div className="mb-6">
-                <p className="text-sm text-gray-600 mb-1">Current Bid</p>
+                <p className="text-sm text-gray-600 mb-1">المزايدة الحالية</p>
                 <p className="text-4xl font-bold text-purple-600">
-                  {auction.currentPrice.toLocaleString()} EGP
+                  {currentPrice.toLocaleString()} ج.م
                 </p>
                 {isActive && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Minimum bid: {minBid.toLocaleString()} EGP
+                    الحد الأدنى للمزايدة: {minBid.toLocaleString()} ج.م
                   </p>
                 )}
               </div>
@@ -376,9 +417,9 @@ export default function AuctionDetailsPage() {
               {/* Buy Now Price */}
               {auction.buyNowPrice && isActive && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-gray-700 mb-1">Or Buy It Now</p>
+                  <p className="text-sm text-gray-700 mb-1">أو اشتري الآن</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {auction.buyNowPrice.toLocaleString()} EGP
+                    {auction.buyNowPrice.toLocaleString()} ج.م
                   </p>
                 </div>
               )}
@@ -389,7 +430,7 @@ export default function AuctionDetailsPage() {
                   <form onSubmit={handlePlaceBid} className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Your Bid Amount (EGP)
+                        قيمة مزايدتك (ج.م)
                       </label>
                       <input
                         type="number"
@@ -414,7 +455,7 @@ export default function AuctionDetailsPage() {
                       disabled={bidding}
                       className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {bidding ? 'Placing Bid...' : 'Place Bid'}
+                      {bidding ? 'جاري تقديم المزايدة...' : 'تقديم مزايدة'}
                     </button>
                   </form>
 
@@ -424,16 +465,16 @@ export default function AuctionDetailsPage() {
                       disabled={buying}
                       className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {buying ? 'Processing...' : 'Buy Now'}
+                      {buying ? 'جاري المعالجة...' : 'اشتري الآن'}
                     </button>
                   )}
 
                   {!user && (
                     <p className="text-sm text-center text-gray-600">
                       <Link href="/login" className="text-purple-600 hover:text-purple-700">
-                        Sign in
+                        سجل دخول
                       </Link>{' '}
-                      to place bids
+                      للمزايدة
                     </p>
                   )}
                 </div>
@@ -443,7 +484,7 @@ export default function AuctionDetailsPage() {
               {isSeller && (
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <p className="text-sm text-blue-800 font-medium">
-                    This is your auction
+                    هذا مزادك الخاص
                   </p>
                 </div>
               )}
@@ -452,11 +493,11 @@ export default function AuctionDetailsPage() {
               {isEnded && (
                 <div className="p-4 bg-gray-100 border border-gray-300 rounded-lg">
                   <p className="text-center font-semibold text-gray-700">
-                    Auction Ended
+                    انتهى المزاد
                   </p>
                   {auction.winnerId && (
                     <p className="text-sm text-center text-gray-600 mt-2">
-                      Winner: {auction.bids?.[0]?.bidder.fullName}
+                      الفائز: {auction.bids?.[0]?.bidder.fullName}
                     </p>
                   )}
                 </div>
@@ -466,10 +507,10 @@ export default function AuctionDetailsPage() {
               {!hasStarted && (
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-center font-semibold text-yellow-800">
-                    Auction Starting Soon
+                    المزاد يبدأ قريباً
                   </p>
                   <p className="text-sm text-center text-yellow-700 mt-2">
-                    Starts: {new Date(auction.startTime).toLocaleString()}
+                    يبدأ في: {new Date(auction.startTime).toLocaleString('ar-EG')}
                   </p>
                 </div>
               )}

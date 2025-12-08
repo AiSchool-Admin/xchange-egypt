@@ -20,14 +20,14 @@ const CountdownTimer: React.FC<{ endTime: string }> = ({ endTime }) => {
         const seconds = Math.floor((difference / 1000) % 60);
 
         if (days > 0) {
-          setTimeLeft(`${days}d ${hours}h ${minutes}m`);
+          setTimeLeft(`${days} يوم ${hours} ساعة`);
         } else if (hours > 0) {
-          setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+          setTimeLeft(`${hours} س ${minutes} د ${seconds} ث`);
         } else {
-          setTimeLeft(`${minutes}m ${seconds}s`);
+          setTimeLeft(`${minutes} د ${seconds} ث`);
         }
       } else {
-        setTimeLeft('Ended');
+        setTimeLeft('انتهى');
       }
     };
 
@@ -88,7 +88,7 @@ export default function AuctionsPage() {
       setAuctions(response.data.auctions);
       setTotalPages(response.data.pagination.totalPages);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load auctions');
+      setError(err.response?.data?.message || 'فشل في تحميل المزادات');
     } finally {
       setLoading(false);
     }
@@ -103,20 +103,20 @@ export default function AuctionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div className="bg-gradient-to-l from-purple-600 to-indigo-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-4xl font-bold">🔨 Live Auctions</h1>
-              <p className="text-purple-100 mt-2">Bid on items and win great deals!</p>
+              <h1 className="text-4xl font-bold">🔨 المزادات المباشرة</h1>
+              <p className="text-purple-100 mt-2">زايد على المنتجات واحصل على أفضل الصفقات!</p>
             </div>
             <Link
               href="/auctions/new"
               className="bg-white text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 transition font-semibold shadow-lg"
             >
-              + Start Auction
+              + إنشاء مزاد
             </Link>
           </div>
         </div>
@@ -128,18 +128,18 @@ export default function AuctionsPage() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Filters</h2>
+                <h2 className="text-lg font-semibold">الفلاتر</h2>
                 <button
                   onClick={clearFilters}
                   className="text-sm text-purple-600 hover:text-purple-700"
                 >
-                  Clear All
+                  مسح الكل
                 </button>
               </div>
 
               {/* Status Filter */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">الحالة</label>
                 <select
                   value={selectedStatus}
                   onChange={(e) => {
@@ -148,16 +148,16 @@ export default function AuctionsPage() {
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="">All</option>
-                  <option value="ACTIVE">Active</option>
-                  <option value="PENDING">Starting Soon</option>
-                  <option value="ENDED">Ended</option>
+                  <option value="">الكل</option>
+                  <option value="ACTIVE">نشط</option>
+                  <option value="PENDING">قريباً</option>
+                  <option value="ENDED">منتهي</option>
                 </select>
               </div>
 
               {/* Category Filter */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">الفئة</label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => {
@@ -166,10 +166,10 @@ export default function AuctionsPage() {
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="">All Categories</option>
+                  <option value="">جميع الفئات</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.nameEn}
+                      {cat.nameAr || cat.nameEn}
                     </option>
                   ))}
                 </select>
@@ -178,21 +178,21 @@ export default function AuctionsPage() {
               {/* Price Range */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Current Price (EGP)
+                  نطاق السعر (ج.م)
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
-                    placeholder="Min"
+                    placeholder="من"
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <input
                     type="number"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
-                    placeholder="Max"
+                    placeholder="إلى"
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
@@ -205,7 +205,7 @@ export default function AuctionsPage() {
             {loading ? (
               <div className="text-center py-12">
                 <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                <p className="mt-4 text-gray-600">Loading auctions...</p>
+                <p className="mt-4 text-gray-600">جاري تحميل المزادات...</p>
               </div>
             ) : error ? (
               <div className="text-center py-12">
@@ -214,13 +214,13 @@ export default function AuctionsPage() {
                   onClick={loadAuctions}
                   className="mt-4 text-purple-600 hover:text-purple-700"
                 >
-                  Try Again
+                  حاول مرة أخرى
                 </button>
               </div>
             ) : auctions.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg">
-                <p className="text-gray-600 text-lg">No auctions found</p>
-                <p className="text-gray-500 mt-2">Be the first to start an auction!</p>
+                <p className="text-gray-600 text-lg">لا توجد مزادات</p>
+                <p className="text-gray-500 mt-2">كن أول من يبدأ مزاداً!</p>
               </div>
             ) : (
               <>
@@ -256,25 +256,25 @@ export default function AuctionsPage() {
                           )}
 
                           {/* Status Badge */}
-                          <div className="absolute top-2 right-2">
+                          <div className="absolute top-2 left-2">
                             {isEnded ? (
                               <span className="bg-gray-800 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                Ended
+                                منتهي
                               </span>
                             ) : !hasStarted ? (
                               <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                                Starting Soon
+                                قريباً
                               </span>
                             ) : (
                               <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold animate-pulse">
-                                • Live
+                                • مباشر
                               </span>
                             )}
                           </div>
 
                           {/* Countdown */}
                           {!isEnded && hasStarted && (
-                            <div className="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm font-semibold">
+                            <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white px-3 py-1 rounded text-sm font-semibold">
                               ⏰ <CountdownTimer endTime={auction.endTime} />
                             </div>
                           )}
@@ -291,24 +291,24 @@ export default function AuctionsPage() {
 
                           <div className="mt-3 space-y-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-600">Current Bid:</span>
+                              <span className="text-sm text-gray-600">المزايدة الحالية:</span>
                               <span className="text-lg font-bold text-purple-600">
-                                {auction.currentPrice.toLocaleString()} EGP
+                                {auction.currentPrice.toLocaleString()} ج.م
                               </span>
                             </div>
 
                             {auction.buyNowPrice && (
                               <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600">Buy Now:</span>
+                                <span className="text-gray-600">اشتري الآن:</span>
                                 <span className="font-semibold text-green-600">
-                                  {auction.buyNowPrice.toLocaleString()} EGP
+                                  {auction.buyNowPrice.toLocaleString()} ج.م
                                 </span>
                               </div>
                             )}
 
                             <div className="flex items-center justify-between text-sm text-gray-600">
-                              <span>{auction.totalBids || auction.bidCount || 0} bid{(auction.totalBids || auction.bidCount || 0) !== 1 ? 's' : ''}</span>
-                              {item.category && <span>{item.category.nameEn}</span>}
+                              <span>{auction.totalBids || auction.bidCount || 0} مزايدة</span>
+                              {item.category && <span>{item.category.nameAr || item.category.nameEn}</span>}
                             </div>
                           </div>
                         </div>
@@ -325,7 +325,7 @@ export default function AuctionsPage() {
                       disabled={page === 1}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Previous
+                      السابق
                     </button>
                     <div className="flex items-center gap-2">
                       {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -350,7 +350,7 @@ export default function AuctionsPage() {
                       disabled={page === totalPages}
                       className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Next
+                      التالي
                     </button>
                   </div>
                 )}

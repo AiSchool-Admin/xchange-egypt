@@ -7,6 +7,7 @@ export interface Auction {
   currentPrice: number;
   reservePrice?: number;
   buyNowPrice?: number;
+  minBidIncrement?: number;
   startTime: string;
   endTime: string;
   status: 'PENDING' | 'ACTIVE' | 'ENDED' | 'CANCELLED';
@@ -31,7 +32,8 @@ export interface Auction {
   };
   bids?: Array<{
     id: string;
-    amount: number;
+    bidAmount: number;
+    amount?: number; // Legacy support
     createdAt: string;
     bidder: {
       id: string;
@@ -52,7 +54,7 @@ export interface CreateAuctionData {
 }
 
 export interface PlaceBidData {
-  amount: number;
+  bidAmount: number;
 }
 
 export interface AuctionsResponse {

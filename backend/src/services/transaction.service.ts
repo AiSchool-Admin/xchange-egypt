@@ -1,5 +1,6 @@
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
+import { createNotification } from './notification.service';
 
 // Types
 interface CreatePurchaseData {
@@ -111,8 +112,18 @@ export const createPurchase = async (
     },
   });
 
-  // TODO: Integrate with payment gateway here
-  // For now, we'll just create the transaction in PENDING status
+  // Send notification to seller about new order
+  await createNotification({
+    userId: listing.item.sellerId,
+    type: 'ORDER_RECEIVED',
+    title: 'طلب شراء جديد! 🛒',
+    message: `لديك طلب شراء جديد للمنتج "${listing.item.title}"`,
+    priority: 'HIGH',
+    entityType: 'TRANSACTION',
+    entityId: transaction.id,
+    actionUrl: `/transactions/${transaction.id}`,
+    actionText: 'عرض الطلب',
+  });
 
   return transaction;
 };
@@ -225,6 +236,32 @@ export const buyItemDirectly = async (
   await prisma.listing.update({
     where: { id: listing.id },
     data: { status: 'COMPLETED' },
+  });
+
+  // Send notification to seller about the sale
+  await createNotification({
+    userId: item.sellerId,
+    type: 'ITEM_SOLD',
+    title: 'تم بيع منتجك! 🎉',
+    message: `تم شراء "${item.title}" - يرجى التواصل مع المشتري لإتمام التسليم`,
+    priority: 'HIGH',
+    entityType: 'TRANSACTION',
+    entityId: transaction.id,
+    actionUrl: `/transactions/${transaction.id}`,
+    actionText: 'عرض التفاصيل',
+  });
+
+  // Send notification to buyer confirming purchase
+  await createNotification({
+    userId: buyerId,
+    type: 'ORDER_CONFIRMED',
+    title: 'تم تأكيد طلبك! ✅',
+    message: `تم شراء "${item.title}" بنجاح - سيتواصل معك البائع قريباً`,
+    priority: 'HIGH',
+    entityType: 'TRANSACTION',
+    entityId: transaction.id,
+    actionUrl: `/transactions/${transaction.id}`,
+    actionText: 'تتبع الطلب',
   });
 
   return {
@@ -371,13 +408,47 @@ export const updateDeliveryStatus = async (
     },
   });
 
-  // If transaction is delivered, update listing status
+  // If transaction is delivered, update listing status and send notifications
   if (deliveryStatus === 'DELIVERED') {
     await prisma.listing.update({
       where: { id: transaction.listingId },
       data: {
         status: 'COMPLETED',
       },
+    });
+
+    // Get item details for notification
+    const listing = await prisma.listing.findUnique({
+      where: { id: transaction.listingId },
+      include: { item: true },
+    });
+
+    const itemTitle = listing?.item?.title || 'المنتج';
+
+    // Notify seller that delivery is confirmed
+    await createNotification({
+      userId: updatedTransaction.sellerId,
+      type: 'ORDER_DELIVERED',
+      title: 'تم تسليم الطلب بنجاح! ✅',
+      message: `تم تأكيد استلام "${itemTitle}" - شكراً لك!`,
+      priority: 'HIGH',
+      entityType: 'TRANSACTION',
+      entityId: transactionId,
+      actionUrl: `/transactions/${transactionId}`,
+      actionText: 'عرض التفاصيل',
+    });
+
+    // Notify buyer that transaction is complete
+    await createNotification({
+      userId: updatedTransaction.buyerId,
+      type: 'ORDER_COMPLETED',
+      title: 'اكتملت المعاملة! 🎉',
+      message: `تم إكمال معاملة "${itemTitle}" بنجاح - نتمنى لك تجربة سعيدة!`,
+      priority: 'MEDIUM',
+      entityType: 'TRANSACTION',
+      entityId: transactionId,
+      actionUrl: `/transactions/${transactionId}`,
+      actionText: 'تقييم البائع',
     });
   }
 
@@ -431,11 +502,39 @@ export const confirmPayment = async (
           avatar: true,
         },
       },
-      listing: true,
+      listing: {
+        include: {
+          item: true,
+        },
+      },
     },
   });
 
-  // TODO: Send notification to seller about payment
+  // Send notification to seller about payment confirmation
+  await createNotification({
+    userId: updatedTransaction.sellerId,
+    type: 'PAYMENT_RECEIVED',
+    title: 'تم استلام الدفع! 💰',
+    message: `تم تأكيد دفع "${updatedTransaction.listing.item.title}" - يرجى شحن المنتج`,
+    priority: 'HIGH',
+    entityType: 'TRANSACTION',
+    entityId: transactionId,
+    actionUrl: `/transactions/${transactionId}`,
+    actionText: 'شحن المنتج',
+  });
+
+  // Send notification to buyer confirming payment
+  await createNotification({
+    userId: updatedTransaction.buyerId,
+    type: 'PAYMENT_CONFIRMED',
+    title: 'تم تأكيد الدفع! ✅',
+    message: `تم تأكيد دفعك لـ "${updatedTransaction.listing.item.title}" - سيتم الشحن قريباً`,
+    priority: 'MEDIUM',
+    entityType: 'TRANSACTION',
+    entityId: transactionId,
+    actionUrl: `/transactions/${transactionId}`,
+    actionText: 'تتبع الطلب',
+  });
 
   return updatedTransaction;
 };
@@ -493,11 +592,26 @@ export const markAsShipped = async (
           avatar: true,
         },
       },
-      listing: true,
+      listing: {
+        include: {
+          item: true,
+        },
+      },
     },
   });
 
-  // TODO: Send notification to buyer about shipment
+  // Send notification to buyer about shipment
+  await createNotification({
+    userId: updatedTransaction.buyerId,
+    type: 'ORDER_SHIPPED',
+    title: 'تم شحن طلبك! 📦',
+    message: `تم شحن "${updatedTransaction.listing.item.title}"${trackingNumber ? ` - رقم التتبع: ${trackingNumber}` : ''}`,
+    priority: 'HIGH',
+    entityType: 'TRANSACTION',
+    entityId: transactionId,
+    actionUrl: `/transactions/${transactionId}`,
+    actionText: 'تتبع الشحنة',
+  });
 
   return updatedTransaction;
 };
@@ -578,12 +692,44 @@ export const cancelTransaction = async (
           avatar: true,
         },
       },
-      listing: true,
+      listing: {
+        include: {
+          item: true,
+        },
+      },
     },
   });
 
-  // TODO: Process refund if payment was made
-  // TODO: Send notifications
+  const itemTitle = updatedTransaction.listing.item.title;
+  const cancelledBy = userId === transaction.buyerId ? 'المشتري' : 'البائع';
+
+  // Notify the other party about cancellation
+  const otherUserId = userId === transaction.buyerId ? transaction.sellerId : transaction.buyerId;
+
+  await createNotification({
+    userId: otherUserId,
+    type: 'ORDER_CANCELLED',
+    title: 'تم إلغاء الطلب ❌',
+    message: `تم إلغاء طلب "${itemTitle}" بواسطة ${cancelledBy}${reason ? `: ${reason}` : ''}`,
+    priority: 'HIGH',
+    entityType: 'TRANSACTION',
+    entityId: transactionId,
+    actionUrl: `/transactions/${transactionId}`,
+    actionText: 'عرض التفاصيل',
+  });
+
+  // Confirm cancellation to the user who cancelled
+  await createNotification({
+    userId: userId,
+    type: 'ORDER_CANCELLED',
+    title: 'تم إلغاء الطلب',
+    message: `تم إلغاء طلبك لـ "${itemTitle}" بنجاح`,
+    priority: 'MEDIUM',
+    entityType: 'TRANSACTION',
+    entityId: transactionId,
+    actionUrl: `/transactions/${transactionId}`,
+    actionText: 'عرض التفاصيل',
+  });
 
   return updatedTransaction;
 };

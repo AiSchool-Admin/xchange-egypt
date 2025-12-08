@@ -173,12 +173,14 @@ export const getScrapItems = async (filters: ScrapItemFilters = {}) => {
     }
   });
   const response = await api.get(`/scrap/items?${params.toString()}`);
-  return response.data;
+  // Handle nested data structure: { success, message, data: { items, pagination } }
+  const responseData = response.data?.data || response.data;
+  return responseData;
 };
 
 export const getScrapItemDetails = async (itemId: string) => {
   const response = await api.get(`/scrap/items/${itemId}`);
-  return response.data;
+  return response.data?.data || response.data;
 };
 
 export const createScrapItem = async (data: CreateScrapItemInput) => {
@@ -234,7 +236,7 @@ export const getScrapDealers = async (filters: DealerFilters = {}) => {
     }
   });
   const response = await api.get(`/scrap/dealers?${params.toString()}`);
-  return response.data;
+  return response.data?.data || response.data;
 };
 
 export const getDealerDetails = async (dealerId: string) => {
@@ -253,7 +255,7 @@ export const registerScrapDealer = async (data: RegisterDealerInput) => {
 
 export const getMetalPrices = async () => {
   const response = await api.get('/scrap/metal-prices');
-  return response.data;
+  return response.data?.data || response.data;
 };
 
 export const getMetalPriceHistory = async (metalType: MetalType, days: number = 30) => {
@@ -343,7 +345,7 @@ export const acceptOffer = async (offerId: string) => {
 
 export const getMarketStats = async () => {
   const response = await api.get('/scrap/stats');
-  return response.data;
+  return response.data?.data || response.data;
 };
 
 export const getScrapByType = async () => {

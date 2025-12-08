@@ -352,11 +352,33 @@ export const getReverseAuctionById = async (
     throw new NotFoundError('Reverse auction not found');
   }
 
-  // Increment view count
-  await prisma.reverseAuction.update({
-    where: { id: auctionId },
-    data: { views: { increment: 1 } },
-  });
+  // Recalculate and sync bid counts (fix data integrity issues)
+  const activeBids = auction.bids.filter(b => b.status !== 'WITHDRAWN');
+  const actualBidCount = activeBids.length;
+  const actualLowestBid = activeBids.length > 0
+    ? Math.min(...activeBids.map(b => b.bidAmount))
+    : null;
+
+  // Update if out of sync
+  if (auction.totalBids !== actualBidCount || auction.lowestBid !== actualLowestBid) {
+    await prisma.reverseAuction.update({
+      where: { id: auctionId },
+      data: {
+        totalBids: actualBidCount,
+        lowestBid: actualLowestBid,
+        views: { increment: 1 },
+      },
+    });
+    // Update the auction object with corrected values
+    (auction as any).totalBids = actualBidCount;
+    (auction as any).lowestBid = actualLowestBid;
+  } else {
+    // Just increment views
+    await prisma.reverseAuction.update({
+      where: { id: auctionId },
+      data: { views: { increment: 1 } },
+    });
+  }
 
   // Hide buyer's private notes unless viewer is the buyer
   if (userId !== auction.buyerId) {

@@ -21,6 +21,7 @@
     "seed:users": "tsx prisma/seed-users.ts",
     "seed:items": "tsx prisma/seed-items.ts",
     "seed:demo": "tsx prisma/seed-demo-data.ts",
+    "seed:marketplace": "tsx prisma/seed-marketplace-data.ts",
     "seed:matching": "tsx prisma/seed-matching-tests.ts",
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset"
@@ -36,6 +37,7 @@
   "license": "PROPRIETARY",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.478.0",
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.19.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",

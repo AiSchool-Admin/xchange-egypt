@@ -47,7 +47,7 @@ export default function CreateAuctionPage() {
       const response = await getMyItems();
       // Filter to only show active items (not already in auction)
       const availableItems = response.data.items.filter(
-        (item: any) => item.status === 'ACTIVE' // Changed from 'AVAILABLE' to 'ACTIVE' to match database enum
+        (item: any) => item.status === 'ACTIVE'
       );
       setMyItems(availableItems);
     } catch (err: any) {
@@ -69,11 +69,11 @@ export default function CreateAuctionPage() {
       const endTime = new Date(formData.endTime);
 
       if (startTime < now) {
-        throw new Error('Start time must be in the future');
+        throw new Error('وقت البدء يجب أن يكون في المستقبل');
       }
 
       if (endTime <= startTime) {
-        throw new Error('End time must be after start time');
+        throw new Error('وقت الانتهاء يجب أن يكون بعد وقت البدء');
       }
 
       const auctionData = {
@@ -92,7 +92,7 @@ export default function CreateAuctionPage() {
       const response = await createAuction(auctionData);
       router.push(`/auctions/${response.data.id}`);
     } catch (err: any) {
-      setError(err.message || err.response?.data?.message || 'Failed to create auction');
+      setError(err.message || err.response?.data?.message || 'فشل في إنشاء المزاد');
     } finally {
       setLoading(false);
     }
@@ -124,19 +124,19 @@ export default function CreateAuctionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
+      <div className="bg-gradient-to-l from-purple-600 to-indigo-600 text-white">
         <div className="max-w-4xl mx-auto px-4 py-8">
           <Link
             href="/auctions"
             className="text-purple-100 hover:text-white flex items-center gap-2 mb-4"
           >
-            ← Back to Auctions
+            → العودة للمزادات
           </Link>
-          <h1 className="text-4xl font-bold">🔨 Start an Auction</h1>
+          <h1 className="text-4xl font-bold">🔨 إنشاء مزاد جديد</h1>
           <p className="text-purple-100 mt-2">
-            Sell your items through live bidding
+            بع منتجاتك من خلال المزايدة المباشرة
           </p>
         </div>
       </div>
@@ -152,18 +152,18 @@ export default function CreateAuctionPage() {
           {loadingItems ? (
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-              <p className="mt-4 text-gray-600">Loading your items...</p>
+              <p className="mt-4 text-gray-600">جاري تحميل منتجاتك...</p>
             </div>
           ) : myItems.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-600 text-lg mb-4">
-                You don't have any available items to auction
+                ليس لديك منتجات متاحة للمزاد
               </p>
               <Link
                 href="/items/new"
                 className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition"
               >
-                + List an Item First
+                + أضف منتج أولاً
               </Link>
             </div>
           ) : (
@@ -171,7 +171,7 @@ export default function CreateAuctionPage() {
               {/* Select Item */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Item to Auction *
+                  اختر المنتج للمزاد *
                 </label>
                 <select
                   value={formData.itemId}
@@ -181,10 +181,10 @@ export default function CreateAuctionPage() {
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="">Choose an item...</option>
+                  <option value="">اختر منتجاً...</option>
                   {myItems.map((item) => (
                     <option key={item.id} value={item.id}>
-                      {item.title}{item.category ? ` (${item.category.nameEn})` : ''}
+                      {item.title}{item.category ? ` (${item.category.nameAr || item.category.nameEn})` : ''}
                     </option>
                   ))}
                 </select>
@@ -213,7 +213,7 @@ export default function CreateAuctionPage() {
                       </p>
                       {selectedItem.price && (
                         <p className="text-sm text-purple-600 mt-1">
-                          Listed at: {selectedItem.price.toLocaleString()} EGP
+                          السعر المعروض: {selectedItem.price.toLocaleString()} ج.م
                         </p>
                       )}
                     </div>
@@ -225,7 +225,7 @@ export default function CreateAuctionPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Starting Price (EGP) *
+                    السعر الابتدائي (ج.م) *
                   </label>
                   <input
                     type="number"
@@ -240,13 +240,13 @@ export default function CreateAuctionPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Minimum bid to start
+                    أقل مزايدة للبدء
                   </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reserve Price (EGP)
+                    السعر الاحتياطي (ج.م)
                   </label>
                   <input
                     type="number"
@@ -260,13 +260,13 @@ export default function CreateAuctionPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Optional minimum sale price
+                    اختياري - أقل سعر للبيع
                   </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Buy Now Price (EGP)
+                    سعر الشراء الفوري (ج.م)
                   </label>
                   <input
                     type="number"
@@ -280,7 +280,7 @@ export default function CreateAuctionPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Optional instant purchase price
+                    اختياري - للشراء الفوري
                   </p>
                 </div>
               </div>
@@ -289,7 +289,7 @@ export default function CreateAuctionPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Start Time *
+                    وقت البدء *
                   </label>
                   <input
                     type="datetime-local"
@@ -301,13 +301,13 @@ export default function CreateAuctionPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    When bidding begins
+                    متى تبدأ المزايدة
                   </p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    End Time *
+                    وقت الانتهاء *
                   </label>
                   <input
                     type="datetime-local"
@@ -319,7 +319,7 @@ export default function CreateAuctionPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    When bidding ends
+                    متى تنتهي المزايدة
                   </p>
                 </div>
               </div>
@@ -327,14 +327,14 @@ export default function CreateAuctionPage() {
               {/* Info Box */}
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h3 className="font-semibold text-blue-900 mb-2">
-                  Auction Tips
+                  نصائح للمزاد
                 </h3>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Set a competitive starting price to attract bidders</li>
-                  <li>• Reserve price protects you from selling too low</li>
-                  <li>• Buy Now option allows instant sales at your price</li>
-                  <li>• Typical auction duration is 3-7 days</li>
-                  <li>• You cannot edit or cancel once bidding starts</li>
+                  <li>• ضع سعراً ابتدائياً تنافسياً لجذب المزايدين</li>
+                  <li>• السعر الاحتياطي يحميك من البيع بسعر منخفض</li>
+                  <li>• خيار الشراء الفوري يتيح البيع المباشر بسعرك</li>
+                  <li>• مدة المزاد المثالية من 3 إلى 7 أيام</li>
+                  <li>• لا يمكنك التعديل أو الإلغاء بعد بدء المزايدة</li>
                 </ul>
               </div>
 
@@ -345,14 +345,14 @@ export default function CreateAuctionPage() {
                   onClick={() => router.push('/auctions')}
                   className="flex-1 px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-semibold"
                 >
-                  Cancel
+                  إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
                   className="flex-1 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Creating Auction...' : 'Start Auction'}
+                  {loading ? 'جاري الإنشاء...' : 'بدء المزاد'}
                 </button>
               </div>
             </form>

@@ -27,6 +27,7 @@ interface DashboardStats {
   purchases: number;
   auctions: number;
   bids: number;
+  wonAuctions: number;
   barterOffers: number;
   reverseAuctions: number;
 }
@@ -77,6 +78,7 @@ export default function ActivityDashboardPage() {
     purchases: 0,
     auctions: 0,
     bids: 0,
+    wonAuctions: 0,
     barterOffers: 0,
     reverseAuctions: 0,
   });
@@ -86,6 +88,7 @@ export default function ActivityDashboardPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [auctions, setAuctions] = useState<any[]>([]);
   const [myBids, setMyBids] = useState<any[]>([]);
+  const [wonAuctions, setWonAuctions] = useState<any[]>([]);
   const [barterOffers, setBarterOffers] = useState<any[]>([]);
   const [sentBarterOffers, setSentBarterOffers] = useState<any[]>([]);
   const [receivedBarterOffers, setReceivedBarterOffers] = useState<any[]>([]);
@@ -163,8 +166,20 @@ export default function ActivityDashboardPage() {
     try {
       const response = await apiClient.get('/auctions/my-bids');
       const data = response.data.data || [];
-      setMyBids(data);
-      setStats(s => ({ ...s, bids: data.length }));
+
+      // Separate won auctions from active bids
+      const won = data.filter((item: any) =>
+        item.latestBid?.status === 'WON' ||
+        item.bids?.some((b: any) => b.status === 'WON')
+      );
+      const activeBids = data.filter((item: any) =>
+        item.latestBid?.status !== 'WON' &&
+        !item.bids?.some((b: any) => b.status === 'WON')
+      );
+
+      setWonAuctions(won);
+      setMyBids(activeBids);
+      setStats(s => ({ ...s, bids: data.length, wonAuctions: won.length }));
     } catch (err) {
       console.error('Error loading bids:', err);
     }
@@ -177,12 +192,14 @@ export default function ActivityDashboardPage() {
         apiClient.get('/barter/offers/my?type=sent'),
         apiClient.get('/barter/offers/my?type=received'),
       ]);
-      const sent = sentRes.data.data?.offers || sentRes.data.data || [];
-      const received = receivedRes.data.data?.offers || receivedRes.data.data || [];
-      setSentBarterOffers(sent);
-      setReceivedBarterOffers(received);
-      setBarterOffers([...sent, ...received]);
-      setStats(s => ({ ...s, barterOffers: sent.length + received.length }));
+      // Backend returns { items: [...], pagination: {...} }
+      const sent = sentRes.data.data?.items || sentRes.data.data?.offers || [];
+      const received = receivedRes.data.data?.items || receivedRes.data.data?.offers || [];
+      setSentBarterOffers(Array.isArray(sent) ? sent : []);
+      setReceivedBarterOffers(Array.isArray(received) ? received : []);
+      const allOffers = [...(Array.isArray(sent) ? sent : []), ...(Array.isArray(received) ? received : [])];
+      setBarterOffers(allOffers);
+      setStats(s => ({ ...s, barterOffers: allOffers.length }));
     } catch (err) {
       console.error('Error loading barter offers:', err);
     }
@@ -192,11 +209,13 @@ export default function ActivityDashboardPage() {
     try {
       // Get user's reverse auctions directly using buyerId filter
       const response = await apiClient.get(`/reverse-auctions?buyerId=${user?.id}`);
-      const myAuctions = response.data.data?.auctions || response.data.data || [];
+
+      // Backend returns { data: { items: [...], pagination: {...} } }
+      const myAuctions = response.data?.data?.items || response.data?.data?.auctions || [];
       setReverseAuctions(myAuctions);
       setStats(s => ({ ...s, reverseAuctions: myAuctions.length }));
-    } catch (err) {
-      console.error('Error loading reverse auctions:', err);
+    } catch (err: any) {
+      console.error('Error loading reverse auctions:', err.response?.data || err.message || err);
     }
   };
 
@@ -255,6 +274,11 @@ export default function ActivityDashboardPage() {
             <div className="text-3xl mb-2">🎯</div>
             <div className="text-2xl font-bold text-indigo-600">{stats.bids}</div>
             <div className="text-sm text-gray-600">مزايداتي</div>
+          </div>
+          <div className="bg-white rounded-xl p-4 shadow-sm text-center">
+            <div className="text-3xl mb-2">🏆</div>
+            <div className="text-2xl font-bold text-yellow-600">{stats.wonAuctions}</div>
+            <div className="text-sm text-gray-600">فائز بمزاد</div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm text-center">
             <div className="text-3xl mb-2">🔄</div>
@@ -421,24 +445,54 @@ export default function ActivityDashboardPage() {
                   </div>
                 )}
 
+                {/* Won Auctions Section */}
+                {wonAuctions.length > 0 && (
+                  <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                    <h3 className="font-semibold text-yellow-800 mb-3 flex items-center gap-2">
+                      <span className="text-2xl">🏆</span>
+                      مزادات فائز بها ({wonAuctions.length})
+                    </h3>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {wonAuctions.slice(0, activeTab === 'all' ? 2 : 6).map((item: any) => (
+                        <Link
+                          key={item.auction?.id || item.latestBid?.auctionId}
+                          href={`/auctions/${item.auction?.id || item.latestBid?.auctionId}`}
+                          className="flex gap-4 p-4 bg-white border-2 border-yellow-300 rounded-lg hover:border-yellow-400 transition"
+                        >
+                          <div className="w-16 h-16 bg-yellow-100 rounded-lg flex items-center justify-center text-2xl">🏆</div>
+                          <div className="flex-1">
+                            <h4 className="font-medium">{item.auction?.listing?.item?.title || 'مزاد'}</h4>
+                            <p className="text-yellow-700 font-bold">
+                              فزت بـ: {item.latestBid?.bidAmount?.toLocaleString() || item.auction?.currentPrice?.toLocaleString()} ج.م
+                            </p>
+                            <span className="inline-block px-2 py-0.5 rounded text-xs bg-yellow-200 text-yellow-800">
+                              فائز
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {myBids.length > 0 && (
                   <div>
                     <h3 className="font-semibold text-gray-700 mb-3">مزايداتي ({myBids.length})</h3>
                     <div className="grid gap-4 md:grid-cols-2">
                       {myBids.slice(0, activeTab === 'all' ? 2 : 6).map((bid: any) => (
                         <Link
-                          key={bid.id}
-                          href={`/auctions/${bid.auctionId}`}
+                          key={bid.id || bid.latestBid?.id}
+                          href={`/auctions/${bid.auction?.id || bid.latestBid?.auctionId}`}
                           className="flex gap-4 p-4 border rounded-lg hover:border-indigo-300 transition"
                         >
                           <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🎯</div>
                           <div className="flex-1">
                             <h4 className="font-medium">{bid.auction?.listing?.item?.title || 'مزاد'}</h4>
-                            <p className="text-indigo-600 font-bold">مزايدتي: {bid.amount?.toLocaleString()} ج.م</p>
+                            <p className="text-indigo-600 font-bold">مزايدتي: {bid.latestBid?.bidAmount?.toLocaleString()} ج.م</p>
                             <span className={`inline-block px-2 py-0.5 rounded text-xs ${
-                              bid.isWinning ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
+                              bid.latestBid?.status === 'WINNING' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'
                             }`}>
-                              {bid.isWinning ? 'أعلى مزايدة' : 'تم تجاوزك'}
+                              {bid.latestBid?.status === 'WINNING' ? 'أعلى مزايدة' : 'تم تجاوزك'}
                             </span>
                           </div>
                         </Link>
