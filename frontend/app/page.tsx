@@ -32,16 +32,6 @@ const CATEGORY_ICONS: Record<string, { icon: string; gradient: string }> = {
 };
 
 // ============================================
-// Stats Data
-// ============================================
-const STATS = [
-  { value: '50K+', label: 'منتج نشط', icon: '📦' },
-  { value: '25K+', label: 'مستخدم موثوق', icon: '👥' },
-  { value: '100K+', label: 'صفقة ناجحة', icon: '✅' },
-  { value: '27', label: 'محافظة', icon: '🗺️' },
-];
-
-// ============================================
 // Features Data
 // ============================================
 const FEATURES = [
@@ -450,23 +440,6 @@ export default function HomePage() {
           <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="#f9fafb"/>
           </svg>
-        </div>
-      </section>
-
-      {/* ============================================
-          Stats Section
-          ============================================ */}
-      <section className="relative -mt-8 z-10">
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
-            {STATS.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl mb-2">{stat.icon}</div>
-                <div className="text-2xl md:text-3xl font-bold text-gray-900">{stat.value}</div>
-                <div className="text-sm text-gray-500">{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
