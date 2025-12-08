@@ -950,53 +950,22 @@ export default function Navigation() {
               onMouseEnter={handleMegaMenuMouseEnter}
               onMouseLeave={handleMegaMenuMouseLeave}
             >
-              <div className="max-w-7xl mx-auto px-4 py-6">
+              <div className="max-w-7xl mx-auto px-4 py-5">
                 {categoriesData.filter(c => c.id === hoveredCategory).map((category) => (
-                  <div key={category.id} className="flex gap-8">
-                    {/* Promo Image Section */}
-                    <div className="w-64 flex-shrink-0">
-                      <div className={`h-48 bg-gradient-to-br ${category.color} rounded-2xl flex items-center justify-center overflow-hidden relative`}>
-                        <div className="absolute inset-0 bg-black/10" />
-                        <div className="relative z-10 text-center text-white p-4">
-                          <span className="text-5xl mb-3 block">{category.icon}</span>
-                          <h3 className="text-xl font-bold">{category.name}</h3>
-                          <Link
-                            href={category.href}
-                            className="inline-block mt-3 px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm hover:bg-white/30 transition-all"
-                          >
-                            تصفح الكل
-                          </Link>
-                        </div>
-                      </div>
-                      {/* Brands Section */}
-                      <div className="mt-4">
-                        <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">ماركات مميزة</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {category.brands.slice(0, 5).map((brand) => (
-                            <span
-                              key={brand}
-                              className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium hover:bg-gray-200 cursor-pointer transition-colors"
-                            >
-                              {brand}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Subcategories Grid */}
-                    <div className="flex-1 grid grid-cols-3 gap-8">
+                  <div key={category.id} className="flex gap-6">
+                    {/* Subcategories Grid - Compact Layout */}
+                    <div className="flex-1 grid grid-cols-4 gap-x-8 gap-y-4">
                       {category.subcategories.map((subcat) => (
                         <div key={subcat.title}>
-                          <h4 className="font-bold text-gray-900 mb-3 pb-2 border-b border-gray-100">
+                          <h4 className="font-bold text-gray-900 mb-2 text-sm">
                             {subcat.title}
                           </h4>
-                          <ul className="space-y-2">
+                          <ul className="space-y-1.5">
                             {subcat.items.map((item) => (
                               <li key={item.name}>
                                 <Link
                                   href={item.href}
-                                  className="text-gray-600 hover:text-primary-600 hover:pr-2 transition-all text-sm block"
+                                  className="text-gray-600 hover:text-primary-600 transition-colors text-sm block"
                                 >
                                   {item.name}
                                 </Link>
@@ -1005,6 +974,16 @@ export default function Navigation() {
                           </ul>
                         </div>
                       ))}
+                    </div>
+
+                    {/* View All Link */}
+                    <div className="flex-shrink-0 flex items-start pt-1">
+                      <Link
+                        href={category.href}
+                        className="text-primary-600 hover:text-primary-700 text-sm font-medium whitespace-nowrap"
+                      >
+                        عرض الكل ←
+                      </Link>
                     </div>
                   </div>
                 ))}
