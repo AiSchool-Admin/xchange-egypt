@@ -391,18 +391,7 @@ export default function Navigation() {
                 )}
               </div>
 
-              {/* Direct Links */}
-              <Link
-                href="/deals"
-                className={`px-4 py-2 rounded-xl font-medium transition-all ${
-                  isActive('/deals')
-                    ? 'bg-amber-50 text-amber-700'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <span className="ml-1">⚡</span>
-                عروض
-              </Link>
+            {/* Direct Links - Removed عروض per user request */}
             </div>
 
             {/* Right Side Actions */}

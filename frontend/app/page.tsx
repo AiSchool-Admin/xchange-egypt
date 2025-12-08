@@ -102,6 +102,52 @@ export default function HomePage() {
   const [hoveredSubcategory, setHoveredSubcategory] = useState<string | null>(null);
   const [hoveredQuickCategory, setHoveredQuickCategory] = useState<string | null>(null);
   const [hoveredQuickSubcategory, setHoveredQuickSubcategory] = useState<string | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Hero slides data
+  const heroSlides = [
+    {
+      id: 'main',
+      title: 'اشتري، بيع، أو بادل',
+      subtitle: 'بكل سهولة وأمان',
+      description: 'منصة XChange هي السوق الأول في مصر للتجارة الذكية والمقايضة. جديد، مستعمل، أو تالف - كل شيء له قيمة هنا.',
+      gradient: 'from-primary-600 via-primary-500 to-teal-500',
+      icon: '🔄',
+    },
+    {
+      id: 'flash',
+      title: 'عروض فلاش',
+      subtitle: 'خصومات تصل إلى 70%',
+      description: 'اغتنم الفرصة! عروض حصرية لفترة محدودة على أفضل المنتجات. سارع قبل انتهاء العرض.',
+      gradient: 'from-red-600 via-orange-500 to-amber-500',
+      icon: '⚡',
+      badge: 'عرض محدود',
+    },
+    {
+      id: 'barter',
+      title: 'بادل بدون نقود',
+      subtitle: 'المقايضة الذكية',
+      description: 'لديك شيء لا تحتاجه؟ بادله بشيء تريده! نظام مقايضة ذكي يجد لك أفضل الصفقات.',
+      gradient: 'from-blue-600 via-indigo-500 to-purple-500',
+      icon: '🔁',
+    },
+    {
+      id: 'auction',
+      title: 'المزادات الحية',
+      subtitle: 'زايد واربح',
+      description: 'شارك في مزادات حقيقية على منتجات مميزة. اعثر على صفقات لا تُصدق!',
+      gradient: 'from-purple-600 via-purple-500 to-pink-500',
+      icon: '🔨',
+    },
+  ];
+
+  // Auto-rotate slides
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 5000); // Change slide every 5 seconds
+    return () => clearInterval(interval);
+  }, [heroSlides.length]);
 
   // Quick categories with their parent IDs for fetching subcategories
   const quickCategories = [
@@ -187,9 +233,9 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* ============================================
-          Hero Section
+          Hero Section with Dynamic Slides
           ============================================ */}
-      <section className="relative bg-gradient-to-br from-primary-600 via-primary-500 to-teal-500 overflow-hidden">
+      <section className={`relative bg-gradient-to-br ${heroSlides[currentSlide].gradient} overflow-hidden transition-all duration-700`}>
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 left-0 w-72 h-72 bg-white rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
@@ -198,19 +244,58 @@ export default function HomePage() {
 
         <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
           <div className="text-center max-w-3xl mx-auto">
-            {/* Main Heading */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              اشتري، بيع، أو بادل
-              <span className="block text-primary-100">بكل سهولة وأمان</span>
-            </h1>
+            {/* Dynamic Content with Animation */}
+            <div className="relative min-h-[200px] md:min-h-[220px]">
+              {heroSlides.map((slide, index) => (
+                <div
+                  key={slide.id}
+                  className={`absolute inset-0 transition-all duration-500 ${
+                    index === currentSlide
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 translate-y-4 pointer-events-none'
+                  }`}
+                >
+                  {/* Badge for special slides */}
+                  {slide.badge && (
+                    <div className="mb-4">
+                      <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-bold animate-pulse">
+                        <span>{slide.icon}</span>
+                        {slide.badge}
+                      </span>
+                    </div>
+                  )}
 
-            {/* Subtitle */}
-            <p className="text-lg md:text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-              منصة XChange هي السوق الأول في مصر للتجارة الذكية والمقايضة.
-              جديد، مستعمل، أو تالف - كل شيء له قيمة هنا.
-            </p>
+                  {/* Main Heading */}
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                    <span className="inline-block">{slide.icon}</span> {slide.title}
+                    <span className="block text-white/90">{slide.subtitle}</span>
+                  </h1>
 
-            {/* Search Bar */}
+                  {/* Subtitle */}
+                  <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto">
+                    {slide.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Slide Indicators */}
+            <div className="flex justify-center gap-2 mb-8">
+              {heroSlides.map((slide, index) => (
+                <button
+                  key={slide.id}
+                  onClick={() => setCurrentSlide(index)}
+                  className={`transition-all duration-300 rounded-full ${
+                    index === currentSlide
+                      ? 'w-8 h-2 bg-white'
+                      : 'w-2 h-2 bg-white/40 hover:bg-white/60'
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+
+            {/* Search Bar - Fixed/Static */}
             <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-8">
               <div className="flex bg-white rounded-2xl shadow-xl overflow-hidden">
                 <input
@@ -232,22 +317,81 @@ export default function HomePage() {
               </div>
             </form>
 
-            {/* Quick Actions */}
+            {/* Quick Actions - Context Aware */}
             <div className="flex flex-wrap justify-center gap-4">
-              <Link
-                href={user ? '/inventory/add' : '/register'}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-600 rounded-xl font-semibold hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl"
-              >
-                <span>➕</span>
-                أضف إعلان مجاني
-              </Link>
-              <Link
-                href="/sell-ai"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
-              >
-                <span>✨</span>
-                بيع بالذكاء الصناعي
-              </Link>
+              {currentSlide === 1 ? (
+                // Flash deals slide - show deals link
+                <>
+                  <Link
+                    href="/deals"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-red-600 rounded-xl font-semibold hover:bg-red-50 transition-all shadow-lg hover:shadow-xl animate-pulse"
+                  >
+                    <span>⚡</span>
+                    تصفح العروض الآن
+                  </Link>
+                  <Link
+                    href="/items"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
+                  >
+                    <span>🛒</span>
+                    تصفح المنتجات
+                  </Link>
+                </>
+              ) : currentSlide === 2 ? (
+                // Barter slide
+                <>
+                  <Link
+                    href="/barter"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-blue-600 rounded-xl font-semibold hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl"
+                  >
+                    <span>🔁</span>
+                    ابدأ المقايضة
+                  </Link>
+                  <Link
+                    href={user ? '/inventory/add' : '/register'}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
+                  >
+                    <span>➕</span>
+                    أضف منتج للمقايضة
+                  </Link>
+                </>
+              ) : currentSlide === 3 ? (
+                // Auctions slide
+                <>
+                  <Link
+                    href="/auctions"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-semibold hover:bg-purple-50 transition-all shadow-lg hover:shadow-xl"
+                  >
+                    <span>🔨</span>
+                    شارك في المزادات
+                  </Link>
+                  <Link
+                    href="/auctions/create"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
+                  >
+                    <span>➕</span>
+                    أنشئ مزادك
+                  </Link>
+                </>
+              ) : (
+                // Default main slide
+                <>
+                  <Link
+                    href={user ? '/inventory/add' : '/register'}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-primary-600 rounded-xl font-semibold hover:bg-primary-50 transition-all shadow-lg hover:shadow-xl"
+                  >
+                    <span>➕</span>
+                    أضف إعلان مجاني
+                  </Link>
+                  <Link
+                    href="/sell-ai"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all border border-white/30"
+                  >
+                    <span>✨</span>
+                    بيع بالذكاء الصناعي
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Trust Badges */}
