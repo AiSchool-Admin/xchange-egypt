@@ -98,6 +98,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
+  const [hoveredSubcategory, setHoveredSubcategory] = useState<string | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -287,16 +289,24 @@ export default function HomePage() {
       </section>
 
       {/* ============================================
-          Categories Dropdown & Quick Links Section
+          Categories Mega Menu Section
           ============================================ */}
-      <section className="py-8 md:py-12">
+      <section className="py-6 bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Categories Dropdown */}
-            <div className="relative" ref={categoryDropdownRef}>
+          <div className="flex items-center gap-6">
+            {/* Categories Mega Menu */}
+            <div
+              className="relative"
+              ref={categoryDropdownRef}
+              onMouseLeave={() => {
+                setCategoryDropdownOpen(false);
+                setHoveredCategory(null);
+                setHoveredSubcategory(null);
+              }}
+            >
               <button
-                onClick={() => setCategoryDropdownOpen(!categoryDropdownOpen)}
-                className="flex items-center gap-2 px-6 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-all shadow-lg"
+                onMouseEnter={() => setCategoryDropdownOpen(true)}
+                className="flex items-center gap-2 px-5 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-all shadow-lg"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -307,86 +317,136 @@ export default function HomePage() {
                 </svg>
               </button>
 
-              {/* Dropdown Menu */}
+              {/* Mega Menu */}
               {categoryDropdownOpen && (
-                <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
-                  <div className="max-h-[70vh] overflow-y-auto">
-                    {parentCategories.map((category) => {
-                      const { icon, gradient } = getCategoryIcon(category.slug);
-                      const subcategories = getSubcategories(category.id);
-                      const isExpanded = expandedCategory === category.id;
+                <div className="absolute top-full right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 flex">
+                  {/* Main Categories Column */}
+                  <div className="w-64 bg-gray-50 border-l border-gray-100">
+                    <div className="p-3 border-b border-gray-100 bg-white">
+                      <span className="font-bold text-gray-800">الفئات الرئيسية</span>
+                    </div>
+                    <div className="max-h-[60vh] overflow-y-auto">
+                      {parentCategories.map((category) => {
+                        const { icon, gradient } = getCategoryIcon(category.slug);
+                        const subcategories = getSubcategories(category.id);
+                        const isHovered = hoveredCategory === category.id;
 
-                      return (
-                        <div key={category.id} className="border-b border-gray-50 last:border-0">
+                        return (
                           <div
-                            className="flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                            onClick={() => {
-                              if (subcategories.length > 0) {
-                                setExpandedCategory(isExpanded ? null : category.id);
-                              } else {
-                                router.push(`/items?category=${category.slug}`);
-                                setCategoryDropdownOpen(false);
-                              }
+                            key={category.id}
+                            className={`flex items-center justify-between p-3 cursor-pointer transition-colors ${isHovered ? 'bg-primary-50 border-r-4 border-primary-500' : 'hover:bg-gray-100'}`}
+                            onMouseEnter={() => {
+                              setHoveredCategory(category.id);
+                              setHoveredSubcategory(null);
                             }}
                           >
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 bg-gradient-to-br ${gradient} rounded-xl flex items-center justify-center text-lg`}>
+                            <Link
+                              href={`/items?category=${category.slug}`}
+                              className="flex items-center gap-3 flex-1"
+                              onClick={() => setCategoryDropdownOpen(false)}
+                            >
+                              <div className={`w-9 h-9 bg-gradient-to-br ${gradient} rounded-lg flex items-center justify-center text-base`}>
                                 {icon}
                               </div>
-                              <span className="font-medium text-gray-800">{category.nameAr}</span>
-                            </div>
+                              <span className={`font-medium ${isHovered ? 'text-primary-600' : 'text-gray-700'}`}>{category.nameAr}</span>
+                            </Link>
                             {subcategories.length > 0 && (
-                              <svg className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              <svg className={`w-4 h-4 ${isHovered ? 'text-primary-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                               </svg>
                             )}
                           </div>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                          {/* Subcategories */}
-                          {isExpanded && subcategories.length > 0 && (
-                            <div className="bg-gray-50 py-2">
+                  {/* Subcategories Column */}
+                  {hoveredCategory && getSubcategories(hoveredCategory).length > 0 && (
+                    <div className="w-56 border-l border-gray-100">
+                      <div className="p-3 border-b border-gray-100 bg-primary-50">
+                        <span className="font-bold text-primary-700">الفئات الفرعية</span>
+                      </div>
+                      <div className="max-h-[60vh] overflow-y-auto">
+                        <Link
+                          href={`/items?category=${parentCategories.find(c => c.id === hoveredCategory)?.slug}`}
+                          className="block p-3 text-sm text-primary-600 font-medium hover:bg-primary-50 transition-colors border-b border-gray-50"
+                          onClick={() => setCategoryDropdownOpen(false)}
+                        >
+                          عرض الكل ←
+                        </Link>
+                        {getSubcategories(hoveredCategory).map((sub) => {
+                          const subSubcategories = getSubcategories(sub.id);
+                          const isSubHovered = hoveredSubcategory === sub.id;
+
+                          return (
+                            <div
+                              key={sub.id}
+                              className={`flex items-center justify-between p-3 cursor-pointer transition-colors ${isSubHovered ? 'bg-primary-50' : 'hover:bg-gray-50'}`}
+                              onMouseEnter={() => setHoveredSubcategory(sub.id)}
+                            >
                               <Link
-                                href={`/items?category=${category.slug}`}
-                                className="block px-4 py-2 pr-14 text-sm text-primary-600 font-medium hover:bg-gray-100 transition-colors"
+                                href={`/items?category=${sub.slug}`}
+                                className={`flex-1 text-sm ${isSubHovered ? 'text-primary-600 font-medium' : 'text-gray-600'}`}
                                 onClick={() => setCategoryDropdownOpen(false)}
                               >
-                                عرض الكل في {category.nameAr}
+                                {sub.nameAr}
                               </Link>
-                              {subcategories.map((sub) => (
-                                <Link
-                                  key={sub.id}
-                                  href={`/items?category=${sub.slug}`}
-                                  className="block px-4 py-2 pr-14 text-sm text-gray-600 hover:text-primary-600 hover:bg-gray-100 transition-colors"
-                                  onClick={() => setCategoryDropdownOpen(false)}
-                                >
-                                  {sub.nameAr}
-                                </Link>
-                              ))}
+                              {subSubcategories.length > 0 && (
+                                <svg className={`w-3 h-3 ${isSubHovered ? 'text-primary-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sub-subcategories Column */}
+                  {hoveredSubcategory && getSubcategories(hoveredSubcategory).length > 0 && (
+                    <div className="w-52 border-l border-gray-100">
+                      <div className="p-3 border-b border-gray-100 bg-gray-50">
+                        <span className="font-bold text-gray-700">تفاصيل أكثر</span>
+                      </div>
+                      <div className="max-h-[60vh] overflow-y-auto">
+                        {getSubcategories(hoveredSubcategory).map((subSub) => (
+                          <Link
+                            key={subSub.id}
+                            href={`/items?category=${subSub.slug}`}
+                            className="block p-3 text-sm text-gray-600 hover:text-primary-600 hover:bg-gray-50 transition-colors"
+                            onClick={() => setCategoryDropdownOpen(false)}
+                          >
+                            {subSub.nameAr}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* Quick Category Links */}
-            <div className="flex flex-wrap gap-2">
-              {parentCategories.slice(0, 6).map((category) => {
-                const { icon } = getCategoryIcon(category.slug);
-                return (
-                  <Link
-                    key={category.id}
-                    href={`/items?category=${category.slug}`}
-                    className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl text-gray-700 font-medium hover:bg-gray-50 hover:text-primary-600 transition-all shadow-sm border border-gray-100"
-                  >
-                    <span>{icon}</span>
-                    <span className="hidden sm:inline">{category.nameAr}</span>
-                  </Link>
-                );
-              })}
+            {/* Important Categories Quick Links */}
+            <div className="hidden md:flex items-center gap-3 flex-1">
+              {[
+                { slug: 'mobile-phones', name: 'موبايلات', icon: '📱' },
+                { slug: 'cars', name: 'سيارات', icon: '🚗' },
+                { slug: 'electronics', name: 'إلكترونيات', icon: '💻' },
+                { slug: 'furniture', name: 'أثاث', icon: '🛋️' },
+                { slug: 'fashion', name: 'ملابس', icon: '👕' },
+                { slug: 'home-appliances', name: 'أجهزة منزلية', icon: '🏠' },
+              ].map((cat) => (
+                <Link
+                  key={cat.slug}
+                  href={`/items?category=${cat.slug}`}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-50 rounded-lg text-gray-700 font-medium hover:bg-primary-50 hover:text-primary-600 transition-all text-sm"
+                >
+                  <span>{cat.icon}</span>
+                  <span>{cat.name}</span>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
