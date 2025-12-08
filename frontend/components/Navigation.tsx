@@ -118,56 +118,202 @@ const megaMenuData = {
 // ============================================
 // Noon-Style Categories Mega Menu Data
 // ============================================
+// Categories ordered by popularity
 const categoriesData = [
   {
     id: 'electronics',
     name: 'الإلكترونيات',
     icon: '💻',
-    color: 'from-blue-500 to-blue-600',
     href: '/items?category=electronics-computers',
     subcategories: [
       {
-        title: 'الموبايلات',
+        title: 'الهواتف الذكية',
         items: [
           { name: 'آيفون', href: '/items?category=mobile-phones&brand=apple' },
           { name: 'سامسونج', href: '/items?category=mobile-phones&brand=samsung' },
           { name: 'شاومي', href: '/items?category=mobile-phones&brand=xiaomi' },
           { name: 'أوبو', href: '/items?category=mobile-phones&brand=oppo' },
-          { name: 'اكسسوارات الموبايل', href: '/items?category=mobile-accessories' },
-        ]
+          { name: 'فيفو', href: '/items?category=mobile-phones&brand=vivo' },
+        ],
+        hasMore: true
       },
       {
-        title: 'الكمبيوتر',
+        title: 'أجهزة كمبيوتر',
         items: [
           { name: 'لابتوب', href: '/items?category=laptops' },
           { name: 'كمبيوتر مكتبي', href: '/items?category=desktop-computers' },
           { name: 'شاشات', href: '/items?category=monitors' },
-          { name: 'قطع كمبيوتر', href: '/items?category=computer-components' },
-          { name: 'اكسسوارات', href: '/items?category=computer-accessories' },
-        ]
+          { name: 'طابعات', href: '/items?category=printers' },
+        ],
+        showAllLink: true
       },
       {
-        title: 'الألعاب',
+        title: 'أجهزة التلفزيون',
         items: [
-          { name: 'بلايستيشن', href: '/items?category=gaming&brand=playstation' },
-          { name: 'إكس بوكس', href: '/items?category=gaming&brand=xbox' },
-          { name: 'نينتندو', href: '/items?category=gaming&brand=nintendo' },
-          { name: 'ألعاب فيديو', href: '/items?category=video-games' },
+          { name: 'تلفزيون ذكي', href: '/items?category=smart-tv' },
+          { name: '32 بوصة', href: '/items?category=tv-32' },
+          { name: '43 بوصة', href: '/items?category=tv-43' },
+          { name: '55 بوصة', href: '/items?category=tv-55' },
+          { name: '65 بوصة وأكثر', href: '/items?category=tv-65-plus' },
+        ],
+        hasMore: true
+      },
+      {
+        title: 'كاميرات',
+        items: [
+          { name: 'دي إس إل آر', href: '/items?category=dslr' },
+          { name: 'ميرورليس', href: '/items?category=mirrorless' },
+          { name: 'كاميرات الأكشن', href: '/items?category=action-cameras' },
+          { name: 'كاميرات صغيرة', href: '/items?category=compact-cameras' },
+          { name: 'كاميرات أخرى', href: '/items?category=other-cameras' },
         ]
       },
     ],
-    promoImage: '/images/categories/electronics-promo.jpg',
-    brands: ['Apple', 'Samsung', 'Sony', 'HP', 'Dell', 'Lenovo']
+  },
+  {
+    id: 'vehicles',
+    name: 'سيارات',
+    icon: '🚗',
+    href: '/items?category=vehicles',
+    subcategories: [
+      {
+        title: 'سيارات للبيع',
+        items: [
+          { name: 'سيارات ملاكي', href: '/items?category=passenger-cars' },
+          { name: 'سيارات SUV', href: '/items?category=suv' },
+          { name: 'ميكروباص', href: '/items?category=microbus' },
+          { name: 'نصف نقل', href: '/items?category=pickup' },
+        ]
+      },
+      {
+        title: 'قطع غيار',
+        items: [
+          { name: 'محركات', href: '/items?category=car-engines' },
+          { name: 'فرامل', href: '/items?category=car-brakes' },
+          { name: 'إطارات', href: '/items?category=tires' },
+          { name: 'بطاريات', href: '/items?category=car-batteries' },
+          { name: 'زيوت وفلاتر', href: '/items?category=oils-filters' },
+        ],
+        hasMore: true
+      },
+      {
+        title: 'دراجات',
+        items: [
+          { name: 'موتوسيكلات', href: '/items?category=motorcycles' },
+          { name: 'سكوتر', href: '/items?category=scooters' },
+          { name: 'دراجات هوائية', href: '/items?category=bicycles' },
+        ]
+      },
+      {
+        title: 'اكسسوارات السيارات',
+        items: [
+          { name: 'شنط سيارات', href: '/items?category=car-bags' },
+          { name: 'كاميرات سيارات', href: '/items?category=car-cameras' },
+          { name: 'شواحن', href: '/items?category=car-chargers' },
+        ]
+      },
+    ],
+  },
+  {
+    id: 'home',
+    name: 'أثاث',
+    icon: '🏠',
+    href: '/items?category=home-garden',
+    subcategories: [
+      {
+        title: 'غرف النوم',
+        items: [
+          { name: 'سرير', href: '/items?category=beds' },
+          { name: 'دولاب', href: '/items?category=wardrobes' },
+          { name: 'تسريحة', href: '/items?category=dressers' },
+          { name: 'كومودينو', href: '/items?category=nightstands' },
+        ]
+      },
+      {
+        title: 'غرف المعيشة',
+        items: [
+          { name: 'أنتريه', href: '/items?category=sofas' },
+          { name: 'ركنة', href: '/items?category=corner-sofas' },
+          { name: 'طاولة وسط', href: '/items?category=coffee-tables' },
+          { name: 'مكتبة تلفزيون', href: '/items?category=tv-units' },
+        ]
+      },
+      {
+        title: 'السفرة',
+        items: [
+          { name: 'طاولة سفرة', href: '/items?category=dining-tables' },
+          { name: 'كراسي سفرة', href: '/items?category=dining-chairs' },
+          { name: 'بوفيه', href: '/items?category=buffets' },
+        ]
+      },
+      {
+        title: 'المكتب',
+        items: [
+          { name: 'مكتب', href: '/items?category=desks' },
+          { name: 'كرسي مكتب', href: '/items?category=office-chairs' },
+          { name: 'أرفف', href: '/items?category=shelves' },
+        ]
+      },
+    ],
+  },
+  {
+    id: 'fashion-men',
+    name: 'أزياء الرجال',
+    icon: '👔',
+    href: '/items?category=mens-fashion',
+    subcategories: [
+      {
+        title: 'ملابس',
+        items: [
+          { name: 'تيشرتات', href: '/items?category=mens-tshirts' },
+          { name: 'تيشرتات بولو', href: '/items?category=mens-polo' },
+          { name: 'بنطلونات', href: '/items?category=mens-pants' },
+          { name: 'جينزات', href: '/items?category=mens-jeans' },
+          { name: 'ملابس رياضية', href: '/items?category=mens-sportswear' },
+        ]
+      },
+      {
+        title: 'ملابس رياضية',
+        items: [
+          { name: 'تيشرتات', href: '/items?category=sports-tshirts' },
+          { name: 'جواكت', href: '/items?category=sports-jackets' },
+          { name: 'بنطلونات وشورتات', href: '/items?category=sports-pants' },
+          { name: 'أحذية رياضية', href: '/items?category=sports-shoes' },
+          { name: 'سنيكرز', href: '/items?category=sneakers' },
+          { name: 'بنطلونات رياضية', href: '/items?category=joggers' },
+        ]
+      },
+      {
+        title: 'أحذية',
+        items: [
+          { name: 'أحذية رياضية', href: '/items?category=mens-sneakers' },
+          { name: 'سنيكرز', href: '/items?category=mens-casual-sneakers' },
+          { name: 'أبوات', href: '/items?category=mens-boots' },
+          { name: 'شباشب', href: '/items?category=mens-slippers' },
+        ]
+      },
+      {
+        title: 'شنط',
+        items: [
+          { name: 'شنط الظهر', href: '/items?category=backpacks' },
+          { name: 'محافظ', href: '/items?category=mens-wallets' },
+          { name: 'شنط السفر', href: '/items?category=travel-bags' },
+          { name: 'مجوهرات', href: '/items?category=mens-jewelry' },
+          { name: 'أحزمة', href: '/items?category=mens-belts' },
+          { name: 'ساعات', href: '/items?category=mens-watches' },
+          { name: 'نظارات', href: '/items?category=mens-sunglasses' },
+        ]
+      },
+    ],
   },
   {
     id: 'fashion-women',
     name: 'أزياء النساء',
     icon: '👗',
-    color: 'from-pink-500 to-rose-500',
     href: '/items?category=womens-fashion',
     subcategories: [
       {
-        title: 'الملابس',
+        title: 'ملابس',
         items: [
           { name: 'فساتين', href: '/items?category=womens-dresses' },
           { name: 'بلوزات', href: '/items?category=womens-tops' },
@@ -191,129 +337,64 @@ const categoriesData = [
           { name: 'حقائب يد', href: '/items?category=handbags' },
           { name: 'حقائب كتف', href: '/items?category=shoulder-bags' },
           { name: 'محافظ', href: '/items?category=womens-wallets' },
+          { name: 'شنط سفر', href: '/items?category=womens-travel-bags' },
+        ]
+      },
+      {
+        title: 'إكسسوارات',
+        items: [
+          { name: 'مجوهرات', href: '/items?category=womens-jewelry' },
+          { name: 'ساعات', href: '/items?category=womens-watches' },
+          { name: 'نظارات', href: '/items?category=womens-sunglasses' },
+          { name: 'إيشاربات', href: '/items?category=scarves' },
         ]
       },
     ],
-    promoImage: '/images/categories/fashion-women-promo.jpg',
-    brands: ['Zara', 'H&M', 'LC Waikiki', 'Defacto', 'Trendyol']
   },
   {
-    id: 'fashion-men',
-    name: 'أزياء الرجال',
-    icon: '👔',
-    color: 'from-slate-600 to-slate-700',
-    href: '/items?category=mens-fashion',
+    id: 'kids',
+    name: 'أزياء الأطفال',
+    icon: '👶',
+    href: '/items?category=baby-kids',
     subcategories: [
       {
-        title: 'الملابس',
+        title: 'ملابس أولاد',
         items: [
-          { name: 'قمصان', href: '/items?category=mens-shirts' },
-          { name: 'تيشيرتات', href: '/items?category=mens-tshirts' },
-          { name: 'بناطيل', href: '/items?category=mens-pants' },
-          { name: 'جاكيتات', href: '/items?category=mens-jackets' },
-          { name: 'بدل', href: '/items?category=mens-suits' },
+          { name: 'تيشرتات', href: '/items?category=boys-tshirts' },
+          { name: 'بنطلونات', href: '/items?category=boys-pants' },
+          { name: 'بيجامات', href: '/items?category=boys-pajamas' },
         ]
       },
       {
-        title: 'الأحذية',
+        title: 'ملابس بنات',
         items: [
-          { name: 'أحذية رسمية', href: '/items?category=mens-formal-shoes' },
-          { name: 'أحذية رياضية', href: '/items?category=mens-sneakers' },
-          { name: 'صنادل', href: '/items?category=mens-sandals' },
+          { name: 'فساتين', href: '/items?category=girls-dresses' },
+          { name: 'بلوزات', href: '/items?category=girls-tops' },
+          { name: 'بيجامات', href: '/items?category=girls-pajamas' },
         ]
       },
       {
-        title: 'الإكسسوارات',
+        title: 'أحذية أطفال',
         items: [
-          { name: 'ساعات', href: '/items?category=mens-watches' },
-          { name: 'أحزمة', href: '/items?category=mens-belts' },
-          { name: 'محافظ', href: '/items?category=mens-wallets' },
-          { name: 'نظارات', href: '/items?category=mens-sunglasses' },
+          { name: 'أحذية أولاد', href: '/items?category=boys-shoes' },
+          { name: 'أحذية بنات', href: '/items?category=girls-shoes' },
+          { name: 'صنادل', href: '/items?category=kids-sandals' },
+        ]
+      },
+      {
+        title: 'مستلزمات',
+        items: [
+          { name: 'شنط مدرسة', href: '/items?category=school-bags' },
+          { name: 'ألعاب', href: '/items?category=toys' },
+          { name: 'عربات أطفال', href: '/items?category=strollers' },
         ]
       },
     ],
-    promoImage: '/images/categories/fashion-men-promo.jpg',
-    brands: ['Nike', 'Adidas', 'Puma', 'Activ', 'Town Team']
-  },
-  {
-    id: 'home',
-    name: 'المنزل والأثاث',
-    icon: '🏠',
-    color: 'from-amber-500 to-orange-500',
-    href: '/items?category=home-garden',
-    subcategories: [
-      {
-        title: 'الأثاث',
-        items: [
-          { name: 'غرف نوم', href: '/items?category=bedroom-furniture' },
-          { name: 'غرف معيشة', href: '/items?category=living-room' },
-          { name: 'سفرة وطاولات', href: '/items?category=dining-furniture' },
-          { name: 'مكاتب', href: '/items?category=office-furniture' },
-        ]
-      },
-      {
-        title: 'الأجهزة المنزلية',
-        items: [
-          { name: 'ثلاجات', href: '/items?category=refrigerators' },
-          { name: 'غسالات', href: '/items?category=washing-machines' },
-          { name: 'تكييفات', href: '/items?category=air-conditioners' },
-          { name: 'مطبخ', href: '/items?category=kitchen-appliances' },
-        ]
-      },
-      {
-        title: 'الديكور',
-        items: [
-          { name: 'إضاءة', href: '/items?category=lighting' },
-          { name: 'سجاد', href: '/items?category=rugs' },
-          { name: 'ستائر', href: '/items?category=curtains' },
-        ]
-      },
-    ],
-    promoImage: '/images/categories/home-promo.jpg',
-    brands: ['IKEA', 'Mobica', 'Istikbal', 'Toshiba', 'Samsung']
-  },
-  {
-    id: 'vehicles',
-    name: 'السيارات',
-    icon: '🚗',
-    color: 'from-red-500 to-red-600',
-    href: '/items?category=vehicles',
-    subcategories: [
-      {
-        title: 'أنواع السيارات',
-        items: [
-          { name: 'سيارات ملاكي', href: '/items?category=passenger-cars' },
-          { name: 'سيارات SUV', href: '/items?category=suv' },
-          { name: 'ميكروباص', href: '/items?category=microbus' },
-          { name: 'نصف نقل', href: '/items?category=pickup' },
-        ]
-      },
-      {
-        title: 'قطع الغيار',
-        items: [
-          { name: 'محركات', href: '/items?category=car-engines' },
-          { name: 'فرامل', href: '/items?category=car-brakes' },
-          { name: 'إطارات', href: '/items?category=tires' },
-          { name: 'بطاريات', href: '/items?category=car-batteries' },
-        ]
-      },
-      {
-        title: 'الدراجات',
-        items: [
-          { name: 'موتوسيكلات', href: '/items?category=motorcycles' },
-          { name: 'سكوتر', href: '/items?category=scooters' },
-          { name: 'دراجات هوائية', href: '/items?category=bicycles' },
-        ]
-      },
-    ],
-    promoImage: '/images/categories/vehicles-promo.jpg',
-    brands: ['Toyota', 'Hyundai', 'Chevrolet', 'Nissan', 'BMW']
   },
   {
     id: 'beauty',
-    name: 'الجمال والعناية',
+    name: 'لوازم الجمال والبرفيوم',
     icon: '💄',
-    color: 'from-purple-500 to-purple-600',
     href: '/items?category=health-beauty',
     subcategories: [
       {
@@ -331,6 +412,7 @@ const categoriesData = [
           { name: 'كريمات', href: '/items?category=skin-creams' },
           { name: 'سيروم', href: '/items?category=serums' },
           { name: 'واقي شمس', href: '/items?category=sunscreen' },
+          { name: 'غسول', href: '/items?category=cleansers' },
         ]
       },
       {
@@ -341,79 +423,89 @@ const categoriesData = [
           { name: 'بخور وعود', href: '/items?category=oud' },
         ]
       },
+      {
+        title: 'العناية بالشعر',
+        items: [
+          { name: 'شامبو', href: '/items?category=shampoo' },
+          { name: 'بلسم', href: '/items?category=conditioner' },
+          { name: 'زيوت شعر', href: '/items?category=hair-oils' },
+        ]
+      },
     ],
-    promoImage: '/images/categories/beauty-promo.jpg',
-    brands: ['Maybelline', 'L\'Oreal', 'MAC', 'NYX', 'Nivea']
   },
   {
-    id: 'kids',
-    name: 'الأطفال',
-    icon: '👶',
-    color: 'from-cyan-500 to-teal-500',
-    href: '/items?category=baby-kids',
+    id: 'appliances',
+    name: 'أجهزة منزلية',
+    icon: '🔌',
+    href: '/items?category=home-appliances',
     subcategories: [
       {
-        title: 'ملابس الأطفال',
+        title: 'أجهزة كبيرة',
         items: [
-          { name: 'أولاد', href: '/items?category=boys-clothing' },
-          { name: 'بنات', href: '/items?category=girls-clothing' },
-          { name: 'رضع', href: '/items?category=baby-clothing' },
+          { name: 'ثلاجات', href: '/items?category=refrigerators' },
+          { name: 'غسالات', href: '/items?category=washing-machines' },
+          { name: 'تكييفات', href: '/items?category=air-conditioners' },
+          { name: 'سخانات', href: '/items?category=water-heaters' },
         ]
       },
       {
-        title: 'الألعاب',
+        title: 'أجهزة المطبخ',
         items: [
-          { name: 'ألعاب تعليمية', href: '/items?category=educational-toys' },
-          { name: 'عرائس ودمى', href: '/items?category=dolls' },
-          { name: 'ألعاب خارجية', href: '/items?category=outdoor-toys' },
+          { name: 'بوتاجازات', href: '/items?category=stoves' },
+          { name: 'ميكروويف', href: '/items?category=microwave' },
+          { name: 'خلاطات', href: '/items?category=blenders' },
+          { name: 'محضر طعام', href: '/items?category=food-processors' },
         ]
       },
       {
-        title: 'مستلزمات',
+        title: 'أجهزة صغيرة',
         items: [
-          { name: 'عربات أطفال', href: '/items?category=strollers' },
-          { name: 'كراسي سيارة', href: '/items?category=car-seats' },
-          { name: 'أسرة أطفال', href: '/items?category=baby-beds' },
+          { name: 'مكواة', href: '/items?category=irons' },
+          { name: 'مكنسة كهربائية', href: '/items?category=vacuum-cleaners' },
+          { name: 'مروحة', href: '/items?category=fans' },
+        ]
+      },
+      {
+        title: 'أدوات منزلية',
+        items: [
+          { name: 'حلل وطاسات', href: '/items?category=cookware' },
+          { name: 'أطباق', href: '/items?category=dishes' },
+          { name: 'أدوات المائدة', href: '/items?category=cutlery' },
         ]
       },
     ],
-    promoImage: '/images/categories/kids-promo.jpg',
-    brands: ['Carter\'s', 'LC Waikiki Kids', 'Mothercare', 'Chicco']
   },
   {
     id: 'sports',
     name: 'الرياضة',
     icon: '⚽',
-    color: 'from-green-500 to-emerald-500',
     href: '/items?category=sports-outdoors',
     subcategories: [
       {
-        title: 'الملابس الرياضية',
-        items: [
-          { name: 'تيشيرتات رياضية', href: '/items?category=sports-tshirts' },
-          { name: 'شورتات', href: '/items?category=sports-shorts' },
-          { name: 'ترينج', href: '/items?category=tracksuits' },
-        ]
-      },
-      {
-        title: 'المعدات',
+        title: 'معدات رياضية',
         items: [
           { name: 'أجهزة رياضية', href: '/items?category=gym-equipment' },
-          { name: 'كرة قدم', href: '/items?category=football' },
-          { name: 'تنس', href: '/items?category=tennis' },
+          { name: 'دمبلز وأثقال', href: '/items?category=weights' },
+          { name: 'سجادة يوجا', href: '/items?category=yoga-mats' },
         ]
       },
       {
-        title: 'الأحذية الرياضية',
+        title: 'كرة القدم',
         items: [
-          { name: 'جري', href: '/items?category=running-shoes' },
-          { name: 'كرة قدم', href: '/items?category=football-shoes' },
-          { name: 'كاجوال', href: '/items?category=casual-sneakers' },
+          { name: 'كرات', href: '/items?category=footballs' },
+          { name: 'أحذية كرة قدم', href: '/items?category=football-shoes' },
+          { name: 'ملابس كرة قدم', href: '/items?category=football-wear' },
+        ]
+      },
+      {
+        title: 'رياضات أخرى',
+        items: [
+          { name: 'تنس', href: '/items?category=tennis' },
+          { name: 'سباحة', href: '/items?category=swimming' },
+          { name: 'كامبينج', href: '/items?category=camping' },
         ]
       },
     ],
-    promoImage: '/images/categories/sports-promo.jpg',
-    brands: ['Nike', 'Adidas', 'Puma', 'Under Armour', 'Reebok']
   },
 ];
 
@@ -907,83 +999,108 @@ export default function Navigation() {
             ============================================ */}
         <div className="hidden lg:block bg-white border-t border-gray-100 relative" ref={categoryBarRef}>
           <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center gap-1 py-1 overflow-x-auto scrollbar-hide">
-              {/* All Categories Button */}
-              <button
-                className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-lg font-medium text-sm whitespace-nowrap transition-all hover:bg-primary-600"
-                onClick={() => router.push('/items')}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-                كل الفئات
-              </button>
-
-              {/* Category Links */}
-              {categoriesData.map((category) => (
-                <div
-                  key={category.id}
-                  className="relative"
-                  onMouseEnter={() => handleCategoryMouseEnter(category.id)}
-                  onMouseLeave={handleCategoryMouseLeave}
-                >
-                  <Link
-                    href={category.href}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                      hoveredCategory === category.id
-                        ? 'bg-gray-100 text-primary-600'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+            <div className="flex items-center gap-0 py-1">
+              {/* Category Links with Scroll */}
+              <div className="flex-1 flex items-center gap-0 overflow-x-auto scrollbar-hide">
+                {categoriesData.map((category) => (
+                  <div
+                    key={category.id}
+                    className="relative flex-shrink-0"
+                    onMouseEnter={() => handleCategoryMouseEnter(category.id)}
+                    onMouseLeave={handleCategoryMouseLeave}
                   >
-                    <span>{category.icon}</span>
-                    {category.name}
-                  </Link>
-                </div>
-              ))}
+                    <Link
+                      href={category.href}
+                      className={`flex items-center gap-1.5 px-4 py-2.5 font-medium text-sm whitespace-nowrap transition-all border-b-2 ${
+                        hoveredCategory === category.id
+                          ? 'text-primary-600 border-primary-500'
+                          : 'text-gray-700 hover:text-primary-600 border-transparent'
+                      }`}
+                    >
+                      <span>{category.icon}</span>
+                      {category.name}
+                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </Link>
+                  </div>
+                ))}
+              </div>
+
+              {/* Scroll Arrow */}
+              <button className="flex-shrink-0 p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
             </div>
           </div>
 
           {/* Category Mega Menu Dropdown */}
           {hoveredCategory && (
             <div
-              className="absolute top-full left-0 right-0 bg-white shadow-2xl border-t border-gray-100 z-50 animate-fade-in-down"
+              className="absolute top-full left-0 right-0 bg-white shadow-xl border-t border-gray-100 z-50"
               onMouseEnter={handleMegaMenuMouseEnter}
               onMouseLeave={handleMegaMenuMouseLeave}
             >
-              <div className="max-w-7xl mx-auto px-4 py-5">
+              <div className="max-w-7xl mx-auto px-4 py-4">
                 {categoriesData.filter(c => c.id === hoveredCategory).map((category) => (
-                  <div key={category.id} className="flex gap-6">
-                    {/* Subcategories Grid - Compact Layout */}
-                    <div className="flex-1 grid grid-cols-4 gap-x-8 gap-y-4">
+                  <div key={category.id}>
+                    {/* Category Header */}
+                    <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
+                      <span className="text-lg">{category.icon}</span>
+                      <Link
+                        href={category.href}
+                        className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1"
+                      >
+                        تصفح كل {category.name}
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </Link>
+                    </div>
+
+                    {/* Subcategories Grid - Compact Layout like Noon */}
+                    <div className="grid grid-cols-4 gap-x-12 gap-y-1">
                       {category.subcategories.map((subcat) => (
-                        <div key={subcat.title}>
+                        <div key={subcat.title} className="mb-4">
                           <h4 className="font-bold text-gray-900 mb-2 text-sm">
                             {subcat.title}
                           </h4>
-                          <ul className="space-y-1.5">
+                          <ul className="space-y-1">
                             {subcat.items.map((item) => (
                               <li key={item.name}>
                                 <Link
                                   href={item.href}
-                                  className="text-gray-600 hover:text-primary-600 transition-colors text-sm block"
+                                  className="text-gray-600 hover:text-primary-600 transition-colors text-sm block py-0.5"
                                 >
                                   {item.name}
                                 </Link>
                               </li>
                             ))}
+                            {subcat.hasMore && (
+                              <li>
+                                <Link
+                                  href={category.href}
+                                  className="text-primary-600 hover:text-primary-700 text-sm font-medium block py-0.5"
+                                >
+                                  + المزيد
+                                </Link>
+                              </li>
+                            )}
+                            {subcat.showAllLink && (
+                              <li>
+                                <Link
+                                  href={category.href}
+                                  className="text-primary-600 hover:text-primary-700 text-sm block py-0.5"
+                                >
+                                  عرض المنتجات ←
+                                </Link>
+                              </li>
+                            )}
                           </ul>
                         </div>
                       ))}
-                    </div>
-
-                    {/* View All Link */}
-                    <div className="flex-shrink-0 flex items-start pt-1">
-                      <Link
-                        href={category.href}
-                        className="text-primary-600 hover:text-primary-700 text-sm font-medium whitespace-nowrap"
-                      >
-                        عرض الكل ←
-                      </Link>
                     </div>
                   </div>
                 ))}
@@ -992,10 +1109,10 @@ export default function Navigation() {
           )}
         </div>
 
-        {/* Mobile Categories Scroll - Simplified */}
+        {/* Mobile Categories Scroll */}
         <div className="lg:hidden bg-white border-t border-gray-100">
           <div className="flex items-center gap-2 px-4 py-2 overflow-x-auto scrollbar-hide">
-            {categoriesData.slice(0, 6).map((category) => (
+            {categoriesData.map((category) => (
               <Link
                 key={category.id}
                 href={category.href}
@@ -1005,82 +1122,6 @@ export default function Navigation() {
                 <span className="text-xs text-gray-700 font-medium whitespace-nowrap">{category.name.split(' ')[0]}</span>
               </Link>
             ))}
-          </div>
-        </div>
-
-        {/* ============================================
-            Specialized Markets Quick Navigation Bar
-            ============================================ */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center justify-center gap-1 py-2 overflow-x-auto scrollbar-hide">
-              <Link
-                href="/items"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                  isActive('/items')
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <span>🛒</span>
-                السوق العام
-              </Link>
-              <Link
-                href="/auctions"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                  isActive('/auctions')
-                    ? 'bg-amber-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <span>🔨</span>
-                المزادات
-              </Link>
-              <Link
-                href="/reverse-auctions"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                  isActive('/reverse-auctions')
-                    ? 'bg-blue-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <span>📋</span>
-                المناقصات
-              </Link>
-              <Link
-                href="/luxury"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                  isActive('/luxury')
-                    ? 'bg-purple-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <span>👑</span>
-                سوق الفاخر
-              </Link>
-              <Link
-                href="/scrap"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                  isActive('/scrap')
-                    ? 'bg-green-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <span>♻️</span>
-                سوق التوالف
-              </Link>
-              <Link
-                href="/barter"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                  isActive('/barter')
-                    ? 'bg-orange-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <span>🔄</span>
-                المقايضات
-              </Link>
-            </div>
           </div>
         </div>
       </nav>
