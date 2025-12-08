@@ -249,7 +249,7 @@ export default function HomePage() {
         <div className="relative max-w-7xl mx-auto px-4 py-12 md:py-16">
           <div className="text-center max-w-3xl mx-auto">
             {/* Dynamic Content with Animation */}
-            <div className="relative min-h-[140px] md:min-h-[160px] overflow-hidden">
+            <div className="relative min-h-[160px] md:min-h-[180px] overflow-hidden pb-8">
               {heroSlides.map((slide, index) => (
                 <Link
                   key={slide.id}
@@ -287,7 +287,7 @@ export default function HomePage() {
 
               {/* Navigation Arrows - Clear Direction */}
               <button
-                onClick={() => setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length)}
+                onClick={(e) => { e.preventDefault(); setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length); }}
                 className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 md:translate-x-6 p-2 text-white hover:text-white/80 transition-all z-10 group"
                 aria-label="السابق"
               >
@@ -296,7 +296,7 @@ export default function HomePage() {
                 </svg>
               </button>
               <button
-                onClick={() => setCurrentSlide((prev) => (prev + 1) % heroSlides.length)}
+                onClick={(e) => { e.preventDefault(); setCurrentSlide((prev) => (prev + 1) % heroSlides.length); }}
                 className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 md:-translate-x-6 p-2 text-white hover:text-white/80 transition-all z-10 group"
                 aria-label="التالي"
               >
@@ -304,22 +304,22 @@ export default function HomePage() {
                   <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
                 </svg>
               </button>
-            </div>
 
-            {/* Slide Indicators */}
-            <div className="flex justify-center gap-3 my-4">
-              {heroSlides.map((slide, index) => (
-                <button
-                  key={slide.id}
-                  onClick={() => setCurrentSlide(index)}
-                  className={`transition-all duration-300 rounded-full ${
-                    index === currentSlide
-                      ? 'w-10 h-3 bg-white shadow-lg'
-                      : 'w-3 h-3 bg-white/40 hover:bg-white/60'
-                  }`}
-                  aria-label={`انتقل إلى ${index + 1}`}
-                />
-              ))}
+              {/* Slide Indicators - Inside slide area at bottom */}
+              <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-3 pb-2 z-10">
+                {heroSlides.map((slide, index) => (
+                  <button
+                    key={slide.id}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrentSlide(index); }}
+                    className={`transition-all duration-300 rounded-full ${
+                      index === currentSlide
+                        ? 'w-10 h-3 bg-white shadow-lg'
+                        : 'w-3 h-3 bg-white/40 hover:bg-white/60'
+                    }`}
+                    aria-label={`انتقل إلى ${index + 1}`}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* Search Bar - Fixed/Static */}
