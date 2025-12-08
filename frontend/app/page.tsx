@@ -113,6 +113,7 @@ export default function HomePage() {
       description: 'منصة XChange هي السوق الأول في مصر للتجارة الذكية والمقايضة. جديد، مستعمل، أو تالف - كل شيء له قيمة هنا.',
       gradient: 'from-primary-600 via-primary-500 to-teal-500',
       icon: '🔄',
+      href: '/items',
     },
     {
       id: 'flash',
@@ -122,6 +123,7 @@ export default function HomePage() {
       gradient: 'from-red-600 via-orange-500 to-amber-500',
       icon: '⚡',
       badge: 'عرض محدود',
+      href: '/deals',
     },
     {
       id: 'barter',
@@ -130,6 +132,7 @@ export default function HomePage() {
       description: 'لديك شيء لا تحتاجه؟ بادله بشيء تريده! نظام مقايضة ذكي يجد لك أفضل الصفقات.',
       gradient: 'from-blue-600 via-indigo-500 to-purple-500',
       icon: '🔁',
+      href: '/barter',
     },
     {
       id: 'auction',
@@ -138,6 +141,7 @@ export default function HomePage() {
       description: 'شارك في مزادات حقيقية على منتجات مميزة. اعثر على صفقات لا تُصدق!',
       gradient: 'from-purple-600 via-purple-500 to-pink-500',
       icon: '🔨',
+      href: '/auctions',
     },
   ];
 
@@ -247,14 +251,15 @@ export default function HomePage() {
             {/* Dynamic Content with Animation */}
             <div className="relative min-h-[200px] md:min-h-[220px] overflow-hidden">
               {heroSlides.map((slide, index) => (
-                <div
+                <Link
                   key={slide.id}
-                  className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+                  href={slide.href}
+                  className={`absolute inset-0 transition-all duration-700 ease-in-out cursor-pointer block ${
                     index === currentSlide
                       ? 'opacity-100 translate-x-0'
                       : index < currentSlide
-                        ? 'opacity-0 -translate-x-full'
-                        : 'opacity-0 translate-x-full'
+                        ? 'opacity-0 -translate-x-full pointer-events-none'
+                        : 'opacity-0 translate-x-full pointer-events-none'
                   }`}
                 >
                   {/* Badge for special slides */}
@@ -268,7 +273,7 @@ export default function HomePage() {
                   )}
 
                   {/* Main Heading */}
-                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+                  <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight hover:scale-105 transition-transform">
                     <span className="inline-block">{slide.icon}</span> {slide.title}
                     <span className="block text-white/90">{slide.subtitle}</span>
                   </h1>
@@ -277,7 +282,7 @@ export default function HomePage() {
                   <p className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto">
                     {slide.description}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
 
