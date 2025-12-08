@@ -32,6 +32,94 @@ const CATEGORY_ICONS: Record<string, { icon: string; gradient: string }> = {
 };
 
 // ============================================
+// Flash Deals Data (Mock data for demonstration)
+// ============================================
+const FLASH_DEALS = [
+  {
+    id: 'deal-1',
+    title: 'آيفون 14 برو ماكس',
+    originalPrice: 45000,
+    discountedPrice: 32000,
+    discount: 29,
+    image: '📱',
+    sold: 45,
+    total: 100,
+  },
+  {
+    id: 'deal-2',
+    title: 'سامسونج جالاكسي S23',
+    originalPrice: 35000,
+    discountedPrice: 25000,
+    discount: 29,
+    image: '📱',
+    sold: 78,
+    total: 100,
+  },
+  {
+    id: 'deal-3',
+    title: 'لابتوب ديل XPS 15',
+    originalPrice: 55000,
+    discountedPrice: 42000,
+    discount: 24,
+    image: '💻',
+    sold: 23,
+    total: 50,
+  },
+  {
+    id: 'deal-4',
+    title: 'ساعة أبل واتش Series 9',
+    originalPrice: 18000,
+    discountedPrice: 13500,
+    discount: 25,
+    image: '⌚',
+    sold: 89,
+    total: 100,
+  },
+];
+
+// ============================================
+// Charity Organizations Data
+// ============================================
+const CHARITIES = [
+  {
+    id: 'charity-1',
+    name: 'مصر الخير',
+    description: 'مساعدة الأسر الأكثر احتياجاً في مصر',
+    logo: '🤲',
+    color: 'from-green-500 to-emerald-600',
+    totalDonations: 2500000,
+    donorsCount: 15420,
+  },
+  {
+    id: 'charity-2',
+    name: 'بنك الطعام المصري',
+    description: 'إطعام الجائعين ومحاربة هدر الطعام',
+    logo: '🍞',
+    color: 'from-amber-500 to-orange-600',
+    totalDonations: 1850000,
+    donorsCount: 12300,
+  },
+  {
+    id: 'charity-3',
+    name: 'أهل مصر',
+    description: 'علاج الحروق للأطفال والكبار',
+    logo: '❤️‍🩹',
+    color: 'from-red-500 to-pink-600',
+    totalDonations: 980000,
+    donorsCount: 8750,
+  },
+  {
+    id: 'charity-4',
+    name: 'رسالة',
+    description: 'تنمية المجتمع ومساعدة المحتاجين',
+    logo: '💝',
+    color: 'from-purple-500 to-violet-600',
+    totalDonations: 1250000,
+    donorsCount: 9800,
+  },
+];
+
+// ============================================
 // Features Data
 // ============================================
 const FEATURES = [
@@ -94,6 +182,18 @@ export default function HomePage() {
   const [hoveredQuickSubcategory, setHoveredQuickSubcategory] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Flash Deals Countdown Timer
+  const [flashDealsTime, setFlashDealsTime] = useState({
+    hours: 5,
+    minutes: 42,
+    seconds: 18
+  });
+
+  // Donation Modal State
+  const [donationModalOpen, setDonationModalOpen] = useState(false);
+  const [selectedCharity, setSelectedCharity] = useState<typeof CHARITIES[0] | null>(null);
+  const [donationAmount, setDonationAmount] = useState<number | null>(null);
+
   // Hero slides data
   const heroSlides = [
     {
@@ -142,6 +242,32 @@ export default function HomePage() {
     }, 5000); // Change slide every 5 seconds
     return () => clearInterval(interval);
   }, [heroSlides.length]);
+
+  // Flash Deals Countdown Timer
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setFlashDealsTime(prev => {
+        let { hours, minutes, seconds } = prev;
+        if (seconds > 0) {
+          seconds--;
+        } else if (minutes > 0) {
+          minutes--;
+          seconds = 59;
+        } else if (hours > 0) {
+          hours--;
+          minutes = 59;
+          seconds = 59;
+        } else {
+          // Reset timer when it reaches 0
+          hours = 5;
+          minutes = 42;
+          seconds = 18;
+        }
+        return { hours, minutes, seconds };
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Quick categories with their parent IDs for fetching subcategories
   const quickCategories = [
@@ -440,6 +566,125 @@ export default function HomePage() {
           <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M0 120L60 110C120 100 240 80 360 70C480 60 600 60 720 65C840 70 960 80 1080 85C1200 90 1320 90 1380 90L1440 90V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="#f9fafb"/>
           </svg>
+        </div>
+      </section>
+
+      {/* ============================================
+          Flash Deals Section with Countdown
+          ============================================ */}
+      <section className="py-8 md:py-12 bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 relative overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse" />
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 relative">
+          {/* Header with Countdown */}
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-4xl animate-bounce">⚡</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-white">عروض فلاش</h2>
+                <p className="text-white/80 text-sm">خصومات حصرية لفترة محدودة!</p>
+              </div>
+            </div>
+
+            {/* Countdown Timer */}
+            <div className="flex items-center gap-2">
+              <span className="text-white/80 text-sm font-medium">ينتهي خلال:</span>
+              <div className="flex items-center gap-1">
+                {/* Hours */}
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 min-w-[50px] text-center">
+                  <div className="text-2xl font-bold text-white">{String(flashDealsTime.hours).padStart(2, '0')}</div>
+                  <div className="text-xs text-white/70">ساعة</div>
+                </div>
+                <span className="text-white text-2xl font-bold">:</span>
+                {/* Minutes */}
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 min-w-[50px] text-center">
+                  <div className="text-2xl font-bold text-white">{String(flashDealsTime.minutes).padStart(2, '0')}</div>
+                  <div className="text-xs text-white/70">دقيقة</div>
+                </div>
+                <span className="text-white text-2xl font-bold">:</span>
+                {/* Seconds */}
+                <div className="bg-white/20 backdrop-blur-sm rounded-lg px-3 py-2 min-w-[50px] text-center">
+                  <div className="text-2xl font-bold text-white animate-pulse">{String(flashDealsTime.seconds).padStart(2, '0')}</div>
+                  <div className="text-xs text-white/70">ثانية</div>
+                </div>
+              </div>
+            </div>
+
+            <Link
+              href="/deals"
+              className="hidden md:flex items-center gap-2 bg-white text-red-600 px-5 py-2.5 rounded-xl font-bold hover:bg-red-50 transition-colors shadow-lg"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {/* Flash Deals Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {FLASH_DEALS.map((deal) => (
+              <Link
+                key={deal.id}
+                href={`/deals/${deal.id}`}
+                className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 group"
+              >
+                {/* Discount Badge */}
+                <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                  -{deal.discount}%
+                </div>
+
+                {/* Product Image */}
+                <div className="relative bg-gray-100 rounded-xl h-28 md:h-36 flex items-center justify-center mb-3 overflow-hidden">
+                  <span className="text-5xl md:text-6xl group-hover:scale-110 transition-transform duration-300">{deal.image}</span>
+                  <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    -{deal.discount}%
+                  </div>
+                </div>
+
+                {/* Product Info */}
+                <h3 className="font-bold text-gray-900 text-sm mb-2 line-clamp-1">{deal.title}</h3>
+
+                {/* Prices */}
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg font-bold text-red-600">{deal.discountedPrice.toLocaleString()}</span>
+                  <span className="text-xs text-gray-400 line-through">{deal.originalPrice.toLocaleString()}</span>
+                  <span className="text-xs text-gray-500">ج.م</span>
+                </div>
+
+                {/* Stock Progress */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">تم البيع</span>
+                    <span className="text-red-600 font-bold">{Math.round((deal.sold / deal.total) * 100)}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-red-500 to-orange-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(deal.sold / deal.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Mobile View All Button */}
+          <div className="md:hidden mt-4 text-center">
+            <Link
+              href="/deals"
+              className="inline-flex items-center gap-2 bg-white text-red-600 px-6 py-3 rounded-xl font-bold"
+            >
+              عرض كل العروض
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -1071,6 +1316,225 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ============================================
+          Charity / Donations Section
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-emerald-50 to-white">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Section Header */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+              <span>🤲</span>
+              ساهم في الخير
+            </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">تبرع لمن يحتاج</h2>
+            <p className="text-gray-500 max-w-2xl mx-auto">
+              ساهم مع XChange في دعم الجمعيات الخيرية الموثوقة في مصر. كل تبرع يصنع فرقاً.
+            </p>
+          </div>
+
+          {/* Stats Banner */}
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 mb-8 text-white">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+              <div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">6.5M+</div>
+                <div className="text-emerald-100 text-sm">إجمالي التبرعات (ج.م)</div>
+              </div>
+              <div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">46K+</div>
+                <div className="text-emerald-100 text-sm">متبرع</div>
+              </div>
+              <div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">15+</div>
+                <div className="text-emerald-100 text-sm">جمعية خيرية</div>
+              </div>
+              <div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">100%</div>
+                <div className="text-emerald-100 text-sm">يصل للمحتاجين</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charity Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {CHARITIES.map((charity) => (
+              <div
+                key={charity.id}
+                className="bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all overflow-hidden border border-gray-100"
+              >
+                {/* Charity Header */}
+                <div className={`bg-gradient-to-r ${charity.color} p-4 text-white`}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl">{charity.logo}</span>
+                    <div>
+                      <h3 className="font-bold text-lg">{charity.name}</h3>
+                      <p className="text-white/80 text-xs">{charity.description}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="p-4">
+                  <div className="flex justify-between text-sm mb-4">
+                    <div>
+                      <div className="text-gray-500 text-xs">إجمالي التبرعات</div>
+                      <div className="font-bold text-gray-900">{charity.totalDonations.toLocaleString()} ج.م</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-gray-500 text-xs">عدد المتبرعين</div>
+                      <div className="font-bold text-gray-900">{charity.donorsCount.toLocaleString()}</div>
+                    </div>
+                  </div>
+
+                  {/* Quick Donate Buttons */}
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {[10, 25, 50].map((amount) => (
+                      <button
+                        key={amount}
+                        onClick={() => {
+                          setSelectedCharity(charity);
+                          setDonationAmount(amount);
+                          setDonationModalOpen(true);
+                        }}
+                        className="py-2 text-sm font-medium bg-gray-100 hover:bg-emerald-100 text-gray-700 hover:text-emerald-700 rounded-lg transition-colors"
+                      >
+                        {amount} ج.م
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom Amount Button */}
+                  <button
+                    onClick={() => {
+                      setSelectedCharity(charity);
+                      setDonationAmount(null);
+                      setDonationModalOpen(true);
+                    }}
+                    className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+                  >
+                    <span>💝</span>
+                    تبرع الآن
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* View All Charities */}
+          <div className="text-center">
+            <Link
+              href="/donations"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-100 text-emerald-700 rounded-xl font-medium hover:bg-emerald-200 transition-colors"
+            >
+              <span>🏛️</span>
+              عرض كل الجمعيات الخيرية
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================
+          Donation Modal
+          ============================================ */}
+      {donationModalOpen && selectedCharity && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setDonationModalOpen(false)}>
+          <div
+            className="bg-white rounded-2xl max-w-md w-full overflow-hidden shadow-2xl animate-fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className={`bg-gradient-to-r ${selectedCharity.color} p-6 text-white`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-4xl">{selectedCharity.logo}</span>
+                  <div>
+                    <h3 className="font-bold text-xl">{selectedCharity.name}</h3>
+                    <p className="text-white/80 text-sm">{selectedCharity.description}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDonationModalOpen(false)}
+                  className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <h4 className="font-bold text-gray-900 mb-4">اختر مبلغ التبرع</h4>
+
+              {/* Quick Amounts */}
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                {[10, 25, 50, 100].map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => setDonationAmount(amount)}
+                    className={`py-3 rounded-xl font-bold transition-all ${
+                      donationAmount === amount
+                        ? 'bg-emerald-500 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {amount}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Amount Input */}
+              <div className="mb-6">
+                <label className="block text-sm text-gray-600 mb-2">أو أدخل مبلغ آخر</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="أدخل المبلغ"
+                    value={donationAmount || ''}
+                    onChange={(e) => setDonationAmount(Number(e.target.value) || null)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+                  />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">ج.م</span>
+                </div>
+              </div>
+
+              {/* Payment Methods */}
+              <div className="mb-6">
+                <label className="block text-sm text-gray-600 mb-3">طريقة الدفع</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button className="flex items-center justify-center gap-2 p-3 border-2 border-emerald-500 bg-emerald-50 rounded-xl text-emerald-700 font-medium">
+                    <span>💳</span>
+                    بطاقة ائتمان
+                  </button>
+                  <button className="flex items-center justify-center gap-2 p-3 border-2 border-gray-200 rounded-xl text-gray-600 hover:border-emerald-500 hover:bg-emerald-50 transition-colors">
+                    <span>📱</span>
+                    محفظة إلكترونية
+                  </button>
+                </div>
+              </div>
+
+              {/* Donate Button */}
+              <button
+                disabled={!donationAmount || donationAmount <= 0}
+                className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2"
+              >
+                <span>💝</span>
+                تبرع بـ {donationAmount || 0} ج.م
+              </button>
+
+              {/* Trust Note */}
+              <p className="text-center text-xs text-gray-500 mt-4">
+                🔒 جميع التبرعات آمنة ومشفرة • يتم تحويل 100% للجمعية مباشرة
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ============================================
           CTA Section
