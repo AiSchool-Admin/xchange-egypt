@@ -270,10 +270,10 @@ export const createOrder = async (
       },
     });
 
-    // Mark all listings as SOLD to prevent double-selling
+    // Mark all listings as COMPLETED to prevent double-selling
     await tx.listing.updateMany({
       where: { id: { in: listingIds } },
-      data: { status: 'SOLD' },
+      data: { status: 'COMPLETED' },
     });
 
     // Clear cart items within transaction
