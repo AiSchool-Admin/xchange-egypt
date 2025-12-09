@@ -1,0 +1,1071 @@
+{
+  "info": {
+    "name": "XChange Egypt API",
+    "_postman_id": "xchange-egypt-api-v1",
+    "description": "Complete API collection for XChange Egypt e-commerce platform testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "itemId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "listingId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "auctionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health & Info",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health",
+            "description": "Check if the API is running"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has status ok', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.status).to.eql('ok');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Authentication",
+      "item": [
+        {
+          "name": "Register - Individual User",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test{{$randomInt}}@example.com\",\n  \"password\": \"Test123!@#\",\n  \"fullName\": \"مستخدم تجريبي\",\n  \"phone\": \"0101234{{$randomInt}}\",\n  \"userType\": \"INDIVIDUAL\",\n  \"governorate\": \"Cairo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has tokens', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.accessToken).to.be.a('string');",
+                  "    pm.expect(jsonData.refreshToken).to.be.a('string');",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "    pm.collectionVariables.set('userId', jsonData.user.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register - Business User",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/register",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"business{{$randomInt}}@example.com\",\n  \"password\": \"Test123!@#\",\n  \"fullName\": \"صاحب شركة\",\n  \"phone\": \"0112345{{$randomInt}}\",\n  \"userType\": \"BUSINESS\",\n  \"businessName\": \"شركة تجريبية\",\n  \"commercialRegistration\": \"123456789\",\n  \"taxId\": \"987654321\",\n  \"governorate\": \"Alexandria\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Business user created', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.user.userType).to.eql('BUSINESS');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Test123!@#\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has accessToken', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.accessToken).to.be.a('string');",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', jsonData.refreshToken);",
+                  "    pm.collectionVariables.set('userId', jsonData.user.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/refresh",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('New access token received', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.accessToken).to.be.a('string');",
+                  "    pm.collectionVariables.set('accessToken', jsonData.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auth/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('User data returned', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.id).to.be.a('string');",
+                  "    pm.expect(jsonData.email).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/logout",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Categories",
+      "item": [
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/categories"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Returns array of categories', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Category by Slug",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/categories/electronics"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Items",
+      "item": [
+        {
+          "name": "Create Item",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/items",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"iPhone 15 Pro Max - جديد\",\n  \"description\": \"هاتف iPhone 15 Pro Max جديد بالكرتونة\",\n  \"categoryId\": \"category-id-here\",\n  \"condition\": \"NEW\",\n  \"estimatedValue\": 75000,\n  \"images\": []\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Item created', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.id).to.be.a('string');",
+                  "    pm.collectionVariables.set('itemId', jsonData.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Items",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/items?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["items"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Returns paginated items', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data.items).to.be.an('array');",
+                  "    pm.expect(jsonData.data.pagination).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get My Items",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/items/my",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Item by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/items/{{itemId}}"
+          }
+        },
+        {
+          "name": "Update Item",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/items/{{itemId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"iPhone 15 Pro Max - مستعمل\",\n  \"estimatedValue\": 70000\n}"
+            }
+          }
+        },
+        {
+          "name": "Search Items",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/items/search?q=iPhone&minPrice=10000&maxPrice=100000",
+              "host": ["{{baseUrl}}"],
+              "path": ["items", "search"],
+              "query": [
+                { "key": "q", "value": "iPhone" },
+                { "key": "minPrice", "value": "10000" },
+                { "key": "maxPrice", "value": "100000" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Listings",
+      "item": [
+        {
+          "name": "Create Listing (Direct Sale)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/listings",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemId\": \"{{itemId}}\",\n  \"listingType\": \"DIRECT_SALE\",\n  \"price\": 70000,\n  \"currency\": \"EGP\",\n  \"title\": \"iPhone 15 Pro Max للبيع\",\n  \"description\": \"هاتف ممتاز بحالة جيدة جداً\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Listing created', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('listingId', jsonData.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Listings",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/listings"
+          }
+        },
+        {
+          "name": "Get Listing by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/listings/{{listingId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Cart",
+      "item": [
+        {
+          "name": "Get Cart",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/cart",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Cart returned', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.items).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add to Cart",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/cart/items",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"quantity\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 or 201', function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Cart Item Quantity",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/cart/items/{{cartItemId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Remove from Cart",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/cart/items/{{cartItemId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Clear Cart",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/cart",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Orders",
+      "item": [
+        {
+          "name": "Create Order (COD)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethod\": \"COD\",\n  \"shippingAddress\": {\n    \"fullName\": \"محمد أحمد\",\n    \"phone\": \"01012345678\",\n    \"governorate\": \"Cairo\",\n    \"city\": \"مدينة نصر\",\n    \"street\": \"شارع مصطفى النحاس\",\n    \"building\": \"15\",\n    \"floor\": \"3\",\n    \"apartment\": \"7\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Order created', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('orderId', jsonData.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Order (Fawry)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethod\": \"FAWRY\",\n  \"shippingAddress\": {\n    \"fullName\": \"أحمد محمود\",\n    \"phone\": \"01112345678\",\n    \"governorate\": \"Alexandria\",\n    \"city\": \"سموحة\",\n    \"street\": \"شارع فوزي معاذ\",\n    \"building\": \"10\"\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Orders",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/my",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Returns array of orders', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/orders/{{orderId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Cancel Order",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/orders/{{orderId}}/cancel",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Auctions",
+      "item": [
+        {
+          "name": "Create Auction",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auctions",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"listingId\": \"{{listingId}}\",\n  \"startingPrice\": 50000,\n  \"reservePrice\": 60000,\n  \"minBidIncrement\": 1000,\n  \"startTime\": \"2024-12-15T10:00:00Z\",\n  \"endTime\": \"2024-12-20T10:00:00Z\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Auction created', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('auctionId', jsonData.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Active Auctions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auctions?status=ACTIVE"
+          }
+        },
+        {
+          "name": "Get Auction by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auctions/{{auctionId}}"
+          }
+        },
+        {
+          "name": "Place Bid",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auctions/{{auctionId}}/bid",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 55000\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Bids",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/auctions/my-bids",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Barter",
+      "item": [
+        {
+          "name": "Create Barter Offer",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/barter/offers",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientId\": \"recipient-user-id\",\n  \"offeredItemIds\": [\"item-id-1\"],\n  \"requestedItemIds\": [\"item-id-2\"],\n  \"message\": \"أريد مبادلة هذا المنتج\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Barter Offers",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/barter/offers/my",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Accept Barter Offer",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/barter/offers/{{barterOfferId}}/accept",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Reject Barter Offer",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/barter/offers/{{barterOfferId}}/reject",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Transactions",
+      "item": [
+        {
+          "name": "Get My Transactions",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/transactions/my",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Transaction by ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/transactions/{{transactionId}}",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Confirm Payment",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/transactions/{{transactionId}}/confirm-payment",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mark as Shipped",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/transactions/{{transactionId}}/ship",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mark as Delivered",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/transactions/{{transactionId}}/deliver",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Chat",
+      "item": [
+        {
+          "name": "Get Conversations",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/conversations",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Get Messages",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/chat/conversations/{{conversationId}}/messages",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/chat/conversations/{{conversationId}}/messages",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"مرحباً، هل المنتج متاح؟\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/notifications",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mark as Read",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/notifications/{{notificationId}}/read",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/notifications/read-all",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
