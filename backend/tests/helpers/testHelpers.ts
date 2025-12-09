@@ -4,7 +4,7 @@
  */
 
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { getTestDb } from './testDb';
 
 // Type definitions for user enums

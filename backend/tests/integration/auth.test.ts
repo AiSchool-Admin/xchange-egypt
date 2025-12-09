@@ -5,7 +5,7 @@
 import request from 'supertest';
 import { cleanDatabase, disconnectTestDb, getTestDb } from '../helpers/testDb';
 import { createTestUser } from '../helpers/testHelpers';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // Note: These tests require the full Express app
 // For now, we'll test the logic separately until we can import the app
