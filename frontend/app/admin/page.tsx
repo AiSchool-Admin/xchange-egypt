@@ -5,7 +5,8 @@ import axios from 'axios';
 import Link from 'next/link';
 import { useAdmin } from '@/lib/contexts/AdminContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// API_URL already includes /api/v1 from environment variable
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface DashboardStats {
   users: {
@@ -55,10 +56,10 @@ export default function AdminDashboard() {
 
       try {
         const [statsRes, logsRes] = await Promise.all([
-          axios.get(`${API_URL}/api/v1/admin/dashboard/stats`, {
+          axios.get(`${API_URL}/admin/dashboard/stats`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get(`${API_URL}/api/v1/admin/logs?limit=10`, {
+          axios.get(`${API_URL}/admin/logs?limit=10`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);

@@ -4,7 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// API_URL already includes /api/v1 from environment variable
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface Admin {
   id: string;
@@ -41,7 +42,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       }
 
       try {
-        const response = await axios.get(`${API_URL}/api/v1/admin/auth/me`, {
+        const response = await axios.get(`${API_URL}/admin/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -56,7 +57,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         const refreshToken = localStorage.getItem('adminRefreshToken');
         if (refreshToken) {
           try {
-            const refreshResponse = await axios.post(`${API_URL}/api/v1/admin/auth/refresh`, {
+            const refreshResponse = await axios.post(`${API_URL}/admin/auth/refresh`, {
               refreshToken,
             });
 
@@ -65,7 +66,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
               localStorage.setItem('adminRefreshToken', refreshResponse.data.data.refreshToken);
 
               // Retry getting admin info
-              const retryResponse = await axios.get(`${API_URL}/api/v1/admin/auth/me`, {
+              const retryResponse = await axios.get(`${API_URL}/admin/auth/me`, {
                 headers: { Authorization: `Bearer ${refreshResponse.data.data.accessToken}` },
               });
 
@@ -93,7 +94,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    const response = await axios.post(`${API_URL}/api/v1/admin/auth/login`, {
+    const response = await axios.post(`${API_URL}/admin/auth/login`, {
       email,
       password,
     });
@@ -105,7 +106,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('adminRefreshToken', refreshToken);
 
       // Get full admin info with permissions
-      const meResponse = await axios.get(`${API_URL}/api/v1/admin/auth/me`, {
+      const meResponse = await axios.get(`${API_URL}/admin/auth/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
@@ -127,7 +128,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       if (token) {
         await axios.post(
-          `${API_URL}/api/v1/admin/auth/logout`,
+          `${API_URL}/admin/auth/logout`,
           { refreshToken },
           { headers: { Authorization: `Bearer ${token}` } }
         );
