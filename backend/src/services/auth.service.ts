@@ -107,13 +107,15 @@ export const registerBusiness = async (data: RegisterBusinessInput) => {
     throw new ConflictError('User with this email already exists');
   }
 
-  // Check if phone number already exists
-  const existingPhone = await prisma.user.findUnique({
-    where: { phone: data.phone },
-  });
+  // Check if phone number already exists (only if phone is provided)
+  if (data.phone) {
+    const existingPhone = await prisma.user.findUnique({
+      where: { phone: data.phone },
+    });
 
-  if (existingPhone) {
-    throw new ConflictError('User with this phone number already exists');
+    if (existingPhone) {
+      throw new ConflictError('User with this phone number already exists');
+    }
   }
 
   // Hash password
