@@ -195,6 +195,54 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
     });
 
     // ============================================
+    // Conversation Room Management
+    // ============================================
+
+    /**
+     * Join a conversation room
+     */
+    socket.on('join_conversation', async (data, callback) => {
+      try {
+        const { conversationId } = data;
+
+        // Verify user has access to conversation
+        const conversation = await chatService.getConversationById(conversationId, userId);
+
+        if (!conversation) {
+          if (callback) callback({ success: false, error: 'Conversation not found' });
+          return;
+        }
+
+        // Join the conversation room
+        socket.join(`conversation:${conversationId}`);
+        console.log(`[ChatSocket] User ${userId} joined conversation ${conversationId}`);
+
+        if (callback) callback({ success: true });
+      } catch (error: any) {
+        console.error('[ChatSocket] Error joining conversation:', error);
+        if (callback) callback({ success: false, error: error.message });
+      }
+    });
+
+    /**
+     * Leave a conversation room
+     */
+    socket.on('leave_conversation', async (data, callback) => {
+      try {
+        const { conversationId } = data;
+
+        // Leave the conversation room
+        socket.leave(`conversation:${conversationId}`);
+        console.log(`[ChatSocket] User ${userId} left conversation ${conversationId}`);
+
+        if (callback) callback({ success: true });
+      } catch (error: any) {
+        console.error('[ChatSocket] Error leaving conversation:', error);
+        if (callback) callback({ success: false, error: error.message });
+      }
+    });
+
+    // ============================================
     // Typing Indicators
     // ============================================
 
@@ -472,6 +520,48 @@ function setupChatEvents(io: SocketIOServer): void {
         if (callback) callback({ success: true });
       } catch (error: any) {
         console.error('[ChatSocket] Error deleting message:', error);
+        if (callback) callback({ success: false, error: error.message });
+      }
+    });
+
+    // ============================================
+    // Conversation Room Management
+    // ============================================
+
+    socket.on('join_conversation', async (data, callback) => {
+      try {
+        const { conversationId } = data;
+
+        // Verify user has access to conversation
+        const conversation = await chatService.getConversationById(conversationId, userId);
+
+        if (!conversation) {
+          if (callback) callback({ success: false, error: 'Conversation not found' });
+          return;
+        }
+
+        // Join the conversation room
+        socket.join(`conversation:${conversationId}`);
+        console.log(`[ChatSocket] User ${userId} joined conversation ${conversationId}`);
+
+        if (callback) callback({ success: true });
+      } catch (error: any) {
+        console.error('[ChatSocket] Error joining conversation:', error);
+        if (callback) callback({ success: false, error: error.message });
+      }
+    });
+
+    socket.on('leave_conversation', async (data, callback) => {
+      try {
+        const { conversationId } = data;
+
+        // Leave the conversation room
+        socket.leave(`conversation:${conversationId}`);
+        console.log(`[ChatSocket] User ${userId} left conversation ${conversationId}`);
+
+        if (callback) callback({ success: true });
+      } catch (error: any) {
+        console.error('[ChatSocket] Error leaving conversation:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });

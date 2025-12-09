@@ -36,13 +36,13 @@ export default function RegisterPage() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('كلمات المرور غير متطابقة');
       return;
     }
 
     // Validate password length
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
       return;
     }
 
@@ -72,7 +72,7 @@ export default function RegisterPage() {
         });
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to register. Please try again.';
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'فشل التسجيل. حاول مرة أخرى.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -80,11 +80,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+    <div dir="rtl" className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-primary-600 mb-2">Xchange</h1>
-          <p className="text-gray-600">Create your account</p>
+          <p className="text-gray-600">إنشاء حساب جديد</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-8">
@@ -98,7 +98,7 @@ export default function RegisterPage() {
             {/* User Type Toggle */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Account Type *
+                نوع الحساب *
               </label>
               <div className="flex gap-4">
                 <button
@@ -110,7 +110,7 @@ export default function RegisterPage() {
                       : 'border-gray-300 text-gray-700 hover:border-gray-400'
                   }`}
                 >
-                  Individual
+                  فردي
                 </button>
                 <button
                   type="button"
@@ -121,14 +121,14 @@ export default function RegisterPage() {
                       : 'border-gray-300 text-gray-700 hover:border-gray-400'
                   }`}
                 >
-                  Business
+                  تجاري
                 </button>
               </div>
             </div>
 
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name *
+                الاسم الكامل *
               </label>
               <input
                 id="fullName"
@@ -138,13 +138,13 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                placeholder="John Doe"
+                placeholder="محمد أحمد"
               />
             </div>
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email *
+                البريد الإلكتروني *
               </label>
               <input
                 id="email"
@@ -153,14 +153,15 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                placeholder="your@email.com"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none text-right"
+                placeholder="example@email.com"
+                dir="ltr"
               />
             </div>
 
             <div>
               <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                Phone (optional)
+                رقم الهاتف (اختياري)
               </label>
               <input
                 id="phone"
@@ -170,6 +171,7 @@ export default function RegisterPage() {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 placeholder="+201234567890"
+                dir="ltr"
               />
             </div>
 
@@ -178,7 +180,7 @@ export default function RegisterPage() {
               <>
                 <div>
                   <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-2">
-                    Business Name *
+                    اسم النشاط التجاري *
                   </label>
                   <input
                     id="businessName"
@@ -188,13 +190,13 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     required={userType === 'BUSINESS'}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                    placeholder="My Business LLC"
+                    placeholder="شركة التجارة"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="taxId" className="block text-sm font-medium text-gray-700 mb-2">
-                    Tax ID (optional)
+                    الرقم الضريبي (اختياري)
                   </label>
                   <input
                     id="taxId"
@@ -204,12 +206,13 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                     placeholder="123456789"
+                    dir="ltr"
                   />
                 </div>
 
                 <div>
                   <label htmlFor="commercialRegNo" className="block text-sm font-medium text-gray-700 mb-2">
-                    Commercial Registration No. (optional)
+                    رقم السجل التجاري (اختياري)
                   </label>
                   <input
                     id="commercialRegNo"
@@ -219,6 +222,7 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                     placeholder="CR123456"
+                    dir="ltr"
                   />
                 </div>
               </>
@@ -227,7 +231,7 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                  City (optional)
+                  المدينة (اختياري)
                 </label>
                 <input
                   id="city"
@@ -236,13 +240,13 @@ export default function RegisterPage() {
                   value={formData.city}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                  placeholder="Cairo"
+                  placeholder="القاهرة"
                 />
               </div>
 
               <div>
                 <label htmlFor="governorate" className="block text-sm font-medium text-gray-700 mb-2">
-                  Governorate (optional)
+                  المحافظة (اختياري)
                 </label>
                 <input
                   id="governorate"
@@ -251,14 +255,14 @@ export default function RegisterPage() {
                   value={formData.governorate}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                  placeholder="Cairo"
+                  placeholder="القاهرة"
                 />
               </div>
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password *
+                كلمة المرور *
               </label>
               <input
                 id="password"
@@ -274,7 +278,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                Confirm Password *
+                تأكيد كلمة المرور *
               </label>
               <input
                 id="confirmPassword"
@@ -293,21 +297,21 @@ export default function RegisterPage() {
               disabled={loading}
               className="w-full px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-semibold"
             >
-              {loading ? 'Creating account...' : 'Register'}
+              {loading ? 'جاري إنشاء الحساب...' : 'إنشاء حساب'}
             </button>
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-600">
-            Already have an account?{' '}
+            لديك حساب بالفعل؟{' '}
             <Link href="/login" className="text-primary-600 hover:text-primary-700 font-semibold">
-              Login here
+              سجل دخول هنا
             </Link>
           </div>
         </div>
 
         <div className="mt-6 text-center">
           <Link href="/" className="text-sm text-gray-600 hover:text-gray-800">
-            ← Back to home
+            → العودة للرئيسية
           </Link>
         </div>
       </div>
