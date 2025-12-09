@@ -101,7 +101,7 @@ export default function OrdersPage() {
   };
 
   const cancelOrder = async (orderId: string) => {
-    if (!confirm('Are you sure you want to cancel this order?')) return;
+    if (!confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) return;
 
     try {
       const token = localStorage.getItem('accessToken');
@@ -123,7 +123,7 @@ export default function OrdersPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
+        <div className="text-xl text-gray-600">جاري التحميل...</div>
       </div>
     );
   }
@@ -133,13 +133,13 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div dir="rtl" className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-primary-600">My Orders</h1>
+            <h1 className="text-2xl font-bold text-primary-600">طلباتي</h1>
             <Link href="/dashboard" className="text-primary-600 hover:underline">
-              Back to Dashboard
+              العودة للوحة التحكم
             </Link>
           </div>
         </div>
@@ -152,13 +152,13 @@ export default function OrdersPage() {
             <div className="flex items-start gap-3">
               <span className="text-2xl">✅</span>
               <div>
-                <h3 className="font-bold text-green-800">Order Placed Successfully!</h3>
+                <h3 className="font-bold text-green-800">تم تأكيد الطلب بنجاح!</h3>
                 <p className="text-green-700 text-sm">
-                  Your order has been confirmed. You will receive updates via notification.
+                  تم تأكيد طلبك. ستتلقى تحديثات عبر الإشعارات.
                 </p>
                 {fawryRef && (
                   <p className="text-green-800 font-medium mt-2">
-                    Fawry Reference: <code className="bg-green-100 px-2 py-1 rounded">{fawryRef}</code>
+                    رقم مرجع فوري: <code className="bg-green-100 px-2 py-1 rounded">{fawryRef}</code>
                   </p>
                 )}
               </div>
@@ -169,13 +169,13 @@ export default function OrdersPage() {
         {orders.length === 0 ? (
           <div className="bg-white rounded-xl shadow-lg p-8 text-center">
             <div className="text-6xl mb-4">📦</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">No orders yet</h2>
-            <p className="text-gray-600 mb-6">Start shopping to see your orders here</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">لا توجد طلبات بعد</h2>
+            <p className="text-gray-600 mb-6">ابدأ بالتسوق لتظهر طلباتك هنا</p>
             <Link
               href="/items"
               className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              Browse Items
+              تصفح المنتجات
             </Link>
           </div>
         ) : (
@@ -192,9 +192,9 @@ export default function OrdersPage() {
                 >
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="font-bold text-gray-900">Order #{order.orderNumber}</p>
+                      <p className="font-bold text-gray-900">طلب #{order.orderNumber}</p>
                       <p className="text-sm text-gray-500">
-                        {new Date(order.createdAt).toLocaleDateString('en-EG', {
+                        {new Date(order.createdAt).toLocaleDateString('ar-EG', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
@@ -202,7 +202,12 @@ export default function OrdersPage() {
                       </p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[order.status]}`}>
-                      {order.status}
+                      {order.status === 'PENDING' ? 'قيد الانتظار' :
+                       order.status === 'CONFIRMED' ? 'مؤكد' :
+                       order.status === 'PROCESSING' ? 'قيد المعالجة' :
+                       order.status === 'SHIPPED' ? 'تم الشحن' :
+                       order.status === 'DELIVERED' ? 'تم التسليم' :
+                       order.status === 'CANCELLED' ? 'ملغي' : order.status}
                     </span>
                   </div>
 
@@ -227,10 +232,16 @@ export default function OrdersPage() {
 
                   <div className="flex justify-between items-center">
                     <span className={`px-2 py-1 rounded text-xs ${PAYMENT_STATUS_COLORS[order.paymentStatus]}`}>
-                      {order.paymentMethod} - {order.paymentStatus}
+                      {order.paymentMethod === 'COD' ? 'الدفع عند الاستلام' :
+                       order.paymentMethod === 'INSTAPAY' ? 'إنستاباي' :
+                       order.paymentMethod === 'FAWRY' ? 'فوري' : order.paymentMethod} - {
+                       order.paymentStatus === 'PENDING' ? 'قيد الانتظار' :
+                       order.paymentStatus === 'PAID' ? 'مدفوع' :
+                       order.paymentStatus === 'FAILED' ? 'فشل' :
+                       order.paymentStatus === 'REFUNDED' ? 'مسترد' : order.paymentStatus}
                     </span>
                     <span className="font-bold text-primary-600">
-                      EGP {order.total.toLocaleString()}
+                      {order.total.toLocaleString()} ج.م
                     </span>
                   </div>
                 </div>
@@ -243,19 +254,24 @@ export default function OrdersPage() {
                 <div className="bg-white rounded-xl shadow-lg p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h2 className="text-xl font-bold">Order #{selectedOrder.orderNumber}</h2>
+                      <h2 className="text-xl font-bold">طلب #{selectedOrder.orderNumber}</h2>
                       <p className="text-sm text-gray-500">
-                        {new Date(selectedOrder.createdAt).toLocaleString('en-EG')}
+                        {new Date(selectedOrder.createdAt).toLocaleString('ar-EG')}
                       </p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[selectedOrder.status]}`}>
-                      {selectedOrder.status}
+                      {selectedOrder.status === 'PENDING' ? 'قيد الانتظار' :
+                       selectedOrder.status === 'CONFIRMED' ? 'مؤكد' :
+                       selectedOrder.status === 'PROCESSING' ? 'قيد المعالجة' :
+                       selectedOrder.status === 'SHIPPED' ? 'تم الشحن' :
+                       selectedOrder.status === 'DELIVERED' ? 'تم التسليم' :
+                       selectedOrder.status === 'CANCELLED' ? 'ملغي' : selectedOrder.status}
                     </span>
                   </div>
 
                   {/* Items */}
                   <div className="border-t pt-4 mb-4">
-                    <h3 className="font-semibold mb-3">Items</h3>
+                    <h3 className="font-semibold mb-3">المنتجات</h3>
                     <div className="space-y-3 max-h-48 overflow-y-auto">
                       {selectedOrder.items.map((item) => (
                         <div key={item.id} className="flex gap-3">
@@ -270,10 +286,10 @@ export default function OrdersPage() {
                           </div>
                           <div className="flex-1">
                             <p className="font-medium">{item.listing.title}</p>
-                            <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                            <p className="text-sm text-gray-600">الكمية: {item.quantity}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium">EGP {item.price.toLocaleString()}</p>
+                          <div className="text-left">
+                            <p className="font-medium">{item.price.toLocaleString()} ج.م</p>
                           </div>
                         </div>
                       ))}
@@ -282,33 +298,40 @@ export default function OrdersPage() {
 
                   {/* Shipping Address */}
                   <div className="border-t pt-4 mb-4">
-                    <h3 className="font-semibold mb-2">Shipping Address</h3>
+                    <h3 className="font-semibold mb-2">عنوان الشحن</h3>
                     <div className="text-sm text-gray-600">
                       <p className="font-medium text-gray-900">{selectedOrder.shippingAddress.fullName}</p>
-                      <p>{selectedOrder.shippingAddress.phone}</p>
+                      <p dir="ltr" className="text-left">{selectedOrder.shippingAddress.phone}</p>
                       <p>
                         {selectedOrder.shippingAddress.street}
-                        {selectedOrder.shippingAddress.building && `, Bldg ${selectedOrder.shippingAddress.building}`}
-                        {selectedOrder.shippingAddress.floor && `, Floor ${selectedOrder.shippingAddress.floor}`}
-                        {selectedOrder.shippingAddress.apartment && `, Apt ${selectedOrder.shippingAddress.apartment}`}
+                        {selectedOrder.shippingAddress.building && `، مبنى ${selectedOrder.shippingAddress.building}`}
+                        {selectedOrder.shippingAddress.floor && `، الدور ${selectedOrder.shippingAddress.floor}`}
+                        {selectedOrder.shippingAddress.apartment && `، شقة ${selectedOrder.shippingAddress.apartment}`}
                       </p>
                       <p>
-                        {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.governorate}
+                        {selectedOrder.shippingAddress.city}، {selectedOrder.shippingAddress.governorate}
                       </p>
                     </div>
                   </div>
 
                   {/* Payment */}
                   <div className="border-t pt-4 mb-4">
-                    <h3 className="font-semibold mb-2">Payment</h3>
+                    <h3 className="font-semibold mb-2">الدفع</h3>
                     <div className="flex justify-between text-sm">
-                      <span>Method:</span>
-                      <span className="font-medium">{selectedOrder.paymentMethod}</span>
+                      <span>طريقة الدفع:</span>
+                      <span className="font-medium">
+                        {selectedOrder.paymentMethod === 'COD' ? 'الدفع عند الاستلام' :
+                         selectedOrder.paymentMethod === 'INSTAPAY' ? 'إنستاباي' :
+                         selectedOrder.paymentMethod === 'FAWRY' ? 'فوري' : selectedOrder.paymentMethod}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span>Status:</span>
+                      <span>الحالة:</span>
                       <span className={`px-2 py-0.5 rounded text-xs ${PAYMENT_STATUS_COLORS[selectedOrder.paymentStatus]}`}>
-                        {selectedOrder.paymentStatus}
+                        {selectedOrder.paymentStatus === 'PENDING' ? 'قيد الانتظار' :
+                         selectedOrder.paymentStatus === 'PAID' ? 'مدفوع' :
+                         selectedOrder.paymentStatus === 'FAILED' ? 'فشل' :
+                         selectedOrder.paymentStatus === 'REFUNDED' ? 'مسترد' : selectedOrder.paymentStatus}
                       </span>
                     </div>
                   </div>
@@ -317,16 +340,16 @@ export default function OrdersPage() {
                   <div className="border-t pt-4">
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Subtotal</span>
-                        <span>EGP {selectedOrder.subtotal.toLocaleString()}</span>
+                        <span className="text-gray-600">المجموع الفرعي</span>
+                        <span>{selectedOrder.subtotal.toLocaleString()} ج.م</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Shipping</span>
-                        <span>EGP {selectedOrder.shippingCost.toLocaleString()}</span>
+                        <span className="text-gray-600">الشحن</span>
+                        <span>{selectedOrder.shippingCost.toLocaleString()} ج.م</span>
                       </div>
                       <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                        <span>Total</span>
-                        <span className="text-primary-600">EGP {selectedOrder.total.toLocaleString()}</span>
+                        <span>الإجمالي</span>
+                        <span className="text-primary-600">{selectedOrder.total.toLocaleString()} ج.م</span>
                       </div>
                     </div>
                   </div>
@@ -338,7 +361,7 @@ export default function OrdersPage() {
                         onClick={() => cancelOrder(selectedOrder.id)}
                         className="w-full py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors font-medium"
                       >
-                        Cancel Order
+                        إلغاء الطلب
                       </button>
                     </div>
                   )}
@@ -346,7 +369,7 @@ export default function OrdersPage() {
               ) : (
                 <div className="bg-white rounded-xl shadow-lg p-8 text-center">
                   <div className="text-4xl mb-3">👆</div>
-                  <p className="text-gray-600">Select an order to view details</p>
+                  <p className="text-gray-600">اختر طلباً لعرض التفاصيل</p>
                 </div>
               )}
             </div>

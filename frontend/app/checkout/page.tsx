@@ -6,12 +6,36 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 const EGYPTIAN_GOVERNORATES = [
-  'Cairo', 'Alexandria', 'Giza', 'Shubra El Kheima', 'Port Said',
-  'Suez', 'Luxor', 'Mansoura', 'El-Mahalla El-Kubra', 'Tanta',
-  'Asyut', 'Ismailia', 'Faiyum', 'Zagazig', 'Aswan', 'Damietta',
-  'Damanhur', 'Minya', 'Beni Suef', 'Qena', 'Sohag', 'Hurghada',
-  'Shibin El Kom', 'Banha', 'Kafr El Sheikh', 'Arish', 'Mallawi',
-  '10th of Ramadan', 'Bilbais', 'Marsa Matruh'
+  { value: 'Cairo', label: 'القاهرة' },
+  { value: 'Alexandria', label: 'الإسكندرية' },
+  { value: 'Giza', label: 'الجيزة' },
+  { value: 'Shubra El Kheima', label: 'شبرا الخيمة' },
+  { value: 'Port Said', label: 'بورسعيد' },
+  { value: 'Suez', label: 'السويس' },
+  { value: 'Luxor', label: 'الأقصر' },
+  { value: 'Mansoura', label: 'المنصورة' },
+  { value: 'El-Mahalla El-Kubra', label: 'المحلة الكبرى' },
+  { value: 'Tanta', label: 'طنطا' },
+  { value: 'Asyut', label: 'أسيوط' },
+  { value: 'Ismailia', label: 'الإسماعيلية' },
+  { value: 'Faiyum', label: 'الفيوم' },
+  { value: 'Zagazig', label: 'الزقازيق' },
+  { value: 'Aswan', label: 'أسوان' },
+  { value: 'Damietta', label: 'دمياط' },
+  { value: 'Damanhur', label: 'دمنهور' },
+  { value: 'Minya', label: 'المنيا' },
+  { value: 'Beni Suef', label: 'بني سويف' },
+  { value: 'Qena', label: 'قنا' },
+  { value: 'Sohag', label: 'سوهاج' },
+  { value: 'Hurghada', label: 'الغردقة' },
+  { value: 'Shibin El Kom', label: 'شبين الكوم' },
+  { value: 'Banha', label: 'بنها' },
+  { value: 'Kafr El Sheikh', label: 'كفر الشيخ' },
+  { value: 'Arish', label: 'العريش' },
+  { value: 'Mallawi', label: 'ملوي' },
+  { value: '10th of Ramadan', label: 'العاشر من رمضان' },
+  { value: 'Bilbais', label: 'بلبيس' },
+  { value: 'Marsa Matruh', label: 'مرسى مطروح' },
 ];
 
 interface CartItem {
@@ -171,7 +195,7 @@ export default function CheckoutPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
+        <div className="text-xl text-gray-600">جاري التحميل...</div>
       </div>
     );
   }
@@ -183,13 +207,13 @@ export default function CheckoutPage() {
   const totalAmount = cart.totalPrice + shippingCost;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div dir="rtl" className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-primary-600">Checkout</h1>
+            <h1 className="text-2xl font-bold text-primary-600">إتمام الشراء</h1>
             <Link href="/cart" className="text-primary-600 hover:underline">
-              Back to Cart
+              العودة للسلة
             </Link>
           </div>
         </div>
@@ -202,11 +226,11 @@ export default function CheckoutPage() {
             <div className="lg:col-span-2 space-y-6">
               {/* Shipping Address */}
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-bold mb-4">Shipping Address</h2>
+                <h2 className="text-xl font-bold mb-4">عنوان الشحن</h2>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Full Name *
+                      الاسم الكامل *
                     </label>
                     <input
                       type="text"
@@ -218,7 +242,7 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number *
+                      رقم الهاتف *
                     </label>
                     <input
                       type="tel"
@@ -226,11 +250,12 @@ export default function CheckoutPage() {
                       value={shippingAddress.phone}
                       onChange={(e) => setShippingAddress({ ...shippingAddress, phone: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      dir="ltr"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Governorate *
+                      المحافظة *
                     </label>
                     <select
                       required
@@ -238,15 +263,15 @@ export default function CheckoutPage() {
                       onChange={(e) => setShippingAddress({ ...shippingAddress, governorate: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     >
-                      <option value="">Select Governorate</option>
+                      <option value="">اختر المحافظة</option>
                       {EGYPTIAN_GOVERNORATES.map((gov) => (
-                        <option key={gov} value={gov}>{gov}</option>
+                        <option key={gov.value} value={gov.value}>{gov.label}</option>
                       ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      City *
+                      المدينة *
                     </label>
                     <input
                       type="text"
@@ -258,7 +283,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Street Address *
+                      عنوان الشارع *
                     </label>
                     <input
                       type="text"
@@ -270,7 +295,7 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Building
+                      المبنى
                     </label>
                     <input
                       type="text"
@@ -282,7 +307,7 @@ export default function CheckoutPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Floor
+                        الدور
                       </label>
                       <input
                         type="text"
@@ -293,7 +318,7 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Apt
+                        الشقة
                       </label>
                       <input
                         type="text"
@@ -305,13 +330,13 @@ export default function CheckoutPage() {
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Landmark (optional)
+                      علامة مميزة (اختياري)
                     </label>
                     <input
                       type="text"
                       value={shippingAddress.landmark}
                       onChange={(e) => setShippingAddress({ ...shippingAddress, landmark: e.target.value })}
-                      placeholder="Near mosque, school, etc."
+                      placeholder="بجوار مسجد، مدرسة، إلخ."
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
@@ -320,7 +345,7 @@ export default function CheckoutPage() {
 
               {/* Payment Method */}
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-bold mb-4">Payment Method</h2>
+                <h2 className="text-xl font-bold mb-4">طريقة الدفع</h2>
                 <div className="space-y-3">
                   <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                     <input
@@ -329,11 +354,11 @@ export default function CheckoutPage() {
                       value="COD"
                       checked={paymentMethod === 'COD'}
                       onChange={() => setPaymentMethod('COD')}
-                      className="mr-3"
+                      className="ml-3"
                     />
                     <div className="flex-1">
-                      <div className="font-semibold">Cash on Delivery</div>
-                      <div className="text-sm text-gray-600">Pay when you receive your order</div>
+                      <div className="font-semibold">الدفع عند الاستلام</div>
+                      <div className="text-sm text-gray-600">ادفع عند استلام طلبك</div>
                     </div>
                     <span className="text-2xl">💵</span>
                   </label>
@@ -345,11 +370,11 @@ export default function CheckoutPage() {
                       value="INSTAPAY"
                       checked={paymentMethod === 'INSTAPAY'}
                       onChange={() => setPaymentMethod('INSTAPAY')}
-                      className="mr-3"
+                      className="ml-3"
                     />
                     <div className="flex-1">
-                      <div className="font-semibold">InstaPay</div>
-                      <div className="text-sm text-gray-600">Pay instantly via InstaPay</div>
+                      <div className="font-semibold">إنستاباي</div>
+                      <div className="text-sm text-gray-600">ادفع فوراً عبر إنستاباي</div>
                     </div>
                     <span className="text-2xl">📱</span>
                   </label>
@@ -361,11 +386,11 @@ export default function CheckoutPage() {
                       value="FAWRY"
                       checked={paymentMethod === 'FAWRY'}
                       onChange={() => setPaymentMethod('FAWRY')}
-                      className="mr-3"
+                      className="ml-3"
                     />
                     <div className="flex-1">
-                      <div className="font-semibold">Fawry</div>
-                      <div className="text-sm text-gray-600">Pay at any Fawry outlet</div>
+                      <div className="font-semibold">فوري</div>
+                      <div className="text-sm text-gray-600">ادفع من أي منفذ فوري</div>
                     </div>
                     <span className="text-2xl">🏪</span>
                   </label>
@@ -376,7 +401,7 @@ export default function CheckoutPage() {
             {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-lg p-6 sticky top-4">
-                <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+                <h2 className="text-xl font-bold mb-4">ملخص الطلب</h2>
 
                 {/* Items */}
                 <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
@@ -393,10 +418,10 @@ export default function CheckoutPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.listing.title}</p>
-                        <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                        <p className="text-xs text-gray-500">الكمية: {item.quantity}</p>
                       </div>
                       <div className="text-sm font-medium">
-                        EGP {(item.listing.price * item.quantity).toLocaleString()}
+                        {(item.listing.price * item.quantity).toLocaleString()} ج.م
                       </div>
                     </div>
                   ))}
@@ -404,22 +429,22 @@ export default function CheckoutPage() {
 
                 <div className="border-t pt-4 space-y-2 mb-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span>EGP {cart.totalPrice.toLocaleString()}</span>
+                    <span className="text-gray-600">المجموع الفرعي</span>
+                    <span>{cart.totalPrice.toLocaleString()} ج.م</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Shipping</span>
+                    <span className="text-gray-600">الشحن</span>
                     <span>
-                      {shippingCost > 0 ? `EGP ${shippingCost}` : 'Select governorate'}
+                      {shippingCost > 0 ? `${shippingCost} ج.م` : 'اختر المحافظة'}
                     </span>
                   </div>
                 </div>
 
                 <div className="border-t pt-4 mb-6">
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
+                    <span>الإجمالي</span>
                     <span className="text-primary-600">
-                      EGP {totalAmount.toLocaleString()}
+                      {totalAmount.toLocaleString()} ج.م
                     </span>
                   </div>
                 </div>
@@ -429,7 +454,7 @@ export default function CheckoutPage() {
                   disabled={submitting || !shippingAddress.governorate}
                   className="w-full py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {submitting ? 'Processing...' : 'Place Order'}
+                  {submitting ? 'جاري المعالجة...' : 'تأكيد الطلب'}
                 </button>
               </div>
             </div>

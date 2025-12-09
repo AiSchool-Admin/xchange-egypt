@@ -115,7 +115,7 @@ export default function CartPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
+        <div className="text-xl text-gray-600">جاري التحميل...</div>
       </div>
     );
   }
@@ -125,13 +125,13 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div dir="rtl" className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-primary-600">Shopping Cart</h1>
+            <h1 className="text-2xl font-bold text-primary-600">سلة التسوق</h1>
             <Link href="/dashboard" className="text-primary-600 hover:underline">
-              Back to Dashboard
+              العودة للوحة التحكم
             </Link>
           </div>
         </div>
@@ -141,13 +141,13 @@ export default function CartPage() {
         {!cart || cart.items.length === 0 ? (
           <div className="bg-white rounded-xl shadow-lg p-8 text-center">
             <div className="text-6xl mb-4">🛒</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Your cart is empty</h2>
-            <p className="text-gray-600 mb-6">Browse items and add them to your cart</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">سلة التسوق فارغة</h2>
+            <p className="text-gray-600 mb-6">تصفح المنتجات وأضفها إلى سلتك</p>
             <Link
               href="/items"
               className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              Browse Items
+              تصفح المنتجات
             </Link>
           </div>
         ) : (
@@ -168,45 +168,45 @@ export default function CartPage() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        No Image
+                        لا توجد صورة
                       </div>
                     )}
                   </div>
                   <div className="flex-1">
                     <h3 className="font-bold text-gray-900">{item.listing.title}</h3>
                     <p className="text-sm text-gray-600">
-                      Condition: {item.listing.item?.condition || 'N/A'}
+                      الحالة: {item.listing.item?.condition || 'غير محدد'}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Seller: {item.listing.seller?.fullName || 'Unknown'}
+                      البائع: {item.listing.seller?.fullName || 'غير معروف'}
                     </p>
                     <p className="text-lg font-bold text-primary-600 mt-2">
-                      EGP {item.listing.price.toLocaleString()}
+                      {item.listing.price.toLocaleString()} ج.م
                     </p>
                   </div>
-                  <div className="flex flex-col items-end justify-between">
+                  <div className="flex flex-col items-start justify-between">
                     <button
                       onClick={() => removeItem(item.id)}
                       disabled={updating === item.id}
                       className="text-red-600 hover:text-red-800 text-sm"
                     >
-                      Remove
+                      حذف
                     </button>
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        disabled={updating === item.id || item.quantity <= 1}
-                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
-                      >
-                        -
-                      </button>
-                      <span className="w-8 text-center">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         disabled={updating === item.id}
                         className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
                       >
                         +
+                      </button>
+                      <span className="w-8 text-center">{item.quantity}</span>
+                      <button
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        disabled={updating === item.id || item.quantity <= 1}
+                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                      >
+                        -
                       </button>
                     </div>
                   </div>
@@ -217,22 +217,22 @@ export default function CartPage() {
             {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-lg p-6 sticky top-4">
-                <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+                <h2 className="text-xl font-bold mb-4">ملخص الطلب</h2>
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Items ({cart.totalItems})</span>
-                    <span>EGP {cart.totalPrice.toLocaleString()}</span>
+                    <span className="text-gray-600">المنتجات ({cart.totalItems})</span>
+                    <span>{cart.totalPrice.toLocaleString()} ج.م</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Shipping</span>
-                    <span className="text-green-600">Calculated at checkout</span>
+                    <span className="text-gray-600">الشحن</span>
+                    <span className="text-green-600">يُحسب عند الدفع</span>
                   </div>
                 </div>
                 <div className="border-t pt-4 mb-6">
                   <div className="flex justify-between font-bold text-lg">
-                    <span>Total</span>
+                    <span>الإجمالي</span>
                     <span className="text-primary-600">
-                      EGP {cart.totalPrice.toLocaleString()}
+                      {cart.totalPrice.toLocaleString()} ج.م
                     </span>
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export default function CartPage() {
                   href="/checkout"
                   className="block w-full py-3 bg-primary-600 text-white text-center rounded-lg hover:bg-primary-700 transition-colors font-semibold"
                 >
-                  Proceed to Checkout
+                  إتمام الشراء
                 </Link>
               </div>
             </div>
