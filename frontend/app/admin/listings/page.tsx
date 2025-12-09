@@ -4,7 +4,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useAdmin } from '@/lib/contexts/AdminContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// API_URL already includes /api/v1 from environment variable
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface Listing {
   id: string;
@@ -59,7 +60,7 @@ export default function ListingsManagement() {
       if (search) params.append('search', search);
       if (statusFilter) params.append('status', statusFilter);
 
-      const response = await axios.get(`${API_URL}/api/v1/admin/listings?${params}`, {
+      const response = await axios.get(`${API_URL}/admin/listings?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -87,7 +88,7 @@ export default function ListingsManagement() {
     setActionLoading(true);
     try {
       await axios.delete(
-        `${API_URL}/api/v1/admin/listings/${selectedListing.id}`,
+        `${API_URL}/admin/listings/${selectedListing.id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
           data: { reason: deleteReason },
@@ -111,7 +112,7 @@ export default function ListingsManagement() {
 
     try {
       await axios.post(
-        `${API_URL}/api/v1/admin/listings/${listingId}/feature`,
+        `${API_URL}/admin/listings/${listingId}/feature`,
         { featured },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -4,7 +4,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useAdmin } from '@/lib/contexts/AdminContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// API_URL already includes /api/v1 from environment variable
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface User {
   id: string;
@@ -62,7 +63,7 @@ export default function UsersManagement() {
       if (statusFilter) params.append('status', statusFilter);
       if (typeFilter) params.append('userType', typeFilter);
 
-      const response = await axios.get(`${API_URL}/api/v1/admin/users?${params}`, {
+      const response = await axios.get(`${API_URL}/admin/users?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -89,7 +90,7 @@ export default function UsersManagement() {
 
     setActionLoading(true);
     try {
-      let url = `${API_URL}/api/v1/admin/users/${selectedUser.id}`;
+      let url = `${API_URL}/admin/users/${selectedUser.id}`;
       let method = 'POST';
 
       if (modalAction === 'suspend') {

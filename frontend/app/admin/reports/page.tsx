@@ -4,7 +4,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useAdmin } from '@/lib/contexts/AdminContext';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// API_URL already includes /api/v1 from environment variable
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 interface Report {
   id: string;
@@ -39,7 +40,7 @@ export default function ReportsPage() {
       const params = new URLSearchParams();
       if (statusFilter) params.append('status', statusFilter);
 
-      const response = await axios.get(`${API_URL}/api/v1/admin/reports?${params}`, {
+      const response = await axios.get(`${API_URL}/admin/reports?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -66,7 +67,7 @@ export default function ReportsPage() {
     setActionLoading(true);
     try {
       await axios.put(
-        `${API_URL}/api/v1/admin/reports/${selectedReport.id}`,
+        `${API_URL}/admin/reports/${selectedReport.id}`,
         { resolution, status },
         { headers: { Authorization: `Bearer ${token}` } }
       );
