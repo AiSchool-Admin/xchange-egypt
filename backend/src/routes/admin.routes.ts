@@ -32,6 +32,18 @@ router.post('/auth/refresh', adminController.refreshToken);
  */
 router.post('/auth/setup', adminController.initialSetup);
 
+/**
+ * Force Setup - Create or reset super admin (requires ADMIN_SETUP_KEY)
+ * POST /api/v1/admin/auth/force-setup
+ */
+router.post('/auth/force-setup', adminController.forceSetup);
+
+/**
+ * Reset Password (requires ADMIN_SETUP_KEY)
+ * POST /api/v1/admin/auth/reset-password
+ */
+router.post('/auth/reset-password', adminController.resetPassword);
+
 // ==========================================
 // Authenticated Routes
 // ==========================================
