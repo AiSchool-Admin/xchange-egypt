@@ -83,7 +83,7 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/my`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -104,7 +104,7 @@ export default function OrdersPage() {
     if (!confirm('Are you sure you want to cancel this order?')) return;
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}/cancel`, {
         method: 'POST',
         headers: {

@@ -3,9 +3,8 @@
  * خدمة السمعة متعددة الأبعاد
  */
 
-import { PrismaClient, TrustLevel } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { TrustLevel } from '@prisma/client';
+import prisma from '../config/database';
 
 // ============================================
 // Types & Interfaces

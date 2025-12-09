@@ -3,9 +3,8 @@
  * خدمة صناديق المقايضة الجماعية
  */
 
-import { PrismaClient, BarterPoolStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { BarterPoolStatus } from '@prisma/client';
+import prisma from '../config/database';
 
 // ============================================
 // Types & Interfaces

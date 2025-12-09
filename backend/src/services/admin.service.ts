@@ -1008,3 +1008,110 @@ export const createInitialSuperAdmin = async (email: string, password: string, f
 
   return admin;
 };
+
+/**
+ * Reset admin password (for emergency recovery)
+ * Requires ADMIN_SETUP_KEY environment variable
+ */
+export const resetAdminPassword = async (email: string, newPassword: string, setupKey: string) => {
+  // Verify setup key
+  const validSetupKey = process.env.ADMIN_SETUP_KEY;
+
+  if (!validSetupKey || setupKey !== validSetupKey) {
+    throw new UnauthorizedError('مفتاح الإعداد غير صالح');
+  }
+
+  // Find admin by email
+  const admin = await prisma.admin.findUnique({
+    where: { email: email.toLowerCase() },
+  });
+
+  if (!admin) {
+    throw new NotFoundError('المدير غير موجود');
+  }
+
+  // Hash new password
+  const passwordHash = await hashPassword(newPassword);
+
+  // Update admin
+  const updatedAdmin = await prisma.admin.update({
+    where: { id: admin.id },
+    data: {
+      passwordHash,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      role: true,
+    },
+  });
+
+  return updatedAdmin;
+};
+
+/**
+ * Force create or reset super admin (for emergency setup)
+ * Requires ADMIN_SETUP_KEY environment variable
+ */
+export const forceCreateSuperAdmin = async (
+  email: string,
+  password: string,
+  fullName: string,
+  setupKey: string
+) => {
+  // Verify setup key
+  const validSetupKey = process.env.ADMIN_SETUP_KEY;
+
+  if (!validSetupKey || setupKey !== validSetupKey) {
+    throw new UnauthorizedError('مفتاح الإعداد غير صالح');
+  }
+
+  const passwordHash = await hashPassword(password);
+
+  // Check if admin with this email exists
+  const existingAdmin = await prisma.admin.findUnique({
+    where: { email: email.toLowerCase() },
+  });
+
+  if (existingAdmin) {
+    // Update existing admin
+    const admin = await prisma.admin.update({
+      where: { id: existingAdmin.id },
+      data: {
+        passwordHash,
+        fullName,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+        status: AdminStatus.ACTIVE,
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+      },
+    });
+    return { admin, created: false };
+  }
+
+  // Create new admin
+  const admin = await prisma.admin.create({
+    data: {
+      email: email.toLowerCase(),
+      passwordHash,
+      fullName,
+      role: AdminRole.SUPER_ADMIN,
+    },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      role: true,
+    },
+  });
+
+  return { admin, created: true };
+};

@@ -98,6 +98,31 @@ model User {
   scrapPurchaseRequests     ScrapPurchaseRequest[]    @relation("ScrapPurchaseBuyer")
   scrapSellerOffers         ScrapSellerOffer[]        @relation("ScrapSellerOffers")
 
+  // Search & Discovery Relations
+  searchHistory             SearchHistory[]           @relation("UserSearchHistory")
+  savedSearches             SavedSearch[]             @relation("UserSavedSearches")
+  searchAlerts              SearchAlert[]             @relation("UserSearchAlerts")
+
+  // Social Features Relations
+  followers                 UserFollow[]              @relation("UserFollowing")
+  following                 UserFollow[]              @relation("UserFollowers")
+  activityFeed              ActivityFeed[]            @relation("UserActivityFeed")
+
+  // Chat & Messaging Relations
+  messagesSent              Message[]                 @relation("MessagesSent")
+  messagesReceived          Message[]                 @relation("MessagesReceived")
+  typingIndicators          TypingIndicator[]         @relation("UserTypingIndicators")
+  blockedUsers              BlockedUser[]             @relation("UserBlocking")
+  blockedBy                 BlockedUser[]             @relation("UserBlocked")
+  presence                  UserPresence?             @relation("UserPresence")
+  conversationsAsParticipant1 Conversation[]          @relation("ConversationParticipant1")
+  conversationsAsParticipant2 Conversation[]          @relation("ConversationParticipant2")
+
+  // Additional Relations
+  priceAlerts               PriceAlert[]              @relation("UserPriceAlerts")
+  challengeParticipations   ChallengeParticipation[]  @relation("UserChallengeParticipations")
+  barterPoolParticipations  BarterPoolParticipant[]   @relation("UserBarterPoolParticipations")
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -363,8 +388,8 @@ model Item {
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  seller                  User                    @relation("UserItems", fields: [sellerId], references: [id])
-  category                Category?               @relation(fields: [categoryId], references: [id])
+  seller                  User                    @relation("UserItems", fields: [sellerId], references: [id], onDelete: Cascade)
+  category                Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   desiredCategory         Category?               @relation("ItemDesiredCategory", fields: [desiredCategoryId], references: [id])
   listings                Listing[]
   barterPreferenceItems   BarterPreferenceItem[]  @relation("BarterPreferenceItems")
@@ -447,8 +472,8 @@ model Listing {
   updatedAt   DateTime        @updatedAt @map("updated_at")
 
   // Relations
-  item        Item            @relation(fields: [itemId], references: [id])
-  user        User            @relation("UserListings", fields: [userId], references: [id])
+  item        Item            @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user        User            @relation("UserListings", fields: [userId], references: [id], onDelete: Cascade)
   auction     Auction?
   auctionBids  AuctionBid[]
   transactions Transaction[]
@@ -490,7 +515,7 @@ model CartItem {
   createdAt DateTime @default(now()) @map("created_at")
 
   cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  listing   Listing  @relation(fields: [listingId], references: [id])
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, listingId])
   @@map("cart_items")
@@ -548,8 +573,8 @@ model Order {
   shippedAt         DateTime?     @map("shipped_at")
   deliveredAt       DateTime?     @map("delivered_at")
 
-  user              User          @relation(fields: [userId], references: [id])
-  shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id])
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id], onDelete: Restrict)
   items             OrderItem[]
 
   @@map("orders")
@@ -567,7 +592,7 @@ model OrderItem {
   price       Float
 
   order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  listing     Listing  @relation(fields: [listingId], references: [id])
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Restrict)
 
   @@map("order_items")
   @@index([orderId])
@@ -652,8 +677,8 @@ model BarterOffer {
   respondedAt       DateTime?          @map("responded_at")
 
   // Relations
-  initiator         User               @relation("BarterInitiator", fields: [initiatorId], references: [id])
-  recipient         User?              @relation("BarterRecipient", fields: [recipientId], references: [id])
+  initiator         User               @relation("BarterInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  recipient         User?              @relation("BarterRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
   itemRequests      ItemRequest[]
 
   @@map("barter_offers")
@@ -743,7 +768,7 @@ model BarterPreferenceItem {
 
   // Relations
   preferenceSet     BarterPreferenceSet @relation(fields: [preferenceSetId], references: [id], onDelete: Cascade)
-  item              Item               @relation("BarterPreferenceItems", fields: [itemId], references: [id])
+  item              Item               @relation("BarterPreferenceItems", fields: [itemId], references: [id], onDelete: Cascade)
 
   @@map("barter_preference_items")
   @@unique([preferenceSetId, itemId])  // Can't have duplicate items in same set
@@ -851,9 +876,9 @@ model BarterParticipant {
 
   // Relations
   chain           BarterChain        @relation(fields: [chainId], references: [id], onDelete: Cascade)
-  user            User               @relation(fields: [userId], references: [id])
-  givingItem      Item               @relation("ParticipantGivingItem", fields: [givingItemId], references: [id])
-  receivingItem   Item               @relation("ParticipantReceivingItem", fields: [receivingItemId], references: [id])
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  givingItem      Item               @relation("ParticipantGivingItem", fields: [givingItemId], references: [id], onDelete: Cascade)
+  receivingItem   Item               @relation("ParticipantReceivingItem", fields: [receivingItemId], references: [id], onDelete: Cascade)
 
   @@map("barter_participants")
   @@unique([chainId, userId])
@@ -908,7 +933,7 @@ model InventoryLock {
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
   // Relations
-  item            Item        @relation("InventoryLocks", fields: [itemId], references: [id])
+  item            Item        @relation("InventoryLocks", fields: [itemId], references: [id], onDelete: Cascade)
 
   @@map("inventory_locks")
   @@index([itemId])
@@ -1076,7 +1101,7 @@ model AuctionBid {
   // Relations
   auction         Auction    @relation(fields: [auctionId], references: [id], onDelete: Cascade)
   listing         Listing    @relation(fields: [listingId], references: [id], onDelete: Cascade)
-  bidder          User       @relation(fields: [bidderId], references: [id])
+  bidder          User       @relation(fields: [bidderId], references: [id], onDelete: Cascade)
   wonAuction      Auction?   @relation("WinningBid")
 
   @@map("auction_bids")
@@ -1162,8 +1187,8 @@ model ReverseAuction {
   completedAt       DateTime?           @map("completed_at")
 
   // Relations
-  buyer             User                @relation("ReverseAuctionBuyer", fields: [buyerId], references: [id])
-  category          Category            @relation(fields: [categoryId], references: [id])
+  buyer             User                @relation("ReverseAuctionBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  category          Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   bids              ReverseAuctionBid[]
   winningBid        ReverseAuctionBid?  @relation("WinningBid", fields: [winningBidId], references: [id])
 
@@ -1214,8 +1239,8 @@ model ReverseAuctionBid {
 
   // Relations
   reverseAuction    ReverseAuction          @relation(fields: [reverseAuctionId], references: [id], onDelete: Cascade)
-  seller            User                    @relation("ReverseAuctionSeller", fields: [sellerId], references: [id])
-  item              Item?                   @relation("ReverseAuctionBidItem", fields: [itemId], references: [id])
+  seller            User                    @relation("ReverseAuctionSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  item              Item?                   @relation("ReverseAuctionBidItem", fields: [itemId], references: [id], onDelete: SetNull)
   wonAuction        ReverseAuction?         @relation("WinningBid")
 
   @@map("reverse_auction_bids")
@@ -1275,9 +1300,9 @@ model Transaction {
   completedAt     DateTime?       @map("completed_at")
 
   // Relations
-  listing         Listing         @relation(fields: [listingId], references: [id])
-  buyer           User            @relation("Buyer", fields: [buyerId], references: [id])
-  seller          User            @relation("Seller", fields: [sellerId], references: [id])
+  listing         Listing         @relation(fields: [listingId], references: [id], onDelete: Restrict)
+  buyer           User            @relation("Buyer", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller          User            @relation("Seller", fields: [sellerId], references: [id], onDelete: Restrict)
   reviews         Review[]
 
   @@map("transactions")
@@ -1348,9 +1373,9 @@ model Review {
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   // Relations
-  transaction     Transaction   @relation(fields: [transactionId], references: [id])
-  reviewer        User          @relation("Reviewer", fields: [reviewerId], references: [id])
-  reviewed        User          @relation("Reviewed", fields: [reviewedId], references: [id])
+  transaction     Transaction   @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  reviewer        User          @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewed        User          @relation("Reviewed", fields: [reviewedId], references: [id], onDelete: Cascade)
   response        ReviewResponse?
   votes           ReviewVote[]
   reports         ReviewReport[]
@@ -1468,8 +1493,8 @@ model WishListItem {
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
   // Relations
-  user        User      @relation(fields: [userId], references: [id])
-  category    Category? @relation(fields: [categoryId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@map("wish_list_items")
   @@index([userId])
@@ -1705,6 +1730,9 @@ model SearchHistory {
   // Timestamps
   createdAt       DateTime    @default(now()) @map("created_at")
 
+  // Relations
+  user            User?       @relation("UserSearchHistory", fields: [userId], references: [id], onDelete: SetNull)
+
   @@map("search_history")
   @@index([userId])
   @@index([query])
@@ -1750,6 +1778,10 @@ model SavedSearch {
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   lastUsedAt      DateTime?   @map("last_used_at")
+
+  // Relations
+  user            User        @relation("UserSavedSearches", fields: [userId], references: [id], onDelete: Cascade)
+  alerts          SearchAlert[]
 
   @@map("saved_searches")
   @@index([userId])
@@ -1813,6 +1845,9 @@ model Conversation {
 
   // Relations
   messages        Message[]
+  typingIndicators TypingIndicator[]
+  participant1    User        @relation("ConversationParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2    User        @relation("ConversationParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
 
   @@map("conversations")
   @@unique([participant1Id, participant2Id])
@@ -1875,6 +1910,8 @@ model Message {
 
   // Relations
   conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender          User          @relation("MessagesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient       User          @relation("MessagesReceived", fields: [recipientId], references: [id], onDelete: Cascade)
 
   @@map("messages")
   @@index([conversationId])
@@ -1896,6 +1933,10 @@ model TypingIndicator {
 
   // Timestamps
   createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user            User         @relation("UserTypingIndicators", fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("typing_indicators")
   @@unique([conversationId, userId])
@@ -1919,6 +1960,9 @@ model UserPresence {
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
+  // Relations
+  user            User        @relation("UserPresence", fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("user_presence")
   @@index([userId])
   @@index([isOnline])
@@ -1935,6 +1979,10 @@ model BlockedUser {
 
   // Timestamps
   createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  blocker         User        @relation("UserBlocking", fields: [userId], references: [id], onDelete: Cascade)
+  blocked         User        @relation("UserBlocked", fields: [blockedUserId], references: [id], onDelete: Cascade)
 
   @@map("blocked_users")
   @@unique([userId, blockedUserId])
@@ -2471,7 +2519,7 @@ model UserAchievement {
 
   // Relations
   userLevel       UserLevel   @relation(fields: [userLevelId], references: [id], onDelete: Cascade)
-  achievement     Achievement @relation(fields: [achievementId], references: [id])
+  achievement     Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
 
   @@map("user_achievements")
   @@unique([userLevelId, achievementId])
@@ -2547,6 +2595,7 @@ model ChallengeParticipation {
 
   // Relations
   challenge       Challenge   @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user            User        @relation("UserChallengeParticipations", fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("challenge_participations")
   @@unique([challengeId, userId])
@@ -2641,6 +2690,7 @@ model BarterPoolParticipant {
 
   // Relations
   pool            BarterPool  @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  user            User        @relation("UserBarterPoolParticipations", fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("barter_pool_participants")
   @@unique([poolId, userId])
@@ -2714,7 +2764,7 @@ model Facilitator {
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
   // Relations
-  user            User                @relation(fields: [userId], references: [id])
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignments     FacilitatorAssignment[]
   reviews         FacilitatorReview[]
 
@@ -2757,7 +2807,7 @@ model FacilitatorAssignment {
   completedAt     DateTime?   @map("completed_at")
 
   // Relations
-  facilitator     Facilitator @relation(fields: [facilitatorId], references: [id])
+  facilitator     Facilitator @relation(fields: [facilitatorId], references: [id], onDelete: Cascade)
 
   @@map("facilitator_assignments")
   @@index([facilitatorId])
@@ -3128,7 +3178,7 @@ model UserSubscription {
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
   // Relations
-  plan            SubscriptionPlan    @relation(fields: [planId], references: [id])
+  plan            SubscriptionPlan    @relation(fields: [planId], references: [id], onDelete: Restrict)
 
   @@map("user_subscriptions")
   @@index([userId])
@@ -3272,6 +3322,9 @@ model PriceAlert {
   updatedAt       DateTime    @updatedAt @map("updated_at")
   expiresAt       DateTime?   @map("expires_at")
 
+  // Relations
+  user            User        @relation("UserPriceAlerts", fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("price_alerts")
   @@index([userId])
   @@index([itemId])
@@ -3299,6 +3352,10 @@ model UserFollow {
 
   // Timestamps
   createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  follower        User        @relation("UserFollowers", fields: [followerId], references: [id], onDelete: Cascade)
+  following       User        @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@map("user_follows")
   @@unique([followerId, followingId])
@@ -3329,6 +3386,9 @@ model ActivityFeed {
 
   // Timestamps
   createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  user            User        @relation("UserActivityFeed", fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("activity_feeds")
   @@index([userId])
@@ -3402,7 +3462,7 @@ model InstallmentPlan {
   completedAt     DateTime?             @map("completed_at")
 
   // Relations
-  listing         Listing               @relation(fields: [listingId], references: [id])
+  listing         Listing               @relation(fields: [listingId], references: [id], onDelete: Restrict)
   installments    Installment[]
 
   @@map("installment_plans")
@@ -4179,6 +4239,10 @@ model SearchAlert {
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
+  // Relations
+  savedSearch     SavedSearch @relation(fields: [savedSearchId], references: [id], onDelete: Cascade)
+  user            User        @relation("UserSearchAlerts", fields: [userId], references: [id], onDelete: Cascade)
+
   @@map("search_alerts")
   @@unique([savedSearchId, userId])
   @@index([userId])
@@ -4246,8 +4310,8 @@ model ScrapDealerVerification {
   updatedAt           DateTime            @updatedAt @map("updated_at")
 
   // Relations
-  user                User                @relation("ScrapDealerUser", fields: [userId], references: [id])
-  verifiedBy          User?               @relation("ScrapDealerVerifier", fields: [verifiedById], references: [id])
+  user                User                @relation("ScrapDealerUser", fields: [userId], references: [id], onDelete: Cascade)
+  verifiedBy          User?               @relation("ScrapDealerVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
 
   @@map("scrap_dealer_verifications")
   @@index([userId])
@@ -4315,7 +4379,7 @@ model ScrapPurchaseRequest {
   updatedAt           DateTime            @updatedAt @map("updated_at")
 
   // Relations
-  buyer               User                @relation("ScrapPurchaseBuyer", fields: [buyerId], references: [id])
+  buyer               User                @relation("ScrapPurchaseBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
   sellerOffers        ScrapSellerOffer[]
 
   @@map("scrap_purchase_requests")
@@ -4350,9 +4414,9 @@ model ScrapSellerOffer {
   updatedAt           DateTime            @updatedAt @map("updated_at")
 
   // Relations
-  request             ScrapPurchaseRequest @relation(fields: [requestId], references: [id])
-  seller              User                @relation("ScrapSellerOffers", fields: [sellerId], references: [id])
-  item                Item?               @relation("ScrapOfferItem", fields: [itemId], references: [id])
+  request             ScrapPurchaseRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  seller              User                @relation("ScrapSellerOffers", fields: [sellerId], references: [id], onDelete: Cascade)
+  item                Item?               @relation("ScrapOfferItem", fields: [itemId], references: [id], onDelete: SetNull)
 
   @@map("scrap_seller_offers")
   @@unique([requestId, sellerId])
@@ -4444,7 +4508,7 @@ model AdminActivityLog {
   userAgent   String?   @map("user_agent")
   createdAt   DateTime  @default(now()) @map("created_at")
 
-  admin       Admin     @relation(fields: [adminId], references: [id])
+  admin       Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@map("admin_activity_logs")
   @@index([adminId])

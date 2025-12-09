@@ -5,7 +5,7 @@ import { authenticate, optionalAuth } from '../middleware/auth';
 const router = Router();
 
 // ============================================
-// Public Routes
+// Public Routes - Specific paths BEFORE /:id
 // ============================================
 
 /**
@@ -22,15 +22,8 @@ router.get('/', facilitatorController.getAvailableFacilitators);
  */
 router.get('/top', facilitatorController.getTopFacilitators);
 
-/**
- * @route   GET /api/v1/facilitators/:id
- * @desc    Get facilitator profile
- * @access  Public
- */
-router.get('/:id', facilitatorController.getFacilitatorProfile);
-
 // ============================================
-// Protected Routes
+// Protected Routes - Specific paths BEFORE /:id
 // ============================================
 
 /**
@@ -55,27 +48,6 @@ router.get('/user/my-assignments', authenticate, facilitatorController.getMyAssi
 router.post('/apply', authenticate, facilitatorController.applyForFacilitator);
 
 /**
- * @route   PATCH /api/v1/facilitators/:id
- * @desc    Update facilitator profile
- * @access  Private
- */
-router.patch('/:id', authenticate, facilitatorController.updateFacilitatorProfile);
-
-/**
- * @route   POST /api/v1/facilitators/:id/toggle-availability
- * @desc    Toggle availability
- * @access  Private
- */
-router.post('/:id/toggle-availability', authenticate, facilitatorController.toggleAvailability);
-
-/**
- * @route   POST /api/v1/facilitators/:id/assign
- * @desc    Assign facilitator to deal
- * @access  Private
- */
-router.post('/:id/assign', authenticate, facilitatorController.assignFacilitator);
-
-/**
  * @route   POST /api/v1/facilitators/assignments/:assignmentId/start
  * @desc    Start assignment
  * @access  Private
@@ -95,5 +67,37 @@ router.post('/assignments/:assignmentId/complete', authenticate, facilitatorCont
  * @access  Private
  */
 router.post('/assignments/:assignmentId/review', authenticate, facilitatorController.submitReview);
+
+// ============================================
+// Routes with :id parameter (MUST BE LAST)
+// ============================================
+
+/**
+ * @route   GET /api/v1/facilitators/:id
+ * @desc    Get facilitator profile
+ * @access  Public
+ */
+router.get('/:id', facilitatorController.getFacilitatorProfile);
+
+/**
+ * @route   PATCH /api/v1/facilitators/:id
+ * @desc    Update facilitator profile
+ * @access  Private
+ */
+router.patch('/:id', authenticate, facilitatorController.updateFacilitatorProfile);
+
+/**
+ * @route   POST /api/v1/facilitators/:id/toggle-availability
+ * @desc    Toggle availability
+ * @access  Private
+ */
+router.post('/:id/toggle-availability', authenticate, facilitatorController.toggleAvailability);
+
+/**
+ * @route   POST /api/v1/facilitators/:id/assign
+ * @desc    Assign facilitator to deal
+ * @access  Private
+ */
+router.post('/:id/assign', authenticate, facilitatorController.assignFacilitator);
 
 export default router;

@@ -3,10 +3,9 @@
  * خدمة التلعيب والإنجازات
  */
 
-import { PrismaClient, AchievementCategory, AchievementRarity, ChallengeType } from '@prisma/client';
+import { AchievementCategory, AchievementRarity, ChallengeType } from '@prisma/client';
+import prisma from '../config/database';
 import * as walletService from './wallet.service';
-
-const prisma = new PrismaClient();
 
 // ============================================
 // Level Configuration

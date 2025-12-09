@@ -113,6 +113,56 @@ export const initialSetup = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+/**
+ * Force Setup - Create or reset super admin (requires ADMIN_SETUP_KEY)
+ * POST /api/v1/admin/auth/force-setup
+ */
+export const forceSetup = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password, fullName, setupKey } = req.body;
+
+    if (!email || !password || !fullName || !setupKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'جميع الحقول مطلوبة: email, password, fullName, setupKey',
+      });
+    }
+
+    const result = await adminService.forceCreateSuperAdmin(email, password, fullName, setupKey);
+
+    const message = result.created
+      ? 'تم إنشاء مدير النظام بنجاح'
+      : 'تم تحديث مدير النظام بنجاح';
+
+    return successResponse(res, { admin: result.admin }, message);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Reset Password - Reset admin password (requires ADMIN_SETUP_KEY)
+ * POST /api/v1/admin/auth/reset-password
+ */
+export const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, newPassword, setupKey } = req.body;
+
+    if (!email || !newPassword || !setupKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'جميع الحقول مطلوبة: email, newPassword, setupKey',
+      });
+    }
+
+    const admin = await adminService.resetAdminPassword(email, newPassword, setupKey);
+
+    return successResponse(res, { admin }, 'تم إعادة تعيين كلمة المرور بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
 // ==========================================
 // Admin Management
 // ==========================================

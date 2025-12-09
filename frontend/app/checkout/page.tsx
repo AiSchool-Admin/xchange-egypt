@@ -83,7 +83,7 @@ export default function CheckoutPage() {
 
   const fetchCart = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -109,7 +109,7 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
         method: 'POST',
         headers: {
@@ -129,7 +129,7 @@ export default function CheckoutPage() {
           router.push(`/dashboard/orders?success=${order.id}`);
         } else if (paymentMethod === 'INSTAPAY') {
           // Redirect to InstaPay
-          const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/instapay/initiate`, {
+          const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/instapay/initiate`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -145,7 +145,7 @@ export default function CheckoutPage() {
           }
         } else if (paymentMethod === 'FAWRY') {
           // Show Fawry reference
-          const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/fawry/initiate`, {
+          const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/fawry/create`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

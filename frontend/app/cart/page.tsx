@@ -52,7 +52,7 @@ export default function CartPage() {
 
   const fetchCart = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -73,9 +73,9 @@ export default function CartPage() {
     if (quantity < 1) return;
     setUpdating(itemId);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items/${itemId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
@@ -95,7 +95,7 @@ export default function CartPage() {
   const removeItem = async (itemId: string) => {
     setUpdating(itemId);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items/${itemId}`, {
         method: 'DELETE',
         headers: {

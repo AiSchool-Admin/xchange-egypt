@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       await login({ email, password });
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'Failed to login. Please try again.';
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'فشل تسجيل الدخول. حاول مرة أخرى.';
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -27,11 +27,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+    <div dir="rtl" className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-primary-600 mb-2">Xchange</h1>
-          <p className="text-gray-600">Login to your account</p>
+          <p className="text-gray-600">تسجيل الدخول إلى حسابك</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-lg p-8">
@@ -44,7 +44,7 @@ export default function LoginPage() {
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+                البريد الإلكتروني
               </label>
               <input
                 id="email"
@@ -52,14 +52,15 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
-                placeholder="your@email.com"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none text-right"
+                placeholder="example@email.com"
+                dir="ltr"
               />
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                كلمة المرور
               </label>
               <input
                 id="password"
@@ -77,21 +78,21 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-semibold"
             >
-              {loading ? 'Logging in...' : 'Login'}
+              {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-600">
-            Don't have an account?{' '}
+            ليس لديك حساب؟{' '}
             <Link href="/register" className="text-primary-600 hover:text-primary-700 font-semibold">
-              Register here
+              سجل هنا
             </Link>
           </div>
         </div>
 
         <div className="mt-6 text-center">
           <Link href="/" className="text-sm text-gray-600 hover:text-gray-800">
-            ← Back to home
+            → العودة للرئيسية
           </Link>
         </div>
       </div>
