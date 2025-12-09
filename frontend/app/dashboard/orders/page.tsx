@@ -9,9 +9,12 @@ interface OrderItem {
   id: string;
   listing: {
     id: string;
-    title: string;
     price: number;
-    images: string[];
+    item: {
+      id: string;
+      title: string;
+      images: string[];
+    };
   };
   quantity: number;
   price: number;
@@ -84,14 +87,15 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/my`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       if (response.ok) {
         const data = await response.json();
-        setOrders(data);
+        // Backend returns { success, message, data: { orders, pagination } }
+        setOrders(data.data?.orders || []);
       }
     } catch (error) {
       console.error('Failed to fetch orders:', error);
@@ -214,10 +218,10 @@ export default function OrdersPage() {
                   <div className="flex items-center gap-2 mb-3">
                     {order.items.slice(0, 3).map((item) => (
                       <div key={item.id} className="w-12 h-12 bg-gray-100 rounded overflow-hidden">
-                        {item.listing.images?.[0] && (
+                        {item.listing.item?.images?.[0] && (
                           <img
-                            src={item.listing.images[0]}
-                            alt={item.listing.title}
+                            src={item.listing.item.images[0]}
+                            alt={item.listing.item.title}
                             className="w-full h-full object-cover"
                           />
                         )}
@@ -276,16 +280,16 @@ export default function OrdersPage() {
                       {selectedOrder.items.map((item) => (
                         <div key={item.id} className="flex gap-3">
                           <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                            {item.listing.images?.[0] && (
+                            {item.listing.item?.images?.[0] && (
                               <img
-                                src={item.listing.images[0]}
-                                alt={item.listing.title}
+                                src={item.listing.item.images[0]}
+                                alt={item.listing.item.title}
                                 className="w-full h-full object-cover"
                               />
                             )}
                           </div>
                           <div className="flex-1">
-                            <p className="font-medium">{item.listing.title}</p>
+                            <p className="font-medium">{item.listing.item?.title}</p>
                             <p className="text-sm text-gray-600">الكمية: {item.quantity}</p>
                           </div>
                           <div className="text-left">
