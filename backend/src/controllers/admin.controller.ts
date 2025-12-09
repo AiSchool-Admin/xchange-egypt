@@ -1,12 +1,546 @@
 /**
  * Admin Controller
- * Endpoints for administrative tasks
+ * Comprehensive endpoints for platform administration
  */
 
 import { Request, Response, NextFunction } from 'express';
+import * as adminService from '../services/admin.service';
 import * as matchingService from '../services/barter-matching.service';
 import { successResponse } from '../utils/response';
 import prisma from '../lib/prisma';
+import { AdminRequest } from '../middleware/adminAuth';
+import { getAdminPermissions } from '../middleware/adminAuth';
+
+// ==========================================
+// Authentication
+// ==========================================
+
+/**
+ * Admin Login
+ * POST /api/v1/admin/auth/login
+ */
+export const login = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password } = req.body;
+
+    const result = await adminService.loginAdmin({
+      email,
+      password,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    });
+
+    return successResponse(res, result, 'تم تسجيل الدخول بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Refresh Token
+ * POST /api/v1/admin/auth/refresh
+ */
+export const refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { refreshToken } = req.body;
+
+    const result = await adminService.refreshAdminToken(
+      refreshToken,
+      req.ip,
+      req.headers['user-agent']
+    );
+
+    return successResponse(res, result, 'تم تحديث الرمز بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Admin Logout
+ * POST /api/v1/admin/auth/logout
+ */
+export const logout = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { refreshToken } = req.body;
+
+    await adminService.logoutAdmin(adminReq.adminId!, refreshToken);
+
+    return successResponse(res, null, 'تم تسجيل الخروج بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get Current Admin
+ * GET /api/v1/admin/auth/me
+ */
+export const getCurrentAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+
+    return successResponse(res, {
+      admin: adminReq.admin,
+      permissions: adminReq.admin.permissions,
+    }, 'تم جلب بيانات المدير بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Initial Setup - Create first super admin
+ * POST /api/v1/admin/auth/setup
+ */
+export const initialSetup = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password, fullName } = req.body;
+
+    if (!email || !password || !fullName) {
+      return res.status(400).json({
+        success: false,
+        message: 'البريد الإلكتروني وكلمة المرور والاسم مطلوبون',
+      });
+    }
+
+    const admin = await adminService.createInitialSuperAdmin(email, password, fullName);
+
+    return successResponse(res, { admin }, 'تم إنشاء مدير النظام الأول بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// Admin Management
+// ==========================================
+
+/**
+ * Get All Admins
+ * GET /api/v1/admin/admins
+ */
+export const getAllAdmins = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const admins = await adminService.getAllAdmins(adminReq.admin.role);
+
+    return successResponse(res, { admins }, 'تم جلب قائمة المديرين بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Create Admin
+ * POST /api/v1/admin/admins
+ */
+export const createAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { email, password, fullName, phone, role } = req.body;
+
+    const admin = await adminService.createAdmin({
+      email,
+      password,
+      fullName,
+      phone,
+      role,
+      createdBy: adminReq.adminId,
+    });
+
+    return successResponse(res, { admin }, 'تم إنشاء المدير بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update Admin
+ * PUT /api/v1/admin/admins/:adminId
+ */
+export const updateAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { adminId } = req.params;
+    const updateData = req.body;
+
+    const admin = await adminService.updateAdmin(adminId, updateData, adminReq.adminId!);
+
+    return successResponse(res, { admin }, 'تم تحديث المدير بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete Admin
+ * DELETE /api/v1/admin/admins/:adminId
+ */
+export const deleteAdmin = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { adminId } = req.params;
+
+    // Prevent self-deletion
+    if (adminId === adminReq.adminId) {
+      return res.status(400).json({
+        success: false,
+        message: 'لا يمكنك حذف حسابك الخاص',
+      });
+    }
+
+    await adminService.updateAdmin(adminId, { status: 'DELETED' }, adminReq.adminId!);
+
+    return successResponse(res, null, 'تم حذف المدير بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// Dashboard & Statistics
+// ==========================================
+
+/**
+ * Get Dashboard Statistics
+ * GET /api/v1/admin/dashboard/stats
+ */
+export const getDashboardStats = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const stats = await adminService.getDashboardStats();
+
+    return successResponse(res, stats, 'تم جلب الإحصائيات بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get Activity Logs
+ * GET /api/v1/admin/logs
+ */
+export const getActivityLogs = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit, adminId, action, startDate, endDate } = req.query;
+
+    const result = await adminService.getActivityLogs({
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      adminId: adminId as string,
+      action: action as string,
+      startDate: startDate ? new Date(startDate as string) : undefined,
+      endDate: endDate ? new Date(endDate as string) : undefined,
+    });
+
+    return successResponse(res, result, 'تم جلب سجل النشاط بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// User Management
+// ==========================================
+
+/**
+ * Get All Users
+ * GET /api/v1/admin/users
+ */
+export const getUsers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit, search, status, userType, sortBy, sortOrder } = req.query;
+
+    const result = await adminService.getUsers({
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      search: search as string,
+      status: status as any,
+      userType: userType as any,
+      sortBy: sortBy as string,
+      sortOrder: sortOrder as any,
+    });
+
+    return successResponse(res, result, 'تم جلب قائمة المستخدمين بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get User Details
+ * GET /api/v1/admin/users/:userId
+ */
+export const getUserDetails = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { userId } = req.params;
+    const user = await adminService.getUserDetails(userId);
+
+    return successResponse(res, { user }, 'تم جلب بيانات المستخدم بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Suspend User
+ * POST /api/v1/admin/users/:userId/suspend
+ */
+export const suspendUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { userId } = req.params;
+    const { reason } = req.body;
+
+    const user = await adminService.suspendUser(userId, reason || 'مخالفة شروط الاستخدام', adminReq.adminId!);
+
+    return successResponse(res, { user }, 'تم إيقاف المستخدم بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Activate User
+ * POST /api/v1/admin/users/:userId/activate
+ */
+export const activateUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { userId } = req.params;
+
+    const user = await adminService.activateUser(userId, adminReq.adminId!);
+
+    return successResponse(res, { user }, 'تم تفعيل المستخدم بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete User
+ * DELETE /api/v1/admin/users/:userId
+ */
+export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { userId } = req.params;
+
+    const user = await adminService.deleteUser(userId, adminReq.adminId!);
+
+    return successResponse(res, { user }, 'تم حذف المستخدم بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// Listings Management
+// ==========================================
+
+/**
+ * Get All Listings
+ * GET /api/v1/admin/listings
+ */
+export const getListings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit, search, status, categoryId, sortBy, sortOrder } = req.query;
+
+    const result = await adminService.getListings({
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      search: search as string,
+      status: status as any,
+      categoryId: categoryId as string,
+      sortBy: sortBy as string,
+      sortOrder: sortOrder as any,
+    });
+
+    return successResponse(res, result, 'تم جلب قائمة الإعلانات بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete Listing
+ * DELETE /api/v1/admin/listings/:itemId
+ */
+export const deleteListing = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { itemId } = req.params;
+    const { reason } = req.body;
+
+    const item = await adminService.deleteListing(itemId, reason || 'مخالفة شروط الاستخدام', adminReq.adminId!);
+
+    return successResponse(res, { item }, 'تم حذف الإعلان بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Feature Listing
+ * POST /api/v1/admin/listings/:itemId/feature
+ */
+export const featureListing = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { itemId } = req.params;
+    const { featured } = req.body;
+
+    const item = await prisma.item.update({
+      where: { id: itemId },
+      data: { promotionTier: featured ? 'FEATURED' : 'BASIC' },
+    });
+
+    return successResponse(res, { item }, featured ? 'تم تمييز الإعلان بنجاح' : 'تم إلغاء تمييز الإعلان');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// Platform Settings
+// ==========================================
+
+/**
+ * Get All Settings
+ * GET /api/v1/admin/settings
+ */
+export const getSettings = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { category } = req.query;
+    const settings = await adminService.getSettings(category as string);
+
+    return successResponse(res, { settings }, 'تم جلب الإعدادات بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update Setting
+ * PUT /api/v1/admin/settings/:key
+ */
+export const updateSetting = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { key } = req.params;
+    const { value } = req.body;
+
+    const setting = await adminService.updateSetting(key, value, adminReq.adminId!);
+
+    return successResponse(res, { setting }, 'تم تحديث الإعداد بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// Content Reports
+// ==========================================
+
+/**
+ * Get Content Reports
+ * GET /api/v1/admin/reports
+ */
+export const getContentReports = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { page, limit, status, targetType } = req.query;
+
+    const result = await adminService.getContentReports({
+      page: page ? Number(page) : undefined,
+      limit: limit ? Number(limit) : undefined,
+      status: status as string,
+      targetType: targetType as string,
+    });
+
+    return successResponse(res, result, 'تم جلب البلاغات بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Resolve Report
+ * PUT /api/v1/admin/reports/:reportId
+ */
+export const resolveReport = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { reportId } = req.params;
+    const { resolution, status } = req.body;
+
+    const report = await adminService.resolveReport(reportId, resolution, status, adminReq.adminId!);
+
+    return successResponse(res, { report }, 'تم معالجة البلاغ بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// Categories Management
+// ==========================================
+
+/**
+ * Create Category
+ * POST /api/v1/admin/categories
+ */
+export const createCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const categoryData = req.body;
+
+    const category = await adminService.createCategory(categoryData, adminReq.adminId!);
+
+    return successResponse(res, { category }, 'تم إنشاء الفئة بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update Category
+ * PUT /api/v1/admin/categories/:categoryId
+ */
+export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { categoryId } = req.params;
+    const updateData = req.body;
+
+    const category = await adminService.updateCategory(categoryId, updateData, adminReq.adminId!);
+
+    return successResponse(res, { category }, 'تم تحديث الفئة بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete Category
+ * DELETE /api/v1/admin/categories/:categoryId
+ */
+export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const adminReq = req as AdminRequest;
+    const { categoryId } = req.params;
+
+    await adminService.deleteCategory(categoryId, adminReq.adminId!);
+
+    return successResponse(res, null, 'تم حذف الفئة بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// Legacy Admin Functions
+// ==========================================
 
 // Mapping of English governorate names to Arabic
 const GOVERNORATE_EN_TO_AR: Record<string, string> = {
@@ -66,7 +600,6 @@ const GOVERNORATE_EN_TO_AR: Record<string, string> = {
   'aswan': 'أسوان',
 };
 
-// Convert governorate to Arabic if it's in English
 const toArabicGovernorate = (governorate: string): string => {
   return GOVERNORATE_EN_TO_AR[governorate] || GOVERNORATE_EN_TO_AR[governorate.toLowerCase()] || governorate;
 };
@@ -83,15 +616,9 @@ export const populateGovernorates = async (
   try {
     console.log('[Admin] Starting governorate population...');
 
-    // Step 1: Update users with English governorate names to Arabic
     const usersWithEnglishGov = await prisma.user.findMany({
-      where: {
-        governorate: { not: null },
-      },
-      select: {
-        id: true,
-        governorate: true,
-      },
+      where: { governorate: { not: null } },
+      select: { id: true, governorate: true },
     });
 
     let usersUpdated = 0;
@@ -104,17 +631,10 @@ export const populateGovernorates = async (
         usersUpdated++;
       }
     }
-    console.log(`[Admin] Updated ${usersUpdated} users with Arabic governorate names`);
 
-    // Step 2: Update items with English governorate names to Arabic
     const itemsWithEnglishGov = await prisma.item.findMany({
-      where: {
-        governorate: { not: null },
-      },
-      select: {
-        id: true,
-        governorate: true,
-      },
+      where: { governorate: { not: null } },
+      select: { id: true, governorate: true },
     });
 
     let itemsConvertedToArabic = 0;
@@ -127,24 +647,13 @@ export const populateGovernorates = async (
         itemsConvertedToArabic++;
       }
     }
-    console.log(`[Admin] Converted ${itemsConvertedToArabic} items to Arabic governorate names`);
 
-    // Step 3: Get items without governorate and populate from seller
     const itemsWithoutGovernorate = await prisma.item.findMany({
-      where: {
-        governorate: null,
-      },
+      where: { governorate: null },
       include: {
-        seller: {
-          select: {
-            id: true,
-            governorate: true,
-          },
-        },
+        seller: { select: { id: true, governorate: true } },
       },
     });
-
-    console.log(`[Admin] Found ${itemsWithoutGovernorate.length} items without governorate`);
 
     let updatedCount = 0;
     let skippedCount = 0;
@@ -162,8 +671,6 @@ export const populateGovernorates = async (
       }
     }
 
-    console.log(`[Admin] Governorate population complete: ${updatedCount} updated, ${skippedCount} skipped`);
-
     return successResponse(res, {
       usersUpdated,
       itemsConvertedToArabic,
@@ -171,140 +678,6 @@ export const populateGovernorates = async (
       itemsPopulated: updatedCount,
       itemsSkipped: skippedCount,
     }, 'Governorate population completed successfully');
-
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * Seed test bids for a reverse auction
- * POST /api/v1/admin/seed-reverse-auction-bids
- */
-export const seedReverseAuctionBids = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    console.log('[Admin] Seeding reverse auction bids...');
-
-    // Find the active reverse auction
-    const auction = await prisma.reverseAuction.findFirst({
-      where: { status: 'ACTIVE' },
-      include: { buyer: true }
-    });
-
-    if (!auction) {
-      return successResponse(res, { error: 'No active reverse auction found' }, 'No auction to seed');
-    }
-
-    console.log(`[Admin] Found auction: ${auction.title} (buyer: ${auction.buyer.fullName})`);
-
-    // Find sellers (users who are not the buyer)
-    const sellers = await prisma.user.findMany({
-      where: {
-        id: { not: auction.buyerId }
-      },
-      take: 3
-    });
-
-    if (sellers.length === 0) {
-      return successResponse(res, { error: 'No sellers available' }, 'No sellers to create bids');
-    }
-
-    // Create bids from different sellers
-    const maxBudget = auction.maxBudget || 5000;
-    const bidAmounts = [
-      Math.round(maxBudget * 0.9),  // 90% of budget
-      Math.round(maxBudget * 0.84), // 84% of budget
-      Math.round(maxBudget * 0.76), // 76% of budget (lowest)
-    ];
-    const conditions: Array<'GOOD' | 'LIKE_NEW' | 'NEW'> = ['GOOD', 'LIKE_NEW', 'NEW'];
-    const createdBids: any[] = [];
-
-    for (let i = 0; i < Math.min(sellers.length, 3); i++) {
-      const seller = sellers[i];
-      const bidAmount = bidAmounts[i];
-
-      // Check if this seller already has a bid
-      const existingBid = await prisma.reverseAuctionBid.findFirst({
-        where: {
-          reverseAuctionId: auction.id,
-          sellerId: seller.id
-        }
-      });
-
-      if (existingBid) {
-        console.log(`[Admin] Seller ${seller.fullName} already has a bid`);
-        continue;
-      }
-
-      // Determine status based on bid amount (lowest is WINNING)
-      const isLowest = i === Math.min(sellers.length, 3) - 1;
-
-      const bid = await prisma.reverseAuctionBid.create({
-        data: {
-          reverseAuctionId: auction.id,
-          sellerId: seller.id,
-          bidAmount: bidAmount,
-          itemCondition: conditions[i],
-          itemDescription: `عرض من ${seller.fullName} - ${auction.title} بحالة ${conditions[i] === 'NEW' ? 'جديدة' : conditions[i] === 'LIKE_NEW' ? 'شبه جديدة' : 'جيدة'}`,
-          deliveryOption: 'DELIVERY',
-          deliveryDays: 3 + i,
-          deliveryCost: 50 + (i * 25),
-          status: isLowest ? 'WINNING' : 'OUTBID',
-          notes: `عرض تنافسي - التسليم خلال ${3 + i} أيام`
-        },
-        include: {
-          seller: {
-            select: { id: true, fullName: true }
-          }
-        }
-      });
-
-      createdBids.push({
-        id: bid.id,
-        seller: bid.seller.fullName,
-        amount: bidAmount,
-        status: bid.status
-      });
-
-      console.log(`[Admin] Created bid from ${seller.fullName}: ${bidAmount} EGP (${bid.status})`);
-    }
-
-    // Update auction stats
-    const activeBids = await prisma.reverseAuctionBid.findMany({
-      where: {
-        reverseAuctionId: auction.id,
-        status: { notIn: ['WITHDRAWN'] }
-      }
-    });
-
-    const lowestBid = Math.min(...activeBids.map(b => b.bidAmount));
-    const uniqueSellers = new Set(activeBids.map(b => b.sellerId)).size;
-
-    await prisma.reverseAuction.update({
-      where: { id: auction.id },
-      data: {
-        totalBids: activeBids.length,
-        uniqueBidders: uniqueSellers,
-        lowestBid: lowestBid
-      }
-    });
-
-    console.log(`[Admin] Auction updated: ${activeBids.length} bids, lowest: ${lowestBid} EGP`);
-
-    return successResponse(res, {
-      auction: {
-        id: auction.id,
-        title: auction.title,
-        totalBids: activeBids.length,
-        lowestBid
-      },
-      bidsCreated: createdBids
-    }, 'Test bids created successfully');
-
   } catch (error) {
     next(error);
   }
@@ -322,23 +695,17 @@ export const runRetroactiveMatching = async (
   try {
     console.log('[Admin] Starting retroactive matching...');
 
-    // Get all active items with barter preferences
     const items = await prisma.item.findMany({
       where: {
         status: 'ACTIVE',
         desiredCategoryId: { not: null },
       },
-      select: {
-        id: true,
-        sellerId: true,
-        title: true,
-      },
+      select: { id: true, sellerId: true, title: true },
     });
 
     let notificationsSent = 0;
     const notifiedUsers = new Set<string>();
 
-    // Process each item
     for (const item of items) {
       try {
         const matches = await matchingService.findMatchesForUser(
@@ -351,12 +718,10 @@ export const runRetroactiveMatching = async (
           cycle => cycle.averageScore >= 0.60
         );
 
-        // Send notifications for matches
         for (const cycle of highQualityMatches.slice(0, 3)) {
           for (const participant of cycle.participants) {
             if (notifiedUsers.has(participant.userId)) continue;
 
-            // Check if already notified recently
             const existing = await prisma.notification.findFirst({
               where: {
                 userId: participant.userId,
@@ -388,14 +753,11 @@ export const runRetroactiveMatching = async (
       }
     }
 
-    console.log(`[Admin] Retroactive matching complete: ${notificationsSent} notifications sent`);
-
     return successResponse(res, {
       itemsProcessed: items.length,
       notificationsSent,
       usersNotified: notifiedUsers.size,
     }, 'Retroactive matching completed successfully');
-
   } catch (error) {
     next(error);
   }
