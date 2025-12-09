@@ -15,15 +15,8 @@ const router = Router();
  */
 router.get('/', barterPoolController.getOpenPools);
 
-/**
- * @route   GET /api/v1/barter-pools/:id
- * @desc    Get pool by ID
- * @access  Public
- */
-router.get('/:id', barterPoolController.getPool);
-
 // ============================================
-// Protected Routes
+// Protected Routes - Specific paths BEFORE /:id
 // ============================================
 
 /**
@@ -39,6 +32,17 @@ router.get('/user/my-pools', authenticate, barterPoolController.getMyPools);
  * @access  Private
  */
 router.post('/', authenticate, barterPoolController.createPool);
+
+// ============================================
+// Routes with :id parameter (MUST BE AFTER specific paths)
+// ============================================
+
+/**
+ * @route   GET /api/v1/barter-pools/:id
+ * @desc    Get pool by ID
+ * @access  Public
+ */
+router.get('/:id', barterPoolController.getPool);
 
 /**
  * @route   POST /api/v1/barter-pools/:id/join

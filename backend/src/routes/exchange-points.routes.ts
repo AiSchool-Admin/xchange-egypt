@@ -4,17 +4,21 @@ import { authenticate } from '../middleware/auth';
 
 const router = Router();
 
-// Public routes
+// ============================================
+// Public Routes - Specific paths BEFORE /:id
+// ============================================
+
 router.get('/', exchangePointsController.getExchangePoints);
 router.get('/governorates', exchangePointsController.getGovernorates);
 router.get('/nearby', exchangePointsController.getNearbyPoints);
-router.get('/:id', exchangePointsController.getExchangePoint);
-router.get('/:id/slots', exchangePointsController.getAvailableSlots);
 
-// Protected routes
+// ============================================
+// Protected Routes - Specific paths BEFORE /:id
+// ============================================
+
 router.use(authenticate);
 
-// Bookings
+// Bookings (must be before /:id to avoid conflict)
 router.post('/bookings', exchangePointsController.createBooking);
 router.get('/bookings/my', exchangePointsController.getMyBookings);
 router.post('/bookings/:id/confirm', exchangePointsController.confirmBooking);
@@ -22,7 +26,12 @@ router.post('/bookings/:id/check-in', exchangePointsController.checkIn);
 router.post('/bookings/:id/complete', exchangePointsController.completeBooking);
 router.post('/bookings/:id/cancel', exchangePointsController.cancelBooking);
 
-// Reviews
+// ============================================
+// Routes with :id parameter (MUST BE LAST)
+// ============================================
+
+router.get('/:id', exchangePointsController.getExchangePoint);
+router.get('/:id/slots', exchangePointsController.getAvailableSlots);
 router.post('/:id/reviews', exchangePointsController.addReview);
 
 export default router;

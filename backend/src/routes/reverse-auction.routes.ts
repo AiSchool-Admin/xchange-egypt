@@ -44,6 +44,59 @@ router.get(
   reverseAuctionController.getReverseAuctions
 );
 
+// ============================================
+// Authenticated Routes - MUST BE BEFORE /:id
+// ============================================
+
+/**
+ * Get statistics for current user
+ * GET /api/v1/reverse-auctions/stats
+ */
+router.get(
+  '/stats',
+  authenticate,
+  validate(getStatisticsSchema),
+  reverseAuctionController.getStatistics
+);
+
+/**
+ * Get my bids (Seller view)
+ * GET /api/v1/reverse-auctions/bids/my-bids
+ * Query params: status, page, limit
+ */
+router.get(
+  '/bids/my-bids',
+  authenticate,
+  validate(getMyBidsSchema),
+  reverseAuctionController.getMyBids
+);
+
+/**
+ * Update a bid (Seller only)
+ * PATCH /api/v1/reverse-auctions/bids/:bidId
+ */
+router.patch(
+  '/bids/:bidId',
+  authenticate,
+  validate(updateBidSchema),
+  reverseAuctionController.updateBid
+);
+
+/**
+ * Withdraw a bid (Seller only)
+ * POST /api/v1/reverse-auctions/bids/:bidId/withdraw
+ */
+router.post(
+  '/bids/:bidId/withdraw',
+  authenticate,
+  validate(withdrawBidSchema),
+  reverseAuctionController.withdrawBid
+);
+
+// ============================================
+// Routes with :id parameter
+// ============================================
+
 /**
  * Get single reverse auction by ID with all bids
  * GET /api/v1/reverse-auctions/:id
@@ -62,21 +115,6 @@ router.get(
   '/:id/bids',
   validate(getBidsSchema),
   reverseAuctionController.getBidsForAuction
-);
-
-// ============================================
-// Authenticated Routes (Buyer & Seller)
-// ============================================
-
-/**
- * Get statistics for current user
- * GET /api/v1/reverse-auctions/stats
- */
-router.get(
-  '/stats',
-  authenticate,
-  validate(getStatisticsSchema),
-  reverseAuctionController.getStatistics
 );
 
 /**
@@ -146,10 +184,6 @@ router.post(
   reverseAuctionController.completeAuction
 );
 
-// ============================================
-// Bidding Routes (Seller)
-// ============================================
-
 /**
  * Submit a bid on a reverse auction (Seller)
  * POST /api/v1/reverse-auctions/:id/bids
@@ -159,40 +193,6 @@ router.post(
   authenticate,
   validate(submitBidSchema),
   reverseAuctionController.submitBid
-);
-
-/**
- * Get my bids (Seller view)
- * GET /api/v1/reverse-auctions/bids/my-bids
- * Query params: status, page, limit
- */
-router.get(
-  '/bids/my-bids',
-  authenticate,
-  validate(getMyBidsSchema),
-  reverseAuctionController.getMyBids
-);
-
-/**
- * Update a bid (Seller only)
- * PATCH /api/v1/reverse-auctions/bids/:bidId
- */
-router.patch(
-  '/bids/:bidId',
-  authenticate,
-  validate(updateBidSchema),
-  reverseAuctionController.updateBid
-);
-
-/**
- * Withdraw a bid (Seller only)
- * POST /api/v1/reverse-auctions/bids/:bidId/withdraw
- */
-router.post(
-  '/bids/:bidId/withdraw',
-  authenticate,
-  validate(withdrawBidSchema),
-  reverseAuctionController.withdrawBid
 );
 
 export default router;

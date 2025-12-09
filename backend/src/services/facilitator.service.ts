@@ -3,9 +3,8 @@
  * خدمة شبكة الوسطاء المعتمدين
  */
 
-import { PrismaClient, FacilitatorLevel, FacilitatorStatus } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { FacilitatorLevel, FacilitatorStatus } from '@prisma/client';
+import prisma from '../config/database';
 
 // ============================================
 // Configuration

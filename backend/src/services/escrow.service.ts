@@ -3,11 +3,10 @@
  * خدمة الضمان الذكي وحل النزاعات
  */
 
-import { PrismaClient, EscrowStatus, EscrowType, DisputeStatus, DisputeReason, DisputeResolution } from '@prisma/client';
+import { EscrowStatus, EscrowType, DisputeStatus, DisputeReason, DisputeResolution } from '@prisma/client';
+import prisma from '../config/database';
 import * as walletService from './wallet.service';
 import * as reputationService from './reputation.service';
-
-const prisma = new PrismaClient();
 
 // ============================================
 // Types & Interfaces
