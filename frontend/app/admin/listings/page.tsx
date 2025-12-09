@@ -14,7 +14,7 @@ interface Listing {
   status: string;
   images: string[];
   createdAt: string;
-  user: {
+  seller: {
     id: string;
     fullName: string;
     email: string;
@@ -254,9 +254,9 @@ export default function ListingsManagement() {
 
                 <div className="flex items-center gap-2 text-sm text-gray-400 mb-4">
                   <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center text-xs text-white">
-                    {listing.user.fullName.charAt(0)}
+                    {listing.seller.fullName.charAt(0)}
                   </div>
-                  <span className="truncate">{listing.user.fullName}</span>
+                  <span className="truncate">{listing.seller.fullName}</span>
                 </div>
 
                 {/* Actions */}
