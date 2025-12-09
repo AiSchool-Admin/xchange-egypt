@@ -1,9 +1,8 @@
 import prisma from '../config/database';
-import { AdminRole, AdminStatus, UserStatus, ItemStatus } from '@prisma/client';
+import { AdminRole, AdminStatus, UserStatus, ItemStatus, OrderStatus } from '@prisma/client';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateAdminAccessToken, generateAdminRefreshToken, verifyAdminRefreshToken } from '../utils/adminJwt';
 import { BadRequestError, NotFoundError, UnauthorizedError } from '../utils/errors';
-import { v4 as uuidv4 } from 'uuid';
 
 // ==========================================
 // Admin Authentication
@@ -563,7 +562,7 @@ export const getListings = async (params: GetListingsParams) => {
     prisma.item.findMany({
       where,
       include: {
-        user: {
+        seller: {
           select: { id: true, fullName: true, email: true },
         },
         category: {
@@ -730,8 +729,8 @@ export const getDashboardStats = async () => {
     prisma.item.count({ where: { status: ItemStatus.ACTIVE } }),
     prisma.item.count({ where: { createdAt: { gte: today } } }),
     prisma.order.count(),
-    prisma.order.count({ where: { status: 'COMPLETED' } }),
-    prisma.order.aggregate({ _sum: { total: true }, where: { status: 'COMPLETED' } }),
+    prisma.order.count({ where: { status: OrderStatus.DELIVERED } }),
+    prisma.order.aggregate({ _sum: { total: true }, where: { status: OrderStatus.DELIVERED } }),
     prisma.contentReport.count({ where: { status: 'PENDING' } }),
   ]);
 
