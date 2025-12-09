@@ -91,6 +91,9 @@ export const getCart = async (userId: string) => {
     ...cart,
     subtotal,
     itemCount,
+    // Aliases for frontend compatibility
+    totalPrice: subtotal,
+    totalItems: itemCount,
   };
 };
 

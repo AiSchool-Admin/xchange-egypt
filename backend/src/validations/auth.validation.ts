@@ -45,7 +45,10 @@ export const registerBusinessSchema = z.object({
     email: z.string().email('Invalid email address'),
     password: passwordSchema,
     fullName: z.string().min(3, 'Full name must be at least 3 characters'),
-    phone: z.string().regex(egyptianPhoneRegex, 'Invalid Egyptian phone number'),
+    phone: z
+      .string()
+      .regex(egyptianPhoneRegex, 'Invalid Egyptian phone number')
+      .optional(),
     businessName: z.string().min(3, 'Business name must be at least 3 characters'),
     taxId: z.string().optional(),
     commercialRegNo: z.string().optional(),

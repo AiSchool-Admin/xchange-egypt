@@ -136,111 +136,195 @@ export const deleteShippingAddress = async (userId: string, addressId: string) =
 
 /**
  * Create order from cart
+ * Accepts either shippingAddressId OR shippingAddress object
+ * Uses transaction with row-level locking to prevent race conditions
  */
 export const createOrder = async (
   userId: string,
   data: {
-    shippingAddressId: string;
+    shippingAddressId?: string;
+    shippingAddress?: {
+      fullName: string;
+      phone: string;
+      street: string;
+      building?: string;
+      floor?: string;
+      apartment?: string;
+      landmark?: string;
+      city: string;
+      governorate: string;
+    };
     paymentMethod: string;
     notes?: string;
   }
 ) => {
-  // Get cart
+  // Get cart first (outside transaction for validation)
   const cart = await getCart(userId);
 
   if (cart.items.length === 0) {
     throw new BadRequestError('Cart is empty');
   }
 
-  // Verify shipping address
-  const shippingAddress = await prisma.shippingAddress.findFirst({
-    where: { id: data.shippingAddressId, userId },
-  });
+  // Extract listing IDs for locking
+  const listingIds = cart.items.map(item => item.listingId);
 
-  if (!shippingAddress) {
-    throw new NotFoundError('Shipping address not found');
-  }
+  // Use transaction with serializable isolation to prevent race conditions
+  const order = await prisma.$transaction(async (tx) => {
+    // Lock and verify listings are still available using SELECT FOR UPDATE
+    // This prevents other transactions from modifying these listings until we're done
+    const listings = await tx.$queryRaw<Array<{ id: string; status: string; title: string }>>`
+      SELECT l.id, l.status, i.title
+      FROM "Listing" l
+      JOIN "Item" i ON l."itemId" = i.id
+      WHERE l.id = ANY(${listingIds}::uuid[])
+      FOR UPDATE NOWAIT
+    `.catch((error: Error) => {
+      // NOWAIT will throw if rows are locked by another transaction
+      if (error.message.includes('could not obtain lock')) {
+        throw new BadRequestError('Some items are being purchased by another user. Please try again.');
+      }
+      throw error;
+    });
 
-  // Verify all listings are still available
-  for (const item of cart.items) {
-    if (item.listing.status !== 'ACTIVE') {
-      throw new BadRequestError(`Item "${item.listing.item.title}" is no longer available`);
+    // Verify all listings are still available
+    for (const listing of listings) {
+      if (listing.status !== 'ACTIVE') {
+        throw new BadRequestError(`Item "${listing.title}" is no longer available`);
+      }
     }
-  }
 
-  // Calculate totals
-  const subtotal = cart.subtotal;
-  const shippingCost = calculateShippingCost(shippingAddress.governorate);
-  const total = subtotal + shippingCost;
+    // Handle shipping address
+    let shippingAddress;
+    let shippingAddressId = data.shippingAddressId;
 
-  // Create order
-  const order = await prisma.order.create({
-    data: {
-      userId,
-      orderNumber: generateOrderNumber(),
-      status: OrderStatus.PENDING,
-      subtotal,
-      shippingCost,
-      total,
-      shippingAddressId: data.shippingAddressId,
-      paymentMethod: data.paymentMethod,
-      notes: data.notes,
-      items: {
-        create: cart.items.map(item => ({
-          listingId: item.listingId,
-          sellerId: item.listing.userId,
-          quantity: item.quantity,
-          price: item.listing.price || 0,
-        })),
+    if (data.shippingAddress && !data.shippingAddressId) {
+      const addressData = data.shippingAddress;
+      const newAddress = await tx.shippingAddress.create({
+        data: {
+          userId,
+          fullName: addressData.fullName,
+          phone: addressData.phone,
+          address: [
+            addressData.street,
+            addressData.building ? `مبنى ${addressData.building}` : '',
+            addressData.floor ? `الدور ${addressData.floor}` : '',
+            addressData.apartment ? `شقة ${addressData.apartment}` : '',
+            addressData.landmark || '',
+          ].filter(Boolean).join('، '),
+          city: addressData.city,
+          governorate: addressData.governorate,
+          isDefault: false,
+        },
+      });
+      shippingAddress = newAddress;
+      shippingAddressId = newAddress.id;
+    } else if (data.shippingAddressId) {
+      shippingAddress = await tx.shippingAddress.findFirst({
+        where: { id: data.shippingAddressId, userId },
+      });
+
+      if (!shippingAddress) {
+        throw new NotFoundError('Shipping address not found');
+      }
+    } else {
+      throw new BadRequestError('Either shippingAddressId or shippingAddress is required');
+    }
+
+    // Calculate totals
+    const subtotal = cart.subtotal;
+    const shippingCost = calculateShippingCost(shippingAddress.governorate);
+    const total = subtotal + shippingCost;
+
+    // Create order
+    const newOrder = await tx.order.create({
+      data: {
+        userId,
+        orderNumber: generateOrderNumber(),
+        status: OrderStatus.PENDING,
+        subtotal,
+        shippingCost,
+        total,
+        shippingAddressId: shippingAddressId!,
+        paymentMethod: data.paymentMethod,
+        notes: data.notes,
+        items: {
+          create: cart.items.map(item => ({
+            listingId: item.listingId,
+            sellerId: item.listing.userId,
+            quantity: item.quantity,
+            price: item.listing.price || 0,
+          })),
+        },
       },
-    },
-    include: {
-      items: {
-        include: {
-          listing: {
-            include: {
-              item: true,
+      include: {
+        items: {
+          include: {
+            listing: {
+              include: {
+                item: true,
+              },
             },
           },
         },
+        shippingAddress: true,
       },
-      shippingAddress: true,
-    },
+    });
+
+    // Mark all listings as SOLD to prevent double-selling
+    await tx.listing.updateMany({
+      where: { id: { in: listingIds } },
+      data: { status: 'SOLD' },
+    });
+
+    // Clear cart items within transaction
+    await tx.cartItem.deleteMany({
+      where: { cart: { userId } },
+    });
+
+    return newOrder;
+  }, {
+    // Use serializable isolation for strongest consistency
+    isolationLevel: 'Serializable',
+    // Set timeout to prevent long-running locks
+    timeout: 10000,
   });
 
-  // Clear cart
-  await clearCart(userId);
-
-  // Send notification to buyer confirming order
-  await createNotification({
-    userId: userId,
-    type: 'TRANSACTION_PAYMENT_RECEIVED',
-    title: 'تم إنشاء طلبك بنجاح',
-    message: `تم إنشاء طلبك رقم ${order.orderNumber} وهو قيد المعالجة`,
-    priority: 'HIGH',
-    entityType: 'ORDER',
-    entityId: order.id,
-    actionUrl: `/dashboard/orders/${order.id}`,
-    actionText: 'عرض الطلب',
-  });
-
-  // Send notifications to all sellers
-  const sellerIds = [...new Set(order.items.map(item => item.sellerId))];
-  for (const sellerId of sellerIds) {
-    const sellerItems = order.items.filter(item => item.sellerId === sellerId);
-    const itemTitles = sellerItems.map(item => item.listing.item.title).join('، ');
-
+  // Send notifications outside transaction (non-critical)
+  try {
+    // Send notification to buyer confirming order
     await createNotification({
-      userId: sellerId,
-      type: 'ITEM_SOLD',
-      title: 'تم بيع سلعتك! 🎉',
-      message: `تم بيع: ${itemTitles}`,
+      userId: userId,
+      type: 'TRANSACTION_PAYMENT_RECEIVED',
+      title: 'تم إنشاء طلبك بنجاح',
+      message: `تم إنشاء طلبك رقم ${order.orderNumber} وهو قيد المعالجة`,
       priority: 'HIGH',
       entityType: 'ORDER',
       entityId: order.id,
-      actionUrl: `/dashboard/orders`,
-      actionText: 'عرض الطلبات',
+      actionUrl: `/dashboard/orders/${order.id}`,
+      actionText: 'عرض الطلب',
     });
+
+    // Send notifications to all sellers
+    const sellerIds = [...new Set(order.items.map(item => item.sellerId))];
+    for (const sellerId of sellerIds) {
+      const sellerItems = order.items.filter(item => item.sellerId === sellerId);
+      const itemTitles = sellerItems.map(item => item.listing.item.title).join('، ');
+
+      await createNotification({
+        userId: sellerId,
+        type: 'ITEM_SOLD',
+        title: 'تم بيع سلعتك! 🎉',
+        message: `تم بيع: ${itemTitles}`,
+        priority: 'HIGH',
+        entityType: 'ORDER',
+        entityId: order.id,
+        actionUrl: `/dashboard/orders`,
+        actionText: 'عرض الطلبات',
+      });
+    }
+  } catch (notificationError) {
+    // Log but don't fail the order if notifications fail
+    console.error('Failed to send order notifications:', notificationError);
   }
 
   return order;

@@ -44,14 +44,16 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
 /**
  * Create order from cart
  * POST /api/v1/orders
+ * Accepts either shippingAddressId OR shippingAddress object
  */
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const { shippingAddressId, paymentMethod, notes } = req.body;
+    const { shippingAddressId, shippingAddress, paymentMethod, notes } = req.body;
 
     const order = await orderService.createOrder(userId, {
       shippingAddressId,
+      shippingAddress,
       paymentMethod,
       notes,
     });
