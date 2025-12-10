@@ -200,7 +200,7 @@ export default function RegisterPage() {
     return undefined;
   };
 
-  // Real-time validation on change
+  // Handle change without validation (validation only on blur)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -210,10 +210,9 @@ export default function RegisterPage() {
       setFormData(prev => ({ ...prev, city: '' }));
     }
 
-    // Validate if field was touched
-    if (touched[name]) {
-      const error = validateField(name, value);
-      setErrors(prev => ({ ...prev, [name]: error }));
+    // Clear error when user starts typing (don't validate yet)
+    if (errors[name as keyof FieldErrors]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }));
     }
   };
 
@@ -287,6 +286,27 @@ export default function RegisterPage() {
     }
   };
 
+  // Password strength indicator
+  const getPasswordStrength = (password: string) => {
+    if (!password) return { level: 0, text: '' };
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+    const levels = [
+      { level: 0, text: '', color: '' },
+      { level: 1, text: lang === 'ar' ? 'ضعيفة جداً' : 'Very Weak', color: 'bg-red-500' },
+      { level: 2, text: lang === 'ar' ? 'ضعيفة' : 'Weak', color: 'bg-orange-500' },
+      { level: 3, text: lang === 'ar' ? 'متوسطة' : 'Medium', color: 'bg-yellow-500' },
+      { level: 4, text: lang === 'ar' ? 'قوية' : 'Strong', color: 'bg-green-500' },
+      { level: 5, text: lang === 'ar' ? 'قوية جداً' : 'Very Strong', color: 'bg-green-600' },
+    ];
+    return levels[strength];
+  };
+
   // Input field component with inline error
   const InputField = ({
     name,
@@ -295,6 +315,7 @@ export default function RegisterPage() {
     required = false,
     placeholder,
     dir,
+    hint,
   }: {
     name: keyof typeof formData;
     label: string;
@@ -302,32 +323,58 @@ export default function RegisterPage() {
     required?: boolean;
     placeholder?: string;
     dir?: string;
-  }) => (
-    <div>
-      <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
-        {label} {required ? <span className="text-red-500">{t.required}</span> : <span className="text-gray-400">{t.optional}</span>}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        value={formData[name]}
-        onChange={handleChange}
-        onBlur={handleBlur}
-        required={required}
-        dir={dir}
-        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors ${
-          errors[name as keyof FieldErrors] && touched[name] ? 'border-red-500 bg-red-50' : 'border-gray-300'
-        }`}
-        placeholder={placeholder}
-      />
-      {errors[name as keyof FieldErrors] && touched[name] && (
-        <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-          <span>⚠</span> {errors[name as keyof FieldErrors]}
-        </p>
-      )}
-    </div>
-  );
+    hint?: string;
+  }) => {
+    const hasError = errors[name as keyof FieldErrors] && touched[name];
+    const showPasswordStrength = name === 'password' && formData.password.length > 0;
+    const passwordStrength = showPasswordStrength ? getPasswordStrength(formData.password) : null;
+
+    return (
+      <div>
+        <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+          {label} {required ? <span className="text-red-500">{t.required}</span> : <span className="text-gray-400">{t.optional}</span>}
+        </label>
+        <input
+          id={name}
+          name={name}
+          type={type}
+          value={formData[name]}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          required={required}
+          dir={dir}
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors ${
+            hasError ? 'border-red-500 bg-red-50' : 'border-gray-300'
+          }`}
+          placeholder={placeholder}
+        />
+        {/* Password strength indicator */}
+        {showPasswordStrength && passwordStrength && (
+          <div className="mt-1">
+            <div className="flex gap-1 mb-1">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className={`h-1 flex-1 rounded ${i <= passwordStrength.level ? passwordStrength.color : 'bg-gray-200'}`}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-gray-500">{passwordStrength.text}</p>
+          </div>
+        )}
+        {/* Hint text */}
+        {hint && !hasError && (
+          <p className="mt-1 text-xs text-gray-500">{hint}</p>
+        )}
+        {/* Error message */}
+        {hasError && (
+          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+            <span>⚠</span> {errors[name as keyof FieldErrors]}
+          </p>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
@@ -389,7 +436,14 @@ export default function RegisterPage() {
 
             <InputField name="fullName" label={t.fullName} required placeholder={isRTL ? 'محمد أحمد' : 'John Doe'} />
             <InputField name="email" label={t.email} type="email" required placeholder="example@email.com" dir="ltr" />
-            <InputField name="phone" label={t.phone} type="tel" placeholder="01012345678" dir="ltr" />
+            <InputField
+              name="phone"
+              label={t.phone}
+              type="tel"
+              placeholder="01012345678"
+              dir="ltr"
+              hint={isRTL ? 'رقم مصري: 01012345678' : 'Egyptian number: 01012345678'}
+            />
 
             {/* Business-specific fields */}
             {userType === 'BUSINESS' && (
@@ -440,7 +494,14 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <InputField name="password" label={t.password} type="password" required placeholder="••••••••" />
+            <InputField
+              name="password"
+              label={t.password}
+              type="password"
+              required
+              placeholder="••••••••"
+              hint={isRTL ? '8 أحرف على الأقل، حرف كبير، حرف صغير، ورقم' : 'Min 8 chars, uppercase, lowercase, and number'}
+            />
             <InputField name="confirmPassword" label={t.confirmPassword} type="password" required placeholder="••••••••" />
 
             <button
