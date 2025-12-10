@@ -340,6 +340,9 @@ function AddInventoryContent() {
   const [level3Categories, setLevel3Categories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
 
+  // Ref to track when setting from AI suggestion (to prevent useEffect resets)
+  const isSettingFromAISuggestion = React.useRef(false);
+
   // Desired category state for barter
   const [desiredLevel2Categories, setDesiredLevel2Categories] = useState<Category[]>([]);
   const [desiredLevel3Categories, setDesiredLevel3Categories] = useState<Category[]>([]);
@@ -426,13 +429,17 @@ function AddInventoryContent() {
       } else {
         setLevel2Categories([]);
       }
-      setLevel3Categories([]);
-      setFormData(prev => ({
-        ...prev,
-        categoryLevel2: '',
-        categoryLevel3: '',
-        selectedCategoryId: formData.categoryLevel1,
-      }));
+
+      // Only reset child values if NOT setting from AI suggestion
+      if (!isSettingFromAISuggestion.current) {
+        setLevel3Categories([]);
+        setFormData(prev => ({
+          ...prev,
+          categoryLevel2: '',
+          categoryLevel3: '',
+          selectedCategoryId: formData.categoryLevel1,
+        }));
+      }
     } else {
       setLevel2Categories([]);
       setLevel3Categories([]);
@@ -448,11 +455,15 @@ function AddInventoryContent() {
       } else {
         setLevel3Categories([]);
       }
-      setFormData(prev => ({
-        ...prev,
-        categoryLevel3: '',
-        selectedCategoryId: formData.categoryLevel2,
-      }));
+
+      // Only reset child values if NOT setting from AI suggestion
+      if (!isSettingFromAISuggestion.current) {
+        setFormData(prev => ({
+          ...prev,
+          categoryLevel3: '',
+          selectedCategoryId: formData.categoryLevel2,
+        }));
+      }
     } else {
       setLevel3Categories([]);
     }
@@ -628,28 +639,58 @@ function AddInventoryContent() {
 
   const handleCategorySuggestionSelect = (categoryId: string) => {
     // Find the category in the tree and set all levels
-    const findCategoryPath = (categories: Category[], targetId: string, path: string[] = []): string[] | null => {
+    const findCategoryPath = (categories: Category[], targetId: string, path: Category[][] = []): Category[][] | null => {
       for (const cat of categories) {
         if (cat.id === targetId) {
-          return [...path, cat.id];
+          return [...path, [cat]];
         }
         if (cat.children) {
-          const found = findCategoryPath(cat.children, targetId, [...path, cat.id]);
+          const found = findCategoryPath(cat.children, targetId, [...path, [cat]]);
           if (found) return found;
         }
       }
       return null;
     };
 
-    const categoryPath = findCategoryPath(rootCategories, categoryId);
-    if (categoryPath) {
+    const categoryPathWithObjects = findCategoryPath(rootCategories, categoryId);
+    if (categoryPathWithObjects && categoryPathWithObjects.length > 0) {
+      // Set flag to prevent useEffects from resetting values
+      isSettingFromAISuggestion.current = true;
+
+      // Extract IDs from the path
+      const level1Id = categoryPathWithObjects[0]?.[0]?.id || '';
+      const level2Id = categoryPathWithObjects[1]?.[0]?.id || '';
+      const level3Id = categoryPathWithObjects[2]?.[0]?.id || '';
+
+      // Also populate the level2 and level3 category arrays directly
+      const level1Category = rootCategories.find(c => c.id === level1Id);
+      if (level1Category?.children) {
+        setLevel2Categories(level1Category.children);
+
+        // If there's a level 2 selected, populate level 3 as well
+        if (level2Id) {
+          const level2Category = level1Category.children.find(c => c.id === level2Id);
+          if (level2Category?.children) {
+            setLevel3Categories(level2Category.children);
+          } else {
+            setLevel3Categories([]);
+          }
+        }
+      }
+
+      // Set all form data at once
       setFormData(prev => ({
         ...prev,
-        categoryLevel1: categoryPath[0] || '',
-        categoryLevel2: categoryPath[1] || '',
-        categoryLevel3: categoryPath[2] || '',
+        categoryLevel1: level1Id,
+        categoryLevel2: level2Id,
+        categoryLevel3: level3Id,
         selectedCategoryId: categoryId,
       }));
+
+      // Reset the flag after a short delay to allow for normal dropdown behavior later
+      setTimeout(() => {
+        isSettingFromAISuggestion.current = false;
+      }, 100);
     } else {
       // If not found in tree, just set it directly
       setFormData(prev => ({
