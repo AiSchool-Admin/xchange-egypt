@@ -172,11 +172,12 @@ export const createOrder = async (
   const order = await prisma.$transaction(async (tx) => {
     // Lock and verify listings are still available using SELECT FOR UPDATE
     // This prevents other transactions from modifying these listings until we're done
+    // Cast l.id to text for comparison since Prisma passes array as text
     const listings = await tx.$queryRaw<Array<{ id: string; status: string; title: string }>>`
       SELECT l.id, l.status, i.title
       FROM "listings" l
       JOIN "items" i ON l."item_id" = i.id
-      WHERE l.id = ANY(${listingIds}::uuid[])
+      WHERE l.id::text = ANY(${listingIds})
       FOR UPDATE NOWAIT
     `.catch((error: Error) => {
       // NOWAIT will throw if rows are locked by another transaction
