@@ -26,42 +26,68 @@ const COUNTRIES = [
   { code: 'YE', name: { ar: 'اليمن', en: 'Yemen' }, phoneCode: '+967', flag: '🇾🇪', phoneFormat: '9 digits' },
 ];
 
-// Egyptian governorates list
+// Egyptian governorates with both Arabic and English names
 const EGYPTIAN_GOVERNORATES = [
-  'القاهرة',
-  'الجيزة',
-  'الإسكندرية',
-  'الدقهلية',
-  'البحر الأحمر',
-  'البحيرة',
-  'الفيوم',
-  'الغربية',
-  'الإسماعيلية',
-  'المنوفية',
-  'المنيا',
-  'القليوبية',
-  'الوادي الجديد',
-  'السويس',
-  'أسوان',
-  'أسيوط',
-  'بني سويف',
-  'بورسعيد',
-  'دمياط',
-  'الشرقية',
-  'جنوب سيناء',
-  'كفر الشيخ',
-  'مطروح',
-  'الأقصر',
-  'قنا',
-  'شمال سيناء',
-  'سوهاج',
+  { ar: 'القاهرة', en: 'Cairo' },
+  { ar: 'الجيزة', en: 'Giza' },
+  { ar: 'الإسكندرية', en: 'Alexandria' },
+  { ar: 'الدقهلية', en: 'Dakahlia' },
+  { ar: 'البحر الأحمر', en: 'Red Sea' },
+  { ar: 'البحيرة', en: 'Beheira' },
+  { ar: 'الفيوم', en: 'Fayoum' },
+  { ar: 'الغربية', en: 'Gharbiya' },
+  { ar: 'الإسماعيلية', en: 'Ismailia' },
+  { ar: 'المنوفية', en: 'Menofia' },
+  { ar: 'المنيا', en: 'Minya' },
+  { ar: 'القليوبية', en: 'Qaliubiya' },
+  { ar: 'الوادي الجديد', en: 'New Valley' },
+  { ar: 'السويس', en: 'Suez' },
+  { ar: 'أسوان', en: 'Aswan' },
+  { ar: 'أسيوط', en: 'Assiut' },
+  { ar: 'بني سويف', en: 'Beni Suef' },
+  { ar: 'بورسعيد', en: 'Port Said' },
+  { ar: 'دمياط', en: 'Damietta' },
+  { ar: 'الشرقية', en: 'Sharkia' },
+  { ar: 'جنوب سيناء', en: 'South Sinai' },
+  { ar: 'كفر الشيخ', en: 'Kafr El Sheikh' },
+  { ar: 'مطروح', en: 'Matrouh' },
+  { ar: 'الأقصر', en: 'Luxor' },
+  { ar: 'قنا', en: 'Qena' },
+  { ar: 'شمال سيناء', en: 'North Sinai' },
+  { ar: 'سوهاج', en: 'Sohag' },
 ];
 
 // Cities by governorate
-const CITIES_BY_GOVERNORATE: Record<string, string[]> = {
-  'القاهرة': ['مدينة نصر', 'المعادي', 'الزمالك', 'مصر الجديدة', 'التجمع الخامس', 'المقطم', 'شبرا', 'حلوان', 'عين شمس', '6 أكتوبر'],
-  'الجيزة': ['الدقي', 'المهندسين', 'الهرم', 'فيصل', 'العجوزة', 'الشيخ زايد', 'أكتوبر', 'البدرشين', 'العياط'],
-  'الإسكندرية': ['المنتزه', 'سيدي جابر', 'محرم بك', 'سموحة', 'العصافرة', 'المندرة', 'العجمي', 'برج العرب'],
+const CITIES_BY_GOVERNORATE: Record<string, { ar: string; en: string }[]> = {
+  'القاهرة': [
+    { ar: 'مدينة نصر', en: 'Nasr City' },
+    { ar: 'المعادي', en: 'Maadi' },
+    { ar: 'الزمالك', en: 'Zamalek' },
+    { ar: 'مصر الجديدة', en: 'Heliopolis' },
+    { ar: 'التجمع الخامس', en: 'Fifth Settlement' },
+    { ar: 'المقطم', en: 'Mokattam' },
+    { ar: 'شبرا', en: 'Shubra' },
+    { ar: 'حلوان', en: 'Helwan' },
+    { ar: 'عين شمس', en: 'Ain Shams' },
+  ],
+  'الجيزة': [
+    { ar: 'الدقي', en: 'Dokki' },
+    { ar: 'المهندسين', en: 'Mohandessin' },
+    { ar: 'الهرم', en: 'Haram' },
+    { ar: 'فيصل', en: 'Faisal' },
+    { ar: 'العجوزة', en: 'Agouza' },
+    { ar: 'الشيخ زايد', en: 'Sheikh Zayed' },
+    { ar: '6 أكتوبر', en: '6th of October' },
+  ],
+  'الإسكندرية': [
+    { ar: 'المنتزه', en: 'Montazah' },
+    { ar: 'سيدي جابر', en: 'Sidi Gaber' },
+    { ar: 'محرم بك', en: 'Moharam Bek' },
+    { ar: 'سموحة', en: 'Smouha' },
+    { ar: 'العصافرة', en: 'Asafra' },
+    { ar: 'المندرة', en: 'Mandara' },
+    { ar: 'العجمي', en: 'Agami' },
+  ],
 };
 
 // Translations
@@ -82,6 +108,8 @@ const translations = {
     commercialRegNo: 'رقم السجل التجاري',
     governorate: 'المحافظة',
     city: 'المدينة',
+    district: 'الحي',
+    street: 'الشارع',
     selectGovernorate: 'اختر المحافظة',
     selectCity: 'اختر المدينة',
     phoneHint: 'أدخل الرقم بدون رمز الدولة',
@@ -99,6 +127,18 @@ const translations = {
     businessNameHint: 'الاسم التجاري المسجل',
     taxIdHint: 'الرقم الضريبي المكون من 9 أرقام',
     commercialRegHint: 'رقم السجل التجاري',
+    districtHint: 'مثال: حي المعادي، المقطم',
+    streetHint: 'مثال: شارع 9، عمارة 5',
+    // GPS
+    detectLocation: 'تحديد موقعي تلقائياً',
+    detectingLocation: 'جاري تحديد الموقع...',
+    locationDetected: 'تم تحديد الموقع بنجاح',
+    locationError: 'تعذر تحديد الموقع. يرجى إدخال العنوان يدوياً',
+    locationPermissionDenied: 'تم رفض إذن الموقع. يرجى السماح بالوصول للموقع',
+    locationUnavailable: 'خدمة الموقع غير متاحة',
+    locationTimeout: 'انتهت مهلة تحديد الموقع',
+    locationSection: 'معلومات الموقع والشحن',
+    locationSectionHint: 'يُستخدم كعنوان شحن ولمطابقة المستخدمين القريبين',
     passwordStrength: {
       veryWeak: 'ضعيفة جداً',
       weak: 'ضعيفة',
@@ -136,6 +176,8 @@ const translations = {
     commercialRegNo: 'Commercial Reg. No.',
     governorate: 'Governorate',
     city: 'City',
+    district: 'District',
+    street: 'Street',
     selectGovernorate: 'Select Governorate',
     selectCity: 'Select City',
     phoneHint: 'Enter number without country code',
@@ -153,6 +195,18 @@ const translations = {
     businessNameHint: 'Registered business name',
     taxIdHint: '9-digit tax number',
     commercialRegHint: 'Commercial registration number',
+    districtHint: 'e.g., Maadi District, Mokattam',
+    streetHint: 'e.g., Street 9, Building 5',
+    // GPS
+    detectLocation: 'Detect My Location',
+    detectingLocation: 'Detecting location...',
+    locationDetected: 'Location detected successfully',
+    locationError: 'Could not detect location. Please enter address manually',
+    locationPermissionDenied: 'Location permission denied. Please allow location access',
+    locationUnavailable: 'Location service unavailable',
+    locationTimeout: 'Location detection timed out',
+    locationSection: 'Location & Shipping Info',
+    locationSectionHint: 'Used as shipping address and to match nearby users',
     passwordStrength: {
       veryWeak: 'Very Weak',
       weak: 'Weak',
@@ -202,6 +256,10 @@ export default function RegisterPage() {
     phone: '',
     city: '',
     governorate: '',
+    district: '',
+    street: '',
+    latitude: 0,
+    longitude: 0,
     businessName: '',
     taxId: '',
     commercialRegNo: '',
@@ -212,9 +270,129 @@ export default function RegisterPage() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [globalError, setGlobalError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [gpsMessage, setGpsMessage] = useState('');
   const { registerIndividual, registerBusiness } = useAuth();
 
-  const availableCities = formData.governorate ? (CITIES_BY_GOVERNORATE[formData.governorate] || []) : [];
+  // Get available cities based on selected governorate
+  const availableCities = useMemo(() => {
+    if (!formData.governorate) return [];
+    const govAr = EGYPTIAN_GOVERNORATES.find(g => g.ar === formData.governorate || g.en === formData.governorate);
+    if (govAr) {
+      return CITIES_BY_GOVERNORATE[govAr.ar] || [];
+    }
+    return [];
+  }, [formData.governorate]);
+
+  // GPS Location Detection
+  const detectLocation = useCallback(async () => {
+    if (!navigator.geolocation) {
+      setGpsStatus('error');
+      setGpsMessage(t.locationUnavailable);
+      return;
+    }
+
+    setGpsLoading(true);
+    setGpsStatus('idle');
+    setGpsMessage('');
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        try {
+          // Use OpenStreetMap Nominatim for reverse geocoding (free, no API key needed)
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=${lang}&addressdetails=1`
+          );
+
+          if (!response.ok) throw new Error('Geocoding failed');
+
+          const data = await response.json();
+          const address = data.address;
+
+          // Extract address components
+          let governorate = '';
+          let city = '';
+          let district = '';
+          let street = '';
+
+          // Map OSM response to Egyptian governorates
+          const stateOrCounty = address.state || address.county || address.governorate || '';
+
+          // Find matching governorate
+          const matchedGov = EGYPTIAN_GOVERNORATES.find(g =>
+            stateOrCounty.includes(g.ar) ||
+            stateOrCounty.includes(g.en) ||
+            g.ar.includes(stateOrCounty) ||
+            g.en.toLowerCase().includes(stateOrCounty.toLowerCase())
+          );
+
+          if (matchedGov) {
+            governorate = isRTL ? matchedGov.ar : matchedGov.en;
+          }
+
+          // Get city/town
+          city = address.city || address.town || address.village || address.suburb || '';
+
+          // Get district
+          district = address.suburb || address.neighbourhood || address.district || '';
+
+          // Get street
+          street = address.road || address.street || '';
+
+          setFormData(prev => ({
+            ...prev,
+            governorate,
+            city,
+            district,
+            street,
+            latitude,
+            longitude,
+          }));
+
+          setGpsStatus('success');
+          setGpsMessage(t.locationDetected);
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+          // Still save coordinates even if geocoding fails
+          setFormData(prev => ({
+            ...prev,
+            latitude,
+            longitude,
+          }));
+          setGpsStatus('error');
+          setGpsMessage(t.locationError);
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      (error) => {
+        setGpsLoading(false);
+        setGpsStatus('error');
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setGpsMessage(t.locationPermissionDenied);
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setGpsMessage(t.locationUnavailable);
+            break;
+          case error.TIMEOUT:
+            setGpsMessage(t.locationTimeout);
+            break;
+          default:
+            setGpsMessage(t.locationError);
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  }, [lang, t, isRTL]);
 
   // Memoized validation function
   const validateField = useCallback((name: string, value: string): string | undefined => {
@@ -297,7 +475,7 @@ export default function RegisterPage() {
     if (userType === 'BUSINESS') fieldsToValidate.push('businessName');
 
     fieldsToValidate.forEach(field => {
-      const error = validateField(field, formData[field as keyof typeof formData]);
+      const error = validateField(field, formData[field as keyof typeof formData] as string);
       if (error) newErrors[field as keyof FieldErrors] = error;
     });
 
@@ -318,6 +496,10 @@ export default function RegisterPage() {
           phone: formData.phone || undefined,
           city: formData.city || undefined,
           governorate: formData.governorate || undefined,
+          district: formData.district || undefined,
+          street: formData.street || undefined,
+          latitude: formData.latitude || undefined,
+          longitude: formData.longitude || undefined,
         });
       } else {
         await registerBusiness({
@@ -330,6 +512,10 @@ export default function RegisterPage() {
           commercialRegNo: formData.commercialRegNo || undefined,
           city: formData.city || undefined,
           governorate: formData.governorate || undefined,
+          district: formData.district || undefined,
+          street: formData.street || undefined,
+          latitude: formData.latitude || undefined,
+          longitude: formData.longitude || undefined,
         });
       }
     } catch (err: any) {
@@ -605,43 +791,127 @@ export default function RegisterPage() {
               </>
             )}
 
-            {/* Governorate and City */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className={isRTL ? 'order-2' : 'order-1'}>
-                <label htmlFor="governorate" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.governorate} <span className="text-gray-400">{t.optional}</span>
-                </label>
-                <select
-                  id="governorate"
-                  name="governorate"
-                  value={formData.governorate}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-white"
-                >
-                  <option value="">{t.selectGovernorate}</option>
-                  {EGYPTIAN_GOVERNORATES.map(gov => (
-                    <option key={gov} value={gov}>{gov}</option>
-                  ))}
-                </select>
+            {/* Location Section */}
+            <div className="border-t border-gray-200 pt-5">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700">📍 {t.locationSection}</h3>
+                  <p className="text-xs text-gray-500">{t.locationSectionHint}</p>
+                </div>
               </div>
 
-              <div className={isRTL ? 'order-1' : 'order-2'}>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.city} <span className="text-gray-400">{t.optional}</span>
-                </label>
-                <select
-                  id="city"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  disabled={!formData.governorate || availableCities.length === 0}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">{t.selectCity}</option>
-                  {availableCities.map(city => (
-                    <option key={city} value={city}>{city}</option>
-                  ))}
-                </select>
+              {/* GPS Detection Button */}
+              <button
+                type="button"
+                onClick={detectLocation}
+                disabled={gpsLoading}
+                className={`w-full mb-4 px-4 py-3 rounded-lg border-2 border-dashed transition-colors flex items-center justify-center gap-2 ${
+                  gpsLoading
+                    ? 'border-gray-300 bg-gray-50 cursor-wait'
+                    : gpsStatus === 'success'
+                    ? 'border-green-500 bg-green-50 text-green-700'
+                    : gpsStatus === 'error'
+                    ? 'border-red-300 bg-red-50 text-red-700 hover:border-red-400'
+                    : 'border-primary-300 bg-primary-50 text-primary-700 hover:border-primary-400'
+                }`}
+              >
+                {gpsLoading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    {t.detectingLocation}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xl">📍</span>
+                    {gpsStatus === 'success' ? t.locationDetected : t.detectLocation}
+                  </>
+                )}
+              </button>
+
+              {gpsMessage && gpsStatus === 'error' && (
+                <p className="text-sm text-red-600 mb-3 text-center">{gpsMessage}</p>
+              )}
+
+              {/* Governorate and City */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label htmlFor="governorate" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.governorate}
+                  </label>
+                  <select
+                    id="governorate"
+                    name="governorate"
+                    value={formData.governorate}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-white"
+                  >
+                    <option value="">{t.selectGovernorate}</option>
+                    {EGYPTIAN_GOVERNORATES.map(gov => (
+                      <option key={gov.ar} value={isRTL ? gov.ar : gov.en}>
+                        {isRTL ? gov.ar : gov.en}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.city}
+                  </label>
+                  <select
+                    id="city"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    disabled={!formData.governorate || availableCities.length === 0}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{t.selectCity}</option>
+                    {availableCities.map(city => (
+                      <option key={city.ar} value={isRTL ? city.ar : city.en}>
+                        {isRTL ? city.ar : city.en}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* District and Street */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.district}
+                  </label>
+                  <input
+                    id="district"
+                    name="district"
+                    type="text"
+                    value={formData.district}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                    placeholder={isRTL ? 'حي المعادي' : 'Maadi District'}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t.districtHint}</p>
+                </div>
+
+                <div>
+                  <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.street}
+                  </label>
+                  <input
+                    id="street"
+                    name="street"
+                    type="text"
+                    value={formData.street}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                    placeholder={isRTL ? 'شارع 9' : 'Street 9'}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t.streetHint}</p>
+                </div>
               </div>
             </div>
 

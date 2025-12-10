@@ -336,6 +336,15 @@ export default function NewItemPage() {
       return;
     }
     loadCategories();
+
+    // Auto-fill location from user profile
+    if (user.governorate || user.city || user.district) {
+      setFormData(prev => ({
+        ...prev,
+        governorate: user.governorate || '',
+        location: user.district || user.city || '',
+      }));
+    }
   }, [user, router]);
 
   const loadCategories = async () => {
