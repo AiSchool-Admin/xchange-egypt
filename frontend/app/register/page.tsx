@@ -321,8 +321,8 @@ export default function RegisterPage() {
   };
 
   // Password strength indicator
-  const getPasswordStrength = (password: string) => {
-    if (!password) return { level: 0, text: '' };
+  const getPasswordStrength = (password: string): { level: number; text: string; color: string } => {
+    if (!password) return { level: 0, text: '', color: 'bg-gray-200' };
     let strength = 0;
     if (password.length >= 8) strength++;
     if (/[A-Z]/.test(password)) strength++;
@@ -330,8 +330,8 @@ export default function RegisterPage() {
     if (/\d/.test(password)) strength++;
     if (/[^A-Za-z0-9]/.test(password)) strength++;
 
-    const levels = [
-      { level: 0, text: '', color: '' },
+    const levels: Array<{ level: number; text: string; color: string }> = [
+      { level: 0, text: '', color: 'bg-gray-200' },
       { level: 1, text: lang === 'ar' ? 'ضعيفة جداً' : 'Very Weak', color: 'bg-red-500' },
       { level: 2, text: lang === 'ar' ? 'ضعيفة' : 'Weak', color: 'bg-orange-500' },
       { level: 3, text: lang === 'ar' ? 'متوسطة' : 'Medium', color: 'bg-yellow-500' },
