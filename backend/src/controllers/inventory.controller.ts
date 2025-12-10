@@ -288,3 +288,149 @@ export const getProximityStats = async (
     next(error);
   }
 };
+
+// ============================================
+// Stock Management Endpoints
+// ============================================
+
+/**
+ * Adjust stock for an item
+ * POST /api/v1/inventory/:id/stock/adjust
+ */
+export const adjustStock = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const { type, quantityChange, reason, notes, unitCost } = req.body;
+
+    const result = await inventoryService.adjustStock(userId, {
+      itemId: id,
+      type,
+      quantityChange,
+      reason,
+      notes,
+      unitCost,
+    });
+
+    return successResponse(res, result, 'تم تعديل المخزون بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get stock adjustment history for an item
+ * GET /api/v1/inventory/:id/stock/adjustments
+ */
+export const getStockAdjustments = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const { page, limit } = req.query;
+
+    const result = await inventoryService.getStockAdjustments(userId, id, {
+      page: page ? parseInt(page as string) : 1,
+      limit: limit ? parseInt(limit as string) : 20,
+    });
+
+    return successResponse(res, result, 'تم استرجاع سجل التعديلات بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Bulk import items for merchants
+ * POST /api/v1/inventory/bulk-import
+ */
+export const bulkImport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { items } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'يجب توفير قائمة الأصناف للاستيراد',
+      });
+    }
+
+    if (items.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'الحد الأقصى للاستيراد 100 صنف في المرة الواحدة',
+      });
+    }
+
+    const result = await inventoryService.bulkImportItems(userId, items);
+
+    return successResponse(res, result, `تم استيراد ${result.success} صنف بنجاح`);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get items with low or negative stock
+ * GET /api/v1/inventory/low-stock
+ */
+export const getLowStock = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { includeNegative, page, limit } = req.query;
+
+    const result = await inventoryService.getLowStockItems(userId, {
+      includeNegative: includeNegative !== 'false',
+      page: page ? parseInt(page as string) : 1,
+      limit: limit ? parseInt(limit as string) : 20,
+    });
+
+    return successResponse(res, result, 'تم استرجاع المخزون المنخفض بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update stock settings for an item
+ * PATCH /api/v1/inventory/:id/stock/settings
+ */
+export const updateStockSettings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+    const { trackInventory, allowNegativeStock, lowStockThreshold, sku, barcode } = req.body;
+
+    const result = await inventoryService.updateStockSettings(userId, id, {
+      trackInventory,
+      allowNegativeStock,
+      lowStockThreshold,
+      sku,
+      barcode,
+    });
+
+    return successResponse(res, result, 'تم تحديث إعدادات المخزون بنجاح');
+  } catch (error) {
+    next(error);
+  }
+};

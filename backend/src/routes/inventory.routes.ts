@@ -78,6 +78,29 @@ router.get('/stats', inventoryController.getStats);
  */
 router.get('/proximity-matches', inventoryController.getProximityMatches);
 
+// ============================================
+// Stock Management Routes (for merchants)
+// Must be before /:id routes
+// ============================================
+
+/**
+ * @route GET /api/v1/inventory/low-stock
+ * @desc Get items with low or negative stock
+ * @query includeNegative - Include negative stock items (default: true)
+ * @query page - Page number (default: 1)
+ * @query limit - Items per page (default: 20)
+ * @access Private
+ */
+router.get('/low-stock', inventoryController.getLowStock);
+
+/**
+ * @route POST /api/v1/inventory/bulk-import
+ * @desc Bulk import items for merchants
+ * @body items - Array of items to import
+ * @access Private
+ */
+router.post('/bulk-import', inventoryController.bulkImport);
+
 /**
  * @route POST /api/v1/inventory
  * @desc Create new inventory item
@@ -114,5 +137,38 @@ router.get('/:id/matches', inventoryController.findMatches);
  * @access Private
  */
 router.get('/:id/proximity-matches', inventoryController.getItemProximityMatches);
+
+/**
+ * @route POST /api/v1/inventory/:id/stock/adjust
+ * @desc Adjust stock for an item (add/subtract)
+ * @body type - Adjustment type (MANUAL_ADD, MANUAL_SUBTRACT, CORRECTION, DAMAGE, RETURN, INITIAL)
+ * @body quantityChange - Quantity to add (positive) or subtract (negative)
+ * @body reason - Optional reason for adjustment
+ * @body notes - Optional notes
+ * @body unitCost - Optional unit cost
+ * @access Private
+ */
+router.post('/:id/stock/adjust', inventoryController.adjustStock);
+
+/**
+ * @route GET /api/v1/inventory/:id/stock/adjustments
+ * @desc Get stock adjustment history for an item
+ * @query page - Page number (default: 1)
+ * @query limit - Items per page (default: 20)
+ * @access Private
+ */
+router.get('/:id/stock/adjustments', inventoryController.getStockAdjustments);
+
+/**
+ * @route PATCH /api/v1/inventory/:id/stock/settings
+ * @desc Update stock settings for an item
+ * @body trackInventory - Enable/disable inventory tracking
+ * @body allowNegativeStock - Allow negative stock
+ * @body lowStockThreshold - Low stock threshold
+ * @body sku - Stock Keeping Unit
+ * @body barcode - Barcode/EAN
+ * @access Private
+ */
+router.patch('/:id/stock/settings', inventoryController.updateStockSettings);
 
 export default router;

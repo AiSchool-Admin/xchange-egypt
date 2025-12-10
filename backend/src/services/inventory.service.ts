@@ -776,6 +776,462 @@ export const getLatestPublicItems = async (options: {
   };
 };
 
+// ============================================
+// Stock Management Functions
+// ============================================
+
+export interface StockAdjustmentInput {
+  itemId: string;
+  type: 'MANUAL_ADD' | 'MANUAL_SUBTRACT' | 'CORRECTION' | 'DAMAGE' | 'RETURN' | 'INITIAL';
+  quantityChange: number;  // Positive for add, negative for subtract
+  reason?: string;
+  notes?: string;
+  unitCost?: number;
+}
+
+export interface BulkImportItem {
+  title: string;
+  description: string;
+  categoryId?: string;
+  condition?: ItemConditionValue;
+  estimatedValue: number;
+  stockQuantity: number;
+  sku?: string;
+  barcode?: string;
+  images?: string[];
+  lowStockThreshold?: number;
+  governorate?: string;
+  city?: string;
+  district?: string;
+}
+
+/**
+ * Adjust stock for an item
+ * Creates a stock adjustment record and updates the item's stock quantity
+ */
+export const adjustStock = async (
+  userId: string,
+  input: StockAdjustmentInput
+): Promise<any> => {
+  const item = await prisma.item.findFirst({
+    where: { id: input.itemId, sellerId: userId },
+  });
+
+  if (!item) {
+    throw new Error('Item not found or not owned by user');
+  }
+
+  const quantityBefore = item.stockQuantity;
+  const quantityAfter = quantityBefore + input.quantityChange;
+
+  // Check if negative stock is allowed
+  if (quantityAfter < 0 && !item.allowNegativeStock) {
+    throw new Error('الكمية المطلوبة غير متوفرة في المخزون');
+  }
+
+  // Create adjustment record and update stock in transaction
+  const [adjustment, updatedItem] = await prisma.$transaction([
+    prisma.stockAdjustment.create({
+      data: {
+        itemId: input.itemId,
+        userId: userId,
+        type: input.type,
+        quantityBefore,
+        quantityChange: input.quantityChange,
+        quantityAfter,
+        reason: input.reason,
+        notes: input.notes,
+        unitCost: input.unitCost,
+        totalCost: input.unitCost ? Math.abs(input.quantityChange) * input.unitCost : null,
+      },
+    }),
+    prisma.item.update({
+      where: { id: input.itemId },
+      data: { stockQuantity: quantityAfter },
+    }),
+  ]);
+
+  // Check if stock is below threshold and trigger notification
+  if (item.lowStockThreshold && quantityAfter <= item.lowStockThreshold && quantityBefore > item.lowStockThreshold) {
+    // Trigger low stock notification
+    await prisma.notification.create({
+      data: {
+        userId: userId,
+        type: 'LOW_STOCK',
+        title: 'تنبيه: المخزون منخفض',
+        message: `المخزون منخفض للمنتج: ${item.title}. الكمية الحالية: ${quantityAfter}`,
+        entityType: 'ITEM',
+        entityId: input.itemId,
+        priority: 'HIGH',
+      },
+    });
+  }
+
+  // Check if stock is negative and trigger notification
+  if (quantityAfter < 0 && quantityBefore >= 0) {
+    await prisma.notification.create({
+      data: {
+        userId: userId,
+        type: 'NEGATIVE_STOCK',
+        title: 'تحذير: مخزون سالب',
+        message: `تحذير: المخزون سالب للمنتج: ${item.title}. الكمية الحالية: ${quantityAfter}. يرجى تسوية المخزون.`,
+        entityType: 'ITEM',
+        entityId: input.itemId,
+        priority: 'URGENT',
+      },
+    });
+  }
+
+  return {
+    adjustment,
+    item: updatedItem,
+    isNegativeStock: quantityAfter < 0,
+    isLowStock: item.lowStockThreshold ? quantityAfter <= item.lowStockThreshold : false,
+  };
+};
+
+/**
+ * Get stock adjustment history for an item
+ */
+export const getStockAdjustments = async (
+  userId: string,
+  itemId: string,
+  options: { page?: number; limit?: number } = {}
+): Promise<{ adjustments: any[]; total: number }> => {
+  const { page = 1, limit = 20 } = options;
+  const skip = (page - 1) * limit;
+
+  // Verify ownership
+  const item = await prisma.item.findFirst({
+    where: { id: itemId, sellerId: userId },
+  });
+
+  if (!item) {
+    throw new Error('Item not found or not owned by user');
+  }
+
+  const [adjustments, total] = await Promise.all([
+    prisma.stockAdjustment.findMany({
+      where: { itemId },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.stockAdjustment.count({ where: { itemId } }),
+  ]);
+
+  return { adjustments, total };
+};
+
+/**
+ * Bulk import items for merchants
+ * Creates multiple items with stock quantities at once
+ */
+export const bulkImportItems = async (
+  userId: string,
+  items: BulkImportItem[]
+): Promise<{ success: number; failed: number; errors: string[]; items: any[] }> => {
+  const results = {
+    success: 0,
+    failed: 0,
+    errors: [] as string[],
+    items: [] as any[],
+  };
+
+  for (let i = 0; i < items.length; i++) {
+    const itemData = items[i];
+    try {
+      // Resolve category ID
+      const resolvedCategoryId = itemData.categoryId
+        ? await resolveCategoryId(itemData.categoryId)
+        : null;
+
+      // Create item
+      const item = await prisma.item.create({
+        data: {
+          seller: { connect: { id: userId } },
+          title: itemData.title,
+          description: itemData.description,
+          itemType: 'GOOD',
+          listingType: 'DIRECT_SALE',
+          estimatedValue: itemData.estimatedValue,
+          category: resolvedCategoryId ? { connect: { id: resolvedCategoryId } } : undefined,
+          condition: itemData.condition || 'GOOD',
+          images: itemData.images || [],
+          // Stock management
+          stockQuantity: itemData.stockQuantity || 0,
+          sku: itemData.sku,
+          barcode: itemData.barcode,
+          lowStockThreshold: itemData.lowStockThreshold,
+          trackInventory: true,
+          // Location
+          governorate: itemData.governorate,
+          city: itemData.city,
+          district: itemData.district,
+          status: 'ACTIVE',
+        },
+      });
+
+      // Create initial stock adjustment record
+      if (itemData.stockQuantity > 0) {
+        await prisma.stockAdjustment.create({
+          data: {
+            itemId: item.id,
+            userId: userId,
+            type: 'INITIAL',
+            quantityBefore: 0,
+            quantityChange: itemData.stockQuantity,
+            quantityAfter: itemData.stockQuantity,
+            reason: 'رصيد افتتاحي - استيراد مجمع',
+          },
+        });
+      }
+
+      results.success++;
+      results.items.push({
+        id: item.id,
+        title: item.title,
+        stockQuantity: item.stockQuantity,
+        sku: item.sku,
+      });
+    } catch (error: any) {
+      results.failed++;
+      results.errors.push(`صف ${i + 1}: ${error.message || 'خطأ غير معروف'}`);
+    }
+  }
+
+  return results;
+};
+
+/**
+ * Get items with low or negative stock
+ */
+export const getLowStockItems = async (
+  userId: string,
+  options: { includeNegative?: boolean; page?: number; limit?: number } = {}
+): Promise<{ items: any[]; total: number; negativeCount: number; lowCount: number }> => {
+  const { includeNegative = true, page = 1, limit = 20 } = options;
+  const skip = (page - 1) * limit;
+
+  const where: any = {
+    sellerId: userId,
+    status: 'ACTIVE',
+    trackInventory: true,
+    OR: [
+      // Low stock (quantity <= threshold)
+      {
+        lowStockThreshold: { not: null },
+        stockQuantity: { lte: prisma.item.fields.lowStockThreshold },
+      },
+    ],
+  };
+
+  if (includeNegative) {
+    where.OR.push({ stockQuantity: { lt: 0 } });
+  }
+
+  const [items, total, negativeCount, lowCount] = await Promise.all([
+    prisma.item.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { stockQuantity: 'asc' },
+      include: { category: true },
+    }),
+    prisma.item.count({ where }),
+    prisma.item.count({
+      where: { sellerId: userId, status: 'ACTIVE', trackInventory: true, stockQuantity: { lt: 0 } },
+    }),
+    prisma.item.count({
+      where: {
+        sellerId: userId,
+        status: 'ACTIVE',
+        trackInventory: true,
+        lowStockThreshold: { not: null },
+        stockQuantity: { gte: 0 },
+        // This requires raw query for proper comparison
+      },
+    }),
+  ]);
+
+  return {
+    items: items.map(item => ({
+      id: item.id,
+      title: item.title,
+      sku: item.sku,
+      stockQuantity: item.stockQuantity,
+      reservedQuantity: item.reservedQuantity,
+      availableQuantity: item.stockQuantity - item.reservedQuantity,
+      lowStockThreshold: item.lowStockThreshold,
+      isNegative: item.stockQuantity < 0,
+      isLow: item.lowStockThreshold ? item.stockQuantity <= item.lowStockThreshold : false,
+      category: item.category?.nameAr,
+    })),
+    total,
+    negativeCount,
+    lowCount,
+  };
+};
+
+/**
+ * Auto-deduct stock when order is placed
+ * Called by order service
+ */
+export const deductStockForOrder = async (
+  itemId: string,
+  quantity: number,
+  orderId: string
+): Promise<{ success: boolean; item: any; isNegative: boolean }> => {
+  const item = await prisma.item.findUnique({ where: { id: itemId } });
+
+  if (!item) {
+    throw new Error('Item not found');
+  }
+
+  if (!item.trackInventory) {
+    return { success: true, item, isNegative: false };
+  }
+
+  const quantityBefore = item.stockQuantity;
+  const quantityAfter = quantityBefore - quantity;
+
+  // Check if negative stock is allowed
+  if (quantityAfter < 0 && !item.allowNegativeStock) {
+    throw new Error('الكمية المطلوبة غير متوفرة في المخزون');
+  }
+
+  // Create adjustment and update stock
+  const [adjustment, updatedItem] = await prisma.$transaction([
+    prisma.stockAdjustment.create({
+      data: {
+        itemId,
+        userId: item.sellerId,
+        type: 'SALE',
+        quantityBefore,
+        quantityChange: -quantity,
+        quantityAfter,
+        referenceType: 'ORDER',
+        referenceId: orderId,
+        reason: 'خصم تلقائي - طلب شراء',
+      },
+    }),
+    prisma.item.update({
+      where: { id: itemId },
+      data: { stockQuantity: quantityAfter },
+    }),
+  ]);
+
+  // Notify if stock became negative
+  if (quantityAfter < 0 && quantityBefore >= 0) {
+    await prisma.notification.create({
+      data: {
+        userId: item.sellerId,
+        type: 'NEGATIVE_STOCK',
+        title: 'تحذير: مخزون سالب',
+        message: `المخزون أصبح سالباً للمنتج: ${item.title}. الكمية: ${quantityAfter}`,
+        entityType: 'ITEM',
+        entityId: itemId,
+        priority: 'URGENT',
+      },
+    });
+  }
+
+  // Notify if low stock
+  if (item.lowStockThreshold && quantityAfter <= item.lowStockThreshold && quantityAfter >= 0) {
+    await prisma.notification.create({
+      data: {
+        userId: item.sellerId,
+        type: 'LOW_STOCK',
+        title: 'تنبيه: المخزون منخفض',
+        message: `المخزون منخفض للمنتج: ${item.title}. الكمية: ${quantityAfter}`,
+        entityType: 'ITEM',
+        entityId: itemId,
+        priority: 'HIGH',
+      },
+    });
+  }
+
+  return {
+    success: true,
+    item: updatedItem,
+    isNegative: quantityAfter < 0,
+  };
+};
+
+/**
+ * Restore stock when order is cancelled or returned
+ */
+export const restoreStockForOrder = async (
+  itemId: string,
+  quantity: number,
+  orderId: string,
+  type: 'RETURN' | 'CORRECTION' = 'RETURN'
+): Promise<{ success: boolean; item: any }> => {
+  const item = await prisma.item.findUnique({ where: { id: itemId } });
+
+  if (!item) {
+    throw new Error('Item not found');
+  }
+
+  if (!item.trackInventory) {
+    return { success: true, item };
+  }
+
+  const quantityBefore = item.stockQuantity;
+  const quantityAfter = quantityBefore + quantity;
+
+  // Create adjustment and update stock
+  await prisma.$transaction([
+    prisma.stockAdjustment.create({
+      data: {
+        itemId,
+        userId: item.sellerId,
+        type,
+        quantityBefore,
+        quantityChange: quantity,
+        quantityAfter,
+        referenceType: 'ORDER',
+        referenceId: orderId,
+        reason: type === 'RETURN' ? 'استرجاع - إلغاء طلب' : 'تصحيح مخزون',
+      },
+    }),
+    prisma.item.update({
+      where: { id: itemId },
+      data: { stockQuantity: quantityAfter },
+    }),
+  ]);
+
+  return { success: true, item: { ...item, stockQuantity: quantityAfter } };
+};
+
+/**
+ * Update item stock settings
+ */
+export const updateStockSettings = async (
+  userId: string,
+  itemId: string,
+  settings: {
+    trackInventory?: boolean;
+    allowNegativeStock?: boolean;
+    lowStockThreshold?: number | null;
+    sku?: string;
+    barcode?: string;
+  }
+): Promise<any> => {
+  const item = await prisma.item.findFirst({
+    where: { id: itemId, sellerId: userId },
+  });
+
+  if (!item) {
+    throw new Error('Item not found or not owned by user');
+  }
+
+  return prisma.item.update({
+    where: { id: itemId },
+    data: settings,
+  });
+};
+
 export default {
   getUserInventory,
   getInventoryStats,
@@ -784,4 +1240,12 @@ export default {
   deleteInventoryItem,
   findMatchesForItem,
   getLatestPublicItems,
+  // Stock management
+  adjustStock,
+  getStockAdjustments,
+  bulkImportItems,
+  getLowStockItems,
+  deductStockForOrder,
+  restoreStockForOrder,
+  updateStockSettings,
 };
