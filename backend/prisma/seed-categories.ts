@@ -16,12 +16,82 @@ const categories = [
     icon: '📱',
     order: 1,
     subcategories: [
-      { nameAr: 'هواتف محمولة', nameEn: 'Mobile Phones', slug: 'mobile-phones', order: 1 },
-      { nameAr: 'أجهزة كمبيوتر', nameEn: 'Computers', slug: 'computers', order: 2 },
-      { nameAr: 'أجهزة لوحية', nameEn: 'Tablets', slug: 'tablets', order: 3 },
-      { nameAr: 'كاميرات', nameEn: 'Cameras', slug: 'cameras', order: 4 },
-      { nameAr: 'سماعات وصوتيات', nameEn: 'Audio & Headphones', slug: 'audio-headphones', order: 5 },
-      { nameAr: 'إكسسوارات إلكترونية', nameEn: 'Electronics Accessories', slug: 'electronics-accessories', order: 6 },
+      {
+        nameAr: 'هواتف محمولة',
+        nameEn: 'Mobile Phones',
+        slug: 'mobile-phones',
+        order: 1,
+        subsubcategories: [
+          { nameAr: 'آيفون', nameEn: 'iPhone', slug: 'iphone', order: 1 },
+          { nameAr: 'سامسونج', nameEn: 'Samsung', slug: 'samsung-phones', order: 2 },
+          { nameAr: 'شاومي', nameEn: 'Xiaomi', slug: 'xiaomi-phones', order: 3 },
+          { nameAr: 'هواوي', nameEn: 'Huawei', slug: 'huawei-phones', order: 4 },
+          { nameAr: 'أوبو', nameEn: 'Oppo', slug: 'oppo-phones', order: 5 },
+          { nameAr: 'ريلمي', nameEn: 'Realme', slug: 'realme-phones', order: 6 },
+          { nameAr: 'هواتف أخرى', nameEn: 'Other Phones', slug: 'other-phones', order: 7 },
+        ],
+      },
+      {
+        nameAr: 'أجهزة كمبيوتر',
+        nameEn: 'Computers',
+        slug: 'computers',
+        order: 2,
+        subsubcategories: [
+          { nameAr: 'لابتوب', nameEn: 'Laptops', slug: 'laptops', order: 1 },
+          { nameAr: 'كمبيوتر مكتبي', nameEn: 'Desktop PCs', slug: 'desktop-pcs', order: 2 },
+          { nameAr: 'شاشات', nameEn: 'Monitors', slug: 'monitors', order: 3 },
+          { nameAr: 'قطع كمبيوتر', nameEn: 'Computer Parts', slug: 'computer-parts', order: 4 },
+          { nameAr: 'طابعات وماسحات', nameEn: 'Printers & Scanners', slug: 'printers-scanners', order: 5 },
+        ],
+      },
+      {
+        nameAr: 'أجهزة لوحية',
+        nameEn: 'Tablets',
+        slug: 'tablets',
+        order: 3,
+        subsubcategories: [
+          { nameAr: 'آيباد', nameEn: 'iPad', slug: 'ipad', order: 1 },
+          { nameAr: 'تابلت سامسونج', nameEn: 'Samsung Tablets', slug: 'samsung-tablets', order: 2 },
+          { nameAr: 'تابلت أخرى', nameEn: 'Other Tablets', slug: 'other-tablets', order: 3 },
+        ],
+      },
+      {
+        nameAr: 'كاميرات',
+        nameEn: 'Cameras',
+        slug: 'cameras',
+        order: 4,
+        subsubcategories: [
+          { nameAr: 'كاميرات DSLR', nameEn: 'DSLR Cameras', slug: 'dslr-cameras', order: 1 },
+          { nameAr: 'كاميرات ميرورليس', nameEn: 'Mirrorless Cameras', slug: 'mirrorless-cameras', order: 2 },
+          { nameAr: 'كاميرات فيديو', nameEn: 'Video Cameras', slug: 'video-cameras', order: 3 },
+          { nameAr: 'عدسات', nameEn: 'Lenses', slug: 'camera-lenses', order: 4 },
+          { nameAr: 'إكسسوارات كاميرا', nameEn: 'Camera Accessories', slug: 'camera-accessories', order: 5 },
+        ],
+      },
+      {
+        nameAr: 'سماعات وصوتيات',
+        nameEn: 'Audio & Headphones',
+        slug: 'audio-headphones',
+        order: 5,
+        subsubcategories: [
+          { nameAr: 'سماعات لاسلكية', nameEn: 'Wireless Headphones', slug: 'wireless-headphones', order: 1 },
+          { nameAr: 'سماعات سلكية', nameEn: 'Wired Headphones', slug: 'wired-headphones', order: 2 },
+          { nameAr: 'سماعات بلوتوث', nameEn: 'Bluetooth Speakers', slug: 'bluetooth-speakers', order: 3 },
+          { nameAr: 'مكبرات صوت', nameEn: 'Sound Systems', slug: 'sound-systems', order: 4 },
+        ],
+      },
+      {
+        nameAr: 'إكسسوارات إلكترونية',
+        nameEn: 'Electronics Accessories',
+        slug: 'electronics-accessories',
+        order: 6,
+        subsubcategories: [
+          { nameAr: 'شواحن وكابلات', nameEn: 'Chargers & Cables', slug: 'chargers-cables', order: 1 },
+          { nameAr: 'حافظات وأغطية', nameEn: 'Cases & Covers', slug: 'cases-covers', order: 2 },
+          { nameAr: 'باور بانك', nameEn: 'Power Banks', slug: 'power-banks', order: 3 },
+          { nameAr: 'ساعات ذكية', nameEn: 'Smart Watches', slug: 'smart-watches', order: 4 },
+        ],
+      },
     ],
   },
   {
@@ -32,10 +102,124 @@ const categories = [
     icon: '🛋️',
     order: 2,
     subcategories: [
-      { nameAr: 'أثاث غرف النوم', nameEn: 'Bedroom Furniture', slug: 'bedroom-furniture', order: 1 },
-      { nameAr: 'أثاث غرف المعيشة', nameEn: 'Living Room Furniture', slug: 'living-room-furniture', order: 2 },
-      { nameAr: 'أثاث مكتبي', nameEn: 'Office Furniture', slug: 'office-furniture', order: 3 },
-      { nameAr: 'أثاث خارجي', nameEn: 'Outdoor Furniture', slug: 'outdoor-furniture', order: 4 },
+      {
+        nameAr: 'أثاث غرف النوم',
+        nameEn: 'Bedroom Furniture',
+        slug: 'bedroom-furniture',
+        order: 1,
+        subsubcategories: [
+          { nameAr: 'أسِرَّة', nameEn: 'Beds', slug: 'beds', order: 1 },
+          { nameAr: 'دواليب', nameEn: 'Wardrobes', slug: 'wardrobes', order: 2 },
+          { nameAr: 'كومودينو', nameEn: 'Nightstands', slug: 'nightstands', order: 3 },
+          { nameAr: 'تسريحات', nameEn: 'Dressers', slug: 'dressers', order: 4 },
+        ],
+      },
+      {
+        nameAr: 'أثاث غرف المعيشة',
+        nameEn: 'Living Room Furniture',
+        slug: 'living-room-furniture',
+        order: 2,
+        subsubcategories: [
+          { nameAr: 'كنب وأرائك', nameEn: 'Sofas & Couches', slug: 'sofas-couches', order: 1 },
+          { nameAr: 'طاولات', nameEn: 'Tables', slug: 'tables', order: 2 },
+          { nameAr: 'مكتبات وأرفف', nameEn: 'Shelves & Bookcases', slug: 'shelves-bookcases', order: 3 },
+          { nameAr: 'وحدات تلفزيون', nameEn: 'TV Units', slug: 'tv-units', order: 4 },
+        ],
+      },
+      {
+        nameAr: 'أثاث مكتبي',
+        nameEn: 'Office Furniture',
+        slug: 'office-furniture',
+        order: 3,
+        subsubcategories: [
+          { nameAr: 'مكاتب', nameEn: 'Desks', slug: 'desks', order: 1 },
+          { nameAr: 'كراسي مكتب', nameEn: 'Office Chairs', slug: 'office-chairs', order: 2 },
+          { nameAr: 'خزائن ملفات', nameEn: 'Filing Cabinets', slug: 'filing-cabinets', order: 3 },
+        ],
+      },
+      {
+        nameAr: 'أثاث خارجي',
+        nameEn: 'Outdoor Furniture',
+        slug: 'outdoor-furniture',
+        order: 4,
+        subsubcategories: [
+          { nameAr: 'جلسات حدائق', nameEn: 'Garden Sets', slug: 'garden-sets', order: 1 },
+          { nameAr: 'مظلات', nameEn: 'Umbrellas', slug: 'umbrellas', order: 2 },
+          { nameAr: 'أراجيح', nameEn: 'Swings', slug: 'swings', order: 3 },
+        ],
+      },
+    ],
+  },
+  // NEW: Home & Garden Category
+  {
+    nameAr: 'المنزل والحديقة',
+    nameEn: 'Home & Garden',
+    slug: 'home-garden',
+    description: 'مستلزمات المنزل والحديقة',
+    icon: '🏡',
+    order: 13,
+    subcategories: [
+      {
+        nameAr: 'المطبخ والطعام',
+        nameEn: 'Kitchen & Food',
+        slug: 'kitchen-food',
+        order: 1,
+        subsubcategories: [
+          { nameAr: 'أواني طهي', nameEn: 'Cookware', slug: 'cookware', order: 1 },
+          { nameAr: 'أدوات مائدة', nameEn: 'Tableware', slug: 'tableware', order: 2 },
+          { nameAr: 'أجهزة مطبخ صغيرة', nameEn: 'Small Kitchen Appliances', slug: 'small-kitchen-appliances', order: 3 },
+          { nameAr: 'تخزين طعام', nameEn: 'Food Storage', slug: 'food-storage', order: 4 },
+          { nameAr: 'أدوات خَبز', nameEn: 'Bakeware', slug: 'bakeware', order: 5 },
+        ],
+      },
+      {
+        nameAr: 'الحمام',
+        nameEn: 'Bathroom',
+        slug: 'bathroom',
+        order: 2,
+        subsubcategories: [
+          { nameAr: 'إكسسوارات حمام', nameEn: 'Bathroom Accessories', slug: 'bathroom-accessories', order: 1 },
+          { nameAr: 'مناشف', nameEn: 'Towels', slug: 'towels', order: 2 },
+          { nameAr: 'ستائر حمام', nameEn: 'Shower Curtains', slug: 'shower-curtains', order: 3 },
+        ],
+      },
+      {
+        nameAr: 'الحديقة',
+        nameEn: 'Garden',
+        slug: 'garden',
+        order: 3,
+        subsubcategories: [
+          { nameAr: 'نباتات وأصص', nameEn: 'Plants & Pots', slug: 'plants-pots', order: 1 },
+          { nameAr: 'أدوات حديقة', nameEn: 'Garden Tools', slug: 'garden-tools', order: 2 },
+          { nameAr: 'ري وخراطيم', nameEn: 'Watering & Hoses', slug: 'watering-hoses', order: 3 },
+          { nameAr: 'إضاءة حديقة', nameEn: 'Garden Lighting', slug: 'garden-lighting', order: 4 },
+        ],
+      },
+      {
+        nameAr: 'ديكور منزلي',
+        nameEn: 'Home Decor',
+        slug: 'home-decor',
+        order: 4,
+        subsubcategories: [
+          { nameAr: 'لوحات وإطارات', nameEn: 'Art & Frames', slug: 'art-frames', order: 1 },
+          { nameAr: 'مرايا', nameEn: 'Mirrors', slug: 'mirrors', order: 2 },
+          { nameAr: 'شموع ومعطرات', nameEn: 'Candles & Fragrances', slug: 'candles-fragrances', order: 3 },
+          { nameAr: 'سجاد', nameEn: 'Rugs', slug: 'rugs', order: 4 },
+          { nameAr: 'ستائر', nameEn: 'Curtains', slug: 'curtains', order: 5 },
+        ],
+      },
+      {
+        nameAr: 'مفروشات',
+        nameEn: 'Bedding & Linens',
+        slug: 'bedding-linens',
+        order: 5,
+        subsubcategories: [
+          { nameAr: 'ملايات', nameEn: 'Bed Sheets', slug: 'bed-sheets', order: 1 },
+          { nameAr: 'لحافات', nameEn: 'Comforters', slug: 'comforters', order: 2 },
+          { nameAr: 'وسائد', nameEn: 'Pillows', slug: 'pillows', order: 3 },
+          { nameAr: 'بطانيات', nameEn: 'Blankets', slug: 'blankets', order: 4 },
+        ],
+      },
     ],
   },
   {
@@ -192,7 +376,7 @@ async function seedCategories() {
   console.log('🌱 Seeding categories...');
 
   for (const category of categories) {
-    // Create parent category
+    // Create parent category (Level 1)
     const parent = await prisma.category.upsert({
       where: { slug: category.slug },
       update: {},
@@ -209,10 +393,11 @@ async function seedCategories() {
 
     console.log(`✅ Created parent category: ${category.nameEn}`);
 
-    // Create subcategories
+    // Create subcategories (Level 2)
     if (category.subcategories) {
+      let subsubCount = 0;
       for (const subcategory of category.subcategories) {
-        await prisma.category.upsert({
+        const subcat = await prisma.category.upsert({
           where: { slug: subcategory.slug },
           update: {},
           create: {
@@ -224,8 +409,27 @@ async function seedCategories() {
             isActive: true,
           },
         });
+
+        // Create sub-subcategories (Level 3)
+        if ('subsubcategories' in subcategory && subcategory.subsubcategories) {
+          for (const subsubcategory of subcategory.subsubcategories) {
+            await prisma.category.upsert({
+              where: { slug: subsubcategory.slug },
+              update: {},
+              create: {
+                nameAr: subsubcategory.nameAr,
+                nameEn: subsubcategory.nameEn,
+                slug: subsubcategory.slug,
+                parentId: subcat.id,
+                order: subsubcategory.order,
+                isActive: true,
+              },
+            });
+            subsubCount++;
+          }
+        }
       }
-      console.log(`   ↳ Created ${category.subcategories.length} subcategories`);
+      console.log(`   ↳ Created ${category.subcategories.length} subcategories, ${subsubCount} sub-subcategories`);
     }
   }
 
