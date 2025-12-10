@@ -40,11 +40,20 @@ const EGYPTIAN_GOVERNORATES = [
 
 interface CartItem {
   id: string;
+  listingId: string;
   listing: {
     id: string;
-    title: string;
     price: number;
-    images: string[];
+    item: {
+      id: string;
+      title: string;
+      images: string[];
+      condition: string;
+      seller: {
+        id: string;
+        fullName: string;
+      };
+    };
   };
   quantity: number;
 }
@@ -114,9 +123,11 @@ export default function CheckoutPage() {
         },
       });
       if (response.ok) {
-        const data = await response.json();
-        setCart(data);
-        if (!data || data.items.length === 0) {
+        const result = await response.json();
+        // API returns { success: true, data: {...} }
+        const cartData = result.data || result;
+        setCart(cartData);
+        if (!cartData || !cartData.items || cartData.items.length === 0) {
           router.push('/cart');
         }
       }
@@ -408,20 +419,20 @@ export default function CheckoutPage() {
                   {cart.items.map((item) => (
                     <div key={item.id} className="flex gap-3">
                       <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                        {item.listing.images?.[0] && (
+                        {item.listing?.item?.images?.[0] && (
                           <img
-                            src={item.listing.images[0]}
-                            alt={item.listing.title}
+                            src={item.listing.item.images[0]}
+                            alt={item.listing.item.title}
                             className="w-full h-full object-cover"
                           />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.listing.title}</p>
+                        <p className="text-sm font-medium truncate">{item.listing?.item?.title || 'منتج'}</p>
                         <p className="text-xs text-gray-500">الكمية: {item.quantity}</p>
                       </div>
                       <div className="text-sm font-medium">
-                        {(item.listing.price * item.quantity).toLocaleString()} ج.م
+                        {((item.listing?.price || 0) * item.quantity).toLocaleString()} ج.م
                       </div>
                     </div>
                   ))}

@@ -26,7 +26,7 @@ const LISTING_TYPES = [
   { value: 'DIRECT_SALE', label: 'بيع مباشر', icon: '🏷️' },
   { value: 'AUCTION', label: 'مزاد', icon: '🔨' },
   { value: 'BARTER', label: 'مقايضة', icon: '🔄' },
-  { value: 'WANTED', label: 'مطلوب للشراء', icon: '🔍' },
+  { value: 'DIRECT_BUY', label: 'مطلوب للشراء', icon: '🔍' },
   { value: 'REVERSE_AUCTION', label: 'مناقصات', icon: '📢' },
 ];
 
