@@ -812,6 +812,30 @@ export default function NewItemPage() {
             </button>
           </div>
 
+          {/* Bulk Import Banner */}
+          <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">📦</span>
+                <div>
+                  <h3 className="font-semibold text-purple-900 text-sm">
+                    {lang === 'ar' ? 'هل لديك منتجات كثيرة؟' : 'Have many products?'}
+                  </h3>
+                  <p className="text-xs text-purple-700">
+                    {lang === 'ar' ? 'استخدم الاستيراد الجماعي لإضافة عدة منتجات دفعة واحدة' : 'Use bulk import to add multiple products at once'}
+                  </p>
+                </div>
+              </div>
+              <a
+                href="/inventory/bulk-import"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium text-sm hover:bg-purple-700 transition-colors flex items-center gap-2"
+              >
+                <span>📥</span>
+                {lang === 'ar' ? 'استيراد جماعي' : 'Bulk Import'}
+              </a>
+            </div>
+          </div>
+
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-600">{error}</p>
