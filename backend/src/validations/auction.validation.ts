@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Create Auction Schema
 export const createAuctionSchema = z.object({
   body: z.object({
-    itemId: z.string().uuid('Invalid item ID'),
+    itemId: z.string().min(1, 'Item ID is required'),
     startingPrice: z.number().positive('Starting price must be positive'),
     buyNowPrice: z.number().positive('Buy now price must be positive').optional(),
     reservePrice: z.number().positive('Reserve price must be positive').optional(),
@@ -53,7 +53,7 @@ export const createAuctionSchema = z.object({
 // Update Auction Schema
 export const updateAuctionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
   body: z.object({
     buyNowPrice: z.number().positive('Buy now price must be positive').optional(),
@@ -68,7 +68,7 @@ export const updateAuctionSchema = z.object({
 // Place Bid Schema
 export const placeBidSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
   body: z.object({
     bidAmount: z.number().positive('Bid amount must be positive'),
@@ -87,14 +87,14 @@ export const placeBidSchema = z.object({
 // Buy Now Schema
 export const buyNowSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
 });
 
 // Get Auction Schema
 export const getAuctionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
 });
 
@@ -102,7 +102,7 @@ export const getAuctionSchema = z.object({
 export const listAuctionsSchema = z.object({
   query: z.object({
     status: z.enum(['DRAFT', 'SCHEDULED', 'ACTIVE', 'ENDED', 'CANCELLED', 'COMPLETED']).optional(),
-    categoryId: z.string().uuid().optional(),
+    categoryId: z.string().min(1).optional(),
     minPrice: z.string().transform((val) => parseFloat(val)).optional(),
     maxPrice: z.string().transform((val) => parseFloat(val)).optional(),
     sortBy: z.enum(['price', 'endTime', 'bids', 'createdAt']).default('createdAt'),
@@ -115,7 +115,7 @@ export const listAuctionsSchema = z.object({
 // Get Auction Bids Schema
 export const getAuctionBidsSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
   query: z.object({
     page: z.string().transform((val) => parseInt(val, 10)).default('1'),
@@ -126,7 +126,7 @@ export const getAuctionBidsSchema = z.object({
 // Cancel Auction Schema
 export const cancelAuctionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
   body: z.object({
     reason: z.string().min(10, 'Cancellation reason must be at least 10 characters').optional(),
@@ -136,7 +136,7 @@ export const cancelAuctionSchema = z.object({
 // End Auction Schema (Admin only)
 export const endAuctionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
 });
 
