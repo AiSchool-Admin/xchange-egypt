@@ -595,17 +595,23 @@ model CartItem {
 // ============================================
 
 model ShippingAddress {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  fullName     String   @map("full_name")
-  phone        String
-  address      String
-  city         String
-  governorate  String
-  postalCode   String?  @map("postal_code")
-  isDefault    Boolean  @default(false) @map("is_default")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  fullName        String   @map("full_name")
+  phone           String
+  address         String?  // Legacy combined address field
+  street          String?  // الشارع
+  buildingName    String?  @map("building_name")   // اسم المبنى
+  buildingNumber  String?  @map("building_number") // رقم المبنى
+  floor           String?  // الدور
+  apartmentNumber String?  @map("apartment_number") // رقم الشقة
+  landmark        String?  // علامة مميزة
+  city            String
+  governorate     String
+  postalCode      String?  @map("postal_code")
+  isDefault       Boolean  @default(false) @map("is_default")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders       Order[]

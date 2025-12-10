@@ -147,9 +147,10 @@ export const createOrder = async (
       fullName: string;
       phone: string;
       street: string;
-      building?: string;
+      buildingName?: string;
+      buildingNumber?: string;
       floor?: string;
-      apartment?: string;
+      apartmentNumber?: string;
       landmark?: string;
       city: string;
       governorate: string;
@@ -205,11 +206,19 @@ export const createOrder = async (
           userId,
           fullName: addressData.fullName,
           phone: addressData.phone,
+          street: addressData.street,
+          buildingName: addressData.buildingName,
+          buildingNumber: addressData.buildingNumber,
+          floor: addressData.floor,
+          apartmentNumber: addressData.apartmentNumber,
+          landmark: addressData.landmark,
+          // Also store combined address for backwards compatibility
           address: [
             addressData.street,
-            addressData.building ? `مبنى ${addressData.building}` : '',
+            addressData.buildingName ? `${addressData.buildingName}` : '',
+            addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
             addressData.floor ? `الدور ${addressData.floor}` : '',
-            addressData.apartment ? `شقة ${addressData.apartment}` : '',
+            addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
             addressData.landmark || '',
           ].filter(Boolean).join('، '),
           city: addressData.city,

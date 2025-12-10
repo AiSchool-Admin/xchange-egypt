@@ -80,9 +80,10 @@ export default function CheckoutPage() {
     governorate: '',
     city: '',
     street: '',
-    building: '',
+    buildingName: '',
+    buildingNumber: '',
     floor: '',
-    apartment: '',
+    apartmentNumber: '',
     landmark: '',
   });
 
@@ -306,16 +307,28 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      المبنى
+                      اسم المبنى
                     </label>
                     <input
                       type="text"
-                      value={shippingAddress.building}
-                      onChange={(e) => setShippingAddress({ ...shippingAddress, building: e.target.value })}
+                      value={shippingAddress.buildingName}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, buildingName: e.target.value })}
+                      placeholder="مثال: برج النيل، عمارة السلام"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        رقم المبنى
+                      </label>
+                      <input
+                        type="text"
+                        value={shippingAddress.buildingNumber}
+                        onChange={(e) => setShippingAddress({ ...shippingAddress, buildingNumber: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         الدور
@@ -329,12 +342,12 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        الشقة
+                        رقم الشقة
                       </label>
                       <input
                         type="text"
-                        value={shippingAddress.apartment}
-                        onChange={(e) => setShippingAddress({ ...shippingAddress, apartment: e.target.value })}
+                        value={shippingAddress.apartmentNumber}
+                        onChange={(e) => setShippingAddress({ ...shippingAddress, apartmentNumber: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       />
                     </div>
