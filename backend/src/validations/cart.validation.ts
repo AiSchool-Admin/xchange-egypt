@@ -2,10 +2,13 @@ import { z } from 'zod';
 
 /**
  * Add item to cart validation schema
+ * Accepts either listingId or itemId (for flexibility)
  */
 export const addToCartSchema = z.object({
   body: z.object({
-    listingId: z.string().uuid('Invalid listing ID format'),
+    // Accept either listingId or itemId
+    listingId: z.string().uuid('Invalid ID format').optional(),
+    itemId: z.string().uuid('Invalid ID format').optional(),
     quantity: z
       .number()
       .int('Quantity must be an integer')
@@ -13,7 +16,10 @@ export const addToCartSchema = z.object({
       .max(100, 'Quantity cannot exceed 100')
       .optional()
       .default(1),
-  }),
+  }).refine(
+    (data) => data.listingId || data.itemId,
+    { message: 'Either listingId or itemId is required' }
+  ),
 });
 
 /**
