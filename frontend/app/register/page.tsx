@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
@@ -62,7 +62,6 @@ const CITIES_BY_GOVERNORATE: Record<string, string[]> = {
   'القاهرة': ['مدينة نصر', 'المعادي', 'الزمالك', 'مصر الجديدة', 'التجمع الخامس', 'المقطم', 'شبرا', 'حلوان', 'عين شمس', '6 أكتوبر'],
   'الجيزة': ['الدقي', 'المهندسين', 'الهرم', 'فيصل', 'العجوزة', 'الشيخ زايد', 'أكتوبر', 'البدرشين', 'العياط'],
   'الإسكندرية': ['المنتزه', 'سيدي جابر', 'محرم بك', 'سموحة', 'العصافرة', 'المندرة', 'العجمي', 'برج العرب'],
-  // Add more cities as needed - for now showing top governorates
 };
 
 // Translations
@@ -96,6 +95,19 @@ const translations = {
     haveAccount: 'لديك حساب بالفعل؟',
     loginHere: 'سجل دخول هنا',
     backToHome: '← العودة للرئيسية',
+    nameHint: 'أدخل اسمك الكامل كما هو في الهوية',
+    emailHint: 'سيتم استخدامه لتسجيل الدخول',
+    confirmPasswordHint: 'أعد كتابة كلمة المرور للتأكيد',
+    businessNameHint: 'الاسم التجاري المسجل',
+    taxIdHint: 'الرقم الضريبي المكون من 9 أرقام',
+    commercialRegHint: 'رقم السجل التجاري',
+    passwordStrength: {
+      veryWeak: 'ضعيفة جداً',
+      weak: 'ضعيفة',
+      medium: 'متوسطة',
+      strong: 'قوية',
+      veryStrong: 'قوية جداً',
+    },
     errors: {
       fullNameRequired: 'الاسم الكامل مطلوب',
       fullNameMin: 'الاسم يجب أن يكون 3 أحرف على الأقل',
@@ -139,6 +151,19 @@ const translations = {
     haveAccount: 'Already have an account?',
     loginHere: 'Login here',
     backToHome: '→ Back to Home',
+    nameHint: 'Enter your full name as on ID',
+    emailHint: 'Will be used for login',
+    confirmPasswordHint: 'Re-enter password to confirm',
+    businessNameHint: 'Registered business name',
+    taxIdHint: '9-digit tax number',
+    commercialRegHint: 'Commercial registration number',
+    passwordStrength: {
+      veryWeak: 'Very Weak',
+      weak: 'Weak',
+      medium: 'Medium',
+      strong: 'Strong',
+      veryStrong: 'Very Strong',
+    },
     errors: {
       fullNameRequired: 'Full name is required',
       fullNameMin: 'Name must be at least 3 characters',
@@ -177,7 +202,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    country: 'EG', // Default to Egypt
+    country: 'EG',
     phone: '',
     city: '',
     governorate: '',
@@ -186,7 +211,6 @@ export default function RegisterPage() {
     commercialRegNo: '',
   });
 
-  // Get selected country data
   const selectedCountry = COUNTRIES.find(c => c.code === formData.country) || COUNTRIES[0];
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -194,11 +218,10 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const { registerIndividual, registerBusiness } = useAuth();
 
-  // Get cities for selected governorate
   const availableCities = formData.governorate ? (CITIES_BY_GOVERNORATE[formData.governorate] || []) : [];
 
-  // Validation functions
-  const validateField = (name: string, value: string): string | undefined => {
+  // Memoized validation function
+  const validateField = useCallback((name: string, value: string): string | undefined => {
     switch (name) {
       case 'fullName':
         if (!value.trim()) return t.errors.fullNameRequired;
@@ -232,33 +255,34 @@ export default function RegisterPage() {
         break;
     }
     return undefined;
-  };
+  }, [t.errors, userType, formData.password]);
 
-  // Handle change without validation (validation only on blur)
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // Simple change handler - no validation
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [name]: value };
+      // Clear city if governorate changes
+      if (name === 'governorate') {
+        newData.city = '';
+      }
+      return newData;
+    });
+    // Clear error when user starts typing
+    setErrors(prev => prev[name as keyof FieldErrors] ? { ...prev, [name]: undefined } : prev);
+  }, []);
 
-    // Clear city if governorate changes
-    if (name === 'governorate') {
-      setFormData(prev => ({ ...prev, city: '' }));
-    }
-
-    // Clear error when user starts typing (don't validate yet)
-    if (errors[name as keyof FieldErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }));
-    }
-  };
-
-  // Validate on blur
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+  // Validate only on blur
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setTouched(prev => ({ ...prev, [name]: true }));
     const error = validateField(name, value);
-    setErrors(prev => ({ ...prev, [name]: error }));
-  };
+    if (error) {
+      setErrors(prev => ({ ...prev, [name]: error }));
+    }
+  }, [validateField]);
 
-  // Revalidate confirm password when password changes
+  // Revalidate confirm password when password changes (only if already touched)
   useEffect(() => {
     if (touched.confirmPassword && formData.confirmPassword) {
       const error = formData.password !== formData.confirmPassword ? t.errors.passwordsMismatch : undefined;
@@ -320,9 +344,11 @@ export default function RegisterPage() {
     }
   };
 
-  // Password strength indicator
-  const getPasswordStrength = (password: string): { level: number; text: string; color: string } => {
+  // Password strength calculation - memoized
+  const passwordStrength = useMemo(() => {
+    const password = formData.password;
     if (!password) return { level: 0, text: '', color: 'bg-gray-200' };
+
     let strength = 0;
     if (password.length >= 8) strength++;
     if (/[A-Z]/.test(password)) strength++;
@@ -330,84 +356,32 @@ export default function RegisterPage() {
     if (/\d/.test(password)) strength++;
     if (/[^A-Za-z0-9]/.test(password)) strength++;
 
-    const levels: Array<{ level: number; text: string; color: string }> = [
-      { level: 0, text: '', color: 'bg-gray-200' },
-      { level: 1, text: lang === 'ar' ? 'ضعيفة جداً' : 'Very Weak', color: 'bg-red-500' },
-      { level: 2, text: lang === 'ar' ? 'ضعيفة' : 'Weak', color: 'bg-orange-500' },
-      { level: 3, text: lang === 'ar' ? 'متوسطة' : 'Medium', color: 'bg-yellow-500' },
-      { level: 4, text: lang === 'ar' ? 'قوية' : 'Strong', color: 'bg-green-500' },
-      { level: 5, text: lang === 'ar' ? 'قوية جداً' : 'Very Strong', color: 'bg-green-600' },
+    const strengthTexts = [
+      '',
+      t.passwordStrength.veryWeak,
+      t.passwordStrength.weak,
+      t.passwordStrength.medium,
+      t.passwordStrength.strong,
+      t.passwordStrength.veryStrong,
     ];
-    return levels[strength];
-  };
+    const strengthColors = [
+      'bg-gray-200',
+      'bg-red-500',
+      'bg-orange-500',
+      'bg-yellow-500',
+      'bg-green-500',
+      'bg-green-600',
+    ];
 
-  // Input field component with inline error
-  const InputField = ({
-    name,
-    label,
-    type = 'text',
-    required = false,
-    placeholder,
-    dir,
-    hint,
-  }: {
-    name: keyof typeof formData;
-    label: string;
-    type?: string;
-    required?: boolean;
-    placeholder?: string;
-    dir?: string;
-    hint?: string;
-  }) => {
-    const hasError = errors[name as keyof FieldErrors] && touched[name];
-    const showPasswordStrength = name === 'password' && formData.password.length > 0;
-    const passwordStrength = showPasswordStrength ? getPasswordStrength(formData.password) : null;
+    return { level: strength, text: strengthTexts[strength], color: strengthColors[strength] };
+  }, [formData.password, t.passwordStrength]);
 
-    return (
-      <div>
-        <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
-          {label} {required ? <span className="text-red-500">{t.required}</span> : <span className="text-gray-400">{t.optional}</span>}
-        </label>
-        <input
-          id={name}
-          name={name}
-          type={type}
-          value={formData[name]}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          required={required}
-          dir={dir}
-          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors ${
-            hasError ? 'border-red-500 bg-red-50' : 'border-gray-300'
-          }`}
-          placeholder={placeholder}
-        />
-        {/* Password strength indicator */}
-        {showPasswordStrength && passwordStrength && (
-          <div className="mt-1">
-            <div className="flex gap-1 mb-1">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div
-                  key={i}
-                  className={`h-1 flex-1 rounded ${i <= passwordStrength.level ? passwordStrength.color : 'bg-gray-200'}`}
-                />
-              ))}
-            </div>
-            <p className="text-xs text-gray-500">{passwordStrength.text}</p>
-          </div>
-        )}
-        {/* Hint text */}
-        {hint && !hasError && (
-          <p className="mt-1 text-xs text-gray-500">{hint}</p>
-        )}
-        {/* Error message */}
-        {hasError && (
-          <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-            <span>⚠</span> {errors[name as keyof FieldErrors]}
-          </p>
-        )}
-      </div>
-    );
+  // Helper to get input classes
+  const getInputClasses = (fieldName: keyof FieldErrors) => {
+    const hasError = errors[fieldName] && touched[fieldName];
+    return `w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors ${
+      hasError ? 'border-red-500 bg-red-50' : 'border-gray-300'
+    }`;
   };
 
   return (
@@ -468,8 +442,56 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <InputField name="fullName" label={t.fullName} required placeholder={isRTL ? 'محمد أحمد' : 'John Doe'} />
-            <InputField name="email" label={t.email} type="email" required placeholder="example@email.com" dir="ltr" />
+            {/* Full Name */}
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
+                {t.fullName} <span className="text-red-500">{t.required}</span>
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                value={formData.fullName}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={getInputClasses('fullName')}
+                placeholder={isRTL ? 'محمد أحمد' : 'John Doe'}
+              />
+              {!(errors.fullName && touched.fullName) && (
+                <p className="mt-1 text-xs text-gray-500">{t.nameHint}</p>
+              )}
+              {errors.fullName && touched.fullName && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠</span> {errors.fullName}
+                </p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                {t.email} <span className="text-red-500">{t.required}</span>
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                dir="ltr"
+                className={getInputClasses('email')}
+                placeholder="example@email.com"
+              />
+              {!(errors.email && touched.email) && (
+                <p className="mt-1 text-xs text-gray-500">{t.emailHint}</p>
+              )}
+              {errors.email && touched.email && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠</span> {errors.email}
+                </p>
+              )}
+            </div>
 
             {/* Country and Phone */}
             <div className="space-y-3">
@@ -499,11 +521,9 @@ export default function RegisterPage() {
                   {t.phone} <span className="text-gray-400">{t.optional}</span>
                 </label>
                 <div className="flex gap-2">
-                  {/* Phone code display */}
                   <div className="flex items-center px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 font-medium min-w-[80px] justify-center">
                     {selectedCountry.flag} {selectedCountry.phoneCode}
                   </div>
-                  {/* Phone input */}
                   <input
                     id="phone"
                     name="phone"
@@ -518,11 +538,9 @@ export default function RegisterPage() {
                     placeholder={formData.country === 'EG' ? '1012345678' : '512345678'}
                   />
                 </div>
-                {/* Hint */}
-                {!errors.phone && (
+                {!(errors.phone && touched.phone) && (
                   <p className="mt-1 text-xs text-gray-500">{t.phoneHint}</p>
                 )}
-                {/* Error */}
                 {errors.phone && touched.phone && (
                   <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                     <span>⚠</span> {errors.phone}
@@ -534,13 +552,70 @@ export default function RegisterPage() {
             {/* Business-specific fields */}
             {userType === 'BUSINESS' && (
               <>
-                <InputField name="businessName" label={t.businessName} required placeholder={isRTL ? 'شركة التجارة' : 'Trading Company'} />
-                <InputField name="taxId" label={t.taxId} placeholder="123456789" dir="ltr" />
-                <InputField name="commercialRegNo" label={t.commercialRegNo} placeholder="CR123456" dir="ltr" />
+                {/* Business Name */}
+                <div>
+                  <label htmlFor="businessName" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.businessName} <span className="text-red-500">{t.required}</span>
+                  </label>
+                  <input
+                    id="businessName"
+                    name="businessName"
+                    type="text"
+                    value={formData.businessName}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    className={getInputClasses('businessName')}
+                    placeholder={isRTL ? 'شركة التجارة' : 'Trading Company'}
+                  />
+                  {!(errors.businessName && touched.businessName) && (
+                    <p className="mt-1 text-xs text-gray-500">{t.businessNameHint}</p>
+                  )}
+                  {errors.businessName && touched.businessName && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                      <span>⚠</span> {errors.businessName}
+                    </p>
+                  )}
+                </div>
+
+                {/* Tax ID */}
+                <div>
+                  <label htmlFor="taxId" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.taxId} <span className="text-gray-400">{t.optional}</span>
+                  </label>
+                  <input
+                    id="taxId"
+                    name="taxId"
+                    type="text"
+                    value={formData.taxId}
+                    onChange={handleChange}
+                    dir="ltr"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                    placeholder="123456789"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t.taxIdHint}</p>
+                </div>
+
+                {/* Commercial Reg No */}
+                <div>
+                  <label htmlFor="commercialRegNo" className="block text-sm font-medium text-gray-700 mb-1">
+                    {t.commercialRegNo} <span className="text-gray-400">{t.optional}</span>
+                  </label>
+                  <input
+                    id="commercialRegNo"
+                    name="commercialRegNo"
+                    type="text"
+                    value={formData.commercialRegNo}
+                    onChange={handleChange}
+                    dir="ltr"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
+                    placeholder="CR123456"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">{t.commercialRegHint}</p>
+                </div>
               </>
             )}
 
-            {/* Governorate and City - Governorate on the right for RTL */}
+            {/* Governorate and City */}
             <div className="grid grid-cols-2 gap-4">
               <div className={isRTL ? 'order-2' : 'order-1'}>
                 <label htmlFor="governorate" className="block text-sm font-medium text-gray-700 mb-1">
@@ -580,15 +655,69 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <InputField
-              name="password"
-              label={t.password}
-              type="password"
-              required
-              placeholder="••••••••"
-              hint={t.passwordHint}
-            />
-            <InputField name="confirmPassword" label={t.confirmPassword} type="password" required placeholder="••••••••" />
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                {t.password} <span className="text-red-500">{t.required}</span>
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={getInputClasses('password')}
+                placeholder="••••••••"
+              />
+              {/* Password strength indicator */}
+              {formData.password.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex gap-1 mb-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded ${i <= passwordStrength.level ? passwordStrength.color : 'bg-gray-200'}`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">{passwordStrength.text}</p>
+                </div>
+              )}
+              {!(errors.password && touched.password) && formData.password.length === 0 && (
+                <p className="mt-1 text-xs text-gray-500">{t.passwordHint}</p>
+              )}
+              {errors.password && touched.password && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠</span> {errors.password}
+                </p>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                {t.confirmPassword} <span className="text-red-500">{t.required}</span>
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={getInputClasses('confirmPassword')}
+                placeholder="••••••••"
+              />
+              {!(errors.confirmPassword && touched.confirmPassword) && (
+                <p className="mt-1 text-xs text-gray-500">{t.confirmPasswordHint}</p>
+              )}
+              {errors.confirmPassword && touched.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠</span> {errors.confirmPassword}
+                </p>
+              )}
+            </div>
 
             <button
               type="submit"
