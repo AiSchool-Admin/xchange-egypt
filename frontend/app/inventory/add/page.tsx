@@ -1242,6 +1242,7 @@ function AddInventoryContent() {
                     category="items"
                     onUploadComplete={handleImageUpload}
                     maxFiles={5}
+                    lang={lang}
                   />
                   {formData.images.length > 0 && (
                     <div className="mt-4 grid grid-cols-4 gap-2">

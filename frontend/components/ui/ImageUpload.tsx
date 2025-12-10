@@ -3,6 +3,32 @@
 import React, { useRef, useState } from 'react';
 import { uploadImage, uploadMultipleImages, validateImageFile } from '@/lib/api/images';
 
+// Translations for the component
+const translations = {
+  ar: {
+    uploadImage: 'رفع صورة',
+    uploadImages: 'رفع صور',
+    uploading: 'جاري الرفع...',
+    uploadingImage: 'جاري رفع الصورة...',
+    uploadingImages: 'جاري رفع الصور...',
+    maxFilesError: 'الحد الأقصى {count} ملفات',
+    dragDrop: 'اسحب وأفلت الصور هنا أو اضغط للاختيار',
+    supportedFormats: 'الصيغ المدعومة: JPG, PNG, WebP',
+  },
+  en: {
+    uploadImage: 'Upload Image',
+    uploadImages: 'Upload Images',
+    uploading: 'Uploading...',
+    uploadingImage: 'Uploading image...',
+    uploadingImages: 'Uploading images...',
+    maxFilesError: 'Maximum {count} files allowed',
+    dragDrop: 'Drag & drop images here or click to select',
+    supportedFormats: 'Supported formats: JPG, PNG, WebP',
+  },
+};
+
+type Language = 'ar' | 'en';
+
 interface ImageUploadProps {
   multiple?: boolean;
   category?: 'items' | 'avatars' | 'bids';
@@ -10,6 +36,7 @@ interface ImageUploadProps {
   onUploadError?: (error: string) => void;
   maxFiles?: number;
   className?: string;
+  lang?: Language;
 }
 
 export const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -19,10 +46,13 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   onUploadError,
   maxFiles = 10,
   className = '',
+  lang = 'ar',
 }) => {
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const t = translations[lang];
+  const isRTL = lang === 'ar';
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -31,7 +61,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
     // Check max files
     if (files.length > maxFiles) {
-      onUploadError?.(`Maximum ${maxFiles} files allowed`);
+      onUploadError?.(t.maxFilesError.replace('{count}', String(maxFiles)));
       return;
     }
 
@@ -87,7 +117,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   };
 
   return (
-    <div className={className}>
+    <div className={className} dir={isRTL ? 'rtl' : 'ltr'}>
       <input
         ref={fileInputRef}
         type="file"
@@ -98,13 +128,19 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         disabled={uploading}
       />
 
-      <button
+      <div
         onClick={handleClick}
-        disabled={uploading}
-        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+        className={`border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-all ${
+          uploading ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
       >
-        {uploading ? 'Uploading...' : multiple ? 'Upload Images' : 'Upload Image'}
-      </button>
+        <div className="text-4xl mb-2">📷</div>
+        <p className="text-gray-600 font-medium">
+          {uploading ? t.uploading : (multiple ? t.uploadImages : t.uploadImage)}
+        </p>
+        <p className="text-xs text-gray-400 mt-1">{t.dragDrop}</p>
+        <p className="text-xs text-gray-400">{t.supportedFormats}</p>
+      </div>
 
       {previews.length > 0 && (
         <div className="mt-4 grid grid-cols-3 gap-2">
@@ -115,14 +151,17 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 alt={`Preview ${index + 1}`}
                 className="w-full h-full object-cover rounded-lg"
               />
+              <div className="absolute inset-0 bg-black bg-opacity-30 rounded-lg flex items-center justify-center">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+              </div>
             </div>
           ))}
         </div>
       )}
 
       {uploading && (
-        <div className="mt-2 text-sm text-gray-600">
-          Uploading {multiple ? 'images' : 'image'}...
+        <div className="mt-2 text-sm text-gray-600 text-center">
+          {multiple ? t.uploadingImages : t.uploadingImage}
         </div>
       )}
     </div>

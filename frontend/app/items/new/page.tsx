@@ -1225,7 +1225,7 @@ export default function NewItemPage() {
             {/* Image Upload */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">{t.photos}</label>
-              <ImageUpload onUploadComplete={handleUploadComplete} onUploadError={handleUploadError} />
+              <ImageUpload onUploadComplete={handleUploadComplete} onUploadError={handleUploadError} lang={lang} multiple />
 
               {uploadedImages.length > 0 && (
                 <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
