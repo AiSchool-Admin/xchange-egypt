@@ -358,3 +358,89 @@ export const getUserProfile = async (userId: string) => {
 
   return user;
 };
+
+/**
+ * Update user profile
+ */
+export interface UpdateProfileInput {
+  fullName?: string;
+  phone?: string;
+  avatar?: string;
+  bio?: string;
+  address?: string;
+  city?: string;
+  governorate?: string;
+  district?: string;
+  street?: string;
+  postalCode?: string;
+  latitude?: number;
+  longitude?: number;
+  businessName?: string;
+  taxId?: string;
+  commercialRegNo?: string;
+}
+
+export const updateProfile = async (userId: string, data: UpdateProfileInput) => {
+  // Check if user exists
+  const existingUser = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!existingUser) {
+    throw new NotFoundError('User not found');
+  }
+
+  // Check if phone number is being changed and is unique
+  if (data.phone && data.phone !== existingUser.phone) {
+    const existingPhone = await prisma.user.findUnique({
+      where: { phone: data.phone },
+    });
+
+    if (existingPhone) {
+      throw new ConflictError('User with this phone number already exists');
+    }
+  }
+
+  // Update user
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      fullName: data.fullName,
+      phone: data.phone,
+      avatar: data.avatar,
+      bio: data.bio,
+      address: data.address,
+      city: data.city,
+      governorate: data.governorate,
+      postalCode: data.postalCode,
+      businessName: data.businessName,
+      taxId: data.taxId,
+      commercialRegNo: data.commercialRegNo,
+    },
+    select: {
+      id: true,
+      email: true,
+      fullName: true,
+      phone: true,
+      userType: true,
+      status: true,
+      emailVerified: true,
+      phoneVerified: true,
+      avatar: true,
+      bio: true,
+      address: true,
+      city: true,
+      governorate: true,
+      postalCode: true,
+      businessName: true,
+      taxId: true,
+      commercialRegNo: true,
+      rating: true,
+      totalReviews: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return user;
+};

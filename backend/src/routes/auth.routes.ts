@@ -68,4 +68,11 @@ router.post('/logout-all', authenticate, authController.logoutAll);
  */
 router.get('/me', authenticate, authController.getMe);
 
+/**
+ * @route   PUT /api/v1/auth/me
+ * @desc    Update current user profile
+ * @access  Private
+ */
+router.put('/me', authenticate, authController.updateMe);
+
 export default router;
