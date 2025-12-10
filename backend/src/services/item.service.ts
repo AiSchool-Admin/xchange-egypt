@@ -525,9 +525,15 @@ export const searchItems = async (
     where.status = status;
   }
 
-  // Listing type filtering
+  // Listing type filtering - filter items with active listings of the specified type
   if (listingType) {
-    where.listingType = listingType;
+    // Filter items that have at least one active listing of this type
+    where.listings = {
+      some: {
+        listingType: listingType,
+        status: 'ACTIVE',
+      },
+    };
   }
 
   // Scrap items filtering
