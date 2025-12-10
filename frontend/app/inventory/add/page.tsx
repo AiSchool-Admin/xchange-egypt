@@ -334,6 +334,9 @@ function AddInventoryContent() {
   const [districts, setDistricts] = useState<District[]>([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
 
+  // Ref to track when auto-filling from user profile (to prevent useEffect resets)
+  const isAutoFillingLocation = React.useRef(false);
+
   // Category state - 3 levels
   const [rootCategories, setRootCategories] = useState<Category[]>([]);
   const [level2Categories, setLevel2Categories] = useState<Category[]>([]);
@@ -365,6 +368,42 @@ function AddInventoryContent() {
     }
   }, [user, loading, router]);
 
+  // Helper function to normalize text for matching (removes diacritics, trims, lowercases)
+  const normalizeText = (text: string | undefined | null): string => {
+    if (!text) return '';
+    return text.toLowerCase().trim()
+      .replace(/[\u064B-\u065F]/g, '') // Remove Arabic diacritics
+      .replace(/أ|إ|آ/g, 'ا') // Normalize Alef variants
+      .replace(/ة/g, 'ه') // Normalize Ta marbuta
+      .replace(/ى/g, 'ي'); // Normalize Alef maksura
+  };
+
+  // Helper function to find matching location
+  const findMatchingLocation = <T extends { nameAr?: string; nameEn?: string; id: string }>(
+    items: T[],
+    userValue: string | undefined | null
+  ): T | undefined => {
+    if (!userValue || items.length === 0) return undefined;
+
+    const normalizedUser = normalizeText(userValue);
+
+    return items.find(item => {
+      const normalizedAr = normalizeText(item.nameAr);
+      const normalizedEn = normalizeText(item.nameEn);
+
+      // Exact match
+      if (normalizedAr === normalizedUser || normalizedEn === normalizedUser) return true;
+
+      // Contains match
+      if (normalizedAr && normalizedAr.includes(normalizedUser)) return true;
+      if (normalizedEn && normalizedEn.includes(normalizedUser)) return true;
+      if (normalizedUser.includes(normalizedAr) && normalizedAr) return true;
+      if (normalizedUser.includes(normalizedEn) && normalizedEn) return true;
+
+      return false;
+    });
+  };
+
   // Load governorates on mount
   useEffect(() => {
     const loadGovernorates = async () => {
@@ -373,66 +412,48 @@ function AddInventoryContent() {
 
       // Auto-fill location from user profile
       if (user && (user.governorate || user.city || user.district)) {
-        // Find matching governorate by name (Arabic or English)
-        const userGov = user.governorate?.toLowerCase() || '';
-        const matchingGov = data.find(g =>
-          g.nameEn?.toLowerCase() === userGov ||
-          g.nameAr === user.governorate ||
-          g.nameEn?.toLowerCase().includes(userGov) ||
-          userGov.includes(g.nameEn?.toLowerCase() || '')
-        );
+        // Set flag to prevent useEffects from resetting values
+        isAutoFillingLocation.current = true;
+
+        // Find matching governorate
+        const matchingGov = findMatchingLocation(data, user.governorate);
 
         if (matchingGov) {
+          // Load cities for this governorate
+          const citiesData = await getCities(matchingGov.id);
+          setCities(citiesData);
+
+          // Find matching city
+          const matchingCity = findMatchingLocation(citiesData, user.city);
+
+          let districtsData: District[] = [];
+          let matchingDistrict: District | undefined;
+
+          if (matchingCity) {
+            // Load districts for this city
+            districtsData = await getDistricts(matchingGov.id, matchingCity.id);
+            setDistricts(districtsData);
+
+            // Find matching district
+            matchingDistrict = findMatchingLocation(districtsData, user.district);
+          }
+
+          // Set all form data at once to prevent partial updates
           setFormData(prev => ({
             ...prev,
             governorateId: matchingGov.id,
-            governorateName: matchingGov.nameEn || '',
+            governorateName: matchingGov.nameEn || matchingGov.nameAr || '',
+            cityId: matchingCity?.id || '',
+            cityName: matchingCity?.nameEn || matchingCity?.nameAr || '',
+            districtId: matchingDistrict?.id || '',
+            districtName: matchingDistrict?.nameEn || matchingDistrict?.nameAr || '',
           }));
-
-          // Load cities for this governorate and find matching city
-          if (user.city) {
-            const citiesData = await getCities(matchingGov.id);
-            setCities(citiesData);
-
-            const userCity = user.city?.toLowerCase() || '';
-            const matchingCity = citiesData.find(c =>
-              c.nameEn?.toLowerCase() === userCity ||
-              c.nameAr === user.city ||
-              c.nameEn?.toLowerCase().includes(userCity) ||
-              userCity.includes(c.nameEn?.toLowerCase() || '')
-            );
-
-            if (matchingCity) {
-              setFormData(prev => ({
-                ...prev,
-                cityId: matchingCity.id,
-                cityName: matchingCity.nameEn || '',
-              }));
-
-              // Load districts for this city and find matching district
-              if (user.district) {
-                const districtsData = await getDistricts(matchingGov.id, matchingCity.id);
-                setDistricts(districtsData);
-
-                const userDistrict = user.district?.toLowerCase() || '';
-                const matchingDistrict = districtsData.find(d =>
-                  d.nameEn?.toLowerCase() === userDistrict ||
-                  d.nameAr === user.district ||
-                  d.nameEn?.toLowerCase().includes(userDistrict) ||
-                  userDistrict.includes(d.nameEn?.toLowerCase() || '')
-                );
-
-                if (matchingDistrict) {
-                  setFormData(prev => ({
-                    ...prev,
-                    districtId: matchingDistrict.id,
-                    districtName: matchingDistrict.nameEn || '',
-                  }));
-                }
-              }
-            }
-          }
         }
+
+        // Reset flag after a delay to allow normal behavior
+        setTimeout(() => {
+          isAutoFillingLocation.current = false;
+        }, 500);
       }
     };
     loadGovernorates();
@@ -456,8 +477,11 @@ function AddInventoryContent() {
     loadCategories();
   }, []);
 
-  // Load cities when governorate changes
+  // Load cities when governorate changes (skip if auto-filling)
   useEffect(() => {
+    // Skip if we're auto-filling from user profile
+    if (isAutoFillingLocation.current) return;
+
     if (formData.governorateId) {
       setLoadingLocations(true);
       getCities(formData.governorateId).then(data => {
@@ -471,8 +495,11 @@ function AddInventoryContent() {
     }
   }, [formData.governorateId]);
 
-  // Load districts when city changes
+  // Load districts when city changes (skip if auto-filling)
   useEffect(() => {
+    // Skip if we're auto-filling from user profile
+    if (isAutoFillingLocation.current) return;
+
     if (formData.governorateId && formData.cityId) {
       setLoadingLocations(true);
       getDistricts(formData.governorateId, formData.cityId).then(data => {
