@@ -80,8 +80,6 @@ const translations = {
     businessName: 'اسم النشاط التجاري',
     taxId: 'الرقم الضريبي',
     commercialRegNo: 'رقم السجل التجاري',
-    country: 'الدولة',
-    selectCountry: 'اختر الدولة',
     governorate: 'المحافظة',
     city: 'المدينة',
     selectGovernorate: 'اختر المحافظة',
@@ -136,8 +134,6 @@ const translations = {
     businessName: 'Business Name',
     taxId: 'Tax ID',
     commercialRegNo: 'Commercial Reg. No.',
-    country: 'Country',
-    selectCountry: 'Select Country',
     governorate: 'Governorate',
     city: 'City',
     selectGovernorate: 'Select Governorate',
@@ -387,8 +383,25 @@ export default function RegisterPage() {
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <div className="max-w-md w-full">
-        {/* Language Switcher */}
-        <div className="flex justify-end mb-4">
+        {/* Country and Language Switchers */}
+        <div className="flex justify-between items-center mb-4">
+          {/* Country Selector */}
+          <div className="relative">
+            <select
+              value={formData.country}
+              onChange={(e) => setFormData(prev => ({ ...prev, country: e.target.value }))}
+              className="appearance-none flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors cursor-pointer pr-8"
+            >
+              {COUNTRIES.map(country => (
+                <option key={country.code} value={country.code}>
+                  {country.flag} {country.name[lang]}
+                </option>
+              ))}
+            </select>
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500">▼</span>
+          </div>
+
+          {/* Language Switcher */}
           <button
             onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
             className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
@@ -493,60 +506,37 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Country and Phone */}
-            <div className="space-y-3">
-              {/* Country Selector */}
-              <div>
-                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.country} <span className="text-gray-400">{t.optional}</span>
-                </label>
-                <select
-                  id="country"
-                  name="country"
-                  value={formData.country}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-white"
-                >
-                  {COUNTRIES.map(country => (
-                    <option key={country.code} value={country.code}>
-                      {country.flag} {country.name[lang]} ({country.phoneCode})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Phone with country code */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  {t.phone} <span className="text-gray-400">{t.optional}</span>
-                </label>
-                <div className="flex gap-2">
-                  <div className="flex items-center px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 font-medium min-w-[80px] justify-center">
-                    {selectedCountry.flag} {selectedCountry.phoneCode}
-                  </div>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    dir="ltr"
-                    className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors ${
-                      errors.phone && touched.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    }`}
-                    placeholder={formData.country === 'EG' ? '1012345678' : '512345678'}
-                  />
+            {/* Phone with country code */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                {t.phone} <span className="text-gray-400">{t.optional}</span>
+              </label>
+              <div className="flex gap-2">
+                <div className="flex items-center px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 font-medium min-w-[80px] justify-center">
+                  {selectedCountry.flag} {selectedCountry.phoneCode}
                 </div>
-                {!(errors.phone && touched.phone) && (
-                  <p className="mt-1 text-xs text-gray-500">{t.phoneHint}</p>
-                )}
-                {errors.phone && touched.phone && (
-                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                    <span>⚠</span> {errors.phone}
-                  </p>
-                )}
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  dir="ltr"
+                  className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors ${
+                    errors.phone && touched.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder={formData.country === 'EG' ? '1012345678' : '512345678'}
+                />
               </div>
+              {!(errors.phone && touched.phone) && (
+                <p className="mt-1 text-xs text-gray-500">{t.phoneHint}</p>
+              )}
+              {errors.phone && touched.phone && (
+                <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠</span> {errors.phone}
+                </p>
+              )}
             </div>
 
             {/* Business-specific fields */}
