@@ -127,18 +127,23 @@ export const addToCart = async (userId: string, listingIdOrItemId: string, quant
       },
     });
 
-    if (item && item.listings.length > 0) {
-      listing = await prisma.listing.findUnique({
-        where: { id: item.listings[0].id },
-        include: {
-          item: true,
-        },
-      });
+    if (item) {
+      if (item.listings.length > 0) {
+        listing = await prisma.listing.findUnique({
+          where: { id: item.listings[0].id },
+          include: {
+            item: true,
+          },
+        });
+      } else {
+        // Item exists but no active DIRECT_SALE listing
+        throw new BadRequestError('This item is not available for direct purchase. It may be listed for auction or barter only.');
+      }
     }
   }
 
   if (!listing) {
-    throw new NotFoundError('Item or listing not found');
+    throw new NotFoundError('Item or listing not found. Please check the item ID and try again.');
   }
 
   if (listing.status !== 'ACTIVE') {
