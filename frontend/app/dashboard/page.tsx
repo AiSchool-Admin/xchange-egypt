@@ -16,6 +16,7 @@ const translations = {
     welcome: 'مرحباً،',
     homePage: 'الصفحة الرئيسية',
     logout: 'تسجيل الخروج',
+    myProfile: 'ملفي الشخصي',
 
     // Stats
     myProducts: 'منتجاتي',
@@ -90,6 +91,7 @@ const translations = {
     welcome: 'Welcome,',
     homePage: 'Home Page',
     logout: 'Logout',
+    myProfile: 'My Profile',
 
     // Stats
     myProducts: 'My Products',
@@ -252,7 +254,7 @@ export default function DashboardPage() {
       <header className={`bg-gradient-to-${isRTL ? 'l' : 'r'} from-primary-600 via-primary-700 to-teal-600 text-white shadow-lg`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
+            <Link href="/dashboard/profile" className="flex items-center gap-4 hover:opacity-90 transition-opacity">
               <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center text-2xl backdrop-blur-sm">
                 {user.avatar ? (
                   <img src={user.avatar} alt="" className="w-full h-full rounded-full object-cover" />
@@ -264,7 +266,7 @@ export default function DashboardPage() {
                 <h1 className="text-2xl font-bold">{t.welcome} {user.fullName}</h1>
                 <p className="text-primary-100 text-sm">{user.email}</p>
               </div>
-            </div>
+            </Link>
             <div className="flex items-center gap-3">
               {/* Language Switcher */}
               <button
@@ -274,6 +276,12 @@ export default function DashboardPage() {
                 <span className="text-lg">{lang === 'ar' ? '🇬🇧' : '🇪🇬'}</span>
                 <span>{lang === 'ar' ? 'English' : 'العربية'}</span>
               </button>
+              <Link
+                href="/dashboard/profile"
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors backdrop-blur-sm"
+              >
+                👤 {t.myProfile}
+              </Link>
               <Link
                 href="/"
                 className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors backdrop-blur-sm"
