@@ -274,6 +274,97 @@ const translations = {
 
 type Language = 'ar' | 'en';
 
+// Mapping for governorate names (Arabic -> English value)
+const governorateMapping: { [key: string]: string } = {
+  // Arabic names
+  'القاهرة': 'Cairo',
+  'الجيزة': 'Giza',
+  'الإسكندرية': 'Alexandria',
+  'الاسكندرية': 'Alexandria',
+  'الدقهلية': 'Dakahlia',
+  'البحر الأحمر': 'Red Sea',
+  'البحيرة': 'Beheira',
+  'الفيوم': 'Fayoum',
+  'الغربية': 'Gharbiya',
+  'الإسماعيلية': 'Ismailia',
+  'الاسماعيلية': 'Ismailia',
+  'المنوفية': 'Menofia',
+  'المنيا': 'Minya',
+  'القليوبية': 'Qaliubiya',
+  'الوادي الجديد': 'New Valley',
+  'السويس': 'Suez',
+  'أسوان': 'Aswan',
+  'اسوان': 'Aswan',
+  'أسيوط': 'Assiut',
+  'اسيوط': 'Assiut',
+  'بني سويف': 'Beni Suef',
+  'بورسعيد': 'Port Said',
+  'دمياط': 'Damietta',
+  'الشرقية': 'Sharkia',
+  'جنوب سيناء': 'South Sinai',
+  'كفر الشيخ': 'Kafr El Sheikh',
+  'مطروح': 'Matrouh',
+  'الأقصر': 'Luxor',
+  'الاقصر': 'Luxor',
+  'قنا': 'Qena',
+  'شمال سيناء': 'North Sinai',
+  'سوهاج': 'Sohag',
+  // English names (for case-insensitive matching)
+  'cairo': 'Cairo',
+  'giza': 'Giza',
+  'alexandria': 'Alexandria',
+  'dakahlia': 'Dakahlia',
+  'red sea': 'Red Sea',
+  'beheira': 'Beheira',
+  'fayoum': 'Fayoum',
+  'gharbiya': 'Gharbiya',
+  'ismailia': 'Ismailia',
+  'menofia': 'Menofia',
+  'minya': 'Minya',
+  'qaliubiya': 'Qaliubiya',
+  'new valley': 'New Valley',
+  'suez': 'Suez',
+  'aswan': 'Aswan',
+  'assiut': 'Assiut',
+  'beni suef': 'Beni Suef',
+  'port said': 'Port Said',
+  'damietta': 'Damietta',
+  'sharkia': 'Sharkia',
+  'south sinai': 'South Sinai',
+  'kafr el sheikh': 'Kafr El Sheikh',
+  'matrouh': 'Matrouh',
+  'luxor': 'Luxor',
+  'qena': 'Qena',
+  'north sinai': 'North Sinai',
+  'sohag': 'Sohag',
+};
+
+// Function to normalize governorate name to English value
+const normalizeGovernorate = (value: string | undefined): string => {
+  if (!value) return '';
+
+  // Check if it's already a valid English value
+  const validValues = [
+    'Cairo', 'Giza', 'Alexandria', 'Dakahlia', 'Red Sea', 'Beheira', 'Fayoum',
+    'Gharbiya', 'Ismailia', 'Menofia', 'Minya', 'Qaliubiya', 'New Valley', 'Suez',
+    'Aswan', 'Assiut', 'Beni Suef', 'Port Said', 'Damietta', 'Sharkia', 'South Sinai',
+    'Kafr El Sheikh', 'Matrouh', 'Luxor', 'Qena', 'North Sinai', 'Sohag'
+  ];
+
+  if (validValues.includes(value)) {
+    return value;
+  }
+
+  // Try to find in mapping (Arabic or lowercase English)
+  const mapped = governorateMapping[value] || governorateMapping[value.toLowerCase()];
+  if (mapped) {
+    return mapped;
+  }
+
+  // Return empty if not found (will show placeholder in dropdown)
+  return '';
+};
+
 export default function NewItemPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -339,9 +430,10 @@ export default function NewItemPage() {
 
     // Auto-fill location from user profile
     if (user.governorate || user.city || user.district) {
+      const normalizedGovernorate = normalizeGovernorate(user.governorate);
       setFormData(prev => ({
         ...prev,
-        governorate: user.governorate || '',
+        governorate: normalizedGovernorate,
         location: user.district || user.city || '',
       }));
     }
