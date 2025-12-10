@@ -174,8 +174,8 @@ export const createOrder = async (
     // This prevents other transactions from modifying these listings until we're done
     const listings = await tx.$queryRaw<Array<{ id: string; status: string; title: string }>>`
       SELECT l.id, l.status, i.title
-      FROM "Listing" l
-      JOIN "Item" i ON l."itemId" = i.id
+      FROM "listings" l
+      JOIN "items" i ON l."item_id" = i.id
       WHERE l.id = ANY(${listingIds}::uuid[])
       FOR UPDATE NOWAIT
     `.catch((error: Error) => {
