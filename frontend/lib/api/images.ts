@@ -31,7 +31,8 @@ export const uploadImage = async (
     },
   });
 
-  return response.data;
+  // Backend returns { success, data, message }, extract the data
+  return response.data.data || response.data;
 };
 
 /**
@@ -54,7 +55,9 @@ export const uploadMultipleImages = async (
     },
   });
 
-  return response.data;
+  // Backend returns { success, data: { count, images }, message }
+  const data = response.data.data || response.data;
+  return data.images || data;
 };
 
 /**

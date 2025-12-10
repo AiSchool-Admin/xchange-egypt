@@ -377,6 +377,17 @@ model Item {
   status          ItemStatus    @default(ACTIVE)
   views           Int           @default(0)
 
+  // ============================================
+  // Inventory/Stock Management (for merchants)
+  // ============================================
+  stockQuantity       Int           @default(0) @map("stock_quantity")      // Current stock quantity (can be negative)
+  reservedQuantity    Int           @default(0) @map("reserved_quantity")   // Quantity reserved in pending orders
+  allowNegativeStock  Boolean       @default(true) @map("allow_negative_stock")  // Allow selling when stock is negative
+  lowStockThreshold   Int?          @map("low_stock_threshold")             // Alert when stock falls below this
+  trackInventory      Boolean       @default(true) @map("track_inventory")  // Enable/disable inventory tracking
+  sku                 String?       @map("sku")                             // Stock Keeping Unit (for merchants)
+  barcode             String?       @map("barcode")                         // Barcode/EAN
+
   // Featured/Promotion fields
   isFeatured          Boolean       @default(false) @map("is_featured")
   promotionTier       PromotionTier @default(BASIC) @map("promotion_tier")
@@ -398,6 +409,7 @@ model Item {
   reverseAuctionBids      ReverseAuctionBid[]     @relation("ReverseAuctionBidItem")
   inventoryLocks          InventoryLock[]         @relation("InventoryLocks")
   scrapSellerOffers       ScrapSellerOffer[]      @relation("ScrapOfferItem")
+  stockAdjustments        StockAdjustment[]       @relation("ItemStockAdjustments")
 
   @@map("items")
   @@index([sellerId])
@@ -422,6 +434,63 @@ model Item {
   @@index([metalType])
   @@index([isScrap, scrapType])
   @@index([isScrap, status])
+  @@index([sku])
+  @@index([barcode])
+  @@index([stockQuantity])
+  @@index([trackInventory])
+}
+
+// ============================================
+// Stock Adjustment - Inventory Change Tracking
+// ============================================
+enum StockAdjustmentType {
+  SALE              // Stock decreased due to sale
+  PURCHASE          // Stock increased due to purchase/restock
+  MANUAL_ADD        // Manual stock addition
+  MANUAL_SUBTRACT   // Manual stock subtraction
+  RETURN            // Stock returned from customer
+  DAMAGE            // Stock lost due to damage
+  TRANSFER_IN       // Stock transferred in from another location
+  TRANSFER_OUT      // Stock transferred out to another location
+  INITIAL           // Initial stock count
+  CORRECTION        // Stock correction/reconciliation
+}
+
+model StockAdjustment {
+  id              String              @id @default(uuid())
+  itemId          String              @map("item_id")
+  userId          String              @map("user_id")         // User who made the adjustment
+
+  // Adjustment details
+  type            StockAdjustmentType
+  quantityBefore  Int                 @map("quantity_before")
+  quantityChange  Int                 @map("quantity_change") // Positive for add, negative for subtract
+  quantityAfter   Int                 @map("quantity_after")
+
+  // Reference to related entity
+  referenceType   String?             @map("reference_type")  // "ORDER", "RETURN", "TRANSFER", etc.
+  referenceId     String?             @map("reference_id")    // ID of the related order/return/etc.
+
+  // Notes
+  reason          String?                                     // Reason for manual adjustment
+  notes           String?                                     // Additional notes
+
+  // Cost tracking (optional)
+  unitCost        Float?              @map("unit_cost")       // Cost per unit at time of adjustment
+  totalCost       Float?              @map("total_cost")      // Total cost of this adjustment
+
+  // Timestamps
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  // Relations
+  item            Item                @relation("ItemStockAdjustments", fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("stock_adjustments")
+  @@index([itemId])
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([referenceType, referenceId])
 }
 
 // ============================================
@@ -1566,6 +1635,11 @@ enum NotificationType {
   // System notifications
   SYSTEM_MAINTENANCE           // Scheduled maintenance
   SYSTEM_ANNOUNCEMENT          // Important announcement
+
+  // Inventory/Stock notifications
+  LOW_STOCK                    // Stock fell below threshold
+  NEGATIVE_STOCK               // Stock became negative
+  STOCK_REPLENISHED            // Stock was replenished
 }
 
 enum NotificationChannel {

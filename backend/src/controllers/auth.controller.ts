@@ -133,3 +133,21 @@ export const getMe = async (req: Request, res: Response, next: NextFunction) => 
     next(error);
   }
 };
+
+/**
+ * Update current user profile
+ * PUT /api/v1/auth/me
+ */
+export const updateMe = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const user = await authService.updateProfile(req.userId, req.body);
+
+    return sendSuccess(res, user, 'Profile updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};

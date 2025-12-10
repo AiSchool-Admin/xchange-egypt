@@ -245,7 +245,7 @@ export default function ItemDetailsPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          listingId: item.id,
+          itemId: item.id,
           quantity: 1,
         }),
       });

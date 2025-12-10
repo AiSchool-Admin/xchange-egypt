@@ -19,12 +19,15 @@ export const getCart = async (req: Request, res: Response, next: NextFunction) =
 /**
  * Add item to cart
  * POST /api/v1/cart/items
+ * Accepts either listingId or itemId
  */
 export const addToCart = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const { listingId, quantity } = req.body;
-    const cart = await cartService.addToCart(userId, listingId, quantity);
+    const { listingId, itemId, quantity } = req.body;
+    // Use listingId if provided, otherwise use itemId
+    const id = listingId || itemId;
+    const cart = await cartService.addToCart(userId, id, quantity);
     return successResponse(res, cart, 'Item added to cart', 201);
   } catch (error) {
     next(error);

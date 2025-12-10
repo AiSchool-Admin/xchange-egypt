@@ -99,22 +99,50 @@ export const getCart = async (userId: string) => {
 
 /**
  * Add item to cart
+ * Accepts either listingId or itemId (for backward compatibility and flexibility)
  */
-export const addToCart = async (userId: string, listingId: string, quantity: number = 1) => {
-  // Verify listing exists and is active
-  const listing = await prisma.listing.findUnique({
-    where: { id: listingId },
+export const addToCart = async (userId: string, listingIdOrItemId: string, quantity: number = 1) => {
+  let listing;
+
+  // First try to find as a listing
+  listing = await prisma.listing.findUnique({
+    where: { id: listingIdOrItemId },
     include: {
       item: true,
     },
   });
 
+  // If not found as listing, try to find as an item and get its DIRECT_SALE listing
   if (!listing) {
-    throw new NotFoundError('Listing not found');
+    const item = await prisma.item.findUnique({
+      where: { id: listingIdOrItemId },
+      include: {
+        listings: {
+          where: {
+            listingType: 'DIRECT_SALE',
+            status: 'ACTIVE',
+          },
+          take: 1,
+        },
+      },
+    });
+
+    if (item && item.listings.length > 0) {
+      listing = await prisma.listing.findUnique({
+        where: { id: item.listings[0].id },
+        include: {
+          item: true,
+        },
+      });
+    }
+  }
+
+  if (!listing) {
+    throw new NotFoundError('Item or listing not found');
   }
 
   if (listing.status !== 'ACTIVE') {
-    throw new BadRequestError('This listing is no longer available');
+    throw new BadRequestError('This item is no longer available');
   }
 
   if (listing.listingType !== 'DIRECT_SALE') {
@@ -134,7 +162,7 @@ export const addToCart = async (userId: string, listingId: string, quantity: num
     where: {
       cartId_listingId: {
         cartId: cart.id,
-        listingId,
+        listingId: listing.id,
       },
     },
   });
@@ -150,7 +178,7 @@ export const addToCart = async (userId: string, listingId: string, quantity: num
     await prisma.cartItem.create({
       data: {
         cartId: cart.id,
-        listingId,
+        listingId: listing.id,
         quantity,
       },
     });

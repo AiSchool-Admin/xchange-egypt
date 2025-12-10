@@ -23,9 +23,11 @@ const CONDITIONS = [
 
 const LISTING_TYPES = [
   { value: '', label: 'الكل', icon: '🛒' },
-  { value: 'DIRECT_SALE', label: 'للبيع', icon: '🏷️' },
-  { value: 'BARTER', label: 'للمقايضة', icon: '🔄' },
+  { value: 'DIRECT_SALE', label: 'بيع مباشر', icon: '🏷️' },
   { value: 'AUCTION', label: 'مزاد', icon: '🔨' },
+  { value: 'BARTER', label: 'مقايضة', icon: '🔄' },
+  { value: 'WANTED', label: 'مطلوب للشراء', icon: '🔍' },
+  { value: 'REVERSE_AUCTION', label: 'مناقصات', icon: '📢' },
 ];
 
 const SORT_OPTIONS = [

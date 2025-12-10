@@ -18,6 +18,10 @@ export interface RegisterIndividualData {
   phone?: string;
   city?: string;
   governorate?: string;
+  district?: string;
+  street?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface RegisterBusinessData {
@@ -30,6 +34,10 @@ export interface RegisterBusinessData {
   commercialRegNo?: string;
   city?: string;
   governorate?: string;
+  district?: string;
+  street?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface LoginData {
@@ -54,6 +62,10 @@ export interface User {
   rating?: number;
   city?: string;
   governorate?: string;
+  district?: string;
+  street?: string;
+  latitude?: number;
+  longitude?: number;
   businessName?: string;
   taxId?: string;
   commercialRegNo?: string;
