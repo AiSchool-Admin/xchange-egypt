@@ -370,9 +370,73 @@ function AddInventoryContent() {
     const loadGovernorates = async () => {
       const data = await getGovernorates();
       setGovernorates(data);
+
+      // Auto-fill location from user profile
+      if (user && (user.governorate || user.city || user.district)) {
+        // Find matching governorate by name (Arabic or English)
+        const userGov = user.governorate?.toLowerCase() || '';
+        const matchingGov = data.find(g =>
+          g.nameEn?.toLowerCase() === userGov ||
+          g.nameAr === user.governorate ||
+          g.nameEn?.toLowerCase().includes(userGov) ||
+          userGov.includes(g.nameEn?.toLowerCase() || '')
+        );
+
+        if (matchingGov) {
+          setFormData(prev => ({
+            ...prev,
+            governorateId: matchingGov.id,
+            governorateName: matchingGov.nameEn || '',
+          }));
+
+          // Load cities for this governorate and find matching city
+          if (user.city) {
+            const citiesData = await getCities(matchingGov.id);
+            setCities(citiesData);
+
+            const userCity = user.city?.toLowerCase() || '';
+            const matchingCity = citiesData.find(c =>
+              c.nameEn?.toLowerCase() === userCity ||
+              c.nameAr === user.city ||
+              c.nameEn?.toLowerCase().includes(userCity) ||
+              userCity.includes(c.nameEn?.toLowerCase() || '')
+            );
+
+            if (matchingCity) {
+              setFormData(prev => ({
+                ...prev,
+                cityId: matchingCity.id,
+                cityName: matchingCity.nameEn || '',
+              }));
+
+              // Load districts for this city and find matching district
+              if (user.district) {
+                const districtsData = await getDistricts(matchingGov.id, matchingCity.id);
+                setDistricts(districtsData);
+
+                const userDistrict = user.district?.toLowerCase() || '';
+                const matchingDistrict = districtsData.find(d =>
+                  d.nameEn?.toLowerCase() === userDistrict ||
+                  d.nameAr === user.district ||
+                  d.nameEn?.toLowerCase().includes(userDistrict) ||
+                  userDistrict.includes(d.nameEn?.toLowerCase() || '')
+                );
+
+                if (matchingDistrict) {
+                  setFormData(prev => ({
+                    ...prev,
+                    districtId: matchingDistrict.id,
+                    districtName: matchingDistrict.nameEn || '',
+                  }));
+                }
+              }
+            }
+          }
+        }
+      }
     };
     loadGovernorates();
-  }, []);
+  }, [user]);
 
   // Load root categories on mount
   useEffect(() => {
