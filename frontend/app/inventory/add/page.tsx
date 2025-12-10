@@ -29,6 +29,206 @@ import {
   District,
 } from '@/lib/api/locations';
 
+// Translations
+const translations = {
+  ar: {
+    back: '← رجوع',
+    step: 'خطوة',
+    of: 'من',
+    whatToDo: 'ماذا تريد أن تفعل؟',
+    iHave: 'عندي',
+    iNeed: 'أحتاج',
+    somethingToSell: 'شيء للبيع أو المزاد أو المقايضة',
+    lookingFor: 'أبحث عن سلع أو خدمات أو نقد',
+    whatType: 'ما نوع العنصر؟',
+    whatOffering: 'ماذا تعرض؟',
+    whatLooking: 'ماذا تبحث عنه؟',
+    goods: 'سلع',
+    services: 'خدمات',
+    cash: 'نقد',
+    physicalProducts: 'منتجات مادية',
+    skillsExpertise: 'مهارات وخبرات',
+    cashExchange: 'تبادل نقدي',
+    goBack: 'رجوع',
+    tellUsAbout: 'أخبرنا عن العنصر',
+    addDetails: 'أضف التفاصيل لمساعدة الآخرين في العثور على إعلانك',
+    title: 'العنوان',
+    description: 'الوصف',
+    describeItem: 'صف العنصر بالتفصيل...',
+    category: 'الفئة',
+    mainCategory: 'الفئة الرئيسية',
+    subCategory: 'الفئة الفرعية',
+    detailedCategory: 'الفئة التفصيلية',
+    selectCategory: 'اختر الفئة...',
+    selectMainFirst: 'اختر الفئة الرئيسية أولاً',
+    selectSubFirst: 'اختر الفئة الفرعية أولاً',
+    noSubCategories: 'لا توجد فئات فرعية',
+    noDetailedCategories: 'لا توجد فئات تفصيلية',
+    selectedCategory: 'الفئة المختارة',
+    condition: 'الحالة',
+    estimatedValue: 'القيمة التقديرية (ج.م)',
+    enterAmount: 'أدخل المبلغ',
+    photos: 'الصور',
+    recommended: 'مُستحسن',
+    location: 'الموقع',
+    governorate: 'المحافظة',
+    city: 'المدينة',
+    district: 'الحي',
+    selectGovernorate: 'اختر المحافظة...',
+    selectCity: 'اختر المدينة...',
+    selectCityFirst: 'اختر المدينة أولاً',
+    selectGovernorateFirst: 'اختر المحافظة أولاً',
+    noDistricts: 'لا توجد أحياء متاحة',
+    selectDistrict: 'اختر الحي...',
+    selectedLocation: 'الموقع المختار',
+    continue: 'متابعة',
+    chooseMarket: 'اختر نطاق السوق',
+    chooseMarketDesc: 'حدد النطاق الجغرافي الذي تريد عرض إعلانك فيه',
+    uniformFee: 'رسوم موحدة: 25 ج.م + 5% عمولة على كل المستويات',
+    listingFee: 'رسوم الإدراج',
+    commissionOnSale: 'عمولة عند البيع',
+    howToSell: 'كيف تريد البيع؟',
+    howToGet: 'كيف تريد الحصول عليه؟',
+    directSale: 'بيع مباشر',
+    directSaleDesc: 'حدد سعرك، بيع فوري',
+    auction: 'مزاد',
+    auctionDesc: 'دع المشترين يتنافسون للحصول على أفضل سعر',
+    barter: 'مقايضة',
+    barterDesc: 'استبدل بشيء تحتاجه',
+    directBuy: 'شراء مباشر',
+    directBuyDesc: 'ابحث عن العناصر المتاحة واشترِ',
+    reverseAuction: 'مزاد عكسي',
+    reverseAuctionDesc: 'انشر طلبك، البائعون يتنافسون',
+    auctionSettings: 'إعدادات المزاد',
+    startingBid: 'السعر الابتدائي (ج.م)',
+    duration: 'المدة (أيام)',
+    day: 'يوم',
+    days: 'أيام',
+    whatInExchange: 'ماذا تريد في المقابل؟',
+    desiredItemTitle: 'اسم الصنف المطلوب',
+    desiredItemDesc: 'وصف الصنف المطلوب',
+    desiredCategory: 'الفئة المطلوبة',
+    anyCategory: 'أي فئة',
+    keywords: 'كلمات مفتاحية',
+    desiredValueRange: 'نطاق القيمة المطلوبة (ج.م)',
+    min: 'الحد الأدنى',
+    max: 'الحد الأقصى',
+    aiNotify: 'سيُعلمك الذكاء الاصطناعي فوراً عند وجود تطابق مناسب!',
+    reviewListing: 'مراجعة الإعلان',
+    reviewDesc: 'تأكد من صحة جميع البيانات قبل النشر',
+    value: 'القيمة',
+    lookingForLabel: 'أبحث عن',
+    createListing: 'إنشاء الإعلان',
+    publishListing: 'نشر الإعلان',
+    publishing: 'جاري النشر...',
+    creating: 'جاري الإنشاء...',
+    successBarter: 'تم إنشاء العنصر بنجاح!\n\nسيتم إشعارك فوراً عند وجود تطابق مناسب.',
+    failedCreate: 'فشل في إنشاء العنصر. حاول مرة أخرى.',
+    flaggedReview: 'تم وضع علامة على إعلانك للمراجعة. يرجى التعديل والمحاولة مرة أخرى.',
+    specifyExchange: 'حدد بالضبط ما تبحث عنه للمقايضة',
+    describeSpecs: 'صف المواصفات المطلوبة بالتفصيل...',
+  },
+  en: {
+    back: '← Back',
+    step: 'Step',
+    of: 'of',
+    whatToDo: 'What would you like to do?',
+    iHave: 'I Have',
+    iNeed: 'I Need',
+    somethingToSell: 'Something to sell, auction, or trade',
+    lookingFor: 'Looking for goods, services, or cash',
+    whatType: 'What type of item?',
+    whatOffering: 'What are you offering?',
+    whatLooking: 'What are you looking for?',
+    goods: 'Goods',
+    services: 'Services',
+    cash: 'Cash',
+    physicalProducts: 'Physical products',
+    skillsExpertise: 'Skills & expertise',
+    cashExchange: 'Cash exchange',
+    goBack: 'Go back',
+    tellUsAbout: 'Tell us about it',
+    addDetails: 'Add details to help others find your listing',
+    title: 'Title',
+    description: 'Description',
+    describeItem: 'Describe your item in detail...',
+    category: 'Category',
+    mainCategory: 'Main Category',
+    subCategory: 'Sub Category',
+    detailedCategory: 'Detailed Category',
+    selectCategory: 'Select category...',
+    selectMainFirst: 'Select main category first',
+    selectSubFirst: 'Select sub category first',
+    noSubCategories: 'No sub categories',
+    noDetailedCategories: 'No detailed categories',
+    selectedCategory: 'Selected Category',
+    condition: 'Condition',
+    estimatedValue: 'Estimated Value (EGP)',
+    enterAmount: 'Enter amount',
+    photos: 'Photos',
+    recommended: 'recommended',
+    location: 'Location',
+    governorate: 'Governorate',
+    city: 'City',
+    district: 'District',
+    selectGovernorate: 'Select governorate...',
+    selectCity: 'Select city...',
+    selectCityFirst: 'Select city first',
+    selectGovernorateFirst: 'Select governorate first',
+    noDistricts: 'No districts available',
+    selectDistrict: 'Select district...',
+    selectedLocation: 'Selected Location',
+    continue: 'Continue',
+    chooseMarket: 'Choose Market Scope',
+    chooseMarketDesc: 'Select the geographic scope for your listing',
+    uniformFee: 'Uniform fee: 25 EGP + 5% commission on all levels',
+    listingFee: 'Listing fee',
+    commissionOnSale: 'Commission on sale',
+    howToSell: 'How do you want to sell?',
+    howToGet: 'How do you want to get it?',
+    directSale: 'Direct Sale',
+    directSaleDesc: 'Set your price, sell instantly',
+    auction: 'Auction',
+    auctionDesc: 'Let buyers bid for the best price',
+    barter: 'Barter',
+    barterDesc: 'Trade for something you need',
+    directBuy: 'Direct Buy',
+    directBuyDesc: 'Find and purchase available items',
+    reverseAuction: 'Reverse Auction',
+    reverseAuctionDesc: 'Post your need, sellers compete',
+    auctionSettings: 'Auction Settings',
+    startingBid: 'Starting Bid (EGP)',
+    duration: 'Duration (days)',
+    day: 'day',
+    days: 'days',
+    whatInExchange: 'What do you want in exchange?',
+    desiredItemTitle: 'Desired Item Title',
+    desiredItemDesc: 'Desired Item Description',
+    desiredCategory: 'Desired Category',
+    anyCategory: 'Any category',
+    keywords: 'Keywords',
+    desiredValueRange: 'Desired Value Range (EGP)',
+    min: 'Min',
+    max: 'Max',
+    aiNotify: 'Our AI will notify you instantly when a matching item is listed!',
+    reviewListing: 'Review Your Listing',
+    reviewDesc: 'Make sure all details are correct before publishing',
+    value: 'Value',
+    lookingForLabel: 'Looking for',
+    createListing: 'Create Listing',
+    publishListing: 'Publish Listing',
+    publishing: 'Publishing...',
+    creating: 'Creating...',
+    successBarter: 'Item created successfully!\n\nYou will be notified when a match is found.',
+    failedCreate: 'Failed to create item. Please try again.',
+    flaggedReview: 'Your listing has been flagged for review. Please modify and try again.',
+    specifyExchange: 'Specify exactly what you\'re looking for in exchange',
+    describeSpecs: 'Describe the desired specifications in detail...',
+  },
+};
+
+type Language = 'ar' | 'en';
+
 type ItemSide = 'supply' | 'demand';
 type ItemType = 'goods' | 'services' | 'cash';
 type ListingType = 'direct_sale' | 'auction' | 'barter' | 'direct_buy' | 'reverse_auction';
@@ -86,6 +286,11 @@ function AddInventoryContent() {
   const searchParams = useSearchParams();
   const { user, loading } = useAuth();
   const { onMatchFound, offMatchFound } = useSocket();
+
+  // Language state - default to Arabic
+  const [lang, setLang] = useState<Language>('ar');
+  const t = translations[lang];
+  const isRTL = lang === 'ar';
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<FormData>({
@@ -548,17 +753,17 @@ function AddInventoryContent() {
     }
   };
 
-  const getListingOptions = (): { value: ListingType; label: string; labelAr: string; icon: string; desc: string }[] => {
+  const getListingOptions = (): { value: ListingType; label: string; icon: string; desc: string }[] => {
     if (formData.side === 'supply') {
       return [
-        { value: 'direct_sale', label: 'Direct Sale', labelAr: 'بيع مباشر', icon: '🏷️', desc: 'Set your price, sell instantly' },
-        { value: 'auction', label: 'Auction', labelAr: 'مزاد', icon: '🔨', desc: 'Let buyers bid for the best price' },
-        { value: 'barter', label: 'Barter', labelAr: 'مقايضة', icon: '🔄', desc: 'Trade for something you need' },
+        { value: 'direct_sale', label: t.directSale, icon: '🏷️', desc: t.directSaleDesc },
+        { value: 'auction', label: t.auction, icon: '🔨', desc: t.auctionDesc },
+        { value: 'barter', label: t.barter, icon: '🔄', desc: t.barterDesc },
       ];
     } else {
       return [
-        { value: 'direct_buy', label: 'Direct Buy', labelAr: 'شراء مباشر', icon: '🛒', desc: 'Find and purchase available items' },
-        { value: 'reverse_auction', label: 'Reverse Auction', labelAr: 'مزاد عكسي', icon: '📢', desc: 'Post your need, sellers compete' },
+        { value: 'direct_buy', label: t.directBuy, icon: '🛒', desc: t.directBuyDesc },
+        { value: 'reverse_auction', label: t.reverseAuction, icon: '📢', desc: t.reverseAuctionDesc },
       ];
     }
   };
@@ -590,16 +795,24 @@ function AddInventoryContent() {
   const totalSteps = formData.side === 'supply' ? 6 : 5;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
       {/* Header */}
       <div className="bg-white border-b sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link href="/inventory" className="text-gray-500 hover:text-gray-700">
-              ← Back
+              {t.back}
             </Link>
+            {/* Language Switcher */}
+            <button
+              onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+              className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 border border-gray-200 rounded-lg text-sm hover:bg-gray-200 transition-colors"
+            >
+              <span className="text-lg">{lang === 'ar' ? '🇬🇧' : '🇪🇬'}</span>
+              <span>{lang === 'ar' ? 'English' : 'العربية'}</span>
+            </button>
             <div className="text-sm text-gray-500">
-              Step {step} of {totalSteps}
+              {t.step} {step} {t.of} {totalSteps}
             </div>
           </div>
           {/* Progress Bar */}
@@ -616,12 +829,9 @@ function AddInventoryContent() {
         {/* Step 1: Choose Side */}
         {step === 1 && (
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              ماذا تريد أن تفعل؟
+            <h1 className="text-3xl font-bold text-gray-800 mb-8">
+              {t.whatToDo}
             </h1>
-            <p className="text-xl text-gray-600 mb-8">
-              What would you like to do?
-            </p>
 
             <div className="grid sm:grid-cols-2 gap-6 max-w-xl mx-auto">
               <button
@@ -636,9 +846,8 @@ function AddInventoryContent() {
                 }`}
               >
                 <div className="text-5xl mb-4">📤</div>
-                <h2 className="text-xl font-bold text-gray-800 mb-1">عندي / I Have</h2>
-                <p className="text-gray-600 text-sm">شيء للبيع أو المزاد أو المقايضة</p>
-                <p className="text-gray-500 text-xs mt-1">Something to sell, auction, or trade</p>
+                <h2 className="text-xl font-bold text-gray-800 mb-1">{t.iHave}</h2>
+                <p className="text-gray-600 text-sm">{t.somethingToSell}</p>
               </button>
 
               <button
@@ -653,9 +862,8 @@ function AddInventoryContent() {
                 }`}
               >
                 <div className="text-5xl mb-4">📥</div>
-                <h2 className="text-xl font-bold text-gray-800 mb-1">أحتاج / I Need</h2>
-                <p className="text-gray-600 text-sm">أبحث عن سلع أو خدمات أو نقد</p>
-                <p className="text-gray-500 text-xs mt-1">Looking for goods, services, or cash</p>
+                <h2 className="text-xl font-bold text-gray-800 mb-1">{t.iNeed}</h2>
+                <p className="text-gray-600 text-sm">{t.lookingFor}</p>
               </button>
             </div>
           </div>
@@ -665,12 +873,10 @@ function AddInventoryContent() {
         {step === 2 && (
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              ما نوع العنصر؟
+              {t.whatType}
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-              {formData.side === 'supply'
-                ? "ماذا تعرض؟ / What are you offering?"
-                : "ماذا تبحث عنه؟ / What are you looking for?"}
+              {formData.side === 'supply' ? t.whatOffering : t.whatLooking}
             </p>
 
             <div className="grid sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
@@ -686,8 +892,8 @@ function AddInventoryContent() {
                 }`}
               >
                 <div className="text-4xl mb-3">📦</div>
-                <h3 className="font-bold text-gray-800 mb-1">سلع / Goods</h3>
-                <p className="text-gray-500 text-xs">منتجات مادية</p>
+                <h3 className="font-bold text-gray-800 mb-1">{t.goods}</h3>
+                <p className="text-gray-500 text-xs">{t.physicalProducts}</p>
               </button>
 
               <button
@@ -702,8 +908,8 @@ function AddInventoryContent() {
                 }`}
               >
                 <div className="text-4xl mb-3">🛠️</div>
-                <h3 className="font-bold text-gray-800 mb-1">خدمات / Services</h3>
-                <p className="text-gray-500 text-xs">مهارات وخبرات</p>
+                <h3 className="font-bold text-gray-800 mb-1">{t.services}</h3>
+                <p className="text-gray-500 text-xs">{t.skillsExpertise}</p>
               </button>
 
               <button
@@ -718,8 +924,8 @@ function AddInventoryContent() {
                 }`}
               >
                 <div className="text-4xl mb-3">💰</div>
-                <h3 className="font-bold text-gray-800 mb-1">نقد / Cash</h3>
-                <p className="text-gray-500 text-xs">تبادل نقدي</p>
+                <h3 className="font-bold text-gray-800 mb-1">{t.cash}</h3>
+                <p className="text-gray-500 text-xs">{t.cashExchange}</p>
               </button>
             </div>
 
@@ -727,7 +933,7 @@ function AddInventoryContent() {
               onClick={() => setStep(1)}
               className="mt-8 text-gray-500 hover:text-gray-700"
             >
-              ← رجوع / Go back
+              ← {t.goBack}
             </button>
           </div>
         )}
@@ -736,17 +942,17 @@ function AddInventoryContent() {
         {step === 3 && (
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
-              أخبرنا عن العنصر
+              {t.tellUsAbout}
             </h1>
             <p className="text-gray-600 mb-8 text-center">
-              Tell us about it - Add details to help others find your listing
+              {t.addDetails}
             </p>
 
             <div className="bg-white rounded-2xl p-6 shadow-lg space-y-6">
               {/* Title */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  العنوان / Title *
+                  {t.title} *
                 </label>
                 <input
                   type="text"
@@ -769,13 +975,13 @@ function AddInventoryContent() {
               {/* Description */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  الوصف / Description *
+                  {t.description} *
                 </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Describe your item in detail... / صف العنصر بالتفصيل..."
+                  placeholder={t.describeItem}
                   rows={4}
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors resize-none"
                   required
@@ -787,7 +993,7 @@ function AddInventoryContent() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg">📂</span>
-                    <label className="text-sm font-semibold text-gray-700">الفئة / Category</label>
+                    <label className="text-sm font-semibold text-gray-700">{t.category}</label>
                     {loadingCategories && <span className="animate-spin text-xs">⏳</span>}
                   </div>
 
@@ -795,7 +1001,7 @@ function AddInventoryContent() {
                     {/* Level 1 - Root Category */}
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">
-                        الفئة الرئيسية / Main Category
+                        {t.mainCategory}
                       </label>
                       <select
                         name="categoryLevel1"
@@ -803,10 +1009,10 @@ function AddInventoryContent() {
                         onChange={handleChange}
                         className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors"
                       >
-                        <option value="">اختر الفئة...</option>
+                        <option value="">{t.selectCategory}</option>
                         {rootCategories.map(cat => (
                           <option key={cat.id} value={cat.id}>
-                            {cat.nameEn} - {cat.nameAr}
+                            {isRTL ? cat.nameAr : cat.nameEn}
                           </option>
                         ))}
                       </select>
@@ -815,7 +1021,7 @@ function AddInventoryContent() {
                     {/* Level 2 - Sub Category */}
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">
-                        الفئة الفرعية / Sub Category
+                        {t.subCategory}
                       </label>
                       <select
                         name="categoryLevel2"
@@ -825,11 +1031,11 @@ function AddInventoryContent() {
                         className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="">
-                          {!formData.categoryLevel1 ? 'اختر الفئة الرئيسية أولاً' : level2Categories.length === 0 ? 'لا توجد فئات فرعية' : 'اختر الفئة الفرعية...'}
+                          {!formData.categoryLevel1 ? t.selectMainFirst : level2Categories.length === 0 ? t.noSubCategories : t.selectCategory}
                         </option>
                         {level2Categories.map(cat => (
                           <option key={cat.id} value={cat.id}>
-                            {cat.nameEn} - {cat.nameAr}
+                            {isRTL ? cat.nameAr : cat.nameEn}
                           </option>
                         ))}
                       </select>
@@ -838,7 +1044,7 @@ function AddInventoryContent() {
                     {/* Level 3 - Sub-Sub Category */}
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">
-                        الفئة التفصيلية / Detailed Category
+                        {t.detailedCategory}
                       </label>
                       <select
                         name="categoryLevel3"
@@ -848,11 +1054,11 @@ function AddInventoryContent() {
                         className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                       >
                         <option value="">
-                          {!formData.categoryLevel2 ? 'اختر الفئة الفرعية أولاً' : level3Categories.length === 0 ? 'لا توجد فئات تفصيلية' : 'اختر الفئة التفصيلية...'}
+                          {!formData.categoryLevel2 ? t.selectSubFirst : level3Categories.length === 0 ? t.noDetailedCategories : t.selectCategory}
                         </option>
                         {level3Categories.map(cat => (
                           <option key={cat.id} value={cat.id}>
-                            {cat.nameEn} - {cat.nameAr}
+                            {isRTL ? cat.nameAr : cat.nameEn}
                           </option>
                         ))}
                       </select>
@@ -862,7 +1068,7 @@ function AddInventoryContent() {
                   {/* Selected Category Preview */}
                   {formData.selectedCategoryId && (
                     <div className="p-3 bg-purple-50 rounded-xl">
-                      <div className="text-xs text-purple-600 font-medium mb-1">الفئة المختارة / Selected Category:</div>
+                      <div className="text-xs text-purple-600 font-medium mb-1">{t.selectedCategory}:</div>
                       <div className="text-sm text-purple-800 font-medium">
                         {getCategoryDisplayName(formData.selectedCategoryId)}
                       </div>
@@ -875,7 +1081,7 @@ function AddInventoryContent() {
               {formData.type === 'goods' && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-3">
-                    الحالة / Condition *
+                    {t.condition} *
                   </label>
                   <div className="grid grid-cols-5 gap-2">
                     {CONDITION_OPTIONS.map(option => (
@@ -890,8 +1096,7 @@ function AddInventoryContent() {
                         }`}
                       >
                         <div className="text-2xl mb-1">{option.icon}</div>
-                        <div className="text-xs font-medium text-gray-700">{option.label}</div>
-                        <div className="text-xs text-gray-500">{option.labelAr}</div>
+                        <div className="text-xs font-medium text-gray-700">{isRTL ? option.labelAr : option.label}</div>
                       </button>
                     ))}
                   </div>
@@ -901,14 +1106,14 @@ function AddInventoryContent() {
               {/* Value */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  القيمة التقديرية (ج.م) / Estimated Value (EGP) *
+                  {t.estimatedValue} *
                 </label>
                 <input
                   type="number"
                   name="value"
                   value={formData.value}
                   onChange={handleChange}
-                  placeholder="أدخل المبلغ / Enter amount"
+                  placeholder={t.enterAmount}
                   className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors"
                   required
                 />
@@ -925,7 +1130,7 @@ function AddInventoryContent() {
               {formData.type !== 'cash' && (
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    الصور / Photos {formData.side === 'supply' && '(recommended / مُستحسن)'}
+                    {t.photos} {formData.side === 'supply' && `(${t.recommended})`}
                   </label>
                   <ImageUpload
                     multiple={true}
@@ -955,7 +1160,7 @@ function AddInventoryContent() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg">📍</span>
-                  <label className="text-sm font-semibold text-gray-700">الموقع / Location</label>
+                  <label className="text-sm font-semibold text-gray-700">{t.location}</label>
                   {loadingLocations && (
                     <span className="animate-spin text-xs">⏳</span>
                   )}
@@ -964,17 +1169,17 @@ function AddInventoryContent() {
                   {/* Governorate */}
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      المحافظة / Governorate
+                      {t.governorate}
                     </label>
                     <select
                       value={formData.governorateId}
                       onChange={handleGovernorateChange}
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors"
                     >
-                      <option value="">اختر المحافظة...</option>
+                      <option value="">{t.selectGovernorate}</option>
                       {governorates.map(gov => (
                         <option key={gov.id} value={gov.id}>
-                          {gov.nameEn} - {gov.nameAr}
+                          {isRTL ? gov.nameAr : gov.nameEn}
                         </option>
                       ))}
                     </select>
@@ -983,7 +1188,7 @@ function AddInventoryContent() {
                   {/* City */}
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      المدينة / City
+                      {t.city}
                     </label>
                     <select
                       value={formData.cityId}
@@ -992,11 +1197,11 @@ function AddInventoryContent() {
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="">
-                        {!formData.governorateId ? 'اختر المحافظة أولاً' : 'اختر المدينة...'}
+                        {!formData.governorateId ? t.selectGovernorateFirst : t.selectCity}
                       </option>
                       {cities.map(city => (
                         <option key={city.id} value={city.id}>
-                          {city.nameEn} - {city.nameAr}
+                          {isRTL ? city.nameAr : city.nameEn}
                         </option>
                       ))}
                     </select>
@@ -1005,7 +1210,7 @@ function AddInventoryContent() {
                   {/* District */}
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      الحي / District
+                      {t.district}
                     </label>
                     <select
                       value={formData.districtId}
@@ -1014,11 +1219,11 @@ function AddInventoryContent() {
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                     >
                       <option value="">
-                        {!formData.cityId ? 'اختر المدينة أولاً' : districts.length === 0 ? 'لا توجد أحياء متاحة' : 'اختر الحي...'}
+                        {!formData.cityId ? t.selectCityFirst : districts.length === 0 ? t.noDistricts : t.selectDistrict}
                       </option>
                       {districts.map(district => (
                         <option key={district.id} value={district.id}>
-                          {district.nameEn} - {district.nameAr}
+                          {isRTL ? district.nameAr : district.nameEn}
                         </option>
                       ))}
                     </select>
@@ -1028,7 +1233,7 @@ function AddInventoryContent() {
                 {/* Location Preview */}
                 {(formData.governorateName || formData.cityName || formData.districtName) && (
                   <div className="p-3 bg-purple-50 rounded-xl">
-                    <div className="text-xs text-purple-600 font-medium mb-1">الموقع المختار / Selected Location:</div>
+                    <div className="text-xs text-purple-600 font-medium mb-1">{t.selectedLocation}:</div>
                     <div className="text-sm text-purple-800">
                       {[formData.districtName, formData.cityName, formData.governorateName]
                         .filter(Boolean)
@@ -1044,14 +1249,14 @@ function AddInventoryContent() {
                 onClick={() => setStep(2)}
                 className="px-6 py-3 text-gray-600 hover:text-gray-800"
               >
-                ← رجوع / Back
+                ← {t.goBack}
               </button>
               <button
                 onClick={() => setStep(4)}
                 disabled={!formData.title || !formData.description || !formData.value}
                 className="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition-all"
               >
-                متابعة / Continue →
+                {t.continue} →
               </button>
             </div>
           </div>
@@ -1061,13 +1266,13 @@ function AddInventoryContent() {
         {step === 4 && (
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-800 mb-4">
-              اختر نطاق السوق
+              {t.chooseMarket}
             </h1>
             <p className="text-gray-600 mb-2">
-              Choose Market Scope - حدد النطاق الجغرافي الذي تريد عرض إعلانك فيه
+              {t.chooseMarketDesc}
             </p>
             <p className="text-sm text-purple-600 mb-8">
-              رسوم موحدة: 25 ج.م + 5% عمولة على كل المستويات
+              {t.uniformFee}
             </p>
 
             <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
@@ -1091,8 +1296,7 @@ function AddInventoryContent() {
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-3xl">{market.icon}</span>
                       <div>
-                        <h3 className="font-bold text-gray-800">{market.nameAr}</h3>
-                        <p className="text-sm text-gray-500">{market.nameEn}</p>
+                        <h3 className="font-bold text-gray-800">{isRTL ? market.nameAr : market.nameEn}</h3>
                       </div>
                       {isSelected && (
                         <span className="mr-auto text-2xl text-green-500">✓</span>
@@ -1108,11 +1312,11 @@ function AddInventoryContent() {
             <div className="mt-8 p-4 bg-gradient-to-r from-purple-100 to-indigo-100 rounded-xl max-w-xl mx-auto">
               <div className="flex items-center justify-center gap-2 text-purple-800">
                 <span className="text-xl">🇪🇬</span>
-                <span className="font-bold">25 ج.م</span>
-                <span>رسوم الإدراج</span>
+                <span className="font-bold">25 {isRTL ? 'ج.م' : 'EGP'}</span>
+                <span>{t.listingFee}</span>
                 <span className="mx-2">+</span>
                 <span className="font-bold">5%</span>
-                <span>عمولة عند البيع</span>
+                <span>{t.commissionOnSale}</span>
               </div>
             </div>
 
@@ -1121,13 +1325,13 @@ function AddInventoryContent() {
                 onClick={() => setStep(3)}
                 className="px-6 py-3 text-gray-600 hover:text-gray-800"
               >
-                ← رجوع / Back
+                ← {t.goBack}
               </button>
               <button
                 onClick={() => setStep(5)}
                 className="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all"
               >
-                متابعة / Continue →
+                {t.continue} →
               </button>
             </div>
           </div>
@@ -1136,12 +1340,9 @@ function AddInventoryContent() {
         {/* Step 5: Listing Type */}
         {step === 5 && (
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              كيف تريد {formData.side === 'supply' ? 'البيع' : 'الحصول عليه'}؟
+            <h1 className="text-3xl font-bold text-gray-800 mb-8">
+              {formData.side === 'supply' ? t.howToSell : t.howToGet}
             </h1>
-            <p className="text-gray-600 mb-8">
-              How do you want to {formData.side === 'supply' ? 'sell' : 'get'} it?
-            </p>
 
             <div className="space-y-4 max-w-xl mx-auto">
               {getListingOptions().map((option) => (
@@ -1156,7 +1357,7 @@ function AddInventoryContent() {
                 >
                   <div className="text-4xl">{option.icon}</div>
                   <div>
-                    <h3 className="font-bold text-gray-800">{option.labelAr} / {option.label}</h3>
+                    <h3 className="font-bold text-gray-800">{option.label}</h3>
                     <p className="text-gray-500 text-sm">{option.desc}</p>
                   </div>
                   {formData.listingType === option.value && (
@@ -1169,24 +1370,24 @@ function AddInventoryContent() {
             {/* Additional fields for specific listing types */}
             {formData.listingType === 'auction' && (
               <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg max-w-xl mx-auto">
-                <h3 className="font-bold text-gray-800 mb-4">إعدادات المزاد / Auction Settings</h3>
+                <h3 className="font-bold text-gray-800 mb-4">{t.auctionSettings}</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      السعر الابتدائي (ج.م) / Starting Bid (EGP)
+                      {t.startingBid}
                     </label>
                     <input
                       type="number"
                       name="startingBid"
                       value={formData.startingBid}
                       onChange={handleChange}
-                      placeholder="e.g., 1000"
+                      placeholder="1000"
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      المدة (أيام) / Duration (days)
+                      {t.duration}
                     </label>
                     <select
                       name="auctionDuration"
@@ -1194,10 +1395,10 @@ function AddInventoryContent() {
                       onChange={handleChange}
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
                     >
-                      <option value="1">1 day / يوم واحد</option>
-                      <option value="3">3 days / 3 أيام</option>
-                      <option value="7">7 days / 7 أيام</option>
-                      <option value="14">14 days / 14 يوم</option>
+                      <option value="1">1 {t.day}</option>
+                      <option value="3">3 {t.days}</option>
+                      <option value="7">7 {t.days}</option>
+                      <option value="14">14 {t.day}</option>
                     </select>
                   </div>
                 </div>
@@ -1205,37 +1406,37 @@ function AddInventoryContent() {
             )}
 
             {formData.listingType === 'barter' && (
-              <div className="mt-8 bg-white rounded-2xl p-6 shadow-lg max-w-xl mx-auto text-left">
-                <h3 className="font-bold text-gray-800 mb-4">ماذا تريد في المقابل؟ / What do you want in exchange?</h3>
+              <div className={`mt-8 bg-white rounded-2xl p-6 shadow-lg max-w-xl mx-auto ${isRTL ? 'text-right' : 'text-left'}`}>
+                <h3 className="font-bold text-gray-800 mb-4">{t.whatInExchange}</h3>
                 <div className="space-y-4">
                   {/* Desired Item Title */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      اسم الصنف المطلوب / Desired Item Title *
+                      {t.desiredItemTitle} *
                     </label>
                     <input
                       type="text"
                       name="desiredItemTitle"
                       value={formData.desiredItemTitle}
                       onChange={handleChange}
-                      placeholder="مثال: سيارة سيدان، لابتوب ماك بوك، آيفون 14 / e.g., Sedan car, MacBook laptop, iPhone 14"
+                      placeholder={isRTL ? "مثال: سيارة سيدان، لابتوب، آيفون 14" : "e.g., Sedan car, MacBook laptop, iPhone 14"}
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      حدد بالضبط ما تبحث عنه للمقايضة / Specify exactly what you're looking for in exchange
+                      {t.specifyExchange}
                     </p>
                   </div>
 
                   {/* Desired Item Description */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      وصف الصنف المطلوب / Desired Item Description
+                      {t.desiredItemDesc}
                     </label>
                     <textarea
                       name="desiredItemDescription"
                       value={formData.desiredItemDescription}
                       onChange={handleChange}
-                      placeholder="صف المواصفات المطلوبة بالتفصيل... / Describe the desired specifications in detail..."
+                      placeholder={t.describeSpecs}
                       rows={3}
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none resize-none"
                     />
@@ -1244,7 +1445,7 @@ function AddInventoryContent() {
                   {/* 3-Level Desired Category Selection */}
                   <div className="space-y-3">
                     <label className="block text-sm font-semibold text-gray-700">
-                      الفئة المطلوبة / Desired Category
+                      {t.desiredCategory}
                     </label>
                     <div className="grid sm:grid-cols-3 gap-3">
                       {/* Desired Level 1 */}
@@ -1254,10 +1455,10 @@ function AddInventoryContent() {
                         onChange={handleChange}
                         className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 focus:border-purple-500 focus:outline-none text-sm"
                       >
-                        <option value="">أي فئة / Any category</option>
+                        <option value="">{t.anyCategory}</option>
                         {rootCategories.map(cat => (
                           <option key={cat.id} value={cat.id}>
-                            {cat.nameEn} - {cat.nameAr}
+                            {isRTL ? cat.nameAr : cat.nameEn}
                           </option>
                         ))}
                       </select>
@@ -1270,10 +1471,10 @@ function AddInventoryContent() {
                         disabled={!formData.desiredCategoryLevel1}
                         className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 focus:border-purple-500 focus:outline-none text-sm disabled:bg-gray-100"
                       >
-                        <option value="">الفئة الفرعية...</option>
+                        <option value="">{t.subCategory}...</option>
                         {desiredLevel2Categories.map(cat => (
                           <option key={cat.id} value={cat.id}>
-                            {cat.nameEn} - {cat.nameAr}
+                            {isRTL ? cat.nameAr : cat.nameEn}
                           </option>
                         ))}
                       </select>
@@ -1286,10 +1487,10 @@ function AddInventoryContent() {
                         disabled={!formData.desiredCategoryLevel2}
                         className="w-full px-3 py-2 rounded-lg border-2 border-gray-200 focus:border-purple-500 focus:outline-none text-sm disabled:bg-gray-100"
                       >
-                        <option value="">الفئة التفصيلية...</option>
+                        <option value="">{t.detailedCategory}...</option>
                         {desiredLevel3Categories.map(cat => (
                           <option key={cat.id} value={cat.id}>
-                            {cat.nameEn} - {cat.nameAr}
+                            {isRTL ? cat.nameAr : cat.nameEn}
                           </option>
                         ))}
                       </select>
@@ -1299,14 +1500,14 @@ function AddInventoryContent() {
                   {/* Keywords */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      كلمات مفتاحية / Keywords (what you're looking for)
+                      {t.keywords}
                     </label>
                     <input
                       type="text"
                       name="desiredKeywords"
                       value={formData.desiredKeywords}
                       onChange={handleChange}
-                      placeholder="e.g., laptop, MacBook, iPhone"
+                      placeholder={isRTL ? "مثال: لابتوب، ماك بوك، آيفون" : "e.g., laptop, MacBook, iPhone"}
                       className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
                     />
                   </div>
@@ -1314,7 +1515,7 @@ function AddInventoryContent() {
                   {/* Desired Value Range */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      نطاق القيمة المطلوبة (ج.م) / Desired Value Range (EGP)
+                      {t.desiredValueRange}
                     </label>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -1323,7 +1524,7 @@ function AddInventoryContent() {
                           name="desiredValueMin"
                           value={formData.desiredValueMin}
                           onChange={handleChange}
-                          placeholder="الحد الأدنى / Min"
+                          placeholder={t.min}
                           className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
                         />
                       </div>
@@ -1333,7 +1534,7 @@ function AddInventoryContent() {
                           name="desiredValueMax"
                           value={formData.desiredValueMax}
                           onChange={handleChange}
-                          placeholder="الحد الأقصى / Max"
+                          placeholder={t.max}
                           className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:outline-none"
                         />
                       </div>
@@ -1345,12 +1546,9 @@ function AddInventoryContent() {
                     <div className="flex items-center gap-2 text-green-700">
                       <span className="text-xl">🤖</span>
                       <span className="text-sm font-medium">
-                        سيُعلمك الذكاء الاصطناعي فوراً عند وجود تطابق مناسب!
+                        {t.aiNotify}
                       </span>
                     </div>
-                    <p className="text-xs text-green-600 mt-1">
-                      Our AI will notify you instantly when a matching item is listed
-                    </p>
                   </div>
                 </div>
               </div>
@@ -1361,7 +1559,7 @@ function AddInventoryContent() {
                 onClick={() => setStep(4)}
                 className="px-6 py-3 text-gray-600 hover:text-gray-800"
               >
-                ← رجوع / Back
+                ← {t.goBack}
               </button>
               <button
                 onClick={() => formData.side === 'supply' ? setStep(6) : handleSubmit()}
@@ -1370,12 +1568,12 @@ function AddInventoryContent() {
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <span className="animate-spin">⏳</span> جاري الإنشاء...
+                    <span className="animate-spin">⏳</span> {t.creating}
                   </span>
                 ) : formData.side === 'supply' ? (
-                  'متابعة / Continue →'
+                  `${t.continue} →`
                 ) : (
-                  'إنشاء الإعلان / Create Listing'
+                  t.createListing
                 )}
               </button>
             </div>
@@ -1386,10 +1584,10 @@ function AddInventoryContent() {
         {step === 6 && (
           <div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
-              مراجعة الإعلان
+              {t.reviewListing}
             </h1>
             <p className="text-gray-600 mb-8 text-center">
-              Review Your Listing - تأكد من صحة جميع البيانات قبل النشر
+              {t.reviewDesc}
             </p>
 
             {/* Fraud Warning */}
@@ -1511,7 +1709,7 @@ function AddInventoryContent() {
                 onClick={() => setStep(5)}
                 className="px-6 py-3 text-gray-600 hover:text-gray-800"
               >
-                ← رجوع / Back
+                ← {t.goBack}
               </button>
               <button
                 onClick={handleSubmit}
@@ -1520,10 +1718,10 @@ function AddInventoryContent() {
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <span className="animate-spin">⏳</span> جاري النشر...
+                    <span className="animate-spin">⏳</span> {t.publishing}
                   </span>
                 ) : (
-                  'نشر الإعلان 🚀 / Publish Listing'
+                  `${t.publishListing} 🚀`
                 )}
               </button>
             </div>
