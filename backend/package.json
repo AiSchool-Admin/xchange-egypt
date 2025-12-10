@@ -1,6 +1,6 @@
 {
   "name": "@xchange/backend",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Xchange E-commerce Platform - Backend API",
   "main": "dist/app.js",
   "scripts": {

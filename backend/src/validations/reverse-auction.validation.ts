@@ -76,8 +76,14 @@ export const createReverseAuctionSchema = z.object({
         .optional(),
       endDate: z
         .string()
-        .datetime('Invalid end date')
-        .transform((val) => new Date(val)),
+        .min(1, 'End date is required')
+        .transform((val) => {
+          const date = new Date(val);
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid end date format');
+          }
+          return date;
+        }),
       publicNotes: z
         .string()
         .max(1000, 'Public notes must not exceed 1000 characters')
@@ -206,8 +212,14 @@ export const updateReverseAuctionSchema = z.object({
         .optional(),
       endDate: z
         .string()
-        .datetime('Invalid end date')
-        .transform((val) => new Date(val))
+        .min(1)
+        .transform((val) => {
+          const date = new Date(val);
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid end date format');
+          }
+          return date;
+        })
         .optional(),
       publicNotes: z
         .string()

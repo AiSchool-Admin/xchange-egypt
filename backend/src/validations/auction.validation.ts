@@ -9,9 +9,21 @@ export const createAuctionSchema = z.object({
     reservePrice: z.number().positive('Reserve price must be positive').optional(),
     minBidIncrement: z.number().positive('Minimum bid increment must be positive').default(1.0),
 
-    // Timing
-    startTime: z.string().datetime().transform((val) => new Date(val)),
-    endTime: z.string().datetime().transform((val) => new Date(val)),
+    // Timing - Accept flexible date formats (ISO 8601, date strings, timestamps)
+    startTime: z.string().min(1, 'Start time is required').transform((val) => {
+      const date = new Date(val);
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid start time format');
+      }
+      return date;
+    }),
+    endTime: z.string().min(1, 'End time is required').transform((val) => {
+      const date = new Date(val);
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid end time format');
+      }
+      return date;
+    }),
 
     // Auto-extension settings
     autoExtend: z.boolean().default(true),
@@ -58,7 +70,13 @@ export const updateAuctionSchema = z.object({
   body: z.object({
     buyNowPrice: z.number().positive('Buy now price must be positive').optional(),
     reservePrice: z.number().positive('Reserve price must be positive').optional(),
-    endTime: z.string().datetime().transform((val) => new Date(val)).optional(),
+    endTime: z.string().min(1).transform((val) => {
+      const date = new Date(val);
+      if (isNaN(date.getTime())) {
+        throw new Error('Invalid end time format');
+      }
+      return date;
+    }).optional(),
     autoExtend: z.boolean().optional(),
     extensionMinutes: z.number().int().min(1).max(30).optional(),
     maxExtensions: z.number().int().min(0).max(10).optional(),

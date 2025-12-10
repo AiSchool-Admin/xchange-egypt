@@ -52,9 +52,16 @@ export const createBarterOfferSchema = z.object({
       .optional(),
     expiresAt: z
       .string()
-      .datetime('Invalid expiration date')
+      .min(1)
       .optional()
-      .transform((val) => (val ? new Date(val) : undefined)),
+      .transform((val) => {
+        if (!val) return undefined;
+        const date = new Date(val);
+        if (isNaN(date.getTime())) {
+          throw new Error('Invalid expiration date format');
+        }
+        return date;
+      }),
     isOpenOffer: z.boolean().default(false).optional(),
     offeredCashAmount: z.number().min(0, 'Cash amount must be positive').default(0).optional(),
     requestedCashAmount: z.number().min(0, 'Cash amount must be positive').default(0).optional(),
