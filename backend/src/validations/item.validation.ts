@@ -87,7 +87,7 @@ export const createItemSchema = z.object({
       .min(10, 'English description must be at least 10 characters')
       .max(5000, 'English description must not exceed 5000 characters')
       .optional(),
-    categoryId: z.string().uuid('Invalid category ID'),
+    categoryId: z.string().min(1, 'Category ID is required'),
     condition: itemConditionEnum,
     estimatedValue: z
       .number()
@@ -107,7 +107,7 @@ export const createItemSchema = z.object({
       errorMap: () => ({ message: 'Invalid governorate' }),
     }).optional(), // Made optional since Item model doesn't have this field
     // Barter preferences
-    desiredCategoryId: z.string().uuid('Invalid desired category ID').optional(),
+    desiredCategoryId: z.string().min(1).optional(),
     desiredKeywords: z.string().max(500, 'Keywords must not exceed 500 characters').optional(),
     desiredValueMin: z.number().positive('Minimum value must be positive').optional(),
     desiredValueMax: z.number().positive('Maximum value must be positive').optional(),
@@ -139,7 +139,7 @@ export const updateItemSchema = z.object({
       .max(5000, 'English description must not exceed 5000 characters')
       .optional()
       .nullable(),
-    categoryId: z.string().uuid('Invalid category ID').optional(),
+    categoryId: z.string().min(1).optional(),
     condition: itemConditionEnum.optional(),
     estimatedValue: z
       .number()
@@ -167,14 +167,14 @@ export const updateItemSchema = z.object({
 // Get Item by ID Schema
 export const getItemByIdSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid item ID'),
+    id: z.string().min(1, 'Item ID is required'),
   }),
 });
 
 // Delete Item Schema
 export const deleteItemSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid item ID'),
+    id: z.string().min(1, 'Item ID is required'),
   }),
 });
 
@@ -185,8 +185,8 @@ export const searchItemsSchema = z.object({
     search: z.string().optional(),
 
     // Filters
-    categoryId: z.string().uuid('Invalid category ID').optional(),
-    sellerId: z.string().uuid('Invalid seller ID').optional(),
+    categoryId: z.string().min(1).optional(),
+    sellerId: z.string().min(1).optional(),
     condition: itemConditionEnum.optional(),
     status: z.enum(['DRAFT', 'ACTIVE', 'SOLD', 'TRADED', 'ARCHIVED', 'DELETED']).optional(),
     governorate: z
@@ -225,7 +225,7 @@ export const searchItemsSchema = z.object({
 // Get User Items Schema
 export const getUserItemsSchema = z.object({
   params: z.object({
-    userId: z.string().uuid('Invalid user ID'),
+    userId: z.string().min(1, 'User ID is required'),
   }),
   query: z.object({
     page: z
@@ -246,7 +246,7 @@ export const getUserItemsSchema = z.object({
 // Get Category Items Schema
 export const getCategoryItemsSchema = z.object({
   params: z.object({
-    categoryId: z.string().uuid('Invalid category ID'),
+    categoryId: z.string().min(1, 'Category ID is required'),
   }),
   query: z.object({
     includeSubcategories: z
@@ -283,7 +283,7 @@ export const getCategoryItemsSchema = z.object({
 // Update Item Images Schema (for removing specific images)
 export const updateItemImagesSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid item ID'),
+    id: z.string().min(1, 'Item ID is required'),
   }),
   body: z.object({
     imagesToRemove: z
