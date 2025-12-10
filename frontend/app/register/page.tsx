@@ -4,6 +4,28 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
+// Countries with phone codes
+const COUNTRIES = [
+  { code: 'EG', name: { ar: 'مصر', en: 'Egypt' }, phoneCode: '+20', flag: '🇪🇬', phoneFormat: '10 digits starting with 1' },
+  { code: 'SA', name: { ar: 'السعودية', en: 'Saudi Arabia' }, phoneCode: '+966', flag: '🇸🇦', phoneFormat: '9 digits starting with 5' },
+  { code: 'AE', name: { ar: 'الإمارات', en: 'UAE' }, phoneCode: '+971', flag: '🇦🇪', phoneFormat: '9 digits starting with 5' },
+  { code: 'KW', name: { ar: 'الكويت', en: 'Kuwait' }, phoneCode: '+965', flag: '🇰🇼', phoneFormat: '8 digits' },
+  { code: 'QA', name: { ar: 'قطر', en: 'Qatar' }, phoneCode: '+974', flag: '🇶🇦', phoneFormat: '8 digits' },
+  { code: 'BH', name: { ar: 'البحرين', en: 'Bahrain' }, phoneCode: '+973', flag: '🇧🇭', phoneFormat: '8 digits' },
+  { code: 'OM', name: { ar: 'عمان', en: 'Oman' }, phoneCode: '+968', flag: '🇴🇲', phoneFormat: '8 digits' },
+  { code: 'JO', name: { ar: 'الأردن', en: 'Jordan' }, phoneCode: '+962', flag: '🇯🇴', phoneFormat: '9 digits' },
+  { code: 'LB', name: { ar: 'لبنان', en: 'Lebanon' }, phoneCode: '+961', flag: '🇱🇧', phoneFormat: '8 digits' },
+  { code: 'IQ', name: { ar: 'العراق', en: 'Iraq' }, phoneCode: '+964', flag: '🇮🇶', phoneFormat: '10 digits' },
+  { code: 'SY', name: { ar: 'سوريا', en: 'Syria' }, phoneCode: '+963', flag: '🇸🇾', phoneFormat: '9 digits' },
+  { code: 'PS', name: { ar: 'فلسطين', en: 'Palestine' }, phoneCode: '+970', flag: '🇵🇸', phoneFormat: '9 digits' },
+  { code: 'LY', name: { ar: 'ليبيا', en: 'Libya' }, phoneCode: '+218', flag: '🇱🇾', phoneFormat: '9 digits' },
+  { code: 'TN', name: { ar: 'تونس', en: 'Tunisia' }, phoneCode: '+216', flag: '🇹🇳', phoneFormat: '8 digits' },
+  { code: 'DZ', name: { ar: 'الجزائر', en: 'Algeria' }, phoneCode: '+213', flag: '🇩🇿', phoneFormat: '9 digits' },
+  { code: 'MA', name: { ar: 'المغرب', en: 'Morocco' }, phoneCode: '+212', flag: '🇲🇦', phoneFormat: '9 digits' },
+  { code: 'SD', name: { ar: 'السودان', en: 'Sudan' }, phoneCode: '+249', flag: '🇸🇩', phoneFormat: '9 digits' },
+  { code: 'YE', name: { ar: 'اليمن', en: 'Yemen' }, phoneCode: '+967', flag: '🇾🇪', phoneFormat: '9 digits' },
+];
+
 // Egyptian governorates list
 const EGYPTIAN_GOVERNORATES = [
   'القاهرة',
@@ -59,10 +81,14 @@ const translations = {
     businessName: 'اسم النشاط التجاري',
     taxId: 'الرقم الضريبي',
     commercialRegNo: 'رقم السجل التجاري',
+    country: 'الدولة',
+    selectCountry: 'اختر الدولة',
     governorate: 'المحافظة',
     city: 'المدينة',
     selectGovernorate: 'اختر المحافظة',
     selectCity: 'اختر المدينة',
+    phoneHint: 'أدخل الرقم بدون رمز الدولة',
+    passwordHint: '8 أحرف على الأقل، حرف كبير، حرف صغير، ورقم',
     password: 'كلمة المرور',
     confirmPassword: 'تأكيد كلمة المرور',
     createAccount: 'إنشاء حساب',
@@ -98,10 +124,14 @@ const translations = {
     businessName: 'Business Name',
     taxId: 'Tax ID',
     commercialRegNo: 'Commercial Reg. No.',
+    country: 'Country',
+    selectCountry: 'Select Country',
     governorate: 'Governorate',
     city: 'City',
     selectGovernorate: 'Select Governorate',
     selectCity: 'Select City',
+    phoneHint: 'Enter number without country code',
+    passwordHint: 'Min 8 chars, uppercase, lowercase, and number',
     password: 'Password',
     confirmPassword: 'Confirm Password',
     createAccount: 'Create Account',
@@ -147,6 +177,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    country: 'EG', // Default to Egypt
     phone: '',
     city: '',
     governorate: '',
@@ -154,6 +185,9 @@ export default function RegisterPage() {
     taxId: '',
     commercialRegNo: '',
   });
+
+  // Get selected country data
+  const selectedCountry = COUNTRIES.find(c => c.code === formData.country) || COUNTRIES[0];
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [globalError, setGlobalError] = useState('');
@@ -436,14 +470,66 @@ export default function RegisterPage() {
 
             <InputField name="fullName" label={t.fullName} required placeholder={isRTL ? 'محمد أحمد' : 'John Doe'} />
             <InputField name="email" label={t.email} type="email" required placeholder="example@email.com" dir="ltr" />
-            <InputField
-              name="phone"
-              label={t.phone}
-              type="tel"
-              placeholder="01012345678"
-              dir="ltr"
-              hint={isRTL ? 'رقم مصري: 01012345678' : 'Egyptian number: 01012345678'}
-            />
+
+            {/* Country and Phone */}
+            <div className="space-y-3">
+              {/* Country Selector */}
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t.country} <span className="text-gray-400">{t.optional}</span>
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-white"
+                >
+                  {COUNTRIES.map(country => (
+                    <option key={country.code} value={country.code}>
+                      {country.flag} {country.name[lang]} ({country.phoneCode})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Phone with country code */}
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  {t.phone} <span className="text-gray-400">{t.optional}</span>
+                </label>
+                <div className="flex gap-2">
+                  {/* Phone code display */}
+                  <div className="flex items-center px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700 font-medium min-w-[80px] justify-center">
+                    {selectedCountry.flag} {selectedCountry.phoneCode}
+                  </div>
+                  {/* Phone input */}
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    dir="ltr"
+                    className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-colors ${
+                      errors.phone && touched.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
+                    placeholder={formData.country === 'EG' ? '1012345678' : '512345678'}
+                  />
+                </div>
+                {/* Hint */}
+                {!errors.phone && (
+                  <p className="mt-1 text-xs text-gray-500">{t.phoneHint}</p>
+                )}
+                {/* Error */}
+                {errors.phone && touched.phone && (
+                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                    <span>⚠</span> {errors.phone}
+                  </p>
+                )}
+              </div>
+            </div>
 
             {/* Business-specific fields */}
             {userType === 'BUSINESS' && (
@@ -500,7 +586,7 @@ export default function RegisterPage() {
               type="password"
               required
               placeholder="••••••••"
-              hint={isRTL ? '8 أحرف على الأقل، حرف كبير، حرف صغير، ورقم' : 'Min 8 chars, uppercase, lowercase, and number'}
+              hint={t.passwordHint}
             />
             <InputField name="confirmPassword" label={t.confirmPassword} type="password" required placeholder="••••••••" />
 
