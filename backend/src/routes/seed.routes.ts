@@ -411,4 +411,129 @@ router.delete('/cleanup-demo', async (req, res) => {
   }
 });
 
+/**
+ * CHECK AVAILABLE PRODUCTS BY LISTING TYPE
+ * فحص المنتجات المتاحة حسب نوع البيع
+ */
+router.get('/check-products', async (req, res) => {
+  try {
+    // Get all items with their listings
+    const items = await prisma.item.findMany({
+      where: { status: 'ACTIVE' },
+      include: {
+        listings: {
+          select: {
+            id: true,
+            listingType: true,
+            status: true,
+            price: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+        category: {
+          select: {
+            id: true,
+            nameAr: true,
+            nameEn: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Group by listing type
+    const directSale = items.filter(item =>
+      item.listings.some(l => l.listingType === 'DIRECT_SALE' && l.status === 'ACTIVE')
+    ).map(item => ({
+      itemId: item.id,
+      listingId: item.listings.find(l => l.listingType === 'DIRECT_SALE' && l.status === 'ACTIVE')?.id,
+      title: item.title,
+      price: item.listings.find(l => l.listingType === 'DIRECT_SALE')?.price || item.estimatedValue,
+      seller: item.seller?.fullName,
+      category: item.category?.nameAr,
+    }));
+
+    const auction = items.filter(item =>
+      item.listings.some(l => l.listingType === 'AUCTION' && l.status === 'ACTIVE')
+    ).map(item => ({
+      itemId: item.id,
+      listingId: item.listings.find(l => l.listingType === 'AUCTION' && l.status === 'ACTIVE')?.id,
+      title: item.title,
+      startingPrice: item.listings.find(l => l.listingType === 'AUCTION')?.price || item.estimatedValue,
+      seller: item.seller?.fullName,
+      category: item.category?.nameAr,
+    }));
+
+    const barter = items.filter(item =>
+      item.listings.some(l => l.listingType === 'BARTER' && l.status === 'ACTIVE')
+    ).map(item => ({
+      itemId: item.id,
+      listingId: item.listings.find(l => l.listingType === 'BARTER' && l.status === 'ACTIVE')?.id,
+      title: item.title,
+      estimatedValue: item.estimatedValue,
+      seller: item.seller?.fullName,
+      category: item.category?.nameAr,
+    }));
+
+    const noListing = items.filter(item =>
+      item.listings.length === 0 || !item.listings.some(l => l.status === 'ACTIVE')
+    ).map(item => ({
+      itemId: item.id,
+      title: item.title,
+      listingType: item.listingType,
+      estimatedValue: item.estimatedValue,
+      seller: item.seller?.fullName,
+      category: item.category?.nameAr,
+      inactiveListings: item.listings.length,
+    }));
+
+    return res.json({
+      success: true,
+      message: 'تقرير المنتجات المتاحة',
+      summary: {
+        totalItems: items.length,
+        directSale: directSale.length,
+        auction: auction.length,
+        barter: barter.length,
+        noActiveListing: noListing.length,
+      },
+      data: {
+        directSale: {
+          count: directSale.length,
+          description: 'منتجات متاحة للشراء المباشر (يمكن إضافتها للسلة)',
+          items: directSale,
+        },
+        auction: {
+          count: auction.length,
+          description: 'منتجات معروضة في مزاد',
+          items: auction,
+        },
+        barter: {
+          count: barter.length,
+          description: 'منتجات متاحة للمقايضة',
+          items: barter,
+        },
+        noActiveListing: {
+          count: noListing.length,
+          description: 'منتجات بدون قائمة نشطة',
+          items: noListing,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Check products error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في جلب المنتجات',
+      error: error.message,
+    });
+  }
+});
+
 export default router;
