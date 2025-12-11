@@ -8,6 +8,8 @@ import {
   BadRequestError,
   NotFoundError,
 } from '../utils/errors';
+import { sendEmailNow } from './email.service';
+import { generateEmailTemplate } from '../utils/email-templates';
 import type {
   RegisterIndividualInput,
   RegisterBusinessInput,
@@ -469,19 +471,23 @@ export const forgotPassword = async (data: ForgotPasswordInput) => {
     email: user.email,
   });
 
-  // In production, send email with reset link
+  // Generate reset URL
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-  // TODO: Send email with reset link using email service
-  // await sendEmail({
-  //   to: user.email,
-  //   subject: 'Password Reset Request',
-  //   template: 'USER_PASSWORD_RESET',
-  //   data: { userName: user.fullName, actionUrl: resetUrl }
-  // });
+  // Send email with reset link
+  const emailHtml = generateEmailTemplate('USER_PASSWORD_RESET', {
+    userName: user.fullName,
+    actionUrl: resetUrl,
+  });
 
-  console.log(`Password reset URL for ${user.email}: ${resetUrl}`);
+  await sendEmailNow({
+    to: user.email,
+    subject: 'إعادة تعيين كلمة المرور - Xchange',
+    html: emailHtml,
+  });
+
+  console.log(`Password reset email sent to: ${user.email}`);
 
   return {
     message: 'If your email is registered, you will receive a password reset link.',
