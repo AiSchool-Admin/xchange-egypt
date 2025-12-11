@@ -159,13 +159,16 @@ export default function AuctionDetailsPage() {
 
     try {
       await buyNow(auctionId);
-      await loadAuction();
-      alert('مبروك! لقد فزت بالمزاد!');
+      // Redirect to auction checkout page
+      router.push(`/checkout/auction/${auctionId}`);
     } catch (err: any) {
       alert(err.response?.data?.message || 'فشل في الشراء الفوري');
-    } finally {
       setBuying(false);
     }
+  };
+
+  const handleCheckout = () => {
+    router.push(`/checkout/auction/${auctionId}`);
   };
 
   if (loading && !auction) {
@@ -536,9 +539,30 @@ export default function AuctionDetailsPage() {
                   <p className="text-center font-semibold text-gray-700">
                     انتهى المزاد
                   </p>
-                  {auction.winnerId && (
+                  {auction.winnerId && auction.winnerId === user?.id ? (
+                    <div className="mt-4 space-y-3">
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-center text-green-700 font-semibold">
+                          مبروك! لقد فزت بهذا المزاد
+                        </p>
+                        <p className="text-sm text-center text-green-600 mt-1">
+                          السعر النهائي: {currentPrice.toLocaleString()} ج.م
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleCheckout}
+                        className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition font-semibold"
+                      >
+                        إتمام الشراء
+                      </button>
+                    </div>
+                  ) : auction.winnerId ? (
                     <p className="text-sm text-center text-gray-600 mt-2">
                       الفائز: {auction.bids?.[0]?.bidder.fullName}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-center text-gray-600 mt-2">
+                      لم يفز أحد بهذا المزاد
                     </p>
                   )}
                 </div>

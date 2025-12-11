@@ -573,3 +573,208 @@ export const getGovernorates = () => {
     shippingCost: calculateShippingCost(name),
   }));
 };
+
+/**
+ * Create order from auction win
+ * Creates an order for a user who won an auction
+ */
+export const createAuctionOrder = async (
+  userId: string,
+  data: {
+    auctionId: string;
+    shippingAddressId?: string;
+    shippingAddress?: {
+      fullName: string;
+      phone: string;
+      street: string;
+      buildingName?: string;
+      buildingNumber?: string;
+      floor?: string;
+      apartmentNumber?: string;
+      landmark?: string;
+      city: string;
+      governorate: string;
+    };
+    paymentMethod: string;
+    notes?: string;
+  }
+) => {
+  // Get auction with related data
+  const auction = await prisma.auction.findUnique({
+    where: { id: data.auctionId },
+    include: {
+      listing: {
+        include: {
+          item: {
+            include: {
+              seller: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!auction) {
+    throw new NotFoundError('Auction not found');
+  }
+
+  // Verify user is the winner
+  if (auction.winnerId !== userId) {
+    throw new ForbiddenError('You are not the winner of this auction');
+  }
+
+  // Check auction status
+  if (auction.status !== 'COMPLETED' && auction.status !== 'ENDED') {
+    throw new BadRequestError('Auction has not ended yet');
+  }
+
+  // Check if order already exists for this auction
+  const existingOrder = await prisma.order.findFirst({
+    where: {
+      userId,
+      items: {
+        some: {
+          listingId: auction.listingId,
+        },
+      },
+    },
+  });
+
+  if (existingOrder) {
+    throw new BadRequestError('Order already exists for this auction');
+  }
+
+  // Create order in transaction
+  const order = await prisma.$transaction(async (tx) => {
+    // Handle shipping address
+    let shippingAddress;
+    let shippingAddressId = data.shippingAddressId;
+
+    if (data.shippingAddress && !data.shippingAddressId) {
+      const addressData = data.shippingAddress;
+      const newAddress = await tx.shippingAddress.create({
+        data: {
+          userId,
+          fullName: addressData.fullName,
+          phone: addressData.phone,
+          street: addressData.street,
+          buildingName: addressData.buildingName,
+          buildingNumber: addressData.buildingNumber,
+          floor: addressData.floor,
+          apartmentNumber: addressData.apartmentNumber,
+          landmark: addressData.landmark,
+          address: [
+            addressData.street,
+            addressData.buildingName ? `${addressData.buildingName}` : '',
+            addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
+            addressData.floor ? `الدور ${addressData.floor}` : '',
+            addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
+            addressData.landmark || '',
+          ].filter(Boolean).join('، '),
+          city: addressData.city,
+          governorate: addressData.governorate,
+          isDefault: false,
+        },
+      });
+      shippingAddress = newAddress;
+      shippingAddressId = newAddress.id;
+    } else if (data.shippingAddressId) {
+      shippingAddress = await tx.shippingAddress.findFirst({
+        where: { id: data.shippingAddressId, userId },
+      });
+
+      if (!shippingAddress) {
+        throw new NotFoundError('Shipping address not found');
+      }
+    } else {
+      throw new BadRequestError('Either shippingAddressId or shippingAddress is required');
+    }
+
+    // Calculate totals - use currentPrice (winning bid amount)
+    const subtotal = auction.currentPrice;
+    const shippingCost = calculateShippingCost(shippingAddress.governorate);
+    const total = subtotal + shippingCost;
+
+    // Create order
+    const newOrder = await tx.order.create({
+      data: {
+        userId,
+        orderNumber: generateOrderNumber(),
+        status: OrderStatus.PENDING,
+        subtotal,
+        shippingCost,
+        total,
+        shippingAddressId: shippingAddressId!,
+        paymentMethod: data.paymentMethod,
+        notes: data.notes || `طلب من مزاد رقم ${auction.id}`,
+        items: {
+          create: {
+            listingId: auction.listingId,
+            sellerId: auction.listing.item.sellerId,
+            quantity: 1,
+            price: auction.currentPrice,
+          },
+        },
+      },
+      include: {
+        items: {
+          include: {
+            listing: {
+              include: {
+                item: true,
+              },
+            },
+          },
+        },
+        shippingAddress: true,
+      },
+    });
+
+    // Update auction transaction (if exists) with order reference
+    await tx.transaction.updateMany({
+      where: {
+        listingId: auction.listingId,
+        buyerId: userId,
+      },
+      data: {
+        paymentStatus: data.paymentMethod === 'COD' ? 'PENDING' : 'PROCESSING',
+      },
+    });
+
+    return newOrder;
+  });
+
+  // Send notifications outside transaction
+  try {
+    // Notify buyer
+    await createNotification({
+      userId: userId,
+      type: 'TRANSACTION_PAYMENT_RECEIVED',
+      title: 'تم إنشاء طلب المزاد بنجاح',
+      message: `تم إنشاء طلبك رقم ${order.orderNumber} للمنتج الذي فزت به في المزاد`,
+      priority: 'HIGH',
+      entityType: 'ORDER',
+      entityId: order.id,
+      actionUrl: `/dashboard/orders/${order.id}`,
+      actionText: 'عرض الطلب',
+    });
+
+    // Notify seller
+    await createNotification({
+      userId: auction.listing.item.sellerId,
+      type: 'ITEM_SOLD',
+      title: 'طلب جديد من مزاد! 🎉',
+      message: `الفائز بمزاد "${auction.listing.item.title}" قام بإتمام الطلب`,
+      priority: 'HIGH',
+      entityType: 'ORDER',
+      entityId: order.id,
+      actionUrl: `/dashboard/orders`,
+      actionText: 'عرض الطلبات',
+    });
+  } catch (notificationError) {
+    console.error('Failed to send auction order notifications:', notificationError);
+  }
+
+  return order;
+};
