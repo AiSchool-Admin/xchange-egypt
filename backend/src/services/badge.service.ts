@@ -1,5 +1,6 @@
 import prisma from '../lib/prisma';
 import { NotFoundError, BadRequestError } from '../utils/errors';
+import { BadgeType } from '@prisma/client';
 
 // ============================================
 // User Badge Service
@@ -114,7 +115,7 @@ export const getAllBadgesInfo = (): BadgeInfo[] => {
 export const getUserBadges = async (userId: string): Promise<any[]> => {
   const badges = await prisma.userBadge.findMany({
     where: { userId },
-    orderBy: { earnedAt: 'desc' },
+    orderBy: { createdAt: 'desc' },
   });
 
   return badges.map((badge) => ({
@@ -138,7 +139,7 @@ export const awardBadge = async (
 
   // Check if user already has this badge
   const existing = await prisma.userBadge.findFirst({
-    where: { userId, badgeType },
+    where: { userId, badgeType: badgeType as BadgeType },
   });
 
   if (existing) {
@@ -148,9 +149,10 @@ export const awardBadge = async (
   const badge = await prisma.userBadge.create({
     data: {
       userId,
-      badgeType: badgeType as any,
+      badgeType: badgeType as BadgeType,
       verifiedBy,
-      verificationNotes: notes,
+      verificationData: notes ? { notes } : undefined,
+      verifiedAt: new Date(),
     },
   });
 
@@ -165,7 +167,7 @@ export const awardBadge = async (
  */
 export const revokeBadge = async (userId: string, badgeType: string): Promise<void> => {
   const badge = await prisma.userBadge.findFirst({
-    where: { userId, badgeType },
+    where: { userId, badgeType: badgeType as BadgeType },
   });
 
   if (!badge) {
@@ -183,14 +185,14 @@ export const revokeBadge = async (userId: string, badgeType: string): Promise<vo
 export const checkAndAwardAutomaticBadges = async (userId: string): Promise<any[]> => {
   const awardedBadges: any[] = [];
 
+  // Get user with related data
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
-      badges: true,
-      sellerTransactions: {
+      transactionsAsSeller: {
         where: { status: 'COMPLETED' },
       },
-      receivedReviews: true,
+      reviewsReceived: true,
     },
   });
 
@@ -198,25 +200,29 @@ export const checkAndAwardAutomaticBadges = async (userId: string): Promise<any[
     throw new NotFoundError('المستخدم غير موجود');
   }
 
-  const existingBadgeTypes = user.badges.map((b) => b.badgeType);
+  // Get user's existing badges
+  const userBadges = await prisma.userBadge.findMany({
+    where: { userId },
+  });
+  const existingBadgeTypes = userBadges.map((b) => b.badgeType);
 
   // Phone verified badge
-  if (user.phoneVerified && !existingBadgeTypes.includes('PHONE_VERIFIED')) {
+  if (user.phoneVerified && !existingBadgeTypes.includes('PHONE_VERIFIED' as BadgeType)) {
     const badge = await awardBadge(userId, 'PHONE_VERIFIED', 'SYSTEM', 'Automatic verification');
     awardedBadges.push(badge);
   }
 
   // Email verified badge
-  if (user.emailVerified && !existingBadgeTypes.includes('EMAIL_VERIFIED')) {
+  if (user.emailVerified && !existingBadgeTypes.includes('EMAIL_VERIFIED' as BadgeType)) {
     const badge = await awardBadge(userId, 'EMAIL_VERIFIED', 'SYSTEM', 'Automatic verification');
     awardedBadges.push(badge);
   }
 
   // Trusted seller badge (10+ completed transactions)
   if (
-    user.sellerTransactions.length >= 10 &&
+    user.transactionsAsSeller.length >= 10 &&
     user.rating >= 4.0 &&
-    !existingBadgeTypes.includes('TRUSTED_SELLER')
+    !existingBadgeTypes.includes('TRUSTED_SELLER' as BadgeType)
   ) {
     const badge = await awardBadge(userId, 'TRUSTED_SELLER', 'SYSTEM', 'Automatic - 10+ transactions with 4.0+ rating');
     awardedBadges.push(badge);
@@ -225,8 +231,8 @@ export const checkAndAwardAutomaticBadges = async (userId: string): Promise<any[
   // Top rated badge (4.8+ rating with 25+ reviews)
   if (
     user.rating >= 4.8 &&
-    user.receivedReviews.length >= 25 &&
-    !existingBadgeTypes.includes('TOP_RATED')
+    user.reviewsReceived.length >= 25 &&
+    !existingBadgeTypes.includes('TOP_RATED' as BadgeType)
   ) {
     const badge = await awardBadge(userId, 'TOP_RATED', 'SYSTEM', 'Automatic - 4.8+ rating with 25+ reviews');
     awardedBadges.push(badge);
@@ -263,22 +269,21 @@ export const submitVerificationRequest = async (
 
   // Check if already has badge
   const existing = await prisma.userBadge.findFirst({
-    where: { userId, badgeType },
+    where: { userId, badgeType: badgeType as BadgeType },
   });
 
   if (existing) {
     throw new BadRequestError('حاصل على هذه الشارة بالفعل');
   }
 
-  // For now, we'll create a pending notification for admin review
-  // In production, this would create a verification request record
+  // Create a pending notification for admin review
   await prisma.notification.create({
     data: {
       userId,
-      type: 'BADGE_VERIFICATION_REQUEST' as any,
+      type: 'SYSTEM' as any,
       title: `طلب توثيق: ${BADGE_CONFIG[badgeType].nameAr}`,
       message: `قدم المستخدم طلب توثيق ${BADGE_CONFIG[badgeType].nameAr}`,
-      data: {
+      metadata: {
         badgeType,
         documents,
         requestedAt: new Date().toISOString(),

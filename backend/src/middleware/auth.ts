@@ -102,8 +102,9 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
     return next(new UnauthorizedError('Authentication required'));
   }
 
-  // Check if user has admin role (you may need to adjust this based on your user model)
-  if (req.user.userType !== 'ADMIN' && req.user.email !== 'admin@xchange.com') {
+  // Check if user has admin privileges by email (admin emails list)
+  const adminEmails = ['admin@xchange.com', 'admin@xchange-egypt.com'];
+  if (!adminEmails.includes(req.user.email)) {
     return next(new ForbiddenError('Admin access required'));
   }
 
