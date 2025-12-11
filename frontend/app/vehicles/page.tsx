@@ -99,7 +99,7 @@ export default function VehiclesPage() {
       if (brand) {
         items = items.filter((item: any) =>
           item.vehicleBrand?.toLowerCase().includes(brand.toLowerCase()) ||
-          item.titleAr?.includes(brand) ||
+          item.title?.includes(brand) ||
           item.titleEn?.toLowerCase().includes(brand.toLowerCase())
         );
       }
@@ -419,7 +419,7 @@ export default function VehiclesPage() {
                         {vehicle.images && vehicle.images.length > 0 ? (
                           <img
                             src={vehicle.images[0].url}
-                            alt={vehicle.titleAr}
+                            alt={vehicle.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
@@ -440,7 +440,7 @@ export default function VehiclesPage() {
                       </div>
                       <div className="p-4">
                         <h3 className="font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                          {vehicle.titleAr}
+                          {vehicle.title}
                         </h3>
                         <div className="flex flex-wrap gap-2 mb-3">
                           {(vehicle as any).vehicleBrand && (

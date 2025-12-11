@@ -500,7 +500,7 @@ export default function RealEstatePage() {
                         {property.images && property.images.length > 0 ? (
                           <img
                             src={property.images[0].url}
-                            alt={property.titleAr}
+                            alt={property.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
@@ -521,7 +521,7 @@ export default function RealEstatePage() {
                       </div>
                       <div className="p-4">
                         <h3 className="font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-emerald-600 transition-colors">
-                          {property.titleAr}
+                          {property.title}
                         </h3>
 
                         {/* Property Details */}
