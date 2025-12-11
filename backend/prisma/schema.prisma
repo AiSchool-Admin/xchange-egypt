@@ -3717,7 +3717,7 @@ enum InstallmentPlanStatus {
   CANCELLED       // ملغي
 }
 
-enum InstallmentStatus {
+enum InstallmentPaymentStatus {
   PENDING         // قيد الانتظار
   PAID            // مدفوع
   LATE            // متأخر
@@ -3799,7 +3799,7 @@ model Installment {
   daysLate        Int               @default(0) @map("days_late")
 
   // Status
-  status          InstallmentStatus @default(PENDING)
+  status          InstallmentPaymentStatus @default(PENDING)
 
   // Reminders
   remindersSent   Int               @default(0) @map("reminders_sent")
