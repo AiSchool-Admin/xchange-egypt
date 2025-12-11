@@ -128,7 +128,7 @@ export default function LiveAuctionsPage() {
     ));
     setSelectedAuction(prev => prev ? { ...prev, currentBid: amount, bidCount: prev.bidCount + 1 } : null);
     setChatMessages(prev => [...prev, {
-      user: user?.name || 'زائر',
+      user: user?.fullName || 'زائر',
       message: `مزايدة جديدة: ${formatPrice(amount)} ج.م`,
       time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
     }]);
@@ -138,7 +138,7 @@ export default function LiveAuctionsPage() {
   const handleSendMessage = () => {
     if (!newMessage.trim()) return;
     setChatMessages(prev => [...prev, {
-      user: user?.name || 'زائر',
+      user: user?.fullName || 'زائر',
       message: newMessage,
       time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
     }]);
