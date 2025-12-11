@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma';
 import { NotFoundError, BadRequestError } from '../utils/errors';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 // ============================================
 // Item Comparison Service
@@ -255,7 +255,7 @@ export const updateComparison = async (
 // ============================================
 
 function generateShareCode(): string {
-  return uuidv4().substring(0, 8).toUpperCase();
+  return crypto.randomUUID().substring(0, 8).toUpperCase();
 }
 
 function generateComparisonFields(items: any[], categorySlug?: string): ComparisonField[] {
