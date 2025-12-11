@@ -507,6 +507,54 @@ const categoriesData = [
       },
     ],
   },
+  {
+    id: 'real-estate',
+    name: 'العقارات',
+    icon: '🏠',
+    href: '/items?category=real-estate',
+    subcategories: [
+      {
+        title: 'سكني',
+        items: [
+          { name: 'شقق', href: '/items?category=apartments' },
+          { name: 'فلل', href: '/items?category=villas' },
+          { name: 'أراضي', href: '/items?category=land' },
+        ]
+      },
+      {
+        title: 'تجاري',
+        items: [
+          { name: 'محلات', href: '/items?category=commercial' },
+          { name: 'مكاتب', href: '/items?category=offices' },
+          { name: 'مخازن', href: '/items?category=warehouses' },
+        ]
+      },
+    ],
+  },
+  {
+    id: 'art-collectibles',
+    name: 'الفن والمقتنيات',
+    icon: '🎨',
+    href: '/items?category=art-collectibles',
+    subcategories: [
+      {
+        title: 'التحف',
+        items: [
+          { name: 'ساعات أثرية', href: '/items?category=antique-clocks' },
+          { name: 'أثاث أثري', href: '/items?category=antique-furniture' },
+          { name: 'فخار', href: '/items?category=pottery' },
+        ]
+      },
+      {
+        title: 'المقتنيات',
+        items: [
+          { name: 'عملات', href: '/items?category=coins-currency' },
+          { name: 'طوابع', href: '/items?category=stamps' },
+          { name: 'لوحات', href: '/items?category=paintings' },
+        ]
+      },
+    ],
+  },
 ];
 
 // ============================================
