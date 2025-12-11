@@ -794,7 +794,7 @@ export default function Navigation() {
                           type="button"
                           onClick={() => {
                             setSearchQuery(suggestion);
-                            router.push(`/items?q=${encodeURIComponent(suggestion)}`);
+                            router.push(`/items?search=${encodeURIComponent(suggestion)}`);
                           }}
                           className="w-full text-right flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
                         >
@@ -824,7 +824,7 @@ export default function Navigation() {
                           type="button"
                           onClick={() => {
                             setSearchQuery(search);
-                            router.push(`/items?q=${encodeURIComponent(search)}`);
+                            router.push(`/items?search=${encodeURIComponent(search)}`);
                           }}
                           className="w-full text-right flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
                         >
@@ -845,7 +845,7 @@ export default function Navigation() {
                           type="button"
                           onClick={() => {
                             setSearchQuery(trend);
-                            router.push(`/items?q=${encodeURIComponent(trend)}`);
+                            router.push(`/items?search=${encodeURIComponent(trend)}`);
                           }}
                           className="px-3 py-1.5 bg-gray-100 hover:bg-primary-100 hover:text-primary-600 rounded-full text-sm text-gray-600 transition-colors flex items-center gap-1"
                         >
@@ -1080,6 +1080,15 @@ export default function Navigation() {
                         {unreadCount > 9 ? '9+' : unreadCount}
                       </span>
                     )}
+                  </Link>
+
+                  {/* Dashboard Button */}
+                  <Link
+                    href="/dashboard"
+                    className="hidden md:flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-xl font-medium transition-colors"
+                  >
+                    <span>📊</span>
+                    <span>لوحة التحكم</span>
                   </Link>
 
                   {/* Add Listing Button */}

@@ -277,9 +277,9 @@ export default function ItemsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث عن المنتجات..."
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-primary-500 focus:bg-white transition-all outline-none"
+                className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border-2 border-gray-200 focus:border-primary-500 transition-all outline-none placeholder-gray-500 text-gray-900"
               />
-              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -302,7 +302,7 @@ export default function ItemsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-primary-500 outline-none font-medium min-w-[150px]"
+              className="px-4 py-3 bg-white rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none font-medium min-w-[150px] text-gray-900 cursor-pointer"
             >
               {SORT_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>{option.label}</option>
