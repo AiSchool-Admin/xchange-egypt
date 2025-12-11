@@ -46,6 +46,10 @@ import exchangePointsRoutes from './routes/exchange-points.routes';
 import searchAlertsRoutes from './routes/search-alerts.routes';
 import scrapMarketplaceRoutes from './routes/scrap-marketplace.routes';
 import matchingRoutes from './routes/matching.routes';
+import comparisonRoutes from './routes/comparison.routes';
+import deliveryRoutes from './routes/delivery.routes';
+import installmentRoutes from './routes/installment.routes';
+import badgeRoutes from './routes/badge.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -312,6 +316,18 @@ app.use('/api/v1/scrap', scrapMarketplaceRoutes);
 
 // Matching routes - نظام المطابقة الذكية
 app.use('/api/v1/matching', matchingRoutes);
+
+// Item Comparison routes - نظام مقارنة المنتجات
+app.use('/api/v1/comparisons', comparisonRoutes);
+
+// Delivery routes - خدمة التوصيل المدمجة
+app.use('/api/v1/delivery', deliveryRoutes);
+
+// Installment routes - خدمة التقسيط (Valu وغيرها)
+app.use('/api/v1/installments', installmentRoutes);
+
+// Badge routes - شارات التحقق
+app.use('/api/v1/badges', badgeRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

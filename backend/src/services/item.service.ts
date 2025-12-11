@@ -93,9 +93,48 @@ interface SearchItemsParams {
   // Featured/promotion filters
   isFeatured?: boolean;
   promotionTier?: PromotionTier;
+
+  // Real Estate filters
+  propertyType?: string;
+  propertyFinishing?: string;
+  propertyView?: string;
+  minArea?: number;
+  maxArea?: number;
+  minBedrooms?: number;
+  maxBedrooms?: number;
+  minBathrooms?: number;
+  maxBathrooms?: number;
+  minFloor?: number;
+  maxFloor?: number;
+  hasElevator?: boolean;
+  hasParking?: boolean;
+  hasGarden?: boolean;
+  hasSecurity?: boolean;
+  hasPool?: boolean;
+
+  // Vehicle filters
+  vehicleBrand?: string;
+  vehicleModel?: string;
+  minYear?: number;
+  maxYear?: number;
+  minKilometers?: number;
+  maxKilometers?: number;
+  fuelType?: string;
+  transmissionType?: string;
+  bodyType?: string;
+  vehicleColor?: string;
+  hasWarranty?: boolean;
+
+  // Delivery & Installment filters
+  deliveryAvailable?: boolean;
+  installmentAvailable?: boolean;
+
+  // Seller verification filter
+  verifiedSeller?: boolean;
+
   page?: number;
   limit?: number;
-  sortBy?: 'createdAt' | 'updatedAt' | 'title' | 'estimatedValue';
+  sortBy?: 'createdAt' | 'updatedAt' | 'title' | 'estimatedValue' | 'areaInSqm' | 'vehicleYear' | 'vehicleKilometers';
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -559,6 +598,146 @@ export const searchItems = async (
   // Promotion tier filtering
   if (promotionTier) {
     where.promotionTier = promotionTier;
+  }
+
+  // ============================================
+  // Real Estate Filters
+  // ============================================
+  if (params.propertyType) {
+    where.propertyType = params.propertyType;
+  }
+
+  if (params.propertyFinishing) {
+    where.propertyFinishing = params.propertyFinishing;
+  }
+
+  if (params.propertyView) {
+    where.propertyView = params.propertyView;
+  }
+
+  // Area range
+  if (params.minArea !== undefined || params.maxArea !== undefined) {
+    where.areaInSqm = {};
+    if (params.minArea !== undefined) {
+      where.areaInSqm.gte = params.minArea;
+    }
+    if (params.maxArea !== undefined) {
+      where.areaInSqm.lte = params.maxArea;
+    }
+  }
+
+  // Bedrooms range
+  if (params.minBedrooms !== undefined || params.maxBedrooms !== undefined) {
+    where.bedrooms = {};
+    if (params.minBedrooms !== undefined) {
+      where.bedrooms.gte = params.minBedrooms;
+    }
+    if (params.maxBedrooms !== undefined) {
+      where.bedrooms.lte = params.maxBedrooms;
+    }
+  }
+
+  // Bathrooms range
+  if (params.minBathrooms !== undefined || params.maxBathrooms !== undefined) {
+    where.bathrooms = {};
+    if (params.minBathrooms !== undefined) {
+      where.bathrooms.gte = params.minBathrooms;
+    }
+    if (params.maxBathrooms !== undefined) {
+      where.bathrooms.lte = params.maxBathrooms;
+    }
+  }
+
+  // Floor range
+  if (params.minFloor !== undefined || params.maxFloor !== undefined) {
+    where.floorNumber = {};
+    if (params.minFloor !== undefined) {
+      where.floorNumber.gte = params.minFloor;
+    }
+    if (params.maxFloor !== undefined) {
+      where.floorNumber.lte = params.maxFloor;
+    }
+  }
+
+  // Property amenities
+  if (params.hasElevator !== undefined) {
+    where.hasElevator = params.hasElevator;
+  }
+  if (params.hasParking !== undefined) {
+    where.hasParking = params.hasParking;
+  }
+  if (params.hasGarden !== undefined) {
+    where.hasGarden = params.hasGarden;
+  }
+  if (params.hasSecurity !== undefined) {
+    where.hasSecurity = params.hasSecurity;
+  }
+  if (params.hasPool !== undefined) {
+    where.hasPool = params.hasPool;
+  }
+
+  // ============================================
+  // Vehicle Filters
+  // ============================================
+  if (params.vehicleBrand) {
+    where.vehicleBrand = { contains: params.vehicleBrand, mode: 'insensitive' };
+  }
+
+  if (params.vehicleModel) {
+    where.vehicleModel = { contains: params.vehicleModel, mode: 'insensitive' };
+  }
+
+  // Year range
+  if (params.minYear !== undefined || params.maxYear !== undefined) {
+    where.vehicleYear = {};
+    if (params.minYear !== undefined) {
+      where.vehicleYear.gte = params.minYear;
+    }
+    if (params.maxYear !== undefined) {
+      where.vehicleYear.lte = params.maxYear;
+    }
+  }
+
+  // Kilometers range
+  if (params.minKilometers !== undefined || params.maxKilometers !== undefined) {
+    where.vehicleKilometers = {};
+    if (params.minKilometers !== undefined) {
+      where.vehicleKilometers.gte = params.minKilometers;
+    }
+    if (params.maxKilometers !== undefined) {
+      where.vehicleKilometers.lte = params.maxKilometers;
+    }
+  }
+
+  if (params.fuelType) {
+    where.fuelType = params.fuelType;
+  }
+
+  if (params.transmissionType) {
+    where.transmissionType = params.transmissionType;
+  }
+
+  if (params.bodyType) {
+    where.bodyType = params.bodyType;
+  }
+
+  if (params.vehicleColor) {
+    where.vehicleColor = { contains: params.vehicleColor, mode: 'insensitive' };
+  }
+
+  if (params.hasWarranty !== undefined) {
+    where.hasWarranty = params.hasWarranty;
+  }
+
+  // ============================================
+  // Delivery & Installment Filters
+  // ============================================
+  if (params.deliveryAvailable !== undefined) {
+    where.deliveryAvailable = params.deliveryAvailable;
+  }
+
+  if (params.installmentAvailable !== undefined) {
+    where.installmentAvailable = params.installmentAvailable;
   }
 
   // Calculate pagination
