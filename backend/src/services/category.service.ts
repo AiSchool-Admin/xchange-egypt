@@ -10,6 +10,7 @@ let hasCheckedSeeding = false;
 
 /**
  * Default categories for auto-seeding
+ * Slugs must match what seed-items.ts and seed-marketplace-data.ts expect
  */
 const DEFAULT_CATEGORIES = [
   {
@@ -33,8 +34,8 @@ const DEFAULT_CATEGORIES = [
     icon: '🛋️',
     order: 2,
     subcategories: [
-      { nameAr: 'أثاث غرف النوم', nameEn: 'Bedroom Furniture', slug: 'bedroom-furniture', order: 1 },
-      { nameAr: 'أثاث غرف المعيشة', nameEn: 'Living Room Furniture', slug: 'living-room-furniture', order: 2 },
+      { nameAr: 'غرفة النوم', nameEn: 'Bedroom', slug: 'bedroom', order: 1 },
+      { nameAr: 'غرفة المعيشة', nameEn: 'Living Room', slug: 'living-room', order: 2 },
       { nameAr: 'أثاث مكتبي', nameEn: 'Office Furniture', slug: 'office-furniture', order: 3 },
     ],
   },
