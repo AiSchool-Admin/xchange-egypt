@@ -29,7 +29,7 @@ export default function BarterPage() {
 
   useEffect(() => {
     loadItems();
-  }, [page, selectedCategory, minValue, maxValue, searchQuery]);
+  }, [page, selectedCategory, minValue, maxValue, searchQuery, user]);
 
   const loadCategories = async () => {
     try {
@@ -55,8 +55,13 @@ export default function BarterPage() {
 
       // Handle different response formats safely
       const responseData = response as any;
-      const items = responseData?.data?.items || responseData?.items || [];
+      let items = responseData?.data?.items || responseData?.items || [];
       const pagination = responseData?.data?.pagination || responseData?.pagination || { totalPages: 1 };
+
+      // Filter out current user's items from barter marketplace
+      if (user) {
+        items = items.filter((item: BarterItem) => item.seller?.id !== user.id);
+      }
 
       setItems(items);
       setTotalPages(pagination.totalPages || 1);

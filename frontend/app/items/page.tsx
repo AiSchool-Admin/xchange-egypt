@@ -180,9 +180,15 @@ export default function ItemsPage() {
         sortOrder: sortOrder as 'asc' | 'desc',
       });
 
-      setItems(response.data.items);
+      // Filter out current user's items when browsing marketplace (not own items view)
+      let filteredItems = response.data.items;
+      if (!isMyItems && currentUser) {
+        filteredItems = response.data.items.filter((item: Item) => item.sellerId !== currentUser.id);
+      }
+
+      setItems(filteredItems);
       setTotalPages(response.data.pagination.totalPages);
-      setTotalItems(response.data.pagination.total);
+      setTotalItems(isMyItems || !currentUser ? response.data.pagination.total : filteredItems.length);
     } catch (err: any) {
       setError(err.response?.data?.message || 'فشل في تحميل المنتجات');
     } finally {
