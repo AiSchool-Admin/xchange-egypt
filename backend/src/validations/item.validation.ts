@@ -154,13 +154,14 @@ export const updateItemSchema = z.object({
       .string()
       .min(3, 'Location must be at least 3 characters')
       .max(200, 'Location must not exceed 200 characters')
-      .optional(),
+      .optional()
+      .or(z.literal('')),
     governorate: z
       .enum(EGYPTIAN_GOVERNORATES, {
         errorMap: () => ({ message: 'Invalid governorate' }),
       })
       .optional(),
-    imageUrls: z.array(z.string().url('Invalid image URL')).optional(),
+    imageUrls: z.array(z.string().url('Invalid image URL')).optional().nullable(),
   }),
 });
 
@@ -215,7 +216,7 @@ export const searchItemsSchema = z.object({
 
     // Sorting
     sortBy: z
-      .enum(['createdAt', 'updatedAt', 'titleAr', 'titleEn', 'title'])
+      .enum(['createdAt', 'updatedAt', 'titleAr', 'titleEn', 'title', 'estimatedValue'])
       .default('createdAt')
       .optional(),
     sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),
@@ -273,7 +274,7 @@ export const getCategoryItemsSchema = z.object({
       .default('20')
       .optional(),
     sortBy: z
-      .enum(['createdAt', 'updatedAt', 'titleAr', 'titleEn'])
+      .enum(['createdAt', 'updatedAt', 'titleAr', 'titleEn', 'estimatedValue'])
       .default('createdAt')
       .optional(),
     sortOrder: z.enum(['asc', 'desc']).default('desc').optional(),

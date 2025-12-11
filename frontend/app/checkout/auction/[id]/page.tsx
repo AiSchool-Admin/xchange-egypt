@@ -109,8 +109,8 @@ export default function AuctionCheckoutPage() {
         return;
       }
 
-      // Check auction status
-      if (auctionData.status !== 'COMPLETED' && auctionData.status !== 'ENDED') {
+      // Check auction status - only ENDED auctions can be checked out
+      if (auctionData.status !== 'ENDED') {
         setError('المزاد لم ينتهِ بعد');
         return;
       }

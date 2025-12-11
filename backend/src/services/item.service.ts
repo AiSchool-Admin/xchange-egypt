@@ -72,6 +72,7 @@ interface UpdateItemData {
   estimatedValue?: number;
   location?: string;
   governorate?: string;
+  images?: string[];
 }
 
 interface SearchItemsParams {
