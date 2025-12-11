@@ -76,6 +76,7 @@ export default function CreateAuctionPage() {
         throw new Error('وقت الانتهاء يجب أن يكون بعد وقت البدء');
       }
 
+      // Convert datetime-local to ISO string with timezone
       const auctionData = {
         itemId: formData.itemId,
         startingPrice: parseFloat(formData.startingPrice),
@@ -85,8 +86,8 @@ export default function CreateAuctionPage() {
         buyNowPrice: formData.buyNowPrice
           ? parseFloat(formData.buyNowPrice)
           : undefined,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
+        startTime: new Date(formData.startTime).toISOString(),
+        endTime: new Date(formData.endTime).toISOString(),
       };
 
       const response = await createAuction(auctionData);

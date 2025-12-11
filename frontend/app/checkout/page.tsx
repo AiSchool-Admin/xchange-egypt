@@ -96,10 +96,14 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (user) {
       fetchCart();
+      // Auto-fill shipping address from user's profile
       setShippingAddress(prev => ({
         ...prev,
         fullName: user.fullName || '',
         phone: user.phone || '',
+        governorate: user.governorate || '',
+        city: user.city || '',
+        street: user.street || '',
       }));
     }
   }, [user]);

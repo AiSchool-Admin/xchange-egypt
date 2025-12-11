@@ -52,6 +52,7 @@ export default function AuctionDetailsPage() {
 
   // Bidding state
   const [bidAmount, setBidAmount] = useState('');
+  const [bidInitialized, setBidInitialized] = useState(false);
   const [bidding, setBidding] = useState(false);
   const [bidError, setBidError] = useState('');
   const [buying, setBuying] = useState(false);
@@ -79,11 +80,12 @@ export default function AuctionDetailsPage() {
       const response = await getAuction(auctionId);
       setAuction(response.data);
 
-      // Set default bid amount to minimum increment
-      if (!bidAmount) {
+      // Set default bid amount to minimum increment (only once on initial load)
+      if (!bidInitialized) {
         const price = response.data.currentPrice || response.data.startingPrice || 0;
         const increment = response.data.minBidIncrement || 10;
         setBidAmount((price + increment).toString());
+        setBidInitialized(true);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'فشل في تحميل المزاد');
@@ -432,16 +434,55 @@ export default function AuctionDetailsPage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         قيمة مزايدتك (ج.م)
                       </label>
-                      <input
-                        type="number"
-                        value={bidAmount}
-                        onChange={(e) => setBidAmount(e.target.value)}
-                        min={minBid}
-                        step="10"
-                        required
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg"
-                        placeholder={minBid.toString()}
-                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setBidAmount((prev) => Math.max(minBid, parseFloat(prev || '0') - minBidIncrement).toString())}
+                          className="px-4 py-3 bg-gray-200 rounded-lg hover:bg-gray-300 transition text-xl font-bold"
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          value={bidAmount}
+                          onChange={(e) => setBidAmount(e.target.value)}
+                          min={minBid}
+                          step={minBidIncrement}
+                          required
+                          className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-lg text-center"
+                          placeholder={minBid.toString()}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setBidAmount((prev) => (parseFloat(prev || '0') + minBidIncrement).toString())}
+                          className="px-4 py-3 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition text-xl font-bold"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setBidAmount((parseFloat(bidAmount || '0') + 50).toString())}
+                          className="flex-1 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200 transition"
+                        >
+                          +50
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBidAmount((parseFloat(bidAmount || '0') + 100).toString())}
+                          className="flex-1 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200 transition"
+                        >
+                          +100
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBidAmount((parseFloat(bidAmount || '0') + 500).toString())}
+                          className="flex-1 py-2 text-sm bg-gray-100 rounded hover:bg-gray-200 transition"
+                        >
+                          +500
+                        </button>
+                      </div>
                     </div>
 
                     {bidError && (

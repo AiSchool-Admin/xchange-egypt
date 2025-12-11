@@ -565,10 +565,30 @@ export default function Navigation() {
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
+      fetchCartCount();
     } else {
       setUnreadCount(0);
+      setCartCount(0);
     }
   }, [user]);
+
+  // Fetch cart count
+  const fetchCartCount = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const result = await response.json();
+        const cart = result.data || result;
+        setCartCount(cart?.items?.length || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch cart count:', error);
+    }
+  };
 
   // Listen for real-time notifications
   useEffect(() => {
