@@ -15,8 +15,8 @@ export interface ComparisonField {
 export interface ComparisonItem {
   id: string;
   title: string;
-  images: Array<{ url: string }>;
-  estimatedValue: number;
+  images?: Array<{ url: string }>;
+  estimatedValue?: number;
   condition: string;
   governorate?: string;
   seller?: {
@@ -50,8 +50,8 @@ export interface ComparisonListItem {
   itemPreviews: Array<{
     id: string;
     title: string;
-    images: Array<{ url: string }>;
-    estimatedValue: number;
+    images?: Array<{ url: string }>;
+    estimatedValue?: number;
   }>;
 }
 

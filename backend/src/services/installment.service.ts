@@ -165,16 +165,16 @@ export const createInstallmentRequest = async (params: CreateInstallmentRequestP
   }
 
   if (params.totalAmount < config.minAmount || params.totalAmount > config.maxAmount) {
-    throw new BadRequestError(\`المبلغ يجب أن يكون بين \${config.minAmount} و \${config.maxAmount} جنيه\`);
+    throw new BadRequestError(`المبلغ يجب أن يكون بين ${config.minAmount} و ${config.maxAmount} جنيه`);
   }
 
   if (!config.availableMonths.includes(params.numberOfMonths)) {
-    throw new BadRequestError(\`عدد الأشهر غير متاح. الخيارات المتاحة: \${config.availableMonths.join(', ')}\`);
+    throw new BadRequestError(`عدد الأشهر غير متاح. الخيارات المتاحة: ${config.availableMonths.join(', ')}`);
   }
 
   const minDownPayment = params.totalAmount * config.minDownPaymentRate;
   if (params.downPayment < minDownPayment) {
-    throw new BadRequestError(\`الحد الأدنى للمقدم هو \${Math.ceil(minDownPayment)} جنيه\`);
+    throw new BadRequestError(`الحد الأدنى للمقدم هو ${Math.ceil(minDownPayment)} جنيه`);
   }
 
   const item = await prisma.item.findUnique({
