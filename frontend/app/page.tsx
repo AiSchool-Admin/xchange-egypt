@@ -171,6 +171,34 @@ const FEATURES = [
     href: '/auctions',
     gradient: 'from-purple-500 to-purple-600',
   },
+  {
+    icon: '💳',
+    title: 'التقسيط',
+    description: 'اشتر الآن وادفع على أقساط مريحة',
+    href: '/installments',
+    gradient: 'from-violet-500 to-purple-600',
+  },
+  {
+    icon: '🚚',
+    title: 'التوصيل',
+    description: 'توصيل سريع لجميع المحافظات',
+    href: '/delivery',
+    gradient: 'from-teal-500 to-cyan-500',
+  },
+  {
+    icon: '🏅',
+    title: 'الشارات والتحقق',
+    description: 'زد مصداقيتك واكسب ثقة المشترين',
+    href: '/badges',
+    gradient: 'from-yellow-500 to-amber-500',
+  },
+  {
+    icon: '📊',
+    title: 'مقارنة المنتجات',
+    description: 'قارن بين المنتجات واختر الأفضل',
+    href: '/compare',
+    gradient: 'from-pink-500 to-rose-500',
+  },
 ];
 
 // ============================================
