@@ -185,15 +185,9 @@ export const revokeBadge = async (userId: string, badgeType: string): Promise<vo
 export const checkAndAwardAutomaticBadges = async (userId: string): Promise<any[]> => {
   const awardedBadges: any[] = [];
 
-  // Get user with related data
+  // Get user basic info
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    include: {
-      transactionsAsSeller: {
-        where: { status: 'COMPLETED' },
-      },
-      reviewsReceived: true,
-    },
   });
 
   if (!user) {
@@ -218,9 +212,17 @@ export const checkAndAwardAutomaticBadges = async (userId: string): Promise<any[
     awardedBadges.push(badge);
   }
 
+  // Get completed transactions as seller (check paymentStatus = COMPLETED)
+  const completedTransactions = await prisma.transaction.count({
+    where: {
+      sellerId: userId,
+      paymentStatus: 'COMPLETED',
+    },
+  });
+
   // Trusted seller badge (10+ completed transactions)
   if (
-    user.transactionsAsSeller.length >= 10 &&
+    completedTransactions >= 10 &&
     user.rating >= 4.0 &&
     !existingBadgeTypes.includes('TRUSTED_SELLER' as BadgeType)
   ) {
@@ -228,10 +230,15 @@ export const checkAndAwardAutomaticBadges = async (userId: string): Promise<any[
     awardedBadges.push(badge);
   }
 
+  // Get reviews received count
+  const reviewsCount = await prisma.review.count({
+    where: { reviewedId: userId },
+  });
+
   // Top rated badge (4.8+ rating with 25+ reviews)
   if (
     user.rating >= 4.8 &&
-    user.reviewsReceived.length >= 25 &&
+    reviewsCount >= 25 &&
     !existingBadgeTypes.includes('TOP_RATED' as BadgeType)
   ) {
     const badge = await awardBadge(userId, 'TOP_RATED', 'SYSTEM', 'Automatic - 4.8+ rating with 25+ reviews');
