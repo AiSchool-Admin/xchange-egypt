@@ -7,6 +7,8 @@ import {
   registerBusinessSchema,
   loginSchema,
   refreshTokenSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } from '../validations/auth.validation';
 
 const router = Router();
@@ -74,5 +76,19 @@ router.get('/me', authenticate, authController.getMe);
  * @access  Private
  */
 router.put('/me', authenticate, authController.updateMe);
+
+/**
+ * @route   POST /api/v1/auth/forgot-password
+ * @desc    Request password reset
+ * @access  Public
+ */
+router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
+
+/**
+ * @route   POST /api/v1/auth/reset-password
+ * @desc    Reset password using token
+ * @access  Public
+ */
+router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
 
 export default router;

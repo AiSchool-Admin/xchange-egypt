@@ -55,3 +55,33 @@ export const verifyRefreshToken = (token: string): TokenPayload => {
 export const decodeToken = (token: string): TokenPayload | null => {
   return jwt.decode(token) as TokenPayload | null;
 };
+
+interface PasswordResetPayload {
+  userId: string;
+  email: string;
+  purpose: 'password_reset';
+}
+
+/**
+ * Generate password reset token (expires in 1 hour)
+ * @param payload - Token payload
+ * @returns JWT password reset token
+ */
+export const generatePasswordResetToken = (payload: Omit<PasswordResetPayload, 'purpose'>): string => {
+  return jwt.sign({ ...payload, purpose: 'password_reset' }, env.jwt.secret, {
+    expiresIn: '1h',
+  } as SignOptions);
+};
+
+/**
+ * Verify password reset token
+ * @param token - JWT password reset token
+ * @returns Decoded token payload
+ */
+export const verifyPasswordResetToken = (token: string): PasswordResetPayload => {
+  const decoded = jwt.verify(token, env.jwt.secret) as PasswordResetPayload;
+  if (decoded.purpose !== 'password_reset') {
+    throw new Error('Invalid token purpose');
+  }
+  return decoded;
+};

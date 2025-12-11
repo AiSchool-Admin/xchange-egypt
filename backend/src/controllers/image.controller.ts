@@ -287,3 +287,26 @@ export const cleanupTempFiles = async (
     next(error);
   }
 };
+
+/**
+ * Get storage provider info
+ * GET /api/v1/images/storage-info
+ */
+export const getStorageInfo = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const provider = imageService.getStorageProvider();
+    const isCloudEnabled = imageService.isCloudStorageEnabled();
+
+    return successResponse(res, {
+      provider: provider.provider,
+      cloudEnabled: isCloudEnabled,
+      publicUrl: provider.publicUrl || null,
+    }, 'Storage info retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
