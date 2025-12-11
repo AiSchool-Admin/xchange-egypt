@@ -118,6 +118,12 @@ export default function LoginPage() {
               />
             </div>
 
+            <div className="flex justify-end">
+              <Link href="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700">
+                {lang === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
+              </Link>
+            </div>
+
             <button
               type="submit"
               disabled={loading}

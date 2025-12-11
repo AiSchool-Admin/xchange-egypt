@@ -4,39 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
-
-const EGYPTIAN_GOVERNORATES = [
-  { value: 'Cairo', label: 'القاهرة' },
-  { value: 'Alexandria', label: 'الإسكندرية' },
-  { value: 'Giza', label: 'الجيزة' },
-  { value: 'Shubra El Kheima', label: 'شبرا الخيمة' },
-  { value: 'Port Said', label: 'بورسعيد' },
-  { value: 'Suez', label: 'السويس' },
-  { value: 'Luxor', label: 'الأقصر' },
-  { value: 'Mansoura', label: 'المنصورة' },
-  { value: 'El-Mahalla El-Kubra', label: 'المحلة الكبرى' },
-  { value: 'Tanta', label: 'طنطا' },
-  { value: 'Asyut', label: 'أسيوط' },
-  { value: 'Ismailia', label: 'الإسماعيلية' },
-  { value: 'Faiyum', label: 'الفيوم' },
-  { value: 'Zagazig', label: 'الزقازيق' },
-  { value: 'Aswan', label: 'أسوان' },
-  { value: 'Damietta', label: 'دمياط' },
-  { value: 'Damanhur', label: 'دمنهور' },
-  { value: 'Minya', label: 'المنيا' },
-  { value: 'Beni Suef', label: 'بني سويف' },
-  { value: 'Qena', label: 'قنا' },
-  { value: 'Sohag', label: 'سوهاج' },
-  { value: 'Hurghada', label: 'الغردقة' },
-  { value: 'Shibin El Kom', label: 'شبين الكوم' },
-  { value: 'Banha', label: 'بنها' },
-  { value: 'Kafr El Sheikh', label: 'كفر الشيخ' },
-  { value: 'Arish', label: 'العريش' },
-  { value: 'Mallawi', label: 'ملوي' },
-  { value: '10th of Ramadan', label: 'العاشر من رمضان' },
-  { value: 'Bilbais', label: 'بلبيس' },
-  { value: 'Marsa Matruh', label: 'مرسى مطروح' },
-];
+import { EGYPTIAN_GOVERNORATES, getShippingCost } from '@/lib/constants/governorates';
 
 interface CartItem {
   id: string;
@@ -111,11 +79,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     // Calculate shipping cost based on governorate
     if (shippingAddress.governorate) {
-      const costs: Record<string, number> = {
-        'Cairo': 30, 'Giza': 30, 'Alexandria': 45, 'Port Said': 50,
-        'Suez': 50, 'Luxor': 60, 'Aswan': 65, 'Hurghada': 55,
-      };
-      setShippingCost(costs[shippingAddress.governorate] || 50);
+      setShippingCost(getShippingCost(shippingAddress.governorate));
     }
   }, [shippingAddress.governorate]);
 
@@ -163,7 +127,8 @@ export default function CheckoutPage() {
       });
 
       if (response.ok) {
-        const order = await response.json();
+        const result = await response.json();
+        const order = result.data || result;
 
         if (paymentMethod === 'COD') {
           router.push(`/dashboard/orders?success=${order.id}`);
@@ -197,8 +162,8 @@ export default function CheckoutPage() {
           router.push(`/dashboard/orders?success=${order.id}&fawryRef=${paymentData.referenceNumber}`);
         }
       } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to create order');
+        const errorData = await response.json();
+        alert(errorData.error?.message || errorData.message || 'فشل في إنشاء الطلب');
       }
     } catch (error) {
       console.error('Failed to create order:', error);
@@ -281,7 +246,7 @@ export default function CheckoutPage() {
                     >
                       <option value="">اختر المحافظة</option>
                       {EGYPTIAN_GOVERNORATES.map((gov) => (
-                        <option key={gov.value} value={gov.value}>{gov.label}</option>
+                        <option key={gov.value} value={gov.value}>{gov.labelAr}</option>
                       ))}
                     </select>
                   </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { uploadImage, uploadMultipleImages, validateImageFile } from '@/lib/api/images';
 
 // Translations for the component
@@ -13,7 +13,7 @@ const translations = {
     uploadingImages: 'جاري رفع الصور...',
     maxFilesError: 'الحد الأقصى {count} ملفات',
     dragDrop: 'اسحب وأفلت الصور هنا أو اضغط للاختيار',
-    supportedFormats: 'الصيغ المدعومة: JPG, PNG, WebP',
+    supportedFormats: 'الصيغ المدعومة: JPG, PNG, WebP (الحد الأقصى 5MB)',
   },
   en: {
     uploadImage: 'Upload Image',
@@ -23,7 +23,7 @@ const translations = {
     uploadingImages: 'Uploading images...',
     maxFilesError: 'Maximum {count} files allowed',
     dragDrop: 'Drag & drop images here or click to select',
-    supportedFormats: 'Supported formats: JPG, PNG, WebP',
+    supportedFormats: 'Supported formats: JPG, PNG, WebP (Max 5MB)',
   },
 };
 
@@ -50,13 +50,12 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 }) => {
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const t = translations[lang];
   const isRTL = lang === 'ar';
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-
+  const handleFiles = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
 
     // Check max files
@@ -110,11 +109,57 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
       previewUrls.forEach((url) => URL.revokeObjectURL(url));
       setPreviews([]);
     }
+  }, [category, maxFiles, multiple, onUploadComplete, onUploadError, t.maxFilesError]);
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    await handleFiles(files);
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleClick = () => {
     fileInputRef.current?.click();
   };
+
+  // Drag and drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (uploading) return;
+
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(file =>
+      file.type.startsWith('image/')
+    );
+
+    if (droppedFiles.length === 0) {
+      onUploadError?.('Please drop image files only');
+      return;
+    }
+
+    await handleFiles(droppedFiles);
+  }, [uploading, handleFiles, onUploadError]);
 
   return (
     <div className={className} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -130,11 +175,17 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
       <div
         onClick={handleClick}
-        className={`border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-all ${
-          uploading ? 'opacity-50 cursor-not-allowed' : ''
-        }`}
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+          isDragging
+            ? 'border-purple-500 bg-purple-100'
+            : 'border-gray-300 hover:border-purple-400 hover:bg-purple-50'
+        } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        <div className="text-4xl mb-2">📷</div>
+        <div className="text-4xl mb-2">{isDragging ? '📥' : '📷'}</div>
         <p className="text-gray-600 font-medium">
           {uploading ? t.uploading : (multiple ? t.uploadImages : t.uploadImage)}
         </p>
