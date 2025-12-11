@@ -64,6 +64,8 @@ export default function ItemsPage() {
   // State
   const [items, setItems] = useState<Item[]>([]);
   const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -165,11 +167,29 @@ export default function ItemsPage() {
   }, [page, selectedMainCategory, selectedSubCategory, selectedSubSubCategory, selectedCondition, selectedListingType, debouncedMinPrice, debouncedMaxPrice, debouncedSearch, location, sortBy, isMyItems, currentUser]);
 
   const loadCategories = async () => {
+    setCategoriesLoading(true);
+    setCategoriesError('');
     try {
+      console.log('[Categories] Loading category tree...');
       const response = await getCategoryTree();
-      setCategories(response.data as CategoryWithChildren[]);
-    } catch (err) {
-      console.error('Failed to load categories:', err);
+      console.log('[Categories] API Response:', response);
+
+      // Handle response structure: response is { success, message, data: [...] }
+      const categoryData = response.data || [];
+      console.log('[Categories] Category data:', categoryData);
+
+      if (Array.isArray(categoryData)) {
+        setCategories(categoryData as CategoryWithChildren[]);
+        console.log(`[Categories] Loaded ${categoryData.length} categories`);
+      } else {
+        console.error('[Categories] Invalid data format:', categoryData);
+        setCategoriesError('تنسيق بيانات الفئات غير صالح');
+      }
+    } catch (err: any) {
+      console.error('[Categories] Failed to load categories:', err);
+      setCategoriesError(err.response?.data?.message || err.message || 'فشل في تحميل الفئات');
+    } finally {
+      setCategoriesLoading(false);
     }
   };
 
@@ -445,44 +465,68 @@ export default function ItemsPage() {
               <div className="pb-6 border-b border-gray-100 space-y-3">
                 <label className="block text-sm font-semibold text-gray-700">📂 الفئة</label>
 
-                {/* Main Category */}
-                <select
-                  value={selectedMainCategory}
-                  onChange={(e) => handleMainCategoryChange(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                >
-                  <option value="">جميع الفئات الرئيسية</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
-                  ))}
-                </select>
+                {/* Category Loading State */}
+                {categoriesLoading ? (
+                  <div className="flex items-center gap-2 text-gray-500 py-3">
+                    <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm">جاري تحميل الفئات...</span>
+                  </div>
+                ) : categoriesError ? (
+                  <div className="text-red-500 text-sm py-2">
+                    <p>⚠️ {categoriesError}</p>
+                    <button
+                      onClick={loadCategories}
+                      className="text-primary-600 hover:text-primary-700 mt-1 underline"
+                    >
+                      إعادة المحاولة
+                    </button>
+                  </div>
+                ) : categories.length === 0 ? (
+                  <div className="text-gray-500 text-sm py-2">
+                    <p>لا توجد فئات متاحة حالياً</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Main Category */}
+                    <select
+                      value={selectedMainCategory}
+                      onChange={(e) => handleMainCategoryChange(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                    >
+                      <option value="">جميع الفئات الرئيسية</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                      ))}
+                    </select>
 
-                {/* Subcategory - shown when main category selected */}
-                {selectedMainCategory && getSubCategories().length > 0 && (
-                  <select
-                    value={selectedSubCategory}
-                    onChange={(e) => handleSubCategoryChange(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                  >
-                    <option value="">جميع الفئات الفرعية</option>
-                    {getSubCategories().map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
-                    ))}
-                  </select>
-                )}
+                    {/* Subcategory - shown when main category selected */}
+                    {selectedMainCategory && getSubCategories().length > 0 && (
+                      <select
+                        value={selectedSubCategory}
+                        onChange={(e) => handleSubCategoryChange(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                      >
+                        <option value="">جميع الفئات الفرعية</option>
+                        {getSubCategories().map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                        ))}
+                      </select>
+                    )}
 
-                {/* Sub-subcategory - shown when subcategory selected */}
-                {selectedSubCategory && getSubSubCategories().length > 0 && (
-                  <select
-                    value={selectedSubSubCategory}
-                    onChange={(e) => handleSubSubCategoryChange(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                  >
-                    <option value="">جميع الفئات الفرعية-فرعية</option>
-                    {getSubSubCategories().map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
-                    ))}
-                  </select>
+                    {/* Sub-subcategory - shown when subcategory selected */}
+                    {selectedSubCategory && getSubSubCategories().length > 0 && (
+                      <select
+                        value={selectedSubSubCategory}
+                        onChange={(e) => handleSubSubCategoryChange(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                      >
+                        <option value="">جميع الفئات الفرعية-فرعية</option>
+                        {getSubSubCategories().map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                        ))}
+                      </select>
+                    )}
+                  </>
                 )}
               </div>
 
