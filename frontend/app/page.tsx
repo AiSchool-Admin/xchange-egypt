@@ -158,6 +158,20 @@ const FEATURES = [
     gradient: 'from-blue-500 to-indigo-500',
   },
   {
+    icon: '🚗',
+    title: 'سوق السيارات',
+    description: 'سيارات جديدة ومستعملة بأفضل الأسعار',
+    href: '/vehicles',
+    gradient: 'from-blue-600 to-indigo-700',
+  },
+  {
+    icon: '🏠',
+    title: 'سوق العقارات',
+    description: 'شقق وفيلات وأراضي للبيع والإيجار',
+    href: '/real-estate',
+    gradient: 'from-emerald-600 to-green-700',
+  },
+  {
     icon: '🔒',
     title: 'نظام الضمان',
     description: 'صفقات آمنة 100%',

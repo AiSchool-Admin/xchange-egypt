@@ -112,14 +112,56 @@ export default function AuctionsPage() {
               <h1 className="text-4xl font-bold">🔨 المزادات المباشرة</h1>
               <p className="text-purple-100 mt-2">زايد على المنتجات واحصل على أفضل الصفقات!</p>
             </div>
-            <Link
-              href="/auctions/new"
-              className="bg-white text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 transition font-semibold shadow-lg"
-            >
-              + إنشاء مزاد
-            </Link>
+            <div className="flex gap-3">
+              <Link
+                href="/auctions/live"
+                className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 transition font-semibold shadow-lg flex items-center gap-2"
+              >
+                <span className="relative flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                </span>
+                📹 مزادات بالفيديو
+              </Link>
+              <Link
+                href="/auctions/new"
+                className="bg-white text-purple-600 px-6 py-3 rounded-lg hover:bg-purple-50 transition font-semibold shadow-lg"
+              >
+                + إنشاء مزاد
+              </Link>
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Live Video Banner */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <Link href="/auctions/live">
+          <div className="bg-gradient-to-r from-red-600 to-pink-600 rounded-xl p-4 text-white flex items-center justify-between hover:from-red-700 hover:to-pink-700 transition cursor-pointer">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <span className="text-4xl">📹</span>
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                </span>
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">مزادات حية بالفيديو</h3>
+                <p className="text-red-100 text-sm">شاهد المنتج مباشرة وزايد في الوقت الفعلي مع البائع</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-center px-4">
+                <p className="text-2xl font-bold">3</p>
+                <p className="text-xs text-red-200">مزاد حي الآن</p>
+              </div>
+              <span className="bg-white text-red-600 px-4 py-2 rounded-lg font-bold">
+                شاهد الآن ←
+              </span>
+            </div>
+          </div>
+        </Link>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">

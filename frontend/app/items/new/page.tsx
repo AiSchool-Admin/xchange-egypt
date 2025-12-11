@@ -404,7 +404,29 @@ export default function NewItemPage() {
     desiredKeywords: '',
     desiredValueMin: '',
     desiredValueMax: '',
+    // Vehicle fields
+    vehicleBrand: '',
+    vehicleModel: '',
+    vehicleYear: '',
+    vehicleKilometers: '',
+    vehicleColor: '',
+    vehicleConditionType: '',
+    // Property fields
+    propertyType: '',
+    propertyFinishing: '',
+    propertyView: '',
+    propertyListingType: '',
+    propertyArea: '',
+    propertyRooms: '',
+    propertyBathrooms: '',
+    propertyFloor: '',
   });
+
+  // Determine category type based on selected category name
+  const selectedCategory = categories.find(c => c.id === formData.categoryLevel1);
+  const categoryName = selectedCategory?.nameEn?.toLowerCase() || selectedCategory?.nameAr || '';
+  const isVehicleCategory = categoryName.includes('vehicle') || categoryName.includes('car') || categoryName.includes('سيار') || categoryName.includes('مركب');
+  const isPropertyCategory = categoryName.includes('real') || categoryName.includes('property') || categoryName.includes('عقار') || categoryName.includes('شق');
 
   // AI Features State
   const [priceEstimation, setPriceEstimation] = useState<aiApi.PriceEstimationResponse | null>(null);
@@ -745,6 +767,28 @@ export default function NewItemPage() {
         }
       }
 
+      // Add vehicle fields if applicable
+      if (isVehicleCategory) {
+        if (formData.vehicleBrand) itemData.vehicleBrand = formData.vehicleBrand;
+        if (formData.vehicleModel) itemData.vehicleModel = formData.vehicleModel;
+        if (formData.vehicleYear) itemData.vehicleYear = parseInt(formData.vehicleYear);
+        if (formData.vehicleKilometers) itemData.vehicleKilometers = parseInt(formData.vehicleKilometers);
+        if (formData.vehicleColor) itemData.vehicleColor = formData.vehicleColor;
+        if (formData.vehicleConditionType) itemData.vehicleConditionType = formData.vehicleConditionType;
+      }
+
+      // Add property fields if applicable
+      if (isPropertyCategory) {
+        if (formData.propertyType) itemData.propertyType = formData.propertyType;
+        if (formData.propertyFinishing) itemData.propertyFinishing = formData.propertyFinishing;
+        if (formData.propertyView) itemData.propertyView = formData.propertyView;
+        if (formData.propertyListingType) itemData.propertyListingType = formData.propertyListingType;
+        if (formData.propertyArea) itemData.propertyArea = parseInt(formData.propertyArea);
+        if (formData.propertyRooms) itemData.propertyRooms = parseInt(formData.propertyRooms);
+        if (formData.propertyBathrooms) itemData.propertyBathrooms = parseInt(formData.propertyBathrooms);
+        if (formData.propertyFloor) itemData.propertyFloor = parseInt(formData.propertyFloor);
+      }
+
       await createItem(itemData);
 
       router.push('/items?success=true');
@@ -1009,6 +1053,305 @@ export default function NewItemPage() {
                 <option value="POOR">{t.conditionPoor}</option>
               </select>
             </div>
+
+            {/* Vehicle Fields Section */}
+            {isVehicleCategory && (
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="text-2xl">🚗</span>
+                  {isRTL ? 'معلومات السيارة' : 'Vehicle Information'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Brand */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'الماركة' : 'Brand'}
+                    </label>
+                    <select
+                      name="vehicleBrand"
+                      value={formData.vehicleBrand}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر الماركة' : 'Select brand'}</option>
+                      <option value="Toyota">{isRTL ? 'تويوتا' : 'Toyota'}</option>
+                      <option value="Honda">{isRTL ? 'هوندا' : 'Honda'}</option>
+                      <option value="Nissan">{isRTL ? 'نيسان' : 'Nissan'}</option>
+                      <option value="Hyundai">{isRTL ? 'هيونداي' : 'Hyundai'}</option>
+                      <option value="Kia">{isRTL ? 'كيا' : 'Kia'}</option>
+                      <option value="BMW">{isRTL ? 'بي إم دبليو' : 'BMW'}</option>
+                      <option value="Mercedes">{isRTL ? 'مرسيدس' : 'Mercedes'}</option>
+                      <option value="Chevrolet">{isRTL ? 'شيفروليه' : 'Chevrolet'}</option>
+                      <option value="Ford">{isRTL ? 'فورد' : 'Ford'}</option>
+                      <option value="Volkswagen">{isRTL ? 'فولكس فاجن' : 'Volkswagen'}</option>
+                      <option value="Audi">{isRTL ? 'أودي' : 'Audi'}</option>
+                      <option value="Peugeot">{isRTL ? 'بيجو' : 'Peugeot'}</option>
+                      <option value="Renault">{isRTL ? 'رينو' : 'Renault'}</option>
+                      <option value="Fiat">{isRTL ? 'فيات' : 'Fiat'}</option>
+                      <option value="Suzuki">{isRTL ? 'سوزوكي' : 'Suzuki'}</option>
+                      <option value="Mitsubishi">{isRTL ? 'ميتسوبيشي' : 'Mitsubishi'}</option>
+                      <option value="MG">{isRTL ? 'إم جي' : 'MG'}</option>
+                      <option value="Chery">{isRTL ? 'شيري' : 'Chery'}</option>
+                      <option value="BYD">{isRTL ? 'بي واي دي' : 'BYD'}</option>
+                      <option value="Geely">{isRTL ? 'جيلي' : 'Geely'}</option>
+                      <option value="Other">{isRTL ? 'أخرى' : 'Other'}</option>
+                    </select>
+                  </div>
+
+                  {/* Model */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'الموديل' : 'Model'}
+                    </label>
+                    <input
+                      type="text"
+                      name="vehicleModel"
+                      value={formData.vehicleModel}
+                      onChange={handleChange}
+                      placeholder={isRTL ? 'مثال: كامري، كورولا' : 'e.g., Camry, Corolla'}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Year */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'سنة الصنع' : 'Year'}
+                    </label>
+                    <select
+                      name="vehicleYear"
+                      value={formData.vehicleYear}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر السنة' : 'Select year'}</option>
+                      {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                        <option key={year} value={year}>{year}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Kilometers */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'الكيلومترات' : 'Kilometers'}
+                    </label>
+                    <input
+                      type="number"
+                      name="vehicleKilometers"
+                      value={formData.vehicleKilometers}
+                      onChange={handleChange}
+                      min="0"
+                      placeholder={isRTL ? 'مثال: 50000' : 'e.g., 50000'}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Color */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'اللون' : 'Color'}
+                    </label>
+                    <input
+                      type="text"
+                      name="vehicleColor"
+                      value={formData.vehicleColor}
+                      onChange={handleChange}
+                      placeholder={isRTL ? 'مثال: أبيض، أسود' : 'e.g., White, Black'}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Vehicle Condition */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'حالة السيارة' : 'Vehicle Condition'}
+                    </label>
+                    <select
+                      name="vehicleConditionType"
+                      value={formData.vehicleConditionType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر الحالة' : 'Select condition'}</option>
+                      <option value="NEW">{isRTL ? 'جديدة (زيرو)' : 'New'}</option>
+                      <option value="USED">{isRTL ? 'مستعملة' : 'Used'}</option>
+                      <option value="ACCIDENT_FREE">{isRTL ? 'بدون حوادث' : 'Accident-free'}</option>
+                      <option value="MINOR_ACCIDENT">{isRTL ? 'حادث بسيط' : 'Minor accident'}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Property Fields Section */}
+            {isPropertyCategory && (
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <span className="text-2xl">🏠</span>
+                  {isRTL ? 'معلومات العقار' : 'Property Information'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Property Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'نوع العقار' : 'Property Type'}
+                    </label>
+                    <select
+                      name="propertyType"
+                      value={formData.propertyType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر النوع' : 'Select type'}</option>
+                      <option value="APARTMENT">{isRTL ? 'شقة' : 'Apartment'}</option>
+                      <option value="VILLA">{isRTL ? 'فيلا' : 'Villa'}</option>
+                      <option value="DUPLEX">{isRTL ? 'دوبلكس' : 'Duplex'}</option>
+                      <option value="PENTHOUSE">{isRTL ? 'بنتهاوس' : 'Penthouse'}</option>
+                      <option value="STUDIO">{isRTL ? 'ستوديو' : 'Studio'}</option>
+                      <option value="CHALET">{isRTL ? 'شاليه' : 'Chalet'}</option>
+                      <option value="TOWNHOUSE">{isRTL ? 'تاون هاوس' : 'Townhouse'}</option>
+                      <option value="LAND">{isRTL ? 'أرض' : 'Land'}</option>
+                      <option value="COMMERCIAL_SHOP">{isRTL ? 'محل تجاري' : 'Commercial Shop'}</option>
+                      <option value="OFFICE">{isRTL ? 'مكتب' : 'Office'}</option>
+                    </select>
+                  </div>
+
+                  {/* Listing Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'نوع الإعلان' : 'Listing Type'}
+                    </label>
+                    <select
+                      name="propertyListingType"
+                      value={formData.propertyListingType}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر' : 'Select'}</option>
+                      <option value="FOR_SALE">{isRTL ? 'للبيع' : 'For Sale'}</option>
+                      <option value="FOR_RENT">{isRTL ? 'للإيجار' : 'For Rent'}</option>
+                      <option value="FOR_EXCHANGE">{isRTL ? 'للمقايضة' : 'For Exchange'}</option>
+                    </select>
+                  </div>
+
+                  {/* Finishing */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'التشطيب' : 'Finishing'}
+                    </label>
+                    <select
+                      name="propertyFinishing"
+                      value={formData.propertyFinishing}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر التشطيب' : 'Select finishing'}</option>
+                      <option value="NOT_FINISHED">{isRTL ? 'بدون تشطيب' : 'Not Finished'}</option>
+                      <option value="SEMI_FINISHED">{isRTL ? 'نصف تشطيب' : 'Semi-Finished'}</option>
+                      <option value="FULLY_FINISHED">{isRTL ? 'تشطيب كامل' : 'Fully Finished'}</option>
+                      <option value="SUPER_LUX">{isRTL ? 'سوبر لوكس' : 'Super Lux'}</option>
+                      <option value="ULTRA_SUPER_LUX">{isRTL ? 'الترا سوبر لوكس' : 'Ultra Super Lux'}</option>
+                      <option value="FURNISHED">{isRTL ? 'مفروش' : 'Furnished'}</option>
+                    </select>
+                  </div>
+
+                  {/* View */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'الإطلالة' : 'View'}
+                    </label>
+                    <select
+                      name="propertyView"
+                      value={formData.propertyView}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر الإطلالة' : 'Select view'}</option>
+                      <option value="STREET">{isRTL ? 'شارع' : 'Street'}</option>
+                      <option value="GARDEN">{isRTL ? 'حديقة' : 'Garden'}</option>
+                      <option value="SEA">{isRTL ? 'بحر' : 'Sea'}</option>
+                      <option value="NILE">{isRTL ? 'نيل' : 'Nile'}</option>
+                      <option value="POOL">{isRTL ? 'حمام سباحة' : 'Pool'}</option>
+                      <option value="CITY">{isRTL ? 'مدينة' : 'City'}</option>
+                      <option value="CORNER">{isRTL ? 'ناصية' : 'Corner'}</option>
+                      <option value="MAIN_ROAD">{isRTL ? 'طريق رئيسي' : 'Main Road'}</option>
+                    </select>
+                  </div>
+
+                  {/* Area */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'المساحة (م²)' : 'Area (m²)'}
+                    </label>
+                    <input
+                      type="number"
+                      name="propertyArea"
+                      value={formData.propertyArea}
+                      onChange={handleChange}
+                      min="0"
+                      placeholder={isRTL ? 'مثال: 150' : 'e.g., 150'}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {/* Rooms */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'عدد الغرف' : 'Rooms'}
+                    </label>
+                    <select
+                      name="propertyRooms"
+                      value={formData.propertyRooms}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر' : 'Select'}</option>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                        <option key={num} value={num}>{num}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Bathrooms */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'عدد الحمامات' : 'Bathrooms'}
+                    </label>
+                    <select
+                      name="propertyBathrooms"
+                      value={formData.propertyBathrooms}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر' : 'Select'}</option>
+                      {[1, 2, 3, 4, 5].map(num => (
+                        <option key={num} value={num}>{num}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Floor */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {isRTL ? 'الدور' : 'Floor'}
+                    </label>
+                    <select
+                      name="propertyFloor"
+                      value={formData.propertyFloor}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                    >
+                      <option value="">{isRTL ? 'اختر' : 'Select'}</option>
+                      <option value="0">{isRTL ? 'أرضي' : 'Ground'}</option>
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map(num => (
+                        <option key={num} value={num}>{num}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Price/Estimated Value */}
             <div>

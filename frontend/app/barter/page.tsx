@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getBarterItems, BarterItem } from '@/lib/api/barter';
 import { getCategories, Category } from '@/lib/api/categories';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { getBarterRecommendations, BarterMatch, formatMatchScore } from '@/lib/api/ai';
 
 export default function BarterPage() {
   const { user } = useAuth();
@@ -12,6 +13,10 @@ export default function BarterPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // AI Recommendations
+  const [recommendations, setRecommendations] = useState<BarterMatch[]>([]);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
 
   // Filters
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -26,6 +31,26 @@ export default function BarterPage() {
   useEffect(() => {
     loadCategories();
   }, []);
+
+  // Load AI recommendations when user is logged in
+  useEffect(() => {
+    if (user?.id) {
+      loadRecommendations();
+    }
+  }, [user]);
+
+  const loadRecommendations = async () => {
+    if (!user?.id) return;
+    setLoadingRecommendations(true);
+    try {
+      const recs = await getBarterRecommendations(user.id);
+      setRecommendations(recs);
+    } catch (err) {
+      console.error('Failed to load recommendations:', err);
+    } finally {
+      setLoadingRecommendations(false);
+    }
+  };
 
   useEffect(() => {
     loadItems();
@@ -131,6 +156,96 @@ export default function BarterPage() {
           </div>
         </div>
       </div>
+
+      {/* AI Recommendations Section */}
+      {user && (recommendations.length > 0 || loadingRecommendations) && (
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">🤖</span>
+              <div>
+                <h2 className="text-xl font-bold text-purple-900">توصيات الذكاء الاصطناعي</h2>
+                <p className="text-sm text-purple-700">مقايضات مقترحة بناءً على منتجاتك وتفضيلاتك</p>
+              </div>
+            </div>
+
+            {loadingRecommendations ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                <span className="mr-3 text-purple-600">جاري تحليل أفضل الفرص...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recommendations.slice(0, 6).map((rec) => (
+                  <div
+                    key={rec.matchId}
+                    className="bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow border border-purple-100"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-bold">
+                          {formatMatchScore(rec.score)}
+                        </span>
+                        <span className="text-green-600 text-xs">
+                          نسبة النجاح: {Math.round(rec.successProbability * 100)}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-orange-500">🔄</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-500">منتجك</p>
+                          <p className="font-medium text-gray-800 truncate text-sm">{rec.offeredItemTitle}</p>
+                        </div>
+                      </div>
+                      <div className="text-center text-purple-400">↕️</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-green-500">✨</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-500">مقابل</p>
+                          <p className="font-medium text-gray-800 truncate text-sm">{rec.requestedItemTitle}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-gray-600 mt-3 line-clamp-2 bg-gray-50 p-2 rounded">
+                      💡 {rec.reason}
+                    </p>
+
+                    <div className="flex gap-2 mt-3">
+                      <Link
+                        href={`/barter/items/${rec.requestedItemId}`}
+                        className="flex-1 text-center px-3 py-2 bg-purple-600 text-white rounded-lg text-xs font-medium hover:bg-purple-700 transition"
+                      >
+                        عرض التفاصيل
+                      </Link>
+                      <Link
+                        href={`/barter/respond/${rec.requestedItemId}?offer=${rec.offeredItemId}`}
+                        className="flex-1 text-center px-3 py-2 bg-green-600 text-white rounded-lg text-xs font-medium hover:bg-green-700 transition"
+                      >
+                        قدم عرض
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {recommendations.length > 6 && (
+              <div className="text-center mt-4">
+                <Link
+                  href="/barter/recommendations"
+                  className="text-purple-600 hover:text-purple-800 font-medium text-sm"
+                >
+                  عرض جميع التوصيات ({recommendations.length}) ←
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
