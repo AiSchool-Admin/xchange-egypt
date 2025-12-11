@@ -64,6 +64,7 @@ export interface User {
   governorate?: string;
   district?: string;
   street?: string;
+  address?: string; // Combined address from backend
   latitude?: number;
   longitude?: number;
   businessName?: string;

@@ -71,7 +71,7 @@ export default function CheckoutPage() {
         phone: user.phone || '',
         governorate: user.governorate || '',
         city: user.city || '',
-        street: user.street || '',
+        street: user.street || user.address || '',
       }));
     }
   }, [user]);
@@ -134,36 +134,58 @@ export default function CheckoutPage() {
           router.push(`/dashboard/orders?success=${order.id}`);
         } else if (paymentMethod === 'INSTAPAY') {
           // Redirect to InstaPay
-          const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/instapay/initiate`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ orderId: order.id }),
-          });
-          const paymentData = await paymentResponse.json();
-          if (paymentData.paymentUrl) {
-            window.location.href = paymentData.paymentUrl;
-          } else {
+          try {
+            const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/instapay/initiate`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ orderId: order.id }),
+            });
+            const paymentData = await paymentResponse.json();
+            if (paymentResponse.ok && paymentData.data?.paymentUrl) {
+              window.location.href = paymentData.data.paymentUrl;
+            } else {
+              // InstaPay not available - order created, redirect to orders
+              alert('تم إنشاء الطلب بنجاح. إنستاباي غير متاح حالياً، يرجى الدفع عند الاستلام أو استخدام فوري.');
+              router.push(`/dashboard/orders?success=${order.id}`);
+            }
+          } catch (paymentError) {
+            console.error('InstaPay error:', paymentError);
+            alert('تم إنشاء الطلب بنجاح. حدث خطأ في إنستاباي، يمكنك الدفع عند الاستلام.');
             router.push(`/dashboard/orders?success=${order.id}`);
           }
         } else if (paymentMethod === 'FAWRY') {
           // Show Fawry reference
-          const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/fawry/create`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ orderId: order.id }),
-          });
-          const paymentData = await paymentResponse.json();
-          router.push(`/dashboard/orders?success=${order.id}&fawryRef=${paymentData.referenceNumber}`);
+          try {
+            const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/fawry/create`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ orderId: order.id }),
+            });
+            const paymentData = await paymentResponse.json();
+            if (paymentResponse.ok && paymentData.data?.referenceNumber) {
+              router.push(`/dashboard/orders?success=${order.id}&fawryRef=${paymentData.data.referenceNumber}`);
+            } else {
+              // Fawry not available
+              alert('تم إنشاء الطلب بنجاح. فوري غير متاح حالياً، يرجى الدفع عند الاستلام.');
+              router.push(`/dashboard/orders?success=${order.id}`);
+            }
+          } catch (paymentError) {
+            console.error('Fawry error:', paymentError);
+            alert('تم إنشاء الطلب بنجاح. حدث خطأ في فوري، يمكنك الدفع عند الاستلام.');
+            router.push(`/dashboard/orders?success=${order.id}`);
+          }
         }
       } else {
         const errorData = await response.json();
-        alert(errorData.error?.message || errorData.message || 'فشل في إنشاء الطلب');
+        const errorMessage = errorData.error?.message || errorData.message || 'فشل في إنشاء الطلب';
+        alert(errorMessage);
+        console.error('Order creation failed:', errorData);
       }
     } catch (error) {
       console.error('Failed to create order:', error);
