@@ -738,7 +738,7 @@ export const createAuctionOrder = async (
         buyerId: userId,
       },
       data: {
-        paymentStatus: data.paymentMethod === 'COD' ? 'PENDING' : 'PROCESSING',
+        paymentStatus: 'PENDING',
       },
     });
 

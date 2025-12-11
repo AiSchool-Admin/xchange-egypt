@@ -183,7 +183,7 @@ export default function ItemsPage() {
       // Filter out current user's items when browsing marketplace (not own items view)
       let filteredItems = response.data.items;
       if (!isMyItems && currentUser) {
-        filteredItems = response.data.items.filter((item: Item) => item.sellerId !== currentUser.id);
+        filteredItems = response.data.items.filter((item: Item) => item.seller?.id !== currentUser.id);
       }
 
       setItems(filteredItems);
