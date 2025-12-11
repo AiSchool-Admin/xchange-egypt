@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import apiClient from '@/lib/api/client';
-import { getCategories, Category } from '@/lib/api/categories';
 
 interface ImportItem {
   title: string;
@@ -44,20 +43,6 @@ export default function BulkImportPage() {
   const [result, setResult] = useState<ImportResult | null>(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'manual' | 'csv'>('manual');
-  const [categories, setCategories] = useState<Category[]>([]);
-
-  // Fetch categories on mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await getCategories({ includeChildren: true });
-        setCategories(response.data || []);
-      } catch (err) {
-        console.error('Failed to fetch categories:', err);
-      }
-    };
-    fetchCategories();
-  }, []);
 
   // Example CSV format
   const exampleCsv = `العنوان,الوصف,الفئة,الحالة,السعر,الكمية,SKU,الباركود,حد التنبيه
@@ -421,28 +406,6 @@ export default function BulkImportPage() {
                               {item.title.length > 0 && item.title.length < 3 && (
                                 <p className="text-red-500 text-xs mt-1">العنوان يجب أن يكون 3 حروف على الأقل</p>
                               )}
-                            </div>
-
-                            {/* Category */}
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">الفئة</label>
-                              <select
-                                value={item.categoryId || ''}
-                                onChange={(e) => updateItem(index, 'categoryId', e.target.value || undefined)}
-                                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                              >
-                                <option value="">-- اختر الفئة --</option>
-                                {categories.map(cat => (
-                                  <React.Fragment key={cat.id}>
-                                    <option value={cat.id}>{cat.nameAr || cat.nameEn}</option>
-                                    {cat.children?.map(child => (
-                                      <option key={child.id} value={child.id}>
-                                        &nbsp;&nbsp;↳ {child.nameAr || child.nameEn}
-                                      </option>
-                                    ))}
-                                  </React.Fragment>
-                                ))}
-                              </select>
                             </div>
 
                             {/* Condition */}

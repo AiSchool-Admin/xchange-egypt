@@ -6,9 +6,9 @@ import { z } from 'zod';
  */
 export const addToCartSchema = z.object({
   body: z.object({
-    // Accept either listingId or itemId (supports both UUID and custom string IDs)
-    listingId: z.string().min(1, 'Listing ID is required').optional(),
-    itemId: z.string().min(1, 'Item ID is required').optional(),
+    // Accept either listingId or itemId
+    listingId: z.string().uuid('Invalid ID format').optional(),
+    itemId: z.string().uuid('Invalid ID format').optional(),
     quantity: z
       .number()
       .int('Quantity must be an integer')
@@ -27,7 +27,7 @@ export const addToCartSchema = z.object({
  */
 export const updateCartItemSchema = z.object({
   params: z.object({
-    listingId: z.string().min(1, 'Listing ID is required'),
+    listingId: z.string().uuid('Invalid listing ID format'),
   }),
   body: z.object({
     quantity: z
@@ -43,7 +43,7 @@ export const updateCartItemSchema = z.object({
  */
 export const removeFromCartSchema = z.object({
   params: z.object({
-    listingId: z.string().min(1, 'Listing ID is required'),
+    listingId: z.string().uuid('Invalid listing ID format'),
   }),
 });
 
