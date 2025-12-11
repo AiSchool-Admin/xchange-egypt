@@ -1361,74 +1361,97 @@ export default function Navigation() {
 
         {/* ============================================
             Specialized Markets Quick Navigation Bar
+            - Main Competitive Advantage of the Platform
             ============================================ */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+        <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center justify-center gap-1 py-2 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center justify-center gap-1 py-3 overflow-x-auto scrollbar-hide">
               <Link
                 href="/items"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                   isActive('/items')
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-emerald-800 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>🛒</span>
+                <span className="text-lg">🛒</span>
                 السوق العام
               </Link>
               <Link
-                href="/auctions"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                  isActive('/auctions')
-                    ? 'bg-amber-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                href="/vehicles"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/vehicles')
+                    ? 'bg-white text-blue-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>🔨</span>
+                <span className="text-lg">🚗</span>
+                سوق السيارات
+              </Link>
+              <Link
+                href="/real-estate"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/real-estate')
+                    ? 'bg-white text-emerald-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">🏠</span>
+                سوق العقارات
+              </Link>
+              <Link
+                href="/auctions"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/auctions')
+                    ? 'bg-white text-amber-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">🔨</span>
                 المزادات
               </Link>
               <Link
                 href="/reverse-auctions"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                   isActive('/reverse-auctions')
-                    ? 'bg-blue-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-blue-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>📋</span>
+                <span className="text-lg">📋</span>
                 المناقصات
               </Link>
               <Link
                 href="/luxury"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                   isActive('/luxury')
-                    ? 'bg-purple-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-purple-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>👑</span>
+                <span className="text-lg">👑</span>
                 سوق الفاخر
               </Link>
               <Link
                 href="/scrap"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                   isActive('/scrap')
-                    ? 'bg-green-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-green-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>♻️</span>
+                <span className="text-lg">♻️</span>
                 سوق التوالف
               </Link>
               <Link
                 href="/barter"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                   isActive('/barter')
-                    ? 'bg-orange-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-orange-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>🔄</span>
+                <span className="text-lg">🔄</span>
                 المقايضات
               </Link>
             </div>
