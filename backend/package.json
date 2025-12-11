@@ -5,7 +5,7 @@
   "main": "dist/app.js",
   "scripts": {
     "dev": "tsx watch src/app.ts",
-    "build": "echo '=== Starting Prisma Generate ===' && prisma generate && echo '=== Syncing Database Schema ===' && prisma db push --accept-data-loss && echo '=== Database Sync Complete ===' && echo '=== Starting TypeScript Compilation ===' && tsc && echo '=== Build Complete ==='",
+    "build": "echo '=== Starting Prisma Generate ===' && prisma generate && echo '=== Starting TypeScript Compilation ===' && tsc && echo '=== Build Complete ==='",
     "start": "node dist/app.js",
     "test": "jest",
     "test:watch": "jest --watch",
