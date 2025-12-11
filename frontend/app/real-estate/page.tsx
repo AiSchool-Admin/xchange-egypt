@@ -497,9 +497,9 @@ export default function RealEstatePage() {
                       className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all group"
                     >
                       <div className="relative h-48">
-                        {property.imageUrls && property.imageUrls.length > 0 ? (
+                        {property.images && property.images.length > 0 ? (
                           <img
-                            src={property.imageUrls[0]}
+                            src={property.images[0]}
                             alt={property.titleAr}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
