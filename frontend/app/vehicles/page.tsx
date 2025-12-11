@@ -418,7 +418,7 @@ export default function VehiclesPage() {
                       <div className="relative h-48">
                         {vehicle.images && vehicle.images.length > 0 ? (
                           <img
-                            src={vehicle.images[0]}
+                            src={vehicle.images[0].url}
                             alt={vehicle.titleAr}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
