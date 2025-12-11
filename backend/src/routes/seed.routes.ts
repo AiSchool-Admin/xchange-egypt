@@ -17,35 +17,61 @@ interface CategoryData {
   children?: CategoryData[];
 }
 
+/**
+ * Categories matching seed-items.ts and seed-marketplace-data.ts slugs
+ */
 const categories: CategoryData[] = [
   // Electronics
   {
     nameEn: 'Electronics',
-    nameAr: 'الإلكترونيات',
+    nameAr: 'إلكترونيات',
     slug: 'electronics',
     icon: '📱',
     children: [
       {
-        nameEn: 'Smartphones',
-        nameAr: 'الهواتف الذكية',
-        slug: 'smartphones',
+        nameEn: 'Mobile Phones',
+        nameAr: 'هواتف محمولة',
+        slug: 'mobile-phones',
         children: [
           { nameEn: 'iPhone', nameAr: 'آيفون', slug: 'iphone' },
-          { nameEn: 'Samsung', nameAr: 'سامسونج', slug: 'samsung' },
-          { nameEn: 'Xiaomi', nameAr: 'شاومي', slug: 'xiaomi' },
-          { nameEn: 'Oppo', nameAr: 'أوبو', slug: 'oppo' },
-          { nameEn: 'Other Brands', nameAr: 'ماركات أخرى', slug: 'other-brands' },
+          { nameEn: 'Samsung', nameAr: 'سامسونج', slug: 'samsung-phones' },
+          { nameEn: 'Xiaomi', nameAr: 'شاومي', slug: 'xiaomi-phones' },
+          { nameEn: 'Other Phones', nameAr: 'هواتف أخرى', slug: 'other-phones' },
         ],
       },
       {
-        nameEn: 'Laptops',
-        nameAr: 'أجهزة الكمبيوتر',
-        slug: 'laptops',
+        nameEn: 'Computers',
+        nameAr: 'أجهزة كمبيوتر',
+        slug: 'computers',
         children: [
-          { nameEn: 'MacBook', nameAr: 'ماك بوك', slug: 'macbook' },
-          { nameEn: 'Gaming Laptops', nameAr: 'ألعاب', slug: 'gaming-laptops' },
-          { nameEn: 'Business Laptops', nameAr: 'أعمال', slug: 'business-laptops' },
+          { nameEn: 'Laptops', nameAr: 'لابتوب', slug: 'laptops' },
+          { nameEn: 'Desktop PCs', nameAr: 'كمبيوتر مكتبي', slug: 'desktop-pcs' },
+          { nameEn: 'Monitors', nameAr: 'شاشات', slug: 'monitors' },
         ],
+      },
+      {
+        nameEn: 'Tablets',
+        nameAr: 'أجهزة لوحية',
+        slug: 'tablets',
+        children: [
+          { nameEn: 'iPad', nameAr: 'آيباد', slug: 'ipad' },
+          { nameEn: 'Samsung Tablets', nameAr: 'تابلت سامسونج', slug: 'samsung-tablets' },
+          { nameEn: 'Other Tablets', nameAr: 'تابلت أخرى', slug: 'other-tablets' },
+        ],
+      },
+      {
+        nameEn: 'Cameras',
+        nameAr: 'كاميرات',
+        slug: 'cameras',
+        children: [
+          { nameEn: 'DSLR Cameras', nameAr: 'كاميرات DSLR', slug: 'dslr-cameras' },
+          { nameEn: 'Mirrorless', nameAr: 'ميرورليس', slug: 'mirrorless-cameras' },
+        ],
+      },
+      {
+        nameEn: 'Audio & Headphones',
+        nameAr: 'سماعات وصوتيات',
+        slug: 'audio-headphones',
       },
     ],
   },
@@ -53,32 +79,29 @@ const categories: CategoryData[] = [
   // Home Appliances
   {
     nameEn: 'Home Appliances',
-    nameAr: 'الأجهزة المنزلية',
+    nameAr: 'أجهزة منزلية',
     slug: 'home-appliances',
-    icon: '🏠',
+    icon: '🏡',
     children: [
       {
         nameEn: 'Refrigerators',
-        nameAr: 'الثلاجات',
+        nameAr: 'ثلاجات',
         slug: 'refrigerators',
-        children: [
-          { nameEn: '16 Feet', nameAr: '16 قدم', slug: '16-feet' },
-          { nameEn: '18 Feet', nameAr: '18 قدم', slug: '18-feet' },
-          { nameEn: '20 Feet', nameAr: '20 قدم', slug: '20-feet' },
-          { nameEn: '24 Feet', nameAr: '24 قدم', slug: '24-feet' },
-          { nameEn: 'Side by Side', nameAr: 'جنب إلى جنب', slug: 'side-by-side' },
-        ],
       },
       {
         nameEn: 'Washing Machines',
-        nameAr: 'الغسالات',
+        nameAr: 'غسالات',
         slug: 'washing-machines',
-        children: [
-          { nameEn: 'Top Load', nameAr: 'تحميل علوي', slug: 'top-load' },
-          { nameEn: 'Front Load', nameAr: 'تحميل أمامي', slug: 'front-load' },
-          { nameEn: '7-8 KG', nameAr: '7-8 كيلو', slug: '7-8-kg' },
-          { nameEn: '10 KG+', nameAr: '10 كيلو+', slug: '10-kg-plus' },
-        ],
+      },
+      {
+        nameEn: 'Air Conditioners',
+        nameAr: 'مكيفات',
+        slug: 'air-conditioners',
+      },
+      {
+        nameEn: 'Ovens & Stoves',
+        nameAr: 'أفران ومواقد',
+        slug: 'ovens-stoves',
       },
     ],
   },
@@ -86,7 +109,7 @@ const categories: CategoryData[] = [
   // Furniture
   {
     nameEn: 'Furniture',
-    nameAr: 'الأثاث',
+    nameAr: 'أثاث ومفروشات',
     slug: 'furniture',
     icon: '🛋️',
     children: [
@@ -95,8 +118,8 @@ const categories: CategoryData[] = [
         nameAr: 'غرفة المعيشة',
         slug: 'living-room',
         children: [
-          { nameEn: 'Sofas', nameAr: 'الكنب', slug: 'sofas' },
-          { nameEn: 'TV Units', nameAr: 'وحدات التلفزيون', slug: 'tv-units' },
+          { nameEn: 'Sofas', nameAr: 'كنب وأرائك', slug: 'sofas' },
+          { nameEn: 'TV Units', nameAr: 'وحدات تلفزيون', slug: 'tv-units' },
         ],
       },
       {
@@ -104,9 +127,14 @@ const categories: CategoryData[] = [
         nameAr: 'غرفة النوم',
         slug: 'bedroom',
         children: [
-          { nameEn: 'Beds', nameAr: 'الأسرة', slug: 'beds' },
-          { nameEn: 'Wardrobes', nameAr: 'الخزائن', slug: 'wardrobes' },
+          { nameEn: 'Beds', nameAr: 'أسرة', slug: 'beds' },
+          { nameEn: 'Wardrobes', nameAr: 'دواليب', slug: 'wardrobes' },
         ],
+      },
+      {
+        nameEn: 'Office Furniture',
+        nameAr: 'أثاث مكتبي',
+        slug: 'office-furniture',
       },
     ],
   },
@@ -114,20 +142,81 @@ const categories: CategoryData[] = [
   // Vehicles
   {
     nameEn: 'Vehicles',
-    nameAr: 'المركبات',
+    nameAr: 'سيارات ومركبات',
     slug: 'vehicles',
     icon: '🚗',
     children: [
       {
         nameEn: 'Cars',
-        nameAr: 'السيارات',
+        nameAr: 'سيارات',
         slug: 'cars',
         children: [
           { nameEn: 'Sedans', nameAr: 'سيدان', slug: 'sedans' },
           { nameEn: 'SUVs', nameAr: 'دفع رباعي', slug: 'suvs' },
-          { nameEn: 'Hatchbacks', nameAr: 'هاتشباك', slug: 'hatchbacks' },
         ],
       },
+      {
+        nameEn: 'Motorcycles',
+        nameAr: 'دراجات نارية',
+        slug: 'motorcycles',
+      },
+      {
+        nameEn: 'Auto Parts',
+        nameAr: 'قطع غيار',
+        slug: 'auto-parts',
+      },
+    ],
+  },
+
+  // Fashion
+  {
+    nameEn: 'Fashion',
+    nameAr: 'ملابس وأزياء',
+    slug: 'fashion',
+    icon: '👔',
+    children: [
+      { nameEn: "Men's Clothing", nameAr: 'ملابس رجالية', slug: 'mens-clothing' },
+      { nameEn: "Women's Clothing", nameAr: 'ملابس نسائية', slug: 'womens-clothing' },
+      { nameEn: 'Kids Clothing', nameAr: 'ملابس أطفال', slug: 'kids-clothing' },
+      { nameEn: 'Shoes', nameAr: 'أحذية', slug: 'shoes' },
+      { nameEn: 'Bags', nameAr: 'حقائب', slug: 'bags' },
+    ],
+  },
+
+  // Sports & Hobbies
+  {
+    nameEn: 'Sports & Hobbies',
+    nameAr: 'رياضة وترفيه',
+    slug: 'sports-hobbies',
+    icon: '⚽',
+    children: [
+      { nameEn: 'Sports Equipment', nameAr: 'معدات رياضية', slug: 'sports-equipment' },
+      { nameEn: 'Bicycles', nameAr: 'دراجات', slug: 'bicycles' },
+      { nameEn: 'Toys & Games', nameAr: 'ألعاب', slug: 'toys-games' },
+    ],
+  },
+
+  // Books & Media
+  {
+    nameEn: 'Books & Media',
+    nameAr: 'كتب ووسائط',
+    slug: 'books-media',
+    icon: '📚',
+    children: [
+      { nameEn: 'Books', nameAr: 'كتب', slug: 'books' },
+      { nameEn: 'Magazines', nameAr: 'مجلات', slug: 'magazines' },
+    ],
+  },
+
+  // Services
+  {
+    nameEn: 'Services',
+    nameAr: 'خدمات',
+    slug: 'services',
+    icon: '🛠️',
+    children: [
+      { nameEn: 'Maintenance & Repair', nameAr: 'صيانة وإصلاح', slug: 'maintenance-repair' },
+      { nameEn: 'Moving & Shipping', nameAr: 'نقل وشحن', slug: 'moving-shipping' },
     ],
   },
 ];
@@ -168,7 +257,7 @@ router.post('/seed-categories', async (req, res) => {
     if (existingCount > 0) {
       return res.json({
         success: false,
-        message: `Categories already exist (${existingCount} found). Delete them first if you want to re-seed.`,
+        message: `Categories already exist (${existingCount} found). Use /reseed-categories to force re-seed.`,
       });
     }
 
@@ -188,6 +277,137 @@ router.post('/seed-categories', async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to seed categories',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * RESEED CATEGORIES - Force delete and reseed
+ * إعادة بذور الفئات - حذف وإعادة البذور بالقوة
+ */
+router.post('/reseed-categories', async (req, res) => {
+  try {
+    // First, remove categoryId from all items to avoid foreign key issues
+    const itemsUpdated = await prisma.item.updateMany({
+      where: { categoryId: { not: null } },
+      data: { categoryId: null },
+    });
+    console.log(`[Reseed] Removed category references from ${itemsUpdated.count} items`);
+
+    // Also update reverse auctions
+    try {
+      await prisma.reverseAuction.updateMany({
+        where: { categoryId: { not: null } },
+        data: { categoryId: null as any },
+      });
+    } catch {
+      // Table might not exist or have different schema
+    }
+
+    // Delete all existing categories
+    const deletedCount = await prisma.category.deleteMany({});
+    console.log(`[Reseed] Deleted ${deletedCount.count} categories`);
+
+    // Create new categories
+    for (let i = 0; i < categories.length; i++) {
+      await createCategoryHierarchy(categories[i], null, i);
+    }
+
+    const totalCount = await prisma.category.count();
+
+    return res.json({
+      success: true,
+      message: `تم إعادة بذور الفئات بنجاح`,
+      data: {
+        deletedCategories: deletedCount.count,
+        newCategories: totalCount,
+        itemsUpdated: itemsUpdated.count,
+        note: 'يجب إعادة تعيين الفئات للمنتجات الموجودة',
+      },
+    });
+  } catch (error: any) {
+    console.error('Reseed error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في إعادة بذور الفئات',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * FIX ITEM CATEGORIES - Reassign categories to items based on their title/type
+ * إصلاح فئات المنتجات
+ */
+router.post('/fix-item-categories', async (req, res) => {
+  try {
+    // Get all categories for mapping
+    const allCategories = await prisma.category.findMany();
+    const categoryMap = new Map(allCategories.map((c) => [c.slug, c.id]));
+
+    // Get items without categories
+    const itemsWithoutCategory = await prisma.item.findMany({
+      where: { categoryId: null },
+      select: { id: true, title: true, listingType: true },
+    });
+
+    let updated = 0;
+
+    for (const item of itemsWithoutCategory) {
+      const title = item.title.toLowerCase();
+      let categorySlug: string | null = null;
+
+      // Match by keywords in title
+      if (title.includes('iphone') || title.includes('آيفون') || title.includes('samsung') || title.includes('سامسونج') || title.includes('هاتف') || title.includes('phone') || title.includes('موبايل')) {
+        categorySlug = 'mobile-phones';
+      } else if (title.includes('laptop') || title.includes('لابتوب') || title.includes('macbook') || title.includes('ماك بوك') || title.includes('كمبيوتر') || title.includes('computer')) {
+        categorySlug = 'computers';
+      } else if (title.includes('tablet') || title.includes('تابلت') || title.includes('ipad') || title.includes('آيباد')) {
+        categorySlug = 'tablets';
+      } else if (title.includes('camera') || title.includes('كاميرا') || title.includes('canon') || title.includes('nikon') || title.includes('sony')) {
+        categorySlug = 'cameras';
+      } else if (title.includes('ثلاجة') || title.includes('refrigerator') || title.includes('fridge')) {
+        categorySlug = 'refrigerators';
+      } else if (title.includes('غسالة') || title.includes('washer') || title.includes('washing')) {
+        categorySlug = 'washing-machines';
+      } else if (title.includes('تكييف') || title.includes('مكيف') || title.includes('air conditioner') || title.includes('ac ')) {
+        categorySlug = 'air-conditioners';
+      } else if (title.includes('سيارة') || title.includes('car') || title.includes('toyota') || title.includes('mercedes') || title.includes('bmw') || title.includes('تويوتا')) {
+        categorySlug = 'cars';
+      } else if (title.includes('كنب') || title.includes('أريكة') || title.includes('sofa') || title.includes('غرفة معيشة')) {
+        categorySlug = 'living-room';
+      } else if (title.includes('سرير') || title.includes('غرفة نوم') || title.includes('bed') || title.includes('bedroom')) {
+        categorySlug = 'bedroom';
+      } else if (title.includes('ملابس') || title.includes('حقيبة') || title.includes('ساعة') || title.includes('watch') || title.includes('bag') || title.includes('fashion')) {
+        categorySlug = 'fashion';
+      } else if (title.includes('playstation') || title.includes('بلايستيشن') || title.includes('ps5') || title.includes('xbox') || title.includes('game')) {
+        categorySlug = 'electronics';
+      }
+
+      if (categorySlug && categoryMap.has(categorySlug)) {
+        await prisma.item.update({
+          where: { id: item.id },
+          data: { categoryId: categoryMap.get(categorySlug) },
+        });
+        updated++;
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `تم إصلاح فئات ${updated} منتج`,
+      data: {
+        totalItemsWithoutCategory: itemsWithoutCategory.length,
+        itemsFixed: updated,
+        stillWithoutCategory: itemsWithoutCategory.length - updated,
+      },
+    });
+  } catch (error: any) {
+    console.error('Fix categories error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في إصلاح فئات المنتجات',
       error: error.message,
     });
   }
