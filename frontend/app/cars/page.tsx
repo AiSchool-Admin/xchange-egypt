@@ -263,10 +263,16 @@ export default function CarsMarketplacePage() {
               🔄 مقايضة سيارة بسيارة
             </Link>
             <Link
-              href="/cars/how-it-works"
-              className="border-2 border-white text-white px-8 py-3 rounded-xl font-bold hover:bg-white/10 transition-colors"
+              href="/cars/calculator"
+              className="bg-green-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-600 transition-colors"
             >
-              ❓ كيف يعمل
+              🧮 حاسبة السعر
+            </Link>
+            <Link
+              href="/cars/partners"
+              className="bg-orange-500 text-white px-8 py-3 rounded-xl font-bold hover:bg-orange-600 transition-colors"
+            >
+              🔍 مراكز الفحص
             </Link>
           </div>
         </div>
