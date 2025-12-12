@@ -186,6 +186,13 @@ const FEATURES = [
     gradient: 'from-purple-500 to-purple-600',
   },
   {
+    icon: '💰',
+    title: 'سوق الذهب',
+    description: 'بيع وشراء الذهب بأفضل الأسعار',
+    href: '/gold',
+    gradient: 'from-yellow-500 to-amber-600',
+  },
+  {
     icon: '💳',
     title: 'التقسيط',
     description: 'اشتر الآن وادفع على أقساط مريحة',
@@ -232,6 +239,8 @@ export default function HomePage() {
   const [barterItems, setBarterItems] = useState<Item[]>([]);
   const [scrapItems, setScrapItems] = useState<Item[]>([]);
   const [luxuryItems, setLuxuryItems] = useState<Item[]>([]);
+  const [goldItems, setGoldItems] = useState<any[]>([]);
+  const [goldPrices, setGoldPrices] = useState<any[]>([]);
   const [activeAuctions, setActiveAuctions] = useState<any[]>([]);
   const [activeTenders, setActiveTenders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -364,7 +373,7 @@ export default function HomePage() {
       setLoading(true);
 
       // Load all data in parallel
-      const [categoriesRes, featuredRes, latestRes, saleRes, wantedRes, barterRes, scrapRes, luxuryRes, auctionsRes, tendersRes] = await Promise.all([
+      const [categoriesRes, featuredRes, latestRes, saleRes, wantedRes, barterRes, scrapRes, luxuryRes, auctionsRes, tendersRes, goldItemsRes, goldPricesRes] = await Promise.all([
         getCategories().catch(() => ({ data: [] })),
         getItems({ limit: 4, featured: true, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 8, status: 'ACTIVE', sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => ({ data: { items: [] } })),
@@ -375,6 +384,8 @@ export default function HomePage() {
         getItems({ limit: 4, categoryId: '516cbe98-eb69-4d5c-a0e1-021c3a3aa608', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getAuctions({ limit: 4, status: 'ACTIVE' }).catch(() => ({ data: { auctions: [] } })),
         apiClient.get('/reverse-auctions?status=ACTIVE&limit=4').catch(() => ({ data: { data: [] } })),
+        apiClient.get('/gold/items?status=ACTIVE&limit=4').catch(() => ({ data: { data: { items: [] } } })),
+        apiClient.get('/gold/prices').catch(() => ({ data: { data: [] } })),
       ]);
 
       setCategories(categoriesRes.data || []);
@@ -390,6 +401,11 @@ export default function HomePage() {
       setActiveAuctions(auctionsData.data?.auctions || auctionsData.data?.data || []);
       const tendersData = tendersRes as any;
       setActiveTenders(tendersData.data?.data?.items || tendersData.data?.items || []);
+      // Gold Marketplace data
+      const goldItemsData = goldItemsRes as any;
+      setGoldItems(goldItemsData.data?.data?.items || goldItemsData.data?.items || []);
+      const goldPricesData = goldPricesRes as any;
+      setGoldPrices(goldPricesData.data?.data || goldPricesData.data || []);
     } catch (error) {
       console.error('Failed to load home data:', error);
     } finally {
@@ -1318,6 +1334,156 @@ export default function HomePage() {
               </Link>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ============================================
+          Gold Marketplace Section (سوق الذهب)
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-yellow-50 to-amber-50">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Header with Live Prices */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">💰</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">سوق الذهب</h2>
+                <p className="text-gray-500 mt-1">اشتري وبيع الذهب بأفضل الأسعار</p>
+              </div>
+            </div>
+
+            {/* Live Gold Prices */}
+            {goldPrices.length > 0 && (
+              <div className="flex items-center gap-3 bg-white rounded-xl px-4 py-2 shadow-sm border border-yellow-200">
+                <span className="text-sm text-gray-500">أسعار اليوم:</span>
+                {goldPrices.slice(0, 3).map((price: any) => (
+                  <div key={price.karat} className="flex items-center gap-1 text-sm">
+                    <span className="font-bold text-yellow-700">
+                      {price.karat === 'K18' ? '18' : price.karat === 'K21' ? '21' : '24'}
+                    </span>
+                    <span className="text-gray-600">
+                      {new Intl.NumberFormat('ar-EG').format(price.sellPrice || price.sell_price)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Link
+              href="/gold"
+              className="hidden md:flex items-center gap-2 text-yellow-600 hover:text-yellow-700 font-medium"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {goldItems.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {goldItems.map((item: any) => (
+                <Link
+                  key={item.id}
+                  href={`/gold/${item.id}`}
+                  className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all border border-yellow-100 group"
+                >
+                  {/* Image */}
+                  <div className="relative aspect-square bg-gradient-to-br from-yellow-50 to-amber-50">
+                    {item.images && item.images.length > 0 ? (
+                      <img
+                        src={item.images[0]}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-6xl">
+                        💍
+                      </div>
+                    )}
+                    {/* Verification Badge */}
+                    <div className={`absolute top-3 right-3 px-2 py-1 rounded-full text-xs font-bold ${
+                      item.verificationLevel === 'CERTIFIED' || item.verification_level === 'CERTIFIED'
+                        ? 'bg-yellow-500 text-white'
+                        : item.verificationLevel === 'VERIFIED' || item.verification_level === 'VERIFIED'
+                          ? 'bg-blue-500 text-white'
+                          : 'bg-gray-200 text-gray-600'
+                    }`}>
+                      {item.verificationLevel === 'CERTIFIED' || item.verification_level === 'CERTIFIED'
+                        ? '★ معتمد'
+                        : item.verificationLevel === 'VERIFIED' || item.verification_level === 'VERIFIED'
+                          ? '◉ موثق'
+                          : '○ أساسي'}
+                    </div>
+                    {/* Karat Badge */}
+                    <div className="absolute top-3 left-3 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+                      عيار {item.karat === 'K18' ? '18' : item.karat === 'K21' ? '21' : '24'}
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-4">
+                    <h3 className="font-bold text-gray-800 mb-2 line-clamp-1 group-hover:text-yellow-700 transition-colors">
+                      {item.title}
+                    </h3>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                      <span>{item.weightGrams || item.weight_grams} جرام</span>
+                      <span>•</span>
+                      <span>{item.category === 'RING' ? 'خاتم' : item.category === 'NECKLACE' ? 'سلسلة' : item.category === 'BRACELET' ? 'إسورة' : item.category === 'SET' ? 'طقم' : item.category === 'BAR' ? 'سبيكة' : item.category === 'COIN' ? 'عملة' : 'أخرى'}</span>
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xl font-bold text-yellow-700">
+                        {new Intl.NumberFormat('ar-EG').format(item.totalAskingPrice || item.total_asking_price)}
+                      </span>
+                      <span className="text-sm text-gray-500">ج.م</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-white rounded-2xl border border-yellow-200">
+              <div className="text-6xl mb-4">💰</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">سوق الذهب جديد!</h3>
+              <p className="text-gray-500 mb-4">اشتري وبيع الذهب المستعمل بأسعار أفضل من المحلات</p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Link href="/gold" className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 text-white rounded-xl font-semibold hover:bg-yellow-600 transition-colors">
+                  🛒 تصفح سوق الذهب
+                </Link>
+                <Link href="/gold/sell" className="inline-flex items-center gap-2 px-6 py-3 border-2 border-yellow-500 text-yellow-700 rounded-xl font-semibold hover:bg-yellow-50 transition-colors">
+                  💰 بيع ذهبك
+                </Link>
+              </div>
+              {/* Value Props */}
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                <div className="text-center">
+                  <div className="text-2xl mb-1">🔒</div>
+                  <div className="text-sm font-medium text-gray-700">ضمان المعاملة</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-1">💸</div>
+                  <div className="text-sm font-medium text-gray-700">عمولة 1.4% فقط</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-1">📜</div>
+                  <div className="text-sm font-medium text-gray-700">شهادات موثقة</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile View All Link */}
+          <div className="mt-6 text-center md:hidden">
+            <Link
+              href="/gold"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 text-white rounded-xl font-semibold hover:bg-yellow-600 transition-colors"
+            >
+              عرض كل قطع الذهب
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </section>
 
