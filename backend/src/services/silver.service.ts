@@ -408,10 +408,9 @@ export const updateSilverItem = async (
     description: string;
     askingPrice: number;
     images: string[];
-    status: string;
     allowBarter: boolean;
     barterPreferences: string;
-  }>
+  }> & { status?: any }
 ) => {
   // Verify ownership
   const item = await prisma.silverItem.findFirst({

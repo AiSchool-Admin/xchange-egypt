@@ -445,10 +445,9 @@ export const updateCarListing = async (
     priceNegotiable: boolean;
     images: string[];
     videoUrl: string;
-    status: string;
     openForBarter: boolean;
     barterPreferences: any;
-  }>
+  }> & { status?: any }
 ) => {
   // Verify ownership
   const listing = await prisma.carListing.findFirst({
