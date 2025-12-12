@@ -108,6 +108,14 @@ model User {
   silverPurchases           SilverTransaction[]       @relation("UserSilverPurchases")
   silverSales               SilverTransaction[]       @relation("UserSilverSales")
 
+  // سوق السيارات - Cars Marketplace Relations
+  carListings               CarListing[]              @relation("UserCarListings")
+  carPurchases              CarTransaction[]          @relation("CarBuyer")
+  carSales                  CarTransaction[]          @relation("CarSeller")
+  carBarterProposals        CarBarterProposal[]       @relation("CarBarterProposer")
+  carBarterReceived         CarBarterProposal[]       @relation("CarBarterReceiver")
+  carInspectionRequests     CarInspection[]           @relation("CarInspectionRequester")
+
   // Search & Discovery Relations
   searchHistory             SearchHistory[]           @relation("UserSearchHistory")
   savedSearches             SavedSearch[]             @relation("UserSavedSearches")
@@ -5824,6 +5832,541 @@ model SilverPartner {
   transactions        SilverTransaction[]
 
   @@map("silver_partners")
+  @@index([governorate])
+  @@index([isActive])
+}
+
+// ============================================
+// سوق السيارات - Cars Marketplace
+// ============================================
+
+// نوع البائع
+enum CarSellerType {
+  OWNER           // مالك (فرد)
+  DEALER          // تاجر (فردي)
+  SHOWROOM        // معرض (شركة)
+}
+
+// نوع هيكل السيارة
+enum CarBodyType {
+  SEDAN           // سيدان
+  HATCHBACK       // هاتشباك
+  SUV             // SUV
+  CROSSOVER       // كروس أوفر
+  COUPE           // كوبيه
+  CONVERTIBLE     // كشف
+  PICKUP          // بيك أب
+  VAN             // فان
+  MINIVAN         // ميني فان
+  WAGON           // ستيشن واجن
+  TRUCK           // شاحنة
+  BUS             // أتوبيس / ميكروباص
+}
+
+// نوع ناقل الحركة
+enum CarTransmission {
+  AUTOMATIC       // أوتوماتيك
+  MANUAL          // مانيوال
+  CVT             // CVT
+  DCT             // دبل كلتش
+}
+
+// نوع الوقود
+enum CarFuelType {
+  PETROL          // بنزين
+  DIESEL          // ديزل
+  ELECTRIC        // كهرباء
+  HYBRID          // هايبرد
+  NATURAL_GAS     // غاز طبيعي
+  LPG             // غاز بترولي
+}
+
+// حالة السيارة
+enum CarCondition {
+  NEW             // جديدة (زيرو)
+  LIKE_NEW        // كالجديدة
+  EXCELLENT       // ممتازة
+  GOOD            // جيدة
+  FAIR            // مقبولة
+  NEEDS_WORK      // تحتاج صيانة
+}
+
+// حالة الحوادث
+enum CarAccidentHistory {
+  NONE            // بدون حوادث
+  MINOR           // حادث بسيط (خدوش/صدمات)
+  MODERATE        // حادث متوسط
+  MAJOR           // حادث كبير
+  UNKNOWN         // غير معروف
+}
+
+// مستوى التحقق
+enum CarVerificationLevel {
+  BASIC           // أساسي (صور فقط)
+  VERIFIED        // موثق (بائع موثوق)
+  INSPECTED       // مفحوص (فحص فني)
+  CERTIFIED       // معتمد (فحص شامل + ضمان)
+}
+
+// حالة الإعلان
+enum CarListingStatus {
+  DRAFT           // مسودة
+  ACTIVE          // نشط
+  RESERVED        // محجوز
+  SOLD            // مباع
+  EXPIRED         // منتهي
+  SUSPENDED       // معلق
+}
+
+// حالة معاملة السيارة
+enum CarTransactionStatus {
+  INITIATED       // بدأت
+  NEGOTIATING     // قيد التفاوض
+  AGREED          // تم الاتفاق
+  ESCROW_PENDING  // في انتظار الإيداع
+  ESCROW_HELD     // المبلغ محجوز
+  INSPECTION_PENDING // في انتظار الفحص
+  DOCUMENTS_PENDING  // في انتظار الأوراق
+  READY_FOR_TRANSFER // جاهز للنقل
+  COMPLETED       // مكتمل
+  DISPUTED        // نزاع
+  REFUNDED        // مسترد
+  CANCELLED       // ملغي
+}
+
+// طريقة التسليم
+enum CarDeliveryMethod {
+  MEETUP          // تسليم شخصي
+  SHOWROOM        // تسليم في المعرض
+  HOME_DELIVERY   // توصيل للمنزل
+  PARTNER_PICKUP  // استلام من مركز فحص
+}
+
+// حالة اقتراح المقايضة
+enum CarBarterStatus {
+  PENDING         // في انتظار الرد
+  VIEWED          // تم المشاهدة
+  COUNTER_OFFERED // عرض مضاد
+  ACCEPTED        // مقبول
+  REJECTED        // مرفوض
+  EXPIRED         // منتهي
+  COMPLETED       // مكتمل
+}
+
+// نوع الفحص
+enum CarInspectionType {
+  BASIC           // أساسي (خارجي فقط)
+  STANDARD        // قياسي (خارجي + داخلي + ميكانيكي)
+  COMPREHENSIVE   // شامل (كل شيء + كمبيوتر)
+  PRE_PURCHASE    // فحص ما قبل الشراء
+}
+
+// حالة الفحص
+enum CarInspectionStatus {
+  REQUESTED       // مطلوب
+  SCHEDULED       // مجدول
+  IN_PROGRESS     // جاري
+  COMPLETED       // مكتمل
+  CANCELLED       // ملغي
+}
+
+// توصية الفحص
+enum CarInspectionRecommendation {
+  HIGHLY_RECOMMENDED  // موصى به جداً
+  RECOMMENDED         // موصى به
+  CAUTION             // بحذر
+  NOT_RECOMMENDED     // غير موصى به
+}
+
+// ============================================
+// أسعار السيارات المرجعية
+// ============================================
+
+model CarPrice {
+  id              String    @id @default(uuid())
+
+  // تعريف السيارة
+  make            String    // الشركة (Toyota, Hyundai)
+  model           String    // الموديل (Corolla, Accent)
+  year            Int       // سنة الصنع
+  trim            String?   // الفئة (Highline, GLX)
+
+  // نطاق الأسعار
+  priceLow        Float     @map("price_low")        // أقل سعر
+  priceAverage    Float     @map("price_average")    // متوسط السعر
+  priceHigh       Float     @map("price_high")       // أعلى سعر
+
+  // عوامل التسعير
+  basePrice       Float     @map("base_price")       // السعر الأساسي
+  mileageFactor   Float     @default(0.00005) @map("mileage_factor")  // معامل الكيلومترات
+
+  // مصدر البيانات
+  dataSource      String?   @map("data_source")      // xchange, market_research
+  sampleSize      Int       @default(0) @map("sample_size")  // عدد العينات
+
+  // الطوابع الزمنية
+  recordedAt      DateTime  @default(now()) @map("recorded_at")
+  validUntil      DateTime? @map("valid_until")
+
+  @@map("car_prices")
+  @@unique([make, model, year, trim])
+  @@index([make, model])
+  @@index([year])
+}
+
+// ============================================
+// السيارات المعروضة
+// ============================================
+
+model CarListing {
+  id                  String                  @id @default(uuid())
+  sellerId            String                  @map("seller_id")
+
+  // معلومات أساسية
+  title               String
+  description         String?
+
+  // تفاصيل السيارة
+  make                String                  // الشركة المصنعة
+  model               String                  // الموديل
+  year                Int                     // سنة الصنع
+  trim                String?                 // الفئة
+
+  // المواصفات الفنية
+  bodyType            CarBodyType             @map("body_type")
+  transmission        CarTransmission
+  fuelType            CarFuelType             @map("fuel_type")
+  engineSize          Float?                  @map("engine_size")    // سعة المحرك (لتر)
+  cylinders           Int?                    // عدد السلندرات
+  driveType           String?                 @map("drive_type")     // FWD, RWD, AWD, 4WD
+  colorExterior       String?                 @map("color_exterior") // لون الخارج
+  colorInterior       String?                 @map("color_interior") // لون الداخل
+  doors               Int                     @default(4)
+  seats               Int                     @default(5)
+
+  // الحالة والاستخدام
+  mileage             Int                     // الكيلومترات
+  condition           CarCondition            @default(GOOD)
+  accidentHistory     CarAccidentHistory      @default(UNKNOWN) @map("accident_history")
+  serviceHistory      Boolean                 @default(false) @map("service_history")
+
+  // معلومات مصرية خاصة
+  licenseGovernorate  String?                 @map("license_governorate")  // محافظة اللوحة
+  isImported          Boolean                 @default(false) @map("is_imported")  // مستوردة
+  isCngConverted      Boolean                 @default(false) @map("is_cng_converted")  // محولة غاز
+
+  // التعريف
+  vin                 String?                 // رقم الشاسيه
+  plateNumber         String?                 @map("plate_number")  // رقم اللوحة (مشفر)
+
+  // التسعير
+  askingPrice         Float                   @map("asking_price")
+  estimatedValue      Float?                  @map("estimated_value")  // التقييم الآلي
+  priceNegotiable     Boolean                 @default(true) @map("price_negotiable")
+
+  // نوع البائع
+  sellerType          CarSellerType           @default(OWNER) @map("seller_type")
+
+  // المقايضة
+  openForBarter       Boolean                 @default(true) @map("open_for_barter")
+  barterPreferences   Json?                   @map("barter_preferences")  // {"accepts": ["car", "property"]}
+
+  // التحقق والفحص
+  verificationLevel   CarVerificationLevel    @default(BASIC) @map("verification_level")
+  inspectionId        String?                 @unique @map("inspection_id")
+
+  // الصور والوسائط
+  images              String[]
+  videoUrl            String?                 @map("video_url")
+
+  // الموقع
+  governorate         String?
+  city                String?
+  district            String?
+
+  // الإعلان
+  status              CarListingStatus        @default(ACTIVE)
+  isFeatured          Boolean                 @default(false) @map("is_featured")
+  viewsCount          Int                     @default(0) @map("views_count")
+  favoritesCount      Int                     @default(0) @map("favorites_count")
+
+  // الطوابع الزمنية
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  expiresAt           DateTime?               @map("expires_at")
+  soldAt              DateTime?               @map("sold_at")
+
+  // العلاقات
+  seller              User                    @relation("UserCarListings", fields: [sellerId], references: [id], onDelete: Cascade)
+  inspection          CarInspection?          @relation(fields: [inspectionId], references: [id])
+  transactions        CarTransaction[]
+  barterOffered       CarBarterProposal[]     @relation("CarBarterOffered")
+  barterRequested     CarBarterProposal[]     @relation("CarBarterRequested")
+
+  @@map("car_listings")
+  @@index([sellerId])
+  @@index([make, model])
+  @@index([year])
+  @@index([askingPrice])
+  @@index([mileage])
+  @@index([status])
+  @@index([sellerType])
+  @@index([governorate])
+  @@index([bodyType])
+  @@index([fuelType])
+  @@index([createdAt])
+}
+
+// ============================================
+// معاملات السيارات
+// ============================================
+
+model CarTransaction {
+  id                      String                  @id @default(uuid())
+
+  // نوع المعاملة
+  transactionType         String                  @default("direct") @map("transaction_type")  // direct, barter
+
+  // السيارة
+  carId                   String                  @map("car_id")
+
+  // الأطراف
+  buyerId                 String                  @map("buyer_id")
+  sellerId                String                  @map("seller_id")
+
+  // التسعير
+  agreedPrice             Float                   @map("agreed_price")
+  buyerCommission         Float                   @map("buyer_commission")   // 1.5%
+  sellerCommission        Float                   @map("seller_commission")  // 1.5%
+  totalAmount             Float                   @map("total_amount")
+
+  // السعر المرجعي
+  marketValueAtTransaction Float?                 @map("market_value_at_transaction")
+
+  // الدفع الآمن (Escrow)
+  escrowStatus            String                  @default("pending") @map("escrow_status")
+  escrowAmount            Float?                  @map("escrow_amount")
+  escrowDepositedAt       DateTime?               @map("escrow_deposited_at")
+  escrowReleasedAt        DateTime?               @map("escrow_released_at")
+
+  // الفحص
+  inspectionRequired      Boolean                 @default(false) @map("inspection_required")
+  inspectionCompleted     Boolean                 @default(false) @map("inspection_completed")
+  inspectionId            String?                 @map("inspection_id")
+
+  // التسليم
+  deliveryMethod          CarDeliveryMethod       @default(MEETUP) @map("delivery_method")
+  deliveryAddress         String?                 @map("delivery_address")
+  deliveryPartnerId       String?                 @map("delivery_partner_id")
+  deliveryScheduledAt     DateTime?               @map("delivery_scheduled_at")
+
+  // الحالة
+  status                  CarTransactionStatus    @default(INITIATED)
+
+  // التأكيدات
+  buyerConfirmedAt        DateTime?               @map("buyer_confirmed_at")
+  sellerConfirmedAt       DateTime?               @map("seller_confirmed_at")
+
+  // الملاحظات
+  buyerNotes              String?                 @map("buyer_notes")
+  sellerNotes             String?                 @map("seller_notes")
+  disputeReason           String?                 @map("dispute_reason")
+
+  // الطوابع الزمنية
+  createdAt               DateTime                @default(now()) @map("created_at")
+  updatedAt               DateTime                @updatedAt @map("updated_at")
+  completedAt             DateTime?               @map("completed_at")
+  cancelledAt             DateTime?               @map("cancelled_at")
+  cancellationReason      String?                 @map("cancellation_reason")
+
+  // العلاقات
+  car                     CarListing              @relation(fields: [carId], references: [id])
+  buyer                   User                    @relation("CarBuyer", fields: [buyerId], references: [id])
+  seller                  User                    @relation("CarSeller", fields: [sellerId], references: [id])
+
+  @@map("car_transactions")
+  @@index([carId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// اقتراحات المقايضة للسيارات
+// ============================================
+
+model CarBarterProposal {
+  id                  String              @id @default(uuid())
+
+  // الأطراف
+  proposerId          String              @map("proposer_id")
+  receiverId          String              @map("receiver_id")
+
+  // السيارات المشاركة
+  offeredCarId        String              @map("offered_car_id")     // سيارة المقترح
+  requestedCarId      String              @map("requested_car_id")   // سيارة المستقبل
+
+  // تقييم السيارات
+  offeredCarValue     Float               @map("offered_car_value")
+  requestedCarValue   Float               @map("requested_car_value")
+
+  // الفرق النقدي
+  cashDifference      Float               @default(0) @map("cash_difference")
+  cashPayer           String?             @map("cash_payer")         // proposer, receiver
+
+  // العمولة
+  proposerCommission  Float               @map("proposer_commission")
+  receiverCommission  Float               @map("receiver_commission")
+
+  // الحالة
+  status              CarBarterStatus     @default(PENDING)
+
+  // العرض المضاد
+  counterProposalId   String?             @unique @map("counter_proposal_id")
+
+  // الرسائل
+  proposerMessage     String?             @map("proposer_message")
+  receiverResponse    String?             @map("receiver_response")
+
+  // الطوابع الزمنية
+  createdAt           DateTime            @default(now()) @map("created_at")
+  expiresAt           DateTime            @map("expires_at")
+  respondedAt         DateTime?           @map("responded_at")
+  completedAt         DateTime?           @map("completed_at")
+
+  // العلاقات
+  proposer            User                @relation("CarBarterProposer", fields: [proposerId], references: [id])
+  receiver            User                @relation("CarBarterReceiver", fields: [receiverId], references: [id])
+  offeredCar          CarListing          @relation("CarBarterOffered", fields: [offeredCarId], references: [id])
+  requestedCar        CarListing          @relation("CarBarterRequested", fields: [requestedCarId], references: [id])
+  counterProposal     CarBarterProposal?  @relation("CarBarterCounter", fields: [counterProposalId], references: [id])
+  counterOf           CarBarterProposal?  @relation("CarBarterCounter")
+
+  @@map("car_barter_proposals")
+  @@index([proposerId])
+  @@index([receiverId])
+  @@index([offeredCarId])
+  @@index([requestedCarId])
+  @@index([status])
+}
+
+// ============================================
+// فحوصات السيارات
+// ============================================
+
+model CarInspection {
+  id                  String                        @id @default(uuid())
+
+  // السيارة والمفتش
+  carId               String?                       @map("car_id")
+  inspectorId         String?                       @map("inspector_id")
+  partnerId           String?                       @map("partner_id")
+  requestedById       String                        @map("requested_by_id")
+
+  // نوع الفحص
+  inspectionType      CarInspectionType             @default(STANDARD) @map("inspection_type")
+
+  // النتائج (0-100)
+  overallScore        Int?                          @map("overall_score")
+  exteriorScore       Int?                          @map("exterior_score")
+  interiorScore       Int?                          @map("interior_score")
+  mechanicalScore     Int?                          @map("mechanical_score")
+  electricalScore     Int?                          @map("electrical_score")
+
+  // التفاصيل
+  findings            Json?                         // تفاصيل الفحص
+  inspectionPhotos    String[]                      @map("inspection_photos")
+
+  // التوصية
+  recommendation      CarInspectionRecommendation?
+  estimatedRepairCost Float?                        @map("estimated_repair_cost")
+
+  // الحالة
+  status              CarInspectionStatus           @default(REQUESTED)
+
+  // المواعيد
+  scheduledAt         DateTime?                     @map("scheduled_at")
+  completedAt         DateTime?                     @map("completed_at")
+
+  // التقرير
+  reportUrl           String?                       @map("report_url")
+
+  // الرسوم
+  inspectionFee       Float                         @map("inspection_fee")
+  paid                Boolean                       @default(false)
+
+  // الطوابع الزمنية
+  createdAt           DateTime                      @default(now()) @map("created_at")
+  updatedAt           DateTime                      @updatedAt @map("updated_at")
+
+  // العلاقات
+  carListing          CarListing?
+  partner             CarPartner?                   @relation(fields: [partnerId], references: [id])
+  requestedBy         User                          @relation("CarInspectionRequester", fields: [requestedById], references: [id])
+
+  @@map("car_inspections")
+  @@index([carId])
+  @@index([partnerId])
+  @@index([status])
+}
+
+// ============================================
+// مراكز الفحص الشركاء
+// ============================================
+
+model CarPartner {
+  id                  String              @id @default(uuid())
+
+  // معلومات المركز
+  name                String
+  nameAr              String              @map("name_ar")
+  description         String?
+  logo                String?
+
+  // الموقع
+  governorate         String
+  city                String
+  address             String
+  latitude            Float?
+  longitude           Float?
+
+  // التواصل
+  phone               String
+  whatsapp            String?
+  email               String?
+
+  // ساعات العمل
+  workingHours        String?             @map("working_hours")
+
+  // الخدمات
+  offersBasicInspection     Boolean       @default(true) @map("offers_basic_inspection")
+  offersFullInspection      Boolean       @default(true) @map("offers_full_inspection")
+  offersPrePurchase         Boolean       @default(true) @map("offers_pre_purchase")
+  offersComputerDiagnostics Boolean       @default(false) @map("offers_computer_diagnostics")
+
+  // الرسوم
+  basicInspectionFee        Float         @default(200) @map("basic_inspection_fee")
+  standardInspectionFee     Float         @default(500) @map("standard_inspection_fee")
+  comprehensiveInspectionFee Float        @default(1000) @map("comprehensive_inspection_fee")
+
+  // التقييم
+  rating              Float               @default(0)
+  totalReviews        Int                 @default(0) @map("total_reviews")
+  totalInspections    Int                 @default(0) @map("total_inspections")
+
+  // الحالة
+  isActive            Boolean             @default(true) @map("is_active")
+  isVerified          Boolean             @default(false) @map("is_verified")
+
+  // الطوابع الزمنية
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // العلاقات
+  inspections         CarInspection[]
+
+  @@map("car_partners")
   @@index([governorate])
   @@index([isActive])
 }
