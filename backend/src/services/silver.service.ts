@@ -215,9 +215,9 @@ export const getSilverItems = async (filters: SilverItemFilters) => {
   }
 
   if (minPrice || maxPrice) {
-    where.totalAskingPrice = {};
-    if (minPrice) where.totalAskingPrice.gte = minPrice;
-    if (maxPrice) where.totalAskingPrice.lte = maxPrice;
+    where.askingPrice = {};
+    if (minPrice) where.askingPrice.gte = minPrice;
+    if (maxPrice) where.askingPrice.lte = maxPrice;
   }
 
   if (search) {
@@ -264,7 +264,7 @@ export const getSilverItems = async (filters: SilverItemFilters) => {
   const enrichedItems = items.map(item => {
     const marketPrice = currentPrices[item.purity]?.buyPrice || getDefaultPrice(item.purity as any);
     const newSilverPrice = item.weightGrams * marketPrice * (1 + NEW_SILVER_MARKUP);
-    const buyerPays = item.totalAskingPrice * (1 + BUYER_COMMISSION_RATE);
+    const buyerPays = item.askingPrice * (1 + BUYER_COMMISSION_RATE);
     const savings = newSilverPrice - buyerPays;
 
     return {
@@ -322,14 +322,14 @@ export const getSilverItemById = async (id: string) => {
   const currentPrice = await getPriceByPurity(item.purity as any);
   const marketPrice = currentPrice?.buyPrice || getDefaultPrice(item.purity as any);
   const newSilverPrice = item.weightGrams * marketPrice * (1 + NEW_SILVER_MARKUP);
-  const buyerPays = item.totalAskingPrice * (1 + BUYER_COMMISSION_RATE);
+  const buyerPays = item.askingPrice * (1 + BUYER_COMMISSION_RATE);
   const savings = newSilverPrice - buyerPays;
 
   return {
     ...item,
     currentMarketPrice: marketPrice,
     buyerPays: Math.round(buyerPays),
-    buyerCommission: Math.round(item.totalAskingPrice * BUYER_COMMISSION_RATE),
+    buyerCommission: Math.round(item.askingPrice * BUYER_COMMISSION_RATE),
     newSilverPrice: Math.round(newSilverPrice),
     savings: Math.round(savings),
     savingsPercent: Math.round((savings / newSilverPrice) * 100 * 10) / 10,
@@ -348,20 +348,21 @@ export const createSilverItem = async (
     purity: string;
     weightGrams: number;
     condition?: string;
+    brand?: string;
     images: string[];
-    askingPricePerGram: number;
+    askingPrice: number;
     governorate?: string;
     city?: string;
     allowBarter?: boolean;
-    allowGoldBarter?: boolean;
-    barterDescription?: string;
+    barterPreferences?: string;
   }
 ) => {
   // Get current silver price
   const currentPrice = await getPriceByPurity(data.purity as any);
   const marketPrice = currentPrice?.buyPrice || getDefaultPrice(data.purity as any);
 
-  const totalAskingPrice = data.weightGrams * data.askingPricePerGram;
+  // Calculate raw value based on weight and market price
+  const rawValue = data.weightGrams * marketPrice;
 
   const item = await prisma.silverItem.create({
     data: {
@@ -372,15 +373,15 @@ export const createSilverItem = async (
       purity: data.purity as any,
       weightGrams: data.weightGrams,
       condition: (data.condition as any) || 'GOOD',
+      brand: data.brand,
       images: data.images,
-      askingPricePerGram: data.askingPricePerGram,
-      totalAskingPrice,
+      askingPrice: data.askingPrice,
+      rawValue,
       silverPriceAtListing: marketPrice,
       governorate: data.governorate,
       city: data.city,
-      allowBarter: data.allowBarter || false,
-      allowGoldBarter: data.allowGoldBarter || false,
-      barterDescription: data.barterDescription,
+      allowBarter: data.allowBarter ?? true,
+      barterPreferences: data.barterPreferences,
     },
     include: {
       seller: {
@@ -405,12 +406,11 @@ export const updateSilverItem = async (
   data: Partial<{
     title: string;
     description: string;
-    askingPricePerGram: number;
+    askingPrice: number;
     images: string[];
     status: string;
     allowBarter: boolean;
-    allowGoldBarter: boolean;
-    barterDescription: string;
+    barterPreferences: string;
   }>
 ) => {
   // Verify ownership
@@ -422,16 +422,9 @@ export const updateSilverItem = async (
     throw new Error('Item not found or unauthorized');
   }
 
-  const updateData: any = { ...data };
-
-  // Recalculate total if price changed
-  if (data.askingPricePerGram) {
-    updateData.totalAskingPrice = item.weightGrams * data.askingPricePerGram;
-  }
-
   const updated = await prisma.silverItem.update({
     where: { id },
-    data: updateData,
+    data,
   });
 
   return updated;
@@ -522,9 +515,9 @@ export const createSilverTransaction = async (
   const silverPrice = currentPrice?.buyPrice || getDefaultPrice(item.purity as any);
 
   // Calculate commissions
-  const buyerCommission = item.totalAskingPrice * BUYER_COMMISSION_RATE;
-  const sellerCommission = item.totalAskingPrice * SELLER_COMMISSION_RATE;
-  const totalAmount = item.totalAskingPrice + buyerCommission;
+  const buyerCommission = item.askingPrice * BUYER_COMMISSION_RATE;
+  const sellerCommission = item.askingPrice * SELLER_COMMISSION_RATE;
+  const totalAmount = item.askingPrice + buyerCommission;
 
   // Create transaction
   const transaction = await prisma.silverTransaction.create({
@@ -533,7 +526,7 @@ export const createSilverTransaction = async (
       buyerId,
       sellerId: item.sellerId,
       silverPriceAtTransaction: silverPrice,
-      itemPrice: item.totalAskingPrice,
+      itemPrice: item.askingPrice,
       buyerCommission,
       sellerCommission,
       totalAmount,

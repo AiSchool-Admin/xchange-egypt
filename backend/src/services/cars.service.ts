@@ -50,10 +50,11 @@ export const updateCarPrices = async (prices: Array<{
   model: string;
   year: number;
   trim?: string;
-  minPrice: number;
-  maxPrice: number;
-  averagePrice: number;
-  source?: string;
+  priceLow: number;
+  priceHigh: number;
+  priceAverage: number;
+  basePrice?: number;
+  dataSource?: string;
 }>) => {
   const created = await prisma.carPrice.createMany({
     data: prices.map(p => ({
@@ -61,10 +62,11 @@ export const updateCarPrices = async (prices: Array<{
       model: p.model,
       year: p.year,
       trim: p.trim,
-      minPrice: p.minPrice,
-      maxPrice: p.maxPrice,
-      averagePrice: p.averagePrice,
-      source: p.source || 'manual',
+      priceLow: p.priceLow,
+      priceHigh: p.priceHigh,
+      priceAverage: p.priceAverage,
+      basePrice: p.basePrice || p.priceAverage,
+      dataSource: p.dataSource || 'manual',
     })),
   });
 
@@ -99,7 +101,7 @@ export const calculateCarPrice = async (
 
   if (make && model && year) {
     const ref = await getCarPriceReference(make, model, year);
-    marketPrice = ref?.averagePrice || null;
+    marketPrice = ref?.priceAverage || null;
   }
 
   const buyerCommission = listingPrice * BUYER_COMMISSION_RATE;
@@ -203,7 +205,7 @@ export const getCarListings = async (filters: CarListingFilters) => {
   if (condition) where.condition = condition;
   if (verificationLevel) where.verificationLevel = verificationLevel;
   if (sellerId) where.sellerId = sellerId;
-  if (allowBarter !== undefined) where.allowBarter = allowBarter;
+  if (allowBarter !== undefined) where.openForBarter = allowBarter;
   if (isFeatured !== undefined) where.isFeatured = isFeatured;
 
   if (yearMin || yearMax) {
@@ -314,7 +316,7 @@ export const getCarListingById = async (id: string) => {
   // Increment views
   await prisma.carListing.update({
     where: { id },
-    data: { views: { increment: 1 } },
+    data: { viewsCount: { increment: 1 } },
   });
 
   // Get market price reference
@@ -322,14 +324,14 @@ export const getCarListingById = async (id: string) => {
 
   // Calculate buyer price
   const buyerPays = listing.askingPrice * (1 + BUYER_COMMISSION_RATE);
-  const priceVsMarket = marketRef?.averagePrice
-    ? Math.round(((listing.askingPrice - marketRef.averagePrice) / marketRef.averagePrice) * 100 * 10) / 10
+  const priceVsMarket = marketRef?.priceAverage
+    ? Math.round(((listing.askingPrice - marketRef.priceAverage) / marketRef.priceAverage) * 100 * 10) / 10
     : null;
 
   return {
     ...listing,
-    marketPrice: marketRef?.averagePrice || null,
-    marketPriceRange: marketRef ? { min: marketRef.minPrice, max: marketRef.maxPrice } : null,
+    marketPrice: marketRef?.priceAverage || null,
+    marketPriceRange: marketRef ? { min: marketRef.priceLow, max: marketRef.priceHigh } : null,
     buyerPays: Math.round(buyerPays),
     buyerCommission: Math.round(listing.askingPrice * BUYER_COMMISSION_RATE),
     priceVsMarket,
@@ -352,37 +354,28 @@ export const createCarListing = async (
     transmission: string;
     fuelType: string;
     engineSize?: number;
-    horsepower?: number;
     cylinders?: number;
-    drivetrain?: string;
+    driveType?: string;
     mileage: number;
     condition?: string;
     accidentHistory?: string;
     serviceHistory?: boolean;
-    warrantyRemaining?: string;
-    exteriorColor: string;
-    interiorColor?: string;
-    features?: string[];
+    colorExterior?: string;
+    colorInterior?: string;
+    doors?: number;
+    seats?: number;
     images: string[];
     videoUrl?: string;
     vin?: string;
     plateNumber?: string;
     askingPrice: number;
     priceNegotiable?: boolean;
-    installmentAvailable?: boolean;
-    allowBarter?: boolean;
-    barterWithCars?: boolean;
-    barterWithProperty?: boolean;
-    barterDescription?: string;
-    barterPreferredMakes?: string[];
-    maxCashDifference?: number;
-    governorate: string;
-    city: string;
-    latitude?: number;
-    longitude?: number;
+    openForBarter?: boolean;
+    barterPreferences?: any;
+    licenseGovernorate?: string;
+    isImported?: boolean;
+    isCngConverted?: boolean;
     sellerType?: string;
-    showroomName?: string;
-    dealerLicense?: string;
   }
 ) => {
   // Get market price for reference
@@ -392,8 +385,6 @@ export const createCarListing = async (
     data: {
       sellerId,
       sellerType: (data.sellerType as any) || 'OWNER',
-      showroomName: data.showroomName,
-      dealerLicense: data.dealerLicense,
       title: data.title,
       description: data.description,
       make: data.make,
@@ -404,35 +395,28 @@ export const createCarListing = async (
       transmission: data.transmission as any,
       fuelType: data.fuelType as any,
       engineSize: data.engineSize,
-      horsepower: data.horsepower,
       cylinders: data.cylinders,
-      drivetrain: data.drivetrain,
+      driveType: data.driveType,
       mileage: data.mileage,
       condition: (data.condition as any) || 'GOOD',
       accidentHistory: (data.accidentHistory as any) || 'UNKNOWN',
-      serviceHistory: data.serviceHistory,
-      warrantyRemaining: data.warrantyRemaining,
-      exteriorColor: data.exteriorColor,
-      interiorColor: data.interiorColor,
-      features: data.features || [],
+      serviceHistory: data.serviceHistory ?? false,
+      colorExterior: data.colorExterior,
+      colorInterior: data.colorInterior,
+      doors: data.doors ?? 4,
+      seats: data.seats ?? 5,
       images: data.images,
       videoUrl: data.videoUrl,
       vin: data.vin,
       plateNumber: data.plateNumber,
       askingPrice: data.askingPrice,
-      marketPrice: marketRef?.averagePrice,
+      estimatedValue: marketRef?.priceAverage,
       priceNegotiable: data.priceNegotiable ?? true,
-      installmentAvailable: data.installmentAvailable ?? false,
-      allowBarter: data.allowBarter ?? false,
-      barterWithCars: data.barterWithCars ?? false,
-      barterWithProperty: data.barterWithProperty ?? false,
-      barterDescription: data.barterDescription,
-      barterPreferredMakes: data.barterPreferredMakes || [],
-      maxCashDifference: data.maxCashDifference,
-      governorate: data.governorate,
-      city: data.city,
-      latitude: data.latitude,
-      longitude: data.longitude,
+      openForBarter: data.openForBarter ?? true,
+      barterPreferences: data.barterPreferences,
+      licenseGovernorate: data.licenseGovernorate,
+      isImported: data.isImported ?? false,
+      isCngConverted: data.isCngConverted ?? false,
     },
     include: {
       seller: {
@@ -462,12 +446,8 @@ export const updateCarListing = async (
     images: string[];
     videoUrl: string;
     status: string;
-    allowBarter: boolean;
-    barterWithCars: boolean;
-    barterWithProperty: boolean;
-    barterDescription: string;
-    barterPreferredMakes: string[];
-    maxCashDifference: number;
+    openForBarter: boolean;
+    barterPreferences: any;
   }>
 ) => {
   // Verify ownership
@@ -651,7 +631,7 @@ export const updateInspectionStatus = async (
 export const createCarTransaction = async (
   buyerId: string,
   data: {
-    listingId: string;
+    carId: string;
     agreedPrice: number;
     deliveryMethod: string;
     deliveryAddress?: string;
@@ -661,7 +641,7 @@ export const createCarTransaction = async (
 ) => {
   // Get listing details
   const listing = await prisma.carListing.findUnique({
-    where: { id: data.listingId },
+    where: { id: data.carId },
   });
 
   if (!listing || listing.status !== 'ACTIVE') {
@@ -680,7 +660,7 @@ export const createCarTransaction = async (
   // Create transaction
   const transaction = await prisma.carTransaction.create({
     data: {
-      listingId: data.listingId,
+      carId: data.carId,
       buyerId,
       sellerId: listing.sellerId,
       agreedPrice: data.agreedPrice,
@@ -693,7 +673,7 @@ export const createCarTransaction = async (
       inspectionRequired: data.inspectionRequired || false,
     },
     include: {
-      listing: true,
+      car: true,
       buyer: {
         select: { id: true, fullName: true },
       },
@@ -705,7 +685,7 @@ export const createCarTransaction = async (
 
   // Update listing status to RESERVED
   await prisma.carListing.update({
-    where: { id: data.listingId },
+    where: { id: data.carId },
     data: { status: 'RESERVED' },
   });
 
@@ -723,7 +703,7 @@ export const updateCarTransactionStatus = async (
 ) => {
   const transaction = await prisma.carTransaction.findUnique({
     where: { id },
-    include: { listing: true },
+    include: { car: true },
   });
 
   if (!transaction) {
@@ -740,17 +720,17 @@ export const updateCarTransactionStatus = async (
   // Handle specific status updates
   switch (status) {
     case 'ESCROW_HELD':
-      updateData.escrowHeldAt = new Date();
-      updateData.escrowStatus = 'HELD';
+      updateData.escrowDepositedAt = new Date();
+      updateData.escrowStatus = 'held';
       updateData.escrowAmount = transaction.totalAmount;
       break;
     case 'COMPLETED':
       updateData.completedAt = new Date();
       updateData.escrowReleasedAt = new Date();
-      updateData.escrowStatus = 'RELEASED';
+      updateData.escrowStatus = 'released';
       // Update listing status
       await prisma.carListing.update({
-        where: { id: transaction.listingId },
+        where: { id: transaction.carId },
         data: { status: 'SOLD', soldAt: new Date() },
       });
       break;
@@ -759,10 +739,12 @@ export const updateCarTransactionStatus = async (
       break;
     case 'REFUNDED':
     case 'CANCELLED':
-      updateData.escrowStatus = status === 'REFUNDED' ? 'REFUNDED' : 'CANCELLED';
+      updateData.escrowStatus = status === 'REFUNDED' ? 'refunded' : 'cancelled';
+      updateData.cancelledAt = new Date();
+      updateData.cancellationReason = notes;
       // Reactivate listing
       await prisma.carListing.update({
-        where: { id: transaction.listingId },
+        where: { id: transaction.carId },
         data: { status: 'ACTIVE' },
       });
       break;
@@ -772,7 +754,7 @@ export const updateCarTransactionStatus = async (
     where: { id },
     data: updateData,
     include: {
-      listing: true,
+      car: true,
       buyer: { select: { id: true, fullName: true } },
       seller: { select: { id: true, fullName: true } },
     },
@@ -801,7 +783,7 @@ export const getUserCarTransactions = async (
   const transactions = await prisma.carTransaction.findMany({
     where,
     include: {
-      listing: true,
+      car: true,
       buyer: { select: { id: true, fullName: true, avatar: true } },
       seller: { select: { id: true, fullName: true, avatar: true } },
     },
@@ -821,36 +803,42 @@ export const getUserCarTransactions = async (
 export const createBarterProposal = async (
   proposerId: string,
   data: {
-    listingId: string;
-    offeredCarId?: string;
-    offeredCarMake?: string;
-    offeredCarModel?: string;
-    offeredCarYear?: number;
-    offeredCarMileage?: number;
-    offeredCarValue?: number;
-    offeredCarImages?: string[];
-    offeredCarDescription?: string;
-    cashDifference: number;
-    cashDirection: string;
-    message?: string;
+    offeredCarId: string;      // الـ proposer's car
+    requestedCarId: string;    // الـ receiver's car (the listing they want)
+    cashDifference?: number;
+    cashPayer?: string;        // 'proposer' or 'receiver'
+    proposerMessage?: string;
   }
 ) => {
-  // Get listing to find receiver
-  const listing = await prisma.carListing.findUnique({
-    where: { id: data.listingId },
-  });
+  // Get both cars
+  const [offeredCar, requestedCar] = await Promise.all([
+    prisma.carListing.findUnique({ where: { id: data.offeredCarId } }),
+    prisma.carListing.findUnique({ where: { id: data.requestedCarId } }),
+  ]);
 
-  if (!listing) {
-    throw new Error('Listing not found');
+  if (!offeredCar) {
+    throw new Error('Offered car not found');
   }
 
-  if (!listing.allowBarter) {
+  if (!requestedCar) {
+    throw new Error('Requested car not found');
+  }
+
+  if (!requestedCar.openForBarter) {
     throw new Error('This listing does not accept barter');
   }
 
-  if (listing.sellerId === proposerId) {
+  if (offeredCar.sellerId !== proposerId) {
+    throw new Error('You can only offer your own car');
+  }
+
+  if (requestedCar.sellerId === proposerId) {
     throw new Error('Cannot barter with your own listing');
   }
+
+  // Calculate commissions (1.5% each)
+  const proposerCommission = offeredCar.askingPrice * 0.015;
+  const receiverCommission = requestedCar.askingPrice * 0.015;
 
   // Set expiry to 7 days
   const expiresAt = new Date();
@@ -858,26 +846,23 @@ export const createBarterProposal = async (
 
   const proposal = await prisma.carBarterProposal.create({
     data: {
-      listingId: data.listingId,
       proposerId,
-      receiverId: listing.sellerId,
+      receiverId: requestedCar.sellerId,
       offeredCarId: data.offeredCarId,
-      offeredCarMake: data.offeredCarMake,
-      offeredCarModel: data.offeredCarModel,
-      offeredCarYear: data.offeredCarYear,
-      offeredCarMileage: data.offeredCarMileage,
-      offeredCarValue: data.offeredCarValue,
-      offeredCarImages: data.offeredCarImages || [],
-      offeredCarDescription: data.offeredCarDescription,
-      cashDifference: data.cashDifference,
-      cashDirection: data.cashDirection,
-      message: data.message,
+      requestedCarId: data.requestedCarId,
+      offeredCarValue: offeredCar.askingPrice,
+      requestedCarValue: requestedCar.askingPrice,
+      cashDifference: data.cashDifference || 0,
+      cashPayer: data.cashPayer,
+      proposerCommission,
+      receiverCommission,
+      proposerMessage: data.proposerMessage,
       expiresAt,
     },
     include: {
-      listing: true,
-      proposer: { select: { id: true, fullName: true, avatar: true } },
       offeredCar: true,
+      requestedCar: true,
+      proposer: { select: { id: true, fullName: true, avatar: true } },
     },
   });
 
@@ -892,8 +877,7 @@ export const respondToBarterProposal = async (
   userId: string,
   response: {
     action: 'ACCEPT' | 'REJECT' | 'COUNTER';
-    counterCashDifference?: number;
-    counterMessage?: string;
+    receiverResponse?: string;
   }
 ) => {
   const proposal = await prisma.carBarterProposal.findUnique({
@@ -920,23 +904,24 @@ export const respondToBarterProposal = async (
       break;
     case 'COUNTER':
       status = 'COUNTER_OFFERED';
-      updateData.counterCashDifference = response.counterCashDifference;
-      updateData.counterMessage = response.counterMessage;
       break;
     default:
       throw new Error('Invalid action');
   }
 
   updateData.status = status;
+  if (response.receiverResponse) {
+    updateData.receiverResponse = response.receiverResponse;
+  }
 
   const updated = await prisma.carBarterProposal.update({
     where: { id },
     data: updateData,
     include: {
-      listing: true,
+      offeredCar: true,
+      requestedCar: true,
       proposer: { select: { id: true, fullName: true } },
       receiver: { select: { id: true, fullName: true } },
-      offeredCar: true,
     },
   });
 
@@ -963,10 +948,10 @@ export const getUserBarterProposals = async (
   const proposals = await prisma.carBarterProposal.findMany({
     where,
     include: {
-      listing: true,
+      offeredCar: true,
+      requestedCar: true,
       proposer: { select: { id: true, fullName: true, avatar: true } },
       receiver: { select: { id: true, fullName: true, avatar: true } },
-      offeredCar: true,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -995,7 +980,7 @@ export const getCarStatistics = async () => {
     prisma.carTransaction.count(),
     prisma.carTransaction.count({ where: { status: 'COMPLETED' } }),
     prisma.carPartner.count({ where: { isActive: true } }),
-    prisma.carListing.count({ where: { allowBarter: true, status: 'ACTIVE' } }),
+    prisma.carListing.count({ where: { openForBarter: true, status: 'ACTIVE' } }),
   ]);
 
   // Calculate total value

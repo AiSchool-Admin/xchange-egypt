@@ -417,16 +417,28 @@ export const createBarterProposal = async (req: Request, res: Response, next: Ne
     const proposal = await carsService.createBarterProposal(userId, req.body);
     return successResponse(res, proposal, 'تم إرسال عرض المقايضة بنجاح', 201);
   } catch (error: any) {
-    if (error.message === 'Listing not found') {
+    if (error.message === 'Offered car not found') {
       return res.status(404).json({
         success: false,
-        message: 'لم يتم العثور على الإعلان',
+        message: 'لم يتم العثور على السيارة المعروضة',
+      });
+    }
+    if (error.message === 'Requested car not found') {
+      return res.status(404).json({
+        success: false,
+        message: 'لم يتم العثور على السيارة المطلوبة',
       });
     }
     if (error.message === 'This listing does not accept barter') {
       return res.status(400).json({
         success: false,
         message: 'هذا الإعلان لا يقبل المقايضة',
+      });
+    }
+    if (error.message === 'You can only offer your own car') {
+      return res.status(400).json({
+        success: false,
+        message: 'يمكنك فقط عرض سيارتك الخاصة',
       });
     }
     if (error.message === 'Cannot barter with your own listing') {
@@ -447,12 +459,11 @@ export const respondToBarterProposal = async (req: Request, res: Response, next:
   try {
     const { id } = req.params;
     const userId = req.user!.id;
-    const { action, counterCashDifference, counterMessage } = req.body;
+    const { action, receiverResponse } = req.body;
 
     const proposal = await carsService.respondToBarterProposal(id, userId, {
       action,
-      counterCashDifference,
-      counterMessage,
+      receiverResponse,
     });
 
     return successResponse(res, proposal, 'تم الرد على عرض المقايضة');
