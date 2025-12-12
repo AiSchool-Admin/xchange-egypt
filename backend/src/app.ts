@@ -52,6 +52,7 @@ import installmentRoutes from './routes/installment.routes';
 import badgeRoutes from './routes/badge.routes';
 import goldRoutes from './routes/gold.routes';
 import silverRoutes from './routes/silver.routes';
+import carsRoutes from './routes/cars.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -336,6 +337,9 @@ app.use('/api/v1/gold', goldRoutes);
 
 // Silver Marketplace - سوق الفضة
 app.use('/api/v1/silver', silverRoutes);
+
+// Cars Marketplace - سوق السيارات
+app.use('/api/v1/cars', carsRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
