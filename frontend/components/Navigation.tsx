@@ -87,7 +87,7 @@ const megaMenuData = {
     title: 'الأسواق',
     items: [
       { href: '/items', icon: '🛒', label: 'السوق العام', desc: 'تصفح جميع المنتجات' },
-      { href: '/vehicles', icon: '🚗', label: 'سوق السيارات', desc: 'سيارات جديدة ومستعملة' },
+      { href: '/cars', icon: '🚗', label: 'سوق السيارات', desc: 'سيارات بنظام Escrow ومقايضة' },
       { href: '/real-estate', icon: '🏠', label: 'سوق العقارات', desc: 'شقق وفيلات وأراضي' },
       { href: '/auctions', icon: '🔨', label: 'المزادات', desc: 'مزادات حية ومباشرة' },
       { href: '/scrap', icon: '♻️', label: 'سوق التوالف', desc: 'خردة ومواد قابلة للتدوير' },
@@ -1380,9 +1380,9 @@ export default function Navigation() {
                 السوق العام
               </Link>
               <Link
-                href="/vehicles"
+                href="/cars"
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
-                  isActive('/vehicles')
+                  isActive('/cars')
                     ? 'bg-white text-blue-700 shadow-md'
                     : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
