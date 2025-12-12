@@ -73,10 +73,10 @@ BEGIN
     -- ============================================
     DELETE FROM gold_prices WHERE source = 'seed';
 
-    INSERT INTO gold_prices (purity, buy_price, sell_price, source) VALUES
-        ('K24', 4800, 4850, 'seed'),
-        ('K21', 4200, 4250, 'seed'),
-        ('K18', 3600, 3650, 'seed');
+    INSERT INTO gold_prices (id, karat, buy_price, sell_price, source) VALUES
+        (gen_random_uuid()::text, 'K24', 4800, 4850, 'seed'),
+        (gen_random_uuid()::text, 'K21', 4200, 4250, 'seed'),
+        (gen_random_uuid()::text, 'K18', 3600, 3650, 'seed');
 
     RAISE NOTICE 'Gold prices inserted';
 
@@ -194,11 +194,11 @@ BEGIN
     -- ============================================
     DELETE FROM silver_prices WHERE source = 'seed';
 
-    INSERT INTO silver_prices (purity, buy_price, sell_price, source) VALUES
-        ('S999', 60, 65, 'seed'),
-        ('S925', 50, 55, 'seed'),
-        ('S900', 45, 50, 'seed'),
-        ('S800', 40, 45, 'seed');
+    INSERT INTO silver_prices (id, purity, buy_price, sell_price, source) VALUES
+        (gen_random_uuid()::text, 'S999', 60, 65, 'seed'),
+        (gen_random_uuid()::text, 'S925', 50, 55, 'seed'),
+        (gen_random_uuid()::text, 'S900', 45, 50, 'seed'),
+        (gen_random_uuid()::text, 'S800', 40, 45, 'seed');
 
     RAISE NOTICE 'Silver prices inserted';
 
