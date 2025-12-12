@@ -98,6 +98,11 @@ model User {
   scrapPurchaseRequests     ScrapPurchaseRequest[]    @relation("ScrapPurchaseBuyer")
   scrapSellerOffers         ScrapSellerOffer[]        @relation("ScrapSellerOffers")
 
+  // سوق الذهب - Gold Marketplace Relations
+  goldItems                 GoldItem[]                @relation("UserGoldItems")
+  goldPurchases             GoldTransaction[]         @relation("UserGoldPurchases")
+  goldSales                 GoldTransaction[]         @relation("UserGoldSales")
+
   // Search & Discovery Relations
   searchHistory             SearchHistory[]           @relation("UserSearchHistory")
   savedSearches             SavedSearch[]             @relation("UserSavedSearches")
@@ -5254,5 +5259,278 @@ model FacilitatorCertification {
   @@index([facilitatorId])
   @@index([level])
   @@index([status])
+}
+
+// ============================================
+// 🏆 سوق الذهب - Gold Marketplace
+// ============================================
+
+enum GoldKarat {
+  K18   // عيار 18
+  K21   // عيار 21
+  K24   // عيار 24
+}
+
+enum GoldItemCategory {
+  RING          // خاتم
+  NECKLACE      // سلسلة/عقد
+  BRACELET      // إسورة
+  EARRING       // حلق
+  SET           // طقم كامل
+  PENDANT       // تعليقة
+  ANKLET        // خلخال
+  COIN          // جنيه ذهب
+  BAR           // سبيكة
+  OTHER         // أخرى
+}
+
+enum GoldItemCondition {
+  NEW           // جديد (لم يُلبس)
+  LIKE_NEW      // كالجديد
+  GOOD          // جيد
+  FAIR          // مقبول
+}
+
+enum GoldVerificationLevel {
+  BASIC         // أساسي (صور فقط)
+  VERIFIED      // موثق (بائع موثوق)
+  CERTIFIED     // معتمد (فحص صائغ)
+}
+
+enum GoldListingStatus {
+  ACTIVE        // نشط
+  RESERVED      // محجوز
+  SOLD          // مباع
+  EXPIRED       // منتهي
+  CANCELLED     // ملغي
+}
+
+enum GoldTransactionStatus {
+  PENDING       // في انتظار الدفع
+  ESCROW_HELD   // المبلغ محجوز
+  DELIVERED     // تم التسليم
+  INSPECTING    // فترة الفحص
+  COMPLETED     // مكتمل
+  DISPUTED      // نزاع
+  REFUNDED      // مسترد
+  CANCELLED     // ملغي
+}
+
+enum GoldDeliveryMethod {
+  MEETUP        // تسليم شخصي
+  SHIPPING      // شحن
+  PARTNER_PICKUP // استلام من صائغ شريك
+}
+
+// أسعار الذهب اللحظية
+model GoldPrice {
+  id            String      @id @default(uuid())
+  karat         GoldKarat
+  buyPrice      Float       @map("buy_price")      // سعر الشراء (البورصة)
+  sellPrice     Float       @map("sell_price")     // سعر البيع
+  timestamp     DateTime    @default(now())
+  source        String?     // مصدر السعر (API, manual)
+
+  @@map("gold_prices")
+  @@index([karat, timestamp])
+}
+
+// قطع الذهب المعروضة
+model GoldItem {
+  id                  String                @id @default(uuid())
+  sellerId            String                @map("seller_id")
+
+  // معلومات القطعة
+  title               String
+  description         String?
+  category            GoldItemCategory
+  karat               GoldKarat
+  weightGrams         Float                 @map("weight_grams")
+  condition           GoldItemCondition     @default(GOOD)
+
+  // الصور
+  images              String[]
+
+  // التسعير
+  askingPricePerGram  Float                 @map("asking_price_per_gram")  // سعر البائع للجرام
+  totalAskingPrice    Float                 @map("total_asking_price")     // السعر الإجمالي
+  goldPriceAtListing  Float                 @map("gold_price_at_listing")  // سعر البورصة وقت الإضافة
+
+  // الموقع
+  governorate         String?
+  city                String?
+
+  // التحقق
+  verificationLevel   GoldVerificationLevel @default(BASIC) @map("verification_level")
+  certificateId       String?               @unique @map("certificate_id")
+
+  // الحالة
+  status              GoldListingStatus     @default(ACTIVE)
+  views               Int                   @default(0)
+
+  // ميزات إضافية
+  isFeatured          Boolean               @default(false) @map("is_featured")
+  allowBarter         Boolean               @default(false) @map("allow_barter")  // قابل للمقايضة
+  barterDescription   String?               @map("barter_description")  // ما يقبله في المقايضة
+
+  // الطوابع الزمنية
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+  expiresAt           DateTime?             @map("expires_at")
+
+  // العلاقات
+  seller              User                  @relation("UserGoldItems", fields: [sellerId], references: [id], onDelete: Cascade)
+  certificate         GoldCertificate?      @relation(fields: [certificateId], references: [id])
+  transactions        GoldTransaction[]
+
+  @@map("gold_items")
+  @@index([sellerId])
+  @@index([category])
+  @@index([karat])
+  @@index([status])
+  @@index([governorate])
+  @@index([verificationLevel])
+  @@index([createdAt])
+}
+
+// معاملات الذهب
+model GoldTransaction {
+  id                  String                  @id @default(uuid())
+  itemId              String                  @map("item_id")
+  buyerId             String                  @map("buyer_id")
+  sellerId            String                  @map("seller_id")
+
+  // تفاصيل المعاملة
+  goldPriceAtTransaction Float               @map("gold_price_at_transaction")  // سعر البورصة وقت المعاملة
+  itemPrice           Float                   @map("item_price")                 // سعر القطعة
+  buyerCommission     Float                   @map("buyer_commission")           // عمولة المشتري (0.7%)
+  sellerCommission    Float                   @map("seller_commission")          // عمولة البائع (0.7%)
+  totalAmount         Float                   @map("total_amount")               // المبلغ الإجمالي
+
+  // حالة الضمان
+  escrowStatus        String                  @default("PENDING") @map("escrow_status")
+  escrowHeldAt        DateTime?               @map("escrow_held_at")
+  escrowReleasedAt    DateTime?               @map("escrow_released_at")
+
+  // التسليم
+  deliveryMethod      GoldDeliveryMethod      @map("delivery_method")
+  deliveryAddress     String?                 @map("delivery_address")
+  deliveryPartnerId   String?                 @map("delivery_partner_id")  // صائغ شريك للاستلام
+
+  // فترة الفحص
+  inspectionStartedAt DateTime?               @map("inspection_started_at")
+  inspectionEndsAt    DateTime?               @map("inspection_ends_at")
+
+  // الحالة
+  status              GoldTransactionStatus   @default(PENDING)
+
+  // ملاحظات
+  buyerNotes          String?                 @map("buyer_notes")
+  sellerNotes         String?                 @map("seller_notes")
+  disputeReason       String?                 @map("dispute_reason")
+
+  // الطوابع الزمنية
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  completedAt         DateTime?               @map("completed_at")
+
+  // العلاقات
+  item                GoldItem                @relation(fields: [itemId], references: [id])
+  buyer               User                    @relation("UserGoldPurchases", fields: [buyerId], references: [id])
+  seller              User                    @relation("UserGoldSales", fields: [sellerId], references: [id])
+  deliveryPartner     GoldPartner?            @relation(fields: [deliveryPartnerId], references: [id])
+
+  @@map("gold_transactions")
+  @@index([itemId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// شهادات فحص الذهب
+model GoldCertificate {
+  id                  String              @id @default(uuid())
+  itemId              String              @unique @map("item_id")
+  partnerId           String              @map("partner_id")
+
+  // نتائج الفحص
+  verifiedKarat       GoldKarat           @map("verified_karat")
+  verifiedWeight      Float               @map("verified_weight")
+  purityPercentage    Float               @map("purity_percentage")  // نسبة النقاء
+
+  // الحالة
+  isAuthentic         Boolean             @default(true) @map("is_authentic")
+  notes               String?
+
+  // رقم الشهادة
+  certificateNumber   String              @unique @map("certificate_number")
+
+  // الطوابع الزمنية
+  issuedAt            DateTime            @default(now()) @map("issued_at")
+  expiresAt           DateTime?           @map("expires_at")
+
+  // العلاقات
+  partner             GoldPartner         @relation(fields: [partnerId], references: [id])
+  goldItem            GoldItem?
+
+  @@map("gold_certificates")
+  @@index([partnerId])
+  @@index([certificateNumber])
+}
+
+// الصاغة الشركاء
+model GoldPartner {
+  id                  String              @id @default(uuid())
+
+  // معلومات المحل
+  name                String
+  nameAr              String              @map("name_ar")
+  description         String?
+  logo                String?
+
+  // الموقع
+  governorate         String
+  city                String
+  address             String
+  latitude            Float?
+  longitude           Float?
+
+  // التواصل
+  phone               String
+  whatsapp            String?
+  email               String?
+
+  // ساعات العمل
+  workingHours        String?             @map("working_hours")
+
+  // الخدمات
+  offersCertification Boolean             @default(true) @map("offers_certification")   // يقدم فحص
+  offersPickup        Boolean             @default(true) @map("offers_pickup")          // نقطة تسليم
+  offersRepair        Boolean             @default(false) @map("offers_repair")         // إصلاح
+
+  // الرسوم
+  certificationFee    Float               @default(75) @map("certification_fee")        // رسوم الفحص
+
+  // التقييم
+  rating              Float               @default(0)
+  totalReviews        Int                 @default(0) @map("total_reviews")
+  totalCertifications Int                 @default(0) @map("total_certifications")
+
+  // الحالة
+  isActive            Boolean             @default(true) @map("is_active")
+  isVerified          Boolean             @default(false) @map("is_verified")
+
+  // الطوابع الزمنية
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // العلاقات
+  certificates        GoldCertificate[]
+  transactions        GoldTransaction[]
+
+  @@map("gold_partners")
+  @@index([governorate])
+  @@index([isActive])
 }
 

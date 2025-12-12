@@ -91,6 +91,7 @@ const megaMenuData = {
       { href: '/real-estate', icon: '🏠', label: 'سوق العقارات', desc: 'شقق وفيلات وأراضي' },
       { href: '/auctions', icon: '🔨', label: 'المزادات', desc: 'مزادات حية ومباشرة' },
       { href: '/scrap', icon: '♻️', label: 'سوق التوالف', desc: 'خردة ومواد قابلة للتدوير' },
+      { href: '/gold', icon: '💰', label: 'سوق الذهب', desc: 'بيع وشراء الذهب بأفضل الأسعار' },
       { href: '/luxury', icon: '👑', label: 'السوق الفاخر', desc: 'منتجات راقية ومميزة' },
       { href: '/deals', icon: '⚡', label: 'عروض اليوم', desc: 'خصومات لفترة محدودة' },
     ],
@@ -1442,6 +1443,17 @@ export default function Navigation() {
               >
                 <span className="text-lg">♻️</span>
                 سوق التوالف
+              </Link>
+              <Link
+                href="/gold"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/gold')
+                    ? 'bg-white text-yellow-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">💰</span>
+                سوق الذهب
               </Link>
               <Link
                 href="/barter"
