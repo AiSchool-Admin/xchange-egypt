@@ -51,6 +51,7 @@ import deliveryRoutes from './routes/delivery.routes';
 import installmentRoutes from './routes/installment.routes';
 import badgeRoutes from './routes/badge.routes';
 import goldRoutes from './routes/gold.routes';
+import silverRoutes from './routes/silver.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -332,6 +333,9 @@ app.use('/api/v1/badges', badgeRoutes);
 
 // Gold Marketplace - سوق الذهب
 app.use('/api/v1/gold', goldRoutes);
+
+// Silver Marketplace - سوق الفضة
+app.use('/api/v1/silver', silverRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

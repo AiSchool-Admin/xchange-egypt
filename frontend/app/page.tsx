@@ -193,6 +193,13 @@ const FEATURES = [
     gradient: 'from-yellow-500 to-amber-600',
   },
   {
+    icon: '🥈',
+    title: 'سوق الفضة',
+    description: 'فضة بأسعار مميزة وتوفير حتى 30%',
+    href: '/silver',
+    gradient: 'from-slate-400 to-slate-600',
+  },
+  {
     icon: '💳',
     title: 'التقسيط',
     description: 'اشتر الآن وادفع على أقساط مريحة',
@@ -1479,6 +1486,76 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-500 text-white rounded-xl font-semibold hover:bg-yellow-600 transition-colors"
             >
               عرض كل قطع الذهب
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================
+          Silver Marketplace Section (سوق الفضة)
+          ============================================ */}
+      <section className="py-12 md:py-16 bg-gradient-to-b from-slate-50 to-gray-50">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Section Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🥈</span>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">سوق الفضة</h2>
+                <p className="text-gray-500 mt-1">اشتري وبيع الفضة بتوفير يصل إلى 30%</p>
+              </div>
+            </div>
+            <Link
+              href="/silver"
+              className="hidden md:flex items-center gap-2 px-4 py-2 bg-slate-500 text-white rounded-xl font-semibold hover:bg-slate-600 transition-colors"
+            >
+              عرض الكل
+              <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+
+          {/* Silver Promo Card */}
+          <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+            <div className="text-6xl mb-4">🥈</div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">سوق الفضة جديد!</h3>
+            <p className="text-gray-500 mb-4">اشتري وبيع الفضة المستعملة بأسعار أفضل من المحلات</p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link href="/silver" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-500 text-white rounded-xl font-semibold hover:bg-slate-600 transition-colors">
+                🛒 تصفح سوق الفضة
+              </Link>
+              <Link href="/silver/sell" className="inline-flex items-center gap-2 px-6 py-3 border-2 border-slate-500 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-colors">
+                💰 بيع فضتك
+              </Link>
+            </div>
+            {/* Value Props */}
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+              <div className="text-center">
+                <div className="text-2xl mb-1">🔒</div>
+                <div className="text-sm font-medium text-gray-700">ضمان المعاملة</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl mb-1">💸</div>
+                <div className="text-sm font-medium text-gray-700">عمولة 4% فقط</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl mb-1">🔄</div>
+                <div className="text-sm font-medium text-gray-700">مقايضة ذهب↔فضة</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile View All Link */}
+          <div className="mt-6 text-center md:hidden">
+            <Link
+              href="/silver"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-slate-500 text-white rounded-xl font-semibold hover:bg-slate-600 transition-colors"
+            >
+              عرض كل قطع الفضة
               <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

@@ -92,6 +92,7 @@ const megaMenuData = {
       { href: '/auctions', icon: '🔨', label: 'المزادات', desc: 'مزادات حية ومباشرة' },
       { href: '/scrap', icon: '♻️', label: 'سوق التوالف', desc: 'خردة ومواد قابلة للتدوير' },
       { href: '/gold', icon: '💰', label: 'سوق الذهب', desc: 'بيع وشراء الذهب بأفضل الأسعار' },
+      { href: '/silver', icon: '🥈', label: 'سوق الفضة', desc: 'فضة بأسعار مميزة وتوفير حتى 30%' },
       { href: '/luxury', icon: '👑', label: 'السوق الفاخر', desc: 'منتجات راقية ومميزة' },
       { href: '/deals', icon: '⚡', label: 'عروض اليوم', desc: 'خصومات لفترة محدودة' },
     ],
@@ -1454,6 +1455,17 @@ export default function Navigation() {
               >
                 <span className="text-lg">💰</span>
                 سوق الذهب
+              </Link>
+              <Link
+                href="/silver"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/silver')
+                    ? 'bg-white text-slate-600 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">🥈</span>
+                سوق الفضة
               </Link>
               <Link
                 href="/barter"

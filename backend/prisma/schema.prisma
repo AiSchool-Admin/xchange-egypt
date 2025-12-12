@@ -103,6 +103,11 @@ model User {
   goldPurchases             GoldTransaction[]         @relation("UserGoldPurchases")
   goldSales                 GoldTransaction[]         @relation("UserGoldSales")
 
+  // سوق الفضة - Silver Marketplace Relations
+  silverItems               SilverItem[]              @relation("UserSilverItems")
+  silverPurchases           SilverTransaction[]       @relation("UserSilverPurchases")
+  silverSales               SilverTransaction[]       @relation("UserSilverSales")
+
   // Search & Discovery Relations
   searchHistory             SearchHistory[]           @relation("UserSearchHistory")
   savedSearches             SavedSearch[]             @relation("UserSavedSearches")
@@ -5530,6 +5535,295 @@ model GoldPartner {
   transactions        GoldTransaction[]
 
   @@map("gold_partners")
+  @@index([governorate])
+  @@index([isActive])
+}
+
+// ============================================
+// سوق الفضة - Silver Marketplace
+// ============================================
+
+// عيارات الفضة
+enum SilverPurity {
+  S999   // فضة نقية 99.9%
+  S925   // فضة إسترليني 92.5%
+  S900   // فضة 90%
+  S800   // فضة 80%
+}
+
+// فئات قطع الفضة
+enum SilverItemCategory {
+  RING        // خاتم
+  NECKLACE    // سلسلة/قلادة
+  BRACELET    // إسورة
+  EARRING     // حلق
+  SET         // طقم كامل
+  PENDANT     // دلاية
+  ANKLET      // خلخال
+  COIN        // عملة فضية
+  BAR         // سبيكة فضة
+  ANTIQUE     // أنتيك/تراث
+  OTHER       // أخرى
+}
+
+// حالة القطعة الفضية
+enum SilverItemCondition {
+  NEW         // جديد
+  LIKE_NEW    // كالجديد
+  GOOD        // جيد
+  FAIR        // مقبول
+}
+
+// مستوى التحقق للفضة
+enum SilverVerificationLevel {
+  BASIC       // أساسي - صور فقط
+  VERIFIED    // موثق - تحقق من الهوية
+  CERTIFIED   // معتمد - فحص من صائغ شريك
+}
+
+// حالة إعلان الفضة
+enum SilverListingStatus {
+  ACTIVE      // نشط
+  RESERVED    // محجوز
+  SOLD        // تم البيع
+  EXPIRED     // منتهي
+  CANCELLED   // ملغي
+}
+
+// حالة معاملة الفضة
+enum SilverTransactionStatus {
+  PENDING       // في الانتظار
+  ESCROW_HELD   // المبلغ محجوز
+  DELIVERED     // تم التسليم
+  INSPECTING    // قيد الفحص
+  COMPLETED     // مكتملة
+  DISPUTED      // متنازع عليها
+  REFUNDED      // مُسترجعة
+  CANCELLED     // ملغية
+}
+
+// طريقة التسليم للفضة
+enum SilverDeliveryMethod {
+  MEETUP        // تسليم شخصي
+  SHIPPING      // شحن
+  PARTNER_PICKUP // استلام من صائغ شريك
+}
+
+// أسعار الفضة اللحظية
+model SilverPrice {
+  id            String        @id @default(uuid())
+  purity        SilverPurity
+  buyPrice      Float         @map("buy_price")      // سعر الشراء
+  sellPrice     Float         @map("sell_price")     // سعر البيع
+  timestamp     DateTime      @default(now())
+  source        String?       // مصدر السعر (API, manual)
+
+  @@map("silver_prices")
+  @@index([purity, timestamp])
+}
+
+// قطع الفضة المعروضة
+model SilverItem {
+  id                  String                  @id @default(uuid())
+  sellerId            String                  @map("seller_id")
+
+  // معلومات القطعة
+  title               String
+  description         String?
+  category            SilverItemCategory
+  purity              SilverPurity            @default(S925)
+  weightGrams         Float                   @map("weight_grams")
+  condition           SilverItemCondition     @default(GOOD)
+  brand               String?                 // الماركة إن وجدت
+
+  // الصور
+  images              String[]
+
+  // التسعير
+  askingPrice         Float                   @map("asking_price")           // السعر المطلوب
+  rawValue            Float?                  @map("raw_value")              // القيمة الخام المحسوبة
+  silverPriceAtListing Float                  @map("silver_price_at_listing") // سعر الفضة وقت الإضافة
+
+  // الموقع
+  governorate         String?
+  city                String?
+
+  // التحقق
+  verificationLevel   SilverVerificationLevel @default(BASIC) @map("verification_level")
+  certificateId       String?                 @unique @map("certificate_id")
+
+  // الحالة
+  status              SilverListingStatus     @default(ACTIVE)
+  views               Int                     @default(0)
+  favoritesCount      Int                     @default(0) @map("favorites_count")
+
+  // ميزات إضافية
+  isFeatured          Boolean                 @default(false) @map("is_featured")
+  allowBarter         Boolean                 @default(true) @map("allow_barter")   // قابل للمقايضة
+  barterPreferences   String?                 @map("barter_preferences")             // تفضيلات المقايضة
+
+  // الطوابع الزمنية
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  expiresAt           DateTime?               @map("expires_at")
+
+  // العلاقات
+  seller              User                    @relation("UserSilverItems", fields: [sellerId], references: [id], onDelete: Cascade)
+  certificate         SilverCertificate?      @relation(fields: [certificateId], references: [id])
+  transactions        SilverTransaction[]
+
+  @@map("silver_items")
+  @@index([sellerId])
+  @@index([category])
+  @@index([purity])
+  @@index([status])
+  @@index([governorate])
+  @@index([verificationLevel])
+  @@index([createdAt])
+  @@index([askingPrice])
+}
+
+// معاملات الفضة
+model SilverTransaction {
+  id                    String                    @id @default(uuid())
+  itemId                String                    @map("item_id")
+  buyerId               String                    @map("buyer_id")
+  sellerId              String                    @map("seller_id")
+
+  // نوع المعاملة
+  transactionType       String                    @default("direct") @map("transaction_type") // direct, barter, auction
+
+  // تفاصيل المعاملة
+  silverPriceAtTransaction Float                  @map("silver_price_at_transaction")  // سعر الفضة وقت المعاملة
+  itemPrice             Float                     @map("item_price")                   // سعر القطعة
+  buyerCommission       Float                     @map("buyer_commission")             // عمولة المشتري (2%)
+  sellerCommission      Float                     @map("seller_commission")            // عمولة البائع (2%)
+  totalAmount           Float                     @map("total_amount")                 // المبلغ الإجمالي
+
+  // حالة الضمان
+  escrowStatus          String                    @default("PENDING") @map("escrow_status")
+  escrowHeldAt          DateTime?                 @map("escrow_held_at")
+  escrowReleasedAt      DateTime?                 @map("escrow_released_at")
+
+  // التسليم
+  deliveryMethod        SilverDeliveryMethod      @map("delivery_method")
+  deliveryAddress       String?                   @map("delivery_address")
+  deliveryPartnerId     String?                   @map("delivery_partner_id")
+
+  // فترة الفحص
+  inspectionStartedAt   DateTime?                 @map("inspection_started_at")
+  inspectionEndsAt      DateTime?                 @map("inspection_ends_at")
+
+  // الحالة
+  status                SilverTransactionStatus   @default(PENDING)
+
+  // ملاحظات
+  buyerNotes            String?                   @map("buyer_notes")
+  sellerNotes           String?                   @map("seller_notes")
+  disputeReason         String?                   @map("dispute_reason")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  completedAt           DateTime?                 @map("completed_at")
+
+  // العلاقات
+  item                  SilverItem                @relation(fields: [itemId], references: [id])
+  buyer                 User                      @relation("UserSilverPurchases", fields: [buyerId], references: [id])
+  seller                User                      @relation("UserSilverSales", fields: [sellerId], references: [id])
+  deliveryPartner       SilverPartner?            @relation(fields: [deliveryPartnerId], references: [id])
+
+  @@map("silver_transactions")
+  @@index([itemId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// شهادات فحص الفضة
+model SilverCertificate {
+  id                  String              @id @default(uuid())
+  itemId              String              @unique @map("item_id")
+  partnerId           String              @map("partner_id")
+
+  // نتائج الفحص
+  verifiedPurity      SilverPurity        @map("verified_purity")
+  verifiedWeight      Float               @map("verified_weight")
+  purityPercentage    Float               @map("purity_percentage")  // نسبة النقاء الفعلية
+
+  // الحالة
+  isAuthentic         Boolean             @default(true) @map("is_authentic")
+  notes               String?
+
+  // رقم الشهادة
+  certificateNumber   String              @unique @map("certificate_number")
+
+  // الطوابع الزمنية
+  issuedAt            DateTime            @default(now()) @map("issued_at")
+  expiresAt           DateTime?           @map("expires_at")
+
+  // العلاقات
+  partner             SilverPartner       @relation(fields: [partnerId], references: [id])
+  silverItem          SilverItem?
+
+  @@map("silver_certificates")
+  @@index([partnerId])
+  @@index([certificateNumber])
+}
+
+// الصاغة الشركاء للفضة
+model SilverPartner {
+  id                  String              @id @default(uuid())
+
+  // معلومات المحل
+  name                String
+  nameAr              String              @map("name_ar")
+  description         String?
+  logo                String?
+
+  // الموقع
+  governorate         String
+  city                String
+  address             String
+  latitude            Float?
+  longitude           Float?
+
+  // التواصل
+  phone               String
+  whatsapp            String?
+  email               String?
+
+  // ساعات العمل
+  workingHours        String?             @map("working_hours")
+
+  // الخدمات
+  offersCertification Boolean             @default(true) @map("offers_certification")
+  offersPickup        Boolean             @default(true) @map("offers_pickup")
+  offersRepair        Boolean             @default(false) @map("offers_repair")
+  offersCleaning      Boolean             @default(true) @map("offers_cleaning")     // تنظيف الفضة
+
+  // الرسوم
+  certificationFee    Float               @default(30) @map("certification_fee")     // رسوم فحص أقل من الذهب
+
+  // التقييم
+  rating              Float               @default(0)
+  totalReviews        Int                 @default(0) @map("total_reviews")
+  totalCertifications Int                 @default(0) @map("total_certifications")
+
+  // الحالة
+  isActive            Boolean             @default(true) @map("is_active")
+  isVerified          Boolean             @default(false) @map("is_verified")
+
+  // الطوابع الزمنية
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // العلاقات
+  certificates        SilverCertificate[]
+  transactions        SilverTransaction[]
+
+  @@map("silver_partners")
   @@index([governorate])
   @@index([isActive])
 }
