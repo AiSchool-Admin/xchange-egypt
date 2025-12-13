@@ -85,7 +85,7 @@ export default function MobileTransactionsPage() {
       if (filter !== 'all') params.set('type', filter.toUpperCase());
       if (statusFilter !== 'all') params.set('status', statusFilter);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/transactions?${params}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/transactions?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -103,7 +103,7 @@ export default function MobileTransactionsPage() {
   const handleConfirmDelivery = async (transactionId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/transactions/${transactionId}/confirm-delivery`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/transactions/${transactionId}/confirm-delivery`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -117,7 +117,7 @@ export default function MobileTransactionsPage() {
   const handleReleaseEscrow = async (transactionId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/transactions/${transactionId}/release-escrow`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/transactions/${transactionId}/release-escrow`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });

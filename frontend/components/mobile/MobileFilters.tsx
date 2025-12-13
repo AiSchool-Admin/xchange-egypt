@@ -81,7 +81,7 @@ export default function MobileFilters({ filters, onFilterChange }: FiltersProps)
 
   const fetchModels = async (brand: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/brands/${brand}/models`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/brands/${brand}/models`);
       const data = await response.json();
       if (data.success) {
         setModels(data.data);

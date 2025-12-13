@@ -66,7 +66,7 @@ export default function MyMobileListingsPage() {
       const params = new URLSearchParams();
       if (filter !== 'all') params.set('status', filter);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/my-listings?${params}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/my-listings?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await response.json();
@@ -85,7 +85,7 @@ export default function MyMobileListingsPage() {
   const handleDelete = async (id: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/listings/${id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -99,7 +99,7 @@ export default function MyMobileListingsPage() {
   const handleMarkAsSold = async (id: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/listings/${id}/mark-sold`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}/mark-sold`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });

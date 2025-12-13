@@ -134,7 +134,7 @@ export default function SellMobilePage() {
 
   const fetchModels = async (brand: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/brands/${brand}/models`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/brands/${brand}/models`);
       const data = await response.json();
       if (data.success) {
         setModels(data.data);
@@ -146,7 +146,7 @@ export default function SellMobilePage() {
 
   const calculateSuggestedPrice = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/calculate-price`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/calculate-price`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -171,7 +171,7 @@ export default function SellMobilePage() {
 
     setImeiStatus('checking');
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/verify/imei/check`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/verify/imei/check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imei: formData.imei }),
@@ -292,7 +292,7 @@ export default function SellMobilePage() {
         const formData = new FormData();
         formData.append('image', image);
 
-        const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/images/upload`, {
+        const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/images/upload`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
@@ -304,7 +304,7 @@ export default function SellMobilePage() {
       }
 
       // Create listing
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/listings`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -108,7 +108,7 @@ export default function MobileListingDetailPage() {
   const fetchListing = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/listings/${params.id}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${params.id}`);
       const data = await response.json();
       if (data.success) {
         setListing(data.data);
@@ -129,7 +129,7 @@ export default function MobileListingDetailPage() {
       }
 
       const method = isFavorite ? 'DELETE' : 'POST';
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/favorites/${params.id}`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/favorites/${params.id}`, {
         method,
         headers: { Authorization: `Bearer ${token}` }
       });
