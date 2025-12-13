@@ -14,6 +14,7 @@ import {
   CollectionRequestStatus,
   MaterialPrice,
 } from '@/lib/api/scrap-marketplace';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 const GOVERNORATES = [
   'القاهرة',
@@ -70,6 +71,7 @@ export default function CollectionRequestPage() {
     preferredDate: '',
     preferredTimeSlot: '',
     notes: '',
+    photos: [] as string[],
   });
 
   useEffect(() => {
@@ -154,6 +156,7 @@ export default function CollectionRequestPage() {
         preferredDate: formData.preferredDate,
         preferredTimeSlot: formData.preferredTimeSlot,
         notes: formData.notes,
+        photos: formData.photos,
       });
       setSuccess(true);
       loadCollections();
@@ -201,6 +204,7 @@ export default function CollectionRequestPage() {
                   preferredDate: '',
                   preferredTimeSlot: '',
                   notes: '',
+                  photos: [],
                 });
                 setStep(1);
               }}
@@ -471,6 +475,55 @@ export default function CollectionRequestPage() {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Photos */}
+                  <div className="border-t pt-6">
+                    <label className="block font-bold mb-2">صور المواد (اختياري)</label>
+                    <p className="text-sm text-gray-500 mb-4">
+                      أضف صور للمواد لتسهيل التقييم على الجامع
+                    </p>
+                    <ImageUpload
+                      multiple
+                      category="items"
+                      maxFiles={5}
+                      onUploadComplete={(urls) =>
+                        setFormData((f) => ({ ...f, photos: [...f.photos, ...urls] }))
+                      }
+                      onUploadError={(error) => setError(error)}
+                    />
+
+                    {/* Preview uploaded images */}
+                    {formData.photos.length > 0 && (
+                      <div className="mt-4">
+                        <p className="text-sm text-gray-600 mb-2">
+                          الصور المرفوعة ({formData.photos.length})
+                        </p>
+                        <div className="grid grid-cols-5 gap-2">
+                          {formData.photos.map((url, index) => (
+                            <div key={index} className="relative aspect-square">
+                              <img
+                                src={url}
+                                alt={`صورة ${index + 1}`}
+                                className="w-full h-full object-cover rounded-lg"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFormData((f) => ({
+                                    ...f,
+                                    photos: f.photos.filter((_, i) => i !== index),
+                                  }))
+                                }
+                                className="absolute top-1 right-1 bg-red-500 text-white w-5 h-5 rounded-full text-xs hover:bg-red-600"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Notes */}

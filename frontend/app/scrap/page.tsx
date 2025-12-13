@@ -150,7 +150,7 @@ export default function ScrapMarketplacePage() {
       {/* Quick Links */}
       <div className="bg-white border-b">
         <div className="container mx-auto px-4 py-4">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
             <Link
               href="/scrap/collection"
               className="flex items-center gap-3 p-4 bg-gradient-to-l from-blue-50 to-cyan-50 rounded-xl hover:shadow-md transition"
@@ -159,6 +159,16 @@ export default function ScrapMarketplacePage() {
               <div>
                 <div className="font-bold text-blue-700">جمع من البيت</div>
                 <div className="text-sm text-gray-500">خدمة مجانية</div>
+              </div>
+            </Link>
+            <Link
+              href="/scrap/prices"
+              className="flex items-center gap-3 p-4 bg-gradient-to-l from-amber-50 to-yellow-50 rounded-xl hover:shadow-md transition"
+            >
+              <span className="text-3xl">📊</span>
+              <div>
+                <div className="font-bold text-amber-700">أسعار السوق</div>
+                <div className="text-sm text-gray-500">أسعار يومية</div>
               </div>
             </Link>
             <Link

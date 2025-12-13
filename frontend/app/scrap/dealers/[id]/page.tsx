@@ -263,6 +263,14 @@ export default function DealerDetailPage() {
                 )}
 
                 <Link
+                  href={`/scrap/chat/${dealer.id}`}
+                  className="flex items-center justify-center gap-2 w-full bg-blue-500 text-white py-3 rounded-lg font-bold hover:bg-blue-600 transition"
+                >
+                  <span>💬</span>
+                  <span>محادثة مباشرة</span>
+                </Link>
+
+                <Link
                   href={`/scrap/sell?dealer=${dealer.id}`}
                   className="flex items-center justify-center gap-2 w-full border-2 border-orange-600 text-orange-600 py-3 rounded-lg font-bold hover:bg-orange-50 transition"
                 >
