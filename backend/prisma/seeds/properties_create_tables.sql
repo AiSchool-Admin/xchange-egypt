@@ -127,6 +127,49 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+-- Rental Contract Status
+DO $$ BEGIN
+    CREATE TYPE "RentalContractStatus" AS ENUM (
+        'DRAFT', 'ACTIVE', 'RENEWED', 'TERMINATED', 'EXPIRED', 'DISPUTED'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Rental Contract Type
+DO $$ BEGIN
+    CREATE TYPE "RentalContractType" AS ENUM ('NEW_RENT', 'OLD_RENT');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Inspection Type
+DO $$ BEGIN
+    CREATE TYPE "InspectionType" AS ENUM (
+        'BASIC', 'STANDARD', 'COMPREHENSIVE', 'PRE_PURCHASE', 'PRE_RENTAL', 'CHECKIN', 'CHECKOUT'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Inspection Status
+DO $$ BEGIN
+    CREATE TYPE "InspectionStatus" AS ENUM (
+        'REQUESTED', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Inspection Recommendation
+DO $$ BEGIN
+    CREATE TYPE "InspectionRecommendation" AS ENUM (
+        'HIGHLY_RECOMMENDED', 'RECOMMENDED', 'NEEDS_ATTENTION', 'NOT_RECOMMENDED'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
 -- =====================================================
 -- Properties Table (جدول العقارات)
 -- =====================================================
@@ -424,11 +467,149 @@ CREATE INDEX IF NOT EXISTS idx_property_favorites_user_id ON property_favorites(
 CREATE INDEX IF NOT EXISTS idx_property_favorites_property_id ON property_favorites(property_id);
 
 -- =====================================================
+-- Inspectors Table (جدول المفتشين)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS inspectors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(255) UNIQUE NOT NULL,
+
+    -- Certification
+    license_number VARCHAR(100),
+    certification_type VARCHAR(100),
+    specializations JSONB DEFAULT '[]'::jsonb,
+
+    -- Coverage Area
+    service_areas JSONB DEFAULT '[]'::jsonb,
+
+    -- Performance
+    total_inspections INTEGER DEFAULT 0,
+    average_rating DOUBLE PRECISION DEFAULT 0,
+
+    -- Status
+    is_active BOOLEAN DEFAULT true,
+    is_verified BOOLEAN DEFAULT false,
+    verified_at TIMESTAMP,
+
+    -- Pricing
+    base_inspection_fee DOUBLE PRECISION,
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for inspectors
+CREATE INDEX IF NOT EXISTS idx_inspectors_user_id ON inspectors(user_id);
+CREATE INDEX IF NOT EXISTS idx_inspectors_is_active ON inspectors(is_active);
+
+-- =====================================================
+-- Field Inspections Table (جدول الفحوصات الميدانية)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS field_inspections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+    inspector_id UUID REFERENCES inspectors(id),
+    requested_by_id VARCHAR(255) NOT NULL,
+
+    -- Inspection Details
+    inspection_type "InspectionType" NOT NULL,
+    scheduled_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    location_verified BOOLEAN DEFAULT false,
+    gps_coordinates JSONB,
+
+    -- Results
+    overall_score INTEGER,
+    findings JSONB,
+    inspection_photos JSONB DEFAULT '[]'::jsonb,
+
+    -- Verification
+    address_matches BOOLEAN,
+    area_matches BOOLEAN,
+
+    -- Recommendation
+    recommendation "InspectionRecommendation",
+    estimated_repair_cost DOUBLE PRECISION,
+
+    -- Status
+    status "InspectionStatus" DEFAULT 'REQUESTED',
+    report_url TEXT,
+    report_notes TEXT,
+
+    -- Payment
+    inspection_fee DOUBLE PRECISION,
+    paid BOOLEAN DEFAULT false,
+    paid_at TIMESTAMP,
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for field_inspections
+CREATE INDEX IF NOT EXISTS idx_field_inspections_property_id ON field_inspections(property_id);
+CREATE INDEX IF NOT EXISTS idx_field_inspections_inspector_id ON field_inspections(inspector_id);
+CREATE INDEX IF NOT EXISTS idx_field_inspections_status ON field_inspections(status);
+CREATE INDEX IF NOT EXISTS idx_field_inspections_inspection_type ON field_inspections(inspection_type);
+
+-- =====================================================
+-- Rental Contracts Table (جدول عقود الإيجار)
+-- =====================================================
+
+CREATE TABLE IF NOT EXISTS rental_contracts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+    landlord_id VARCHAR(255) NOT NULL,
+    tenant_id VARCHAR(255) NOT NULL,
+
+    -- Contract Details
+    contract_type "RentalContractType" DEFAULT 'NEW_RENT',
+    start_date TIMESTAMP NOT NULL,
+    end_date TIMESTAMP NOT NULL,
+
+    -- Amounts
+    monthly_rent DOUBLE PRECISION NOT NULL,
+    security_deposit DOUBLE PRECISION NOT NULL,
+    annual_increase_percent DOUBLE PRECISION DEFAULT 7,
+
+    -- Deposit Protection
+    deposit_protected BOOLEAN DEFAULT false,
+    deposit_protection_id VARCHAR(255),
+    deposit_escrow_account VARCHAR(255),
+    deposit_released BOOLEAN DEFAULT false,
+    deposit_released_at TIMESTAMP,
+    deposit_deductions JSONB,
+
+    -- Inspection References
+    checkin_inspection_id UUID REFERENCES field_inspections(id),
+    checkout_inspection_id UUID REFERENCES field_inspections(id),
+
+    -- Status
+    status "RentalContractStatus" DEFAULT 'DRAFT',
+    contract_document_url TEXT,
+    notes TEXT,
+    renewal_history JSONB,
+
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    terminated_at TIMESTAMP
+);
+
+-- Indexes for rental_contracts
+CREATE INDEX IF NOT EXISTS idx_rental_contracts_property_id ON rental_contracts(property_id);
+CREATE INDEX IF NOT EXISTS idx_rental_contracts_landlord_id ON rental_contracts(landlord_id);
+CREATE INDEX IF NOT EXISTS idx_rental_contracts_tenant_id ON rental_contracts(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_rental_contracts_status ON rental_contracts(status);
+
+-- =====================================================
 -- Success Message
 -- =====================================================
 DO $$
 BEGIN
     RAISE NOTICE '✅ Property marketplace tables created successfully!';
-    RAISE NOTICE '📊 Created tables: properties, property_transactions, property_barter_proposals, property_prices, property_favorites';
+    RAISE NOTICE '📊 Created tables: properties, property_transactions, property_barter_proposals, property_prices, property_favorites, inspectors, field_inspections, rental_contracts';
     RAISE NOTICE '🔗 Now you can run properties_comprehensive_seed.sql to add test data';
 END $$;
