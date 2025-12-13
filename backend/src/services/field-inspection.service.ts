@@ -3,7 +3,7 @@ import {
   InspectionStatus,
   InspectionRecommendation,
   PropertyStatus,
-  VerificationLevel,
+  PropertyPropertyVerificationLevel,
   Prisma,
 } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
@@ -440,7 +440,7 @@ export const completeInspection = async (
     await tx.property.update({
       where: { id: inspection.propertyId },
       data: {
-        verificationLevel: VerificationLevel.FIELD_VERIFIED,
+        verificationLevel: PropertyVerificationLevel.FIELD_VERIFIED,
         verificationDate: new Date(),
       },
     });

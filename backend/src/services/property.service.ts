@@ -1,11 +1,11 @@
 import {
   PropertyType,
   TitleType,
-  VerificationLevel,
+  PropertyPropertyVerificationLevel,
   FinishingLevel,
   FurnishedStatus,
   PropertyListingType,
-  DeliveryStatus,
+  PropertyDeliveryStatus,
   PropertyStatus,
   PromotionTier,
   Prisma,
@@ -88,7 +88,7 @@ interface CreatePropertyData {
 
 interface UpdatePropertyData extends Partial<CreatePropertyData> {
   status?: PropertyStatus;
-  verificationLevel?: VerificationLevel;
+  verificationLevel?: PropertyVerificationLevel;
   verificationNotes?: string;
 }
 
@@ -124,7 +124,7 @@ interface SearchPropertiesParams {
 
   // Title/Verification
   titleType?: TitleType | TitleType[];
-  verificationLevel?: VerificationLevel | VerificationLevel[];
+  verificationLevel?: PropertyVerificationLevel | PropertyVerificationLevel[];
   governmentVerified?: boolean;
 
   // Delivery
@@ -560,7 +560,7 @@ export const searchProperties = async (
 
   // Government verified filter
   if (params.governmentVerified) {
-    where.verificationLevel = VerificationLevel.GOVERNMENT_VERIFIED;
+    where.verificationLevel = PropertyVerificationLevel.GOVERNMENT_VERIFIED;
   }
 
   // Delivery status filter
@@ -721,7 +721,7 @@ export const activateProperty = async (
     where: { id: propertyId },
     data: {
       status: PropertyStatus.ACTIVE,
-      verificationLevel: VerificationLevel.DOCUMENTS_VERIFIED,
+      verificationLevel: PropertyVerificationLevel.DOCUMENTS_VERIFIED,
       verificationDate: new Date(),
       verifiedById: verifierId,
       verificationNotes,
