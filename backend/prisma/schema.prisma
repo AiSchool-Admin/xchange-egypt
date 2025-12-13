@@ -123,6 +123,20 @@ model User {
   challengeParticipations   ChallengeParticipation[]  @relation("UserChallengeParticipations")
   barterPoolParticipations  BarterPoolParticipant[]   @relation("UserBarterPoolParticipations")
 
+  // Real Estate / Property Relations
+  properties                Property[]                @relation("UserProperties")
+  propertiesVerified        Property[]                @relation("PropertyVerifier")
+  propertyTransAsBuyer      PropertyTransaction[]     @relation("PropertyBuyer")
+  propertyTransAsSeller     PropertyTransaction[]     @relation("PropertySeller")
+  propertyTransAsTenant     PropertyTransaction[]     @relation("PropertyTenant")
+  propertyTransAsLandlord   PropertyTransaction[]     @relation("PropertyLandlord")
+  propertyBarterProposed    PropertyBarterProposal[]  @relation("PropertyBarterProposer")
+  propertyBarterReceived    PropertyBarterProposal[]  @relation("PropertyBarterReceiver")
+  rentalContractsAsLandlord RentalContract[]          @relation("RentalLandlord")
+  rentalContractsAsTenant   RentalContract[]          @relation("RentalTenant")
+  inspectionsRequested      FieldInspection[]         @relation("InspectionRequester")
+  inspectorProfile          Inspector?                @relation("InspectorUser")
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -4662,5 +4676,684 @@ model DailyStats {
 
   @@map("daily_stats")
   @@index([date])
+}
+
+// ============================================
+// Real Estate Marketplace - سوق العقارات
+// ============================================
+
+// أنواع العقارات
+enum PropertyType {
+  APARTMENT         // شقة
+  VILLA             // فيلا
+  TOWNHOUSE         // تاون هاوس
+  TWIN_HOUSE        // توين هاوس
+  DUPLEX            // دوبلكس
+  PENTHOUSE         // بنتهاوس
+  STUDIO            // ستوديو
+  CHALET            // شاليه
+  LAND              // أرض
+  OFFICE            // مكتب
+  SHOP              // محل تجاري
+  WAREHOUSE         // مخزن
+  BUILDING          // مبنى كامل
+  FARM              // مزرعة
+  ROOF              // روف
+}
+
+// نوع الملكية - الأهم!
+enum TitleType {
+  REGISTERED        // عقد مسجل - ملكية كاملة موثقة
+  PRELIMINARY       // عقد ابتدائي - حقوق تعاقدية فقط
+  POA               // توكيل - قابل للإلغاء (خطر عالي)
+}
+
+// مستوى التحقق
+enum VerificationLevel {
+  UNVERIFIED        // غير متحقق
+  DOCUMENTS_VERIFIED // تم التحقق من المستندات
+  FIELD_VERIFIED    // تم الفحص الميداني
+  GOVERNMENT_VERIFIED // تحقق حكومي (منصة مصر العقارية)
+}
+
+// مستوى التشطيب
+enum FinishingLevel {
+  SUPER_LUX         // سوبر لوكس
+  LUX               // لوكس
+  SEMI_FINISHED     // نصف تشطيب
+  UNFINISHED        // بدون تشطيب
+  CORE_SHELL        // على الطوب الأحمر
+}
+
+// حالة الأثاث
+enum FurnishedStatus {
+  FURNISHED         // مفروش
+  SEMI_FURNISHED    // نصف مفروش
+  UNFURNISHED       // بدون أثاث
+}
+
+// نوع العرض
+enum PropertyListingType {
+  SALE              // للبيع
+  RENT              // للإيجار
+  BOTH              // للبيع والإيجار
+}
+
+// حالة التسليم
+enum DeliveryStatus {
+  READY             // جاهز للتسليم
+  UNDER_CONSTRUCTION // تحت الإنشاء
+  OFF_PLAN          // على الخريطة
+}
+
+// حالة العقار
+enum PropertyStatus {
+  DRAFT             // مسودة
+  PENDING_VERIFICATION // في انتظار التحقق
+  ACTIVE            // نشط
+  RESERVED          // محجوز
+  SOLD              // مباع
+  RENTED            // مؤجر
+  EXPIRED           // منتهي
+  REJECTED          // مرفوض
+}
+
+// نوع معاملة العقار
+enum PropertyTransactionType {
+  SALE              // بيع
+  RENT              // إيجار
+  BARTER_PROPERTY   // مقايضة عقار بعقار
+  BARTER_CAR        // مقايضة عقار بسيارة
+  BARTER_GOLD       // مقايضة عقار بذهب
+  BARTER_MULTI      // مقايضة متعددة الأطراف
+}
+
+// حالة Escrow للعقار
+enum PropertyEscrowStatus {
+  NOT_INITIATED     // لم تبدأ
+  PENDING_DEPOSIT   // في انتظار الإيداع
+  DEPOSITED         // تم الإيداع
+  VERIFICATION_IN_PROGRESS // جاري التحقق
+  VERIFIED          // تم التحقق
+  RELEASED          // تم التحرير
+  REFUNDED          // تم الاسترداد
+  DISPUTED          // منازع عليه
+}
+
+// حالة معاملة العقار
+enum PropertyTransactionStatus {
+  INITIATED         // بدأت
+  NEGOTIATING       // قيد التفاوض
+  AGREED            // تم الاتفاق
+  ESCROW_PENDING    // في انتظار Escrow
+  DOCUMENTS_PENDING // في انتظار المستندات
+  INSPECTION_PENDING // في انتظار الفحص
+  REGISTRATION_PENDING // في انتظار التسجيل
+  COMPLETED         // مكتملة
+  CANCELLED         // ملغاة
+  DISPUTED          // منازع عليها
+}
+
+// حالة اقتراح المقايضة العقارية
+enum PropertyBarterStatus {
+  PENDING           // قيد الانتظار
+  VIEWED            // تمت المشاهدة
+  COUNTER_OFFERED   // عرض مضاد
+  ACCEPTED          // مقبول
+  APPRAISAL_PENDING // في انتظار التقييم
+  LEGAL_REVIEW      // مراجعة قانونية
+  ESCROW_PENDING    // في انتظار Escrow
+  REGISTRATION_PENDING // في انتظار التسجيل
+  COMPLETED         // مكتمل
+  REJECTED          // مرفوض
+  EXPIRED           // منتهي الصلاحية
+}
+
+// حالة عقد الإيجار
+enum RentalContractStatus {
+  DRAFT             // مسودة
+  ACTIVE            // نشط
+  RENEWED           // مجدد
+  TERMINATED        // منتهي
+  EXPIRED           // منتهي الصلاحية
+  DISPUTED          // منازع عليه
+}
+
+// نوع عقد الإيجار
+enum RentalContractType {
+  NEW_RENT          // إيجار جديد
+  OLD_RENT          // إيجار قديم
+}
+
+// نوع الفحص الميداني
+enum InspectionType {
+  BASIC             // فحص أساسي
+  STANDARD          // فحص قياسي
+  COMPREHENSIVE     // فحص شامل
+  PRE_PURCHASE      // فحص قبل الشراء
+  PRE_RENTAL        // فحص قبل الإيجار
+  CHECKIN           // فحص تسليم
+  CHECKOUT          // فحص استلام
+}
+
+// حالة الفحص
+enum InspectionStatus {
+  REQUESTED         // مطلوب
+  SCHEDULED         // مجدول
+  IN_PROGRESS       // جاري
+  COMPLETED         // مكتمل
+  CANCELLED         // ملغي
+}
+
+// توصية الفحص
+enum InspectionRecommendation {
+  HIGHLY_RECOMMENDED // موصى به بشدة
+  RECOMMENDED       // موصى به
+  NEEDS_ATTENTION   // يحتاج اهتمام
+  NOT_RECOMMENDED   // غير موصى به
+}
+
+// ============================================
+// Property Model - نموذج العقار
+// ============================================
+
+model Property {
+  id                String              @id @default(uuid())
+  ownerId           String              @map("owner_id")
+
+  // معلومات أساسية
+  title             String
+  titleAr           String?             @map("title_ar")
+  description       String?
+  descriptionAr     String?             @map("description_ar")
+
+  // نوع العقار
+  propertyType      PropertyType        @map("property_type")
+
+  // الموقع
+  governorate       String
+  city              String?
+  district          String?
+  compoundName      String?             @map("compound_name")
+  address           String?
+  latitude          Float?
+  longitude         Float?
+
+  // المساحة
+  areaSqm           Float               @map("area_sqm")
+  gardenArea        Float?              @map("garden_area")
+  roofArea          Float?              @map("roof_area")
+
+  // المواصفات
+  bedrooms          Int?
+  bathrooms         Int?
+  floorNumber       Int?                @map("floor_number")
+  totalFloors       Int?                @map("total_floors")
+
+  // التشطيب
+  finishingLevel    FinishingLevel?     @map("finishing_level")
+  furnished         FurnishedStatus?
+
+  // المرافق
+  amenities         Json?
+
+  // نوع العرض
+  listingType       PropertyListingType @default(SALE) @map("listing_type")
+
+  // التسعير (للبيع)
+  salePrice         Float?              @map("sale_price")
+  pricePerSqm       Float?              @map("price_per_sqm")
+  priceNegotiable   Boolean             @default(true) @map("price_negotiable")
+
+  // التسعير (للإيجار)
+  rentPrice         Float?              @map("rent_price")
+  rentPeriod        String?             @map("rent_period")
+
+  // التقسيط
+  installmentAvailable Boolean          @default(false) @map("installment_available")
+  installmentYears  Int?                @map("installment_years")
+  downPaymentPercent Float?             @map("down_payment_percent")
+  monthlyInstallment Float?             @map("monthly_installment")
+
+  // حالة التسليم
+  deliveryStatus    DeliveryStatus?     @map("delivery_status")
+  deliveryDate      DateTime?           @map("delivery_date")
+
+  // حقول التحقق والملكية
+  titleType         TitleType           @default(PRELIMINARY) @map("title_type")
+  governmentPropertyId String?          @map("government_property_id")
+  governmentQrCode  String?             @map("government_qr_code")
+
+  verificationLevel VerificationLevel   @default(UNVERIFIED) @map("verification_level")
+  verificationDate  DateTime?           @map("verification_date")
+  verifiedById      String?             @map("verified_by_id")
+  verificationNotes String?             @map("verification_notes")
+
+  // المقايضة
+  openForBarter     Boolean             @default(false) @map("open_for_barter")
+  barterPreferences Json?               @map("barter_preferences")
+
+  // حالة الإعلان
+  status            PropertyStatus      @default(DRAFT)
+  rejectionReason   String?             @map("rejection_reason")
+
+  featured          Boolean             @default(false)
+  promotionTier     PromotionTier       @default(BASIC) @map("promotion_tier")
+  viewsCount        Int                 @default(0) @map("views_count")
+  favoritesCount    Int                 @default(0) @map("favorites_count")
+
+  // الوسائط
+  images            Json                @default("[]")
+  videoUrl          String?             @map("video_url")
+  virtualTourUrl    String?             @map("virtual_tour_url")
+  floorPlanUrl      String?             @map("floor_plan_url")
+
+  // التقييم
+  estimatedValue    Float?              @map("estimated_value")
+  lastValuationDate DateTime?           @map("last_valuation_date")
+
+  // الوقت
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  expiresAt         DateTime?           @map("expires_at")
+
+  // Relations
+  owner             User                @relation("UserProperties", fields: [ownerId], references: [id], onDelete: Cascade)
+  verifiedBy        User?               @relation("PropertyVerifier", fields: [verifiedById], references: [id])
+  transactions      PropertyTransaction[]
+  barterProposalsOffered   PropertyBarterProposal[] @relation("OfferedProperty")
+  barterProposalsRequested PropertyBarterProposal[] @relation("RequestedProperty")
+  rentalContracts   RentalContract[]
+  inspections       FieldInspection[]
+  favorites         PropertyFavorite[]
+
+  @@map("properties")
+  @@index([ownerId])
+  @@index([propertyType])
+  @@index([governorate])
+  @@index([city])
+  @@index([district])
+  @@index([compoundName])
+  @@index([listingType])
+  @@index([salePrice])
+  @@index([rentPrice])
+  @@index([status])
+  @@index([titleType])
+  @@index([verificationLevel])
+  @@index([openForBarter])
+  @@index([featured])
+  @@index([createdAt])
+}
+
+// ============================================
+// Property Transaction - معاملة العقار
+// ============================================
+
+model PropertyTransaction {
+  id                  String                    @id @default(uuid())
+  transactionType     PropertyTransactionType   @map("transaction_type")
+  propertyId          String                    @map("property_id")
+
+  // للمقايضة
+  secondaryItemId     String?                   @map("secondary_item_id")
+  secondaryItemType   String?                   @map("secondary_item_type")
+
+  // الأطراف
+  buyerId             String?                   @map("buyer_id")
+  sellerId            String                    @map("seller_id")
+  tenantId            String?                   @map("tenant_id")
+  landlordId          String?                   @map("landlord_id")
+
+  // التسعير
+  agreedPrice         Float?                    @map("agreed_price")
+  cashDifference      Float                     @default(0) @map("cash_difference")
+  buyerCommission     Float?                    @map("buyer_commission")
+  sellerCommission    Float?                    @map("seller_commission")
+
+  // نظام Escrow
+  escrowStatus        PropertyEscrowStatus      @default(NOT_INITIATED) @map("escrow_status")
+  escrowAmount        Float?                    @map("escrow_amount")
+  escrowAccountId     String?                   @map("escrow_account_id")
+  escrowDepositedAt   DateTime?                 @map("escrow_deposited_at")
+  escrowReleasedAt    DateTime?                 @map("escrow_released_at")
+  escrowReleaseConditions Json?                 @map("escrow_release_conditions")
+
+  // التحقق
+  documentsVerified   Boolean                   @default(false) @map("documents_verified")
+  fieldInspectionId   String?                   @map("field_inspection_id")
+  governmentVerified  Boolean                   @default(false) @map("government_verified")
+
+  // للإيجار
+  leaseStartDate      DateTime?                 @map("lease_start_date")
+  leaseEndDate        DateTime?                 @map("lease_end_date")
+  securityDeposit     Float?                    @map("security_deposit")
+  depositProtected    Boolean                   @default(false) @map("deposit_protected")
+
+  // الحالة
+  status              PropertyTransactionStatus @default(INITIATED)
+  statusHistory       Json?                     @map("status_history")
+  notes               String?
+
+  // الوقت
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+  completedAt         DateTime?                 @map("completed_at")
+
+  // Relations
+  property            Property                  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  buyer               User?                     @relation("PropertyBuyer", fields: [buyerId], references: [id])
+  seller              User                      @relation("PropertySeller", fields: [sellerId], references: [id])
+  tenant              User?                     @relation("PropertyTenant", fields: [tenantId], references: [id])
+  landlord            User?                     @relation("PropertyLandlord", fields: [landlordId], references: [id])
+
+  @@map("property_transactions")
+  @@index([propertyId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([transactionType])
+  @@index([status])
+  @@index([escrowStatus])
+}
+
+// ============================================
+// Property Barter Proposal - اقتراح مقايضة عقارية
+// ============================================
+
+model PropertyBarterProposal {
+  id                    String                @id @default(uuid())
+  proposerId            String                @map("proposer_id")
+  receiverId            String                @map("receiver_id")
+
+  // ما يعرضه المقترح
+  offeredPropertyId     String                @map("offered_property_id")
+  offeredItems          Json?                 @map("offered_items")
+
+  // ما يطلبه المقترح
+  requestedPropertyId   String                @map("requested_property_id")
+  requestedItems        Json?                 @map("requested_items")
+
+  // الفرق النقدي
+  cashDifference        Float                 @default(0) @map("cash_difference")
+  cashPayer             String?               @map("cash_payer")
+
+  // التقييم
+  totalOfferedValue     Float?                @map("total_offered_value")
+  totalRequestedValue   Float?                @map("total_requested_value")
+  appraisals            Json?
+
+  // العمولة
+  proposerCommission    Float?                @map("proposer_commission")
+  receiverCommission    Float?                @map("receiver_commission")
+
+  // Escrow للمقايضة
+  escrowRequired        Boolean               @default(true) @map("escrow_required")
+  escrowStatus          PropertyEscrowStatus? @map("escrow_status")
+
+  // الحالة
+  status                PropertyBarterStatus  @default(PENDING)
+  counterProposalId     String?               @map("counter_proposal_id")
+
+  // الرسائل
+  proposerMessage       String?               @map("proposer_message")
+  receiverResponse      String?               @map("receiver_response")
+
+  // المتطلبات القانونية
+  legalReviewStatus     String?               @map("legal_review_status")
+  legalNotes            String?               @map("legal_notes")
+
+  // الوقت
+  createdAt             DateTime              @default(now()) @map("created_at")
+  expiresAt             DateTime              @default(dbgenerated("NOW() + INTERVAL '30 days'")) @map("expires_at")
+  respondedAt           DateTime?             @map("responded_at")
+  completedAt           DateTime?             @map("completed_at")
+
+  // Relations
+  proposer              User                  @relation("PropertyBarterProposer", fields: [proposerId], references: [id], onDelete: Cascade)
+  receiver              User                  @relation("PropertyBarterReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  offeredProperty       Property              @relation("OfferedProperty", fields: [offeredPropertyId], references: [id], onDelete: Cascade)
+  requestedProperty     Property              @relation("RequestedProperty", fields: [requestedPropertyId], references: [id], onDelete: Cascade)
+  counterProposal       PropertyBarterProposal? @relation("CounterProposal", fields: [counterProposalId], references: [id])
+  counterProposals      PropertyBarterProposal[] @relation("CounterProposal")
+
+  @@map("property_barter_proposals")
+  @@index([proposerId])
+  @@index([receiverId])
+  @@index([offeredPropertyId])
+  @@index([requestedPropertyId])
+  @@index([status])
+}
+
+// ============================================
+// Rental Contract - عقد الإيجار
+// ============================================
+
+model RentalContract {
+  id                    String                @id @default(uuid())
+  propertyId            String                @map("property_id")
+  landlordId            String                @map("landlord_id")
+  tenantId              String                @map("tenant_id")
+
+  // تفاصيل العقد
+  contractType          RentalContractType    @default(NEW_RENT) @map("contract_type")
+  startDate             DateTime              @map("start_date")
+  endDate               DateTime              @map("end_date")
+
+  // المبالغ
+  monthlyRent           Float                 @map("monthly_rent")
+  securityDeposit       Float                 @map("security_deposit")
+  annualIncreasePercent Float                 @default(7) @map("annual_increase_percent")
+
+  // حماية التأمين
+  depositProtected      Boolean               @default(false) @map("deposit_protected")
+  depositProtectionId   String?               @map("deposit_protection_id")
+  depositEscrowAccount  String?               @map("deposit_escrow_account")
+  depositReleased       Boolean               @default(false) @map("deposit_released")
+  depositReleasedAt     DateTime?             @map("deposit_released_at")
+  depositDeductions     Json?                 @map("deposit_deductions")
+
+  // فحص التسليم/الاستلام
+  checkinInspectionId   String?               @map("checkin_inspection_id")
+  checkoutInspectionId  String?               @map("checkout_inspection_id")
+
+  // الحالة
+  status                RentalContractStatus  @default(DRAFT)
+  contractDocumentUrl   String?               @map("contract_document_url")
+  notes                 String?
+  renewalHistory        Json?                 @map("renewal_history")
+
+  // الوقت
+  createdAt             DateTime              @default(now()) @map("created_at")
+  updatedAt             DateTime              @updatedAt @map("updated_at")
+  terminatedAt          DateTime?             @map("terminated_at")
+
+  // Relations
+  property              Property              @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  landlord              User                  @relation("RentalLandlord", fields: [landlordId], references: [id])
+  tenant                User                  @relation("RentalTenant", fields: [tenantId], references: [id])
+  payments              RentalPayment[]
+  disputes              RentalDispute[]
+
+  @@map("rental_contracts")
+  @@index([propertyId])
+  @@index([landlordId])
+  @@index([tenantId])
+  @@index([status])
+}
+
+// ============================================
+// Rental Payment - دفعة الإيجار
+// ============================================
+
+model RentalPayment {
+  id                String        @id @default(uuid())
+  contractId        String        @map("contract_id")
+  amount            Float
+  dueDate           DateTime      @map("due_date")
+  paidDate          DateTime?     @map("paid_date")
+  status            String        @default("PENDING")
+  paymentMethod     String?       @map("payment_method")
+  paymentReference  String?       @map("payment_reference")
+  notes             String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+
+  contract          RentalContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("rental_payments")
+  @@index([contractId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ============================================
+// Rental Dispute - نزاع الإيجار
+// ============================================
+
+model RentalDispute {
+  id                String        @id @default(uuid())
+  contractId        String        @map("contract_id")
+  reason            String
+  description       String
+  evidence          Json?         @default("[]")
+  disputedAmount    Float?        @map("disputed_amount")
+  status            String        @default("OPEN")
+  resolution        String?
+  resolutionAmount  Float?        @map("resolution_amount")
+  resolvedAt        DateTime?     @map("resolved_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  contract          RentalContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("rental_disputes")
+  @@index([contractId])
+  @@index([status])
+}
+
+// ============================================
+// Field Inspection - الفحص الميداني
+// ============================================
+
+model FieldInspection {
+  id                  String                    @id @default(uuid())
+  propertyId          String                    @map("property_id")
+  inspectorId         String?                   @map("inspector_id")
+  requestedById       String                    @map("requested_by_id")
+
+  inspectionType      InspectionType            @map("inspection_type")
+  scheduledAt         DateTime?                 @map("scheduled_at")
+  completedAt         DateTime?                 @map("completed_at")
+  locationVerified    Boolean                   @default(false) @map("location_verified")
+  gpsCoordinates      Json?                     @map("gps_coordinates")
+
+  overallScore        Int?                      @map("overall_score")
+  findings            Json?
+  inspectionPhotos    Json?                     @map("inspection_photos")
+
+  addressMatches      Boolean?                  @map("address_matches")
+  areaMatches         Boolean?                  @map("area_matches")
+
+  recommendation      InspectionRecommendation?
+  estimatedRepairCost Float?                    @map("estimated_repair_cost")
+
+  status              InspectionStatus          @default(REQUESTED)
+  reportUrl           String?                   @map("report_url")
+  reportNotes         String?                   @map("report_notes")
+
+  inspectionFee       Float?                    @map("inspection_fee")
+  paid                Boolean                   @default(false)
+  paidAt              DateTime?                 @map("paid_at")
+
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+
+  property            Property                  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  inspector           Inspector?                @relation(fields: [inspectorId], references: [id])
+  requestedBy         User                      @relation("InspectionRequester", fields: [requestedById], references: [id])
+
+  @@map("field_inspections")
+  @@index([propertyId])
+  @@index([inspectorId])
+  @@index([status])
+  @@index([inspectionType])
+}
+
+// ============================================
+// Inspector - المفتش المعتمد
+// ============================================
+
+model Inspector {
+  id                  String          @id @default(uuid())
+  userId              String          @unique @map("user_id")
+  specializations     Json?
+  certifications      Json?
+  serviceAreas        Json?           @map("service_areas")
+  rating              Float           @default(0)
+  totalInspections    Int             @default(0) @map("total_inspections")
+  baseFee             Float           @default(500) @map("base_fee")
+  isActive            Boolean         @default(true) @map("is_active")
+  isVerified          Boolean         @default(false) @map("is_verified")
+  createdAt           DateTime        @default(now()) @map("created_at")
+  updatedAt           DateTime        @updatedAt @map("updated_at")
+
+  user                User            @relation("InspectorUser", fields: [userId], references: [id], onDelete: Cascade)
+  inspections         FieldInspection[]
+
+  @@map("inspectors")
+  @@index([isActive])
+  @@index([isVerified])
+  @@index([rating])
+}
+
+// ============================================
+// Property Prices - أسعار العقارات
+// ============================================
+
+model PropertyPrice {
+  id                  String          @id @default(uuid())
+  governorate         String
+  city                String?
+  district            String?
+  compoundName        String?         @map("compound_name")
+  propertyType        PropertyType    @map("property_type")
+
+  pricePerSqmLow      Float?          @map("price_per_sqm_low")
+  pricePerSqmAvg      Float?          @map("price_per_sqm_avg")
+  pricePerSqmHigh     Float?          @map("price_per_sqm_high")
+
+  rentPerSqmLow       Float?          @map("rent_per_sqm_low")
+  rentPerSqmAvg       Float?          @map("rent_per_sqm_avg")
+  rentPerSqmHigh      Float?          @map("rent_per_sqm_high")
+
+  rentalYieldAvg      Float?          @map("rental_yield_avg")
+  priceChangeMonthly  Float?          @map("price_change_monthly")
+  priceChangeYearly   Float?          @map("price_change_yearly")
+
+  dataSource          String?         @map("data_source")
+  sampleSize          Int?            @map("sample_size")
+  recordedAt          DateTime        @default(now()) @map("recorded_at")
+  validUntil          DateTime?       @map("valid_until")
+
+  @@map("property_prices")
+  @@unique([governorate, city, district, compoundName, propertyType])
+  @@index([governorate])
+  @@index([propertyType])
+}
+
+// ============================================
+// Property Favorite - العقارات المفضلة
+// ============================================
+
+model PropertyFavorite {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  propertyId      String    @map("property_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  property        Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@map("property_favorites")
+  @@index([userId])
+  @@index([propertyId])
 }
 
