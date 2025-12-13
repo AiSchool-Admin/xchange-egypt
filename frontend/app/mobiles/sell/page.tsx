@@ -116,6 +116,34 @@ export default function SellMobilePage() {
     imei: '',
   });
 
+  // Auto-fill governorate from user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success && data.data) {
+          const user = data.data;
+          if (user.governorate && !formData.governorate) {
+            setFormData(prev => ({
+              ...prev,
+              governorate: user.governorate || '',
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user profile:', err);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
   // Fetch models when brand changes
   useEffect(() => {
     if (formData.brand) {

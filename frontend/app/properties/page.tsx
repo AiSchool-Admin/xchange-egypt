@@ -331,28 +331,37 @@ export default function PropertiesPage() {
                 : 'grid-cols-1'
             }`}
           >
-            {properties.map((property) => (
+            {properties.map((property: any) => (
               <Link key={property.id} href={`/properties/${property.id}`}>
                 <PropertyCard
                   property={{
                     id: property.id,
                     title: property.title,
+                    titleAr: property.titleAr,
                     propertyType: property.propertyType,
                     listingType: property.listingType,
                     titleType: property.titleType,
                     verificationLevel: property.verificationLevel,
-                    price: property.price,
-                    area: property.area,
+                    salePrice: property.salePrice,
+                    rentPrice: property.rentPrice,
+                    pricePerSqm: property.pricePerSqm,
+                    areaSqm: property.areaSqm,
                     bedrooms: property.bedrooms,
                     bathrooms: property.bathrooms,
+                    finishingLevel: property.finishingLevel,
                     governorate: property.governorate,
                     city: property.city,
-                    images: property.images,
+                    district: property.district,
+                    compoundName: property.compoundName,
+                    images: property.images || [],
                     isFavorite: property.isFavorite,
-                    openToBarter: property.openToBarter,
+                    openForBarter: property.openForBarter,
                     hasEscrow: property.hasEscrow,
-                    viewCount: property.viewCount,
+                    viewsCount: property.viewsCount,
+                    virtualTourUrl: property.virtualTourUrl,
+                    owner: property.owner,
                   }}
+                  showOwner={true}
                 />
               </Link>
             ))}

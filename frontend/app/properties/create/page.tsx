@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import api from '@/lib/api/client';
 import {
   createProperty,
   estimatePropertyValue,
@@ -176,6 +177,35 @@ export default function CreatePropertyPage() {
   const updateFormData = (updates: Partial<FormData>) => {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
+
+  // Auto-fill address from user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        const response = await api.get('/auth/profile');
+        if (response.data.success && response.data.data) {
+          const user = response.data.data;
+          // Auto-fill location fields from user profile
+          if (user.governorate || user.city || user.district || user.street) {
+            setFormData(prev => ({
+              ...prev,
+              governorate: prev.governorate || user.governorate || '',
+              city: prev.city || user.city || '',
+              district: prev.district || user.district || '',
+              address: prev.address || user.street || user.address || '',
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user profile:', err);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
 
   const toggleAmenity = (amenityId: string) => {
     setFormData((prev) => ({
