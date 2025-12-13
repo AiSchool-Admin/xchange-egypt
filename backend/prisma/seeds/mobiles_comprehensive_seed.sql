@@ -10,7 +10,7 @@
 -- =====================================================
 -- Mobile Price References (أسعار مرجعية للموبايلات)
 -- =====================================================
-INSERT INTO "MobilePriceReference" (id, brand, model, variant, storage_capacity, condition, min_price, max_price, avg_price, currency, data_source, sample_size, last_updated)
+INSERT INTO mobile_price_references (id, brand, model, variant, storage_capacity, condition, min_price, max_price, avg_price, currency, data_source, sample_size, last_updated)
 VALUES
   -- Apple iPhone (أسعار آيفون)
   ('price_iphone_15_pro_max_256_a', 'APPLE', 'iPhone 15 Pro Max', NULL, 256, 'A', 72000, 78000, 75000, 'EGP', 'MARKET_ANALYSIS', 150, NOW()),
@@ -95,7 +95,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- =====================================================
 -- Mobile Listings (إعلانات الموبايلات)
 -- =====================================================
-INSERT INTO "MobileListing" (id, seller_id, title, description, brand, model, variant, color, storage_capacity, ram_size, condition, condition_notes, price, negotiable, accepts_barter, barter_preferences, images, battery_health, screen_condition, body_condition, accessories, original_box, warranty, warranty_expiry, purchase_date, governorate, city, area, status, imei_verified, views_count, favorites_count, created_at, expires_at)
+INSERT INTO mobile_listings (id, seller_id, title, description, brand, model, variant, color, storage_capacity, ram_size, condition, condition_notes, price, negotiable, accepts_barter, barter_preferences, images, battery_health, screen_condition, body_condition, accessories, original_box, warranty, warranty_expiry, purchase_date, governorate, city, area, status, imei_verified, views_count, favorites_count, created_at, expires_at)
 VALUES
   -- iPhone Listings (إعلانات آيفون)
   ('mobile_1', 'user_test_1', 'iPhone 15 Pro Max 256GB - تيتانيوم طبيعي - كالجديد', 'آيفون 15 برو ماكس بحالة ممتازة جداً - استخدام شهرين فقط. البطارية 100% والشاشة بدون أي خدش. يأتي مع العلبة الأصلية والشاحن والكابل.', 'APPLE', 'iPhone 15 Pro Max', 'Natural Titanium', 'تيتانيوم طبيعي', 256, 8, 'A', 'كالجديد تماماً - بدون أي علامات استخدام', 73000, true, true, '{"brands": ["SAMSUNG", "APPLE"], "models": ["Galaxy S24 Ultra", "iPhone 14 Pro Max"], "min_condition": "B", "accepts_cash_difference": true, "max_cash_difference": 15000}', '["/mobiles/iphone15promax-natural-1.jpg", "/mobiles/iphone15promax-natural-2.jpg", "/mobiles/iphone15promax-natural-3.jpg"]', 100, 'EXCELLENT', 'EXCELLENT', '["الشاحن الأصلي", "الكابل الأصلي", "العلبة الأصلية"]', true, true, NOW() + INTERVAL '10 months', NOW() - INTERVAL '2 months', 'القاهرة', 'مدينة نصر', 'عباس العقاد', 'ACTIVE', true, 450, 35, NOW() - INTERVAL '5 days', NOW() + INTERVAL '25 days'),
@@ -156,7 +156,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- =====================================================
 -- IMEI Verifications (تحققات IMEI)
 -- =====================================================
-INSERT INTO "MobileIMEIVerification" (id, listing_id, imei_number, verification_status, is_blacklisted, is_stolen, carrier_lock_status, ntra_registered, original_device_info, verification_source, verified_at, created_at)
+INSERT INTO mobile_imei_verifications (id, listing_id, imei_number, verification_status, is_blacklisted, is_stolen, carrier_lock_status, ntra_registered, original_device_info, verification_source, verified_at, created_at)
 VALUES
   ('imei_1', 'mobile_1', '353456789012345', 'VERIFIED', false, false, 'UNLOCKED', true, '{"brand": "Apple", "model": "iPhone 15 Pro Max", "manufacturing_date": "2023-09"}', 'GSMA_IMEI_DB', NOW() - INTERVAL '4 days', NOW() - INTERVAL '5 days'),
   ('imei_2', 'mobile_2', '357890123456789', 'VERIFIED', false, false, 'UNLOCKED', true, '{"brand": "Apple", "model": "iPhone 14 Pro", "manufacturing_date": "2023-02"}', 'GSMA_IMEI_DB', NOW() - INTERVAL '7 days', NOW() - INTERVAL '8 days'),
@@ -176,7 +176,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- Device Diagnostics (تقارير فحص الأجهزة)
 -- =====================================================
-INSERT INTO "MobileDeviceDiagnostics" (id, listing_id, overall_score, battery_health, screen_test, touch_test, speaker_test, microphone_test, camera_test, wifi_test, bluetooth_test, gps_test, fingerprint_test, face_id_test, accelerometer_test, gyroscope_test, proximity_test, tested_at, report_url)
+INSERT INTO mobile_device_diagnostics (id, listing_id, overall_score, battery_health, screen_test, touch_test, speaker_test, microphone_test, camera_test, wifi_test, bluetooth_test, gps_test, fingerprint_test, face_id_test, accelerometer_test, gyroscope_test, proximity_test, tested_at, report_url)
 VALUES
   ('diag_1', 'mobile_1', 98, 100, true, true, true, true, true, true, true, true, true, true, true, true, true, NOW() - INTERVAL '5 days', '/reports/diag_mobile_1.pdf'),
   ('diag_2', 'mobile_2', 95, 92, true, true, true, true, true, true, true, true, true, true, true, true, true, NOW() - INTERVAL '8 days', '/reports/diag_mobile_2.pdf'),
@@ -192,7 +192,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- Mobile Transactions (معاملات الموبايلات)
 -- =====================================================
-INSERT INTO "MobileTransaction" (id, listing_id, buyer_id, seller_id, transaction_type, status, price, escrow_amount, escrow_status, payment_method, delivery_method, meetup_location, shipping_address, inspection_period_days, inspection_deadline, buyer_confirmed_receipt, seller_confirmed_shipment, platform_fee, platform_fee_paid, notes, created_at, completed_at)
+INSERT INTO mobile_transactions (id, listing_id, buyer_id, seller_id, transaction_type, status, price, escrow_amount, escrow_status, payment_method, delivery_method, meetup_location, shipping_address, inspection_period_days, inspection_deadline, buyer_confirmed_receipt, seller_confirmed_shipment, platform_fee, platform_fee_paid, notes, created_at, completed_at)
 VALUES
   -- Completed Sales (مبيعات مكتملة)
   ('trans_1', 'mobile_3', 'user_test_4', 'user_test_3', 'SALE', 'COMPLETED', 26000, 26000, 'RELEASED', 'ESCROW', 'MEETUP', 'محطة مترو السادات - القاهرة', NULL, 5, NOW() - INTERVAL '10 days', true, true, 520, true, 'تمت المعاملة بنجاح', NOW() - INTERVAL '20 days', NOW() - INTERVAL '10 days'),
@@ -211,7 +211,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- Barter Matches (مطابقات المقايضة)
 -- =====================================================
-INSERT INTO "MobileBarterMatch" (id, listing1_id, listing2_id, match_type, match_score, value_difference, status, algorithm_version, match_factors, created_at)
+INSERT INTO mobile_barter_matches (id, listing1_id, listing2_id, match_type, match_score, value_difference, status, algorithm_version, match_factors, created_at)
 VALUES
   ('match_1', 'mobile_1', 'mobile_5', 'DIRECT', 85, 3000, 'PENDING', '2.0', '{"brand_match": 0.7, "condition_match": 1.0, "price_proximity": 0.9, "location_proximity": 0.8}', NOW() - INTERVAL '1 day'),
   ('match_2', 'mobile_6', 'mobile_9', 'DIRECT', 78, 6500, 'PENDING', '2.0', '{"brand_match": 0.6, "condition_match": 1.0, "price_proximity": 0.85, "location_proximity": 0.7}', NOW() - INTERVAL '2 days'),
@@ -223,7 +223,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- Barter Proposals (عروض المقايضة)
 -- =====================================================
-INSERT INTO "MobileBarterProposal" (id, match_id, proposer_id, proposer_listing_id, target_listing_id, proposed_cash_difference, message, status, created_at, responded_at)
+INSERT INTO mobile_barter_proposals (id, match_id, proposer_id, proposer_listing_id, target_listing_id, proposed_cash_difference, message, status, created_at, responded_at)
 VALUES
   ('proposal_1', 'match_1', 'user_test_1', 'mobile_1', 'mobile_5', 3000, 'مهتم بالمقايضة - الجهاز نظيف جداً وبحالة ممتازة. مستعد لدفع فرق 3000 جنيه.', 'PENDING', NOW() - INTERVAL '12 hours', NULL),
   ('proposal_2', 'match_2', 'user_test_2', 'mobile_6', 'mobile_9', 6500, 'جهازي S23 Ultra بحالة ممتازة - مستعد للمقايضة مع دفع الفرق', 'PENDING', NOW() - INTERVAL '1 day', NULL),
@@ -234,7 +234,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- Mobile Reviews (تقييمات الموبايلات)
 -- =====================================================
-INSERT INTO "MobileReview" (id, transaction_id, reviewer_id, reviewed_user_id, listing_id, rating, title, comment, device_as_described, communication_rating, shipping_rating, is_verified_purchase, helpful_count, created_at)
+INSERT INTO mobile_reviews (id, transaction_id, reviewer_id, reviewed_user_id, listing_id, rating, title, comment, device_as_described, communication_rating, shipping_rating, is_verified_purchase, helpful_count, created_at)
 VALUES
   ('review_1', 'trans_1', 'user_test_4', 'user_test_3', 'mobile_3', 5, 'جهاز ممتاز كما في الوصف', 'الجهاز وصل بحالة ممتازة تماماً كما في الوصف. البائع متعاون جداً والتواصل كان سهل. أنصح بالتعامل معه.', true, 5, 5, true, 12, NOW() - INTERVAL '10 days'),
   ('review_2', 'trans_1', 'user_test_3', 'user_test_4', NULL, 5, 'مشتري ممتاز', 'تعامل محترم وسريع. تم إتمام المعاملة بسلاسة.', true, 5, 5, true, 8, NOW() - INTERVAL '9 days'),
@@ -246,7 +246,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- Mobile Favorites (المفضلات)
 -- =====================================================
-INSERT INTO "MobileFavorite" (id, user_id, listing_id, created_at)
+INSERT INTO mobile_favorites (id, user_id, listing_id, created_at)
 VALUES
   ('fav_1', 'user_test_1', 'mobile_5', NOW() - INTERVAL '3 days'),
   ('fav_2', 'user_test_1', 'mobile_7', NOW() - INTERVAL '2 days'),
@@ -263,7 +263,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- Price Alerts (تنبيهات الأسعار)
 -- =====================================================
-INSERT INTO "MobilePriceAlert" (id, user_id, brand, model, storage_capacity, condition, target_price, is_active, notification_method, last_notified_at, created_at)
+INSERT INTO mobile_price_alerts (id, user_id, brand, model, storage_capacity, condition, target_price, is_active, notification_method, last_notified_at, created_at)
 VALUES
   ('alert_1', 'user_test_1', 'APPLE', 'iPhone 15 Pro Max', 256, 'A', 70000, true, 'PUSH', NULL, NOW() - INTERVAL '10 days'),
   ('alert_2', 'user_test_1', 'SAMSUNG', 'Galaxy S24 Ultra', 256, 'A', 65000, true, 'EMAIL', NULL, NOW() - INTERVAL '5 days'),
@@ -276,7 +276,7 @@ ON CONFLICT (id) DO NOTHING;
 -- =====================================================
 -- Mobile Disputes (نزاعات الموبايلات)
 -- =====================================================
-INSERT INTO "MobileDispute" (id, transaction_id, raised_by_id, dispute_type, status, description, evidence_urls, resolution, resolved_by_id, refund_amount, created_at, resolved_at)
+INSERT INTO mobile_disputes (id, transaction_id, raised_by_id, dispute_type, status, description, evidence_urls, resolution, resolved_by_id, refund_amount, created_at, resolved_at)
 VALUES
   ('dispute_1', 'trans_2', 'user_test_1', 'ITEM_NOT_AS_DESCRIBED', 'RESOLVED', 'البطارية أقل من المذكور في الإعلان (85% بدلاً من 88%)', '["/evidence/dispute1_battery_screenshot.jpg"]', 'تم الاتفاق على خصم 500 جنيه من المبلغ كتعويض عن فرق حالة البطارية. تم استكمال المعاملة.', 'user_admin', 500, NOW() - INTERVAL '6 days', NOW() - INTERVAL '5 days')
 ON CONFLICT (id) DO NOTHING;
