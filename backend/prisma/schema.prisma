@@ -97,6 +97,11 @@ model User {
   scrapDealerVerifications  ScrapDealerVerification[] @relation("ScrapDealerVerifier")
   scrapPurchaseRequests     ScrapPurchaseRequest[]    @relation("ScrapPurchaseBuyer")
   scrapSellerOffers         ScrapSellerOffer[]        @relation("ScrapSellerOffers")
+  collectionRequests        CollectionRequest[]       @relation("CollectionRequester")
+  collectorProfile          CollectorProfile?         @relation("CollectorUser")
+  esgCertificates           ESGCertificate[]          @relation("UserESGCertificates")
+  scrapTransactionsSold     ScrapTransaction[]        @relation("ScrapTransactionSeller")
+  scrapTransactionsBought   ScrapTransaction[]        @relation("ScrapTransactionBuyer")
 
   // سوق الذهب - Gold Marketplace Relations
   goldItems                 GoldItem[]                @relation("UserGoldItems")
@@ -4752,6 +4757,311 @@ model ScrapSellerOffer {
   @@index([requestId])
   @@index([sellerId])
   @@index([status])
+}
+
+// ============================================
+// طلبات جمع الخردة - Collection Requests (C2B)
+// ============================================
+
+enum CollectionRequestStatus {
+  PENDING       // في انتظار قبول جامع
+  ACCEPTED      // تم قبول الطلب
+  SCHEDULED     // مجدول للجمع
+  IN_TRANSIT    // الجامع في الطريق
+  ARRIVED       // وصل الجامع
+  WEIGHING      // جاري الوزن
+  COMPLETED     // تم الجمع والدفع
+  CANCELLED     // ملغي
+  DISPUTED      // خلاف
+}
+
+model CollectionRequest {
+  id                  String                    @id @default(uuid())
+  requesterId         String                    @map("requester_id")
+  collectorId         String?                   @map("collector_id")
+
+  // تفاصيل المواد
+  materials           Json                      // [{type: 'COPPER', estimatedWeight: 5, condition: 'GOOD'}]
+  estimatedTotalValue Float?                    @map("estimated_total_value")
+
+  // العنوان والموقع
+  address             String
+  governorate         String
+  city                String?
+  district            String?
+  landmark            String?                   // علامة مميزة
+  latitude            Float?
+  longitude           Float?
+  floor               Int?                      // الدور
+  hasElevator         Boolean                   @default(false) @map("has_elevator")
+
+  // جدول المواعيد
+  preferredDate       DateTime                  @map("preferred_date")
+  preferredTimeSlot   String?                   @map("preferred_time_slot") // "morning", "afternoon", "evening"
+  alternateDate       DateTime?                 @map("alternate_date")
+  scheduledAt         DateTime?                 @map("scheduled_at")
+
+  // معلومات الاتصال
+  contactName         String                    @map("contact_name")
+  contactPhone        String                    @map("contact_phone")
+  notes               String?
+
+  // الحالة والتتبع
+  status              CollectionRequestStatus   @default(PENDING)
+  collectorLocation   Json?                     @map("collector_location") // {lat, lng, updatedAt}
+  estimatedArrival    DateTime?                 @map("estimated_arrival")
+
+  // الوزن الفعلي والدفع
+  actualWeights       Json?                     @map("actual_weights")    // [{type: 'COPPER', weight: 4.5, pricePerKg: 500, total: 2250}]
+  actualTotalValue    Float?                    @map("actual_total_value")
+  paymentMethod       String?                   @map("payment_method")    // "cash", "wallet", "bank_transfer"
+  paymentStatus       String?                   @map("payment_status")    // "pending", "paid"
+  paidAt              DateTime?                 @map("paid_at")
+
+  // الصور
+  beforePhotos        String[]                  @map("before_photos")
+  afterPhotos         String[]                  @map("after_photos")
+  weightingPhotos     String[]                  @map("weighting_photos")
+
+  // التقييم
+  requesterRating     Float?                    @map("requester_rating")
+  requesterReview     String?                   @map("requester_review")
+  collectorRating     Float?                    @map("collector_rating")
+  collectorReview     String?                   @map("collector_review")
+
+  // Timestamps
+  acceptedAt          DateTime?                 @map("accepted_at")
+  arrivedAt           DateTime?                 @map("arrived_at")
+  completedAt         DateTime?                 @map("completed_at")
+  cancelledAt         DateTime?                 @map("cancelled_at")
+  cancellationReason  String?                   @map("cancellation_reason")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  requester           User                      @relation("CollectionRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  collector           CollectorProfile?         @relation(fields: [collectorId], references: [id], onDelete: SetNull)
+  esgCertificate      ESGCertificate?
+
+  @@map("collection_requests")
+  @@index([requesterId])
+  @@index([collectorId])
+  @@index([status])
+  @@index([governorate])
+  @@index([preferredDate])
+  @@index([createdAt])
+}
+
+// ملف الجامع/المندوب
+// Collector Profile
+model CollectorProfile {
+  id                  String                    @id @default(uuid())
+  userId              String                    @unique @map("user_id")
+
+  // معلومات أساسية
+  displayName         String                    @map("display_name")
+  nationalId          String?                   @unique @map("national_id")
+  vehicleType         String?                   @map("vehicle_type")      // "motorcycle", "tricycle", "pickup", "truck"
+  vehiclePlate        String?                   @map("vehicle_plate")
+
+  // منطقة العمل
+  serviceAreas        String[]                  @map("service_areas")     // قائمة المحافظات/المناطق
+  maxPickupWeightKg   Float                     @default(100) @map("max_pickup_weight_kg")
+
+  // التخصص
+  specializations     ScrapType[]
+  acceptedMetals      MetalType[]               @map("accepted_metals")
+
+  // الحالة والتحقق
+  isActive            Boolean                   @default(true) @map("is_active")
+  isVerified          Boolean                   @default(false) @map("is_verified")
+  verifiedAt          DateTime?                 @map("verified_at")
+
+  // المستندات
+  nationalIdUrl       String?                   @map("national_id_url")
+  vehicleLicenseUrl   String?                   @map("vehicle_license_url")
+  profilePhotoUrl     String?                   @map("profile_photo_url")
+
+  // الموقع الحالي (للتتبع المباشر)
+  currentLatitude     Float?                    @map("current_latitude")
+  currentLongitude    Float?                    @map("current_longitude")
+  locationUpdatedAt   DateTime?                 @map("location_updated_at")
+  isOnline            Boolean                   @default(false) @map("is_online")
+
+  // الإحصائيات
+  rating              Float                     @default(0)
+  totalReviews        Int                       @default(0) @map("total_reviews")
+  totalCollections    Int                       @default(0) @map("total_collections")
+  totalWeightKg       Float                     @default(0) @map("total_weight_kg")
+  totalEarnings       Float                     @default(0) @map("total_earnings")
+  completionRate      Float                     @default(100) @map("completion_rate")
+
+  // المحفظة
+  walletBalance       Float                     @default(0) @map("wallet_balance")
+
+  // Timestamps
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  user                User                      @relation("CollectorUser", fields: [userId], references: [id], onDelete: Cascade)
+  collections         CollectionRequest[]
+
+  @@map("collector_profiles")
+  @@index([userId])
+  @@index([isActive])
+  @@index([isVerified])
+  @@index([rating])
+}
+
+// أسعار المواد (شامل كل الأنواع)
+// Material Prices (All Types)
+model ScrapMaterialPrice {
+  id                  String                    @id @default(uuid())
+
+  // نوع المادة
+  materialCategory    String                    @map("material_category")  // "metal", "paper", "plastic", "glass", "textile", "ewaste", "other"
+  materialType        String                    @map("material_type")      // نوع محدد مثل "copper_red", "cardboard", "pet_plastic"
+  materialNameAr      String                    @map("material_name_ar")   // الاسم بالعربية
+  materialNameEn      String?                   @map("material_name_en")   // الاسم بالإنجليزية
+
+  // السعر
+  pricePerKg          Float                     @map("price_per_kg")
+  pricePerTon         Float?                    @map("price_per_ton")
+  currency            String                    @default("EGP")
+
+  // النطاق السعري
+  minPrice            Float?                    @map("min_price")
+  maxPrice            Float?                    @map("max_price")
+
+  // تغير السعر
+  previousPrice       Float?                    @map("previous_price")
+  priceChange         Float?                    @map("price_change")       // نسبة التغير
+  priceChangeType     String?                   @map("price_change_type")  // "up", "down", "stable"
+
+  // الموقع (أسعار مختلفة حسب المنطقة)
+  governorate         String?
+  region              String?                   // "cairo_giza", "delta", "upper_egypt", "canal"
+
+  // المصدر والصلاحية
+  source              String?                   // مصدر السعر
+  validFrom           DateTime                  @map("valid_from")
+  validUntil          DateTime?                 @map("valid_until")
+  isActive            Boolean                   @default(true) @map("is_active")
+
+  // Timestamps
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+
+  @@map("scrap_material_prices")
+  @@unique([materialType, governorate, validFrom])
+  @@index([materialCategory])
+  @@index([materialType])
+  @@index([governorate])
+  @@index([isActive])
+  @@index([validFrom])
+}
+
+// شهادات الاستدامة البيئية ESG
+// ESG Environmental Certificates
+model ESGCertificate {
+  id                  String                    @id @default(uuid())
+
+  // مرجع المعاملة
+  collectionRequestId String?                   @unique @map("collection_request_id")
+  transactionId       String?                   @map("transaction_id")
+  userId              String                    @map("user_id")
+
+  // بيانات الشهادة
+  certificateNumber   String                    @unique @map("certificate_number")
+  qrCode              String?                   @map("qr_code")
+
+  // تفاصيل المواد المعاد تدويرها
+  materials           Json                      // [{type, weight, co2Saved}]
+  totalWeightKg       Float                     @map("total_weight_kg")
+  totalCO2SavedKg     Float                     @map("total_co2_saved_kg")
+  treesEquivalent     Float?                    @map("trees_equivalent")
+  waterSavedLiters    Float?                    @map("water_saved_liters")
+  energySavedKwh      Float?                    @map("energy_saved_kwh")
+
+  // معلومات الشركة (للشهادات التجارية)
+  companyName         String?                   @map("company_name")
+  companyTaxId        String?                   @map("company_tax_id")
+
+  // الفترة
+  periodStart         DateTime                  @map("period_start")
+  periodEnd           DateTime                  @map("period_end")
+
+  // الحالة
+  isVerified          Boolean                   @default(true) @map("is_verified")
+  verifiedAt          DateTime?                 @map("verified_at")
+
+  // PDF والمستندات
+  certificatePdfUrl   String?                   @map("certificate_pdf_url")
+
+  // Timestamps
+  issuedAt            DateTime                  @default(now()) @map("issued_at")
+  expiresAt           DateTime?                 @map("expires_at")
+  createdAt           DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  collectionRequest   CollectionRequest?        @relation(fields: [collectionRequestId], references: [id], onDelete: SetNull)
+  user                User                      @relation("UserESGCertificates", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("esg_certificates")
+  @@index([userId])
+  @@index([certificateNumber])
+  @@index([issuedAt])
+}
+
+// معاملات الخردة المكتملة
+// Scrap Transactions
+model ScrapTransaction {
+  id                  String                    @id @default(uuid())
+
+  // الأطراف
+  sellerId            String                    @map("seller_id")
+  buyerId             String                    @map("buyer_id")
+  dealerId            String?                   @map("dealer_id")
+
+  // مرجع المصدر
+  itemId              String?                   @map("item_id")
+  purchaseRequestId   String?                   @map("purchase_request_id")
+  collectionRequestId String?                   @map("collection_request_id")
+
+  // تفاصيل المعاملة
+  materials           Json                      // [{type, weight, pricePerKg, total}]
+  totalWeightKg       Float                     @map("total_weight_kg")
+  totalAmount         Float                     @map("total_amount")
+  platformFee         Float                     @default(0) @map("platform_fee")
+  netAmount           Float                     @map("net_amount")
+
+  // الدفع
+  paymentMethod       String                    @map("payment_method")
+  paymentStatus       String                    @default("PENDING") @map("payment_status")
+  paidAt              DateTime?                 @map("paid_at")
+
+  // الموقع
+  governorate         String?
+  city                String?
+
+  // الحالة
+  status              String                    @default("COMPLETED")
+
+  // Timestamps
+  createdAt           DateTime                  @default(now()) @map("created_at")
+  updatedAt           DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  seller              User                      @relation("ScrapTransactionSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+  buyer               User                      @relation("ScrapTransactionBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@map("scrap_transactions")
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([dealerId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // ============================================
