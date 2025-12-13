@@ -17,22 +17,29 @@ interface PropertyCardProps {
     city?: string;
     district?: string;
     compoundName?: string;
-    areaSqm: number;
+    // Support both naming conventions
+    areaSqm?: number;
+    area?: number;
     bedrooms?: number;
     bathrooms?: number;
     salePrice?: number;
     rentPrice?: number;
+    price?: number;
     pricePerSqm?: number;
     rentPeriod?: string;
-    listingType: 'SALE' | 'RENT' | 'BOTH';
+    listingType?: 'SALE' | 'RENT' | 'BOTH';
     titleType: 'REGISTERED' | 'PRELIMINARY' | 'POA';
     verificationLevel: 'UNVERIFIED' | 'DOCUMENTS_VERIFIED' | 'FIELD_VERIFIED' | 'GOVERNMENT_VERIFIED';
     finishingLevel?: string;
     openForBarter?: boolean;
+    openToBarter?: boolean;
+    hasEscrow?: boolean;
     virtualTourUrl?: string;
     images: any[];
     viewsCount?: number;
+    viewCount?: number;
     favoritesCount?: number;
+    isFavorite?: boolean;
     estimatedValue?: number;
     owner?: {
       id: string;
@@ -85,16 +92,24 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     ? (typeof images[0] === 'string' ? images[0] : images[0]?.url)
     : '/placeholder-property.jpg';
 
-  const formatPrice = (price: number) => {
-    if (price >= 1000000) {
-      return `${(price / 1000000).toFixed(1)} مليون`;
+  // Support alternative property names
+  const area = property.area || property.areaSqm || 0;
+  const price = property.price || property.salePrice || property.rentPrice || 0;
+  const isOpenToBarter = property.openToBarter || property.openForBarter || false;
+  const views = property.viewCount || property.viewsCount || 0;
+  const isFavorite = property.isFavorite || isFavorited;
+
+  const formatPrice = (value: number) => {
+    if (value >= 1000000) {
+      return `${(value / 1000000).toFixed(1)} مليون`;
     }
-    return price.toLocaleString('ar-EG');
+    return value.toLocaleString('ar-EG');
   };
 
   const getPriceRating = () => {
-    if (!property.estimatedValue || !property.salePrice) return null;
-    const ratio = property.salePrice / property.estimatedValue;
+    const salePrice = property.salePrice || property.price;
+    if (!property.estimatedValue || !salePrice) return null;
+    const ratio = salePrice / property.estimatedValue;
     if (ratio <= 0.9) return { label: 'سعر ممتاز', color: 'text-green-600', bg: 'bg-green-100' };
     if (ratio <= 1.05) return { label: 'سعر جيد', color: 'text-blue-600', bg: 'bg-blue-100' };
     if (ratio <= 1.15) return { label: 'سعر معقول', color: 'text-yellow-600', bg: 'bg-yellow-100' };
@@ -133,7 +148,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
               جولة 360°
             </span>
           )}
-          {property.openForBarter && (
+          {isOpenToBarter && (
             <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
               <RefreshCw className="w-3 h-3" />
               قابل للمقايضة
@@ -151,7 +166,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
             className="absolute top-2 left-2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
           >
             <Heart
-              className={`w-5 h-5 ${isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
+              className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
             />
           </button>
         )}
@@ -186,7 +201,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         <div className="flex items-center gap-4 mt-3 text-gray-600 text-sm">
           <div className="flex items-center gap-1">
             <Maximize2 className="w-4 h-4" />
-            <span>{property.areaSqm} م²</span>
+            <span>{area} م²</span>
           </div>
           {property.bedrooms !== undefined && (
             <div className="flex items-center gap-1">
@@ -282,7 +297,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
           >
             عرض التفاصيل
           </Link>
-          {property.openForBarter && onBarter && (
+          {isOpenToBarter && onBarter && (
             <button
               onClick={() => onBarter(property.id)}
               className="px-4 py-2 border border-orange-500 text-orange-500 rounded-lg hover:bg-orange-50 transition-colors text-sm flex items-center gap-1"
