@@ -115,27 +115,39 @@ export default function PropertiesPage() {
         page: pagination.page,
         limit: pagination.limit,
       });
-      setProperties(result.properties);
+
+      // Handle API response with proper null checks
+      const properties = result?.properties || [];
+      const paginationData = result?.pagination || { total: 0, totalPages: 0 };
+
+      setProperties(properties);
       setPagination((prev) => ({
         ...prev,
-        total: result.pagination.total,
-        totalPages: result.pagination.totalPages,
+        total: paginationData.total || 0,
+        totalPages: paginationData.totalPages || 0,
       }));
 
       // Calculate basic stats from first load
-      if (pagination.page === 1 && !stats) {
+      if (pagination.page === 1 && !stats && properties.length > 0) {
         setStats({
-          totalProperties: result.pagination.total,
-          forSale: result.properties.filter((p) => p.listingType === 'SALE').length,
-          forRent: result.properties.filter((p) => p.listingType === 'RENT').length,
-          verifiedProperties: result.properties.filter(
+          totalProperties: paginationData.total || properties.length,
+          forSale: properties.filter((p) => p.listingType === 'SALE').length,
+          forRent: properties.filter((p) => p.listingType === 'RENT').length,
+          verifiedProperties: properties.filter(
             (p) => p.verificationLevel !== 'UNVERIFIED'
           ).length,
-          barterEnabled: result.properties.filter((p) => p.openToBarter).length,
+          barterEnabled: properties.filter((p) => p.openToBarter).length,
         });
       }
     } catch (error) {
       console.error('Error loading properties:', error);
+      // Set empty state on error
+      setProperties([]);
+      setPagination((prev) => ({
+        ...prev,
+        total: 0,
+        totalPages: 0,
+      }));
     } finally {
       setLoading(false);
     }
