@@ -4708,8 +4708,8 @@ enum TitleType {
   POA               // توكيل - قابل للإلغاء (خطر عالي)
 }
 
-// مستوى التحقق
-enum VerificationLevel {
+// مستوى التحقق من العقار
+enum PropertyVerificationLevel {
   UNVERIFIED        // غير متحقق
   DOCUMENTS_VERIFIED // تم التحقق من المستندات
   FIELD_VERIFIED    // تم الفحص الميداني
@@ -4739,8 +4739,8 @@ enum PropertyListingType {
   BOTH              // للبيع والإيجار
 }
 
-// حالة التسليم
-enum DeliveryStatus {
+// حالة تسليم العقار
+enum PropertyDeliveryStatus {
   READY             // جاهز للتسليم
   UNDER_CONSTRUCTION // تحت الإنشاء
   OFF_PLAN          // على الخريطة
@@ -4916,7 +4916,7 @@ model Property {
   monthlyInstallment Float?             @map("monthly_installment")
 
   // حالة التسليم
-  deliveryStatus    DeliveryStatus?     @map("delivery_status")
+  deliveryStatus    PropertyDeliveryStatus? @map("delivery_status")
   deliveryDate      DateTime?           @map("delivery_date")
 
   // حقول التحقق والملكية
@@ -4924,7 +4924,7 @@ model Property {
   governmentPropertyId String?          @map("government_property_id")
   governmentQrCode  String?             @map("government_qr_code")
 
-  verificationLevel VerificationLevel   @default(UNVERIFIED) @map("verification_level")
+  verificationLevel PropertyVerificationLevel @default(UNVERIFIED) @map("verification_level")
   verificationDate  DateTime?           @map("verification_date")
   verifiedById      String?             @map("verified_by_id")
   verificationNotes String?             @map("verification_notes")
