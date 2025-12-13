@@ -492,7 +492,7 @@ SELECT
 INSERT INTO property_barter_proposals (
   id, proposer_id, receiver_id,
   offered_property_id, requested_property_id,
-  cash_difference, cash_direction,
+  cash_difference, cash_payer,
   message, status, created_at, updated_at
 )
 SELECT
@@ -501,7 +501,7 @@ SELECT
   (SELECT id FROM users WHERE email = 'test6@xchange.eg'),
   (SELECT id FROM properties WHERE title_ar = 'دوبلكس واسع في مدينة نصر' LIMIT 1),
   (SELECT id FROM properties WHERE title_ar = 'فيلا مستقلة في الشيخ زايد' LIMIT 1),
-  8200000, 'PROPOSER_PAYS',
+  8200000, (SELECT id FROM users WHERE email = 'test3@xchange.eg'),
   'مهتم بمقايضة الدوبلكس بالفيلا مع دفع الفرق. الدوبلكس في حالة ممتازة وموقع متميز.',
   'PENDING', NOW() - INTERVAL '3 days', NOW();
 
@@ -509,7 +509,7 @@ SELECT
 INSERT INTO property_barter_proposals (
   id, proposer_id, receiver_id,
   offered_property_id, requested_property_id,
-  cash_difference, cash_direction,
+  cash_difference, cash_payer,
   message, status, created_at, updated_at
 )
 SELECT
@@ -518,7 +518,7 @@ SELECT
   (SELECT id FROM users WHERE email = 'test5@xchange.eg'),
   (SELECT id FROM properties WHERE title_ar = 'محل تجاري في الإسكندرية' LIMIT 1),
   (SELECT id FROM properties WHERE title_ar = 'شاليه على البحر في الساحل الشمالي' LIMIT 1),
-  1000000, 'PROPOSER_PAYS',
+  1000000, (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   'أرغب في مقايضة المحل بالشاليه للاستمتاع بالصيف مع العائلة',
   'REJECTED', NOW() - INTERVAL '10 days', NOW() - INTERVAL '8 days';
 
