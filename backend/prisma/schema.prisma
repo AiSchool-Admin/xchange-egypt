@@ -340,57 +340,6 @@ enum ScrapDealerStatus {
 }
 
 // ============================================
-// العقارات - Real Estate Enums
-// ============================================
-
-// نوع العقار
-enum PropertyType {
-  APARTMENT           // شقة
-  VILLA               // فيلا
-  DUPLEX              // دوبلكس
-  PENTHOUSE           // بنتهاوس
-  STUDIO              // ستوديو
-  CHALET              // شاليه
-  TOWNHOUSE           // تاون هاوس
-  LAND                // أرض
-  COMMERCIAL_SHOP     // محل تجاري
-  OFFICE              // مكتب
-  WAREHOUSE           // مخزن
-  BUILDING            // مبنى كامل
-  FARM                // مزرعة
-}
-
-// تشطيب العقار
-enum PropertyFinishing {
-  NOT_FINISHED        // بدون تشطيب
-  SEMI_FINISHED       // نصف تشطيب
-  FULLY_FINISHED      // تشطيب كامل
-  SUPER_LUX           // سوبر لوكس
-  ULTRA_SUPER_LUX     // الترا سوبر لوكس
-  FURNISHED           // مفروش
-}
-
-// إطلالة العقار
-enum PropertyView {
-  STREET              // شارع
-  GARDEN              // حديقة
-  SEA                 // بحر
-  NILE                // نيل
-  POOL                // حمام سباحة
-  CITY                // مدينة
-  DESERT              // صحراء
-  CORNER              // ناصية
-  MAIN_ROAD           // طريق رئيسي
-  NO_VIEW             // بدون إطلالة
-}
-
-// نوع الإعلان العقاري
-enum PropertyListingType {
-  FOR_SALE            // للبيع
-  FOR_RENT            // للإيجار
-  FOR_EXCHANGE        // للمقايضة
-}
-
 // ============================================
 // السيارات والمركبات - Vehicle Enums
 // ============================================
