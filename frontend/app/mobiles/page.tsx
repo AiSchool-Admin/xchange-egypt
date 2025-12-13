@@ -101,12 +101,15 @@ export default function MobilesPage() {
       params.append('page', currentPage.toString());
       params.append('limit', '20');
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/listings?${params}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings?${params}`);
       const data = await response.json();
 
       if (data.success) {
-        setListings(data.data);
-        setTotalCount(data.pagination?.total || 0);
+        // Backend returns { success, data: [...listings...], pagination: {...} }
+        const listingsData = Array.isArray(data.data) ? data.data : [];
+        const pagination = data.pagination || {};
+        setListings(listingsData);
+        setTotalCount(pagination.total || 0);
       }
     } catch (error) {
       console.error('Error fetching listings:', error);
