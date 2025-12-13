@@ -11,6 +11,7 @@
 -- =====================================================
 -- CLEANUP - Delete existing mobile data (مسح البيانات القديمة)
 -- =====================================================
+DELETE FROM mobile_price_alerts;
 DELETE FROM mobile_favorites;
 DELETE FROM mobile_barter_proposals;
 DELETE FROM mobile_transactions;
