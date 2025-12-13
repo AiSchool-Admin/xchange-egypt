@@ -352,3 +352,411 @@ export const getScrapByType = async () => {
   const response = await api.get('/scrap/stats/by-type');
   return response.data;
 };
+
+export const getComprehensiveStats = async () => {
+  const response = await api.get('/scrap/stats/comprehensive');
+  return response.data?.data || response.data;
+};
+
+// ============================================
+// Material Prices API - أسعار المواد
+// ============================================
+
+export interface MaterialPrice {
+  id: string;
+  materialCategory: string;
+  materialType: string;
+  materialNameAr: string;
+  pricePerKg: number;
+  currency: string;
+  priceChange?: number;
+  priceChangeType?: 'up' | 'down' | 'stable';
+  lastUpdated: string;
+}
+
+export const getMaterialPrices = async (category?: string) => {
+  const params = category ? `?category=${category}` : '';
+  const response = await api.get(`/scrap/material-prices${params}`);
+  return response.data?.data || response.data;
+};
+
+export const upsertMaterialPrice = async (data: {
+  materialCategory: string;
+  materialType: string;
+  materialNameAr: string;
+  pricePerKg: number;
+}) => {
+  const response = await api.post('/scrap/material-prices', data);
+  return response.data;
+};
+
+// ============================================
+// Price Calculator API - حاسبة الأسعار
+// ============================================
+
+export interface CalculatorMaterial {
+  materialType: string;
+  weightKg: number;
+}
+
+export interface CalculatorResult {
+  materials: Array<{
+    materialType: string;
+    materialNameAr: string;
+    weightKg: number;
+    pricePerKg: number;
+    subtotal: number;
+  }>;
+  totalValue: number;
+  currency: string;
+  estimatedCO2Saved: number;
+}
+
+export const calculateScrapValue = async (materials: CalculatorMaterial[]): Promise<CalculatorResult> => {
+  const response = await api.post('/scrap/calculator', { materials });
+  return response.data?.data || response.data;
+};
+
+// ============================================
+// Collection Requests API - طلبات الجمع (C2B)
+// ============================================
+
+export type CollectionRequestStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'SCHEDULED'
+  | 'IN_TRANSIT'
+  | 'ARRIVED'
+  | 'WEIGHING'
+  | 'COMPLETED'
+  | 'CANCELLED'
+  | 'DISPUTED';
+
+export const COLLECTION_STATUS_AR: Record<CollectionRequestStatus, string> = {
+  PENDING: 'في الانتظار',
+  ACCEPTED: 'مقبول',
+  SCHEDULED: 'مجدول',
+  IN_TRANSIT: 'في الطريق',
+  ARRIVED: 'وصل',
+  WEIGHING: 'جاري الوزن',
+  COMPLETED: 'مكتمل',
+  CANCELLED: 'ملغي',
+  DISPUTED: 'متنازع عليه',
+};
+
+export interface CollectionMaterial {
+  materialType: string;
+  estimatedWeightKg: number;
+  description?: string;
+}
+
+export interface CreateCollectionInput {
+  materials: CollectionMaterial[];
+  address: string;
+  governorate: string;
+  city?: string;
+  preferredDate: string;
+  preferredTimeSlot?: string;
+  notes?: string;
+  photos?: string[];
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface CollectionRequest {
+  id: string;
+  requesterId: string;
+  collectorId?: string;
+  materials: CollectionMaterial[];
+  estimatedTotalValue?: number;
+  address: string;
+  governorate: string;
+  city?: string;
+  preferredDate: string;
+  preferredTimeSlot?: string;
+  status: CollectionRequestStatus;
+  actualWeights?: Record<string, number>;
+  actualTotalValue?: number;
+  collectionFee?: number;
+  netAmount?: number;
+  collectorRating?: number;
+  requesterRating?: number;
+  notes?: string;
+  photos?: string[];
+  completedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  collector?: {
+    id: string;
+    displayName: string;
+    phoneNumber?: string;
+    vehicleType?: string;
+    rating: number;
+  };
+  requester?: {
+    id: string;
+    name: string;
+    phoneNumber?: string;
+  };
+}
+
+export const createCollectionRequest = async (data: CreateCollectionInput) => {
+  const response = await api.post('/scrap/collections', data);
+  return response.data?.data || response.data;
+};
+
+export const getUserCollections = async (status?: CollectionRequestStatus) => {
+  const params = status ? `?status=${status}` : '';
+  const response = await api.get(`/scrap/collections/my-requests${params}`);
+  return response.data?.data || response.data;
+};
+
+export const getAvailableCollections = async (governorate?: string) => {
+  const params = governorate ? `?governorate=${governorate}` : '';
+  const response = await api.get(`/scrap/collections/available${params}`);
+  return response.data?.data || response.data;
+};
+
+export const acceptCollection = async (requestId: string, scheduledDate?: string) => {
+  const response = await api.post(`/scrap/collections/${requestId}/accept`, { scheduledDate });
+  return response.data?.data || response.data;
+};
+
+export const updateCollectionStatus = async (
+  requestId: string,
+  status: CollectionRequestStatus,
+  data?: {
+    actualWeights?: Record<string, number>;
+    actualTotalValue?: number;
+    collectionFee?: number;
+    notes?: string;
+  }
+) => {
+  const response = await api.put(`/scrap/collections/${requestId}/status`, { status, ...data });
+  return response.data?.data || response.data;
+};
+
+export const rateCollection = async (requestId: string, rating: number, review?: string) => {
+  const response = await api.post(`/scrap/collections/${requestId}/rate`, { rating, review });
+  return response.data?.data || response.data;
+};
+
+// ============================================
+// Collector API - الجامعين
+// ============================================
+
+export interface RegisterCollectorInput {
+  displayName: string;
+  phoneNumber: string;
+  vehicleType?: string;
+  vehiclePlateNumber?: string;
+  serviceAreas: string[];
+  specializations?: ScrapType[];
+  nationalIdUrl?: string;
+  vehicleLicenseUrl?: string;
+}
+
+export interface CollectorProfile {
+  id: string;
+  userId: string;
+  displayName: string;
+  phoneNumber?: string;
+  vehicleType?: string;
+  vehiclePlateNumber?: string;
+  serviceAreas: string[];
+  specializations: ScrapType[];
+  rating: number;
+  totalCollections: number;
+  totalWeightCollected: number;
+  totalEarnings: number;
+  isOnline: boolean;
+  isVerified: boolean;
+  currentLatitude?: number;
+  currentLongitude?: number;
+  createdAt: string;
+}
+
+export interface CollectorStats {
+  profile: CollectorProfile;
+  todayCollections: number;
+  weekCollections: number;
+  monthCollections: number;
+  pendingRequests: number;
+  activeRequest?: CollectionRequest;
+  recentCollections: CollectionRequest[];
+  earningsBreakdown: {
+    today: number;
+    week: number;
+    month: number;
+  };
+}
+
+export const registerCollector = async (data: RegisterCollectorInput) => {
+  const response = await api.post('/scrap/collectors/register', data);
+  return response.data?.data || response.data;
+};
+
+export const updateCollectorLocation = async (latitude: number, longitude: number, isOnline?: boolean) => {
+  const response = await api.put('/scrap/collectors/location', { latitude, longitude, isOnline });
+  return response.data?.data || response.data;
+};
+
+export const getCollectorStats = async (): Promise<CollectorStats> => {
+  const response = await api.get('/scrap/collectors/stats');
+  return response.data?.data || response.data;
+};
+
+// ============================================
+// ESG Certificates API - شهادات ESG البيئية
+// ============================================
+
+export interface ESGCertificate {
+  id: string;
+  userId: string;
+  certificateNumber: string;
+  collectionRequestId?: string;
+  transactionId?: string;
+  materials: Array<{
+    materialType: string;
+    weightKg: number;
+    co2SavedKg: number;
+  }>;
+  totalWeightKg: number;
+  totalCO2SavedKg: number;
+  treesEquivalent?: number;
+  waterSavedLiters?: number;
+  energySavedKwh?: number;
+  issuedAt: string;
+  validUntil?: string;
+  qrCodeUrl?: string;
+  pdfUrl?: string;
+}
+
+export interface GenerateESGInput {
+  collectionRequestId?: string;
+  transactionId?: string;
+  materials?: Array<{
+    materialType: string;
+    weightKg: number;
+  }>;
+}
+
+export const generateESGCertificate = async (data: GenerateESGInput): Promise<ESGCertificate> => {
+  const response = await api.post('/scrap/esg/generate', data);
+  return response.data?.data || response.data;
+};
+
+export const getUserESGCertificates = async (): Promise<ESGCertificate[]> => {
+  const response = await api.get('/scrap/esg/my-certificates');
+  return response.data?.data || response.data;
+};
+
+export const verifyESGCertificate = async (certificateNumber: string): Promise<ESGCertificate | null> => {
+  const response = await api.get(`/scrap/esg/verify/${certificateNumber}`);
+  return response.data?.data || response.data;
+};
+
+// ============================================
+// Material Categories - فئات المواد
+// ============================================
+
+export const MATERIAL_CATEGORIES = {
+  metal: {
+    nameAr: 'معادن',
+    icon: '⚙️',
+    types: [
+      { type: 'copper_red', nameAr: 'نحاس أحمر خام' },
+      { type: 'copper_yellow', nameAr: 'نحاس أصفر' },
+      { type: 'copper_burnt', nameAr: 'نحاس محروق' },
+      { type: 'aluminum_soft', nameAr: 'ألمونيوم طري' },
+      { type: 'aluminum_hard', nameAr: 'ألمونيوم كاست' },
+      { type: 'aluminum_cans', nameAr: 'علب ألمونيوم' },
+      { type: 'iron', nameAr: 'حديد خردة' },
+      { type: 'stainless_steel', nameAr: 'استانلس ستيل' },
+      { type: 'lead', nameAr: 'رصاص' },
+      { type: 'zinc', nameAr: 'زنك' },
+      { type: 'brass', nameAr: 'نحاس أصفر (براص)' },
+    ],
+  },
+  paper: {
+    nameAr: 'ورق وكرتون',
+    icon: '📄',
+    types: [
+      { type: 'cardboard', nameAr: 'كرتون' },
+      { type: 'white_paper', nameAr: 'ورق أبيض' },
+      { type: 'newspaper', nameAr: 'جرائد' },
+      { type: 'mixed_paper', nameAr: 'ورق مخلوط' },
+      { type: 'books', nameAr: 'كتب ومجلات' },
+    ],
+  },
+  plastic: {
+    nameAr: 'بلاستيك',
+    icon: '♻️',
+    types: [
+      { type: 'pet', nameAr: 'بلاستيك PET (زجاجات)' },
+      { type: 'hdpe', nameAr: 'بلاستيك HDPE' },
+      { type: 'pvc', nameAr: 'بلاستيك PVC' },
+      { type: 'ldpe', nameAr: 'بلاستيك LDPE (أكياس)' },
+      { type: 'pp', nameAr: 'بلاستيك PP' },
+      { type: 'mixed_plastic', nameAr: 'بلاستيك مخلوط' },
+    ],
+  },
+  electronics: {
+    nameAr: 'إلكترونيات',
+    icon: '💻',
+    types: [
+      { type: 'computer_parts', nameAr: 'قطع كمبيوتر' },
+      { type: 'mobile_phones', nameAr: 'هواتف محمولة' },
+      { type: 'cables', nameAr: 'كابلات وأسلاك' },
+      { type: 'circuit_boards', nameAr: 'لوحات إلكترونية' },
+      { type: 'batteries', nameAr: 'بطاريات' },
+    ],
+  },
+  appliances: {
+    nameAr: 'أجهزة منزلية',
+    icon: '🔌',
+    types: [
+      { type: 'washing_machine', nameAr: 'غسالات' },
+      { type: 'refrigerator', nameAr: 'ثلاجات' },
+      { type: 'air_conditioner', nameAr: 'تكييفات' },
+      { type: 'small_appliances', nameAr: 'أجهزة صغيرة' },
+      { type: 'motors', nameAr: 'موتورات' },
+    ],
+  },
+  textiles: {
+    nameAr: 'منسوجات',
+    icon: '👕',
+    types: [
+      { type: 'clothes', nameAr: 'ملابس مستعملة' },
+      { type: 'fabric_scraps', nameAr: 'قصاصات قماش' },
+      { type: 'carpets', nameAr: 'سجاد' },
+      { type: 'shoes', nameAr: 'أحذية' },
+    ],
+  },
+  glass: {
+    nameAr: 'زجاج',
+    icon: '🫙',
+    types: [
+      { type: 'clear_glass', nameAr: 'زجاج شفاف' },
+      { type: 'colored_glass', nameAr: 'زجاج ملون' },
+      { type: 'broken_glass', nameAr: 'زجاج مكسور' },
+    ],
+  },
+  wood: {
+    nameAr: 'خشب',
+    icon: '🪵',
+    types: [
+      { type: 'furniture_wood', nameAr: 'خشب أثاث' },
+      { type: 'pallets', nameAr: 'طبالي خشب' },
+      { type: 'mdf', nameAr: 'خشب MDF' },
+    ],
+  },
+  oil: {
+    nameAr: 'زيوت',
+    icon: '🛢️',
+    types: [
+      { type: 'cooking_oil', nameAr: 'زيت طعام مستعمل' },
+      { type: 'motor_oil', nameAr: 'زيت موتور' },
+    ],
+  },
+};

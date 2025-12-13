@@ -98,12 +98,24 @@ export default function ScrapMarketplacePage() {
               <p className="text-xl opacity-90 mb-4">
                 بيع واشتري التوالف والخردة بأفضل الأسعار
               </p>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-3">
                 <Link
                   href="/scrap/sell"
                   className="bg-white text-orange-600 px-6 py-3 rounded-lg font-bold hover:bg-orange-50 transition"
                 >
                   بيع توالف
+                </Link>
+                <Link
+                  href="/scrap/collection"
+                  className="bg-green-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-600 transition"
+                >
+                  🚛 جمع من البيت
+                </Link>
+                <Link
+                  href="/scrap/calculator"
+                  className="border-2 border-white text-white px-6 py-3 rounded-lg font-bold hover:bg-white/10 transition"
+                >
+                  🧮 حاسبة الأسعار
                 </Link>
                 <Link
                   href="/scrap/dealers"
@@ -131,6 +143,54 @@ export default function ScrapMarketplacePage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Links */}
+      <div className="bg-white border-b">
+        <div className="container mx-auto px-4 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link
+              href="/scrap/collection"
+              className="flex items-center gap-3 p-4 bg-gradient-to-l from-blue-50 to-cyan-50 rounded-xl hover:shadow-md transition"
+            >
+              <span className="text-3xl">🚛</span>
+              <div>
+                <div className="font-bold text-blue-700">جمع من البيت</div>
+                <div className="text-sm text-gray-500">خدمة مجانية</div>
+              </div>
+            </Link>
+            <Link
+              href="/scrap/calculator"
+              className="flex items-center gap-3 p-4 bg-gradient-to-l from-green-50 to-emerald-50 rounded-xl hover:shadow-md transition"
+            >
+              <span className="text-3xl">🧮</span>
+              <div>
+                <div className="font-bold text-green-700">حاسبة الأسعار</div>
+                <div className="text-sm text-gray-500">اعرف قيمة خردتك</div>
+              </div>
+            </Link>
+            <Link
+              href="/scrap/esg"
+              className="flex items-center gap-3 p-4 bg-gradient-to-l from-emerald-50 to-teal-50 rounded-xl hover:shadow-md transition"
+            >
+              <span className="text-3xl">🌍</span>
+              <div>
+                <div className="font-bold text-emerald-700">شهادات ESG</div>
+                <div className="text-sm text-gray-500">أثرك البيئي</div>
+              </div>
+            </Link>
+            <Link
+              href="/scrap/collector"
+              className="flex items-center gap-3 p-4 bg-gradient-to-l from-purple-50 to-indigo-50 rounded-xl hover:shadow-md transition"
+            >
+              <span className="text-3xl">💼</span>
+              <div>
+                <div className="font-bold text-purple-700">اعمل كجامع</div>
+                <div className="text-sm text-gray-500">اربح معنا</div>
+              </div>
+            </Link>
           </div>
         </div>
       </div>
