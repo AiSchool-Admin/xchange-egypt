@@ -756,4 +756,184 @@ router.get('/check-products', async (req, res) => {
   }
 });
 
+/**
+ * SEED PROPERTIES MARKETPLACE
+ * تغذية سوق العقارات ببيانات تجريبية
+ */
+router.post('/seed-properties', async (req, res) => {
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    // Read the SQL file
+    const sqlPath = path.join(__dirname, '../../prisma/seeds/properties_comprehensive_seed.sql');
+    const sqlContent = fs.readFileSync(sqlPath, 'utf-8');
+
+    // Split by semicolons and execute each statement
+    const statements = sqlContent
+      .split(';')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('--'));
+
+    let successCount = 0;
+    let errorCount = 0;
+    const errors: string[] = [];
+
+    for (const statement of statements) {
+      try {
+        await prisma.$executeRawUnsafe(statement + ';');
+        successCount++;
+      } catch (err: any) {
+        // Skip duplicate key errors
+        if (!err.message?.includes('duplicate key') && !err.message?.includes('already exists')) {
+          errorCount++;
+          errors.push(err.message?.substring(0, 100) || 'Unknown error');
+        }
+      }
+    }
+
+    // Get counts
+    const propertiesCount = await prisma.property.count();
+    const transactionsCount = await prisma.propertyTransaction.count();
+    const rentalsCount = await prisma.rentalContract.count();
+    const inspectionsCount = await prisma.fieldInspection.count();
+    const barterProposalsCount = await prisma.propertyBarterProposal.count();
+
+    return res.json({
+      success: true,
+      message: 'تم تغذية سوق العقارات بنجاح! 🏠',
+      data: {
+        statementsExecuted: successCount,
+        errors: errorCount,
+        counts: {
+          properties: propertiesCount,
+          transactions: transactionsCount,
+          rentals: rentalsCount,
+          inspections: inspectionsCount,
+          barterProposals: barterProposalsCount,
+        },
+      },
+      errorDetails: errors.length > 0 ? errors.slice(0, 5) : undefined,
+    });
+  } catch (error: any) {
+    console.error('Seed properties error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في تغذية سوق العقارات',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * CHECK PROPERTIES MARKETPLACE DATA
+ * فحص بيانات سوق العقارات
+ */
+router.get('/check-properties', async (_req, res) => {
+  try {
+    const properties = await prisma.property.findMany({
+      include: {
+        owner: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const transactions = await prisma.propertyTransaction.findMany({
+      include: {
+        property: {
+          select: {
+            id: true,
+            title: true,
+            titleAr: true,
+          },
+        },
+        buyer: {
+          select: {
+            fullName: true,
+          },
+        },
+        seller: {
+          select: {
+            fullName: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const rentals = await prisma.rentalContract.count();
+    const inspections = await prisma.fieldInspection.count();
+    const barterProposals = await prisma.propertyBarterProposal.count();
+
+    // Group properties by type
+    const byType = properties.reduce((acc, p) => {
+      acc[p.propertyType] = (acc[p.propertyType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Group properties by listing type
+    const byListingType = properties.reduce((acc, p) => {
+      acc[p.listingType] = (acc[p.listingType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Group transactions by status
+    const txByStatus = transactions.reduce((acc, t) => {
+      acc[t.status] = (acc[t.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return res.json({
+      success: true,
+      message: 'تقرير سوق العقارات',
+      summary: {
+        totalProperties: properties.length,
+        totalTransactions: transactions.length,
+        totalRentals: rentals,
+        totalInspections: inspections,
+        totalBarterProposals: barterProposals,
+      },
+      breakdown: {
+        byPropertyType: byType,
+        byListingType: byListingType,
+        transactionsByStatus: txByStatus,
+      },
+      properties: properties.map(p => ({
+        id: p.id,
+        title: p.titleAr || p.title,
+        type: p.propertyType,
+        listingType: p.listingType,
+        governorate: p.governorate,
+        price: p.salePrice || p.rentPrice,
+        status: p.status,
+        verificationLevel: p.verificationLevel,
+        owner: p.owner?.fullName,
+      })),
+      transactions: transactions.map(t => ({
+        id: t.id,
+        type: t.transactionType,
+        property: t.property?.titleAr || t.property?.title,
+        buyer: t.buyer?.fullName,
+        seller: t.seller?.fullName,
+        price: t.agreedPrice,
+        status: t.status,
+        escrowStatus: t.escrowStatus,
+      })),
+    });
+  } catch (error: any) {
+    console.error('Check properties error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في جلب بيانات العقارات',
+      error: error.message,
+    });
+  }
+});
+
 export default router;
