@@ -88,7 +88,7 @@ export default function SellMobilePage() {
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [suggestedPrice, setSuggestedPrice] = useState<number | null>(null);
-  const [imeiStatus, setImeiStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+  const [imeiStatus, setImeiStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid' | 'registered'>('idle');
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<FormData>({
@@ -177,8 +177,31 @@ export default function SellMobilePage() {
         body: JSON.stringify({ imei: formData.imei }),
       });
       const data = await response.json();
-      setImeiStatus(data.success && data.data.isClean ? 'valid' : 'invalid');
+
+      if (data.success) {
+        // Check if IMEI is already registered with another listing
+        if (data.data?.isRegistered) {
+          setImeiStatus('registered');
+          return;
+        }
+
+        // IMEI is clean if:
+        // 1. No previous verification (lastVerification is null) - assume clean
+        // 2. Or previous verification shows not blacklisted and not stolen
+        const verification = data.data?.lastVerification;
+        const isBlacklisted = verification?.isBlacklisted === true;
+        const isStolen = verification?.isStolen === true;
+
+        if (isBlacklisted || isStolen) {
+          setImeiStatus('invalid');
+        } else {
+          setImeiStatus('valid');
+        }
+      } else {
+        setImeiStatus('invalid');
+      }
     } catch (error) {
+      console.error('Error checking IMEI:', error);
       setImeiStatus('invalid');
     }
   };
@@ -506,10 +529,16 @@ export default function SellMobilePage() {
                   IMEI نظيف - الجهاز غير مسروق وغير محظور
                 </p>
               )}
+              {imeiStatus === 'registered' && (
+                <p className="mt-2 text-sm text-orange-600 flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  هذا الـ IMEI مسجل بالفعل في إعلان آخر
+                </p>
+              )}
               {imeiStatus === 'invalid' && (
                 <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
                   <AlertCircle className="w-4 h-4" />
-                  تحذير: قد يكون هناك مشكلة في هذا IMEI
+                  تحذير: هذا الـ IMEI مدرج في قائمة الأجهزة المحظورة أو المسروقة
                 </p>
               )}
               <p className="text-xs text-gray-500 mt-2">
