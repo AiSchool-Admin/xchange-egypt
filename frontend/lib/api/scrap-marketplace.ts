@@ -308,6 +308,65 @@ export interface SubmitOfferInput {
   photos?: string[];
 }
 
+export interface PurchaseRequest {
+  id: string;
+  buyerId: string;
+  title: string;
+  description?: string;
+  scrapType: ScrapType;
+  metalType?: MetalType;
+  minWeightKg?: number;
+  maxWeightKg?: number;
+  scrapCondition?: ScrapCondition;
+  offeredPricePerKg?: number;
+  offeredTotalPrice?: number;
+  isNegotiable: boolean;
+  governorate?: string;
+  city?: string;
+  offersPickup: boolean;
+  pickupAddress?: string;
+  expiresAt?: string;
+  status: string;
+  viewsCount: number;
+  offersCount: number;
+  createdAt: string;
+  updatedAt: string;
+  buyer?: {
+    id: string;
+    fullName: string;
+    avatar?: string;
+    businessName?: string;
+    rating: number;
+  };
+}
+
+export interface SellerOffer {
+  id: string;
+  requestId: string;
+  sellerId: string;
+  itemId?: string;
+  offeredWeightKg: number;
+  offeredPricePerKg?: number;
+  offeredTotalPrice: number;
+  message?: string;
+  photos: string[];
+  status: string;
+  rejectionReason?: string;
+  createdAt: string;
+  seller?: {
+    id: string;
+    fullName: string;
+    avatar?: string;
+    rating: number;
+    phone?: string;
+  };
+  item?: {
+    id: string;
+    title: string;
+    images: string[];
+  };
+}
+
 export const getPurchaseRequests = async (filters: PurchaseRequestFilters = {}) => {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
