@@ -87,23 +87,23 @@ export default function MobileBarterPage() {
       }
 
       if (activeTab === 'matches') {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/barter/matches`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/matches`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success) setMatches(data.data);
+        if (data.success) setMatches(data.data || []);
       } else if (activeTab === 'proposals') {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/barter/proposals`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/proposals`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success) setProposals(data.data);
+        if (data.success) setProposals(data.data || []);
       } else {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/barter/proposals/received`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/proposals/received`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success) setReceivedProposals(data.data);
+        if (data.success) setReceivedProposals(data.data || []);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -115,7 +115,7 @@ export default function MobileBarterPage() {
   const handleAcceptMatch = async (matchId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/barter/matches/${matchId}/accept`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/matches/${matchId}/accept`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -129,7 +129,7 @@ export default function MobileBarterPage() {
   const handleRejectMatch = async (matchId: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/barter/matches/${matchId}/reject`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/matches/${matchId}/reject`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -143,7 +143,7 @@ export default function MobileBarterPage() {
   const handleRespondToProposal = async (proposalId: string, accept: boolean) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/mobiles/barter/proposals/${proposalId}/respond`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/proposals/${proposalId}/respond`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

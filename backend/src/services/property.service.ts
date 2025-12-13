@@ -606,8 +606,11 @@ export const searchProperties = async (
     where.openForBarter = openForBarter;
   }
 
-  // Featured filter
-  if (params.featured !== undefined) where.featured = params.featured;
+  // Featured filter - parse string "true"/"false" to boolean
+  if (params.featured !== undefined) {
+    const featured = params.featured === true || params.featured === 'true';
+    where.featured = featured;
+  }
   if (params.promotionTier) where.promotionTier = params.promotionTier;
 
   // Owner filter
