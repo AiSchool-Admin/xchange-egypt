@@ -5233,6 +5233,8 @@ model Property {
   @@index([verificationLevel])
   @@index([openForBarter])
   @@index([featured])
+}
+
 // مقارنة السيارات - Item Comparison
 // ============================================
 
@@ -6569,6 +6571,8 @@ model PropertyBarterProposal {
   @@index([receiverId])
   @@index([offeredPropertyId])
   @@index([requestedPropertyId])
+}
+
 // معاملات السيارات
 // ============================================
 
@@ -6756,6 +6760,8 @@ model RentalContract {
   @@index([propertyId])
   @@index([landlordId])
   @@index([tenantId])
+}
+
 // فحوصات السيارات
 // ============================================
 
@@ -6990,6 +6996,8 @@ model PropertyFavorite {
   @@map("property_favorites")
   @@index([userId])
   @@index([propertyId])
+}
+
 // مراكز الفحص الشركاء
 // ============================================
 
