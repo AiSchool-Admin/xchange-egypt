@@ -88,7 +88,7 @@ const megaMenuData = {
     items: [
       { href: '/items', icon: '🛒', label: 'السوق العام', desc: 'تصفح جميع المنتجات' },
       { href: '/cars', icon: '🚗', label: 'سوق السيارات', desc: 'سيارات بنظام Escrow ومقايضة' },
-      { href: '/real-estate', icon: '🏠', label: 'سوق العقارات', desc: 'شقق وفيلات وأراضي' },
+      { href: '/properties', icon: '🏠', label: 'سوق العقارات', desc: 'شقق وفيلات مع نظام Escrow وتحقق حكومي' },
       { href: '/auctions', icon: '🔨', label: 'المزادات', desc: 'مزادات حية ومباشرة' },
       { href: '/scrap', icon: '♻️', label: 'سوق التوالف', desc: 'خردة ومواد قابلة للتدوير' },
       { href: '/gold', icon: '💰', label: 'سوق الذهب', desc: 'بيع وشراء الذهب بأفضل الأسعار' },
@@ -515,22 +515,22 @@ const categoriesData = [
     id: 'real-estate',
     name: 'العقارات',
     icon: '🏠',
-    href: '/items?category=real-estate',
+    href: '/properties',
     subcategories: [
       {
         title: 'سكني',
         items: [
-          { name: 'شقق', href: '/items?category=apartments' },
-          { name: 'فلل', href: '/items?category=villas' },
-          { name: 'أراضي', href: '/items?category=land' },
+          { name: 'شقق', href: '/properties?type=APARTMENT' },
+          { name: 'فلل', href: '/properties?type=VILLA' },
+          { name: 'أراضي', href: '/properties?type=LAND' },
         ]
       },
       {
         title: 'تجاري',
         items: [
-          { name: 'محلات', href: '/items?category=commercial' },
-          { name: 'مكاتب', href: '/items?category=offices' },
-          { name: 'مخازن', href: '/items?category=warehouses' },
+          { name: 'محلات', href: '/properties?type=SHOP' },
+          { name: 'مكاتب', href: '/properties?type=OFFICE' },
+          { name: 'مخازن', href: '/properties?type=WAREHOUSE' },
         ]
       },
     ],
@@ -1391,9 +1391,9 @@ export default function Navigation() {
                 سوق السيارات
               </Link>
               <Link
-                href="/real-estate"
+                href="/properties"
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
-                  isActive('/real-estate')
+                  isActive('/properties')
                     ? 'bg-white text-emerald-700 shadow-md'
                     : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
