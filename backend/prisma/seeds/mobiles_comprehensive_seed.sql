@@ -9,6 +9,15 @@
 -- References users by email: test1@xchange.eg through test10@xchange.eg
 
 -- =====================================================
+-- CLEANUP - Delete existing mobile data (مسح البيانات القديمة)
+-- =====================================================
+DELETE FROM mobile_favorites;
+DELETE FROM mobile_barter_proposals;
+DELETE FROM mobile_transactions;
+DELETE FROM mobile_listings;
+DELETE FROM mobile_price_references;
+
+-- =====================================================
 -- Mobile Price References (أسعار مرجعية للموبايلات)
 -- =====================================================
 INSERT INTO mobile_price_references (id, brand, model, storage_gb, release_year, price_low, price_average, price_high, condition_a_multiplier, condition_b_multiplier, condition_c_multiplier, condition_d_multiplier, data_source, sample_size, recorded_at)
