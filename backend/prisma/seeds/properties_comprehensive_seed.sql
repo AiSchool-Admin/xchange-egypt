@@ -493,7 +493,7 @@ INSERT INTO property_barter_proposals (
   id, proposer_id, receiver_id,
   offered_property_id, requested_property_id,
   cash_difference, cash_payer,
-  message, status, created_at, updated_at
+  proposer_message, status, created_at
 )
 SELECT
   gen_random_uuid(),
@@ -503,14 +503,14 @@ SELECT
   (SELECT id FROM properties WHERE title_ar = 'فيلا مستقلة في الشيخ زايد' LIMIT 1),
   8200000, (SELECT id FROM users WHERE email = 'test3@xchange.eg'),
   'مهتم بمقايضة الدوبلكس بالفيلا مع دفع الفرق. الدوبلكس في حالة ممتازة وموقع متميز.',
-  'PENDING', NOW() - INTERVAL '3 days', NOW();
+  'PENDING', NOW() - INTERVAL '3 days';
 
 -- Barter Proposal 2: عرض مقايضة شاليه بشقة
 INSERT INTO property_barter_proposals (
   id, proposer_id, receiver_id,
   offered_property_id, requested_property_id,
   cash_difference, cash_payer,
-  message, status, created_at, updated_at
+  proposer_message, status, created_at, responded_at
 )
 SELECT
   gen_random_uuid(),
@@ -528,22 +528,18 @@ SELECT
 
 -- Field Inspection 1: فحص مكتمل
 INSERT INTO field_inspections (
-  id, property_id, inspector_id, requested_by_id,
-  inspection_type, scheduled_date,
-  status, overall_rating, recommendation,
-  structural_condition, electrical_condition, plumbing_condition,
-  finishing_quality, amenities_working,
-  notes, report_url, photos,
+  id, property_id, requested_by_id,
+  inspection_type, scheduled_at,
+  status, overall_score, recommendation,
+  report_notes, report_url, inspection_photos,
   created_at, updated_at, completed_at
 )
 SELECT
   gen_random_uuid(),
   (SELECT id FROM properties WHERE title_ar = 'شقة فاخرة في التجمع الخامس' LIMIT 1),
-  (SELECT id FROM users WHERE email = 'test10@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   'PRE_PURCHASE', NOW() - INTERVAL '20 days',
   'COMPLETED', 92, 'HIGHLY_RECOMMENDED',
-  95, 90, 88, 95, 92,
   'العقار في حالة ممتازة. جميع المرافق تعمل بشكل جيد. موصى به للشراء.',
   '/reports/inspection-001.pdf',
   '["https://example.com/inspection1.jpg","https://example.com/inspection2.jpg"]'::jsonb,
@@ -551,16 +547,15 @@ SELECT
 
 -- Field Inspection 2: فحص مجدول
 INSERT INTO field_inspections (
-  id, property_id, inspector_id, requested_by_id,
-  inspection_type, scheduled_date,
+  id, property_id, requested_by_id,
+  inspection_type, scheduled_at,
   status,
-  notes,
+  report_notes,
   created_at, updated_at
 )
 SELECT
   gen_random_uuid(),
   (SELECT id FROM properties WHERE title_ar = 'فيلا مستقلة في الشيخ زايد' LIMIT 1),
-  NULL,
   (SELECT id FROM users WHERE email = 'test3@xchange.eg'),
   'COMPREHENSIVE', NOW() + INTERVAL '5 days',
   'SCHEDULED',
@@ -575,9 +570,8 @@ SELECT
 INSERT INTO rental_contracts (
   id, property_id, landlord_id, tenant_id,
   start_date, end_date, monthly_rent,
-  security_deposit, deposit_protected, deposit_escrow_id,
-  contract_type, payment_day, grace_period_days,
-  utilities_included, maintenance_responsibility,
+  security_deposit, deposit_protected, deposit_escrow_account,
+  contract_type,
   status, notes, created_at, updated_at
 )
 SELECT
@@ -586,9 +580,8 @@ SELECT
   (SELECT id FROM users WHERE email = 'test7@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test3@xchange.eg'),
   NOW() - INTERVAL '30 days', NOW() + INTERVAL '335 days', 18000,
-  36000, true, gen_random_uuid()::text,
-  'NEW_RENT', 1, 5,
-  '["water","gas"]'::jsonb, 'LANDLORD',
+  36000, true, 'ESC-RENT-001',
+  'NEW_RENT',
   'ACTIVE', 'عقد إيجار سنوي مع إمكانية التجديد',
   NOW() - INTERVAL '32 days', NOW();
 
@@ -597,7 +590,7 @@ INSERT INTO rental_contracts (
   id, property_id, landlord_id, tenant_id,
   start_date, end_date, monthly_rent,
   security_deposit, deposit_protected,
-  contract_type, payment_day,
+  contract_type,
   status, notes, created_at, updated_at
 )
 SELECT
@@ -607,8 +600,8 @@ SELECT
   (SELECT id FROM users WHERE email = 'test9@xchange.eg'),
   NOW() - INTERVAL '400 days', NOW() - INTERVAL '35 days', 7500,
   15000, false,
-  'NEW_RENT', 5,
-  'COMPLETED', 'عقد منتهي بتاريخه بدون مشاكل',
+  'NEW_RENT',
+  'EXPIRED', 'عقد منتهي بتاريخه بدون مشاكل',
   NOW() - INTERVAL '402 days', NOW() - INTERVAL '35 days';
 
 -- =====================================================
