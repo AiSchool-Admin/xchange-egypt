@@ -132,7 +132,7 @@ SELECT
   'SALE', 3200000, 4000, true,
   NULL, 'PRELIMINARY', 'DOCUMENTS_VERIFIED',
   true, '{"acceptedTypes": ["APARTMENT", "CAR"], "minValue": 2000000, "maxCashDifference": 1200000}'::jsonb,
-  'ACTIVE', false, 'STANDARD', 340, 12,
+  'ACTIVE', false, 'BASIC', 340, 12,
   '["https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800","https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800"]'::jsonb,
   NOW() - INTERVAL '25 days', NOW(), NOW() + INTERVAL '65 days'
 FROM users u WHERE u.email = 'test1@xchange.eg' LIMIT 1;
@@ -224,7 +224,7 @@ SELECT
   'RENT', 35000, 'monthly', true,
   'READY', 'REGISTERED', 'DOCUMENTS_VERIFIED',
   false,
-  'ACTIVE', false, 'STANDARD', 280, 8,
+  'ACTIVE', false, 'BASIC', 280, 8,
   '["https://images.unsplash.com/photo-1497366216548-37526070297c?w=800","https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800"]'::jsonb,
   NOW() - INTERVAL '18 days', NOW(), NOW() + INTERVAL '42 days'
 FROM users u WHERE u.email = 'test1@xchange.eg' LIMIT 1;
@@ -286,7 +286,7 @@ SELECT
   true, 8, 10, 51563,
   'UNDER_CONSTRUCTION', '2025-06-30', 'PRELIMINARY', 'DOCUMENTS_VERIFIED',
   false,
-  'ACTIVE', false, 'STANDARD', 320, 22,
+  'ACTIVE', false, 'BASIC', 320, 22,
   '["https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800","https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800"]'::jsonb,
   NOW() - INTERVAL '40 days', NOW(), NOW() + INTERVAL '50 days'
 FROM users u WHERE u.email = 'test6@xchange.eg' LIMIT 1;
