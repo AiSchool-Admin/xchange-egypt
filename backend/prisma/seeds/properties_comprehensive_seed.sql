@@ -422,7 +422,7 @@ SELECT
   4400000, 44000, 88000,
   'VERIFICATION_IN_PROGRESS', 440000, NOW() - INTERVAL '10 days',
   true, false,
-  'IN_PROGRESS', 'في انتظار التحقق الحكومي',
+  'REGISTRATION_PENDING', 'في انتظار التحقق الحكومي',
   NOW() - INTERVAL '15 days', NOW();
 
 -- Transaction 3: عقد إيجار نشط
@@ -443,7 +443,7 @@ SELECT
   18000,
   36000, true,
   NOW() - INTERVAL '30 days', NOW() + INTERVAL '335 days',
-  'ACTIVE', 'عقد إيجار سنوي مع حماية التأمين',
+  'COMPLETED', 'عقد إيجار سنوي مع حماية التأمين',
   NOW() - INTERVAL '32 days', NOW();
 
 -- Transaction 4: مقايضة عقار بسيارة
