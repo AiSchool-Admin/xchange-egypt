@@ -87,8 +87,13 @@ const megaMenuData = {
     title: 'الأسواق',
     items: [
       { href: '/items', icon: '🛒', label: 'السوق العام', desc: 'تصفح جميع المنتجات' },
+      { href: '/cars', icon: '🚗', label: 'سوق السيارات', desc: 'سيارات بنظام Escrow ومقايضة' },
+      { href: '/properties', icon: '🏠', label: 'سوق العقارات', desc: 'شقق وفيلات مع نظام Escrow وتحقق حكومي' },
+      { href: '/mobiles', icon: '📱', label: 'سوق الموبايلات', desc: 'موبايلات مع IMEI موثق ومقايضة ذكية' },
       { href: '/auctions', icon: '🔨', label: 'المزادات', desc: 'مزادات حية ومباشرة' },
       { href: '/scrap', icon: '♻️', label: 'سوق التوالف', desc: 'خردة ومواد قابلة للتدوير' },
+      { href: '/gold', icon: '💰', label: 'سوق الذهب', desc: 'بيع وشراء الذهب بأفضل الأسعار' },
+      { href: '/silver', icon: '🥈', label: 'سوق الفضة', desc: 'فضة بأسعار مميزة وتوفير حتى 30%' },
       { href: '/luxury', icon: '👑', label: 'السوق الفاخر', desc: 'منتجات راقية ومميزة' },
       { href: '/deals', icon: '⚡', label: 'عروض اليوم', desc: 'خصومات لفترة محدودة' },
     ],
@@ -97,10 +102,10 @@ const megaMenuData = {
     title: 'الخدمات',
     items: [
       { href: '/escrow', icon: '🔒', label: 'نظام الضمان', desc: 'حماية صفقاتك' },
-      { href: '/wallet', icon: '💳', label: 'المحفظة', desc: 'إدارة رصيدك' },
-      { href: '/facilitators', icon: '🤝', label: 'الوسطاء', desc: 'مساعدة في الصفقات' },
-      { href: '/exchange-points', icon: '📍', label: 'نقاط التبادل', desc: 'أماكن آمنة للقاء' },
-      { href: '/barter-chains', icon: '🔗', label: 'سلاسل المقايضة', desc: 'مقايضات متعددة الأطراف' },
+      { href: '/installments', icon: '💳', label: 'التقسيط', desc: 'اشتر الآن وادفع لاحقاً' },
+      { href: '/delivery', icon: '🚚', label: 'التوصيل', desc: 'تتبع شحناتك' },
+      { href: '/badges', icon: '🏅', label: 'الشارات', desc: 'زد مصداقيتك' },
+      { href: '/compare', icon: '📊', label: 'المقارنة', desc: 'قارن المنتجات' },
     ],
   },
   account: {
@@ -507,6 +512,54 @@ const categoriesData = [
       },
     ],
   },
+  {
+    id: 'real-estate',
+    name: 'العقارات',
+    icon: '🏠',
+    href: '/properties',
+    subcategories: [
+      {
+        title: 'سكني',
+        items: [
+          { name: 'شقق', href: '/properties?type=APARTMENT' },
+          { name: 'فلل', href: '/properties?type=VILLA' },
+          { name: 'أراضي', href: '/properties?type=LAND' },
+        ]
+      },
+      {
+        title: 'تجاري',
+        items: [
+          { name: 'محلات', href: '/properties?type=SHOP' },
+          { name: 'مكاتب', href: '/properties?type=OFFICE' },
+          { name: 'مخازن', href: '/properties?type=WAREHOUSE' },
+        ]
+      },
+    ],
+  },
+  {
+    id: 'art-collectibles',
+    name: 'الفن والمقتنيات',
+    icon: '🎨',
+    href: '/items?category=art-collectibles',
+    subcategories: [
+      {
+        title: 'التحف',
+        items: [
+          { name: 'ساعات أثرية', href: '/items?category=antique-clocks' },
+          { name: 'أثاث أثري', href: '/items?category=antique-furniture' },
+          { name: 'فخار', href: '/items?category=pottery' },
+        ]
+      },
+      {
+        title: 'المقتنيات',
+        items: [
+          { name: 'عملات', href: '/items?category=coins-currency' },
+          { name: 'طوابع', href: '/items?category=stamps' },
+          { name: 'لوحات', href: '/items?category=paintings' },
+        ]
+      },
+    ],
+  },
 ];
 
 // ============================================
@@ -565,10 +618,30 @@ export default function Navigation() {
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
+      fetchCartCount();
     } else {
       setUnreadCount(0);
+      setCartCount(0);
     }
   }, [user]);
+
+  // Fetch cart count
+  const fetchCartCount = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) return;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const result = await response.json();
+        const cart = result.data || result;
+        setCartCount(cart?.items?.length || 0);
+      }
+    } catch (error) {
+      console.error('Failed to fetch cart count:', error);
+    }
+  };
 
   // Listen for real-time notifications
   useEffect(() => {
@@ -774,7 +847,7 @@ export default function Navigation() {
                           type="button"
                           onClick={() => {
                             setSearchQuery(suggestion);
-                            router.push(`/items?q=${encodeURIComponent(suggestion)}`);
+                            router.push(`/items?search=${encodeURIComponent(suggestion)}`);
                           }}
                           className="w-full text-right flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
                         >
@@ -804,7 +877,7 @@ export default function Navigation() {
                           type="button"
                           onClick={() => {
                             setSearchQuery(search);
-                            router.push(`/items?q=${encodeURIComponent(search)}`);
+                            router.push(`/items?search=${encodeURIComponent(search)}`);
                           }}
                           className="w-full text-right flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors"
                         >
@@ -825,7 +898,7 @@ export default function Navigation() {
                           type="button"
                           onClick={() => {
                             setSearchQuery(trend);
-                            router.push(`/items?q=${encodeURIComponent(trend)}`);
+                            router.push(`/items?search=${encodeURIComponent(trend)}`);
                           }}
                           className="px-3 py-1.5 bg-gray-100 hover:bg-primary-100 hover:text-primary-600 rounded-full text-sm text-gray-600 transition-colors flex items-center gap-1"
                         >
@@ -1062,6 +1135,15 @@ export default function Navigation() {
                     )}
                   </Link>
 
+                  {/* Dashboard Button */}
+                  <Link
+                    href="/dashboard"
+                    className="hidden md:flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-xl font-medium transition-colors"
+                  >
+                    <span>📊</span>
+                    <span>لوحة التحكم</span>
+                  </Link>
+
                   {/* Add Listing Button */}
                   <Link
                     href="/inventory/add"
@@ -1282,74 +1364,130 @@ export default function Navigation() {
 
         {/* ============================================
             Specialized Markets Quick Navigation Bar
+            - Main Competitive Advantage of the Platform
             ============================================ */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
+        <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center justify-center gap-1 py-2 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center justify-center gap-1 py-3 overflow-x-auto scrollbar-hide">
               <Link
                 href="/items"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                   isActive('/items')
-                    ? 'bg-primary-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-emerald-800 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>🛒</span>
+                <span className="text-lg">🛒</span>
                 السوق العام
               </Link>
               <Link
-                href="/auctions"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                  isActive('/auctions')
-                    ? 'bg-amber-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                href="/cars"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/cars')
+                    ? 'bg-white text-blue-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>🔨</span>
+                <span className="text-lg">🚗</span>
+                سوق السيارات
+              </Link>
+              <Link
+                href="/properties"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/properties')
+                    ? 'bg-white text-emerald-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">🏠</span>
+                سوق العقارات
+              </Link>
+              <Link
+                href="/mobiles"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/mobiles')
+                    ? 'bg-white text-indigo-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">📱</span>
+                سوق الموبايلات
+              </Link>
+              <Link
+                href="/auctions"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/auctions')
+                    ? 'bg-white text-amber-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">🔨</span>
                 المزادات
               </Link>
               <Link
                 href="/reverse-auctions"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                   isActive('/reverse-auctions')
-                    ? 'bg-blue-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-blue-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>📋</span>
+                <span className="text-lg">📋</span>
                 المناقصات
               </Link>
               <Link
                 href="/luxury"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                   isActive('/luxury')
-                    ? 'bg-purple-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-purple-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>👑</span>
+                <span className="text-lg">👑</span>
                 سوق الفاخر
               </Link>
               <Link
                 href="/scrap"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
                   isActive('/scrap')
-                    ? 'bg-green-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    ? 'bg-white text-green-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>♻️</span>
+                <span className="text-lg">♻️</span>
                 سوق التوالف
               </Link>
               <Link
-                href="/barter"
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap transition-all ${
-                  isActive('/barter')
-                    ? 'bg-orange-500 text-white'
-                    : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                href="/gold"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/gold')
+                    ? 'bg-white text-yellow-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
               >
-                <span>🔄</span>
+                <span className="text-lg">💰</span>
+                سوق الذهب
+              </Link>
+              <Link
+                href="/silver"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/silver')
+                    ? 'bg-white text-slate-600 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">🥈</span>
+                سوق الفضة
+              </Link>
+              <Link
+                href="/barter"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/barter')
+                    ? 'bg-white text-orange-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">🔄</span>
                 المقايضات
               </Link>
             </div>

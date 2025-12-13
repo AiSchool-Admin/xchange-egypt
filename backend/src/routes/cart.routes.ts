@@ -10,6 +10,16 @@ import {
 
 const router = Router();
 
+// Debug logging for cart routes
+router.use((req, res, next) => {
+  console.log(`🛒 Cart route hit: ${req.method} ${req.originalUrl}`);
+  console.log('   Headers:', JSON.stringify({
+    authorization: req.headers.authorization ? 'Bearer ***' : 'none',
+    'content-type': req.headers['content-type'],
+  }));
+  next();
+});
+
 // All cart routes require authentication
 router.use(authenticate);
 

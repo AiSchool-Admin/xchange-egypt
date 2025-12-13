@@ -10,7 +10,7 @@ const barterOfferStatusEnum = z.nativeEnum(BarterOfferStatus, {
 const preferenceSetSchema = z.object({
   priority: z.number().int().min(1).max(10, 'Priority must be between 1 and 10'),
   itemIds: z
-    .array(z.string().uuid('Invalid item ID'))
+    .array(z.string().min(1, 'Item ID is required'))
     .max(10, 'Maximum 10 items per preference set')
     .default([]),
   description: z.string().max(500, 'Description must not exceed 500 characters').optional(),
@@ -25,7 +25,7 @@ const preferenceSetSchema = z.object({
 // Item Request Schema (for description-based requests)
 const itemRequestSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description must not exceed 500 characters'),
-  categoryId: z.string().uuid('Invalid category ID').optional(),
+  categoryId: z.string().min(1).optional(),
   minPrice: z.number().min(0).optional(),
   maxPrice: z.number().min(0).optional(),
 });
@@ -34,7 +34,7 @@ const itemRequestSchema = z.object({
 export const createBarterOfferSchema = z.object({
   body: z.object({
     offeredItemIds: z
-      .array(z.string().uuid('Invalid offered item ID'))
+      .array(z.string().min(1, 'Item ID is required'))
       .max(20, 'Maximum 20 items per bundle')
       .default([]),
     preferenceSets: z
@@ -45,16 +45,23 @@ export const createBarterOfferSchema = z.object({
       .array(itemRequestSchema)
       .max(5, 'Maximum 5 item requests')
       .optional(),
-    recipientId: z.string().uuid('Invalid recipient ID').optional(),
+    recipientId: z.string().min(1).optional(),
     notes: z
       .string()
       .max(1000, 'Notes must not exceed 1000 characters')
       .optional(),
     expiresAt: z
       .string()
-      .datetime('Invalid expiration date')
+      .min(1)
       .optional()
-      .transform((val) => (val ? new Date(val) : undefined)),
+      .transform((val) => {
+        if (!val) return undefined;
+        const date = new Date(val);
+        if (isNaN(date.getTime())) {
+          throw new Error('Invalid expiration date format');
+        }
+        return date;
+      }),
     isOpenOffer: z.boolean().default(false).optional(),
     offeredCashAmount: z.number().min(0, 'Cash amount must be positive').default(0).optional(),
     requestedCashAmount: z.number().min(0, 'Cash amount must be positive').default(0).optional(),
@@ -109,12 +116,12 @@ export const createBarterOfferSchema = z.object({
 // Accept Barter Offer Schema (with preference set selection)
 export const acceptBarterOfferSchema = z.object({
   params: z.object({
-    offerId: z.string().uuid('Invalid offer ID'),
+    offerId: z.string().min(1, 'Offer ID is required'),
   }),
   body: z.object({
-    preferenceSetId: z.string().uuid('Invalid preference set ID').optional(),
+    preferenceSetId: z.string().min(1).optional(),
     offeredItemIds: z
-      .array(z.string().uuid('Invalid offered item ID'))
+      .array(z.string().min(1, 'Item ID is required'))
       .min(1, 'Must offer at least one item')
       .optional(),
   }),
@@ -123,7 +130,7 @@ export const acceptBarterOfferSchema = z.object({
 // Reject Barter Offer Schema
 export const rejectBarterOfferSchema = z.object({
   params: z.object({
-    offerId: z.string().uuid('Invalid offer ID'),
+    offerId: z.string().min(1, 'Offer ID is required'),
   }),
   body: z.object({
     reason: z
@@ -137,14 +144,14 @@ export const rejectBarterOfferSchema = z.object({
 // Cancel Barter Offer Schema
 export const cancelBarterOfferSchema = z.object({
   params: z.object({
-    offerId: z.string().uuid('Invalid offer ID'),
+    offerId: z.string().min(1, 'Offer ID is required'),
   }),
 });
 
 // Get Barter Offer by ID Schema
 export const getBarterOfferByIdSchema = z.object({
   params: z.object({
-    offerId: z.string().uuid('Invalid offer ID'),
+    offerId: z.string().min(1, 'Offer ID is required'),
   }),
 });
 
@@ -172,7 +179,7 @@ export const getMyBarterOffersSchema = z.object({
 export const searchBarterableItemsSchema = z.object({
   query: z.object({
     search: z.string().optional(),
-    categoryId: z.string().uuid('Invalid category ID').optional(),
+    categoryId: z.string().min(1).optional(),
     condition: z.string().optional(),
     governorate: z.string().optional(),
     excludeMyItems: z
@@ -198,10 +205,10 @@ export const searchBarterableItemsSchema = z.object({
 // Find Barter Matches Schema
 export const findBarterMatchesSchema = z.object({
   params: z.object({
-    itemId: z.string().uuid('Invalid item ID'),
+    itemId: z.string().min(1, 'Item ID is required'),
   }),
   query: z.object({
-    categoryId: z.string().uuid('Invalid category ID').optional(),
+    categoryId: z.string().min(1).optional(),
     maxDistance: z
       .string()
       .transform((val) => parseInt(val, 10))
@@ -214,7 +221,7 @@ export const findBarterMatchesSchema = z.object({
 // Complete Barter Exchange Schema
 export const completeBarterExchangeSchema = z.object({
   params: z.object({
-    offerId: z.string().uuid('Invalid offer ID'),
+    offerId: z.string().min(1, 'Offer ID is required'),
   }),
   body: z.object({
     confirmationNotes: z
@@ -236,14 +243,14 @@ const barterChainStatusEnum = z.nativeEnum(BarterChainStatus, {
 // Discover Barter Opportunities Schema
 export const discoverOpportunitiesSchema = z.object({
   params: z.object({
-    itemId: z.string().uuid('Invalid item ID'),
+    itemId: z.string().min(1, 'Item ID is required'),
   }),
 });
 
 // Create Smart Proposal Schema
 export const createSmartProposalSchema = z.object({
   body: z.object({
-    itemId: z.string().uuid('Invalid item ID'),
+    itemId: z.string().min(1, 'Item ID is required'),
     maxParticipants: z
       .number()
       .int()
@@ -258,14 +265,14 @@ export const createSmartProposalSchema = z.object({
 // Get Barter Chain Schema
 export const getBarterChainSchema = z.object({
   params: z.object({
-    chainId: z.string().uuid('Invalid chain ID'),
+    chainId: z.string().min(1, 'Chain ID is required'),
   }),
 });
 
 // Respond to Chain Proposal Schema
 export const respondToChainSchema = z.object({
   params: z.object({
-    chainId: z.string().uuid('Invalid chain ID'),
+    chainId: z.string().min(1, 'Chain ID is required'),
   }),
   body: z.object({
     accept: z.boolean(),
@@ -276,14 +283,14 @@ export const respondToChainSchema = z.object({
 // Cancel Barter Chain Schema
 export const cancelBarterChainSchema = z.object({
   params: z.object({
-    chainId: z.string().uuid('Invalid chain ID'),
+    chainId: z.string().min(1, 'Chain ID is required'),
   }),
 });
 
 // Execute Barter Chain Schema
 export const executeBarterChainSchema = z.object({
   params: z.object({
-    chainId: z.string().uuid('Invalid chain ID'),
+    chainId: z.string().min(1, 'Chain ID is required'),
   }),
 });
 
@@ -336,6 +343,6 @@ export const getMatchingOffersSchema = z.object({
 // Get Best Match For Offer Schema
 export const getBestMatchSchema = z.object({
   params: z.object({
-    offerId: z.string().uuid('Invalid offer ID'),
+    offerId: z.string().min(1, 'Offer ID is required'),
   }),
 });

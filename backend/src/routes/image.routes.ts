@@ -156,4 +156,13 @@ router.post(
   imageController.cleanupTempFiles
 );
 
+/**
+ * Get storage provider info
+ * GET /api/v1/images/storage-info
+ */
+router.get(
+  '/storage-info',
+  imageController.getStorageInfo
+);
+
 export default router;

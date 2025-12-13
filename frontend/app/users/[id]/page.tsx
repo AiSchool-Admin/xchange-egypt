@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { getReviews, getUserReviewStats, Review, ReviewStats as ReviewStatsType } from '@/lib/api/reviews';
 import { getItems, Item } from '@/lib/api/items';
 import { StarRating, ReviewCard, ReviewStats } from '@/components/reviews';
+import apiClient from '@/lib/api/client';
 
 interface UserProfile {
   id: string;
@@ -15,11 +16,40 @@ interface UserProfile {
   email?: string;
   phone?: string;
   governorate?: string;
+  city?: string;
   bio?: string;
   rating: number;
   totalReviews: number;
   createdAt: string;
+  businessName?: string;
+  userType?: string;
 }
+
+// Fetch user profile directly from API
+const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  try {
+    const response = await apiClient.get(`/users/${userId}`);
+    const userData = response.data?.data || response.data;
+    return {
+      id: userData.id,
+      fullName: userData.fullName || 'مستخدم',
+      avatar: userData.avatar,
+      email: userData.email,
+      phone: userData.phone,
+      governorate: userData.governorate,
+      city: userData.city,
+      bio: userData.bio,
+      rating: userData.rating || 0,
+      totalReviews: userData.totalReviews || 0,
+      createdAt: userData.createdAt,
+      businessName: userData.businessName,
+      userType: userData.userType,
+    };
+  } catch (error) {
+    console.error('Failed to fetch user profile:', error);
+    return null;
+  }
+};
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -43,39 +73,55 @@ export default function UserProfilePage() {
     const loadData = async () => {
       setLoading(true);
       try {
-        // Load reviews and stats (which also contain user info)
-        const [reviewsResponse, statsResponse, itemsResponse] = await Promise.all([
-          getReviews({ reviewedId: userId, limit: 10, sortBy }),
-          getUserReviewStats(userId),
+        // Load user profile directly from API
+        const defaultStats: ReviewStatsType = {
+          totalReviews: 0,
+          averageRating: 0,
+          ratingBreakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+          verifiedPurchasePercentage: 0,
+          detailedRatings: { itemAsDescribed: 0, communication: 0, shippingSpeed: 0, packaging: 0 },
+        };
+
+        const [userProfile, reviewsResponse, statsResponse, itemsResponse] = await Promise.all([
+          getUserProfile(userId),
+          getReviews({ reviewedId: userId, limit: 10, sortBy }).catch(() => ({ data: { reviews: [] } })),
+          getUserReviewStats(userId).catch(() => ({ data: defaultStats })),
           getItems({ sellerId: userId, limit: 12, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         ]);
 
-        setReviews(reviewsResponse.data.reviews);
-        setReviewStats(statsResponse.data);
+        setReviews(reviewsResponse.data?.reviews || []);
+        setReviewStats(statsResponse.data || defaultStats);
         setItems(itemsResponse.data?.items || []);
 
-        // Extract profile from first review or create placeholder
-        if (reviewsResponse.data.reviews.length > 0) {
-          const firstReview = reviewsResponse.data.reviews[0];
+        // Use fetched profile data
+        if (userProfile) {
           setProfile({
-            id: userId,
-            fullName: firstReview.reviewed?.fullName || 'مستخدم',
-            avatar: firstReview.reviewed?.avatar,
-            rating: statsResponse.data.averageRating,
-            totalReviews: statsResponse.data.totalReviews,
-            createdAt: new Date().toISOString(),
+            ...userProfile,
+            rating: statsResponse.data?.averageRating || userProfile.rating || 0,
+            totalReviews: statsResponse.data?.totalReviews || userProfile.totalReviews || 0,
           });
         } else {
+          // Fallback: extract profile from first review if available
+          const firstReview = reviewsResponse.data?.reviews?.[0];
           setProfile({
             id: userId,
-            fullName: 'مستخدم',
-            rating: 0,
-            totalReviews: 0,
+            fullName: firstReview?.reviewed?.fullName || 'مستخدم',
+            avatar: firstReview?.reviewed?.avatar,
+            rating: statsResponse.data?.averageRating || 0,
+            totalReviews: statsResponse.data?.totalReviews || 0,
             createdAt: new Date().toISOString(),
           });
         }
       } catch (error) {
         console.error('Failed to load user data:', error);
+        // Set a minimal profile on error
+        setProfile({
+          id: userId,
+          fullName: 'مستخدم',
+          rating: 0,
+          totalReviews: 0,
+          createdAt: new Date().toISOString(),
+        });
       } finally {
         setLoading(false);
       }

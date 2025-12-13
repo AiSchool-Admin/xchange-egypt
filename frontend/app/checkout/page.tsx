@@ -4,47 +4,24 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
-
-const EGYPTIAN_GOVERNORATES = [
-  { value: 'Cairo', label: 'القاهرة' },
-  { value: 'Alexandria', label: 'الإسكندرية' },
-  { value: 'Giza', label: 'الجيزة' },
-  { value: 'Shubra El Kheima', label: 'شبرا الخيمة' },
-  { value: 'Port Said', label: 'بورسعيد' },
-  { value: 'Suez', label: 'السويس' },
-  { value: 'Luxor', label: 'الأقصر' },
-  { value: 'Mansoura', label: 'المنصورة' },
-  { value: 'El-Mahalla El-Kubra', label: 'المحلة الكبرى' },
-  { value: 'Tanta', label: 'طنطا' },
-  { value: 'Asyut', label: 'أسيوط' },
-  { value: 'Ismailia', label: 'الإسماعيلية' },
-  { value: 'Faiyum', label: 'الفيوم' },
-  { value: 'Zagazig', label: 'الزقازيق' },
-  { value: 'Aswan', label: 'أسوان' },
-  { value: 'Damietta', label: 'دمياط' },
-  { value: 'Damanhur', label: 'دمنهور' },
-  { value: 'Minya', label: 'المنيا' },
-  { value: 'Beni Suef', label: 'بني سويف' },
-  { value: 'Qena', label: 'قنا' },
-  { value: 'Sohag', label: 'سوهاج' },
-  { value: 'Hurghada', label: 'الغردقة' },
-  { value: 'Shibin El Kom', label: 'شبين الكوم' },
-  { value: 'Banha', label: 'بنها' },
-  { value: 'Kafr El Sheikh', label: 'كفر الشيخ' },
-  { value: 'Arish', label: 'العريش' },
-  { value: 'Mallawi', label: 'ملوي' },
-  { value: '10th of Ramadan', label: 'العاشر من رمضان' },
-  { value: 'Bilbais', label: 'بلبيس' },
-  { value: 'Marsa Matruh', label: 'مرسى مطروح' },
-];
+import { EGYPTIAN_GOVERNORATES, getShippingCost } from '@/lib/constants/governorates';
 
 interface CartItem {
   id: string;
+  listingId: string;
   listing: {
     id: string;
-    title: string;
     price: number;
-    images: string[];
+    item: {
+      id: string;
+      title: string;
+      images: string[];
+      condition: string;
+      seller: {
+        id: string;
+        fullName: string;
+      };
+    };
   };
   quantity: number;
 }
@@ -71,9 +48,10 @@ export default function CheckoutPage() {
     governorate: '',
     city: '',
     street: '',
-    building: '',
+    buildingName: '',
+    buildingNumber: '',
     floor: '',
-    apartment: '',
+    apartmentNumber: '',
     landmark: '',
   });
 
@@ -86,10 +64,14 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (user) {
       fetchCart();
+      // Auto-fill shipping address from user's profile
       setShippingAddress(prev => ({
         ...prev,
         fullName: user.fullName || '',
         phone: user.phone || '',
+        governorate: user.governorate || '',
+        city: user.city || '',
+        street: user.street || user.address || '',
       }));
     }
   }, [user]);
@@ -97,11 +79,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     // Calculate shipping cost based on governorate
     if (shippingAddress.governorate) {
-      const costs: Record<string, number> = {
-        'Cairo': 30, 'Giza': 30, 'Alexandria': 45, 'Port Said': 50,
-        'Suez': 50, 'Luxor': 60, 'Aswan': 65, 'Hurghada': 55,
-      };
-      setShippingCost(costs[shippingAddress.governorate] || 50);
+      setShippingCost(getShippingCost(shippingAddress.governorate));
     }
   }, [shippingAddress.governorate]);
 
@@ -114,9 +92,11 @@ export default function CheckoutPage() {
         },
       });
       if (response.ok) {
-        const data = await response.json();
-        setCart(data);
-        if (!data || data.items.length === 0) {
+        const result = await response.json();
+        // API returns { success: true, data: {...} }
+        const cartData = result.data || result;
+        setCart(cartData);
+        if (!cartData || !cartData.items || cartData.items.length === 0) {
           router.push('/cart');
         }
       }
@@ -147,42 +127,65 @@ export default function CheckoutPage() {
       });
 
       if (response.ok) {
-        const order = await response.json();
+        const result = await response.json();
+        const order = result.data || result;
 
         if (paymentMethod === 'COD') {
           router.push(`/dashboard/orders?success=${order.id}`);
         } else if (paymentMethod === 'INSTAPAY') {
           // Redirect to InstaPay
-          const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/instapay/initiate`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ orderId: order.id }),
-          });
-          const paymentData = await paymentResponse.json();
-          if (paymentData.paymentUrl) {
-            window.location.href = paymentData.paymentUrl;
-          } else {
+          try {
+            const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/instapay/initiate`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ orderId: order.id }),
+            });
+            const paymentData = await paymentResponse.json();
+            if (paymentResponse.ok && paymentData.data?.paymentUrl) {
+              window.location.href = paymentData.data.paymentUrl;
+            } else {
+              // InstaPay not available - order created, redirect to orders
+              alert('تم إنشاء الطلب بنجاح. إنستاباي غير متاح حالياً، يرجى الدفع عند الاستلام أو استخدام فوري.');
+              router.push(`/dashboard/orders?success=${order.id}`);
+            }
+          } catch (paymentError) {
+            console.error('InstaPay error:', paymentError);
+            alert('تم إنشاء الطلب بنجاح. حدث خطأ في إنستاباي، يمكنك الدفع عند الاستلام.');
             router.push(`/dashboard/orders?success=${order.id}`);
           }
         } else if (paymentMethod === 'FAWRY') {
           // Show Fawry reference
-          const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/fawry/create`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ orderId: order.id }),
-          });
-          const paymentData = await paymentResponse.json();
-          router.push(`/dashboard/orders?success=${order.id}&fawryRef=${paymentData.referenceNumber}`);
+          try {
+            const paymentResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/fawry/create`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ orderId: order.id }),
+            });
+            const paymentData = await paymentResponse.json();
+            if (paymentResponse.ok && paymentData.data?.referenceNumber) {
+              router.push(`/dashboard/orders?success=${order.id}&fawryRef=${paymentData.data.referenceNumber}`);
+            } else {
+              // Fawry not available
+              alert('تم إنشاء الطلب بنجاح. فوري غير متاح حالياً، يرجى الدفع عند الاستلام.');
+              router.push(`/dashboard/orders?success=${order.id}`);
+            }
+          } catch (paymentError) {
+            console.error('Fawry error:', paymentError);
+            alert('تم إنشاء الطلب بنجاح. حدث خطأ في فوري، يمكنك الدفع عند الاستلام.');
+            router.push(`/dashboard/orders?success=${order.id}`);
+          }
         }
       } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to create order');
+        const errorData = await response.json();
+        const errorMessage = errorData.error?.message || errorData.message || 'فشل في إنشاء الطلب';
+        alert(errorMessage);
+        console.error('Order creation failed:', errorData);
       }
     } catch (error) {
       console.error('Failed to create order:', error);
@@ -265,7 +268,7 @@ export default function CheckoutPage() {
                     >
                       <option value="">اختر المحافظة</option>
                       {EGYPTIAN_GOVERNORATES.map((gov) => (
-                        <option key={gov.value} value={gov.value}>{gov.label}</option>
+                        <option key={gov.value} value={gov.value}>{gov.labelAr}</option>
                       ))}
                     </select>
                   </div>
@@ -295,16 +298,28 @@ export default function CheckoutPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      المبنى
+                      اسم المبنى
                     </label>
                     <input
                       type="text"
-                      value={shippingAddress.building}
-                      onChange={(e) => setShippingAddress({ ...shippingAddress, building: e.target.value })}
+                      value={shippingAddress.buildingName}
+                      onChange={(e) => setShippingAddress({ ...shippingAddress, buildingName: e.target.value })}
+                      placeholder="مثال: برج النيل، عمارة السلام"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        رقم المبنى
+                      </label>
+                      <input
+                        type="text"
+                        value={shippingAddress.buildingNumber}
+                        onChange={(e) => setShippingAddress({ ...shippingAddress, buildingNumber: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         الدور
@@ -318,12 +333,12 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        الشقة
+                        رقم الشقة
                       </label>
                       <input
                         type="text"
-                        value={shippingAddress.apartment}
-                        onChange={(e) => setShippingAddress({ ...shippingAddress, apartment: e.target.value })}
+                        value={shippingAddress.apartmentNumber}
+                        onChange={(e) => setShippingAddress({ ...shippingAddress, apartmentNumber: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       />
                     </div>
@@ -408,20 +423,20 @@ export default function CheckoutPage() {
                   {cart.items.map((item) => (
                     <div key={item.id} className="flex gap-3">
                       <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                        {item.listing.images?.[0] && (
+                        {item.listing?.item?.images?.[0] && (
                           <img
-                            src={item.listing.images[0]}
-                            alt={item.listing.title}
+                            src={item.listing.item.images[0]}
+                            alt={item.listing.item.title}
                             className="w-full h-full object-cover"
                           />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.listing.title}</p>
+                        <p className="text-sm font-medium truncate">{item.listing?.item?.title || 'منتج'}</p>
                         <p className="text-xs text-gray-500">الكمية: {item.quantity}</p>
                       </div>
                       <div className="text-sm font-medium">
-                        {(item.listing.price * item.quantity).toLocaleString()} ج.م
+                        {((item.listing?.price || 0) * item.quantity).toLocaleString()} ج.م
                       </div>
                     </div>
                   ))}

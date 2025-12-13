@@ -7,18 +7,20 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface CartItem {
   id: string;
+  listingId: string;
   listing: {
     id: string;
-    title: string;
     price: number;
-    images: string[];
     item: {
-      title: string;
-      condition: string;
-    };
-    seller: {
       id: string;
-      fullName: string;
+      title: string;
+      images: string[];
+      condition: string;
+      seller: {
+        id: string;
+        fullName: string;
+        avatar?: string;
+      };
     };
   };
   quantity: number;
@@ -59,8 +61,9 @@ export default function CartPage() {
         },
       });
       if (response.ok) {
-        const data = await response.json();
-        setCart(data);
+        const result = await response.json();
+        // API returns { success: true, data: {...} }
+        setCart(result.data || result);
       }
     } catch (error) {
       console.error('Failed to fetch cart:', error);
@@ -160,10 +163,10 @@ export default function CartPage() {
                   className="bg-white rounded-xl shadow-lg p-4 flex gap-4"
                 >
                   <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                    {item.listing.images?.[0] ? (
+                    {item.listing?.item?.images?.[0] ? (
                       <img
-                        src={item.listing.images[0]}
-                        alt={item.listing.title}
+                        src={item.listing.item.images[0]}
+                        alt={item.listing.item.title}
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -173,20 +176,20 @@ export default function CartPage() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-900">{item.listing.title}</h3>
+                    <h3 className="font-bold text-gray-900">{item.listing?.item?.title || 'منتج'}</h3>
                     <p className="text-sm text-gray-600">
-                      الحالة: {item.listing.item?.condition || 'غير محدد'}
+                      الحالة: {item.listing?.item?.condition || 'غير محدد'}
                     </p>
                     <p className="text-sm text-gray-600">
-                      البائع: {item.listing.seller?.fullName || 'غير معروف'}
+                      البائع: {item.listing?.item?.seller?.fullName || 'غير معروف'}
                     </p>
                     <p className="text-lg font-bold text-primary-600 mt-2">
-                      {item.listing.price.toLocaleString()} ج.م
+                      {(item.listing?.price || 0).toLocaleString()} ج.م
                     </p>
                   </div>
                   <div className="flex flex-col items-start justify-between">
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeItem(item.listingId || item.id)}
                       disabled={updating === item.id}
                       className="text-red-600 hover:text-red-800 text-sm"
                     >
@@ -194,7 +197,7 @@ export default function CartPage() {
                     </button>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.listingId || item.id, item.quantity + 1)}
                         disabled={updating === item.id}
                         className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
                       >
@@ -202,7 +205,7 @@ export default function CartPage() {
                       </button>
                       <span className="w-8 text-center">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.listingId || item.id, item.quantity - 1)}
                         disabled={updating === item.id || item.quantity <= 1}
                         className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
                       >

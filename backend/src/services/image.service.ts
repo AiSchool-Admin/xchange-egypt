@@ -2,12 +2,14 @@
  * Image Service
  *
  * Handles image upload, processing, compression, and management
+ * Uses cloud storage (R2) when configured, falls back to local storage
  */
 
 import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
 import { BadRequestError, NotFoundError } from '../utils/errors';
+import * as cloudStorage from './cloud-storage.service';
 
 // ============================================
 // Configuration
@@ -247,6 +249,7 @@ export const createImageSizes = async (
 
 /**
  * Upload single image
+ * Uses cloud storage (R2) when configured, falls back to local storage
  */
 export const uploadImage = async (
   file: Express.Multer.File,
@@ -255,38 +258,103 @@ export const uploadImage = async (
 ): Promise<ProcessedImages | UploadedImage> => {
   validateImage(file);
 
-  const directory = getDirectoryForCategory(category);
-  const filename = generateFilename(file.originalname);
-  const filePath = path.join(directory, filename);
+  // Try cloud storage first (R2)
+  const cloudCategory = category === 'bid' ? 'items' : (category === 'item' ? 'items' : 'avatars');
 
-  // Save original file
-  await fs.writeFile(filePath, file.buffer);
+  try {
+    // Use cloud storage service which handles both cloud and local fallback
+    const cloudUrls = await cloudStorage.uploadImage(file, cloudCategory);
 
-  if (processMultipleSizes) {
-    // Create multiple sizes
-    const processedImages = await createImageSizes(filePath, category, file.originalname);
+    // Convert cloud storage response to ProcessedImages format
+    if (processMultipleSizes) {
+      const processedImages: ProcessedImages = {
+        original: {
+          filename: path.basename(cloudUrls.original),
+          originalName: file.originalname,
+          path: cloudUrls.original,
+          url: cloudUrls.original,
+          size: file.size,
+          mimeType: 'image/webp',
+          dimensions: { width: 1920, height: 1920 },
+        },
+        large: {
+          filename: path.basename(cloudUrls.large),
+          originalName: file.originalname,
+          path: cloudUrls.large,
+          url: cloudUrls.large,
+          size: file.size,
+          mimeType: 'image/webp',
+          dimensions: { width: 1200, height: 1200 },
+        },
+        medium: {
+          filename: path.basename(cloudUrls.medium),
+          originalName: file.originalname,
+          path: cloudUrls.medium,
+          url: cloudUrls.medium,
+          size: file.size,
+          mimeType: 'image/webp',
+          dimensions: { width: 800, height: 800 },
+        },
+        thumbnail: {
+          filename: path.basename(cloudUrls.thumbnail),
+          originalName: file.originalname,
+          path: cloudUrls.thumbnail,
+          url: cloudUrls.thumbnail,
+          size: file.size,
+          mimeType: 'image/webp',
+          dimensions: { width: 300, height: 300 },
+        },
+      };
+      return processedImages;
+    } else {
+      return {
+        filename: path.basename(cloudUrls.medium),
+        originalName: file.originalname,
+        path: cloudUrls.medium,
+        url: cloudUrls.medium,
+        size: file.size,
+        mimeType: 'image/webp',
+        dimensions: { width: 800, height: 800 },
+      };
+    }
+  } catch (cloudError) {
+    // Log error but continue with local storage fallback
+    console.error('Cloud storage upload failed, using local storage:', cloudError);
 
-    // Delete original unprocessed file
-    await fs.unlink(filePath);
+    // Fall back to local storage
+    const directory = getDirectoryForCategory(category);
+    const filename = generateFilename(file.originalname);
+    const filePath = path.join(directory, filename);
 
-    return processedImages;
-  } else {
-    // Return single image
-    const metadata = await getImageMetadata(filePath);
-    const urlPath = `/uploads/${category}s/${filename}`;
+    // Save original file
+    await fs.writeFile(filePath, file.buffer);
 
-    return {
-      filename,
-      originalName: file.originalname,
-      path: filePath,
-      url: urlPath,
-      size: metadata.size,
-      mimeType: file.mimetype,
-      dimensions: {
-        width: metadata.width,
-        height: metadata.height,
-      },
-    };
+    if (processMultipleSizes) {
+      // Create multiple sizes
+      const processedImages = await createImageSizes(filePath, category, file.originalname);
+
+      // Delete original unprocessed file
+      await fs.unlink(filePath);
+
+      return processedImages;
+    } else {
+      // Return single image
+      const metadata = await getImageMetadata(filePath);
+      const urlPath = `/uploads/${category}s/${filename}`;
+
+      return {
+        filename,
+        originalName: file.originalname,
+        path: filePath,
+        url: urlPath,
+        size: metadata.size,
+        mimeType: file.mimetype,
+        dimensions: {
+          width: metadata.width,
+          height: metadata.height,
+        },
+      };
+    }
   }
 };
 
@@ -302,6 +370,20 @@ export const uploadImages = async (
 
   const uploadPromises = files.map((file) => uploadImage(file, category, true));
   return Promise.all(uploadPromises);
+};
+
+/**
+ * Check if cloud storage is available
+ */
+export const isCloudStorageEnabled = (): boolean => {
+  return cloudStorage.isCloudStorageAvailable();
+};
+
+/**
+ * Get storage provider info
+ */
+export const getStorageProvider = () => {
+  return cloudStorage.getStorageInfo();
 };
 
 // ============================================

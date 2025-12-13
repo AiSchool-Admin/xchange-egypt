@@ -4,6 +4,18 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
+// Error message translations (backend English -> localized)
+const errorTranslations: Record<string, { ar: string; en: string }> = {
+  'Invalid email or password': {
+    ar: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+    en: 'Invalid email or password',
+  },
+  'Your account has been suspended': {
+    ar: 'تم تعليق حسابك. يرجى التواصل مع الدعم.',
+    en: 'Your account has been suspended. Please contact support.',
+  },
+};
+
 // Translations
 const translations = {
   ar: {
@@ -16,7 +28,7 @@ const translations = {
     noAccount: 'ليس لديك حساب؟',
     registerHere: 'سجل هنا',
     backToHome: '← العودة للرئيسية',
-    loginFailed: 'فشل تسجيل الدخول. حاول مرة أخرى.',
+    loginFailed: 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
   },
   en: {
     title: 'Xchange',
@@ -28,7 +40,7 @@ const translations = {
     noAccount: "Don't have an account?",
     registerHere: 'Register here',
     backToHome: '→ Back to Home',
-    loginFailed: 'Login failed. Please try again.',
+    loginFailed: 'Invalid email or password',
   },
 };
 
@@ -53,7 +65,10 @@ export default function LoginPage() {
     try {
       await login({ email, password });
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || t.loginFailed;
+      const backendMessage = err.response?.data?.error?.message || err.response?.data?.message || '';
+      // Translate backend error message or use default
+      const translation = errorTranslations[backendMessage];
+      const errorMessage = translation ? translation[lang] : t.loginFailed;
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -116,6 +131,12 @@ export default function LoginPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none"
                 placeholder="••••••••"
               />
+            </div>
+
+            <div className="flex justify-end">
+              <Link href="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700">
+                {lang === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
+              </Link>
             </div>
 
             <button

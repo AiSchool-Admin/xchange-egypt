@@ -46,6 +46,15 @@ import exchangePointsRoutes from './routes/exchange-points.routes';
 import searchAlertsRoutes from './routes/search-alerts.routes';
 import scrapMarketplaceRoutes from './routes/scrap-marketplace.routes';
 import matchingRoutes from './routes/matching.routes';
+import propertyRoutes from './routes/property.routes';
+import comparisonRoutes from './routes/comparison.routes';
+import deliveryRoutes from './routes/delivery.routes';
+import installmentRoutes from './routes/installment.routes';
+import badgeRoutes from './routes/badge.routes';
+import goldRoutes from './routes/gold.routes';
+import silverRoutes from './routes/silver.routes';
+import carsRoutes from './routes/cars.routes';
+import mobileRoutes from './routes/mobile.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -312,6 +321,33 @@ app.use('/api/v1/scrap', scrapMarketplaceRoutes);
 
 // Matching routes - نظام المطابقة الذكية
 app.use('/api/v1/matching', matchingRoutes);
+
+// Real Estate / Property Marketplace routes - سوق العقارات
+app.use('/api/v1/properties', propertyRoutes);
+
+// Item Comparison routes - نظام مقارنة المنتجات
+app.use('/api/v1/comparisons', comparisonRoutes);
+
+// Delivery routes - خدمة التوصيل المدمجة
+app.use('/api/v1/delivery', deliveryRoutes);
+
+// Installment routes - خدمة التقسيط (Valu وغيرها)
+app.use('/api/v1/installments', installmentRoutes);
+
+// Badge routes - شارات التحقق
+app.use('/api/v1/badges', badgeRoutes);
+
+// Gold Marketplace - سوق الذهب
+app.use('/api/v1/gold', goldRoutes);
+
+// Silver Marketplace - سوق الفضة
+app.use('/api/v1/silver', silverRoutes);
+
+// Cars Marketplace - سوق السيارات
+app.use('/api/v1/cars', carsRoutes);
+
+// Mobile Marketplace Routes - سوق الموبايلات
+app.use('/api/v1/mobiles', mobileRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

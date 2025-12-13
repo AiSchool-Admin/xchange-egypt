@@ -14,7 +14,7 @@ const listingStatusEnum = z.nativeEnum(ListingStatus, {
 // Create Direct Sale Listing Schema
 export const createSaleListingSchema = z.object({
   body: z.object({
-    itemId: z.string().uuid('Invalid item ID'),
+    itemId: z.string().min(1, 'Item ID is required'),
     price: z
       .number()
       .positive('Price must be positive')
@@ -83,21 +83,21 @@ export const updateListingSchema = z.object({
 // Get Listing by ID Schema
 export const getListingByIdSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid listing ID'),
+    id: z.string().min(1, 'Listing ID is required'),
   }),
 });
 
 // Delete Listing Schema
 export const deleteListingSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid listing ID'),
+    id: z.string().min(1, 'Listing ID is required'),
   }),
 });
 
 // Get User Listings Schema
 export const getUserListingsSchema = z.object({
   params: z.object({
-    userId: z.string().uuid('Invalid user ID'),
+    userId: z.string().min(1, 'User ID is required'),
   }),
   query: z.object({
     type: listingTypeEnum.optional(),
@@ -121,8 +121,8 @@ export const getUserListingsSchema = z.object({
 export const searchListingsSchema = z.object({
   query: z.object({
     search: z.string().optional(),
-    categoryId: z.string().uuid('Invalid category ID').optional(),
-    sellerId: z.string().uuid('Invalid seller ID').optional(),
+    categoryId: z.string().min(1).optional(),
+    sellerId: z.string().min(1).optional(),
     type: listingTypeEnum.optional(),
     status: listingStatusEnum.optional(),
     minPrice: z
@@ -159,20 +159,20 @@ export const searchListingsSchema = z.object({
 // Activate Listing Schema
 export const activateListingSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid listing ID'),
+    id: z.string().min(1, 'Listing ID is required'),
   }),
 });
 
 // Cancel Listing Schema
 export const cancelListingSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid listing ID'),
+    id: z.string().min(1, 'Listing ID is required'),
   }),
 });
 
 // Mark Listing as Sold Schema
 export const markListingAsSoldSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid listing ID'),
+    id: z.string().min(1, 'Listing ID is required'),
   }),
 });

@@ -9,7 +9,7 @@ const transactionStatusEnum = z.string().min(1, 'Transaction status is required'
 // Buy Item Directly Schema (simplified for demo)
 export const buyItemSchema = z.object({
   body: z.object({
-    itemId: z.string().uuid('Invalid item ID'),
+    itemId: z.string().min(1, 'Item ID is required'),
     paymentMethod: z.enum(['CASH_ON_DELIVERY', 'BANK_TRANSFER', 'INSTAPAY', 'VODAFONE_CASH']).default('CASH_ON_DELIVERY'),
     shippingAddress: z
       .string()
@@ -26,7 +26,7 @@ export const buyItemSchema = z.object({
 // Create Purchase Transaction Schema
 export const createPurchaseSchema = z.object({
   body: z.object({
-    listingId: z.string().uuid('Invalid listing ID'),
+    listingId: z.string().min(1, 'Listing ID is required'),
     quantity: z
       .number()
       .int('Quantity must be an integer')
@@ -47,7 +47,7 @@ export const createPurchaseSchema = z.object({
 // Update Transaction Status Schema
 export const updateTransactionStatusSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid transaction ID'),
+    id: z.string().min(1, 'Transaction ID is required'),
   }),
   body: z.object({
     status: transactionStatusEnum,
@@ -61,7 +61,7 @@ export const updateTransactionStatusSchema = z.object({
 // Confirm Payment Schema
 export const confirmPaymentSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid transaction ID'),
+    id: z.string().min(1, 'Transaction ID is required'),
   }),
   body: z.object({
     paymentReference: z
@@ -75,7 +75,7 @@ export const confirmPaymentSchema = z.object({
 // Mark as Shipped Schema
 export const markAsShippedSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid transaction ID'),
+    id: z.string().min(1, 'Transaction ID is required'),
   }),
   body: z.object({
     trackingNumber: z
@@ -89,14 +89,14 @@ export const markAsShippedSchema = z.object({
 // Mark as Delivered Schema
 export const markAsDeliveredSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid transaction ID'),
+    id: z.string().min(1, 'Transaction ID is required'),
   }),
 });
 
 // Cancel Transaction Schema
 export const cancelTransactionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid transaction ID'),
+    id: z.string().min(1, 'Transaction ID is required'),
   }),
   body: z.object({
     reason: z
@@ -109,14 +109,14 @@ export const cancelTransactionSchema = z.object({
 // Get Transaction by ID Schema
 export const getTransactionByIdSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid transaction ID'),
+    id: z.string().min(1, 'Transaction ID is required'),
   }),
 });
 
 // Get User Transactions Schema
 export const getUserTransactionsSchema = z.object({
   params: z.object({
-    userId: z.string().uuid('Invalid user ID'),
+    userId: z.string().min(1, 'User ID is required'),
   }),
   query: z.object({
     role: z.enum(['buyer', 'seller']).optional(),

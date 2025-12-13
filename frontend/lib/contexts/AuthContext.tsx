@@ -8,6 +8,7 @@ import type { User, LoginData, RegisterIndividualData, RegisterBusinessData } fr
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isAuthenticated: boolean;
   login: (data: LoginData) => Promise<void>;
   registerIndividual: (data: RegisterIndividualData) => Promise<void>;
   registerBusiness: (data: RegisterBusinessData) => Promise<void>;
@@ -134,6 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         user,
         loading,
+        isAuthenticated: !!user,
         login,
         registerIndividual,
         registerBusiness,
