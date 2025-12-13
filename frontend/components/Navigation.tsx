@@ -89,6 +89,7 @@ const megaMenuData = {
       { href: '/items', icon: '🛒', label: 'السوق العام', desc: 'تصفح جميع المنتجات' },
       { href: '/cars', icon: '🚗', label: 'سوق السيارات', desc: 'سيارات بنظام Escrow ومقايضة' },
       { href: '/properties', icon: '🏠', label: 'سوق العقارات', desc: 'شقق وفيلات مع نظام Escrow وتحقق حكومي' },
+      { href: '/mobiles', icon: '📱', label: 'سوق الموبايلات', desc: 'موبايلات مع IMEI موثق ومقايضة ذكية' },
       { href: '/auctions', icon: '🔨', label: 'المزادات', desc: 'مزادات حية ومباشرة' },
       { href: '/scrap', icon: '♻️', label: 'سوق التوالف', desc: 'خردة ومواد قابلة للتدوير' },
       { href: '/gold', icon: '💰', label: 'سوق الذهب', desc: 'بيع وشراء الذهب بأفضل الأسعار' },
@@ -1400,6 +1401,17 @@ export default function Navigation() {
               >
                 <span className="text-lg">🏠</span>
                 سوق العقارات
+              </Link>
+              <Link
+                href="/mobiles"
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  isActive('/mobiles')
+                    ? 'bg-white text-indigo-700 shadow-md'
+                    : 'text-white/90 hover:bg-white/20 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">📱</span>
+                سوق الموبايلات
               </Link>
               <Link
                 href="/auctions"

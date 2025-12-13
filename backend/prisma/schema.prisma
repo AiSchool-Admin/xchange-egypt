@@ -155,6 +155,19 @@ model User {
   inspectionsRequested      FieldInspection[]         @relation("InspectionRequester")
   inspectorProfile          Inspector?                @relation("InspectorUser")
 
+  // سوق الموبايلات - Mobile Marketplace Relations
+  mobileListings            MobileListing[]           @relation("UserMobileListings")
+  mobilePurchases           MobileTransaction[]       @relation("MobileBuyer")
+  mobileSales               MobileTransaction[]       @relation("MobileSeller")
+  mobileBarterProposed      MobileBarterProposal[]    @relation("MobileBarterProposer")
+  mobileBarterReceived      MobileBarterProposal[]    @relation("MobileBarterReceiver")
+  mobileBarterParticipations MobileBarterMatchParticipant[] @relation("MobileBarterParticipant")
+  mobileDisputesInitiated   MobileDispute[]           @relation("MobileDisputeInitiator")
+  mobileReviewsGiven        MobileReview[]            @relation("MobileReviewer")
+  mobileReviewsReceived     MobileReview[]            @relation("MobileReviewee")
+  mobileFavorites           MobileFavorite[]          @relation("MobileFavorites")
+  mobilePriceAlerts         MobilePriceAlert[]        @relation("MobilePriceAlerts")
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -7032,5 +7045,714 @@ model CarPartner {
   @@map("car_partners")
   @@index([governorate])
   @@index([isActive])
+}
+
+// ============================================
+// ============================================
+// MOBILE MARKETPLACE - سوق الموبايلات
+// ============================================
+// ============================================
+
+// ============================================
+// Mobile Enums
+// ============================================
+
+enum MobileBrand {
+  APPLE
+  SAMSUNG
+  XIAOMI
+  OPPO
+  VIVO
+  REALME
+  HUAWEI
+  HONOR
+  ONEPLUS
+  GOOGLE
+  MOTOROLA
+  NOKIA
+  INFINIX
+  TECNO
+  ITEL
+  NOTHING
+  ASUS
+  SONY
+  LG
+  OTHER
+}
+
+enum MobileConditionGrade {
+  A      // ممتاز - Like New
+  B      // جيد جداً - Good
+  C      // مقبول - Fair
+  D      // ضعيف - Poor
+}
+
+enum MobileScreenCondition {
+  PERFECT           // بدون أي خدوش
+  MINOR_SCRATCHES   // خدوش بسيطة
+  CRACKED          // مكسور
+  REPLACED         // تم استبداله
+}
+
+enum MobileBodyCondition {
+  LIKE_NEW    // كالجديد
+  GOOD        // جيد
+  FAIR        // مقبول
+  POOR        // ضعيف
+}
+
+enum MobileIMEIStatus {
+  CLEAN           // نظيف
+  BLACKLISTED     // في القائمة السوداء
+  FINANCED        // مقسط/مرهون
+  LOCKED          // مقفل على شبكة
+  UNKNOWN         // غير معروف
+}
+
+enum MobileListingStatus {
+  DRAFT             // مسودة
+  PENDING_REVIEW    // في انتظار المراجعة
+  ACTIVE            // نشط
+  SOLD              // مباع
+  RESERVED          // محجوز
+  EXPIRED           // منتهي الصلاحية
+  REJECTED          // مرفوض
+  SUSPENDED         // موقوف
+}
+
+enum MobileTransactionType {
+  SALE              // بيع مباشر
+  BARTER            // مقايضة
+  BARTER_WITH_CASH  // مقايضة مع فرق نقدي
+}
+
+enum MobileTransactionStatus {
+  INITIATED         // تم البدء
+  PAYMENT_PENDING   // في انتظار الدفع
+  PAYMENT_HELD      // المبلغ محجوز (Escrow)
+  SHIPPING          // في الشحن
+  DELIVERED         // تم التوصيل
+  INSPECTION        // فترة الفحص
+  COMPLETED         // مكتمل
+  DISPUTED          // متنازع عليه
+  CANCELLED         // ملغي
+  REFUNDED          // تم استرداد المبلغ
+}
+
+enum MobilePaymentMethod {
+  ESCROW      // نظام الضمان
+  COD         // الدفع عند الاستلام
+  FAWRY       // فوري
+  INSTAPAY    // انستاباي
+  WALLET      // المحفظة
+  BNPL        // اشتري الآن وادفع لاحقاً
+}
+
+enum MobileDeliveryMethod {
+  MEETUP        // مقابلة شخصية
+  BOSTA         // بوسطة
+  ARAMEX        // أرامكس
+  EGYPT_POST    // البريد المصري
+  PARTNER_SHOP  // محل شريك
+}
+
+enum MobileDeliveryStatus {
+  PENDING       // في الانتظار
+  SHIPPED       // تم الشحن
+  IN_TRANSIT    // في الطريق
+  DELIVERED     // تم التوصيل
+  RETURNED      // تم الإرجاع
+}
+
+enum MobileBarterMatchType {
+  DIRECT      // مباشرة (2 طرف)
+  THREE_WAY   // ثلاثية (3 أطراف)
+  CHAIN       // سلسلة (4+ أطراف)
+}
+
+enum MobileBarterMatchStatus {
+  PROPOSED          // مقترح
+  PARTIALLY_ACCEPTED // قبول جزئي
+  ALL_ACCEPTED      // قبول كامل
+  IN_PROGRESS       // قيد التنفيذ
+  COMPLETED         // مكتمل
+  EXPIRED           // منتهي
+  CANCELLED         // ملغي
+}
+
+enum MobileBarterProposalStatus {
+  PENDING     // في الانتظار
+  ACCEPTED    // مقبول
+  REJECTED    // مرفوض
+  COUNTERED   // عرض مضاد
+  EXPIRED     // منتهي
+  WITHDRAWN   // منسحب
+}
+
+enum MobileDisputeReason {
+  NOT_AS_DESCRIBED      // مختلف عن الوصف
+  FAKE_DEVICE           // جهاز مزيف/مقلد
+  NOT_RECEIVED          // لم يتم الاستلام
+  DAMAGED_IN_SHIPPING   // تالف في الشحن
+  SELLER_UNRESPONSIVE   // البائع لا يرد
+  BATTERY_DIFFERENT     // حالة البطارية مختلفة
+  NON_ORIGINAL_PARTS    // قطع غير أصلية
+  OTHER                 // سبب آخر
+}
+
+enum MobileDisputeStatus {
+  OPEN            // مفتوح
+  UNDER_REVIEW    // قيد المراجعة
+  MEDIATION       // وساطة
+  RESOLVED        // تم الحل
+  ESCALATED       // تصعيد
+}
+
+enum MobileDisputeResolution {
+  REFUND_FULL       // استرداد كامل
+  REFUND_PARTIAL    // استرداد جزئي
+  NO_REFUND         // لا استرداد
+  RETURN_REQUIRED   // مطلوب إرجاع الجهاز
+}
+
+// ============================================
+// Mobile Listing - إعلان الموبايل
+// ============================================
+
+model MobileListing {
+  id                    String                  @id @default(uuid())
+  sellerId              String                  @map("seller_id")
+
+  // معلومات الجهاز الأساسية
+  title                 String
+  titleAr               String?                 @map("title_ar")
+  description           String?
+  descriptionAr         String?                 @map("description_ar")
+
+  // تفاصيل الجهاز
+  brand                 MobileBrand
+  model                 String                  // iPhone 15 Pro Max, Galaxy S24 Ultra
+  storageGb             Int                     @map("storage_gb")
+  ramGb                 Int?                    @map("ram_gb")
+  color                 String?
+  colorAr               String?                 @map("color_ar")
+
+  // التحقق من IMEI (الميزة التنافسية الأساسية)
+  imei                  String                  @unique
+  imeiVerified          Boolean                 @default(false) @map("imei_verified")
+  imeiStatus            MobileIMEIStatus        @default(UNKNOWN) @map("imei_status")
+  ntraRegistered        Boolean                 @default(false) @map("ntra_registered")
+
+  // التدرج والحالة
+  conditionGrade        MobileConditionGrade    @map("condition_grade")
+  batteryHealth         Int?                    @map("battery_health")
+  screenCondition       MobileScreenCondition?  @map("screen_condition")
+  bodyCondition         MobileBodyCondition?    @map("body_condition")
+  originalParts         Boolean                 @default(true) @map("original_parts")
+  hasBox                Boolean                 @default(false) @map("has_box")
+  hasAccessories        Boolean                 @default(false) @map("has_accessories")
+  accessoriesDetails    String?                 @map("accessories_details")
+
+  // التسعير
+  priceEgp              Float                   @map("price_egp")
+  originalPrice         Float?                  @map("original_price")
+  negotiable            Boolean                 @default(true)
+
+  // المقايضة
+  acceptsBarter         Boolean                 @default(false) @map("accepts_barter")
+  barterPreferences     Json?                   @map("barter_preferences")
+  // {"wanted_brands": ["SAMSUNG", "APPLE"], "min_value_percent": 70, "max_value_percent": 130, "max_cash_to_pay": 5000}
+
+  // الوسائط
+  images                Json                    @default("[]")
+  verificationImageUrl  String?                 @map("verification_image_url")
+  verificationCode      String?                 @map("verification_code")
+  videoUrl              String?                 @map("video_url")
+
+  // الموقع
+  governorate           String
+  city                  String?
+  district              String?
+
+  // حالة الإعلان
+  status                MobileListingStatus     @default(DRAFT)
+  rejectionReason       String?                 @map("rejection_reason")
+  featured              Boolean                 @default(false)
+  featuredUntil         DateTime?               @map("featured_until")
+  promotionTier         PromotionTier           @default(BASIC) @map("promotion_tier")
+
+  // الإحصائيات
+  viewsCount            Int                     @default(0) @map("views_count")
+  favoritesCount        Int                     @default(0) @map("favorites_count")
+  inquiriesCount        Int                     @default(0) @map("inquiries_count")
+
+  // الضمان الإضافي
+  warrantyMonths        Int?                    @map("warranty_months")
+  warrantyProvider      String?                 @map("warranty_provider")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+  expiresAt             DateTime?               @map("expires_at")
+  soldAt                DateTime?               @map("sold_at")
+
+  // العلاقات
+  seller                User                    @relation("UserMobileListings", fields: [sellerId], references: [id], onDelete: Cascade)
+  imeiVerification      MobileIMEIVerification?
+  diagnostics           MobileDeviceDiagnostics?
+  transactions          MobileTransaction[]
+  barterOffered         MobileBarterProposal[]  @relation("MobileBarterOffered")
+  barterRequested       MobileBarterProposal[]  @relation("MobileBarterRequested")
+  favorites             MobileFavorite[]
+  barterMatchParticipants MobileBarterMatchParticipant[]
+
+  @@map("mobile_listings")
+  @@index([sellerId])
+  @@index([brand, model])
+  @@index([priceEgp])
+  @@index([governorate])
+  @@index([status])
+  @@index([conditionGrade])
+  @@index([acceptsBarter])
+  @@index([createdAt])
+  @@index([imeiStatus])
+}
+
+// ============================================
+// IMEI Verification - التحقق من IMEI
+// ============================================
+
+model MobileIMEIVerification {
+  id                    String                  @id @default(uuid())
+  listingId             String                  @unique @map("listing_id")
+  imei                  String
+
+  // نتائج الفحص
+  isBlacklisted         Boolean?                @map("is_blacklisted")
+  isStolen              Boolean?                @map("is_stolen")
+  isFinanced            Boolean?                @map("is_financed")
+  carrierLockStatus     String?                 @map("carrier_lock_status")
+  originalCarrier       String?                 @map("original_carrier")
+
+  // التحقق من الموديل
+  reportedModel         String?                 @map("reported_model")
+  actualModel           String?                 @map("actual_model")
+  modelMatches          Boolean?                @map("model_matches")
+
+  // NTRA مصر
+  ntraRegistrationStatus String?                @map("ntra_registration_status")
+  ntraCheckDate         DateTime?               @map("ntra_check_date")
+
+  // المزود
+  verificationProvider  String?                 @map("verification_provider")
+  rawResponse           Json?                   @map("raw_response")
+
+  // الطوابع الزمنية
+  verifiedAt            DateTime                @default(now()) @map("verified_at")
+
+  // العلاقات
+  listing               MobileListing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("mobile_imei_verifications")
+  @@index([imei])
+}
+
+// ============================================
+// Device Diagnostics - تشخيص الجهاز
+// ============================================
+
+model MobileDeviceDiagnostics {
+  id                    String                  @id @default(uuid())
+  listingId             String                  @unique @map("listing_id")
+
+  // البطارية
+  batteryHealthPercent  Int?                    @map("battery_health_percent")
+  batteryCycleCount     Int?                    @map("battery_cycle_count")
+  batteryOriginal       Boolean?                @map("battery_original")
+
+  // الشاشة
+  deadPixelsCount       Int?                    @map("dead_pixels_count")
+  touchResponsive       Boolean?                @map("touch_responsive")
+  screenOriginal        Boolean?                @map("screen_original")
+
+  // الأجهزة
+  camerasFunctional     Boolean?                @map("cameras_functional")
+  speakersFunctional    Boolean?                @map("speakers_functional")
+  microphoneFunctional  Boolean?                @map("microphone_functional")
+  sensorsFunctional     Boolean?                @map("sensors_functional")
+  buttonsFunctional     Boolean?                @map("buttons_functional")
+  wifiFunctional        Boolean?                @map("wifi_functional")
+  bluetoothFunctional   Boolean?                @map("bluetooth_functional")
+  gpsFunctional         Boolean?                @map("gps_functional")
+  simCardFunctional     Boolean?                @map("sim_card_functional")
+  faceidFunctional      Boolean?                @map("faceid_functional")
+  fingerprintFunctional Boolean?                @map("fingerprint_functional")
+
+  // النتيجة الإجمالية
+  diagnosticScore       Int?                    @map("diagnostic_score")
+  diagnosticProvider    String?                 @map("diagnostic_provider")
+  rawReport             Json?                   @map("raw_report")
+
+  // الطوابع الزمنية
+  diagnosedAt           DateTime                @default(now()) @map("diagnosed_at")
+
+  // العلاقات
+  listing               MobileListing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("mobile_device_diagnostics")
+}
+
+// ============================================
+// Mobile Transaction - معاملة الموبايل
+// ============================================
+
+model MobileTransaction {
+  id                    String                    @id @default(uuid())
+  listingId             String                    @map("listing_id")
+  buyerId               String                    @map("buyer_id")
+  sellerId              String                    @map("seller_id")
+
+  // نوع المعاملة
+  transactionType       MobileTransactionType     @map("transaction_type")
+
+  // التسعير
+  agreedPriceEgp        Float?                    @map("agreed_price_egp")
+  platformFeeEgp        Float?                    @map("platform_fee_egp")
+  sellerPayoutEgp       Float?                    @map("seller_payout_egp")
+
+  // للمقايضة
+  barterListingId       String?                   @map("barter_listing_id")
+  cashDifferenceEgp     Float?                    @map("cash_difference_egp")
+  cashPaidBy            String?                   @map("cash_paid_by")
+
+  // الدفع
+  paymentMethod         MobilePaymentMethod?      @map("payment_method")
+  paymentStatus         String?                   @map("payment_status")
+  escrowHeldAt          DateTime?                 @map("escrow_held_at")
+  escrowReleasedAt      DateTime?                 @map("escrow_released_at")
+  escrowAmount          Float?                    @map("escrow_amount")
+
+  // التوصيل
+  deliveryMethod        MobileDeliveryMethod?     @map("delivery_method")
+  deliveryStatus        MobileDeliveryStatus?     @map("delivery_status")
+  trackingNumber        String?                   @map("tracking_number")
+  deliveryAddress       Json?                     @map("delivery_address")
+  deliveryFee           Float?                    @map("delivery_fee")
+
+  // فترة الفحص
+  inspectionStartsAt    DateTime?                 @map("inspection_starts_at")
+  inspectionEndsAt      DateTime?                 @map("inspection_ends_at")
+  buyerConfirmed        Boolean                   @default(false) @map("buyer_confirmed")
+  buyerNotes            String?                   @map("buyer_notes")
+
+  // الحالة
+  status                MobileTransactionStatus   @default(INITIATED)
+  statusHistory         Json?                     @map("status_history")
+  notes                 String?
+
+  // الطوابع الزمنية
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  completedAt           DateTime?                 @map("completed_at")
+
+  // العلاقات
+  listing               MobileListing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  buyer                 User                      @relation("MobileBuyer", fields: [buyerId], references: [id])
+  seller                User                      @relation("MobileSeller", fields: [sellerId], references: [id])
+  disputes              MobileDispute[]
+  reviews               MobileReview[]
+
+  @@map("mobile_transactions")
+  @@index([listingId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([transactionType])
+}
+
+// ============================================
+// Mobile Barter Match - مطابقة المقايضة
+// ============================================
+
+model MobileBarterMatch {
+  id                    String                    @id @default(uuid())
+
+  // نوع المطابقة
+  matchType             MobileBarterMatchType     @map("match_type")
+
+  // قيمة المقايضة
+  totalValueEgp         Float?                    @map("total_value_egp")
+  cashSettlements       Json?                     @map("cash_settlements")
+
+  // درجة التطابق
+  matchScore            Float?                    @map("match_score")
+  locationCompatible    Boolean?                  @map("location_compatible")
+
+  // الحالة
+  status                MobileBarterMatchStatus   @default(PROPOSED)
+  expiresAt             DateTime?                 @map("expires_at")
+  cancellationReason    String?                   @map("cancellation_reason")
+  cancelledBy           String?                   @map("cancelled_by")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  completedAt           DateTime?                 @map("completed_at")
+
+  // العلاقات
+  participants          MobileBarterMatchParticipant[]
+
+  @@map("mobile_barter_matches")
+  @@index([status])
+  @@index([matchType])
+}
+
+// ============================================
+// Mobile Barter Match Participant - مشارك في المقايضة
+// ============================================
+
+model MobileBarterMatchParticipant {
+  id                    String                    @id @default(uuid())
+  matchId               String                    @map("match_id")
+  userId                String                    @map("user_id")
+
+  // ما يقدمه المشارك
+  offersListingId       String                    @map("offers_listing_id")
+  offersValue           Float?                    @map("offers_value")
+
+  // ما يستلمه المشارك
+  receivesListingId     String?                   @map("receives_listing_id")
+  receivesValue         Float?                    @map("receives_value")
+
+  // الفرق النقدي
+  cashToPay             Float                     @default(0) @map("cash_to_pay")
+  cashToReceive         Float                     @default(0) @map("cash_to_receive")
+
+  // القبول
+  accepted              Boolean                   @default(false)
+  acceptedAt            DateTime?                 @map("accepted_at")
+
+  // العلاقات
+  match                 MobileBarterMatch         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user                  User                      @relation("MobileBarterParticipant", fields: [userId], references: [id])
+  offersListing         MobileListing             @relation(fields: [offersListingId], references: [id])
+
+  @@map("mobile_barter_match_participants")
+  @@unique([matchId, userId])
+  @@index([userId])
+}
+
+// ============================================
+// Mobile Barter Proposal - عرض المقايضة
+// ============================================
+
+model MobileBarterProposal {
+  id                    String                      @id @default(uuid())
+  proposerId            String                      @map("proposer_id")
+  receiverId            String                      @map("receiver_id")
+
+  // ما يعرضه المقترح
+  offeredListingId      String                      @map("offered_listing_id")
+
+  // ما يطلبه المقترح
+  requestedListingId    String                      @map("requested_listing_id")
+
+  // الفرق النقدي
+  cashDifference        Float                       @default(0) @map("cash_difference")
+  cashDirection         String?                     @map("cash_direction")
+
+  // الرسائل
+  proposerMessage       String?                     @map("proposer_message")
+  receiverResponse      String?                     @map("receiver_response")
+
+  // العرض المضاد
+  counterCashOffer      Float?                      @map("counter_cash_offer")
+
+  // الحالة
+  status                MobileBarterProposalStatus  @default(PENDING)
+
+  // الطوابع الزمنية
+  createdAt             DateTime                    @default(now()) @map("created_at")
+  expiresAt             DateTime                    @default(dbgenerated("NOW() + INTERVAL '7 days'")) @map("expires_at")
+  respondedAt           DateTime?                   @map("responded_at")
+
+  // العلاقات
+  proposer              User                        @relation("MobileBarterProposer", fields: [proposerId], references: [id], onDelete: Cascade)
+  receiver              User                        @relation("MobileBarterReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  offeredListing        MobileListing               @relation("MobileBarterOffered", fields: [offeredListingId], references: [id], onDelete: Cascade)
+  requestedListing      MobileListing               @relation("MobileBarterRequested", fields: [requestedListingId], references: [id], onDelete: Cascade)
+
+  @@map("mobile_barter_proposals")
+  @@index([proposerId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+// ============================================
+// Mobile Dispute - نزاع الموبايل
+// ============================================
+
+model MobileDispute {
+  id                    String                      @id @default(uuid())
+  transactionId         String                      @map("transaction_id")
+  initiatedById         String                      @map("initiated_by_id")
+
+  // السبب
+  reason                MobileDisputeReason
+  descriptionAr         String?                     @map("description_ar")
+  descriptionEn         String?                     @map("description_en")
+  evidenceUrls          Json?                       @map("evidence_urls")
+
+  // الحل
+  status                MobileDisputeStatus         @default(OPEN)
+  resolution            MobileDisputeResolution?
+  resolutionNotes       String?                     @map("resolution_notes")
+  resolvedById          String?                     @map("resolved_by_id")
+  refundAmount          Float?                      @map("refund_amount")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                    @default(now()) @map("created_at")
+  updatedAt             DateTime                    @updatedAt @map("updated_at")
+  resolvedAt            DateTime?                   @map("resolved_at")
+
+  // العلاقات
+  transaction           MobileTransaction           @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  initiatedBy           User                        @relation("MobileDisputeInitiator", fields: [initiatedById], references: [id])
+
+  @@map("mobile_disputes")
+  @@index([transactionId])
+  @@index([status])
+}
+
+// ============================================
+// Mobile Review - تقييم الموبايل
+// ============================================
+
+model MobileReview {
+  id                    String                      @id @default(uuid())
+  transactionId         String                      @map("transaction_id")
+  reviewerId            String                      @map("reviewer_id")
+  revieweeId            String                      @map("reviewee_id")
+
+  // التقييم
+  rating                Int
+  accuracyRating        Int?                        @map("accuracy_rating")
+  communicationRating   Int?                        @map("communication_rating")
+  speedRating           Int?                        @map("speed_rating")
+
+  // التعليق
+  commentAr             String?                     @map("comment_ar")
+  commentEn             String?                     @map("comment_en")
+
+  // التحقق
+  isVerifiedPurchase    Boolean                     @default(true) @map("is_verified_purchase")
+
+  // رد البائع
+  sellerResponse        String?                     @map("seller_response")
+  sellerRespondedAt     DateTime?                   @map("seller_responded_at")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                    @default(now()) @map("created_at")
+  updatedAt             DateTime                    @updatedAt @map("updated_at")
+
+  // العلاقات
+  transaction           MobileTransaction           @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  reviewer              User                        @relation("MobileReviewer", fields: [reviewerId], references: [id])
+  reviewee              User                        @relation("MobileReviewee", fields: [revieweeId], references: [id])
+
+  @@map("mobile_reviews")
+  @@unique([transactionId, reviewerId])
+  @@index([revieweeId])
+}
+
+// ============================================
+// Mobile Favorite - المفضلة
+// ============================================
+
+model MobileFavorite {
+  id                    String                      @id @default(uuid())
+  userId                String                      @map("user_id")
+  listingId             String                      @map("listing_id")
+
+  createdAt             DateTime                    @default(now()) @map("created_at")
+
+  // العلاقات
+  user                  User                        @relation("MobileFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  listing               MobileListing               @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("mobile_favorites")
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+}
+
+// ============================================
+// Mobile Price Alert - تنبيه السعر
+// ============================================
+
+model MobilePriceAlert {
+  id                    String                      @id @default(uuid())
+  userId                String                      @map("user_id")
+
+  // معايير البحث
+  brand                 MobileBrand?
+  model                 String?
+  maxPriceEgp           Float?                      @map("max_price_egp")
+  minConditionGrade     MobileConditionGrade?       @map("min_condition_grade")
+  governorate           String?
+  minStorageGb          Int?                        @map("min_storage_gb")
+
+  // الحالة
+  isActive              Boolean                     @default(true) @map("is_active")
+  lastNotifiedAt        DateTime?                   @map("last_notified_at")
+  notificationCount     Int                         @default(0) @map("notification_count")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                    @default(now()) @map("created_at")
+  updatedAt             DateTime                    @updatedAt @map("updated_at")
+
+  // العلاقات
+  user                  User                        @relation("MobilePriceAlerts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("mobile_price_alerts")
+  @@index([userId])
+  @@index([isActive])
+}
+
+// ============================================
+// Mobile Price Reference - أسعار مرجعية
+// ============================================
+
+model MobilePriceReference {
+  id                    String                      @id @default(uuid())
+
+  // تعريف الجهاز
+  brand                 MobileBrand
+  model                 String
+  storageGb             Int                         @map("storage_gb")
+  releaseYear           Int?                        @map("release_year")
+
+  // نطاق الأسعار
+  priceLow              Float                       @map("price_low")
+  priceAverage          Float                       @map("price_average")
+  priceHigh             Float                       @map("price_high")
+
+  // عوامل التسعير
+  conditionAMultiplier  Float                       @default(1.0) @map("condition_a_multiplier")
+  conditionBMultiplier  Float                       @default(0.85) @map("condition_b_multiplier")
+  conditionCMultiplier  Float                       @default(0.70) @map("condition_c_multiplier")
+  conditionDMultiplier  Float                       @default(0.50) @map("condition_d_multiplier")
+
+  // مصدر البيانات
+  dataSource            String?                     @map("data_source")
+  sampleSize            Int                         @default(0) @map("sample_size")
+
+  // الطوابع الزمنية
+  recordedAt            DateTime                    @default(now()) @map("recorded_at")
+  validUntil            DateTime?                   @map("valid_until")
+
+  @@map("mobile_price_references")
+  @@unique([brand, model, storageGb])
+  @@index([brand, model])
 }
 
