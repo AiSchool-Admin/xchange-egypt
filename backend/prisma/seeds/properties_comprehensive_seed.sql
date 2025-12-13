@@ -427,7 +427,7 @@ SELECT
 
 -- Transaction 3: عقد إيجار نشط
 INSERT INTO property_transactions (
-  id, transaction_type, property_id, tenant_id, landlord_id,
+  id, transaction_type, property_id, tenant_id, landlord_id, seller_id,
   agreed_price,
   security_deposit, deposit_protected,
   lease_start_date, lease_end_date,
@@ -438,6 +438,7 @@ SELECT
   'RENTAL',
   (SELECT id FROM properties WHERE title_ar = 'شقة عصرية للإيجار في المعادي' LIMIT 1),
   (SELECT id FROM users WHERE email = 'test3@xchange.eg'),
+  (SELECT id FROM users WHERE email = 'test7@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test7@xchange.eg'),
   18000,
   36000, true,
@@ -458,7 +459,7 @@ SELECT
   'BARTER',
   (SELECT id FROM properties WHERE title_ar = 'محل تجاري في الإسكندرية' LIMIT 1),
   NULL, 'CAR',
-  (SELECT id FROM users WHERE email = 'test8@xchange.eg'),
+  (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   1800000, 600000,
   'PENDING', 600000,
