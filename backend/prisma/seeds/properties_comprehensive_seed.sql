@@ -420,7 +420,7 @@ SELECT
   (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test6@xchange.eg'),
   4400000, 44000, 88000,
-  'HELD', 440000, NOW() - INTERVAL '10 days',
+  'VERIFICATION_IN_PROGRESS', 440000, NOW() - INTERVAL '10 days',
   true, false,
   'IN_PROGRESS', 'في انتظار التحقق الحكومي',
   NOW() - INTERVAL '15 days', NOW();
@@ -462,7 +462,7 @@ SELECT
   (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
   1800000, 600000,
-  'PENDING', 600000,
+  'PENDING_DEPOSIT', 600000,
   'INITIATED', 'مقايضة محل تجاري بسيارة BMW مع فرق نقدي',
   NOW() - INTERVAL '5 days', NOW();
 
