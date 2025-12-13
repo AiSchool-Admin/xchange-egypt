@@ -80,9 +80,9 @@ export default function MobileBarterPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (!token) {
-        router.push('/auth/login');
+        router.push('/login');
         return;
       }
 
@@ -114,7 +114,7 @@ export default function MobileBarterPage() {
 
   const handleAcceptMatch = async (matchId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/matches/${matchId}/accept`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
@@ -128,7 +128,7 @@ export default function MobileBarterPage() {
 
   const handleRejectMatch = async (matchId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/matches/${matchId}/reject`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
@@ -142,7 +142,7 @@ export default function MobileBarterPage() {
 
   const handleRespondToProposal = async (proposalId: string, accept: boolean) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/proposals/${proposalId}/respond`, {
         method: 'PUT',
         headers: {

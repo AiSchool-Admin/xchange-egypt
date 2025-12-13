@@ -5,7 +5,7 @@ import { authenticate, optionalAuth } from '../middleware/auth';
 const router = Router();
 
 // ============================================
-// Property Listings
+// Property Listings (Root routes first)
 // ============================================
 
 // Search properties (public)
@@ -20,53 +20,47 @@ router.get('/my-properties', authenticate, propertyController.getUserProperties)
 // Get favorites
 router.get('/favorites', authenticate, propertyController.getFavorites);
 
-// Get property by ID (public with optional auth for favorites check)
-router.get('/:id', optionalAuth, propertyController.getProperty);
-
 // Create property
 router.post('/', authenticate, propertyController.createProperty);
 
-// Update property
-router.put('/:id', authenticate, propertyController.updateProperty);
-
-// Delete property
-router.delete('/:id', authenticate, propertyController.deleteProperty);
-
 // ============================================
-// Property Status
+// Field Inspection (MUST be before /:id routes)
 // ============================================
 
-// Submit for verification
-router.post('/:id/submit-verification', authenticate, propertyController.submitForVerification);
+// Get user's inspections
+router.get('/inspections', authenticate, propertyController.getUserInspections);
 
-// Activate property (admin)
-router.post('/:id/activate', authenticate, propertyController.activateProperty);
+// Request inspection
+router.post('/inspections', authenticate, propertyController.requestInspection);
 
-// Reject property (admin)
-router.post('/:id/reject', authenticate, propertyController.rejectProperty);
+// Get inspection by ID
+router.get('/inspections/:id', authenticate, propertyController.getInspection);
 
-// Mark as sold
-router.post('/:id/mark-sold', authenticate, propertyController.markAsSold);
+// Pay for inspection
+router.post('/inspections/:id/pay', authenticate, propertyController.payForInspection);
 
-// Mark as rented
-router.post('/:id/mark-rented', authenticate, propertyController.markAsRented);
+// Schedule inspection (inspector)
+router.post('/inspections/:id/schedule', authenticate, propertyController.scheduleInspection);
 
-// ============================================
-// Favorites
-// ============================================
+// Start inspection (inspector)
+router.post('/inspections/:id/start', authenticate, propertyController.startInspection);
 
-// Add to favorites
-router.post('/:id/favorite', authenticate, propertyController.addToFavorites);
-
-// Remove from favorites
-router.delete('/:id/favorite', authenticate, propertyController.removeFromFavorites);
+// Complete inspection (inspector)
+router.post('/inspections/:id/complete', authenticate, propertyController.completeInspection);
 
 // ============================================
-// Property Barter
+// Inspector Routes (MUST be before /:id routes)
 // ============================================
 
-// Get barter suggestions for a property
-router.get('/:id/barter-suggestions', authenticate, propertyController.getBarterSuggestions);
+// Register as inspector
+router.post('/inspectors/register', authenticate, propertyController.registerAsInspector);
+
+// Get inspector's inspections
+router.get('/inspectors/inspections', authenticate, propertyController.getInspectorInspections);
+
+// ============================================
+// Property Barter (MUST be before /:id routes)
+// ============================================
 
 // Create barter proposal
 router.post('/barter/propose', authenticate, propertyController.createBarterProposal);
@@ -84,7 +78,7 @@ router.post('/barter/:id/respond', authenticate, propertyController.respondToBar
 router.delete('/barter/:id', authenticate, propertyController.cancelBarterProposal);
 
 // ============================================
-// Rental Management
+// Rental Management (MUST be before /:id routes)
 // ============================================
 
 // Get user's rental contracts
@@ -126,38 +120,48 @@ router.post('/rentals/contracts/:id/dispute-deposit', authenticate, propertyCont
 router.post('/rentals/payments/:id/record', authenticate, propertyController.recordRentalPayment);
 
 // ============================================
-// Field Inspection
+// Property by ID (Wildcard routes LAST)
 // ============================================
 
-// Get user's inspections
-router.get('/inspections', authenticate, propertyController.getUserInspections);
+// Get property by ID (public with optional auth for favorites check)
+router.get('/:id', optionalAuth, propertyController.getProperty);
 
-// Request inspection
-router.post('/inspections', authenticate, propertyController.requestInspection);
+// Update property
+router.put('/:id', authenticate, propertyController.updateProperty);
 
-// Get inspection by ID
-router.get('/inspections/:id', authenticate, propertyController.getInspection);
-
-// Pay for inspection
-router.post('/inspections/:id/pay', authenticate, propertyController.payForInspection);
+// Delete property
+router.delete('/:id', authenticate, propertyController.deleteProperty);
 
 // ============================================
-// Inspector Routes
+// Property Status (ID-based routes)
 // ============================================
 
-// Register as inspector
-router.post('/inspectors/register', authenticate, propertyController.registerAsInspector);
+// Submit for verification
+router.post('/:id/submit-verification', authenticate, propertyController.submitForVerification);
 
-// Get inspector's inspections
-router.get('/inspectors/inspections', authenticate, propertyController.getInspectorInspections);
+// Activate property (admin)
+router.post('/:id/activate', authenticate, propertyController.activateProperty);
 
-// Schedule inspection (inspector)
-router.post('/inspections/:id/schedule', authenticate, propertyController.scheduleInspection);
+// Reject property (admin)
+router.post('/:id/reject', authenticate, propertyController.rejectProperty);
 
-// Start inspection (inspector)
-router.post('/inspections/:id/start', authenticate, propertyController.startInspection);
+// Mark as sold
+router.post('/:id/mark-sold', authenticate, propertyController.markAsSold);
 
-// Complete inspection (inspector)
-router.post('/inspections/:id/complete', authenticate, propertyController.completeInspection);
+// Mark as rented
+router.post('/:id/mark-rented', authenticate, propertyController.markAsRented);
+
+// ============================================
+// Favorites (ID-based routes)
+// ============================================
+
+// Add to favorites
+router.post('/:id/favorite', authenticate, propertyController.addToFavorites);
+
+// Remove from favorites
+router.delete('/:id/favorite', authenticate, propertyController.removeFromFavorites);
+
+// Get barter suggestions for a property
+router.get('/:id/barter-suggestions', authenticate, propertyController.getBarterSuggestions);
 
 export default router;

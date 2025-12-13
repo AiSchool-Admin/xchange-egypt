@@ -75,9 +75,9 @@ export default function MobileTransactionsPage() {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (!token) {
-        router.push('/auth/login');
+        router.push('/login');
         return;
       }
 
@@ -102,7 +102,7 @@ export default function MobileTransactionsPage() {
 
   const handleConfirmDelivery = async (transactionId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/transactions/${transactionId}/confirm-delivery`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
@@ -116,7 +116,7 @@ export default function MobileTransactionsPage() {
 
   const handleReleaseEscrow = async (transactionId: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/transactions/${transactionId}/release-escrow`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }

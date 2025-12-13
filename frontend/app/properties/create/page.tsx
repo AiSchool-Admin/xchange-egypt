@@ -182,7 +182,7 @@ export default function CreatePropertyPage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         if (!token) return;
 
         const response = await api.get('/auth/profile');

@@ -120,7 +120,7 @@ export default function SellMobilePage() {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken');
         if (!token) return;
 
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
@@ -331,9 +331,9 @@ export default function SellMobilePage() {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (!token) {
-        router.push('/auth/login');
+        router.push('/login');
         return;
       }
 

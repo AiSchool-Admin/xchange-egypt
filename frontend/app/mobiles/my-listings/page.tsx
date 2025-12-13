@@ -57,9 +57,9 @@ export default function MyMobileListingsPage() {
   const fetchListings = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (!token) {
-        router.push('/auth/login');
+        router.push('/login');
         return;
       }
 
@@ -84,7 +84,7 @@ export default function MyMobileListingsPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
@@ -98,7 +98,7 @@ export default function MyMobileListingsPage() {
 
   const handleMarkAsSold = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}/mark-sold`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }

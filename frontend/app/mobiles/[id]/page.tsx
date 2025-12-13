@@ -122,9 +122,9 @@ export default function MobileListingDetailPage() {
 
   const toggleFavorite = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('accessToken');
       if (!token) {
-        router.push('/auth/login');
+        router.push('/login');
         return;
       }
 
