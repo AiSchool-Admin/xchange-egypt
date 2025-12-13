@@ -4,7 +4,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getItems, Item } from '@/lib/api/items';
-import { getCategories, Category } from '@/lib/api/categories';
+import { getCategoryTree, Category } from '@/lib/api/categories';
+
+// Extended Category type with children
+interface CategoryWithChildren extends Category {
+  children?: CategoryWithChildren[];
+}
 import LocationSelector, { LocationSelection } from '@/components/LocationSelector';
 import { getLocationLabel, getGovernorateNameAr, getCityNameAr, getDistrictNameAr } from '@/lib/data/egyptLocations';
 import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
@@ -26,7 +31,7 @@ const LISTING_TYPES = [
   { value: 'DIRECT_SALE', label: 'بيع مباشر', icon: '🏷️' },
   { value: 'AUCTION', label: 'مزاد', icon: '🔨' },
   { value: 'BARTER', label: 'مقايضة', icon: '🔄' },
-  { value: 'WANTED', label: 'مطلوب للشراء', icon: '🔍' },
+  { value: 'DIRECT_BUY', label: 'مطلوب للشراء', icon: '🔍' },
   { value: 'REVERSE_AUCTION', label: 'مناقصات', icon: '📢' },
 ];
 
@@ -58,14 +63,18 @@ export default function ItemsPage() {
 
   // State
   const [items, setItems] = useState<Item[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<CategoryWithChildren[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Filters
+  // Filters - Hierarchical categories
   const [search, setSearch] = useState(searchQuery || '');
   const [debouncedSearch, setDebouncedSearch] = useState(searchQuery || '');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedMainCategory, setSelectedMainCategory] = useState('');
+  const [selectedSubCategory, setSelectedSubCategory] = useState('');
+  const [selectedSubSubCategory, setSelectedSubSubCategory] = useState('');
   const [selectedCondition, setSelectedCondition] = useState('');
   const [selectedListingType, setSelectedListingType] = useState('');
   const [minPrice, setMinPrice] = useState('');
@@ -96,11 +105,35 @@ export default function ItemsPage() {
     loadCategories();
   }, []);
 
-  // Set category from URL
+  // Set category from URL (find in tree)
   useEffect(() => {
     if (categorySlug && categories.length > 0) {
-      const category = categories.find(cat => cat.slug === categorySlug);
-      if (category) setSelectedCategory(category.id);
+      // Search in hierarchy
+      for (const mainCat of categories) {
+        if (mainCat.slug === categorySlug) {
+          setSelectedMainCategory(mainCat.id);
+          return;
+        }
+        if (mainCat.children) {
+          for (const subCat of mainCat.children) {
+            if (subCat.slug === categorySlug) {
+              setSelectedMainCategory(mainCat.id);
+              setSelectedSubCategory(subCat.id);
+              return;
+            }
+            if (subCat.children) {
+              for (const subSubCat of subCat.children) {
+                if (subSubCat.slug === categorySlug) {
+                  setSelectedMainCategory(mainCat.id);
+                  setSelectedSubCategory(subCat.id);
+                  setSelectedSubSubCategory(subSubCat.id);
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }, [categorySlug, categories]);
 
@@ -123,20 +156,56 @@ export default function ItemsPage() {
     return () => clearTimeout(timer);
   }, [minPrice, maxPrice]);
 
+  // Get the most specific selected category ID
+  const selectedCategoryId = selectedSubSubCategory || selectedSubCategory || selectedMainCategory;
+
   // Load items when filters change
   useEffect(() => {
     // For "my items", wait for user to be loaded
     if (isMyItems && !currentUser) return;
     loadItems();
-  }, [page, selectedCategory, selectedCondition, selectedListingType, debouncedMinPrice, debouncedMaxPrice, debouncedSearch, location, sortBy, isMyItems, currentUser]);
+  }, [page, selectedMainCategory, selectedSubCategory, selectedSubSubCategory, selectedCondition, selectedListingType, debouncedMinPrice, debouncedMaxPrice, debouncedSearch, location, sortBy, isMyItems, currentUser]);
 
   const loadCategories = async () => {
+    setCategoriesLoading(true);
+    setCategoriesError('');
     try {
-      const response = await getCategories();
-      setCategories(response.data);
-    } catch (err) {
-      console.error('Failed to load categories:', err);
+      console.log('[Categories] Loading category tree...');
+      const response = await getCategoryTree();
+      console.log('[Categories] API Response:', response);
+
+      // Handle response structure: response is { success, message, data: [...] }
+      const categoryData = response.data || [];
+      console.log('[Categories] Category data:', categoryData);
+
+      if (Array.isArray(categoryData)) {
+        setCategories(categoryData as CategoryWithChildren[]);
+        console.log(`[Categories] Loaded ${categoryData.length} categories`);
+      } else {
+        console.error('[Categories] Invalid data format:', categoryData);
+        setCategoriesError('تنسيق بيانات الفئات غير صالح');
+      }
+    } catch (err: any) {
+      console.error('[Categories] Failed to load categories:', err);
+      setCategoriesError(err.response?.data?.message || err.message || 'فشل في تحميل الفئات');
+    } finally {
+      setCategoriesLoading(false);
     }
+  };
+
+  // Get subcategories for selected main category
+  const getSubCategories = (): CategoryWithChildren[] => {
+    if (!selectedMainCategory) return [];
+    const mainCat = categories.find(c => c.id === selectedMainCategory);
+    return mainCat?.children || [];
+  };
+
+  // Get sub-subcategories for selected subcategory
+  const getSubSubCategories = (): CategoryWithChildren[] => {
+    if (!selectedSubCategory) return [];
+    const subCats = getSubCategories();
+    const subCat = subCats.find(c => c.id === selectedSubCategory);
+    return subCat?.children || [];
   };
 
   const loadItems = async () => {
@@ -165,7 +234,7 @@ export default function ItemsPage() {
       const response = await getItems({
         page,
         limit: 12,
-        categoryId: selectedCategory || undefined,
+        categoryId: selectedCategoryId || undefined,
         condition: selectedCondition || undefined,
         listingType: selectedListingType || undefined,
         minPrice: debouncedMinPrice ? parseFloat(debouncedMinPrice) : undefined,
@@ -180,9 +249,15 @@ export default function ItemsPage() {
         sortOrder: sortOrder as 'asc' | 'desc',
       });
 
-      setItems(response.data.items);
+      // Filter out current user's items when browsing marketplace (not own items view)
+      let filteredItems = response.data.items;
+      if (!isMyItems && currentUser) {
+        filteredItems = response.data.items.filter((item: Item) => item.seller?.id !== currentUser.id);
+      }
+
+      setItems(filteredItems);
       setTotalPages(response.data.pagination.totalPages);
-      setTotalItems(response.data.pagination.total);
+      setTotalItems(isMyItems || !currentUser ? response.data.pagination.total : filteredItems.length);
     } catch (err: any) {
       setError(err.response?.data?.message || 'فشل في تحميل المنتجات');
     } finally {
@@ -193,7 +268,9 @@ export default function ItemsPage() {
   const clearFilters = () => {
     setSearch('');
     setDebouncedSearch('');
-    setSelectedCategory('');
+    setSelectedMainCategory('');
+    setSelectedSubCategory('');
+    setSelectedSubSubCategory('');
     setSelectedCondition('');
     setSelectedListingType('');
     setMinPrice('');
@@ -211,20 +288,52 @@ export default function ItemsPage() {
     setPage(1);
   };
 
+  // Handle main category change - reset subcategories
+  const handleMainCategoryChange = (categoryId: string) => {
+    setSelectedMainCategory(categoryId);
+    setSelectedSubCategory('');
+    setSelectedSubSubCategory('');
+    setPage(1);
+  };
+
+  // Handle subcategory change - reset sub-subcategory
+  const handleSubCategoryChange = (categoryId: string) => {
+    setSelectedSubCategory(categoryId);
+    setSelectedSubSubCategory('');
+    setPage(1);
+  };
+
+  // Handle sub-subcategory change
+  const handleSubSubCategoryChange = (categoryId: string) => {
+    setSelectedSubSubCategory(categoryId);
+    setPage(1);
+  };
+
   const getCategoryName = () => {
     if (isMyItems) {
       return '📦 منتجاتي';
     }
-    if (selectedCategory) {
-      const category = categories.find(cat => cat.id === selectedCategory);
-      return category?.nameAr || 'السوق';
+    // Get the most specific selected category name
+    if (selectedSubSubCategory) {
+      const subSubCats = getSubSubCategories();
+      const cat = subSubCats.find(c => c.id === selectedSubSubCategory);
+      return cat?.nameAr || 'السوق';
+    }
+    if (selectedSubCategory) {
+      const subCats = getSubCategories();
+      const cat = subCats.find(c => c.id === selectedSubCategory);
+      return cat?.nameAr || 'السوق';
+    }
+    if (selectedMainCategory) {
+      const cat = categories.find(c => c.id === selectedMainCategory);
+      return cat?.nameAr || 'السوق';
     }
     return 'السوق';
   };
 
   const locationLabel = getLocationLabel(location.governorateId, location.cityId, location.districtId);
 
-  const hasActiveFilters = selectedCategory || selectedCondition || selectedListingType || debouncedSearch || debouncedMinPrice || debouncedMaxPrice || location.governorateId;
+  const hasActiveFilters = selectedMainCategory || selectedCondition || selectedListingType || debouncedSearch || debouncedMinPrice || debouncedMaxPrice || location.governorateId;
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -271,9 +380,9 @@ export default function ItemsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="ابحث عن المنتجات..."
-                className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-primary-500 focus:bg-white transition-all outline-none"
+                className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border-2 border-gray-200 focus:border-primary-500 transition-all outline-none placeholder-gray-500 text-gray-900"
               />
-              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>
@@ -296,7 +405,7 @@ export default function ItemsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent focus:border-primary-500 outline-none font-medium min-w-[150px]"
+              className="px-4 py-3 bg-white rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none font-medium min-w-[150px] text-gray-900 cursor-pointer"
             >
               {SORT_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -352,19 +461,73 @@ export default function ItemsPage() {
                 />
               </div>
 
-              {/* Category */}
-              <div className="pb-6 border-b border-gray-100">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">📂 الفئة</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                >
-                  <option value="">جميع الفئات</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
-                  ))}
-                </select>
+              {/* Category - Hierarchical */}
+              <div className="pb-6 border-b border-gray-100 space-y-3">
+                <label className="block text-sm font-semibold text-gray-700">📂 الفئة</label>
+
+                {/* Category Loading State */}
+                {categoriesLoading ? (
+                  <div className="flex items-center gap-2 text-gray-500 py-3">
+                    <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-sm">جاري تحميل الفئات...</span>
+                  </div>
+                ) : categoriesError ? (
+                  <div className="text-red-500 text-sm py-2">
+                    <p>⚠️ {categoriesError}</p>
+                    <button
+                      onClick={loadCategories}
+                      className="text-primary-600 hover:text-primary-700 mt-1 underline"
+                    >
+                      إعادة المحاولة
+                    </button>
+                  </div>
+                ) : categories.length === 0 ? (
+                  <div className="text-gray-500 text-sm py-2">
+                    <p>لا توجد فئات متاحة حالياً</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Main Category */}
+                    <select
+                      value={selectedMainCategory}
+                      onChange={(e) => handleMainCategoryChange(e.target.value)}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                    >
+                      <option value="">جميع الفئات الرئيسية</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                      ))}
+                    </select>
+
+                    {/* Subcategory - shown when main category selected */}
+                    {selectedMainCategory && getSubCategories().length > 0 && (
+                      <select
+                        value={selectedSubCategory}
+                        onChange={(e) => handleSubCategoryChange(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                      >
+                        <option value="">جميع الفئات الفرعية</option>
+                        {getSubCategories().map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* Sub-subcategory - shown when subcategory selected */}
+                    {selectedSubCategory && getSubSubCategories().length > 0 && (
+                      <select
+                        value={selectedSubSubCategory}
+                        onChange={(e) => handleSubSubCategoryChange(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                      >
+                        <option value="">جميع الفئات الفرعية-فرعية</option>
+                        {getSubSubCategories().map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                        ))}
+                      </select>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Listing Type */}
@@ -451,10 +614,10 @@ export default function ItemsPage() {
                         <button onClick={() => handleLocationChange({ scope: 'NATIONAL' })} className="hover:text-blue-900">×</button>
                       </span>
                     )}
-                    {selectedCategory && (
+                    {selectedMainCategory && (
                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm">
-                        {categories.find(c => c.id === selectedCategory)?.nameAr}
-                        <button onClick={() => setSelectedCategory('')} className="hover:text-primary-900">×</button>
+                        {getCategoryName()}
+                        <button onClick={() => { setSelectedMainCategory(''); setSelectedSubCategory(''); setSelectedSubSubCategory(''); }} className="hover:text-primary-900">×</button>
                       </span>
                     )}
                     {selectedCondition && (

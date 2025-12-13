@@ -98,6 +98,24 @@ model User {
   scrapPurchaseRequests     ScrapPurchaseRequest[]    @relation("ScrapPurchaseBuyer")
   scrapSellerOffers         ScrapSellerOffer[]        @relation("ScrapSellerOffers")
 
+  // سوق الذهب - Gold Marketplace Relations
+  goldItems                 GoldItem[]                @relation("UserGoldItems")
+  goldPurchases             GoldTransaction[]         @relation("UserGoldPurchases")
+  goldSales                 GoldTransaction[]         @relation("UserGoldSales")
+
+  // سوق الفضة - Silver Marketplace Relations
+  silverItems               SilverItem[]              @relation("UserSilverItems")
+  silverPurchases           SilverTransaction[]       @relation("UserSilverPurchases")
+  silverSales               SilverTransaction[]       @relation("UserSilverSales")
+
+  // سوق السيارات - Cars Marketplace Relations
+  carListings               CarListing[]              @relation("UserCarListings")
+  carPurchases              CarTransaction[]          @relation("CarBuyer")
+  carSales                  CarTransaction[]          @relation("CarSeller")
+  carBarterProposals        CarBarterProposal[]       @relation("CarBarterProposer")
+  carBarterReceived         CarBarterProposal[]       @relation("CarBarterReceiver")
+  carInspectionRequests     CarInspection[]           @relation("CarInspectionRequester")
+
   // Search & Discovery Relations
   searchHistory             SearchHistory[]           @relation("UserSearchHistory")
   savedSearches             SavedSearch[]             @relation("UserSavedSearches")
@@ -321,6 +339,165 @@ enum ScrapDealerStatus {
   SUSPENDED // موقوف
 }
 
+// ============================================
+// العقارات - Real Estate Enums
+// ============================================
+
+// نوع العقار
+enum PropertyType {
+  APARTMENT           // شقة
+  VILLA               // فيلا
+  DUPLEX              // دوبلكس
+  PENTHOUSE           // بنتهاوس
+  STUDIO              // ستوديو
+  CHALET              // شاليه
+  TOWNHOUSE           // تاون هاوس
+  LAND                // أرض
+  COMMERCIAL_SHOP     // محل تجاري
+  OFFICE              // مكتب
+  WAREHOUSE           // مخزن
+  BUILDING            // مبنى كامل
+  FARM                // مزرعة
+}
+
+// تشطيب العقار
+enum PropertyFinishing {
+  NOT_FINISHED        // بدون تشطيب
+  SEMI_FINISHED       // نصف تشطيب
+  FULLY_FINISHED      // تشطيب كامل
+  SUPER_LUX           // سوبر لوكس
+  ULTRA_SUPER_LUX     // الترا سوبر لوكس
+  FURNISHED           // مفروش
+}
+
+// إطلالة العقار
+enum PropertyView {
+  STREET              // شارع
+  GARDEN              // حديقة
+  SEA                 // بحر
+  NILE                // نيل
+  POOL                // حمام سباحة
+  CITY                // مدينة
+  DESERT              // صحراء
+  CORNER              // ناصية
+  MAIN_ROAD           // طريق رئيسي
+  NO_VIEW             // بدون إطلالة
+}
+
+// نوع الإعلان العقاري
+enum PropertyListingType {
+  FOR_SALE            // للبيع
+  FOR_RENT            // للإيجار
+  FOR_EXCHANGE        // للمقايضة
+}
+
+// ============================================
+// السيارات والمركبات - Vehicle Enums
+// ============================================
+
+// نوع الوقود
+enum FuelType {
+  PETROL              // بنزين
+  DIESEL              // ديزل
+  ELECTRIC            // كهرباء
+  HYBRID              // هايبرد
+  NATURAL_GAS         // غاز طبيعي
+  LPG                 // غاز بترولي مسال
+}
+
+// نوع ناقل الحركة
+enum TransmissionType {
+  AUTOMATIC           // أوتوماتيك
+  MANUAL              // مانيوال
+  CVT                 // CVT
+  SEMI_AUTOMATIC      // نصف أوتوماتيك
+}
+
+// حالة السيارة
+enum VehicleCondition {
+  NEW                 // جديدة (زيرو)
+  USED                // مستعملة
+  ACCIDENT_FREE       // بدون حوادث
+  MINOR_ACCIDENT      // حادث بسيط
+  MAJOR_ACCIDENT      // حادث كبير
+}
+
+// نوع الهيكل
+enum BodyType {
+  SEDAN               // سيدان
+  HATCHBACK           // هاتشباك
+  SUV                 // SUV
+  CROSSOVER           // كروس أوفر
+  COUPE               // كوبيه
+  CONVERTIBLE         // كشف
+  PICKUP              // بيك أب
+  VAN                 // فان
+  MINIVAN             // ميني فان
+  WAGON               // ستيشن واجن
+  TRUCK               // شاحنة
+  BUS                 // أتوبيس
+  MOTORCYCLE          // موتوسيكل
+}
+
+// ============================================
+// شارات التحقق - Verification Badge Types
+// ============================================
+
+enum BadgeType {
+  PHONE_VERIFIED      // رقم الهاتف موثق
+  EMAIL_VERIFIED      // البريد الإلكتروني موثق
+  ID_VERIFIED         // الهوية موثقة
+  ADDRESS_VERIFIED    // العنوان موثق
+  BUSINESS_VERIFIED   // النشاط التجاري موثق
+  TRUSTED_SELLER      // بائع موثوق (10+ معاملات)
+  TOP_RATED           // الأعلى تقييماً
+  FAST_RESPONDER      // سريع الرد
+  PREMIUM_MEMBER      // عضو مميز
+}
+
+// ============================================
+// خدمات التوصيل - Delivery Enums
+// ============================================
+
+enum DeliveryProvider {
+  SELF_DELIVERY       // توصيل ذاتي
+  OPEX                // OPEX
+  BOSTA               // بوسطة
+  ARAMEX              // أرامكس
+  FEDEX               // فيدكس
+  DHL                 // DHL
+  OTHER               // أخرى
+}
+
+enum DeliverySpeed {
+  SAME_DAY            // نفس اليوم
+  NEXT_DAY            // اليوم التالي
+  TWO_TO_THREE_DAYS   // 2-3 أيام
+  WEEK                // أسبوع
+  PICKUP              // استلام من الموقع
+}
+
+// ============================================
+// التقسيط - Installment Enums
+// ============================================
+
+enum InstallmentProvider {
+  VALU                // فاليو
+  CONTACT             // كونتكت
+  SOUHOOLA            // سهولة
+  PREMIUM             // بريميوم
+  BANK_INSTALLMENT    // تقسيط بنكي
+}
+
+enum InstallmentStatus {
+  PENDING             // قيد الانتظار
+  APPROVED            // موافق عليه
+  REJECTED            // مرفوض
+  ACTIVE              // نشط
+  COMPLETED           // مكتمل
+  DEFAULTED           // متعثر
+}
+
 model Item {
   id              String        @id @default(uuid())
   sellerId        String        @map("seller_id")
@@ -375,6 +552,58 @@ model Item {
   repairCostEstimate  Float?            @map("repair_cost_estimate")
   workingPartsDesc    String?           @map("working_parts_desc")
   defectDescription   String?           @map("defect_description")
+
+  // ============================================
+  // العقارات - Real Estate Fields
+  // ============================================
+  propertyType        PropertyType?     @map("property_type")
+  propertyFinishing   PropertyFinishing? @map("property_finishing")
+  propertyView        PropertyView?     @map("property_view")
+  propertyListingType PropertyListingType? @map("property_listing_type")
+  areaInSqm           Float?            @map("area_in_sqm")           // المساحة بالمتر المربع
+  bedrooms            Int?              @map("bedrooms")              // عدد غرف النوم
+  bathrooms           Int?              @map("bathrooms")             // عدد الحمامات
+  floorNumber         Int?              @map("floor_number")          // رقم الطابق
+  totalFloors         Int?              @map("total_floors")          // إجمالي الطوابق
+  buildYear           Int?              @map("build_year")            // سنة البناء
+  hasElevator         Boolean?          @map("has_elevator")          // يوجد مصعد
+  hasParking          Boolean?          @map("has_parking")           // يوجد جراج
+  hasGarden           Boolean?          @map("has_garden")            // يوجد حديقة
+  hasSecurity         Boolean?          @map("has_security")          // يوجد أمن
+  hasPool             Boolean?          @map("has_pool")              // يوجد حمام سباحة
+  rentPrice           Float?            @map("rent_price")            // سعر الإيجار الشهري
+  isNegotiable        Boolean?          @map("is_negotiable")         // قابل للتفاوض
+
+  // ============================================
+  // السيارات والمركبات - Vehicle Fields
+  // ============================================
+  vehicleBrand        String?           @map("vehicle_brand")         // الماركة (e.g., Toyota, BMW)
+  vehicleModel        String?           @map("vehicle_model")         // الموديل (e.g., Camry, X5)
+  vehicleYear         Int?              @map("vehicle_year")          // سنة الصنع
+  vehicleKilometers   Int?              @map("vehicle_kilometers")    // عدد الكيلومترات
+  fuelType            FuelType?         @map("fuel_type")
+  transmissionType    TransmissionType? @map("transmission_type")
+  vehicleConditionType VehicleCondition? @map("vehicle_condition_type")
+  bodyType            BodyType?         @map("body_type")
+  engineCapacity      Float?            @map("engine_capacity")       // سعة المحرك (cc)
+  vehicleColor        String?           @map("vehicle_color")         // اللون
+  licensePlate        String?           @map("license_plate")         // رقم اللوحة
+  hasWarranty         Boolean?          @map("has_warranty")          // يوجد ضمان
+  warrantyMonths      Int?              @map("warranty_months")       // مدة الضمان بالأشهر
+
+  // ============================================
+  // خيارات التوصيل والتقسيط
+  // ============================================
+  deliveryAvailable   Boolean           @default(false) @map("delivery_available")
+  deliveryProvider    DeliveryProvider? @map("delivery_provider")
+  deliverySpeed       DeliverySpeed?    @map("delivery_speed")
+  deliveryCost        Float?            @map("delivery_cost")
+  freeDelivery        Boolean           @default(false) @map("free_delivery")
+
+  installmentAvailable Boolean          @default(false) @map("installment_available")
+  installmentProvider InstallmentProvider? @map("installment_provider")
+  installmentMonths   Int[]             @map("installment_months")    // e.g., [6, 12, 18, 24]
+  minDownPayment      Float?            @map("min_down_payment")      // الحد الأدنى للمقدم
 
   // Specs (flexible JSON)
   specifications  Json?         @map("specifications")
@@ -452,6 +681,22 @@ model Item {
   @@index([barcode])
   @@index([stockQuantity])
   @@index([trackInventory])
+  // Real Estate indexes
+  @@index([propertyType])
+  @@index([propertyFinishing])
+  @@index([areaInSqm])
+  @@index([bedrooms])
+  @@index([bathrooms])
+  // Vehicle indexes
+  @@index([vehicleBrand])
+  @@index([vehicleYear])
+  @@index([fuelType])
+  @@index([transmissionType])
+  @@index([bodyType])
+  @@index([vehicleKilometers])
+  // Delivery & Installment indexes
+  @@index([deliveryAvailable])
+  @@index([installmentAvailable])
 }
 
 // ============================================
@@ -609,17 +854,23 @@ model CartItem {
 // ============================================
 
 model ShippingAddress {
-  id           String   @id @default(uuid())
-  userId       String   @map("user_id")
-  fullName     String   @map("full_name")
-  phone        String
-  address      String
-  city         String
-  governorate  String
-  postalCode   String?  @map("postal_code")
-  isDefault    Boolean  @default(false) @map("is_default")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  fullName        String   @map("full_name")
+  phone           String
+  address         String?  // Legacy combined address field
+  street          String?  // الشارع
+  buildingName    String?  @map("building_name")   // اسم المبنى
+  buildingNumber  String?  @map("building_number") // رقم المبنى
+  floor           String?  // الدور
+  apartmentNumber String?  @map("apartment_number") // رقم الشقة
+  landmark        String?  // علامة مميزة
+  city            String
+  governorate     String
+  postalCode      String?  @map("postal_code")
+  isDefault       Boolean  @default(false) @map("is_default")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders       Order[]
@@ -3498,7 +3749,7 @@ enum InstallmentPlanStatus {
   CANCELLED       // ملغي
 }
 
-enum InstallmentStatus {
+enum InstallmentPaymentStatus {
   PENDING         // قيد الانتظار
   PAID            // مدفوع
   LATE            // متأخر
@@ -3580,7 +3831,7 @@ model Installment {
   daysLate        Int               @default(0) @map("days_late")
 
   // Status
-  status          InstallmentStatus @default(PENDING)
+  status          InstallmentPaymentStatus @default(PENDING)
 
   // Reminders
   remindersSent   Int               @default(0) @map("reminders_sent")
@@ -4982,6 +5233,1204 @@ model Property {
   @@index([verificationLevel])
   @@index([openForBarter])
   @@index([featured])
+// مقارنة السيارات - Item Comparison
+// ============================================
+
+model ItemComparison {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  title           String?
+  itemIds         String[]  @map("item_ids")
+  categorySlug    String?   @map("category_slug")
+
+  isPublic        Boolean   @default(false) @map("is_public")
+  shareCode       String?   @unique @map("share_code")
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("item_comparisons")
+  @@index([userId])
+  @@index([shareCode])
+}
+
+// ============================================
+// حجز التوصيل - Delivery Booking
+// ============================================
+
+enum DeliveryBookingStatus {
+  PENDING
+  CONFIRMED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED
+  CANCELLED
+  RETURNED
+}
+
+model DeliveryBooking {
+  id              String              @id @default(uuid())
+  orderId         String?             @map("order_id")
+  transactionId   String?             @map("transaction_id")
+  senderId        String              @map("sender_id")
+  receiverId      String              @map("receiver_id")
+
+  provider        DeliveryProvider
+  providerOrderId String?             @map("provider_order_id")
+
+  pickupAddress   String              @map("pickup_address")
+  pickupCity      String              @map("pickup_city")
+  pickupGovernorate String            @map("pickup_governorate")
+  pickupPhone     String              @map("pickup_phone")
+  pickupLat       Float?              @map("pickup_lat")
+  pickupLng       Float?              @map("pickup_lng")
+
+  deliveryAddress String              @map("delivery_address")
+  deliveryCity    String              @map("delivery_city")
+  deliveryGovernorate String          @map("delivery_governorate")
+  deliveryPhone   String              @map("delivery_phone")
+  deliveryLat     Float?              @map("delivery_lat")
+  deliveryLng     Float?              @map("delivery_lng")
+
+  packageWeight   Float?              @map("package_weight")
+  packageDimensions Json?             @map("package_dimensions")
+  packageDescription String?          @map("package_description")
+  isFragile       Boolean             @default(false) @map("is_fragile")
+
+  deliveryCost    Float               @map("delivery_cost")
+  insuranceCost   Float?              @map("insurance_cost")
+  codAmount       Float?              @map("cod_amount")
+  totalCost       Float               @map("total_cost")
+
+  deliverySpeed   DeliverySpeed?      @map("delivery_speed")
+  hasInsurance    Boolean             @default(false) @map("has_insurance")
+  isCOD           Boolean             @default(false) @map("is_cod")
+
+  status          DeliveryBookingStatus @default(PENDING)
+  trackingNumber  String?             @map("tracking_number")
+  trackingUrl     String?             @map("tracking_url")
+
+  estimatedDelivery DateTime?         @map("estimated_delivery")
+  pickedUpAt      DateTime?           @map("picked_up_at")
+  deliveredAt     DateTime?           @map("delivered_at")
+
+  senderNotes     String?             @map("sender_notes")
+  driverNotes     String?             @map("driver_notes")
+
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  trackingHistory DeliveryTracking[]
+
+  @@map("delivery_bookings")
+  @@index([orderId])
+  @@index([senderId])
+  @@index([status])
+  @@index([trackingNumber])
+}
+
+model DeliveryTracking {
+  id              String    @id @default(uuid())
+  bookingId       String    @map("booking_id")
+  status          String
+  location        String?
+  description     String?
+  timestamp       DateTime  @default(now())
+
+  booking         DeliveryBooking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("delivery_tracking")
+  @@index([bookingId])
+}
+
+// ============================================
+// شارات المستخدم - User Badges
+// ============================================
+
+model UserBadge {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  badgeType       BadgeType @map("badge_type")
+  verifiedAt      DateTime? @map("verified_at")
+  verifiedBy      String?   @map("verified_by")
+  documentUrls    String[]  @map("document_urls")
+  verificationData Json?    @map("verification_data")
+  isActive        Boolean   @default(true) @map("is_active")
+  expiresAt       DateTime? @map("expires_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("user_badges")
+  @@unique([userId, badgeType])
+  @@index([userId])
+  @@index([badgeType])
+  @@index([isActive])
+}
+
+// ============================================
+// طلبات التقسيط - Installment Requests
+// ============================================
+
+model InstallmentRequest {
+  id              String              @id @default(uuid())
+  userId          String              @map("user_id")
+  itemId          String              @map("item_id")
+  orderId         String?             @map("order_id")
+  provider        InstallmentProvider
+  totalAmount     Float               @map("total_amount")
+  downPayment     Float               @map("down_payment")
+  installmentAmount Float             @map("installment_amount")
+  numberOfMonths  Int                 @map("number_of_months")
+  interestRate    Float?              @map("interest_rate")
+  nationalId      String?             @map("national_id")
+  phoneNumber     String              @map("phone_number")
+  monthlyIncome   Float?              @map("monthly_income")
+  employerName    String?             @map("employer_name")
+  status          InstallmentStatus   @default(PENDING)
+  providerRef     String?             @map("provider_ref")
+  approvedAmount  Float?              @map("approved_amount")
+  rejectionReason String?             @map("rejection_reason")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+  approvedAt      DateTime?           @map("approved_at")
+
+  @@map("installment_requests")
+  @@index([userId])
+  @@index([itemId])
+  @@index([status])
+}
+
+// ============================================
+// المزادات الحية - Live Auctions
+// ============================================
+
+enum LiveAuctionStatus {
+  SCHEDULED
+  LIVE
+  PAUSED
+  ENDED
+  CANCELLED
+}
+
+model LiveAuction {
+  id              String            @id @default(uuid())
+  listingId       String            @map("listing_id")
+  hostId          String            @map("host_id")
+  title           String
+  description     String?
+  thumbnailUrl    String?           @map("thumbnail_url")
+  scheduledStart  DateTime          @map("scheduled_start")
+  scheduledEnd    DateTime?         @map("scheduled_end")
+  actualStart     DateTime?         @map("actual_start")
+  actualEnd       DateTime?         @map("actual_end")
+  streamUrl       String?           @map("stream_url")
+  streamKey       String?           @map("stream_key")
+  viewerCount     Int               @default(0) @map("viewer_count")
+  peakViewers     Int               @default(0) @map("peak_viewers")
+  currentBid      Float?            @map("current_bid")
+  currentBidderId String?           @map("current_bidder_id")
+  totalBids       Int               @default(0) @map("total_bids")
+  status          LiveAuctionStatus @default(SCHEDULED)
+  recordingUrl    String?           @map("recording_url")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  chatMessages    LiveAuctionChat[]
+
+  @@map("live_auctions")
+  @@index([listingId])
+  @@index([hostId])
+  @@index([status])
+  @@index([scheduledStart])
+}
+
+model LiveAuctionChat {
+  id              String    @id @default(uuid())
+  auctionId       String    @map("auction_id")
+  userId          String    @map("user_id")
+  userName        String    @map("user_name")
+  message         String
+  messageType     String    @default("TEXT") @map("message_type")
+  timestamp       DateTime  @default(now())
+
+  auction         LiveAuction @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+
+  @@map("live_auction_chat")
+  @@index([auctionId])
+}
+
+// ============================================
+// اقتراحات المقايضة الذكية - AI Barter Suggestions
+// ============================================
+
+model BarterSuggestion {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  userItemId      String    @map("user_item_id")
+  suggestedItemId String    @map("suggested_item_id")
+  matchScore      Float     @map("match_score")
+  matchReasons    String[]  @map("match_reasons")
+  valueMatch      Float     @map("value_match")
+  categoryMatch   Float     @map("category_match")
+  locationMatch   Float     @map("location_match")
+  isViewed        Boolean   @default(false) @map("is_viewed")
+  isAccepted      Boolean?  @map("is_accepted")
+  feedback        String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  viewedAt        DateTime? @map("viewed_at")
+  respondedAt     DateTime? @map("responded_at")
+
+  @@map("barter_suggestions")
+  @@index([userId])
+  @@index([userItemId])
+  @@index([matchScore])
+}
+
+// ============================================
+// شراكات إعادة التدوير - Recycling Partnerships
+// ============================================
+
+enum RecyclingPartnerType {
+  RECYCLING_CENTER
+  SCRAP_FACTORY
+  EXPORT_COMPANY
+  CHARITY
+  GOVERNMENT
+}
+
+enum PartnershipStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+model RecyclingPartner {
+  id              String              @id @default(uuid())
+  name            String
+  nameAr          String              @map("name_ar")
+  type            RecyclingPartnerType
+  description     String?
+  email           String
+  phone           String
+  website         String?
+  address         String
+  city            String
+  governorate     String
+  latitude        Float?
+  longitude       Float?
+  acceptedMaterials String[]          @map("accepted_materials")
+  minQuantityKg   Float?              @map("min_quantity_kg")
+  maxQuantityKg   Float?              @map("max_quantity_kg")
+  pickupAvailable Boolean             @default(false) @map("pickup_available")
+  priceRanges     Json?               @map("price_ranges")
+  licenseNumber   String?             @map("license_number")
+  licenseExpiry   DateTime?           @map("license_expiry")
+  isVerified      Boolean             @default(false) @map("is_verified")
+  status          PartnershipStatus   @default(PENDING)
+  rating          Float               @default(0)
+  reviewCount     Int                 @default(0) @map("review_count")
+  documents       String[]
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  @@map("recycling_partners")
+  @@index([type])
+  @@index([governorate])
+  @@index([status])
+}
+
+// ============================================
+// شهادات الوسطاء المعتمدين - Facilitator Certifications
+// ============================================
+
+enum CertificationLevel {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum CertificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  REVOKED
+}
+
+model FacilitatorCertification {
+  id              String              @id @default(uuid())
+  facilitatorId   String              @map("facilitator_id")
+  level           CertificationLevel  @default(BRONZE)
+  specialization  String[]
+  completedDeals  Int                 @map("completed_deals")
+  totalValue      Float               @map("total_value")
+  avgRating       Float               @map("avg_rating")
+  trainingCompleted Boolean           @default(false) @map("training_completed")
+  examPassed      Boolean             @default(false) @map("exam_passed")
+  documentsSubmitted String[]         @map("documents_submitted")
+  backgroundCheck Boolean             @default(false) @map("background_check")
+  identityVerified Boolean            @default(false) @map("identity_verified")
+  status          CertificationStatus @default(PENDING)
+  issuedAt        DateTime?           @map("issued_at")
+  expiresAt       DateTime?           @map("expires_at")
+  renewalDate     DateTime?           @map("renewal_date")
+  certificateNumber String?           @unique @map("certificate_number")
+  certificateUrl  String?             @map("certificate_url")
+  reviewedBy      String?             @map("reviewed_by")
+  reviewNotes     String?             @map("review_notes")
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  @@map("facilitator_certifications")
+  @@index([facilitatorId])
+  @@index([level])
+  @@index([status])
+}
+
+// ============================================
+// 🏆 سوق الذهب - Gold Marketplace
+// ============================================
+
+enum GoldKarat {
+  K18   // عيار 18
+  K21   // عيار 21
+  K24   // عيار 24
+}
+
+enum GoldItemCategory {
+  RING          // خاتم
+  NECKLACE      // سلسلة/عقد
+  BRACELET      // إسورة
+  EARRING       // حلق
+  SET           // طقم كامل
+  PENDANT       // تعليقة
+  ANKLET        // خلخال
+  COIN          // جنيه ذهب
+  BAR           // سبيكة
+  OTHER         // أخرى
+}
+
+enum GoldItemCondition {
+  NEW           // جديد (لم يُلبس)
+  LIKE_NEW      // كالجديد
+  GOOD          // جيد
+  FAIR          // مقبول
+}
+
+enum GoldVerificationLevel {
+  BASIC         // أساسي (صور فقط)
+  VERIFIED      // موثق (بائع موثوق)
+  CERTIFIED     // معتمد (فحص صائغ)
+}
+
+enum GoldListingStatus {
+  ACTIVE        // نشط
+  RESERVED      // محجوز
+  SOLD          // مباع
+  EXPIRED       // منتهي
+  CANCELLED     // ملغي
+}
+
+enum GoldTransactionStatus {
+  PENDING       // في انتظار الدفع
+  ESCROW_HELD   // المبلغ محجوز
+  DELIVERED     // تم التسليم
+  INSPECTING    // فترة الفحص
+  COMPLETED     // مكتمل
+  DISPUTED      // نزاع
+  REFUNDED      // مسترد
+  CANCELLED     // ملغي
+}
+
+enum GoldDeliveryMethod {
+  MEETUP        // تسليم شخصي
+  SHIPPING      // شحن
+  PARTNER_PICKUP // استلام من صائغ شريك
+}
+
+// أسعار الذهب اللحظية
+model GoldPrice {
+  id            String      @id @default(uuid())
+  karat         GoldKarat
+  buyPrice      Float       @map("buy_price")      // سعر الشراء (البورصة)
+  sellPrice     Float       @map("sell_price")     // سعر البيع
+  timestamp     DateTime    @default(now())
+  source        String?     // مصدر السعر (API, manual)
+
+  @@map("gold_prices")
+  @@index([karat, timestamp])
+}
+
+// قطع الذهب المعروضة
+model GoldItem {
+  id                  String                @id @default(uuid())
+  sellerId            String                @map("seller_id")
+
+  // معلومات القطعة
+  title               String
+  description         String?
+  category            GoldItemCategory
+  karat               GoldKarat
+  weightGrams         Float                 @map("weight_grams")
+  condition           GoldItemCondition     @default(GOOD)
+
+  // الصور
+  images              String[]
+
+  // التسعير
+  askingPricePerGram  Float                 @map("asking_price_per_gram")  // سعر البائع للجرام
+  totalAskingPrice    Float                 @map("total_asking_price")     // السعر الإجمالي
+  goldPriceAtListing  Float                 @map("gold_price_at_listing")  // سعر البورصة وقت الإضافة
+
+  // الموقع
+  governorate         String?
+  city                String?
+
+  // التحقق
+  verificationLevel   GoldVerificationLevel @default(BASIC) @map("verification_level")
+  certificateId       String?               @unique @map("certificate_id")
+
+  // الحالة
+  status              GoldListingStatus     @default(ACTIVE)
+  views               Int                   @default(0)
+
+  // ميزات إضافية
+  isFeatured          Boolean               @default(false) @map("is_featured")
+  allowBarter         Boolean               @default(false) @map("allow_barter")  // قابل للمقايضة
+  barterDescription   String?               @map("barter_description")  // ما يقبله في المقايضة
+
+  // الطوابع الزمنية
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+  expiresAt           DateTime?             @map("expires_at")
+
+  // العلاقات
+  seller              User                  @relation("UserGoldItems", fields: [sellerId], references: [id], onDelete: Cascade)
+  certificate         GoldCertificate?      @relation(fields: [certificateId], references: [id])
+  transactions        GoldTransaction[]
+
+  @@map("gold_items")
+  @@index([sellerId])
+  @@index([category])
+  @@index([karat])
+  @@index([status])
+  @@index([governorate])
+  @@index([verificationLevel])
+  @@index([createdAt])
+}
+
+// معاملات الذهب
+model GoldTransaction {
+  id                  String                  @id @default(uuid())
+  itemId              String                  @map("item_id")
+  buyerId             String                  @map("buyer_id")
+  sellerId            String                  @map("seller_id")
+
+  // تفاصيل المعاملة
+  goldPriceAtTransaction Float               @map("gold_price_at_transaction")  // سعر البورصة وقت المعاملة
+  itemPrice           Float                   @map("item_price")                 // سعر القطعة
+  buyerCommission     Float                   @map("buyer_commission")           // عمولة المشتري (0.7%)
+  sellerCommission    Float                   @map("seller_commission")          // عمولة البائع (0.7%)
+  totalAmount         Float                   @map("total_amount")               // المبلغ الإجمالي
+
+  // حالة الضمان
+  escrowStatus        String                  @default("PENDING") @map("escrow_status")
+  escrowHeldAt        DateTime?               @map("escrow_held_at")
+  escrowReleasedAt    DateTime?               @map("escrow_released_at")
+
+  // التسليم
+  deliveryMethod      GoldDeliveryMethod      @map("delivery_method")
+  deliveryAddress     String?                 @map("delivery_address")
+  deliveryPartnerId   String?                 @map("delivery_partner_id")  // صائغ شريك للاستلام
+
+  // فترة الفحص
+  inspectionStartedAt DateTime?               @map("inspection_started_at")
+  inspectionEndsAt    DateTime?               @map("inspection_ends_at")
+
+  // الحالة
+  status              GoldTransactionStatus   @default(PENDING)
+
+  // ملاحظات
+  buyerNotes          String?                 @map("buyer_notes")
+  sellerNotes         String?                 @map("seller_notes")
+  disputeReason       String?                 @map("dispute_reason")
+
+  // الطوابع الزمنية
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  completedAt         DateTime?               @map("completed_at")
+
+  // العلاقات
+  item                GoldItem                @relation(fields: [itemId], references: [id])
+  buyer               User                    @relation("UserGoldPurchases", fields: [buyerId], references: [id])
+  seller              User                    @relation("UserGoldSales", fields: [sellerId], references: [id])
+  deliveryPartner     GoldPartner?            @relation(fields: [deliveryPartnerId], references: [id])
+
+  @@map("gold_transactions")
+  @@index([itemId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// شهادات فحص الذهب
+model GoldCertificate {
+  id                  String              @id @default(uuid())
+  itemId              String              @unique @map("item_id")
+  partnerId           String              @map("partner_id")
+
+  // نتائج الفحص
+  verifiedKarat       GoldKarat           @map("verified_karat")
+  verifiedWeight      Float               @map("verified_weight")
+  purityPercentage    Float               @map("purity_percentage")  // نسبة النقاء
+
+  // الحالة
+  isAuthentic         Boolean             @default(true) @map("is_authentic")
+  notes               String?
+
+  // رقم الشهادة
+  certificateNumber   String              @unique @map("certificate_number")
+
+  // الطوابع الزمنية
+  issuedAt            DateTime            @default(now()) @map("issued_at")
+  expiresAt           DateTime?           @map("expires_at")
+
+  // العلاقات
+  partner             GoldPartner         @relation(fields: [partnerId], references: [id])
+  goldItem            GoldItem?
+
+  @@map("gold_certificates")
+  @@index([partnerId])
+  @@index([certificateNumber])
+}
+
+// الصاغة الشركاء
+model GoldPartner {
+  id                  String              @id @default(uuid())
+
+  // معلومات المحل
+  name                String
+  nameAr              String              @map("name_ar")
+  description         String?
+  logo                String?
+
+  // الموقع
+  governorate         String
+  city                String
+  address             String
+  latitude            Float?
+  longitude           Float?
+
+  // التواصل
+  phone               String
+  whatsapp            String?
+  email               String?
+
+  // ساعات العمل
+  workingHours        String?             @map("working_hours")
+
+  // الخدمات
+  offersCertification Boolean             @default(true) @map("offers_certification")   // يقدم فحص
+  offersPickup        Boolean             @default(true) @map("offers_pickup")          // نقطة تسليم
+  offersRepair        Boolean             @default(false) @map("offers_repair")         // إصلاح
+
+  // الرسوم
+  certificationFee    Float               @default(75) @map("certification_fee")        // رسوم الفحص
+
+  // التقييم
+  rating              Float               @default(0)
+  totalReviews        Int                 @default(0) @map("total_reviews")
+  totalCertifications Int                 @default(0) @map("total_certifications")
+
+  // الحالة
+  isActive            Boolean             @default(true) @map("is_active")
+  isVerified          Boolean             @default(false) @map("is_verified")
+
+  // الطوابع الزمنية
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // العلاقات
+  certificates        GoldCertificate[]
+  transactions        GoldTransaction[]
+
+  @@map("gold_partners")
+  @@index([governorate])
+  @@index([isActive])
+}
+
+// ============================================
+// سوق الفضة - Silver Marketplace
+// ============================================
+
+// عيارات الفضة
+enum SilverPurity {
+  S999   // فضة نقية 99.9%
+  S925   // فضة إسترليني 92.5%
+  S900   // فضة 90%
+  S800   // فضة 80%
+}
+
+// فئات قطع الفضة
+enum SilverItemCategory {
+  RING        // خاتم
+  NECKLACE    // سلسلة/قلادة
+  BRACELET    // إسورة
+  EARRING     // حلق
+  SET         // طقم كامل
+  PENDANT     // دلاية
+  ANKLET      // خلخال
+  COIN        // عملة فضية
+  BAR         // سبيكة فضة
+  ANTIQUE     // أنتيك/تراث
+  OTHER       // أخرى
+}
+
+// حالة القطعة الفضية
+enum SilverItemCondition {
+  NEW         // جديد
+  LIKE_NEW    // كالجديد
+  GOOD        // جيد
+  FAIR        // مقبول
+}
+
+// مستوى التحقق للفضة
+enum SilverVerificationLevel {
+  BASIC       // أساسي - صور فقط
+  VERIFIED    // موثق - تحقق من الهوية
+  CERTIFIED   // معتمد - فحص من صائغ شريك
+}
+
+// حالة إعلان الفضة
+enum SilverListingStatus {
+  ACTIVE      // نشط
+  RESERVED    // محجوز
+  SOLD        // تم البيع
+  EXPIRED     // منتهي
+  CANCELLED   // ملغي
+}
+
+// حالة معاملة الفضة
+enum SilverTransactionStatus {
+  PENDING       // في الانتظار
+  ESCROW_HELD   // المبلغ محجوز
+  DELIVERED     // تم التسليم
+  INSPECTING    // قيد الفحص
+  COMPLETED     // مكتملة
+  DISPUTED      // متنازع عليها
+  REFUNDED      // مُسترجعة
+  CANCELLED     // ملغية
+}
+
+// طريقة التسليم للفضة
+enum SilverDeliveryMethod {
+  MEETUP        // تسليم شخصي
+  SHIPPING      // شحن
+  PARTNER_PICKUP // استلام من صائغ شريك
+}
+
+// أسعار الفضة اللحظية
+model SilverPrice {
+  id            String        @id @default(uuid())
+  purity        SilverPurity
+  buyPrice      Float         @map("buy_price")      // سعر الشراء
+  sellPrice     Float         @map("sell_price")     // سعر البيع
+  timestamp     DateTime      @default(now())
+  source        String?       // مصدر السعر (API, manual)
+
+  @@map("silver_prices")
+  @@index([purity, timestamp])
+}
+
+// قطع الفضة المعروضة
+model SilverItem {
+  id                  String                  @id @default(uuid())
+  sellerId            String                  @map("seller_id")
+
+  // معلومات القطعة
+  title               String
+  description         String?
+  category            SilverItemCategory
+  purity              SilverPurity            @default(S925)
+  weightGrams         Float                   @map("weight_grams")
+  condition           SilverItemCondition     @default(GOOD)
+  brand               String?                 // الماركة إن وجدت
+
+  // الصور
+  images              String[]
+
+  // التسعير
+  askingPrice         Float                   @map("asking_price")           // السعر المطلوب
+  rawValue            Float?                  @map("raw_value")              // القيمة الخام المحسوبة
+  silverPriceAtListing Float                  @map("silver_price_at_listing") // سعر الفضة وقت الإضافة
+
+  // الموقع
+  governorate         String?
+  city                String?
+
+  // التحقق
+  verificationLevel   SilverVerificationLevel @default(BASIC) @map("verification_level")
+  certificateId       String?                 @unique @map("certificate_id")
+
+  // الحالة
+  status              SilverListingStatus     @default(ACTIVE)
+  views               Int                     @default(0)
+  favoritesCount      Int                     @default(0) @map("favorites_count")
+
+  // ميزات إضافية
+  isFeatured          Boolean                 @default(false) @map("is_featured")
+  allowBarter         Boolean                 @default(true) @map("allow_barter")   // قابل للمقايضة
+  barterPreferences   String?                 @map("barter_preferences")             // تفضيلات المقايضة
+
+  // الطوابع الزمنية
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  expiresAt           DateTime?               @map("expires_at")
+
+  // العلاقات
+  seller              User                    @relation("UserSilverItems", fields: [sellerId], references: [id], onDelete: Cascade)
+  certificate         SilverCertificate?      @relation(fields: [certificateId], references: [id])
+  transactions        SilverTransaction[]
+
+  @@map("silver_items")
+  @@index([sellerId])
+  @@index([category])
+  @@index([purity])
+  @@index([status])
+  @@index([governorate])
+  @@index([verificationLevel])
+  @@index([createdAt])
+  @@index([askingPrice])
+}
+
+// معاملات الفضة
+model SilverTransaction {
+  id                    String                    @id @default(uuid())
+  itemId                String                    @map("item_id")
+  buyerId               String                    @map("buyer_id")
+  sellerId              String                    @map("seller_id")
+
+  // نوع المعاملة
+  transactionType       String                    @default("direct") @map("transaction_type") // direct, barter, auction
+
+  // تفاصيل المعاملة
+  silverPriceAtTransaction Float                  @map("silver_price_at_transaction")  // سعر الفضة وقت المعاملة
+  itemPrice             Float                     @map("item_price")                   // سعر القطعة
+  buyerCommission       Float                     @map("buyer_commission")             // عمولة المشتري (2%)
+  sellerCommission      Float                     @map("seller_commission")            // عمولة البائع (2%)
+  totalAmount           Float                     @map("total_amount")                 // المبلغ الإجمالي
+
+  // حالة الضمان
+  escrowStatus          String                    @default("PENDING") @map("escrow_status")
+  escrowHeldAt          DateTime?                 @map("escrow_held_at")
+  escrowReleasedAt      DateTime?                 @map("escrow_released_at")
+
+  // التسليم
+  deliveryMethod        SilverDeliveryMethod      @map("delivery_method")
+  deliveryAddress       String?                   @map("delivery_address")
+  deliveryPartnerId     String?                   @map("delivery_partner_id")
+
+  // فترة الفحص
+  inspectionStartedAt   DateTime?                 @map("inspection_started_at")
+  inspectionEndsAt      DateTime?                 @map("inspection_ends_at")
+
+  // الحالة
+  status                SilverTransactionStatus   @default(PENDING)
+
+  // ملاحظات
+  buyerNotes            String?                   @map("buyer_notes")
+  sellerNotes           String?                   @map("seller_notes")
+  disputeReason         String?                   @map("dispute_reason")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  completedAt           DateTime?                 @map("completed_at")
+
+  // العلاقات
+  item                  SilverItem                @relation(fields: [itemId], references: [id])
+  buyer                 User                      @relation("UserSilverPurchases", fields: [buyerId], references: [id])
+  seller                User                      @relation("UserSilverSales", fields: [sellerId], references: [id])
+  deliveryPartner       SilverPartner?            @relation(fields: [deliveryPartnerId], references: [id])
+
+  @@map("silver_transactions")
+  @@index([itemId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// شهادات فحص الفضة
+model SilverCertificate {
+  id                  String              @id @default(uuid())
+  itemId              String              @unique @map("item_id")
+  partnerId           String              @map("partner_id")
+
+  // نتائج الفحص
+  verifiedPurity      SilverPurity        @map("verified_purity")
+  verifiedWeight      Float               @map("verified_weight")
+  purityPercentage    Float               @map("purity_percentage")  // نسبة النقاء الفعلية
+
+  // الحالة
+  isAuthentic         Boolean             @default(true) @map("is_authentic")
+  notes               String?
+
+  // رقم الشهادة
+  certificateNumber   String              @unique @map("certificate_number")
+
+  // الطوابع الزمنية
+  issuedAt            DateTime            @default(now()) @map("issued_at")
+  expiresAt           DateTime?           @map("expires_at")
+
+  // العلاقات
+  partner             SilverPartner       @relation(fields: [partnerId], references: [id])
+  silverItem          SilverItem?
+
+  @@map("silver_certificates")
+  @@index([partnerId])
+  @@index([certificateNumber])
+}
+
+// الصاغة الشركاء للفضة
+model SilverPartner {
+  id                  String              @id @default(uuid())
+
+  // معلومات المحل
+  name                String
+  nameAr              String              @map("name_ar")
+  description         String?
+  logo                String?
+
+  // الموقع
+  governorate         String
+  city                String
+  address             String
+  latitude            Float?
+  longitude           Float?
+
+  // التواصل
+  phone               String
+  whatsapp            String?
+  email               String?
+
+  // ساعات العمل
+  workingHours        String?             @map("working_hours")
+
+  // الخدمات
+  offersCertification Boolean             @default(true) @map("offers_certification")
+  offersPickup        Boolean             @default(true) @map("offers_pickup")
+  offersRepair        Boolean             @default(false) @map("offers_repair")
+  offersCleaning      Boolean             @default(true) @map("offers_cleaning")     // تنظيف الفضة
+
+  // الرسوم
+  certificationFee    Float               @default(30) @map("certification_fee")     // رسوم فحص أقل من الذهب
+
+  // التقييم
+  rating              Float               @default(0)
+  totalReviews        Int                 @default(0) @map("total_reviews")
+  totalCertifications Int                 @default(0) @map("total_certifications")
+
+  // الحالة
+  isActive            Boolean             @default(true) @map("is_active")
+  isVerified          Boolean             @default(false) @map("is_verified")
+
+  // الطوابع الزمنية
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // العلاقات
+  certificates        SilverCertificate[]
+  transactions        SilverTransaction[]
+
+  @@map("silver_partners")
+  @@index([governorate])
+  @@index([isActive])
+}
+
+// ============================================
+// سوق السيارات - Cars Marketplace
+// ============================================
+
+// نوع البائع
+enum CarSellerType {
+  OWNER           // مالك (فرد)
+  DEALER          // تاجر (فردي)
+  SHOWROOM        // معرض (شركة)
+}
+
+// نوع هيكل السيارة
+enum CarBodyType {
+  SEDAN           // سيدان
+  HATCHBACK       // هاتشباك
+  SUV             // SUV
+  CROSSOVER       // كروس أوفر
+  COUPE           // كوبيه
+  CONVERTIBLE     // كشف
+  PICKUP          // بيك أب
+  VAN             // فان
+  MINIVAN         // ميني فان
+  WAGON           // ستيشن واجن
+  TRUCK           // شاحنة
+  BUS             // أتوبيس / ميكروباص
+}
+
+// نوع ناقل الحركة
+enum CarTransmission {
+  AUTOMATIC       // أوتوماتيك
+  MANUAL          // مانيوال
+  CVT             // CVT
+  DCT             // دبل كلتش
+}
+
+// نوع الوقود
+enum CarFuelType {
+  PETROL          // بنزين
+  DIESEL          // ديزل
+  ELECTRIC        // كهرباء
+  HYBRID          // هايبرد
+  NATURAL_GAS     // غاز طبيعي
+  LPG             // غاز بترولي
+}
+
+// حالة السيارة
+enum CarCondition {
+  NEW             // جديدة (زيرو)
+  LIKE_NEW        // كالجديدة
+  EXCELLENT       // ممتازة
+  GOOD            // جيدة
+  FAIR            // مقبولة
+  NEEDS_WORK      // تحتاج صيانة
+}
+
+// حالة الحوادث
+enum CarAccidentHistory {
+  NONE            // بدون حوادث
+  MINOR           // حادث بسيط (خدوش/صدمات)
+  MODERATE        // حادث متوسط
+  MAJOR           // حادث كبير
+  UNKNOWN         // غير معروف
+}
+
+// مستوى التحقق
+enum CarVerificationLevel {
+  BASIC           // أساسي (صور فقط)
+  VERIFIED        // موثق (بائع موثوق)
+  INSPECTED       // مفحوص (فحص فني)
+  CERTIFIED       // معتمد (فحص شامل + ضمان)
+}
+
+// حالة الإعلان
+enum CarListingStatus {
+  DRAFT           // مسودة
+  ACTIVE          // نشط
+  RESERVED        // محجوز
+  SOLD            // مباع
+  EXPIRED         // منتهي
+  SUSPENDED       // معلق
+}
+
+// حالة معاملة السيارة
+enum CarTransactionStatus {
+  INITIATED       // بدأت
+  NEGOTIATING     // قيد التفاوض
+  AGREED          // تم الاتفاق
+  ESCROW_PENDING  // في انتظار الإيداع
+  ESCROW_HELD     // المبلغ محجوز
+  INSPECTION_PENDING // في انتظار الفحص
+  DOCUMENTS_PENDING  // في انتظار الأوراق
+  READY_FOR_TRANSFER // جاهز للنقل
+  COMPLETED       // مكتمل
+  DISPUTED        // نزاع
+  REFUNDED        // مسترد
+  CANCELLED       // ملغي
+}
+
+// طريقة التسليم
+enum CarDeliveryMethod {
+  MEETUP          // تسليم شخصي
+  SHOWROOM        // تسليم في المعرض
+  HOME_DELIVERY   // توصيل للمنزل
+  PARTNER_PICKUP  // استلام من مركز فحص
+}
+
+// حالة اقتراح المقايضة
+enum CarBarterStatus {
+  PENDING         // في انتظار الرد
+  VIEWED          // تم المشاهدة
+  COUNTER_OFFERED // عرض مضاد
+  ACCEPTED        // مقبول
+  REJECTED        // مرفوض
+  EXPIRED         // منتهي
+  COMPLETED       // مكتمل
+}
+
+// نوع الفحص
+enum CarInspectionType {
+  BASIC           // أساسي (خارجي فقط)
+  STANDARD        // قياسي (خارجي + داخلي + ميكانيكي)
+  COMPREHENSIVE   // شامل (كل شيء + كمبيوتر)
+  PRE_PURCHASE    // فحص ما قبل الشراء
+}
+
+// حالة الفحص
+enum CarInspectionStatus {
+  REQUESTED       // مطلوب
+  SCHEDULED       // مجدول
+  IN_PROGRESS     // جاري
+  COMPLETED       // مكتمل
+  CANCELLED       // ملغي
+}
+
+// توصية الفحص
+enum CarInspectionRecommendation {
+  HIGHLY_RECOMMENDED  // موصى به جداً
+  RECOMMENDED         // موصى به
+  CAUTION             // بحذر
+  NOT_RECOMMENDED     // غير موصى به
+}
+
+// ============================================
+// أسعار السيارات المرجعية
+// ============================================
+
+model CarPrice {
+  id              String    @id @default(uuid())
+
+  // تعريف السيارة
+  make            String    // الشركة (Toyota, Hyundai)
+  model           String    // الموديل (Corolla, Accent)
+  year            Int       // سنة الصنع
+  trim            String?   // الفئة (Highline, GLX)
+
+  // نطاق الأسعار
+  priceLow        Float     @map("price_low")        // أقل سعر
+  priceAverage    Float     @map("price_average")    // متوسط السعر
+  priceHigh       Float     @map("price_high")       // أعلى سعر
+
+  // عوامل التسعير
+  basePrice       Float     @map("base_price")       // السعر الأساسي
+  mileageFactor   Float     @default(0.00005) @map("mileage_factor")  // معامل الكيلومترات
+
+  // مصدر البيانات
+  dataSource      String?   @map("data_source")      // xchange, market_research
+  sampleSize      Int       @default(0) @map("sample_size")  // عدد العينات
+
+  // الطوابع الزمنية
+  recordedAt      DateTime  @default(now()) @map("recorded_at")
+  validUntil      DateTime? @map("valid_until")
+
+  @@map("car_prices")
+  @@unique([make, model, year, trim])
+  @@index([make, model])
+  @@index([year])
+}
+
+// ============================================
+// السيارات المعروضة
+// ============================================
+
+model CarListing {
+  id                  String                  @id @default(uuid())
+  sellerId            String                  @map("seller_id")
+
+  // معلومات أساسية
+  title               String
+  description         String?
+
+  // تفاصيل السيارة
+  make                String                  // الشركة المصنعة
+  model               String                  // الموديل
+  year                Int                     // سنة الصنع
+  trim                String?                 // الفئة
+
+  // المواصفات الفنية
+  bodyType            CarBodyType             @map("body_type")
+  transmission        CarTransmission
+  fuelType            CarFuelType             @map("fuel_type")
+  engineSize          Float?                  @map("engine_size")    // سعة المحرك (لتر)
+  cylinders           Int?                    // عدد السلندرات
+  driveType           String?                 @map("drive_type")     // FWD, RWD, AWD, 4WD
+  colorExterior       String?                 @map("color_exterior") // لون الخارج
+  colorInterior       String?                 @map("color_interior") // لون الداخل
+  doors               Int                     @default(4)
+  seats               Int                     @default(5)
+
+  // الحالة والاستخدام
+  mileage             Int                     // الكيلومترات
+  condition           CarCondition            @default(GOOD)
+  accidentHistory     CarAccidentHistory      @default(UNKNOWN) @map("accident_history")
+  serviceHistory      Boolean                 @default(false) @map("service_history")
+
+  // معلومات مصرية خاصة
+  licenseGovernorate  String?                 @map("license_governorate")  // محافظة اللوحة
+  isImported          Boolean                 @default(false) @map("is_imported")  // مستوردة
+  isCngConverted      Boolean                 @default(false) @map("is_cng_converted")  // محولة غاز
+
+  // التعريف
+  vin                 String?                 // رقم الشاسيه
+  plateNumber         String?                 @map("plate_number")  // رقم اللوحة (مشفر)
+
+  // التسعير
+  askingPrice         Float                   @map("asking_price")
+  estimatedValue      Float?                  @map("estimated_value")  // التقييم الآلي
+  priceNegotiable     Boolean                 @default(true) @map("price_negotiable")
+
+  // نوع البائع
+  sellerType          CarSellerType           @default(OWNER) @map("seller_type")
+
+  // المقايضة
+  openForBarter       Boolean                 @default(true) @map("open_for_barter")
+  barterPreferences   Json?                   @map("barter_preferences")  // {"accepts": ["car", "property"]}
+
+  // التحقق والفحص
+  verificationLevel   CarVerificationLevel    @default(BASIC) @map("verification_level")
+  inspectionId        String?                 @unique @map("inspection_id")
+
+  // الصور والوسائط
+  images              String[]
+  videoUrl            String?                 @map("video_url")
+
+  // الموقع
+  governorate         String?
+  city                String?
+  district            String?
+
+  // الإعلان
+  status              CarListingStatus        @default(ACTIVE)
+  isFeatured          Boolean                 @default(false) @map("is_featured")
+  viewsCount          Int                     @default(0) @map("views_count")
+  favoritesCount      Int                     @default(0) @map("favorites_count")
+
+  // الطوابع الزمنية
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  expiresAt           DateTime?               @map("expires_at")
+  soldAt              DateTime?               @map("sold_at")
+
+  // العلاقات
+  seller              User                    @relation("UserCarListings", fields: [sellerId], references: [id], onDelete: Cascade)
+  inspection          CarInspection?          @relation(fields: [inspectionId], references: [id])
+  transactions        CarTransaction[]
+  barterOffered       CarBarterProposal[]     @relation("CarBarterOffered")
+  barterRequested     CarBarterProposal[]     @relation("CarBarterRequested")
+
+  @@map("car_listings")
+  @@index([sellerId])
+  @@index([make, model])
+  @@index([year])
+  @@index([askingPrice])
+  @@index([mileage])
+  @@index([status])
+  @@index([sellerType])
+  @@index([governorate])
+  @@index([bodyType])
+  @@index([fuelType])
   @@index([createdAt])
 }
 
@@ -5120,6 +6569,136 @@ model PropertyBarterProposal {
   @@index([receiverId])
   @@index([offeredPropertyId])
   @@index([requestedPropertyId])
+// معاملات السيارات
+// ============================================
+
+model CarTransaction {
+  id                      String                  @id @default(uuid())
+
+  // نوع المعاملة
+  transactionType         String                  @default("direct") @map("transaction_type")  // direct, barter
+
+  // السيارة
+  carId                   String                  @map("car_id")
+
+  // الأطراف
+  buyerId                 String                  @map("buyer_id")
+  sellerId                String                  @map("seller_id")
+
+  // التسعير
+  agreedPrice             Float                   @map("agreed_price")
+  buyerCommission         Float                   @map("buyer_commission")   // 1.5%
+  sellerCommission        Float                   @map("seller_commission")  // 1.5%
+  totalAmount             Float                   @map("total_amount")
+
+  // السعر المرجعي
+  marketValueAtTransaction Float?                 @map("market_value_at_transaction")
+
+  // الدفع الآمن (Escrow)
+  escrowStatus            String                  @default("pending") @map("escrow_status")
+  escrowAmount            Float?                  @map("escrow_amount")
+  escrowDepositedAt       DateTime?               @map("escrow_deposited_at")
+  escrowReleasedAt        DateTime?               @map("escrow_released_at")
+
+  // الفحص
+  inspectionRequired      Boolean                 @default(false) @map("inspection_required")
+  inspectionCompleted     Boolean                 @default(false) @map("inspection_completed")
+  inspectionId            String?                 @map("inspection_id")
+
+  // التسليم
+  deliveryMethod          CarDeliveryMethod       @default(MEETUP) @map("delivery_method")
+  deliveryAddress         String?                 @map("delivery_address")
+  deliveryPartnerId       String?                 @map("delivery_partner_id")
+  deliveryScheduledAt     DateTime?               @map("delivery_scheduled_at")
+
+  // الحالة
+  status                  CarTransactionStatus    @default(INITIATED)
+
+  // التأكيدات
+  buyerConfirmedAt        DateTime?               @map("buyer_confirmed_at")
+  sellerConfirmedAt       DateTime?               @map("seller_confirmed_at")
+
+  // الملاحظات
+  buyerNotes              String?                 @map("buyer_notes")
+  sellerNotes             String?                 @map("seller_notes")
+  disputeReason           String?                 @map("dispute_reason")
+
+  // الطوابع الزمنية
+  createdAt               DateTime                @default(now()) @map("created_at")
+  updatedAt               DateTime                @updatedAt @map("updated_at")
+  completedAt             DateTime?               @map("completed_at")
+  cancelledAt             DateTime?               @map("cancelled_at")
+  cancellationReason      String?                 @map("cancellation_reason")
+
+  // العلاقات
+  car                     CarListing              @relation(fields: [carId], references: [id])
+  buyer                   User                    @relation("CarBuyer", fields: [buyerId], references: [id])
+  seller                  User                    @relation("CarSeller", fields: [sellerId], references: [id])
+
+  @@map("car_transactions")
+  @@index([carId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// اقتراحات المقايضة للسيارات
+// ============================================
+
+model CarBarterProposal {
+  id                  String              @id @default(uuid())
+
+  // الأطراف
+  proposerId          String              @map("proposer_id")
+  receiverId          String              @map("receiver_id")
+
+  // السيارات المشاركة
+  offeredCarId        String              @map("offered_car_id")     // سيارة المقترح
+  requestedCarId      String              @map("requested_car_id")   // سيارة المستقبل
+
+  // تقييم السيارات
+  offeredCarValue     Float               @map("offered_car_value")
+  requestedCarValue   Float               @map("requested_car_value")
+
+  // الفرق النقدي
+  cashDifference      Float               @default(0) @map("cash_difference")
+  cashPayer           String?             @map("cash_payer")         // proposer, receiver
+
+  // العمولة
+  proposerCommission  Float               @map("proposer_commission")
+  receiverCommission  Float               @map("receiver_commission")
+
+  // الحالة
+  status              CarBarterStatus     @default(PENDING)
+
+  // العرض المضاد
+  counterProposalId   String?             @unique @map("counter_proposal_id")
+
+  // الرسائل
+  proposerMessage     String?             @map("proposer_message")
+  receiverResponse    String?             @map("receiver_response")
+
+  // الطوابع الزمنية
+  createdAt           DateTime            @default(now()) @map("created_at")
+  expiresAt           DateTime            @map("expires_at")
+  respondedAt         DateTime?           @map("responded_at")
+  completedAt         DateTime?           @map("completed_at")
+
+  // العلاقات
+  proposer            User                @relation("CarBarterProposer", fields: [proposerId], references: [id])
+  receiver            User                @relation("CarBarterReceiver", fields: [receiverId], references: [id])
+  offeredCar          CarListing          @relation("CarBarterOffered", fields: [offeredCarId], references: [id])
+  requestedCar        CarListing          @relation("CarBarterRequested", fields: [requestedCarId], references: [id])
+  counterProposal     CarBarterProposal?  @relation("CarBarterCounter", fields: [counterProposalId], references: [id])
+  counterOf           CarBarterProposal?  @relation("CarBarterCounter")
+
+  @@map("car_barter_proposals")
+  @@index([proposerId])
+  @@index([receiverId])
+  @@index([offeredCarId])
+  @@index([requestedCarId])
   @@index([status])
 }
 
@@ -5177,6 +6756,62 @@ model RentalContract {
   @@index([propertyId])
   @@index([landlordId])
   @@index([tenantId])
+// فحوصات السيارات
+// ============================================
+
+model CarInspection {
+  id                  String                        @id @default(uuid())
+
+  // السيارة والمفتش
+  carId               String?                       @map("car_id")
+  inspectorId         String?                       @map("inspector_id")
+  partnerId           String?                       @map("partner_id")
+  requestedById       String                        @map("requested_by_id")
+
+  // نوع الفحص
+  inspectionType      CarInspectionType             @default(STANDARD) @map("inspection_type")
+
+  // النتائج (0-100)
+  overallScore        Int?                          @map("overall_score")
+  exteriorScore       Int?                          @map("exterior_score")
+  interiorScore       Int?                          @map("interior_score")
+  mechanicalScore     Int?                          @map("mechanical_score")
+  electricalScore     Int?                          @map("electrical_score")
+
+  // التفاصيل
+  findings            Json?                         // تفاصيل الفحص
+  inspectionPhotos    String[]                      @map("inspection_photos")
+
+  // التوصية
+  recommendation      CarInspectionRecommendation?
+  estimatedRepairCost Float?                        @map("estimated_repair_cost")
+
+  // الحالة
+  status              CarInspectionStatus           @default(REQUESTED)
+
+  // المواعيد
+  scheduledAt         DateTime?                     @map("scheduled_at")
+  completedAt         DateTime?                     @map("completed_at")
+
+  // التقرير
+  reportUrl           String?                       @map("report_url")
+
+  // الرسوم
+  inspectionFee       Float                         @map("inspection_fee")
+  paid                Boolean                       @default(false)
+
+  // الطوابع الزمنية
+  createdAt           DateTime                      @default(now()) @map("created_at")
+  updatedAt           DateTime                      @updatedAt @map("updated_at")
+
+  // العلاقات
+  carListing          CarListing?
+  partner             CarPartner?                   @relation(fields: [partnerId], references: [id])
+  requestedBy         User                          @relation("CarInspectionRequester", fields: [requestedById], references: [id])
+
+  @@map("car_inspections")
+  @@index([carId])
+  @@index([partnerId])
   @@index([status])
 }
 
@@ -5355,5 +6990,62 @@ model PropertyFavorite {
   @@map("property_favorites")
   @@index([userId])
   @@index([propertyId])
+// مراكز الفحص الشركاء
+// ============================================
+
+model CarPartner {
+  id                  String              @id @default(uuid())
+
+  // معلومات المركز
+  name                String
+  nameAr              String              @map("name_ar")
+  description         String?
+  logo                String?
+
+  // الموقع
+  governorate         String
+  city                String
+  address             String
+  latitude            Float?
+  longitude           Float?
+
+  // التواصل
+  phone               String
+  whatsapp            String?
+  email               String?
+
+  // ساعات العمل
+  workingHours        String?             @map("working_hours")
+
+  // الخدمات
+  offersBasicInspection     Boolean       @default(true) @map("offers_basic_inspection")
+  offersFullInspection      Boolean       @default(true) @map("offers_full_inspection")
+  offersPrePurchase         Boolean       @default(true) @map("offers_pre_purchase")
+  offersComputerDiagnostics Boolean       @default(false) @map("offers_computer_diagnostics")
+
+  // الرسوم
+  basicInspectionFee        Float         @default(200) @map("basic_inspection_fee")
+  standardInspectionFee     Float         @default(500) @map("standard_inspection_fee")
+  comprehensiveInspectionFee Float        @default(1000) @map("comprehensive_inspection_fee")
+
+  // التقييم
+  rating              Float               @default(0)
+  totalReviews        Int                 @default(0) @map("total_reviews")
+  totalInspections    Int                 @default(0) @map("total_inspections")
+
+  // الحالة
+  isActive            Boolean             @default(true) @map("is_active")
+  isVerified          Boolean             @default(false) @map("is_verified")
+
+  // الطوابع الزمنية
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  // العلاقات
+  inspections         CarInspection[]
+
+  @@map("car_partners")
+  @@index([governorate])
+  @@index([isActive])
 }
 

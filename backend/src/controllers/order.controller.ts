@@ -155,3 +155,26 @@ export const getGovernorates = async (_req: Request, res: Response, next: NextFu
     next(error);
   }
 };
+
+/**
+ * Create order from auction win
+ * POST /api/v1/orders/auction
+ */
+export const createAuctionOrder = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    const { auctionId, shippingAddressId, shippingAddress, paymentMethod, notes } = req.body;
+
+    const order = await orderService.createAuctionOrder(userId, {
+      auctionId,
+      shippingAddressId,
+      shippingAddress,
+      paymentMethod,
+      notes,
+    });
+
+    return successResponse(res, order, 'Auction order created successfully', 201);
+  } catch (error) {
+    next(error);
+  }
+};

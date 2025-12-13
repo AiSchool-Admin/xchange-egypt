@@ -1,17 +1,21 @@
 import prisma from '../config/database';
 import { UserType } from '@prisma/client';
 import { hashPassword, comparePassword } from '../utils/password';
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken, generatePasswordResetToken, verifyPasswordResetToken } from '../utils/jwt';
 import {
   ConflictError,
   UnauthorizedError,
   BadRequestError,
   NotFoundError,
 } from '../utils/errors';
+import { sendEmailNow } from './email.service';
+import { generateEmailTemplate } from '../utils/email-templates';
 import type {
   RegisterIndividualInput,
   RegisterBusinessInput,
   LoginInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
 } from '../validations/auth.validation';
 
 /**
@@ -443,4 +447,93 @@ export const updateProfile = async (userId: string, data: UpdateProfileInput) =>
   });
 
   return user;
+};
+
+/**
+ * Request password reset
+ * Returns reset token (in production, this would be sent via email)
+ */
+export const forgotPassword = async (data: ForgotPasswordInput) => {
+  // Find user by email
+  const user = await prisma.user.findUnique({
+    where: { email: data.email },
+    select: { id: true, email: true, fullName: true, status: true },
+  });
+
+  // Always return success to prevent email enumeration attacks
+  if (!user || user.status !== 'ACTIVE') {
+    return { message: 'If your email is registered, you will receive a password reset link.' };
+  }
+
+  // Generate password reset token
+  const resetToken = generatePasswordResetToken({
+    userId: user.id,
+    email: user.email,
+  });
+
+  // Generate reset URL
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+  // Send email with reset link
+  const emailHtml = generateEmailTemplate('USER_PASSWORD_RESET', {
+    userName: user.fullName,
+    actionUrl: resetUrl,
+  });
+
+  await sendEmailNow({
+    to: user.email,
+    subject: 'إعادة تعيين كلمة المرور - Xchange',
+    html: emailHtml,
+  });
+
+  console.log(`Password reset email sent to: ${user.email}`);
+
+  return {
+    message: 'If your email is registered, you will receive a password reset link.',
+    // Only include resetUrl in development for testing
+    ...(process.env.NODE_ENV === 'development' ? { resetUrl, resetToken } : {}),
+  };
+};
+
+/**
+ * Reset password using token
+ */
+export const resetPassword = async (data: ResetPasswordInput) => {
+  // Verify reset token
+  let decoded;
+  try {
+    decoded = verifyPasswordResetToken(data.token);
+  } catch (error) {
+    throw new BadRequestError('Invalid or expired password reset token');
+  }
+
+  // Find user
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.userId },
+  });
+
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+
+  if (user.status !== 'ACTIVE') {
+    throw new BadRequestError('User account is not active');
+  }
+
+  // Hash new password
+  const passwordHash = await hashPassword(data.password);
+
+  // Update password
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash },
+  });
+
+  // Invalidate all refresh tokens for security
+  await prisma.refreshToken.deleteMany({
+    where: { userId: user.id },
+  });
+
+  return { message: 'Password has been reset successfully. Please log in with your new password.' };
 };

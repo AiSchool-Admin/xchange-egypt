@@ -69,9 +69,11 @@ export default function EditItemPage() {
         governorate: item.governorate || '',
       });
 
-      // Set existing images
+      // Set existing images - images are stored as string URLs
       if (item.images && item.images.length > 0) {
-        setUploadedImages(item.images.map((img) => img.url));
+        setUploadedImages(item.images.map((img: string | { url: string }) =>
+          typeof img === 'string' ? img : img.url
+        ));
       }
     } catch (err: any) {
       setError('Failed to load item');

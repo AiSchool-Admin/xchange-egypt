@@ -101,13 +101,29 @@ export default function InventoryPage() {
               <h1 className="text-3xl font-bold mb-2">My Inventory</h1>
               <p className="text-purple-100">Manage what you have and what you need</p>
             </div>
-            <Link
-              href="/inventory/add"
-              className="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-purple-50 transition-all transform hover:scale-105 shadow-lg"
-            >
-              <span className="text-xl">+</span>
-              Add Item
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/inventory/bulk-import"
+                className="flex items-center gap-2 px-4 py-3 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30"
+              >
+                <span className="text-xl">📥</span>
+                استيراد جماعي
+              </Link>
+              <Link
+                href="/inventory/stock"
+                className="flex items-center gap-2 px-4 py-3 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-all border border-white/30"
+              >
+                <span className="text-xl">📦</span>
+                إدارة المخزون
+              </Link>
+              <Link
+                href="/inventory/add"
+                className="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-purple-50 transition-all transform hover:scale-105 shadow-lg"
+              >
+                <span className="text-xl">+</span>
+                Add Item
+              </Link>
+            </div>
           </div>
 
           {/* Tab Selector */}

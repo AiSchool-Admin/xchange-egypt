@@ -19,7 +19,7 @@ export const searchSchema = z.object({
     query: z.string().min(1).max(200).optional(),
 
     // Category
-    categoryId: z.string().uuid().optional(),
+    categoryId: z.string().min(1).optional(),
     categorySlug: z.string().optional(),
 
     // Price range
@@ -46,7 +46,7 @@ export const searchSchema = z.object({
     radius: z.string().transform(Number).pipe(z.number().positive()).optional(),
 
     // User filters
-    sellerId: z.string().uuid().optional(),
+    sellerId: z.string().min(1).optional(),
     userType: z.enum(['INDIVIDUAL', 'BUSINESS']).optional(),
     minRating: z.string().transform(Number).pipe(z.number().min(0).max(5)).optional(),
 
@@ -163,7 +163,7 @@ export const saveSearchSchema = z.object({
  */
 export const getSavedSearchByIdSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid saved search ID'),
+    id: z.string().min(1, 'Saved search ID is required'),
   }),
 });
 
@@ -172,7 +172,7 @@ export const getSavedSearchByIdSchema = z.object({
  */
 export const updateSavedSearchSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid saved search ID'),
+    id: z.string().min(1, 'Saved search ID is required'),
   }),
   body: z.object({
     name: z.string().min(1).max(100).optional(),
@@ -187,7 +187,7 @@ export const updateSavedSearchSchema = z.object({
  */
 export const deleteSavedSearchSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid saved search ID'),
+    id: z.string().min(1, 'Saved search ID is required'),
   }),
 });
 
@@ -196,7 +196,7 @@ export const deleteSavedSearchSchema = z.object({
  */
 export const executeSavedSearchSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid saved search ID'),
+    id: z.string().min(1, 'Saved search ID is required'),
   }),
 });
 

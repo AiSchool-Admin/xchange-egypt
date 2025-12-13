@@ -15,9 +15,9 @@ import { z } from 'zod';
  */
 export const getOrCreateConversationSchema = z.object({
   body: z.object({
-    participant2Id: z.string().uuid('Invalid user ID'),
-    itemId: z.string().uuid('Invalid item ID').optional(),
-    transactionId: z.string().uuid('Invalid transaction ID').optional(),
+    participant2Id: z.string().min(1, 'User ID is required'),
+    itemId: z.string().min(1).optional(),
+    transactionId: z.string().min(1).optional(),
   }),
 });
 
@@ -36,7 +36,7 @@ export const getUserConversationsSchema = z.object({
  */
 export const getConversationByIdSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid conversation ID'),
+    id: z.string().min(1, 'Conversation ID is required'),
   }),
 });
 
@@ -45,7 +45,7 @@ export const getConversationByIdSchema = z.object({
  */
 export const deleteConversationSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid conversation ID'),
+    id: z.string().min(1, 'Conversation ID is required'),
   }),
 });
 
@@ -58,12 +58,12 @@ export const deleteConversationSchema = z.object({
  */
 export const sendMessageSchema = z.object({
   body: z.object({
-    conversationId: z.string().uuid('Invalid conversation ID'),
+    conversationId: z.string().min(1, 'Conversation ID is required'),
     content: z.string().min(1, 'Message content is required').max(5000, 'Message too long'),
     type: z.enum(['TEXT', 'IMAGE', 'FILE', 'ITEM', 'OFFER', 'SYSTEM']).optional(),
     attachments: z.array(z.string().url()).max(10, 'Maximum 10 attachments').optional(),
-    itemId: z.string().uuid().optional(),
-    offerId: z.string().uuid().optional(),
+    itemId: z.string().min(1).optional(),
+    offerId: z.string().min(1).optional(),
   }),
 });
 
@@ -72,7 +72,7 @@ export const sendMessageSchema = z.object({
  */
 export const getMessagesSchema = z.object({
   params: z.object({
-    conversationId: z.string().uuid('Invalid conversation ID'),
+    conversationId: z.string().min(1, 'Conversation ID is required'),
   }),
   query: z.object({
     page: z.string().transform(Number).pipe(z.number().int().min(1)).optional(),
@@ -87,7 +87,7 @@ export const getMessagesSchema = z.object({
  */
 export const markAsReadSchema = z.object({
   params: z.object({
-    conversationId: z.string().uuid('Invalid conversation ID'),
+    conversationId: z.string().min(1, 'Conversation ID is required'),
   }),
 });
 
@@ -96,7 +96,7 @@ export const markAsReadSchema = z.object({
  */
 export const editMessageSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid message ID'),
+    id: z.string().min(1, 'Message ID is required'),
   }),
   body: z.object({
     content: z.string().min(1, 'Content is required').max(5000, 'Message too long'),
@@ -108,7 +108,7 @@ export const editMessageSchema = z.object({
  */
 export const deleteMessageSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid message ID'),
+    id: z.string().min(1, 'Message ID is required'),
   }),
 });
 
@@ -121,7 +121,7 @@ export const deleteMessageSchema = z.object({
  */
 export const getUserPresenceSchema = z.object({
   params: z.object({
-    userId: z.string().uuid('Invalid user ID'),
+    userId: z.string().min(1, 'User ID is required'),
   }),
 });
 
@@ -130,7 +130,7 @@ export const getUserPresenceSchema = z.object({
  */
 export const getMultiplePresenceSchema = z.object({
   body: z.object({
-    userIds: z.array(z.string().uuid()).min(1, 'At least one user ID required').max(100, 'Maximum 100 users'),
+    userIds: z.array(z.string().min(1)).min(1, 'At least one user ID required').max(100, 'Maximum 100 users'),
   }),
 });
 
@@ -143,7 +143,7 @@ export const getMultiplePresenceSchema = z.object({
  */
 export const blockUserSchema = z.object({
   body: z.object({
-    blockedUserId: z.string().uuid('Invalid user ID'),
+    blockedUserId: z.string().min(1, 'User ID is required'),
     reason: z.string().max(500).optional(),
   }),
 });
@@ -153,7 +153,7 @@ export const blockUserSchema = z.object({
  */
 export const unblockUserSchema = z.object({
   params: z.object({
-    userId: z.string().uuid('Invalid user ID'),
+    userId: z.string().min(1, 'User ID is required'),
   }),
 });
 
@@ -166,6 +166,6 @@ export const unblockUserSchema = z.object({
  */
 export const getConversationStatsSchema = z.object({
   params: z.object({
-    conversationId: z.string().uuid('Invalid conversation ID'),
+    conversationId: z.string().min(1, 'Conversation ID is required'),
   }),
 });

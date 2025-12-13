@@ -95,6 +95,23 @@ export const requireIndividual = (req: Request, res: Response, next: NextFunctio
 };
 
 /**
+ * Middleware to check if user is an admin
+ */
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return next(new UnauthorizedError('Authentication required'));
+  }
+
+  // Check if user has admin privileges by email (admin emails list)
+  const adminEmails = ['admin@xchange.com', 'admin@xchange-egypt.com'];
+  if (!adminEmails.includes(req.user.email)) {
+    return next(new ForbiddenError('Admin access required'));
+  }
+
+  next();
+};
+
+/**
  * Optional authentication - doesn't fail if no token provided
  * But validates token if present
  */

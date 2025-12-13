@@ -275,15 +275,20 @@ export default function RegisterPage() {
   const [gpsMessage, setGpsMessage] = useState('');
   const { registerIndividual, registerBusiness } = useAuth();
 
-  // Get available cities based on selected governorate
+  // Get available cities based on selected governorate (stored in English)
   const availableCities = useMemo(() => {
     if (!formData.governorate) return [];
-    const govAr = EGYPTIAN_GOVERNORATES.find(g => g.ar === formData.governorate || g.en === formData.governorate);
-    if (govAr) {
-      return CITIES_BY_GOVERNORATE[govAr.ar] || [];
+    // Find governorate object by English name
+    const govObj = EGYPTIAN_GOVERNORATES.find(g => g.en === formData.governorate);
+    if (govObj) {
+      // Use Arabic key to look up cities
+      return CITIES_BY_GOVERNORATE[govObj.ar] || [];
     }
     return [];
   }, [formData.governorate]);
+
+  // Check if the selected governorate has predefined cities
+  const hasPredefinedCities = availableCities.length > 0;
 
   // GPS Location Detection
   const detectLocation = useCallback(async () => {
@@ -330,7 +335,8 @@ export default function RegisterPage() {
           );
 
           if (matchedGov) {
-            governorate = isRTL ? matchedGov.ar : matchedGov.en;
+            // Always store governorate in English for backend compatibility
+            governorate = matchedGov.en;
           }
 
           // Get city/town
@@ -850,7 +856,7 @@ export default function RegisterPage() {
                   >
                     <option value="">{t.selectGovernorate}</option>
                     {EGYPTIAN_GOVERNORATES.map(gov => (
-                      <option key={gov.ar} value={isRTL ? gov.ar : gov.en}>
+                      <option key={gov.ar} value={gov.en}>
                         {isRTL ? gov.ar : gov.en}
                       </option>
                     ))}
@@ -861,21 +867,33 @@ export default function RegisterPage() {
                   <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
                     {t.city}
                   </label>
-                  <select
-                    id="city"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    disabled={!formData.governorate || availableCities.length === 0}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">{t.selectCity}</option>
-                    {availableCities.map(city => (
-                      <option key={city.ar} value={isRTL ? city.ar : city.en}>
-                        {isRTL ? city.ar : city.en}
-                      </option>
-                    ))}
-                  </select>
+                  {hasPredefinedCities ? (
+                    <select
+                      id="city"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none bg-white"
+                    >
+                      <option value="">{t.selectCity}</option>
+                      {availableCities.map(city => (
+                        <option key={city.ar} value={city.en}>
+                          {isRTL ? city.ar : city.en}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      id="city"
+                      name="city"
+                      type="text"
+                      value={formData.city}
+                      onChange={handleChange}
+                      disabled={!formData.governorate}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder={isRTL ? 'أدخل اسم المدينة' : 'Enter city name'}
+                    />
+                  )}
                 </div>
               </div>
 

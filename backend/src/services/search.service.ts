@@ -199,12 +199,26 @@ export const search = async (
     };
   }
 
-  // Listing type filter
+  // Listing type filter - apply to both listings and items queries
   if (filters.listingType) {
     if (Array.isArray(filters.listingType)) {
       listingWhere.listingType = { in: filters.listingType };
+      // Also filter items to only include those with active listings of these types
+      itemWhere.listings = {
+        some: {
+          listingType: { in: filters.listingType },
+          status: 'ACTIVE',
+        },
+      };
     } else {
       listingWhere.listingType = filters.listingType;
+      // Also filter items to only include those with an active listing of this type
+      itemWhere.listings = {
+        some: {
+          listingType: filters.listingType,
+          status: 'ACTIVE',
+        },
+      };
     }
   }
 

@@ -90,7 +90,7 @@ export const updateItem = async (
     if (req.body.quantity) updateData.quantity = req.body.quantity;
     if (req.body.location) updateData.location = req.body.location;
     if (req.body.governorate) updateData.governorate = req.body.governorate;
-    if (req.body.imageUrls) updateData.imageUrls = req.body.imageUrls;
+    if (req.body.imageUrls && Array.isArray(req.body.imageUrls)) updateData.images = req.body.imageUrls;
 
     const item = await itemService.updateItem(id, userId, updateData);
 

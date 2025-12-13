@@ -52,7 +52,7 @@ export const createReverseAuctionSchema = z.object({
         .min(20, 'Description must be at least 20 characters')
         .max(2000, 'Description must not exceed 2000 characters')
         .trim(),
-      categoryId: z.string().uuid('Invalid category ID'),
+      categoryId: z.string().min(1, 'Category ID is required'),
       condition: itemConditionSchema,
       specifications: z.record(z.any()).optional(),
       quantity: z
@@ -76,8 +76,14 @@ export const createReverseAuctionSchema = z.object({
         .optional(),
       endDate: z
         .string()
-        .datetime('Invalid end date')
-        .transform((val) => new Date(val)),
+        .min(1, 'End date is required')
+        .transform((val) => {
+          const date = new Date(val);
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid end date format');
+          }
+          return date;
+        }),
       publicNotes: z
         .string()
         .max(1000, 'Public notes must not exceed 1000 characters')
@@ -131,9 +137,9 @@ export const createReverseAuctionSchema = z.object({
 export const getReverseAuctionsSchema = z.object({
   query: z.object({
     status: reverseAuctionStatusSchema.optional(),
-    categoryId: z.string().uuid('Invalid category ID').optional(),
+    categoryId: z.string().min(1, 'Category ID is required').optional(),
     condition: itemConditionSchema.optional(),
-    buyerId: z.string().uuid('Invalid buyer ID').optional(),
+    buyerId: z.string().min(1).optional(),
     minBudget: z
       .string()
       .transform((val) => parseFloat(val))
@@ -166,7 +172,7 @@ export const getReverseAuctionsSchema = z.object({
  */
 export const getReverseAuctionByIdSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
 });
 
@@ -176,7 +182,7 @@ export const getReverseAuctionByIdSchema = z.object({
  */
 export const updateReverseAuctionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
   body: z
     .object({
@@ -206,8 +212,14 @@ export const updateReverseAuctionSchema = z.object({
         .optional(),
       endDate: z
         .string()
-        .datetime('Invalid end date')
-        .transform((val) => new Date(val))
+        .min(1)
+        .transform((val) => {
+          const date = new Date(val);
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid end date format');
+          }
+          return date;
+        })
         .optional(),
       publicNotes: z
         .string()
@@ -252,7 +264,7 @@ export const updateReverseAuctionSchema = z.object({
  */
 export const cancelReverseAuctionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
 });
 
@@ -262,7 +274,7 @@ export const cancelReverseAuctionSchema = z.object({
  */
 export const deleteReverseAuctionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
 });
 
@@ -276,14 +288,14 @@ export const deleteReverseAuctionSchema = z.object({
  */
 export const submitBidSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
   body: z.object({
     bidAmount: z
       .number()
       .positive('Bid amount must be positive')
       .max(10000000, 'Bid amount must not exceed 10,000,000 EGP'),
-    itemId: z.string().uuid('Invalid item ID').optional(),
+    itemId: z.string().min(1).optional(),
     itemCondition: itemConditionSchema,
     itemDescription: z
       .string()
@@ -318,7 +330,7 @@ export const submitBidSchema = z.object({
  */
 export const getBidsSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
 });
 
@@ -328,7 +340,7 @@ export const getBidsSchema = z.object({
  */
 export const updateBidSchema = z.object({
   params: z.object({
-    bidId: z.string().uuid('Invalid bid ID'),
+    bidId: z.string().min(1, 'Bid ID is required'),
   }),
   body: z.object({
     bidAmount: z
@@ -367,7 +379,7 @@ export const updateBidSchema = z.object({
  */
 export const withdrawBidSchema = z.object({
   params: z.object({
-    bidId: z.string().uuid('Invalid bid ID'),
+    bidId: z.string().min(1, 'Bid ID is required'),
   }),
 });
 
@@ -403,10 +415,10 @@ export const getMyBidsSchema = z.object({
  */
 export const awardAuctionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
   body: z.object({
-    bidId: z.string().uuid('Invalid bid ID'),
+    bidId: z.string().min(1, 'Bid ID is required'),
   }),
 });
 
@@ -416,7 +428,7 @@ export const awardAuctionSchema = z.object({
  */
 export const completeAuctionSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid auction ID'),
+    id: z.string().min(1, 'Auction ID is required'),
   }),
 });
 

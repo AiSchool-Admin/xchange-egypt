@@ -6,6 +6,8 @@ import type {
   RegisterBusinessInput,
   LoginInput,
   RefreshTokenInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
 } from '../validations/auth.validation';
 
 /**
@@ -147,6 +149,42 @@ export const updateMe = async (req: Request, res: Response, next: NextFunction) 
     const user = await authService.updateProfile(req.userId, req.body);
 
     return sendSuccess(res, user, 'Profile updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Request password reset
+ * POST /api/v1/auth/forgot-password
+ */
+export const forgotPassword = async (
+  req: Request<object, object, ForgotPasswordInput>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await authService.forgotPassword(req.body);
+
+    return sendSuccess(res, result, 'Password reset request processed');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Reset password using token
+ * POST /api/v1/auth/reset-password
+ */
+export const resetPassword = async (
+  req: Request<object, object, ResetPasswordInput>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await authService.resetPassword(req.body);
+
+    return sendSuccess(res, result, 'Password reset successfully');
   } catch (error) {
     next(error);
   }

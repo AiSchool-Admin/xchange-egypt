@@ -44,6 +44,7 @@ export default function MessagesPage() {
   const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({});
   const [onlineUsers, setOnlineUsers] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingRef = useRef<number>(0);
 
@@ -156,6 +157,11 @@ export default function MessagesPage() {
       );
 
       scrollToBottom();
+
+      // Auto-focus input after sending
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
     } catch (error) {
       console.error('Failed to send message:', error);
       setNewMessage(messageContent); // Restore message on failure
@@ -506,6 +512,7 @@ export default function MessagesPage() {
                 <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-200">
                   <div className="flex gap-2">
                     <input
+                      ref={inputRef}
                       type="text"
                       value={newMessage}
                       onChange={(e) => {
@@ -516,6 +523,7 @@ export default function MessagesPage() {
                       className="flex-1 px-4 py-3 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
                       disabled={sendingMessage}
                       dir="rtl"
+                      autoFocus
                     />
                     <button
                       type="submit"

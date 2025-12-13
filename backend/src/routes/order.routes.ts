@@ -51,6 +51,12 @@ router.get('/', orderController.getMyOrders);
 router.post('/', orderController.createOrder);
 
 /**
+ * Create order from auction win
+ * POST /api/v1/orders/auction
+ */
+router.post('/auction', orderController.createAuctionOrder);
+
+/**
  * Get order by ID
  * GET /api/v1/orders/:orderId
  */
