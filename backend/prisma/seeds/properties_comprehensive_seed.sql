@@ -435,7 +435,7 @@ INSERT INTO property_transactions (
 )
 SELECT
   gen_random_uuid(),
-  'RENTAL',
+  'RENT',
   (SELECT id FROM properties WHERE title_ar = 'شقة عصرية للإيجار في المعادي' LIMIT 1),
   (SELECT id FROM users WHERE email = 'test3@xchange.eg'),
   (SELECT id FROM users WHERE email = 'test7@xchange.eg'),
@@ -456,7 +456,7 @@ INSERT INTO property_transactions (
 )
 SELECT
   gen_random_uuid(),
-  'BARTER',
+  'BARTER_CAR',
   (SELECT id FROM properties WHERE title_ar = 'محل تجاري في الإسكندرية' LIMIT 1),
   NULL, 'CAR',
   (SELECT id FROM users WHERE email = 'test2@xchange.eg'),
