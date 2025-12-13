@@ -276,45 +276,52 @@ export const getPropertyById = async (
   userId?: string,
   incrementViews: boolean = true
 ): Promise<any> => {
+  // Build include object conditionally to avoid Prisma error with `false` value
+  const includeOptions: any = {
+    owner: {
+      select: {
+        id: true,
+        fullName: true,
+        avatar: true,
+        phone: true,
+        rating: true,
+        totalReviews: true,
+        userType: true,
+        businessName: true,
+        createdAt: true,
+      },
+    },
+    verifiedBy: {
+      select: {
+        id: true,
+        fullName: true,
+      },
+    },
+    inspections: {
+      where: { status: 'COMPLETED' },
+      orderBy: { completedAt: 'desc' },
+      take: 1,
+      select: {
+        id: true,
+        overallScore: true,
+        recommendation: true,
+        completedAt: true,
+        reportUrl: true,
+      },
+    },
+  };
+
+  // Only include favorites relation if userId is provided
+  if (userId) {
+    includeOptions.favorites = {
+      where: { userId },
+      select: { id: true },
+    };
+  }
+
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
-    include: {
-      owner: {
-        select: {
-          id: true,
-          fullName: true,
-          avatar: true,
-          phone: true,
-          rating: true,
-          totalReviews: true,
-          userType: true,
-          businessName: true,
-          createdAt: true,
-        },
-      },
-      verifiedBy: {
-        select: {
-          id: true,
-          fullName: true,
-        },
-      },
-      inspections: {
-        where: { status: 'COMPLETED' },
-        orderBy: { completedAt: 'desc' },
-        take: 1,
-        select: {
-          id: true,
-          overallScore: true,
-          recommendation: true,
-          completedAt: true,
-          reportUrl: true,
-        },
-      },
-      favorites: userId ? {
-        where: { userId },
-        select: { id: true },
-      } : false,
-    },
+    include: includeOptions,
   });
 
   if (!property) {
