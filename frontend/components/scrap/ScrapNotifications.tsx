@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSocket } from '@/lib/contexts/SocketContext';
-import { getNotifications, markAsRead, Notification } from '@/lib/api/notifications';
+import { getNotifications, markAsRead, Notification as AppNotification } from '@/lib/api/notifications';
 import { COLLECTION_STATUS_AR, CollectionRequestStatus } from '@/lib/api/scrap-marketplace';
 
 interface ScrapNotificationsProps {
@@ -79,7 +79,7 @@ const getNotificationColor = (type: string): string => {
 };
 
 export function ScrapNotifications({ onNotificationCount }: ScrapNotificationsProps) {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const { socket, connected } = useSocket();
@@ -154,7 +154,7 @@ export function ScrapNotifications({ onNotificationCount }: ScrapNotificationsPr
     }
   };
 
-  const getActionUrl = (notification: Notification): string => {
+  const getActionUrl = (notification: AppNotification): string => {
     if (notification.actionUrl) return notification.actionUrl;
 
     switch (notification.type) {
@@ -286,7 +286,7 @@ export function ScrapNotificationToast({
   notification,
   onClose,
 }: {
-  notification: Notification;
+  notification: AppNotification;
   onClose: () => void;
 }) {
   useEffect(() => {
