@@ -268,24 +268,46 @@ export async function searchProperties(filters: PropertyFilters = {}): Promise<{
 }> {
   const params = new URLSearchParams();
 
+  // Text search
   if (filters.search) params.append('search', filters.search);
+
+  // Location filters
   if (filters.governorate) params.append('governorate', filters.governorate);
   if (filters.city) params.append('city', filters.city);
   if (filters.district) params.append('district', filters.district);
-  if (filters.propertyTypes?.length) params.append('propertyTypes', filters.propertyTypes.join(','));
+
+  // Property type filter - backend expects 'propertyType' (can be array)
+  if (filters.propertyTypes?.length) params.append('propertyType', filters.propertyTypes.join(','));
+
+  // Listing type filter
   if (filters.listingType) params.append('listingType', filters.listingType);
-  if (filters.minPrice) params.append('minPrice', filters.minPrice.toString());
-  if (filters.maxPrice) params.append('maxPrice', filters.maxPrice.toString());
-  if (filters.minArea) params.append('minArea', filters.minArea.toString());
-  if (filters.maxArea) params.append('maxArea', filters.maxArea.toString());
-  if (filters.bedrooms) params.append('bedrooms', filters.bedrooms.toString());
-  if (filters.bathrooms) params.append('bathrooms', filters.bathrooms.toString());
-  if (filters.titleTypes?.length) params.append('titleTypes', filters.titleTypes.join(','));
-  if (filters.verificationLevels?.length) params.append('verificationLevels', filters.verificationLevels.join(','));
-  if (filters.hasEscrow !== undefined) params.append('hasEscrow', filters.hasEscrow.toString());
-  if (filters.openToBarter !== undefined) params.append('openToBarter', filters.openToBarter.toString());
+
+  // Price filters - backend expects 'priceMin' and 'priceMax'
+  if (filters.minPrice !== undefined) params.append('priceMin', filters.minPrice.toString());
+  if (filters.maxPrice !== undefined) params.append('priceMax', filters.maxPrice.toString());
+
+  // Area filters - backend expects 'areaMin' and 'areaMax'
+  if (filters.minArea !== undefined) params.append('areaMin', filters.minArea.toString());
+  if (filters.maxArea !== undefined) params.append('areaMax', filters.maxArea.toString());
+
+  // Rooms filters - backend expects 'bedroomsMin' and 'bathroomsMin'
+  if (filters.bedrooms) params.append('bedroomsMin', filters.bedrooms.toString());
+  if (filters.bathrooms) params.append('bathroomsMin', filters.bathrooms.toString());
+
+  // Title type filter - backend expects 'titleType'
+  if (filters.titleTypes?.length) params.append('titleType', filters.titleTypes.join(','));
+
+  // Verification level filter - backend expects 'verificationLevel'
+  if (filters.verificationLevels?.length) params.append('verificationLevel', filters.verificationLevels.join(','));
+
+  // Barter filter - backend expects 'openForBarter'
+  if (filters.openToBarter !== undefined) params.append('openForBarter', filters.openToBarter.toString());
+
+  // Sorting
   if (filters.sortBy) params.append('sortBy', filters.sortBy);
   if (filters.sortOrder) params.append('sortOrder', filters.sortOrder);
+
+  // Pagination
   if (filters.page) params.append('page', filters.page.toString());
   if (filters.limit) params.append('limit', filters.limit.toString());
 

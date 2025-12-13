@@ -101,50 +101,50 @@ interface SearchPropertiesParams {
   district?: string;
   compoundName?: string;
 
-  // Type
-  propertyType?: PropertyType | PropertyType[];
+  // Type - can come as comma-separated string from query params
+  propertyType?: PropertyType | PropertyType[] | string;
   listingType?: PropertyListingType;
 
-  // Price
-  priceMin?: number;
-  priceMax?: number;
-  rentMin?: number;
-  rentMax?: number;
+  // Price - can come as string from query params
+  priceMin?: number | string;
+  priceMax?: number | string;
+  rentMin?: number | string;
+  rentMax?: number | string;
 
-  // Size
-  areaMin?: number;
-  areaMax?: number;
-  bedroomsMin?: number;
-  bedroomsMax?: number;
-  bathroomsMin?: number;
+  // Size - can come as string from query params
+  areaMin?: number | string;
+  areaMax?: number | string;
+  bedroomsMin?: number | string;
+  bedroomsMax?: number | string;
+  bathroomsMin?: number | string;
 
-  // Finishing
-  finishingLevel?: FinishingLevel | FinishingLevel[];
+  // Finishing - can come as comma-separated string from query params
+  finishingLevel?: FinishingLevel | FinishingLevel[] | string;
   furnished?: FurnishedStatus;
 
-  // Title/Verification
-  titleType?: TitleType | TitleType[];
-  verificationLevel?: PropertyVerificationLevel | PropertyVerificationLevel[];
-  governmentVerified?: boolean;
+  // Title/Verification - can come as comma-separated string from query params
+  titleType?: TitleType | TitleType[] | string;
+  verificationLevel?: PropertyVerificationLevel | PropertyVerificationLevel[] | string;
+  governmentVerified?: boolean | string;
 
   // Delivery
   deliveryStatus?: PropertyDeliveryStatus;
 
-  // Barter
-  openForBarter?: boolean;
+  // Barter - can come as string "true"/"false" from query params
+  openForBarter?: boolean | string;
   barterAccepts?: string[];
 
   // Featured
-  featured?: boolean;
+  featured?: boolean | string;
   promotionTier?: PromotionTier;
 
   // Status
   status?: PropertyStatus;
   ownerId?: string;
 
-  // Pagination & Sorting
-  page?: number;
-  limit?: number;
+  // Pagination & Sorting - can come as string from query params
+  page?: number | string;
+  limit?: number | string;
   sortBy?: 'createdAt' | 'salePrice' | 'rentPrice' | 'areaSqm' | 'viewsCount';
   sortOrder?: 'asc' | 'desc';
 }
@@ -452,13 +452,26 @@ export const deleteProperty = async (
 };
 
 /**
+ * Helper to parse comma-separated string to array
+ */
+function parseArrayParam<T extends string>(value: T | T[] | string | undefined): T[] | undefined {
+  if (!value) return undefined;
+  if (Array.isArray(value)) return value as T[];
+  // Handle comma-separated string
+  if (typeof value === 'string' && value.includes(',')) {
+    return value.split(',').map(v => v.trim()) as T[];
+  }
+  return [value] as T[];
+}
+
+/**
  * Search properties with advanced filters
  */
 export const searchProperties = async (
   params: SearchPropertiesParams
 ): Promise<PaginatedResult<any>> => {
-  const page = params.page || 1;
-  const limit = Math.min(params.limit || 20, 100);
+  const page = Number(params.page) || 1;
+  const limit = Math.min(Number(params.limit) || 20, 100);
   const skip = (page - 1) * limit;
 
   // Build where clause
@@ -483,78 +496,99 @@ export const searchProperties = async (
   if (params.district) where.district = params.district;
   if (params.compoundName) where.compoundName = { contains: params.compoundName, mode: 'insensitive' };
 
-  // Property type filter
+  // Property type filter - handle comma-separated string
   if (params.propertyType) {
-    if (Array.isArray(params.propertyType)) {
-      where.propertyType = { in: params.propertyType };
-    } else {
-      where.propertyType = params.propertyType;
+    const propertyTypes = parseArrayParam<PropertyType>(params.propertyType as any);
+    if (propertyTypes && propertyTypes.length > 0) {
+      if (propertyTypes.length === 1) {
+        where.propertyType = propertyTypes[0];
+      } else {
+        where.propertyType = { in: propertyTypes };
+      }
     }
   }
 
   // Listing type filter
   if (params.listingType) where.listingType = params.listingType;
 
-  // Price filters (for sale)
-  if (params.priceMin !== undefined || params.priceMax !== undefined) {
+  // Price filters (for sale) - parse as numbers
+  const priceMin = params.priceMin !== undefined ? Number(params.priceMin) : undefined;
+  const priceMax = params.priceMax !== undefined ? Number(params.priceMax) : undefined;
+  if (priceMin !== undefined || priceMax !== undefined) {
     where.salePrice = {};
-    if (params.priceMin !== undefined) where.salePrice.gte = params.priceMin;
-    if (params.priceMax !== undefined) where.salePrice.lte = params.priceMax;
+    if (priceMin !== undefined && !isNaN(priceMin)) where.salePrice.gte = priceMin;
+    if (priceMax !== undefined && !isNaN(priceMax)) where.salePrice.lte = priceMax;
   }
 
-  // Rent filters
-  if (params.rentMin !== undefined || params.rentMax !== undefined) {
+  // Rent filters - parse as numbers
+  const rentMin = params.rentMin !== undefined ? Number(params.rentMin) : undefined;
+  const rentMax = params.rentMax !== undefined ? Number(params.rentMax) : undefined;
+  if (rentMin !== undefined || rentMax !== undefined) {
     where.rentPrice = {};
-    if (params.rentMin !== undefined) where.rentPrice.gte = params.rentMin;
-    if (params.rentMax !== undefined) where.rentPrice.lte = params.rentMax;
+    if (rentMin !== undefined && !isNaN(rentMin)) where.rentPrice.gte = rentMin;
+    if (rentMax !== undefined && !isNaN(rentMax)) where.rentPrice.lte = rentMax;
   }
 
-  // Area filters
-  if (params.areaMin !== undefined || params.areaMax !== undefined) {
+  // Area filters - parse as numbers
+  const areaMin = params.areaMin !== undefined ? Number(params.areaMin) : undefined;
+  const areaMax = params.areaMax !== undefined ? Number(params.areaMax) : undefined;
+  if (areaMin !== undefined || areaMax !== undefined) {
     where.areaSqm = {};
-    if (params.areaMin !== undefined) where.areaSqm.gte = params.areaMin;
-    if (params.areaMax !== undefined) where.areaSqm.lte = params.areaMax;
+    if (areaMin !== undefined && !isNaN(areaMin)) where.areaSqm.gte = areaMin;
+    if (areaMax !== undefined && !isNaN(areaMax)) where.areaSqm.lte = areaMax;
   }
 
-  // Bedrooms filter
-  if (params.bedroomsMin !== undefined || params.bedroomsMax !== undefined) {
+  // Bedrooms filter - parse as numbers
+  const bedroomsMin = params.bedroomsMin !== undefined ? Number(params.bedroomsMin) : undefined;
+  const bedroomsMax = params.bedroomsMax !== undefined ? Number(params.bedroomsMax) : undefined;
+  if (bedroomsMin !== undefined || bedroomsMax !== undefined) {
     where.bedrooms = {};
-    if (params.bedroomsMin !== undefined) where.bedrooms.gte = params.bedroomsMin;
-    if (params.bedroomsMax !== undefined) where.bedrooms.lte = params.bedroomsMax;
+    if (bedroomsMin !== undefined && !isNaN(bedroomsMin)) where.bedrooms.gte = bedroomsMin;
+    if (bedroomsMax !== undefined && !isNaN(bedroomsMax)) where.bedrooms.lte = bedroomsMax;
   }
 
-  // Bathrooms filter
-  if (params.bathroomsMin !== undefined) {
-    where.bathrooms = { gte: params.bathroomsMin };
+  // Bathrooms filter - parse as number
+  const bathroomsMin = params.bathroomsMin !== undefined ? Number(params.bathroomsMin) : undefined;
+  if (bathroomsMin !== undefined && !isNaN(bathroomsMin)) {
+    where.bathrooms = { gte: bathroomsMin };
   }
 
-  // Finishing level filter
+  // Finishing level filter - handle comma-separated string
   if (params.finishingLevel) {
-    if (Array.isArray(params.finishingLevel)) {
-      where.finishingLevel = { in: params.finishingLevel };
-    } else {
-      where.finishingLevel = params.finishingLevel;
+    const finishingLevels = parseArrayParam<FinishingLevel>(params.finishingLevel as any);
+    if (finishingLevels && finishingLevels.length > 0) {
+      if (finishingLevels.length === 1) {
+        where.finishingLevel = finishingLevels[0];
+      } else {
+        where.finishingLevel = { in: finishingLevels };
+      }
     }
   }
 
   // Furnished filter
   if (params.furnished) where.furnished = params.furnished;
 
-  // Title type filter (IMPORTANT for verification)
+  // Title type filter - handle comma-separated string
   if (params.titleType) {
-    if (Array.isArray(params.titleType)) {
-      where.titleType = { in: params.titleType };
-    } else {
-      where.titleType = params.titleType;
+    const titleTypes = parseArrayParam<TitleType>(params.titleType as any);
+    if (titleTypes && titleTypes.length > 0) {
+      if (titleTypes.length === 1) {
+        where.titleType = titleTypes[0];
+      } else {
+        where.titleType = { in: titleTypes };
+      }
     }
   }
 
-  // Verification level filter
+  // Verification level filter - handle comma-separated string
   if (params.verificationLevel) {
-    if (Array.isArray(params.verificationLevel)) {
-      where.verificationLevel = { in: params.verificationLevel };
-    } else {
-      where.verificationLevel = params.verificationLevel;
+    const verificationLevels = parseArrayParam<PropertyVerificationLevel>(params.verificationLevel as any);
+    if (verificationLevels && verificationLevels.length > 0) {
+      if (verificationLevels.length === 1) {
+        where.verificationLevel = verificationLevels[0];
+      } else {
+        where.verificationLevel = { in: verificationLevels };
+      }
     }
   }
 
@@ -566,8 +600,11 @@ export const searchProperties = async (
   // Delivery status filter
   if (params.deliveryStatus) where.deliveryStatus = params.deliveryStatus;
 
-  // Barter filter
-  if (params.openForBarter !== undefined) where.openForBarter = params.openForBarter;
+  // Barter filter - parse string "true"/"false" to boolean
+  if (params.openForBarter !== undefined) {
+    const openForBarter = params.openForBarter === true || params.openForBarter === 'true';
+    where.openForBarter = openForBarter;
+  }
 
   // Featured filter
   if (params.featured !== undefined) where.featured = params.featured;
