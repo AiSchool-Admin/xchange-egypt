@@ -1,7 +1,7 @@
 import {
   PropertyType,
   TitleType,
-  PropertyPropertyVerificationLevel,
+  PropertyVerificationLevel,
   FinishingLevel,
   FurnishedStatus,
   PropertyListingType,
@@ -67,7 +67,7 @@ interface CreatePropertyData {
   monthlyInstallment?: number;
 
   // Delivery
-  deliveryStatus?: DeliveryStatus;
+  deliveryStatus?: PropertyDeliveryStatus;
   deliveryDate?: Date;
 
   // Title/Ownership
@@ -128,7 +128,7 @@ interface SearchPropertiesParams {
   governmentVerified?: boolean;
 
   // Delivery
-  deliveryStatus?: DeliveryStatus;
+  deliveryStatus?: PropertyDeliveryStatus;
 
   // Barter
   openForBarter?: boolean;
@@ -986,7 +986,7 @@ export const estimatePropertyValue = async (data: {
   bathrooms?: number;
   floorNumber?: number;
   finishingLevel?: FinishingLevel;
-  deliveryStatus?: DeliveryStatus;
+  deliveryStatus?: PropertyDeliveryStatus;
   amenities?: string[];
 }): Promise<any> => {
   // Get market prices

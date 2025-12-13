@@ -297,4 +297,29 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   );
 };
 
+// Skeleton loading component
+export const PropertyCardSkeleton: React.FC = () => {
+  return (
+    <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 animate-pulse">
+      {/* Image placeholder */}
+      <div className="relative aspect-[4/3] bg-gray-200" />
+
+      {/* Content placeholder */}
+      <div className="p-4 space-y-3">
+        <div className="h-4 bg-gray-200 rounded w-3/4" />
+        <div className="h-3 bg-gray-200 rounded w-1/2" />
+        <div className="h-6 bg-gray-200 rounded w-1/3" />
+        <div className="flex gap-4 mt-3">
+          <div className="h-3 bg-gray-200 rounded w-16" />
+          <div className="h-3 bg-gray-200 rounded w-16" />
+          <div className="h-3 bg-gray-200 rounded w-16" />
+        </div>
+        <div className="flex gap-2 mt-3">
+          <div className="h-8 bg-gray-200 rounded flex-1" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default PropertyCard;

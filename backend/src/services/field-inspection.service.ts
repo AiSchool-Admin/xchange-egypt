@@ -3,7 +3,7 @@ import {
   InspectionStatus,
   InspectionRecommendation,
   PropertyStatus,
-  PropertyPropertyVerificationLevel,
+  PropertyVerificationLevel,
   Prisma,
 } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';

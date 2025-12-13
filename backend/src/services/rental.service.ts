@@ -8,7 +8,7 @@ import {
 } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 // ============================================
 // Types & Interfaces
@@ -85,7 +85,7 @@ export const createRentalContract = async (
 
   // Generate protection ID if deposit protection is enabled
   const depositProtectionId = data.protectDeposit
-    ? `DEP-${new Date().getFullYear()}-${uuidv4().substring(0, 8).toUpperCase()}`
+    ? `DEP-${new Date().getFullYear()}-${randomUUID().substring(0, 8).toUpperCase()}`
     : null;
 
   // Create the contract
@@ -373,7 +373,7 @@ export const protectDeposit = async (
     throw new BadRequestError('Deposit is already protected');
   }
 
-  const protectionId = `DEP-${new Date().getFullYear()}-${uuidv4().substring(0, 8).toUpperCase()}`;
+  const protectionId = `DEP-${new Date().getFullYear()}-${randomUUID().substring(0, 8).toUpperCase()}`;
   const escrowAccount = `ESCROW-${contract.id.substring(0, 8)}`;
 
   const updatedContract = await prisma.rentalContract.update({
@@ -508,7 +508,7 @@ export const releaseDeposit = async (
     data: {
       depositReleased: true,
       depositReleasedAt: new Date(),
-      depositDeductions: deductions || [],
+      depositDeductions: deductions ? JSON.parse(JSON.stringify(deductions)) : [],
     },
   });
 
