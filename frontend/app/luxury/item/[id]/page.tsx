@@ -30,6 +30,7 @@ interface LuxuryItemDetails extends Item {
   totalBids?: number;
   auctionEnd?: string;
   bidIncrement?: number;
+  views?: number;
   watchDetails?: {
     movementType?: string;
     caseMaterial?: string;
