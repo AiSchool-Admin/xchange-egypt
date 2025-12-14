@@ -616,8 +616,9 @@ export class BarterMatcher {
     // إنشاء سجل السلسلة
     const barterChain = await prisma.barterChain.create({
       data: {
+        chainType: 'CYCLE',
         chainData: chain as any,
-        status: 'PENDING_PARTICIPANTS',
+        status: 'PENDING',
         participantCount: chain.participants.length,
         totalValue: chain.values.reduce((a, b) => a + b, 0),
         totalCashFlow: chain.cashFlows.reduce((a, b) => a + b.amount, 0),
@@ -627,19 +628,17 @@ export class BarterMatcher {
     });
 
     // إنشاء سجلات المشاركين
-    for (const participant of chain.participants) {
+    for (let i = 0; i < chain.participants.length; i++) {
+      const participant = chain.participants[i];
+      const nextParticipant = chain.participants[(i + 1) % chain.participants.length];
+
       await prisma.barterParticipant.create({
         data: {
           chainId: barterChain.id,
           userId: participant.userId,
-          role: 'PARTICIPANT',
-          offeredItemType: participant.gives.type,
-          offeredItemId: participant.gives.id,
-          offeredValue: participant.gives.estimatedValue,
-          receivedItemType: participant.receives.type,
-          receivedItemId: participant.receives.id,
-          receivedValue: participant.receives.estimatedValue,
-          cashDelta: participant.cashDelta,
+          givingItemId: participant.gives.id,
+          receivingItemId: nextParticipant.gives.id,
+          position: i,
           status: 'PENDING',
         },
       });

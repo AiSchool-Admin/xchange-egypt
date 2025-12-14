@@ -346,18 +346,15 @@ async function getCollaborativeRecommendations(
   };
 
   // جلب مستخدمين آخرين لديهم مفضلات
-  const otherUsers = await prisma.propertyFavorite.groupBy({
+  const otherUsersRaw = await prisma.propertyFavorite.groupBy({
     by: ['userId'],
-    _count: true,
-    having: {
-      userId: {
-        _count: {
-          gte: 3, // على الأقل 3 مفضلات
-        },
-      },
-    },
+    _count: { userId: true },
+    orderBy: { _count: { userId: 'desc' } },
     take: 100,
   });
+
+  // تصفية المستخدمين الذين لديهم 3 مفضلات على الأقل
+  const otherUsers = otherUsersRaw.filter(u => (u._count?.userId || 0) >= 3);
 
   // بناء ملفات تعريف المستخدمين الآخرين
   const otherUserProfiles: UserSimilarityProfile[] = [];
@@ -917,6 +914,14 @@ function extractFeatures(amenities: any): string[] {
 // ============================================
 // Exports
 // ============================================
+
+export {
+  getRecommendations,
+  getSimilarPropertyRecommendations,
+  getColdStartRecommendations,
+  invalidateUserCache,
+  invalidateAllCache,
+};
 
 export default {
   getRecommendations,

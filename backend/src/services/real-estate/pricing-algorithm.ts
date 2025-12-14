@@ -182,12 +182,11 @@ const CONDITION_ADJUSTMENTS: Record<PropertyCondition, number> = {
  * معاملات تعديل التشطيب
  */
 const FINISHING_ADJUSTMENTS: Record<FinishingLevel, number> = {
-  'ULTRA_SUPER_LUX': 1.25,
   'SUPER_LUX': 1.15,
   'LUX': 1.08,
-  'FINISHED': 1.00,
   'SEMI_FINISHED': 0.85,
   'UNFINISHED': 0.70,
+  'CORE_SHELL': 0.60,
 };
 
 /**
@@ -231,17 +230,18 @@ const PROPERTY_TYPE_MULTIPLIERS: Record<PropertyType, number> = {
   'APARTMENT': 1.00,
   'VILLA': 1.25,
   'TOWNHOUSE': 1.15,
+  'TWIN_HOUSE': 1.18,
   'DUPLEX': 1.10,
-  'STUDIO': 0.95,
   'PENTHOUSE': 1.30,
+  'STUDIO': 0.95,
   'CHALET': 1.20,
   'LAND': 0.80,
-  'COMMERCIAL': 1.15,
   'OFFICE': 1.10,
   'SHOP': 1.20,
   'WAREHOUSE': 0.60,
   'BUILDING': 1.00,
   'FARM': 0.40,
+  'ROOF': 0.90,
 };
 
 // ============================================

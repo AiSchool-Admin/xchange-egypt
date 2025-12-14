@@ -22,7 +22,7 @@ import {
   recordInteraction,
 } from '../controllers/real-estate-advanced.controller';
 import { authenticate, optionalAuth } from '../middleware/auth';
-import { isAdmin } from '../middleware/admin';
+import { authenticateAdmin } from '../middleware/adminAuth';
 
 const router = Router();
 
@@ -69,7 +69,7 @@ router.get('/market-prices', getMarketPrices);
  * @desc    تحديث أسعار السوق (Admin only)
  * @access  Admin
  */
-router.post('/admin/update-prices', authenticate, isAdmin, updateMarketPrices);
+router.post('/admin/update-prices', authenticateAdmin, updateMarketPrices);
 
 // ============================================
 // نظام المقايضة متعدد الأطراف

@@ -456,7 +456,7 @@ async function buildUserProfile(userId: string): Promise<UserProfile> {
   // جلب البحوث المحفوظة
   const savedSearches = await prisma.savedSearch.findMany({
     where: { userId },
-    select: { criteria: true },
+    select: { filters: true },
     take: 10,
   });
 
@@ -474,17 +474,17 @@ async function buildUserProfile(userId: string): Promise<UserProfile> {
 
   // تحويل البحوث المحفوظة
   const parsedSearches = savedSearches.map(s => {
-    const criteria = s.criteria as Record<string, any> || {};
+    const filters = s.filters as Record<string, any> || {};
     return {
-      governorate: criteria.governorate,
-      city: criteria.city,
-      propertyType: criteria.propertyType,
-      priceMin: criteria.priceMin,
-      priceMax: criteria.priceMax,
-      areaMin: criteria.areaMin,
-      areaMax: criteria.areaMax,
-      bedrooms: criteria.bedrooms,
-      features: criteria.features,
+      governorate: filters.governorate,
+      city: filters.city,
+      propertyType: filters.propertyType,
+      priceMin: filters.priceMin,
+      priceMax: filters.priceMax,
+      areaMin: filters.areaMin,
+      areaMax: filters.areaMax,
+      bedrooms: filters.bedrooms,
+      features: filters.features,
     };
   });
 
