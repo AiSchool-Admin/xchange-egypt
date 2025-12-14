@@ -38,9 +38,9 @@ import {
 const BARTER_LISTINGS = MOCK_VEHICLE_LISTINGS.filter((v) => v.allowBarter);
 
 const SELLER_TYPE_ICONS = {
-  individual: User,
-  dealer: Building2,
-  certified_dealer: Store,
+  OWNER: User,
+  DEALER: Building2,
+  SHOWROOM: Store,
 };
 
 export default function BarterMarketplacePage() {

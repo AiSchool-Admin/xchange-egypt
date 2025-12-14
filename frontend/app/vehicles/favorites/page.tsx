@@ -60,9 +60,9 @@ const SAVED_VEHICLES: SavedVehicle[] = MOCK_VEHICLE_LISTINGS.slice(0, 4).map((v,
 }));
 
 const SELLER_TYPE_ICONS = {
-  individual: User,
-  dealer: Building2,
-  certified_dealer: Store,
+  OWNER: User,
+  DEALER: Building2,
+  SHOWROOM: Store,
 };
 
 export default function FavoritesPage() {
