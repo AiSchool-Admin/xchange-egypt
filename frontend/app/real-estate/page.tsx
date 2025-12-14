@@ -246,16 +246,37 @@ export default function RealEstatePage() {
                 اعثر على عقارك المثالي - {totalCount} عقار متاح
               </p>
             </div>
-            <Link
-              href="/items/new?category=real-estate"
-              className="bg-white text-emerald-600 px-6 py-3 rounded-xl font-bold hover:bg-emerald-50 transition-all shadow-lg"
-            >
-              + أضف عقارك
-            </Link>
+            <div className="flex gap-3">
+              <Link
+                href="/real-estate/valuation"
+                className="bg-emerald-500/30 text-white px-4 py-3 rounded-xl font-bold hover:bg-emerald-500/50 transition-all flex items-center gap-2"
+              >
+                💰 تقييم العقار
+              </Link>
+              <Link
+                href="/items/new?category=real-estate"
+                className="bg-white text-emerald-600 px-6 py-3 rounded-xl font-bold hover:bg-emerald-50 transition-all shadow-lg"
+              >
+                + أضف عقارك
+              </Link>
+            </div>
           </div>
 
-          {/* Quick Filters */}
+          {/* Quick Actions */}
           <div className="flex flex-wrap gap-2 mt-6">
+            <Link
+              href="/real-estate/barter"
+              className="px-4 py-2 rounded-full text-sm font-medium bg-orange-500/80 text-white hover:bg-orange-500 transition-all flex items-center gap-1"
+            >
+              🔄 المقايضة
+            </Link>
+            <Link
+              href="/real-estate/recommendations"
+              className="px-4 py-2 rounded-full text-sm font-medium bg-purple-500/80 text-white hover:bg-purple-500 transition-all flex items-center gap-1"
+            >
+              ✨ توصيات لك
+            </Link>
+            <span className="text-emerald-300 mx-2">|</span>
             {LISTING_TYPES.slice(1).map((type) => (
               <button
                 key={type.value}
@@ -597,6 +618,64 @@ export default function RealEstatePage() {
                 )}
               </>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="bg-white py-12 mt-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-2xl font-bold text-gray-800 text-center mb-8">
+            خدمات متقدمة لسوق العقارات
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Valuation */}
+            <Link href="/real-estate/valuation" className="group">
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 hover:shadow-lg transition-all border border-emerald-100 group-hover:border-emerald-300">
+                <div className="w-14 h-14 bg-emerald-500 rounded-xl flex items-center justify-center mb-4">
+                  <span className="text-3xl">💰</span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">تقييم العقار (AVM)</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  احصل على تقدير دقيق لقيمة عقارك باستخدام خوارزمية التقييم الآلي المتقدمة
+                </p>
+                <span className="text-emerald-600 font-medium text-sm group-hover:underline">
+                  قيّم عقارك الآن ←
+                </span>
+              </div>
+            </Link>
+
+            {/* Barter */}
+            <Link href="/real-estate/barter" className="group">
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 hover:shadow-lg transition-all border border-orange-100 group-hover:border-orange-300">
+                <div className="w-14 h-14 bg-orange-500 rounded-xl flex items-center justify-center mb-4">
+                  <span className="text-3xl">🔄</span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">المقايضة الذكية</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  بادل عقارك مع عقارات أخرى - مقايضة مباشرة أو متعددة الأطراف بعدالة كاملة
+                </p>
+                <span className="text-orange-600 font-medium text-sm group-hover:underline">
+                  ابحث عن فرص المقايضة ←
+                </span>
+              </div>
+            </Link>
+
+            {/* Recommendations */}
+            <Link href="/real-estate/recommendations" className="group">
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 hover:shadow-lg transition-all border border-purple-100 group-hover:border-purple-300">
+                <div className="w-14 h-14 bg-purple-500 rounded-xl flex items-center justify-center mb-4">
+                  <span className="text-3xl">✨</span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">توصيات مخصصة</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  اكتشف عقارات مختارة بعناية بناءً على تفضيلاتك وسلوكك باستخدام الذكاء الاصطناعي
+                </p>
+                <span className="text-purple-600 font-medium text-sm group-hover:underline">
+                  اكتشف توصياتك ←
+                </span>
+              </div>
+            </Link>
           </div>
         </div>
       </div>

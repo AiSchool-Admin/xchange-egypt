@@ -47,6 +47,7 @@ import searchAlertsRoutes from './routes/search-alerts.routes';
 import scrapMarketplaceRoutes from './routes/scrap-marketplace.routes';
 import matchingRoutes from './routes/matching.routes';
 import propertyRoutes from './routes/property.routes';
+import realEstateAdvancedRoutes from './routes/real-estate-advanced.routes';
 import comparisonRoutes from './routes/comparison.routes';
 import deliveryRoutes from './routes/delivery.routes';
 import installmentRoutes from './routes/installment.routes';
@@ -324,6 +325,9 @@ app.use('/api/v1/matching', matchingRoutes);
 
 // Real Estate / Property Marketplace routes - سوق العقارات
 app.use('/api/v1/properties', propertyRoutes);
+
+// Real Estate Advanced routes - خوارزميات التسعير والمقايضة والتوصيات
+app.use('/api/v1/real-estate/advanced', realEstateAdvancedRoutes);
 
 // Item Comparison routes - نظام مقارنة المنتجات
 app.use('/api/v1/comparisons', comparisonRoutes);
