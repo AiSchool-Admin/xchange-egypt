@@ -531,7 +531,7 @@ export default function MobileListingsPage() {
                 {filteredListings.map((listing) => (
                   <Link
                     key={listing.id}
-                    href={`/mobile/listing/${listing.id}`}
+                    href={`/mobiles/listing/${listing.id}`}
                     className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-shadow group"
                   >
                     {/* Image */}
@@ -601,7 +601,7 @@ export default function MobileListingsPage() {
                 {filteredListings.map((listing) => (
                   <Link
                     key={listing.id}
-                    href={`/mobile/listing/${listing.id}`}
+                    href={`/mobiles/listing/${listing.id}`}
                     className="flex gap-4 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 hover:shadow-lg transition-shadow"
                   >
                     {/* Image */}

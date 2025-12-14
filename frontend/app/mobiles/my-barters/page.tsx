@@ -126,7 +126,7 @@ export default function MyBartersPage() {
             <h3 className="text-xl font-bold text-gray-700 mb-2">لا توجد عروض مقايضة</h3>
             <p className="text-gray-500 mb-6">ابحث عن فرص المقايضة في صفحة المقايضة</p>
             <Link
-              href="/mobile/barter"
+              href="/mobiles/barter"
               className="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700"
             >
               <ArrowLeftRight className="w-5 h-5" />
@@ -244,7 +244,7 @@ export default function MyBartersPage() {
                   {proposal.status === "accepted" && (
                     <div className="mt-4">
                       <Link
-                        href={`/mobile/transactions`}
+                        href={`/mobiles/transactions`}
                         className="w-full block py-3 bg-green-600 text-white rounded-lg font-medium text-center hover:bg-green-700"
                       >
                         متابعة المعاملة
