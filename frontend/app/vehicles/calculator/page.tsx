@@ -303,7 +303,7 @@ export default function VehicleCalculatorPage() {
                       <option value="">اختر النوع</option>
                       {Object.entries(BODY_TYPE_AR).map(([key, value]) => (
                         <option key={key} value={key}>
-                          {value}
+                          {value.label}
                         </option>
                       ))}
                     </select>
@@ -332,17 +332,17 @@ export default function VehicleCalculatorPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">الحالة</label>
                   <div className="grid grid-cols-5 gap-2">
-                    {Object.entries(CONDITION_AR).map(([key, value]) => (
+                    {(Object.entries(CONDITION_AR) as [VehicleCondition, { label: string; description: string }][]).map(([key, value]) => (
                       <button
                         key={key}
-                        onClick={() => setCondition(key as VehicleCondition)}
+                        onClick={() => setCondition(key)}
                         className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                           condition === key
                             ? "bg-blue-600 text-white"
                             : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                       >
-                        {value}
+                        {value.label}
                       </button>
                     ))}
                   </div>

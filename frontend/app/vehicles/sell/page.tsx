@@ -302,7 +302,7 @@ export default function SellVehiclePage() {
                   <option value="">اختر النوع</option>
                   {Object.entries(BODY_TYPE_AR).map(([key, value]) => (
                     <option key={key} value={key}>
-                      {value}
+                      {value.label}
                     </option>
                   ))}
                 </select>
@@ -410,7 +410,7 @@ export default function SellVehiclePage() {
                   <option value="">اختر الحالة</option>
                   {Object.entries(CONDITION_AR).map(([key, value]) => (
                     <option key={key} value={key}>
-                      {value}
+                      {value.label}
                     </option>
                   ))}
                 </select>
@@ -624,7 +624,7 @@ export default function SellVehiclePage() {
                   <option value="">اختر نوع البائع</option>
                   {Object.entries(SELLER_TYPE_AR).map(([key, value]) => (
                     <option key={key} value={key}>
-                      {value}
+                      {value.label}
                     </option>
                   ))}
                 </select>
