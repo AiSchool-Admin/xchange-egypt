@@ -332,7 +332,7 @@ export default function FavoritesPage() {
                             {formatMileage(vehicle.mileage)}
                           </span>
                           <span className="text-sm text-gray-500">
-                            {CONDITION_AR[vehicle.condition]}
+                            {CONDITION_AR[vehicle.condition].label}
                           </span>
                           <span className="text-sm text-gray-500 flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
@@ -437,7 +437,7 @@ export default function FavoritesPage() {
                     <div className="flex items-center gap-3 text-sm text-gray-500 mt-2">
                       <span>{formatMileage(vehicle.mileage)}</span>
                       <span>•</span>
-                      <span>{CONDITION_AR[vehicle.condition]}</span>
+                      <span>{CONDITION_AR[vehicle.condition].label}</span>
                     </div>
 
                     {vehicle.priceAlert && vehicle.alertThreshold && (

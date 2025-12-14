@@ -418,7 +418,7 @@ export default function BarterMarketplacePage() {
                   <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
                     <span>{formatMileage(vehicle.mileage)}</span>
                     <span>•</span>
-                    <span>{CONDITION_AR[vehicle.condition]}</span>
+                    <span>{CONDITION_AR[vehicle.condition].label}</span>
                   </div>
 
                   {/* Seller Info */}
@@ -429,7 +429,7 @@ export default function BarterMarketplacePage() {
                     </div>
                     <div className="flex items-center gap-1 text-sm text-gray-500">
                       <SellerIcon className="w-4 h-4" />
-                      <span>{SELLER_TYPE_AR[vehicle.sellerType]}</span>
+                      <span>{SELLER_TYPE_AR[vehicle.sellerType].label}</span>
                     </div>
                   </div>
 

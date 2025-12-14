@@ -772,7 +772,7 @@ export default function SellVehiclePage() {
                     <p className="text-sm text-gray-500">الحالة</p>
                     <p className="font-bold">
                       {formData.condition
-                        ? CONDITION_AR[formData.condition as VehicleCondition]
+                        ? CONDITION_AR[formData.condition as VehicleCondition].label
                         : "-"}
                     </p>
                   </div>

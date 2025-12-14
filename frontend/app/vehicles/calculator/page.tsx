@@ -34,53 +34,55 @@ const YEARS = Array.from({ length: 35 }, (_, i) => 2025 - i);
 
 // Base prices for different makes (in EGP)
 const MAKE_BASE_PRICES: Partial<Record<VehicleMake, number>> = {
-  toyota: 600000,
-  honda: 550000,
-  nissan: 500000,
-  hyundai: 450000,
-  kia: 420000,
-  mercedes: 1500000,
-  bmw: 1400000,
-  audi: 1300000,
-  volkswagen: 600000,
-  chevrolet: 480000,
-  ford: 520000,
-  peugeot: 380000,
-  renault: 350000,
-  fiat: 320000,
-  suzuki: 350000,
-  mitsubishi: 450000,
-  mazda: 520000,
-  skoda: 450000,
-  geely: 400000,
-  chery: 380000,
-  mg: 450000,
-  byd: 600000,
-  jetour: 550000,
-  changan: 420000,
+  TOYOTA: 600000,
+  HONDA: 550000,
+  NISSAN: 500000,
+  HYUNDAI: 450000,
+  KIA: 420000,
+  MERCEDES: 1500000,
+  BMW: 1400000,
+  AUDI: 1300000,
+  VOLKSWAGEN: 600000,
+  CHEVROLET: 480000,
+  FORD: 520000,
+  PEUGEOT: 380000,
+  RENAULT: 350000,
+  FIAT: 320000,
+  SUZUKI: 350000,
+  MITSUBISHI: 450000,
+  MAZDA: 520000,
+  SKODA: 450000,
+  GEELY: 400000,
+  CHERY: 380000,
+  MG: 450000,
+  BYD: 600000,
+  JETOUR: 550000,
+  CHANGAN: 420000,
 };
 
 // Body type multipliers
 const BODY_TYPE_MULTIPLIERS: Partial<Record<VehicleBodyType, number>> = {
-  sedan: 1.0,
-  suv: 1.25,
-  hatchback: 0.9,
-  coupe: 1.1,
-  convertible: 1.3,
-  wagon: 0.95,
-  pickup: 1.15,
-  van: 1.1,
-  minivan: 1.05,
-  crossover: 1.15,
+  SEDAN: 1.0,
+  SUV: 1.25,
+  HATCHBACK: 0.9,
+  COUPE: 1.1,
+  CONVERTIBLE: 1.3,
+  WAGON: 0.95,
+  PICKUP: 1.15,
+  VAN: 1.1,
+  MINIVAN: 1.05,
+  CROSSOVER: 1.15,
 };
 
 // Condition multipliers
-const CONDITION_MULTIPLIERS: Record<VehicleCondition, number> = {
-  new: 1.0,
-  excellent: 0.85,
-  good: 0.7,
-  fair: 0.55,
-  poor: 0.4,
+const CONDITION_MULTIPLIERS: Partial<Record<VehicleCondition, number>> = {
+  NEW: 1.0,
+  LIKE_NEW: 0.92,
+  EXCELLENT: 0.85,
+  VERY_GOOD: 0.75,
+  GOOD: 0.65,
+  FAIR: 0.5,
+  NEEDS_WORK: 0.35,
 };
 
 // Depreciation rate per year
@@ -102,7 +104,7 @@ export default function VehicleCalculatorPage() {
   const [year, setYear] = useState<number>(2020);
   const [bodyType, setBodyType] = useState<VehicleBodyType | "">("");
   const [mileage, setMileage] = useState<number>(50000);
-  const [condition, setCondition] = useState<VehicleCondition>("good");
+  const [condition, setCondition] = useState<VehicleCondition>("GOOD");
 
   // Loan form
   const [vehiclePrice, setVehiclePrice] = useState<number>(500000);
@@ -407,7 +409,7 @@ export default function VehicleCalculatorPage() {
                       <div className="flex items-center gap-3">
                         <Check className="w-5 h-5 text-green-500" />
                         <span className="text-gray-600">
-                          الحالة: {CONDITION_AR[condition]}
+                          الحالة: {CONDITION_AR[condition].label}
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
