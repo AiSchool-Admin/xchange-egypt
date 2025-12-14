@@ -1,0 +1,1065 @@
+// Xchange Cars Marketplace - Complete Database Schema
+// نظام متكامل للسيارات الجديدة والمستعملة مع المقايضة والتمويل
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 👤 USERS & AUTHENTICATION
+// ============================================
+
+enum UserRole {
+  BUYER           // مشتري
+  SELLER          // بائع
+  DEALER          // تاجر
+  INSPECTOR       // فاحص
+  ADMIN           // مدير النظام
+}
+
+enum VerificationLevel {
+  UNVERIFIED      // غير موثق
+  PHONE_VERIFIED  // موثق بالهاتف
+  ID_VERIFIED     // موثق بالهوية
+  TRUSTED         // موثوق
+  PROFESSIONAL    // محترف (تاجر معتمد)
+}
+
+model User {
+  id                String              @id @default(uuid())
+  email             String?             @unique
+  phone             String              @unique
+  phoneVerified     Boolean             @default(false)
+  password          String
+  
+  // Personal Info
+  firstName         String
+  lastName          String
+  nationalId        String?             @unique  // رقم البطاقة
+  dateOfBirth       DateTime?
+  
+  // Location
+  governorate       String              // المحافظة
+  city              String              // المدينة
+  address           String?
+  latitude          Float?
+  longitude         Float?
+  
+  // Verification
+  role              UserRole            @default(BUYER)
+  verificationLevel VerificationLevel   @default(UNVERIFIED)
+  verifiedAt        DateTime?
+  
+  // Business Info (for dealers)
+  businessName      String?
+  taxId             String?             @unique  // الرقم الضريبي
+  commercialRegNo   String?             @unique  // السجل التجاري
+  
+  // Banking
+  bankName          String?
+  accountNumber     String?
+  accountHolderName String?
+  
+  // Stats
+  rating            Float               @default(0)
+  totalReviews      Int                 @default(0)
+  successfulSales   Int                 @default(0)
+  successfulPurchases Int               @default(0)
+  
+  // Status
+  isActive          Boolean             @default(true)
+  isSuspended       Boolean             @default(false)
+  suspensionReason  String?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  listings          Listing[]           @relation("SellerListings")
+  purchases         Transaction[]       @relation("BuyerTransactions")
+  sales             Transaction[]       @relation("SellerTransactions")
+  inspections       Inspection[]        @relation("InspectorInspections")
+  reviews           Review[]            @relation("ReviewAuthor")
+  receivedReviews   Review[]            @relation("ReviewTarget")
+  messages          Message[]
+  notifications     Notification[]
+  savedSearches     SavedSearch[]
+  favoriteListings  FavoriteListing[]
+  tradeInRequests   TradeInRequest[]
+  barterOffers      BarterOffer[]       @relation("BarterInitiator")
+  receivedBarterOffers BarterOffer[]    @relation("BarterReceiver")
+  
+  @@index([phone])
+  @@index([email])
+  @@index([verificationLevel])
+}
+
+// ============================================
+// 🚗 VEHICLE INFORMATION
+// ============================================
+
+enum VehicleCondition {
+  NEW             // جديدة
+  USED_EXCELLENT  // مستعملة ممتازة (A)
+  USED_GOOD       // مستعملة جيدة (B)
+  USED_FAIR       // مستعملة مقبولة (C)
+  USED_POOR       // مستعملة ضعيفة (D)
+}
+
+enum VehicleType {
+  SEDAN           // سيدان
+  SUV             // دفع رباعي
+  HATCHBACK       // هاتشباك
+  COUPE           // كوبيه
+  VAN             // فان
+  PICKUP          // بيك آب
+  MICROBUS        // ميكروباص
+}
+
+enum FuelType {
+  GASOLINE        // بنزين
+  DIESEL          // ديزل
+  HYBRID          // هجين
+  ELECTRIC        // كهربائي
+  CNG             // غاز طبيعي
+}
+
+enum TransmissionType {
+  MANUAL          // يدوي
+  AUTOMATIC       // أوتوماتيك
+  CVT             // CVT
+  SEMI_AUTOMATIC  // نصف أوتوماتيك
+}
+
+model Vehicle {
+  id                String              @id @default(uuid())
+  
+  // Basic Info
+  make              String              // الماركة (Toyota, Hyundai...)
+  model             String              // الموديل (Corolla, Elantra...)
+  year              Int                 // سنة الصنع
+  vin               String?             @unique  // رقم الشاسيه
+  
+  // Technical Specs
+  vehicleType       VehicleType
+  fuelType          FuelType
+  transmissionType  TransmissionType
+  engineSize        Float               // حجم المحرك (لتر)
+  cylinders         Int?                // عدد الأسطوانات
+  horsepower        Int?                // القوة الحصانية
+  
+  // Features
+  color             String
+  seatingCapacity   Int                 // عدد المقاعد
+  doors             Int                 // عدد الأبواب
+  
+  // Condition
+  condition         VehicleCondition
+  mileage           Int                 // الكيلومترات
+  previousOwners    Int                 @default(1)  // عدد المالكين السابقين
+  
+  // Manufacturing
+  manufacturedIn    String?             // بلد الصنع
+  assembledInEgypt  Boolean             @default(false)  // مجمعة في مصر
+  
+  // Status
+  hasAccidents      Boolean             @default(false)
+  accidentDetails   String?
+  hasModifications  Boolean             @default(false)
+  modificationDetails String?
+  
+  // Market Data (will be updated by pricing algorithm)
+  estimatedValue    Float?              // القيمة التقديرية
+  marketDemand      String?             // HIGH, MEDIUM, LOW
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  listings          Listing[]
+  inspections       Inspection[]
+  vehicleHistory    VehicleHistory[]
+  
+  @@index([make, model, year])
+  @@index([vin])
+}
+
+// ============================================
+// 📝 LISTINGS
+// ============================================
+
+enum ListingType {
+  MARKETPLACE     // إعلان عادي من فرد
+  CERTIFIED       // معتمدة من Xchange (مفحوصة ومضمونة)
+  DEALER          // من تاجر
+  AUCTION         // مزاد
+}
+
+enum ListingStatus {
+  DRAFT           // مسودة
+  PENDING_REVIEW  // في انتظار المراجعة
+  ACTIVE          // نشطة
+  SOLD            // مباعة
+  RESERVED        // محجوزة
+  EXPIRED         // منتهية
+  REMOVED         // محذوفة
+}
+
+model Listing {
+  id                String              @id @default(uuid())
+  
+  // Basics
+  title             String
+  description       String              @db.Text
+  listingType       ListingType
+  status            ListingStatus       @default(DRAFT)
+  
+  // Seller
+  sellerId          String
+  seller            User                @relation("SellerListings", fields: [sellerId], references: [id])
+  
+  // Vehicle
+  vehicleId         String
+  vehicle           Vehicle             @relation(fields: [vehicleId], references: [id])
+  
+  // Pricing
+  askingPrice       Float               // السعر المطلوب
+  minAcceptablePrice Float?             // أقل سعر مقبول (خاص)
+  negotiable        Boolean             @default(true)
+  
+  // Location
+  governorate       String
+  city              String
+  showExactLocation Boolean             @default(false)
+  latitude          Float?
+  longitude         Float?
+  
+  // Media
+  images            ListingImage[]
+  videos            ListingVideo[]
+  
+  // Features & Extras
+  features          Json?               // {sunroof: true, leatherSeats: true, ...}
+  extras            Json?               // {spareTire: true, toolkit: true, ...}
+  
+  // Documents
+  hasOwnershipCard  Boolean             // رخصة سارية
+  ownershipExpiry   DateTime?
+  hasInsurance      Boolean
+  insuranceExpiry   DateTime?
+  
+  // Trade-In & Barter
+  acceptsTradeIn    Boolean             @default(false)
+  acceptsBarter     Boolean             @default(false)
+  interestedInTypes String[]            // ["SEDAN", "SUV"] للمقايضة
+  
+  // Stats
+  views             Int                 @default(0)
+  favorites         Int                 @default(0)
+  inquiries         Int                 @default(0)
+  
+  // SEO & Search
+  searchKeywords    String?             // مُحَسّنة للبحث
+  
+  // Certification (للسيارات المعتمدة)
+  isCertified       Boolean             @default(false)
+  certificationId   String?             @unique
+  certifiedAt       DateTime?
+  certifiedBy       String?             // Inspector ID
+  warrantyMonths    Int?                // شهور الضمان
+  
+  // Timing
+  publishedAt       DateTime?
+  expiresAt         DateTime?
+  soldAt            DateTime?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  inspection        Inspection?
+  transactions      Transaction[]
+  favorites         FavoriteListing[]
+  tradeInRequests   TradeInRequest[]
+  barterOffers      BarterOffer[]       @relation("BarterListing")
+  interestedBarters BarterOffer[]       @relation("BarterInterestedListing")
+  
+  @@index([sellerId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([listingType])
+  @@index([publishedAt])
+  @@index([governorate, city])
+}
+
+model ListingImage {
+  id                String              @id @default(uuid())
+  listingId         String
+  listing           Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  url               String
+  thumbnail         String?
+  order             Int                 @default(0)
+  caption           String?
+  isPrimary         Boolean             @default(false)
+  
+  createdAt         DateTime            @default(now())
+  
+  @@index([listingId])
+}
+
+model ListingVideo {
+  id                String              @id @default(uuid())
+  listingId         String
+  listing           Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  url               String
+  thumbnail         String?
+  duration          Int?                // seconds
+  
+  createdAt         DateTime            @default(now())
+  
+  @@index([listingId])
+}
+
+// ============================================
+// 🔍 INSPECTION SYSTEM
+// ============================================
+
+enum InspectionStatus {
+  SCHEDULED       // مجدولة
+  IN_PROGRESS     // قيد الفحص
+  COMPLETED       // مكتملة
+  FAILED          // فشلت
+  CANCELLED       // ملغاة
+}
+
+model Inspection {
+  id                String              @id @default(uuid())
+  
+  // References
+  vehicleId         String              @unique
+  vehicle           Vehicle             @relation(fields: [vehicleId], references: [id])
+  listingId         String?             @unique
+  listing           Listing?            @relation(fields: [listingId], references: [id])
+  
+  // Inspector
+  inspectorId       String
+  inspector         User                @relation("InspectorInspections", fields: [inspectorId], references: [id])
+  
+  // Schedule
+  scheduledAt       DateTime
+  startedAt         DateTime?
+  completedAt       DateTime?
+  status            InspectionStatus    @default(SCHEDULED)
+  
+  // Location
+  inspectionAddress String
+  governorate       String
+  city              String
+  
+  // Results
+  overallGrade      String?             // A, B, C, D
+  overallScore      Float?              // 0-100
+  
+  // Detailed Checks (150 points)
+  exteriorScore     Float?              // 0-100
+  interiorScore     Float?              // 0-100
+  mechanicalScore   Float?              // 0-100
+  electricalScore   Float?              // 0-100
+  
+  // Critical Issues
+  hasCriticalIssues Boolean             @default(false)
+  criticalIssues    Json?               // [{category: "engine", issue: "oil leak", severity: "high"}]
+  
+  // Detailed Report (JSON)
+  checklistResults  Json?               // Complete 150-point checklist
+  
+  // Paint Thickness (accident detection)
+  paintThickness    Json?               // {hood: 120, leftDoor: 250, ...} in microns
+  hasRepaint        Boolean             @default(false)
+  
+  // OBD-II Scan
+  odbCodes          Json?               // [{code: "P0420", description: "..."}]
+  hasActiveCodes    Boolean             @default(false)
+  
+  // Battery Health
+  batteryHealth     Float?              // 0-100%
+  batteryVoltage    Float?
+  
+  // Tire Condition
+  tireCondition     Json?               // {frontLeft: 70%, frontRight: 65%, ...}
+  
+  // Photos & Videos
+  inspectionPhotos  String[]            // URLs
+  inspectionVideos  String[]            // URLs
+  
+  // Notes
+  inspectorNotes    String?             @db.Text
+  recommendations   String?             @db.Text
+  estimatedRepairCost Float?
+  
+  // Certification
+  isPassed          Boolean             @default(false)
+  certificationCode String?             @unique  // XCHG-INS-XXXXX
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([inspectorId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+// ============================================
+// 📜 VEHICLE HISTORY
+// ============================================
+
+enum HistoryEventType {
+  OWNERSHIP_CHANGE    // تغيير ملكية
+  ACCIDENT            // حادث
+  MAINTENANCE         // صيانة
+  INSPECTION          // فحص دوري
+  INSURANCE_CLAIM     // مطالبة تأمين
+  RECALL              // استدعاء من الشركة
+  MODIFICATION        // تعديل
+  REGISTRATION        // تجديد الرخصة
+}
+
+model VehicleHistory {
+  id                String              @id @default(uuid())
+  
+  vehicleId         String
+  vehicle           Vehicle             @relation(fields: [vehicleId], references: [id])
+  
+  eventType         HistoryEventType
+  eventDate         DateTime
+  mileageAtEvent    Int?
+  
+  // Event Details
+  title             String
+  description       String?             @db.Text
+  cost              Float?
+  
+  // Source
+  sourceType        String?             // INSURANCE, DEALER, OWNER, GOVERNMENT
+  sourceDocument    String?             // URL to document
+  verified          Boolean             @default(false)
+  
+  createdAt         DateTime            @default(now())
+  
+  @@index([vehicleId])
+  @@index([eventType])
+  @@index([eventDate])
+}
+
+// ============================================
+// 💰 TRANSACTIONS
+// ============================================
+
+enum TransactionType {
+  PURCHASE        // شراء عادي
+  CERTIFIED_SALE  // بيع سيارة معتمدة
+  TRADE_IN        // استبدال
+  BARTER          // مقايضة
+  AUCTION         // مزاد
+}
+
+enum TransactionStatus {
+  INITIATED       // بدأت
+  PAYMENT_PENDING // في انتظار الدفع
+  PAYMENT_HELD    // المبلغ محجوز (Escrow)
+  INSPECTION_SCHEDULED // فحص مجدول
+  INSPECTION_PASSED // نجح الفحص
+  INSPECTION_FAILED // فشل الفحص
+  DOCUMENTS_PENDING // في انتظار الوثائق
+  DELIVERY_SCHEDULED // توصيل مجدول
+  DELIVERED       // تم التسليم
+  COMPLETED       // مكتملة
+  CANCELLED       // ملغاة
+  REFUNDED        // مسترد
+  DISPUTED        // نزاع
+}
+
+enum PaymentMethod {
+  CASH            // كاش
+  BANK_TRANSFER   // تحويل بنكي
+  CARD            // بطاقة
+  FAWRY           // فوري
+  MOBILE_WALLET   // محفظة إلكترونية
+  FINANCING       // تمويل
+}
+
+model Transaction {
+  id                String              @id @default(uuid())
+  transactionCode   String              @unique  // XCHG-TXN-XXXXX
+  
+  // Type
+  transactionType   TransactionType
+  status            TransactionStatus   @default(INITIATED)
+  
+  // Parties
+  buyerId           String
+  buyer             User                @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  sellerId          String
+  seller            User                @relation("SellerTransactions", fields: [sellerId], references: [id])
+  
+  // Listing
+  listingId         String
+  listing           Listing             @relation(fields: [listingId], references: [id])
+  
+  // Financial
+  agreedPrice       Float
+  platformFee       Float               // عمولة المنصة
+  inspectionFee     Float               @default(0)
+  deliveryFee       Float               @default(0)
+  totalAmount       Float
+  
+  // Payment
+  paymentMethod     PaymentMethod
+  paymentStatus     String              @default("PENDING")
+  paymentReference  String?
+  paidAt            DateTime?
+  
+  // Escrow (حجز المبلغ)
+  escrowHeld        Boolean             @default(false)
+  escrowAmount      Float?
+  escrowReleasedAt  DateTime?
+  
+  // Financing
+  isFinanced        Boolean             @default(false)
+  financingId       String?             @unique
+  financing         Financing?
+  
+  // Trade-In Component (if applicable)
+  tradeInId         String?             @unique
+  tradeIn           TradeInRequest?
+  tradeInValue      Float?
+  
+  // Barter Component (if applicable)
+  barterId          String?             @unique
+  barter            BarterOffer?
+  barterValue       Float?
+  
+  // Delivery
+  requiresDelivery  Boolean             @default(false)
+  deliveryAddress   String?
+  deliveryScheduledAt DateTime?
+  deliveredAt       DateTime?
+  deliveryProof     String?             // صورة التسليم
+  
+  // Documents
+  ownershipTransferDoc String?
+  billOfSale        String?
+  
+  // Warranty (للسيارات المعتمدة)
+  hasWarranty       Boolean             @default(false)
+  warrantyMonths    Int?
+  warrantyStartDate DateTime?
+  warrantyEndDate   DateTime?
+  
+  // Cancellation
+  cancelledAt       DateTime?
+  cancellationReason String?
+  cancelledBy       String?             // USER_ID
+  
+  // Refund
+  refundedAt        DateTime?
+  refundAmount      Float?
+  refundReason      String?
+  
+  // Dispute
+  isDisputed        Boolean             @default(false)
+  disputeId         String?             @unique
+  dispute           Dispute?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([listingId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// 💳 FINANCING
+// ============================================
+
+enum FinancingStatus {
+  PENDING         // في انتظار الموافقة
+  APPROVED        // موافق
+  REJECTED        // مرفوض
+  ACTIVE          // نشط
+  COMPLETED       // مكتمل
+  DEFAULTED       // متعثر
+}
+
+model Financing {
+  id                String              @id @default(uuid())
+  
+  transactionId     String              @unique
+  transaction       Transaction         @relation(fields: [transactionId], references: [id])
+  
+  // Partner Info
+  partnerId         String              // CONTACT, DRIVE, etc.
+  partnerName       String
+  
+  // Application
+  applicationId     String?             @unique  // من الشريك
+  appliedAt         DateTime            @default(now())
+  
+  // Amounts
+  vehiclePrice      Float
+  downPayment       Float
+  financedAmount    Float
+  
+  // Terms
+  interestRate      Float               // معدل الفائدة
+  durationMonths    Int                 // المدة بالأشهر
+  monthlyPayment    Float
+  totalPayable      Float
+  
+  // Status
+  status            FinancingStatus     @default(PENDING)
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  rejectionReason   String?
+  
+  // Contract
+  contractUrl       String?
+  contractSignedAt  DateTime?
+  
+  // Tracking
+  paidInstallments  Int                 @default(0)
+  missedPayments    Int                 @default(0)
+  nextPaymentDue    DateTime?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([status])
+  @@index([partnerId])
+}
+
+// ============================================
+// 🔄 TRADE-IN SYSTEM
+// ============================================
+
+enum TradeInStatus {
+  REQUESTED       // مطلوب
+  QUOTE_PROVIDED  // عرض سعر مقدم
+  ACCEPTED        // مقبول
+  REJECTED        // مرفوض
+  INSPECTING      // قيد الفحص
+  COMPLETED       // مكتمل
+}
+
+model TradeInRequest {
+  id                String              @id @default(uuid())
+  
+  // User
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  
+  // Old Car (to trade in)
+  oldCarMake        String
+  oldCarModel       String
+  oldCarYear        Int
+  oldCarMileage     Int
+  oldCarCondition   VehicleCondition
+  oldCarImages      String[]
+  oldCarDescription String?             @db.Text
+  
+  // New Car (interested in)
+  newCarListingId   String?
+  newCarListing     Listing?            @relation(fields: [newCarListingId], references: [id])
+  
+  // Quote
+  estimatedValue    Float?              // القيمة التقديرية للسيارة القديمة
+  quotedAt          DateTime?
+  quoteValidUntil   DateTime?
+  
+  // Inspection
+  inspectionScheduled Boolean           @default(false)
+  inspectionDate    DateTime?
+  
+  // Status
+  status            TradeInStatus       @default(REQUESTED)
+  
+  // Transaction (if completed)
+  transactionId     String?             @unique
+  transaction       Transaction?        @relation(fields: [transactionId], references: [id])
+  
+  // Notes
+  userNotes         String?             @db.Text
+  adminNotes        String?             @db.Text
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// 🔀 BARTER SYSTEM (المقايضة)
+// ============================================
+
+enum BarterType {
+  CAR_FOR_CAR         // سيارة مقابل سيارة
+  CAR_FOR_PHONE       // سيارة مقابل موبايل
+  CAR_FOR_PROPERTY    // سيارة مقابل عقار
+  CAR_FOR_GOLD        // سيارة مقابل ذهب
+  CAR_FOR_MIXED       // سيارة مقابل أصناف متعددة
+}
+
+enum BarterStatus {
+  PROPOSED        // مقترح
+  COUNTER_OFFERED // عرض مضاد
+  NEGOTIATING     // في المفاوضات
+  ACCEPTED        // مقبول
+  REJECTED        // مرفوض
+  EXPIRED         // منتهي
+  COMPLETED       // مكتمل
+}
+
+model BarterOffer {
+  id                String              @id @default(uuid())
+  offerCode         String              @unique  // XCHG-BRT-XXXXX
+  
+  // Type
+  barterType        BarterType
+  status            BarterStatus        @default(PROPOSED)
+  
+  // Parties
+  initiatorId       String
+  initiator         User                @relation("BarterInitiator", fields: [initiatorId], references: [id])
+  receiverId        String
+  receiver          User                @relation("BarterReceiver", fields: [receiverId], references: [id])
+  
+  // What I'm offering (Car)
+  myListingId       String
+  myListing         Listing             @relation("BarterListing", fields: [myListingId], references: [id])
+  
+  // What I want
+  interestedListingId String?
+  interestedListing Listing?            @relation("BarterInterestedListing", fields: [interestedListingId], references: [id])
+  
+  // Values
+  myItemValue       Float               // قيمة ما أعرضه
+  theirItemValue    Float               // قيمة ما أريده
+  cashDifference    Float               @default(0)  // الفرق النقدي
+  whoPays           String?             // INITIATOR or RECEIVER
+  
+  // Multi-party barter (for complex exchanges)
+  isMultiParty      Boolean             @default(false)
+  involvedParties   Json?               // [{userId, listingId, value}]
+  
+  // Negotiation
+  message           String?             @db.Text
+  counterOffers     BarterCounterOffer[]
+  
+  // Timing
+  expiresAt         DateTime?
+  acceptedAt        DateTime?
+  completedAt       DateTime?
+  
+  // Transaction (if completed)
+  transactionId     String?             @unique
+  transaction       Transaction?        @relation(fields: [transactionId], references: [id])
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([initiatorId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+model BarterCounterOffer {
+  id                String              @id @default(uuid())
+  
+  barterOfferId     String
+  barterOffer       BarterOffer         @relation(fields: [barterOfferId], references: [id], onDelete: Cascade)
+  
+  proposedBy        String              // USER_ID
+  
+  // Counter Values
+  myItemValue       Float
+  theirItemValue    Float
+  cashDifference    Float
+  whoPays           String
+  
+  message           String?             @db.Text
+  
+  createdAt         DateTime            @default(now())
+  
+  @@index([barterOfferId])
+}
+
+// ============================================
+// ⚖️ DISPUTE RESOLUTION
+// ============================================
+
+enum DisputeReason {
+  VEHICLE_MISMATCH    // السيارة لا تطابق الوصف
+  HIDDEN_DAMAGES      // أضرار مخفية
+  FAKE_DOCUMENTS      // وثائق مزورة
+  PAYMENT_ISSUE       // مشكلة دفع
+  DELIVERY_ISSUE      // مشكلة توصيل
+  WARRANTY_CLAIM      // مطالبة ضمان
+  OTHER               // أخرى
+}
+
+enum DisputeStatus {
+  OPEN            // مفتوح
+  UNDER_REVIEW    // قيد المراجعة
+  AWAITING_INFO   // في انتظار معلومات
+  RESOLVED        // محلول
+  ESCALATED       // مُصعّد
+  CLOSED          // مغلق
+}
+
+model Dispute {
+  id                String              @id @default(uuid())
+  disputeCode       String              @unique  // XCHG-DSP-XXXXX
+  
+  transactionId     String              @unique
+  transaction       Transaction         @relation(fields: [transactionId], references: [id])
+  
+  // Parties
+  complainantId     String              // المُشتكي
+  respondentId      String              // المُشتكى عليه
+  
+  // Details
+  reason            DisputeReason
+  description       String              @db.Text
+  evidence          String[]            // URLs to photos/documents
+  
+  // Status
+  status            DisputeStatus       @default(OPEN)
+  priority          String              @default("MEDIUM")  // LOW, MEDIUM, HIGH
+  
+  // Resolution
+  assignedTo        String?             // ADMIN_ID
+  resolution        String?             @db.Text
+  refundAmount      Float?
+  
+  resolvedAt        DateTime?
+  closedAt          DateTime?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// ⭐ REVIEWS & RATINGS
+// ============================================
+
+model Review {
+  id                String              @id @default(uuid())
+  
+  // Who reviewed whom
+  authorId          String
+  author            User                @relation("ReviewAuthor", fields: [authorId], references: [id])
+  targetId          String
+  target            User                @relation("ReviewTarget", fields: [targetId], references: [id])
+  
+  // Transaction context
+  transactionId     String?
+  
+  // Rating (1-5)
+  rating            Float
+  
+  // Categories
+  communicationRating Float?
+  accuracyRating    Float?
+  professionalismRating Float?
+  
+  // Review text
+  title             String?
+  comment           String?             @db.Text
+  
+  // Response
+  response          String?             @db.Text
+  respondedAt       DateTime?
+  
+  // Moderation
+  isVerified        Boolean             @default(false)
+  isReported        Boolean             @default(false)
+  isHidden          Boolean             @default(false)
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([targetId])
+  @@index([authorId])
+  @@index([rating])
+}
+
+// ============================================
+// 💬 MESSAGING
+// ============================================
+
+model Message {
+  id                String              @id @default(uuid())
+  
+  senderId          String
+  sender            User                @relation(fields: [senderId], references: [id])
+  receiverId        String
+  
+  listingId         String?             // السياق (أي إعلان)
+  
+  content           String              @db.Text
+  attachments       String[]            // URLs
+  
+  isRead            Boolean             @default(false)
+  readAt            DateTime?
+  
+  createdAt         DateTime            @default(now())
+  
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([listingId])
+  @@index([createdAt])
+}
+
+// ============================================
+// 🔔 NOTIFICATIONS
+// ============================================
+
+enum NotificationType {
+  NEW_MESSAGE
+  LISTING_VIEWED
+  LISTING_FAVORITED
+  PRICE_DROP
+  TRADE_IN_QUOTE
+  BARTER_OFFER
+  INSPECTION_SCHEDULED
+  PAYMENT_RECEIVED
+  DELIVERY_SCHEDULED
+  REVIEW_RECEIVED
+  SYSTEM_ANNOUNCEMENT
+}
+
+model Notification {
+  id                String              @id @default(uuid())
+  
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  
+  type              NotificationType
+  title             String
+  message           String              @db.Text
+  
+  actionUrl         String?
+  
+  isRead            Boolean             @default(false)
+  readAt            DateTime?
+  
+  createdAt         DateTime            @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ============================================
+// 🔖 FAVORITES & SAVED SEARCHES
+// ============================================
+
+model FavoriteListing {
+  id                String              @id @default(uuid())
+  
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  
+  listingId         String
+  listing           Listing             @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime            @default(now())
+  
+  @@unique([userId, listingId])
+  @@index([userId])
+}
+
+model SavedSearch {
+  id                String              @id @default(uuid())
+  
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  
+  name              String
+  filters           Json                // {make: "Toyota", priceMax: 500000, ...}
+  
+  notifyOnNewListings Boolean           @default(false)
+  
+  createdAt         DateTime            @default(now())
+  
+  @@index([userId])
+}
+
+// ============================================
+// 📊 ANALYTICS & TRACKING
+// ============================================
+
+model ListingView {
+  id                String              @id @default(uuid())
+  
+  listingId         String
+  
+  viewerId          String?             // null if anonymous
+  ipAddress         String
+  userAgent         String?
+  
+  // Referral
+  referrer          String?
+  source            String?             // SEARCH, DIRECT, SOCIAL, etc.
+  
+  viewedAt          DateTime            @default(now())
+  
+  @@index([listingId])
+  @@index([viewedAt])
+}
+
+model SearchQuery {
+  id                String              @id @default(uuid())
+  
+  userId            String?
+  query             String
+  filters           Json?
+  
+  resultsCount      Int
+  
+  createdAt         DateTime            @default(now())
+  
+  @@index([createdAt])
+}
+
+// ============================================
+// ⚙️ SYSTEM CONFIGURATION
+// ============================================
+
+model SystemConfig {
+  id                String              @id @default(uuid())
+  key               String              @unique
+  value             Json
+  description       String?
+  
+  updatedAt         DateTime            @updatedAt
+}
+
+// Examples:
+// - platform_fees: {marketplace: 3, certified: 5, dealer: 4}
+// - payment_providers: {paymob: {...}, fawry: {...}}
+// - financing_partners: [{name: "Contact", ...}]
