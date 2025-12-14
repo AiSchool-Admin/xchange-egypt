@@ -267,7 +267,7 @@ export default function FavoritesPage() {
                     <div className="flex">
                       <div className="w-48 h-36 flex-shrink-0">
                         <img
-                          src={vehicle.images[0]}
+                          src={vehicle.images[0]?.url || "/images/placeholder-car.jpg"}
                           alt={`${VEHICLE_MAKE_AR[vehicle.make]} ${vehicle.model}`}
                           className="w-full h-full object-cover"
                         />
@@ -365,7 +365,7 @@ export default function FavoritesPage() {
                   {/* Image */}
                   <div className="relative aspect-[4/3]">
                     <img
-                      src={vehicle.images[0]}
+                      src={vehicle.images[0]?.url || "/images/placeholder-car.jpg"}
                       alt={`${VEHICLE_MAKE_AR[vehicle.make]} ${vehicle.model}`}
                       className="w-full h-full object-cover"
                     />

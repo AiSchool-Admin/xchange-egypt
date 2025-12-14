@@ -431,7 +431,7 @@ export default function TransactionsPage() {
                     <div className="flex gap-4">
                       <div className="w-32 h-24 rounded-lg overflow-hidden flex-shrink-0">
                         <img
-                          src={transaction.vehicle.images[0]}
+                          src={transaction.vehicle.images[0]?.url || "/images/placeholder-car.jpg"}
                           alt={`${VEHICLE_MAKE_AR[transaction.vehicle.make]} ${transaction.vehicle.model}`}
                           className="w-full h-full object-cover"
                         />
@@ -472,7 +472,7 @@ export default function TransactionsPage() {
                           </div>
                           <div className="w-32 h-24 rounded-lg overflow-hidden flex-shrink-0">
                             <img
-                              src={transaction.barterVehicle.images[0]}
+                              src={transaction.barterVehicle.images[0]?.url || "/images/placeholder-car.jpg"}
                               alt={`${VEHICLE_MAKE_AR[transaction.barterVehicle.make]} ${transaction.barterVehicle.model}`}
                               className="w-full h-full object-cover"
                             />

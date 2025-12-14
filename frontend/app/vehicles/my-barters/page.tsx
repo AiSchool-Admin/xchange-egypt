@@ -347,7 +347,7 @@ export default function MyBartersPage() {
                       <div className="md:col-span-2 flex gap-3">
                         <div className="w-24 h-20 rounded-lg overflow-hidden flex-shrink-0">
                           <img
-                            src={barter.myVehicle.images[0]}
+                            src={barter.myVehicle.images[0]?.url || "/images/placeholder-car.jpg"}
                             alt="سيارتي"
                             className="w-full h-full object-cover"
                           />
@@ -375,7 +375,7 @@ export default function MyBartersPage() {
                       <div className="md:col-span-2 flex gap-3">
                         <div className="w-24 h-20 rounded-lg overflow-hidden flex-shrink-0">
                           <img
-                            src={barter.theirVehicle.images[0]}
+                            src={barter.theirVehicle.images[0]?.url || "/images/placeholder-car.jpg"}
                             alt="سيارتهم"
                             className="w-full h-full object-cover"
                           />

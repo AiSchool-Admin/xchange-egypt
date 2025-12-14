@@ -324,7 +324,7 @@ export default function MyListingsPage() {
                       {/* Image */}
                       <div className="w-48 h-40 flex-shrink-0 relative">
                         <img
-                          src={listing.vehicle.images[0]}
+                          src={listing.vehicle.images[0]?.url || "/images/placeholder-car.jpg"}
                           alt={`${VEHICLE_MAKE_AR[listing.vehicle.make]} ${listing.vehicle.model}`}
                           className="w-full h-full object-cover"
                         />
@@ -463,7 +463,7 @@ export default function MyListingsPage() {
                   {/* Image */}
                   <div className="relative aspect-[4/3]">
                     <img
-                      src={listing.vehicle.images[0]}
+                      src={listing.vehicle.images[0]?.url || "/images/placeholder-car.jpg"}
                       alt={`${VEHICLE_MAKE_AR[listing.vehicle.make]} ${listing.vehicle.model}`}
                       className="w-full h-full object-cover"
                     />

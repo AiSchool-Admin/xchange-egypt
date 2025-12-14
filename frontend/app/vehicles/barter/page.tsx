@@ -370,7 +370,7 @@ export default function BarterMarketplacePage() {
                 {/* Image */}
                 <div className="relative aspect-[4/3]">
                   <img
-                    src={vehicle.images[0]}
+                    src={vehicle.images[0]?.url || "/images/placeholder-car.jpg"}
                     alt={`${VEHICLE_MAKE_AR[vehicle.make]} ${vehicle.model}`}
                     className="w-full h-full object-cover"
                   />
