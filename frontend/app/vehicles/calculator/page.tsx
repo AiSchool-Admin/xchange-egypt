@@ -123,7 +123,7 @@ export default function VehicleCalculatorPage() {
 
     const basePrice = MAKE_BASE_PRICES[make] || 500000;
     const bodyMultiplier = BODY_TYPE_MULTIPLIERS[bodyType] || 1.0;
-    const conditionMultiplier = CONDITION_MULTIPLIERS[condition];
+    const conditionMultiplier = CONDITION_MULTIPLIERS[condition] || 0.7;
 
     // Calculate age depreciation
     const currentYear = new Date().getFullYear();
