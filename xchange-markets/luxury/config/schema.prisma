@@ -1,0 +1,603 @@
+// Xchange Luxury Marketplace - Prisma Schema
+// سوق السلع الفاخرة المستعملة
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum SellerLevel {
+  new        // جديد
+  verified   // موثق
+  trusted    // موثوق
+  pro        // تاجر محترف
+}
+
+enum ProductCondition {
+  new           // جديد تماماً
+  excellent     // ممتاز
+  very_good     // جيد جداً
+  good          // جيد
+  fair          // مقبول
+}
+
+enum AuthenticationStatus {
+  pending           // قيد الانتظار
+  ai_verified       // تم التحقق بالذكاء الاصطناعي
+  expert_verified   // تم التحقق من خبير
+  fully_verified    // تحقق كامل
+  rejected          // مرفوض
+}
+
+enum ProductStatus {
+  draft           // مسودة
+  pending_review  // قيد المراجعة
+  active          // نشط
+  sold            // تم البيع
+  reserved        // محجوز
+  expired         // منتهي الصلاحية
+}
+
+enum OfferType {
+  cash    // نقدي
+  trade   // مقايضة
+  mixed   // مختلط
+}
+
+enum OfferStatus {
+  pending     // قيد الانتظار
+  accepted    // مقبول
+  rejected    // مرفوض
+  expired     // منتهي
+  withdrawn   // تم السحب
+  countered   // عرض مضاد
+}
+
+enum TransactionType {
+  sale    // بيع
+  trade   // مقايضة
+  mixed   // مختلط
+}
+
+enum TransactionStatus {
+  pending_payment     // في انتظار الدفع
+  paid                // تم الدفع
+  shipped             // تم الشحن
+  delivered           // تم التوصيل
+  inspection_period   // فترة الفحص
+  completed           // مكتمل
+  disputed            // نزاع
+  refunded            // تم الاسترداد
+  cancelled           // ملغي
+}
+
+enum PaymentMethod {
+  card          // بطاقة ائتمان
+  wallet        // محفظة إلكترونية
+  bank_transfer // تحويل بنكي
+  fawry         // فوري
+  instapay      // إنستاباي
+}
+
+enum BrandTier {
+  ultra_luxury  // فاخر جداً (Patek, Hermès)
+  prestige      // راقي (Rolex, Louis Vuitton)
+  entry_luxury  // فاخر مبتدئ (TAG Heuer, Coach)
+}
+
+enum WatchMovement {
+  automatic   // أوتوماتيك
+  manual      // يدوي
+  quartz      // كوارتز
+}
+
+enum ReviewType {
+  buyer_to_seller  // من المشتري للبائع
+  seller_to_buyer  // من البائع للمشتري
+}
+
+// ============================================
+// MODELS
+// ============================================
+
+// المستخدمين
+model User {
+  id                    String       @id @default(uuid())
+  phone                 String       @unique
+  email                 String?      @unique
+  fullName              String?      @map("full_name")
+  avatarUrl             String?      @map("avatar_url")
+  
+  // التحقق
+  isPhoneVerified       Boolean      @default(false) @map("is_phone_verified")
+  isEmailVerified       Boolean      @default(false) @map("is_email_verified")
+  isIdentityVerified    Boolean      @default(false) @map("is_identity_verified")
+  identityDocumentUrl   String?      @map("identity_document_url")
+  
+  // معلومات البائع
+  sellerLevel           SellerLevel  @default(new) @map("seller_level")
+  sellerRating          Decimal      @default(0) @db.Decimal(3, 2) @map("seller_rating")
+  totalSales            Int          @default(0) @map("total_sales")
+  totalPurchases        Int          @default(0) @map("total_purchases")
+  
+  // الإعدادات
+  preferredLanguage     String       @default("ar") @map("preferred_language")
+  notificationSettings  Json         @default("{}") @map("notification_settings")
+  
+  // الأوقات
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+  lastActiveAt          DateTime?    @map("last_active_at")
+  
+  // العلاقات
+  products              Product[]    @relation("SellerProducts")
+  sentOffers            Offer[]      @relation("BuyerOffers")
+  salesTransactions     Transaction[] @relation("SellerTransactions")
+  purchaseTransactions  Transaction[] @relation("BuyerTransactions")
+  favorites             Favorite[]
+  notifications         Notification[]
+  reviewsGiven          Review[]     @relation("ReviewerReviews")
+  reviewsReceived       Review[]     @relation("ReviewedReviews")
+  expertAuthentications AuthenticationRecord[] @relation("ExpertAuthentications")
+  refreshTokens         RefreshToken[]
+  otpCodes              OTP[]
+  
+  @@map("users")
+}
+
+// OTP للتحقق
+model OTP {
+  id        String   @id @default(uuid())
+  userId    String?  @map("user_id")
+  phone     String
+  code      String
+  expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false) @map("is_used")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User?    @relation(fields: [userId], references: [id])
+  
+  @@map("otp_codes")
+}
+
+// Refresh Tokens
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("refresh_tokens")
+}
+
+// الفئات
+model Category {
+  id                     String     @id @default(uuid())
+  nameAr                 String     @map("name_ar")
+  nameEn                 String     @map("name_en")
+  slug                   String     @unique
+  icon                   String?
+  parentId               String?    @map("parent_id")
+  sortOrder              Int        @default(0) @map("sort_order")
+  isActive               Boolean    @default(true) @map("is_active")
+  
+  // إعدادات خاصة بالفئة
+  requiresAuthentication Boolean    @default(true) @map("requires_authentication")
+  commissionRate         Decimal    @default(12.00) @db.Decimal(5, 2) @map("commission_rate")
+  
+  createdAt              DateTime   @default(now()) @map("created_at")
+  
+  // العلاقات
+  parent                 Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
+  children               Category[] @relation("CategoryChildren")
+  brands                 Brand[]
+  products               Product[]
+  
+  @@map("categories")
+}
+
+// الماركات
+model Brand {
+  id                   String    @id @default(uuid())
+  name                 String
+  slug                 String    @unique
+  logoUrl              String?   @map("logo_url")
+  country              String?
+  
+  // التصنيف
+  tier                 BrandTier
+  categoryId           String    @map("category_id")
+  
+  // احتفاظ القيمة
+  avgValueRetention    Decimal?  @db.Decimal(5, 2) @map("avg_value_retention")
+  
+  // التحقق
+  isEntrupySupported   Boolean   @default(false) @map("is_entrupy_supported")
+  authenticationNotes  String?   @map("authentication_notes")
+  
+  isActive             Boolean   @default(true) @map("is_active")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  
+  // العلاقات
+  category             Category  @relation(fields: [categoryId], references: [id])
+  products             Product[]
+  priceHistory         PriceHistory[]
+  
+  @@map("brands")
+}
+
+// المنتجات
+model Product {
+  id                      String                @id @default(uuid())
+  sellerId                String                @map("seller_id")
+  categoryId              String                @map("category_id")
+  brandId                 String                @map("brand_id")
+  
+  // المعلومات الأساسية
+  title                   String
+  description             String?
+  model                   String?
+  referenceNumber         String?               @map("reference_number")
+  
+  // الحالة
+  condition               ProductCondition
+  conditionNotes          String?               @map("condition_notes")
+  
+  // التسعير
+  price                   Decimal               @db.Decimal(12, 2)
+  originalRetailPrice     Decimal?              @db.Decimal(12, 2) @map("original_retail_price")
+  currency                String                @default("EGP")
+  isNegotiable            Boolean               @default(true) @map("is_negotiable")
+  acceptsTrade            Boolean               @default(false) @map("accepts_trade")
+  
+  // التحقق
+  authenticationStatus    AuthenticationStatus  @default(pending) @map("authentication_status")
+  authCertificateUrl      String?               @map("auth_certificate_url")
+  
+  // خاص بالساعات
+  watchMovement           WatchMovement?        @map("watch_movement")
+  watchCaseSize           String?               @map("watch_case_size")
+  watchCaseMaterial       String?               @map("watch_case_material")
+  watchDialColor          String?               @map("watch_dial_color")
+  watchBraceletMaterial   String?               @map("watch_bracelet_material")
+  watchYear               Int?                  @map("watch_year")
+  watchBoxPapers          Boolean               @default(false) @map("watch_box_papers")
+  watchServiceHistory     String?               @map("watch_service_history")
+  
+  // خاص بالحقائب
+  bagSize                 String?               @map("bag_size")
+  bagMaterial             String?               @map("bag_material")
+  bagColor                String?               @map("bag_color")
+  bagHardwareColor        String?               @map("bag_hardware_color")
+  bagDateCode             String?               @map("bag_date_code")
+  bagIncludesDustbag      Boolean               @default(false) @map("bag_includes_dustbag")
+  bagIncludesBox          Boolean               @default(false) @map("bag_includes_box")
+  
+  // خاص بالمجوهرات
+  jewelryMetal            String?               @map("jewelry_metal")
+  jewelryMetalPurity      String?               @map("jewelry_metal_purity")
+  jewelryGemstone         String?               @map("jewelry_gemstone")
+  jewelryCertification    String?               @map("jewelry_certification")
+  jewelryCaratWeight      Decimal?              @db.Decimal(6, 3) @map("jewelry_carat_weight")
+  
+  // الحالة
+  status                  ProductStatus         @default(draft)
+  
+  // الإحصائيات
+  viewsCount              Int                   @default(0) @map("views_count")
+  favoritesCount          Int                   @default(0) @map("favorites_count")
+  
+  // الأوقات
+  createdAt               DateTime              @default(now()) @map("created_at")
+  updatedAt               DateTime              @updatedAt @map("updated_at")
+  publishedAt             DateTime?             @map("published_at")
+  soldAt                  DateTime?             @map("sold_at")
+  expiresAt               DateTime?             @map("expires_at")
+  
+  // العلاقات
+  seller                  User                  @relation("SellerProducts", fields: [sellerId], references: [id])
+  category                Category              @relation(fields: [categoryId], references: [id])
+  brand                   Brand                 @relation(fields: [brandId], references: [id])
+  images                  ProductImage[]
+  offers                  Offer[]               @relation("ProductOffers")
+  tradeOffers             Offer[]               @relation("TradeProductOffers")
+  transactions            Transaction[]         @relation("ProductTransactions")
+  tradeTransactions       Transaction[]         @relation("TradeProductTransactions")
+  favorites               Favorite[]
+  authenticationRecords   AuthenticationRecord[]
+  
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([brandId])
+  @@index([status])
+  @@index([price])
+  @@index([createdAt(sort: Desc)])
+  @@map("products")
+}
+
+// صور المنتجات
+model ProductImage {
+  id           String   @id @default(uuid())
+  productId    String   @map("product_id")
+  url          String
+  thumbnailUrl String?  @map("thumbnail_url")
+  sortOrder    Int      @default(0) @map("sort_order")
+  isPrimary    Boolean  @default(false) @map("is_primary")
+  imageType    String?  @map("image_type") // main, detail, serial, box, certificate
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@index([productId])
+  @@map("product_images")
+}
+
+// العروض
+model Offer {
+  id               String      @id @default(uuid())
+  productId        String      @map("product_id")
+  buyerId          String      @map("buyer_id")
+  
+  // تفاصيل العرض
+  offerType        OfferType   @map("offer_type")
+  cashAmount       Decimal?    @db.Decimal(12, 2) @map("cash_amount")
+  tradeProductId   String?     @map("trade_product_id")
+  message          String?
+  
+  // الحالة
+  status           OfferStatus @default(pending)
+  
+  // الأوقات
+  createdAt        DateTime    @default(now()) @map("created_at")
+  expiresAt        DateTime?   @map("expires_at")
+  respondedAt      DateTime?   @map("responded_at")
+  
+  // العلاقات
+  product          Product     @relation("ProductOffers", fields: [productId], references: [id])
+  buyer            User        @relation("BuyerOffers", fields: [buyerId], references: [id])
+  tradeProduct     Product?    @relation("TradeProductOffers", fields: [tradeProductId], references: [id])
+  transaction      Transaction?
+  
+  @@index([productId])
+  @@index([buyerId])
+  @@index([status])
+  @@map("offers")
+}
+
+// المعاملات
+model Transaction {
+  id                  String            @id @default(uuid())
+  
+  // الأطراف
+  sellerId            String            @map("seller_id")
+  buyerId             String            @map("buyer_id")
+  productId           String            @map("product_id")
+  offerId             String?           @unique @map("offer_id")
+  
+  // النوع
+  transactionType     TransactionType   @map("transaction_type")
+  
+  // المبالغ
+  salePrice           Decimal           @db.Decimal(12, 2) @map("sale_price")
+  platformFee         Decimal           @db.Decimal(12, 2) @map("platform_fee")
+  sellerPayout        Decimal           @db.Decimal(12, 2) @map("seller_payout")
+  
+  // للمقايضة
+  tradeProductId      String?           @map("trade_product_id")
+  cashDifference      Decimal?          @db.Decimal(12, 2) @map("cash_difference")
+  
+  // الحالة
+  status              TransactionStatus @default(pending_payment)
+  
+  // الدفع
+  paymentMethod       PaymentMethod?    @map("payment_method")
+  paymentReference    String?           @map("payment_reference")
+  escrowReleasedAt    DateTime?         @map("escrow_released_at")
+  
+  // الشحن
+  shippingProvider    String?           @map("shipping_provider")
+  trackingNumber      String?           @map("tracking_number")
+  shippedAt           DateTime?         @map("shipped_at")
+  deliveredAt         DateTime?         @map("delivered_at")
+  
+  // الفحص
+  inspectionEndsAt    DateTime?         @map("inspection_ends_at")
+  buyerConfirmedAt    DateTime?         @map("buyer_confirmed_at")
+  
+  // الأوقات
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  completedAt         DateTime?         @map("completed_at")
+  
+  // العلاقات
+  seller              User              @relation("SellerTransactions", fields: [sellerId], references: [id])
+  buyer               User              @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  product             Product           @relation("ProductTransactions", fields: [productId], references: [id])
+  offer               Offer?            @relation(fields: [offerId], references: [id])
+  tradeProduct        Product?          @relation("TradeProductTransactions", fields: [tradeProductId], references: [id])
+  reviews             Review[]
+  
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([status])
+  @@map("transactions")
+}
+
+// سجلات التحقق
+model AuthenticationRecord {
+  id                  String   @id @default(uuid())
+  productId           String   @map("product_id")
+  
+  // التحقق بالذكاء الاصطناعي
+  aiProvider          String?  @map("ai_provider")
+  aiResult            String?  @map("ai_result")
+  aiConfidence        Decimal? @db.Decimal(5, 2) @map("ai_confidence")
+  aiResponse          Json?    @map("ai_response")
+  aiCertificateUrl    String?  @map("ai_certificate_url")
+  aiCheckedAt         DateTime? @map("ai_checked_at")
+  
+  // التحقق من الخبير
+  expertId            String?  @map("expert_id")
+  expertResult        String?  @map("expert_result")
+  expertNotes         String?  @map("expert_notes")
+  expertCheckedAt     DateTime? @map("expert_checked_at")
+  
+  // النتيجة النهائية
+  finalResult         String?  @map("final_result")
+  finalCertificateUrl String?  @map("final_certificate_url")
+  blockchainHash      String?  @map("blockchain_hash")
+  
+  createdAt           DateTime @default(now()) @map("created_at")
+  
+  // العلاقات
+  product             Product  @relation(fields: [productId], references: [id])
+  expert              User?    @relation("ExpertAuthentications", fields: [expertId], references: [id])
+  
+  @@map("authentication_records")
+}
+
+// التقييمات
+model Review {
+  id              String     @id @default(uuid())
+  transactionId   String     @map("transaction_id")
+  
+  // من يقيّم من
+  reviewerId      String     @map("reviewer_id")
+  reviewedId      String     @map("reviewed_id")
+  reviewType      ReviewType @map("review_type")
+  
+  // التقييم
+  rating          Int
+  
+  // تقييمات تفصيلية
+  itemAsDescribed Int?       @map("item_as_described")
+  communication   Int?
+  shippingSpeed   Int?       @map("shipping_speed")
+  
+  // المحتوى
+  comment         String?
+  
+  // الرد
+  response        String?
+  respondedAt     DateTime?  @map("responded_at")
+  
+  createdAt       DateTime   @default(now()) @map("created_at")
+  
+  // العلاقات
+  transaction     Transaction @relation(fields: [transactionId], references: [id])
+  reviewer        User        @relation("ReviewerReviews", fields: [reviewerId], references: [id])
+  reviewed        User        @relation("ReviewedReviews", fields: [reviewedId], references: [id])
+  
+  @@map("reviews")
+}
+
+// تاريخ الأسعار
+model PriceHistory {
+  id              String   @id @default(uuid())
+  brandId         String   @map("brand_id")
+  model           String
+  referenceNumber String?  @map("reference_number")
+  
+  // بيانات السعر
+  avgPrice        Decimal  @db.Decimal(12, 2) @map("avg_price")
+  minPrice        Decimal? @db.Decimal(12, 2) @map("min_price")
+  maxPrice        Decimal? @db.Decimal(12, 2) @map("max_price")
+  sampleSize      Int?     @map("sample_size")
+  
+  // المصدر
+  source          String?
+  
+  // الفترة
+  recordedAt      DateTime @default(now()) @map("recorded_at")
+  period          String?
+  
+  // العلاقات
+  brand           Brand    @relation(fields: [brandId], references: [id])
+  
+  @@index([brandId])
+  @@index([model])
+  @@index([recordedAt])
+  @@map("price_history")
+}
+
+// المفضلات
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, productId])
+  @@map("favorites")
+}
+
+// الإشعارات
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  
+  type          String
+  titleAr       String   @map("title_ar")
+  titleEn       String?  @map("title_en")
+  bodyAr        String?  @map("body_ar")
+  bodyEn        String?  @map("body_en")
+  
+  // المرجع
+  referenceType String?  @map("reference_type")
+  referenceId   String?  @map("reference_id")
+  
+  // الحالة
+  isRead        Boolean  @default(false) @map("is_read")
+  readAt        DateTime? @map("read_at")
+  
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// إعدادات النظام
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@map("system_config")
+}
+
+// سجل التدقيق
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  oldData     Json?    @map("old_data")
+  newData     Json?    @map("new_data")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
