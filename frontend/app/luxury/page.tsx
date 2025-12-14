@@ -7,11 +7,19 @@ import { getItems, getLuxuryItems, Item } from '@/lib/api/items';
 // Luxury categories with links to dedicated pages
 const LUXURY_CATEGORIES = [
   { id: 'luxury-watches', slug: 'watches', nameAr: 'ساعات فاخرة', icon: '⌚', gradient: 'from-amber-600 to-yellow-500', hasPage: true },
-  { id: 'jewelry', slug: 'jewelry', nameAr: 'مجوهرات', icon: '💎', gradient: 'from-purple-600 to-pink-500', hasPage: false },
-  { id: 'luxury-bags', slug: 'handbags', nameAr: 'حقائب فاخرة', icon: '👜', gradient: 'from-rose-600 to-orange-500', hasPage: false },
+  { id: 'jewelry', slug: 'jewelry', nameAr: 'مجوهرات', icon: '💎', gradient: 'from-purple-600 to-pink-500', hasPage: true },
+  { id: 'luxury-bags', slug: 'handbags', nameAr: 'حقائب فاخرة', icon: '👜', gradient: 'from-rose-600 to-orange-500', hasPage: true },
   { id: 'perfumes', slug: 'perfumes', nameAr: 'عطور أصلية', icon: '🌸', gradient: 'from-pink-500 to-rose-400', hasPage: false },
   { id: 'luxury-pens', slug: 'pens', nameAr: 'أقلام فاخرة', icon: '🖊️', gradient: 'from-gray-600 to-gray-800', hasPage: false },
   { id: 'sunglasses', slug: 'sunglasses', nameAr: 'نظارات شمسية', icon: '🕶️', gradient: 'from-blue-600 to-indigo-500', hasPage: false },
+];
+
+// User account links
+const USER_LINKS = [
+  { href: '/luxury/my-listings', icon: '📦', title: 'إعلاناتي', desc: 'إدارة منتجاتك', gradient: 'from-blue-500 to-indigo-500' },
+  { href: '/luxury/my-bids', icon: '🔨', title: 'مزايداتي', desc: 'تتبع مزايداتك', gradient: 'from-purple-500 to-violet-500' },
+  { href: '/luxury/notifications', icon: '🔔', title: 'الإشعارات', desc: 'تنبيهات المزادات', gradient: 'from-red-500 to-pink-500' },
+  { href: '/luxury/experts', icon: '👨‍💼', title: 'الخبراء', desc: 'توثيق المنتجات', gradient: 'from-emerald-500 to-teal-500' },
 ];
 
 // Quick action links
@@ -212,6 +220,26 @@ export default function LuxuryMarketplacePage() {
         </div>
       </section>
 
+      {/* User Account Section */}
+      <section className="bg-gray-800/50 py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <h2 className="text-xl font-bold text-white text-center mb-6">👤 حسابي</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {USER_LINKS.map((link, i) => (
+              <Link
+                key={i}
+                href={link.href}
+                className={`p-4 rounded-xl bg-gradient-to-br ${link.gradient} hover:scale-105 transition-transform`}
+              >
+                <span className="text-3xl block mb-2">{link.icon}</span>
+                <h3 className="text-white font-bold">{link.title}</h3>
+                <p className="text-white/80 text-sm">{link.desc}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Categories with Links */}
       <section className="bg-gray-900 py-8">
         <div className="max-w-7xl mx-auto px-4">
@@ -260,25 +288,11 @@ export default function LuxuryMarketplacePage() {
       {/* Navigation Links Section */}
       <section className="bg-gray-800/50 py-8 border-y border-gray-700">
         <div className="max-w-7xl mx-auto px-4">
-          <h2 className="text-xl font-bold text-white text-center mb-6">🗺️ صفحات السوق</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {/* Sell Page */}
-            <Link
-              href="/luxury/sell"
-              className="p-6 bg-gray-900 rounded-xl border border-gray-700 hover:border-amber-500 transition group"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
-                  ➕
-                </div>
-                <div>
-                  <h3 className="text-white font-bold">بيع منتج فاخر</h3>
-                  <p className="text-gray-400 text-sm">/luxury/sell</p>
-                </div>
-              </div>
-              <p className="text-gray-500 text-sm mt-3">نموذج متعدد الخطوات لإضافة منتجك مع دعم المزايدة</p>
-            </Link>
+          <h2 className="text-xl font-bold text-white text-center mb-6">🗺️ جميع صفحات السوق</h2>
 
+          {/* Category Pages */}
+          <h3 className="text-lg font-semibold text-amber-400 mb-4">📦 صفحات الفئات</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
             {/* Watches Page */}
             <Link
               href="/luxury/watches"
@@ -296,13 +310,140 @@ export default function LuxuryMarketplacePage() {
               <p className="text-gray-500 text-sm mt-3">Rolex, Omega, Patek Philippe والمزيد</p>
             </Link>
 
+            {/* Jewelry Page */}
+            <Link
+              href="/luxury/jewelry"
+              className="p-6 bg-gray-900 rounded-xl border border-gray-700 hover:border-purple-500 transition group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  💎
+                </div>
+                <div>
+                  <h3 className="text-white font-bold">المجوهرات</h3>
+                  <p className="text-gray-400 text-sm">/luxury/jewelry</p>
+                </div>
+              </div>
+              <p className="text-gray-500 text-sm mt-3">خواتم، قلائد، أساور، أقراط</p>
+            </Link>
+
+            {/* Handbags Page */}
+            <Link
+              href="/luxury/handbags"
+              className="p-6 bg-gray-900 rounded-xl border border-gray-700 hover:border-rose-500 transition group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-rose-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  👜
+                </div>
+                <div>
+                  <h3 className="text-white font-bold">الحقائب الفاخرة</h3>
+                  <p className="text-gray-400 text-sm">/luxury/handbags</p>
+                </div>
+              </div>
+              <p className="text-gray-500 text-sm mt-3">Hermès, Louis Vuitton, Chanel</p>
+            </Link>
+
+            {/* Experts Page */}
+            <Link
+              href="/luxury/experts"
+              className="p-6 bg-gray-900 rounded-xl border border-gray-700 hover:border-emerald-500 transition group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  👨‍💼
+                </div>
+                <div>
+                  <h3 className="text-white font-bold">خبراء التوثيق</h3>
+                  <p className="text-gray-400 text-sm">/luxury/experts</p>
+                </div>
+              </div>
+              <p className="text-gray-500 text-sm mt-3">خبراء معتمدين للتحقق من الأصالة</p>
+            </Link>
+          </div>
+
+          {/* User Account Pages */}
+          <h3 className="text-lg font-semibold text-amber-400 mb-4">👤 صفحات المستخدم</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+            {/* Sell Page */}
+            <Link
+              href="/luxury/sell"
+              className="p-6 bg-gray-900 rounded-xl border border-gray-700 hover:border-emerald-500 transition group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  ➕
+                </div>
+                <div>
+                  <h3 className="text-white font-bold">بيع منتج فاخر</h3>
+                  <p className="text-gray-400 text-sm">/luxury/sell</p>
+                </div>
+              </div>
+              <p className="text-gray-500 text-sm mt-3">نموذج متعدد الخطوات مع دعم المزايدة</p>
+            </Link>
+
+            {/* My Listings Page */}
+            <Link
+              href="/luxury/my-listings"
+              className="p-6 bg-gray-900 rounded-xl border border-gray-700 hover:border-blue-500 transition group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  📦
+                </div>
+                <div>
+                  <h3 className="text-white font-bold">إعلاناتي</h3>
+                  <p className="text-gray-400 text-sm">/luxury/my-listings</p>
+                </div>
+              </div>
+              <p className="text-gray-500 text-sm mt-3">إدارة منتجاتك والعروض المقدمة</p>
+            </Link>
+
+            {/* My Bids Page */}
+            <Link
+              href="/luxury/my-bids"
+              className="p-6 bg-gray-900 rounded-xl border border-gray-700 hover:border-purple-500 transition group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  🔨
+                </div>
+                <div>
+                  <h3 className="text-white font-bold">مزايداتي</h3>
+                  <p className="text-gray-400 text-sm">/luxury/my-bids</p>
+                </div>
+              </div>
+              <p className="text-gray-500 text-sm mt-3">تتبع حالة مزايداتك على المنتجات</p>
+            </Link>
+
+            {/* Notifications Page */}
+            <Link
+              href="/luxury/notifications"
+              className="p-6 bg-gray-900 rounded-xl border border-gray-700 hover:border-red-500 transition group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                  🔔
+                </div>
+                <div>
+                  <h3 className="text-white font-bold">الإشعارات</h3>
+                  <p className="text-gray-400 text-sm">/luxury/notifications</p>
+                </div>
+              </div>
+              <p className="text-gray-500 text-sm mt-3">تنبيهات المزادات والعروض</p>
+            </Link>
+          </div>
+
+          {/* Other Pages */}
+          <h3 className="text-lg font-semibold text-amber-400 mb-4">📄 صفحات أخرى</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {/* Item Details Page */}
             <Link
               href="/luxury/item/demo"
               className="p-6 bg-gray-900 rounded-xl border border-gray-700 hover:border-amber-500 transition group"
             >
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center text-2xl group-hover:scale-110 transition">
                   🔍
                 </div>
                 <div>
@@ -524,32 +665,35 @@ export default function LuxuryMarketplacePage() {
       {/* Footer */}
       <footer className="bg-gray-900 border-t border-gray-800 py-8">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 mb-8">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <h3 className="text-white font-bold mb-4">👑 السلع الفاخرة</h3>
               <p className="text-gray-400 text-sm">سوق المنتجات الفاخرة الأول في مصر - ساعات، مجوهرات، حقائب وأكثر</p>
             </div>
             <div>
-              <h3 className="text-white font-bold mb-4">روابط سريعة</h3>
+              <h3 className="text-white font-bold mb-4">الفئات</h3>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/luxury/sell" className="text-gray-400 hover:text-amber-400">بيع منتج فاخر</Link></li>
-                <li><Link href="/luxury/watches" className="text-gray-400 hover:text-amber-400">الساعات الفاخرة</Link></li>
-                <li><Link href="/luxury" className="text-gray-400 hover:text-amber-400">جميع المنتجات</Link></li>
+                <li><Link href="/luxury/watches" className="text-gray-400 hover:text-amber-400">⌚ الساعات الفاخرة</Link></li>
+                <li><Link href="/luxury/jewelry" className="text-gray-400 hover:text-amber-400">💎 المجوهرات</Link></li>
+                <li><Link href="/luxury/handbags" className="text-gray-400 hover:text-amber-400">👜 الحقائب الفاخرة</Link></li>
+                <li><Link href="/luxury/experts" className="text-gray-400 hover:text-amber-400">👨‍💼 خبراء التوثيق</Link></li>
               </ul>
             </div>
             <div>
-              <h3 className="text-white font-bold mb-4">الفئات</h3>
+              <h3 className="text-white font-bold mb-4">حسابي</h3>
               <ul className="space-y-2 text-sm">
-                {LUXURY_CATEGORIES.slice(0, 4).map((cat) => (
-                  <li key={cat.id}>
-                    <button
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className="text-gray-400 hover:text-amber-400"
-                    >
-                      {cat.icon} {cat.nameAr}
-                    </button>
-                  </li>
-                ))}
+                <li><Link href="/luxury/sell" className="text-gray-400 hover:text-amber-400">➕ بيع منتج فاخر</Link></li>
+                <li><Link href="/luxury/my-listings" className="text-gray-400 hover:text-amber-400">📦 إعلاناتي</Link></li>
+                <li><Link href="/luxury/my-bids" className="text-gray-400 hover:text-amber-400">🔨 مزايداتي</Link></li>
+                <li><Link href="/luxury/notifications" className="text-gray-400 hover:text-amber-400">🔔 الإشعارات</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="text-white font-bold mb-4">روابط سريعة</h3>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/luxury" className="text-gray-400 hover:text-amber-400">🏠 الصفحة الرئيسية</Link></li>
+                <li><Link href="/luxury/item/demo" className="text-gray-400 hover:text-amber-400">🔍 تفاصيل المنتج</Link></li>
+                <li><Link href="/" className="text-gray-400 hover:text-amber-400">🔙 العودة للسوق الرئيسي</Link></li>
               </ul>
             </div>
           </div>
