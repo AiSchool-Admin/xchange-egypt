@@ -7,7 +7,8 @@ import { useSearchParams } from 'next/navigation';
 import {
   Search, Filter, Grid, List, Smartphone, Shield,
   RefreshCw, MapPin, Heart, ChevronDown, Sparkles,
-  Battery, CheckCircle2, AlertCircle, TrendingUp
+  Battery, CheckCircle2, AlertCircle, TrendingUp,
+  Package, ArrowLeftRight, Gavel, MessageSquare, Bell, User, Plus
 } from 'lucide-react';
 import MobileCard from '@/components/mobile/MobileCard';
 import MobileFilters from '@/components/mobile/MobileFilters';
@@ -359,8 +360,172 @@ export default function MobilesPage() {
         </div>
       </div>
 
+      {/* User Account Section */}
+      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center gap-2 mb-6">
+            <User className="w-6 h-6 text-indigo-600" />
+            <h2 className="text-2xl font-bold">حسابي</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link
+              href="/mobiles/sell"
+              className="p-5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow group"
+            >
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <Plus className="w-6 h-6 text-emerald-600" />
+              </div>
+              <h3 className="font-bold text-gray-800">بيع موبايل</h3>
+              <p className="text-sm text-gray-500">أضف إعلانك الآن</p>
+            </Link>
+
+            <Link
+              href="/mobiles/my-listings"
+              className="p-5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow group"
+            >
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <Package className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="font-bold text-gray-800">إعلاناتي</h3>
+              <p className="text-sm text-gray-500">إدارة منتجاتك</p>
+            </Link>
+
+            <Link
+              href="/mobiles/my-barters"
+              className="p-5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow group"
+            >
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <ArrowLeftRight className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="font-bold text-gray-800">مقايضاتي</h3>
+              <p className="text-sm text-gray-500">عروض المقايضة</p>
+            </Link>
+
+            <Link
+              href="/mobiles/transactions"
+              className="p-5 bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow group"
+            >
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <Gavel className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="font-bold text-gray-800">معاملاتي</h3>
+              <p className="text-sm text-gray-500">سجل الشراء والبيع</p>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* All Pages Navigation */}
+      <div className="bg-white py-12 border-t">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl font-bold text-center mb-8">جميع صفحات سوق الموبايلات</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+            <Link
+              href="/mobiles/listings"
+              className="p-4 border rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <Search className="w-8 h-8 text-indigo-600" />
+                <div>
+                  <h3 className="font-bold">تصفح الإعلانات</h3>
+                  <p className="text-xs text-gray-500">/mobiles/listings</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/mobiles/barter"
+              className="p-4 border rounded-xl hover:border-purple-500 hover:bg-purple-50 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <RefreshCw className="w-8 h-8 text-purple-600" />
+                <div>
+                  <h3 className="font-bold">نظام المقايضة</h3>
+                  <p className="text-xs text-gray-500">/mobiles/barter</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/mobiles/sell"
+              className="p-4 border rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <Plus className="w-8 h-8 text-emerald-600" />
+                <div>
+                  <h3 className="font-bold">بيع موبايل</h3>
+                  <p className="text-xs text-gray-500">/mobiles/sell</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/mobiles/my-listings"
+              className="p-4 border rounded-xl hover:border-blue-500 hover:bg-blue-50 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <Package className="w-8 h-8 text-blue-600" />
+                <div>
+                  <h3 className="font-bold">إعلاناتي</h3>
+                  <p className="text-xs text-gray-500">/mobiles/my-listings</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/mobiles/my-barters"
+              className="p-4 border rounded-xl hover:border-violet-500 hover:bg-violet-50 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <ArrowLeftRight className="w-8 h-8 text-violet-600" />
+                <div>
+                  <h3 className="font-bold">مقايضاتي</h3>
+                  <p className="text-xs text-gray-500">/mobiles/my-barters</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/mobiles/transactions"
+              className="p-4 border rounded-xl hover:border-green-500 hover:bg-green-50 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <Gavel className="w-8 h-8 text-green-600" />
+                <div>
+                  <h3 className="font-bold">المعاملات</h3>
+                  <p className="text-xs text-gray-500">/mobiles/transactions</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href="/mobiles/disputes"
+              className="p-4 border rounded-xl hover:border-red-500 hover:bg-red-50 transition group"
+            >
+              <div className="flex items-center gap-3">
+                <MessageSquare className="w-8 h-8 text-red-600" />
+                <div>
+                  <h3 className="font-bold">النزاعات</h3>
+                  <p className="text-xs text-gray-500">/mobiles/disputes</p>
+                </div>
+              </div>
+            </Link>
+
+            <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl">
+              <div className="flex items-center gap-3">
+                <Smartphone className="w-8 h-8 text-indigo-600" />
+                <div>
+                  <h3 className="font-bold text-indigo-600">أنت هنا</h3>
+                  <p className="text-xs text-gray-500">/mobiles</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Trust Features */}
-      <div className="bg-white py-12">
+      <div className="bg-gray-50 py-12">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl font-bold text-center mb-8">لماذا Xchange Mobile؟</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
