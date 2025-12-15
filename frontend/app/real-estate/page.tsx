@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getItems, Item } from '@/lib/api/items';
+import { searchProperties, RealEstateProperty } from '@/lib/api/properties';
 
 // Property types
 const PROPERTY_TYPES = [
@@ -64,7 +64,7 @@ const ROOM_COUNTS = [
 ];
 
 export default function RealEstatePage() {
-  const [properties, setProperties] = useState<Item[]>([]);
+  const [properties, setProperties] = useState<RealEstateProperty[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -105,78 +105,50 @@ export default function RealEstatePage() {
   const loadProperties = async () => {
     try {
       setLoading(true);
-      // Search for properties using category or keywords
-      const response = await getItems({
+
+      // Map sort options
+      let sortField = 'createdAt';
+      let sortOrder: 'asc' | 'desc' = 'desc';
+
+      if (sortBy === 'price_asc') {
+        sortField = 'salePrice';
+        sortOrder = 'asc';
+      } else if (sortBy === 'price_desc') {
+        sortField = 'salePrice';
+        sortOrder = 'desc';
+      } else if (sortBy === 'area_asc') {
+        sortField = 'areaSqm';
+        sortOrder = 'asc';
+      } else if (sortBy === 'area_desc') {
+        sortField = 'areaSqm';
+        sortOrder = 'desc';
+      }
+
+      // Use dedicated properties API
+      const response = await searchProperties({
         page,
         limit: 12,
-        search: searchQuery || 'عقار شقة فيلا',
+        search: searchQuery || undefined,
+        propertyType: propertyType || undefined,
+        listingType: listingType || undefined,
+        finishing: finishing || undefined,
+        view: view || undefined,
+        bedrooms: rooms ? parseInt(rooms) : undefined,
+        minArea: minArea ? parseInt(minArea) : undefined,
+        maxArea: maxArea ? parseInt(maxArea) : undefined,
         minPrice: minPrice ? parseFloat(minPrice) : undefined,
         maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
         governorate: governorate || undefined,
+        sortBy: sortField,
+        sortOrder,
       });
 
-      let items = response.data?.items || [];
-
-      // Filter by property fields if available
-      if (propertyType) {
-        items = items.filter((item: any) =>
-          item.propertyType === propertyType
-        );
-      }
-
-      if (listingType) {
-        items = items.filter((item: any) =>
-          item.propertyListingType === listingType
-        );
-      }
-
-      if (finishing) {
-        items = items.filter((item: any) =>
-          item.propertyFinishing === finishing
-        );
-      }
-
-      if (view) {
-        items = items.filter((item: any) =>
-          item.propertyView === view
-        );
-      }
-
-      if (rooms) {
-        const roomCount = parseInt(rooms);
-        items = items.filter((item: any) => {
-          if (roomCount === 5) return item.propertyRooms >= 5;
-          return item.propertyRooms === roomCount;
-        });
-      }
-
-      if (minArea) {
-        items = items.filter((item: any) =>
-          item.propertyArea && item.propertyArea >= parseInt(minArea)
-        );
-      }
-
-      if (maxArea) {
-        items = items.filter((item: any) =>
-          item.propertyArea && item.propertyArea <= parseInt(maxArea)
-        );
-      }
-
-      // Sort
-      if (sortBy === 'price_asc') {
-        items.sort((a: any, b: any) => (a.estimatedValue || 0) - (b.estimatedValue || 0));
-      } else if (sortBy === 'price_desc') {
-        items.sort((a: any, b: any) => (b.estimatedValue || 0) - (a.estimatedValue || 0));
-      } else if (sortBy === 'area_asc') {
-        items.sort((a: any, b: any) => (a.propertyArea || 0) - (b.propertyArea || 0));
-      } else if (sortBy === 'area_desc') {
-        items.sort((a: any, b: any) => (b.propertyArea || 0) - (a.propertyArea || 0));
-      }
-
-      setProperties(items);
+      const propertiesList = response.data?.properties || [];
+      setProperties(propertiesList);
       setTotalPages(response.data?.pagination?.totalPages || 1);
-      setTotalCount(response.data?.pagination?.total || items.length);
+      setTotalCount(response.data?.pagination?.total || 0);
     } catch (err: any) {
+      console.error('Error loading properties:', err);
       setError(err.response?.data?.message || 'فشل في تحميل العقارات');
     } finally {
       setLoading(false);
@@ -514,7 +486,7 @@ export default function RealEstatePage() {
                   {properties.map((property) => (
                     <Link
                       key={property.id}
-                      href={`/items/${property.id}`}
+                      href={`/real-estate/property/${property.id}`}
                       className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-lg transition-all group"
                     >
                       <div className="relative h-48">
@@ -529,64 +501,64 @@ export default function RealEstatePage() {
                             <span className="text-6xl">🏠</span>
                           </div>
                         )}
-                        {(property as any).propertyListingType && (
-                          <div className={`absolute top-3 right-3 ${getListingTypeColor((property as any).propertyListingType)} text-white px-3 py-1 rounded-lg text-sm font-bold`}>
-                            {getListingTypeLabel((property as any).propertyListingType)}
+                        {property.listingType && (
+                          <div className={`absolute top-3 right-3 ${getListingTypeColor(property.listingType)} text-white px-3 py-1 rounded-lg text-sm font-bold`}>
+                            {getListingTypeLabel(property.listingType)}
                           </div>
                         )}
-                        {(property as any).propertyType && (
+                        {property.propertyType && (
                           <div className="absolute bottom-3 right-3 bg-black/60 text-white px-2 py-1 rounded text-xs">
-                            {getPropertyTypeLabel((property as any).propertyType)}
+                            {getPropertyTypeLabel(property.propertyType)}
                           </div>
                         )}
                       </div>
                       <div className="p-4">
                         <h3 className="font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-emerald-600 transition-colors">
-                          {property.title}
+                          {property.titleAr || property.title}
                         </h3>
 
                         {/* Property Details */}
                         <div className="flex flex-wrap gap-3 mb-3 text-sm text-gray-600">
-                          {(property as any).propertyArea && (
+                          {property.areaSqm && (
                             <span className="flex items-center gap-1">
                               <span>📐</span>
-                              {(property as any).propertyArea} م²
+                              {property.areaSqm} م²
                             </span>
                           )}
-                          {(property as any).propertyRooms && (
+                          {property.bedrooms && (
                             <span className="flex items-center gap-1">
                               <span>🛏️</span>
-                              {(property as any).propertyRooms} غرف
+                              {property.bedrooms} غرف
                             </span>
                           )}
-                          {(property as any).propertyBathrooms && (
+                          {property.bathrooms && (
                             <span className="flex items-center gap-1">
                               <span>🚿</span>
-                              {(property as any).propertyBathrooms} حمام
+                              {property.bathrooms} حمام
                             </span>
                           )}
                         </div>
 
                         {/* Tags */}
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {(property as any).propertyFinishing && (
+                          {property.finishing && (
                             <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs">
-                              {getFinishingLabel((property as any).propertyFinishing)}
+                              {getFinishingLabel(property.finishing)}
                             </span>
                           )}
-                          {(property as any).propertyFloor && (
+                          {property.floor && (
                             <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                              الدور {(property as any).propertyFloor}
+                              الدور {property.floor}
                             </span>
                           )}
                         </div>
 
                         <div className="flex items-center justify-between">
                           <p className="text-xl font-bold text-emerald-600">
-                            {property.estimatedValue ? `${formatPrice(property.estimatedValue)} ج.م` : 'اتصل للسعر'}
+                            {property.salePrice ? `${formatPrice(property.salePrice)} ج.م` : property.rentPrice ? `${formatPrice(property.rentPrice)} ج.م/شهر` : 'اتصل للسعر'}
                           </p>
                           <span className="text-xs text-gray-500">
-                            📍 {property.governorate || property.location}
+                            📍 {property.governorate}
                           </span>
                         </div>
                       </div>
