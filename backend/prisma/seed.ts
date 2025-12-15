@@ -27,6 +27,31 @@ async function clearDatabase(): Promise<void> {
 
   try {
     // Delete in reverse dependency order
+
+    // Clear Silver marketplace data
+    await prisma.silverCertificate.deleteMany({});
+    console.log('   ✓ Cleared silver certificates');
+
+    await prisma.silverTransaction.deleteMany({});
+    console.log('   ✓ Cleared silver transactions');
+
+    await prisma.silverItem.deleteMany({});
+    console.log('   ✓ Cleared silver items');
+
+    await prisma.silverPartner.deleteMany({});
+    console.log('   ✓ Cleared silver partners');
+
+    await prisma.silverPrice.deleteMany({});
+    console.log('   ✓ Cleared silver prices');
+
+    // Clear Auctions marketplace data
+    await prisma.auctionBid.deleteMany({});
+    console.log('   ✓ Cleared auction bids');
+
+    await prisma.auction.deleteMany({});
+    console.log('   ✓ Cleared auctions');
+
+    // Clear core data
     await prisma.barterOffer.deleteMany({});
     console.log('   ✓ Cleared barter offers');
 
@@ -78,6 +103,12 @@ async function main() {
     // Step 5: Seed demo data (depends on everything above)
     await runSeedScript('seed-demo-data.ts', 'Seeding Demo Data (Listings, Transactions, Barter)');
 
+    // Step 6: Seed Silver Marketplace (depends on users and categories)
+    await runSeedScript('seed-silver-marketplace.ts', 'Seeding Silver Marketplace Data');
+
+    // Step 7: Seed Auctions Marketplace (depends on users, categories, and items)
+    await runSeedScript('seed-auctions-marketplace.ts', 'Seeding Auctions Marketplace Data');
+
     // Summary
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
@@ -93,6 +124,8 @@ async function main() {
     console.log('   • Active listings');
     console.log('   • Transaction history');
     console.log('   • Barter offers and exchanges');
+    console.log('   • 🥈 Silver marketplace (prices, partners, items, certificates)');
+    console.log('   • 🔨 Auctions marketplace (auctions, bids, featured items)');
     console.log('\n🔐 Demo Login Credentials:');
     console.log('   Individual: ahmed.mohamed@example.com / Password123!');
     console.log('   Business: contact@techstore.eg / Password123!');
