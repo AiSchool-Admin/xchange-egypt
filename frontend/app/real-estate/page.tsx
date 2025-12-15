@@ -490,7 +490,7 @@ export default function RealEstatePage() {
                       <div className="relative h-48">
                         {property.images && property.images.length > 0 ? (
                           <img
-                            src={property.images[0].url}
+                            src={property.images[0]}
                             alt={property.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
