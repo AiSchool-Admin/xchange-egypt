@@ -1,0 +1,691 @@
+// ═══════════════════════════════════════════════════════════════
+// XCHANGE AUCTION MARKETPLACE - PRISMA SCHEMA
+// ═══════════════════════════════════════════════════════════════
+// Complete database schema for Egypt's first comprehensive online auction platform
+// Supports English Auctions + Sealed-bid across all Xchange categories
+// ═══════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// USERS & AUTHENTICATION (من الأسواق الأخرى)
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  phone             String    @unique
+  passwordHash      String
+  fullName          String
+  nationalId        String?   @unique
+  nationalIdVerified Boolean  @default(false)
+  
+  avatar            String?
+  dateOfBirth       DateTime?
+  city              String?
+  district          String?
+  
+  // Trust & Verification
+  trustLevel        TrustLevel @default(NEW)
+  kycStatus         KYCStatus  @default(PENDING)
+  kycDocuments      Json?
+  
+  // Auction-specific
+  auctionReputation Float      @default(0)  // 0-100 score
+  totalBidsPlaced   Int        @default(0)
+  totalAuctionsWon  Int        @default(0)
+  totalAuctionsLost Int        @default(0)
+  averagePaymentTime Float?    // in hours
+  
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  
+  // Relations
+  auctions          Auction[]
+  bids              Bid[]
+  watchlist         Watchlist[]
+  autoProxies       AutoProxyBid[]
+  deposits          AuctionDeposit[]
+  escrowTransactions EscrowTransaction[]
+  reviews           Review[]
+  reviewsReceived   Review[]             @relation("ReviewsReceived")
+  addresses         Address[]
+  bankAccounts      BankAccount[]
+  
+  @@index([email])
+  @@index([phone])
+  @@index([trustLevel])
+  @@index([auctionReputation])
+}
+
+enum TrustLevel {
+  NEW           // جديد
+  VERIFIED      // موثق
+  TRUSTED       // موثوق - 5+ successful transactions
+  PROFESSIONAL  // محترف - 50+ transactions
+  POWER_BIDDER  // مزايد قوي - 100+ auctions won
+}
+
+enum KYCStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+model Address {
+  id          String      @id @default(cuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        AddressType
+  isDefault   Boolean     @default(false)
+  
+  fullName    String
+  phone       String
+  governorate String
+  city        String
+  district    String
+  street      String
+  building    String?
+  floor       String?
+  apartment   String?
+  landmark    String?
+  
+  latitude    Float?
+  longitude   Float?
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  auctions    Auction[]
+  
+  @@index([userId])
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  bankName      String
+  accountName   String
+  accountNumber String
+  iban          String?
+  
+  isVerified    Boolean  @default(false)
+  isDefault     Boolean  @default(false)
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUCTIONS (المزادات)
+// ═══════════════════════════════════════════════════════════════
+
+model Auction {
+  id                  String         @id @default(cuid())
+  
+  // Seller
+  sellerId            String
+  seller              User           @relation(fields: [sellerId], references: [id])
+  
+  // Item being auctioned
+  itemType            AuctionCategory
+  itemId              String?        // Reference to item in other marketplace
+  
+  // Basic Info
+  title               String
+  description         String         @db.Text
+  
+  // Images & Media
+  images              Json           // Array of image URLs
+  videos              Json?
+  virtualTourUrl      String?        // For real estate
+  
+  // Auction Type
+  auctionType         AuctionType
+  
+  // Timing
+  startTime           DateTime
+  endTime             DateTime
+  extendOnBid         Boolean        @default(true)  // Anti-sniper
+  extensionMinutes    Int            @default(2)     // Extend by X minutes
+  maxExtensions       Int?           @default(10)    // Prevent infinite extensions
+  currentExtensions   Int            @default(0)
+  
+  // Pricing
+  startingPrice       Float
+  reservePrice        Float?         // Minimum acceptable price (hidden)
+  buyNowPrice         Float?         // Instant buy option
+  
+  // Bidding Rules
+  minimumIncrement    Float          // Calculated based on current price
+  depositRequired     Float?         // Required deposit to bid (% or fixed)
+  depositPercentage   Float?         // e.g., 10% of starting price
+  
+  // Current Status
+  status              AuctionStatus  @default(DRAFT)
+  currentPrice        Float?
+  currentWinnerId     String?
+  totalBids           Int            @default(0)
+  uniqueBidders       Int            @default(0)
+  
+  // Reserve status
+  reserveMet          Boolean        @default(false)
+  
+  // Location (for pickup/inspection)
+  inspectionAddressId String?
+  inspectionAddress   Address?       @relation(fields: [inspectionAddressId], references: [id])
+  allowInspection     Boolean        @default(true)
+  inspectionNotes     String?
+  
+  // Delivery
+  shippingAvailable   Boolean        @default(false)
+  shippingCost        Float?
+  pickupOnly          Boolean        @default(false)
+  
+  // Featured & Promotion
+  isFeatured          Boolean        @default(false)
+  featuredUntil       DateTime?
+  featuredFee         Float?
+  
+  // Moderation
+  moderationStatus    ModerationStatus @default(PENDING)
+  moderationNotes     String?        @db.Text
+  moderatedAt         DateTime?
+  moderatedBy         String?
+  
+  // Engagement
+  viewCount           Int            @default(0)
+  watchlistCount      Int            @default(0)
+  
+  // Timestamps
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  publishedAt         DateTime?
+  endedAt             DateTime?
+  completedAt         DateTime?
+  cancelledAt         DateTime?
+  cancellationReason  String?
+  
+  // Relations
+  bids                Bid[]
+  watchlists          Watchlist[]
+  autoProxies         AutoProxyBid[]
+  deposits            AuctionDeposit[]
+  winner              AuctionWinner?
+  escrow              EscrowTransaction?
+  
+  @@index([sellerId])
+  @@index([itemType])
+  @@index([status])
+  @@index([auctionType])
+  @@index([startTime])
+  @@index([endTime])
+  @@index([currentPrice])
+  @@index([isFeatured])
+  @@fulltext([title, description])
+}
+
+enum AuctionCategory {
+  CARS              // سيارات
+  REAL_ESTATE       // عقارات
+  MOBILE_PHONES     // موبايلات
+  SCRAP_WASTE       // خردة
+  LUXURY_GOODS      // سلع فاخرة
+  GOLD              // ذهب
+  SILVER            // فضة
+  GOVERNMENT        // مزادات حكومية (جمارك، أصول)
+  INSURANCE         // سيارات شركات التأمين
+  BANK_ASSETS       // أصول البنوك المتعثرة
+  LICENSE_PLATES    // لوحات سيارات مميزة
+  ELECTRONICS       // إلكترونيات
+  FURNITURE         // أثاث
+  ART_COLLECTIBLES  // فنون ومقتنيات
+  OTHER             // أخرى
+}
+
+enum AuctionType {
+  ENGLISH           // مزاد إنجليزي تقليدي - علني ومباشر
+  SEALED_BID        // مزاد مختوم - عروض سرية
+}
+
+enum AuctionStatus {
+  DRAFT             // مسودة
+  PENDING_APPROVAL  // في انتظار الموافقة
+  SCHEDULED         // مجدول
+  ACTIVE            // نشط حالياً
+  ENDING_SOON       // ينتهي قريباً (آخر ساعة)
+  ENDED             // انتهى
+  SOLD              // تم البيع
+  UNSOLD            // لم يُباع (reserve not met)
+  CANCELLED         // ملغي
+  SUSPENDED         // معلق
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BIDDING SYSTEM (نظام المزايدة)
+// ═══════════════════════════════════════════════════════════════
+
+model Bid {
+  id              String    @id @default(cuid())
+  
+  auctionId       String
+  auction         Auction   @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  
+  bidderId        String
+  bidder          User      @relation(fields: [bidderId], references: [id])
+  
+  amount          Float
+  
+  // Bid Type
+  isProxyBid      Boolean   @default(false)  // From auto proxy
+  isAutoBid       Boolean   @default(false)  // Automatic proxy increment
+  
+  // Status
+  isWinning       Boolean   @default(false)
+  isOutbid        Boolean   @default(false)
+  
+  // Metadata
+  deviceInfo      Json?     // Browser, IP for fraud detection
+  fingerprint     String?   // Device fingerprint
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  
+  // For sealed-bid auctions
+  revealedAt      DateTime? // When bid is revealed
+  
+  @@index([auctionId])
+  @@index([bidderId])
+  @@index([amount])
+  @@index([createdAt])
+  @@index([isWinning])
+}
+
+// Auto Proxy Bidding (المزايدة التلقائية بالوكالة)
+model AutoProxyBid {
+  id              String    @id @default(cuid())
+  
+  auctionId       String
+  auction         Auction   @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  
+  bidderId        String
+  bidder          User      @relation(fields: [bidderId], references: [id])
+  
+  maxAmount       Float     // أقصى مبلغ يرغب المزايد في دفعه
+  
+  isActive        Boolean   @default(true)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@unique([auctionId, bidderId])
+  @@index([auctionId])
+  @@index([bidderId])
+  @@index([isActive])
+}
+
+// Watchlist (قائمة المتابعة)
+model Watchlist {
+  id          String   @id @default(cuid())
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  auctionId   String
+  auction     Auction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  
+  // Notifications
+  notifyOnBid        Boolean  @default(true)
+  notifyBeforeEnd    Boolean  @default(true)
+  notifyMinutes      Int      @default(60)  // Notify X minutes before end
+  
+  addedAt     DateTime @default(now())
+  
+  @@unique([userId, auctionId])
+  @@index([userId])
+  @@index([auctionId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEPOSITS & PAYMENTS (الودائع والدفع)
+// ═══════════════════════════════════════════════════════════════
+
+model AuctionDeposit {
+  id              String        @id @default(cuid())
+  
+  auctionId       String
+  auction         Auction       @relation(fields: [auctionId], references: [id])
+  
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  
+  amount          Float
+  status          DepositStatus @default(PENDING)
+  
+  paymentMethod   PaymentMethod
+  transactionRef  String?
+  
+  // Refund info
+  refundedAt      DateTime?
+  refundReason    String?
+  refundAmount    Float?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  @@unique([auctionId, userId])
+  @@index([auctionId])
+  @@index([userId])
+  @@index([status])
+}
+
+enum DepositStatus {
+  PENDING
+  PAID
+  HELD
+  REFUNDED
+  FORFEITED    // مصادر (إذا لم يدفع الفائز)
+}
+
+enum PaymentMethod {
+  CARD
+  FAWRY
+  INSTAPAY
+  BANK_TRANSFER
+  WALLET
+  CASH
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUCTION COMPLETION (إتمام المزاد)
+// ═══════════════════════════════════════════════════════════════
+
+model AuctionWinner {
+  id                String    @id @default(cuid())
+  
+  auctionId         String    @unique
+  auction           Auction   @relation(fields: [auctionId], references: [id])
+  
+  winnerId          String
+  // Note: winner User relation handled through bids
+  
+  winningBidAmount  Float
+  
+  // Payment
+  paymentStatus     PaymentStatus @default(PENDING)
+  paymentDueDate    DateTime
+  totalAmount       Float      // Bid + fees + shipping
+  platformFee       Float
+  sellerPremium     Float?     // عمولة البائع
+  buyerPremium      Float?     // عمولة المشتري
+  
+  paidAt            DateTime?
+  
+  // Delivery
+  deliveryStatus    DeliveryStatus @default(PENDING)
+  trackingNumber    String?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  
+  // Completion
+  buyerConfirmed    Boolean    @default(false)
+  sellerConfirmed   Boolean    @default(false)
+  completedAt       DateTime?
+  
+  // Disputes
+  disputeOpened     Boolean    @default(false)
+  disputeReason     String?
+  
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  
+  @@index([winnerId])
+  @@index([paymentStatus])
+  @@index([deliveryStatus])
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  OVERDUE
+  DEFAULTED
+  REFUNDED
+}
+
+enum DeliveryStatus {
+  PENDING
+  PREPARING
+  SHIPPED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  PICKUP_READY
+  PICKED_UP
+  FAILED
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ESCROW SYSTEM (نظام الضمان)
+// ═══════════════════════════════════════════════════════════════
+
+model EscrowTransaction {
+  id              String        @id @default(cuid())
+  
+  auctionId       String        @unique
+  auction         Auction       @relation(fields: [auctionId], references: [id])
+  
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  
+  amount          Float
+  status          EscrowStatus  @default(HELD)
+  
+  purpose         String
+  
+  heldAt          DateTime      @default(now())
+  releasedAt      DateTime?
+  refundedAt      DateTime?
+  
+  @@index([userId])
+  @@index([status])
+}
+
+enum EscrowStatus {
+  HELD
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REVIEWS & RATINGS (التقييمات)
+// ═══════════════════════════════════════════════════════════════
+
+model Review {
+  id              String   @id @default(cuid())
+  
+  reviewerId      String
+  reviewer        User     @relation(fields: [reviewerId], references: [id])
+  
+  reviewedUserId  String
+  reviewedUser    User     @relation("ReviewsReceived", fields: [reviewedUserId], references: [id])
+  
+  auctionId       String   // Reference to auction
+  
+  rating          Int      // 1-5 stars
+  
+  // Specific ratings for auctions
+  accuracyRating       Int?  // دقة الوصف
+  communicationRating  Int?  // التواصل
+  paymentSpeedRating   Int?  // سرعة الدفع (for winners)
+  deliveryRating       Int?  // التوصيل
+  
+  comment         String?  @db.Text
+  
+  response        String?  @db.Text
+  respondedAt     DateTime?
+  
+  isVerified      Boolean  @default(false)
+  isReported      Boolean  @default(false)
+  
+  createdAt       DateTime @default(now())
+  
+  @@index([reviewerId])
+  @@index([reviewedUserId])
+  @@index([auctionId])
+  @@index([rating])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FRAUD DETECTION (كشف الاحتيال)
+// ═══════════════════════════════════════════════════════════════
+
+model SuspiciousActivity {
+  id              String         @id @default(cuid())
+  
+  userId          String?
+  auctionId       String?
+  bidId           String?
+  
+  activityType    FraudType
+  severity        FraudSeverity
+  
+  description     String         @db.Text
+  evidenceData    Json           // Device info, patterns, etc.
+  
+  fingerprint     String?
+  ipAddress       String?
+  
+  status          InvestigationStatus @default(PENDING)
+  
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  resolution      String?
+  
+  createdAt       DateTime       @default(now())
+  
+  @@index([userId])
+  @@index([auctionId])
+  @@index([activityType])
+  @@index([severity])
+  @@index([status])
+}
+
+enum FraudType {
+  SHILL_BIDDING         // مزايدة وهمية
+  BID_SHIELDING         // حماية المزايدة
+  MULTIPLE_ACCOUNTS     // حسابات متعددة
+  FAKE_ITEMS            // منتجات مزيفة
+  NON_PAYMENT           // عدم الدفع
+  RAPID_BIDDING         // مزايدة سريعة مشبوهة
+  DEVICE_FINGERPRINT    // نفس الجهاز لحسابات متعددة
+  SUSPICIOUS_PATTERN    // نمط مشبوه
+}
+
+enum FraudSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum InvestigationStatus {
+  PENDING
+  UNDER_REVIEW
+  CONFIRMED_FRAUD
+  FALSE_POSITIVE
+  RESOLVED
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SYSTEM CONFIGURATION
+// ═══════════════════════════════════════════════════════════════
+
+model SystemConfig {
+  key         String   @id
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+// Predefined configs:
+// - bid_increments: { "0-999": 5, "1000-4999": 10, ... }
+// - platform_fees: { seller_premium: 0.05, buyer_premium: 0.05 }
+// - extension_rules: { enabled: true, minutes: 2, max_extensions: 10 }
+// - anti_sniper: { enabled: true, threshold_minutes: 2 }
+// - deposit_rules: { required_categories: ["CARS", "REAL_ESTATE"], percentage: 0.10 }
+// - fraud_detection: { enabled: true, threshold_score: 75 }
+
+// ═══════════════════════════════════════════════════════════════
+// NOTIFICATIONS & ALERTS
+// ═══════════════════════════════════════════════════════════════
+
+model Notification {
+  id          String           @id @default(cuid())
+  
+  userId      String
+  
+  type        NotificationType
+  title       String
+  message     String
+  
+  relatedId   String?          // Auction/Bid ID
+  actionUrl   String?
+  
+  isRead      Boolean          @default(false)
+  isSent      Boolean          @default(false)
+  
+  channels    Json             // ["email", "sms", "push"]
+  
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+  
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  AUCTION_STARTING
+  AUCTION_ENDING_SOON
+  OUTBID
+  BID_ACCEPTED
+  AUCTION_WON
+  AUCTION_LOST
+  PAYMENT_DUE
+  PAYMENT_RECEIVED
+  ITEM_SHIPPED
+  ITEM_DELIVERED
+  REVIEW_RECEIVED
+  DEPOSIT_REFUNDED
+  AUCTION_CANCELLED
+  SUSPICIOUS_ACTIVITY
+}
