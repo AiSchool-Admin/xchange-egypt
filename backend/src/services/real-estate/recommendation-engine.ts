@@ -506,7 +506,7 @@ function applyDiversity(
  * @param governorate محافظة المستخدم
  * @param limit عدد التوصيات
  */
-async function getColdStartRecommendations(
+export async function getColdStartRecommendations(
   governorate?: string,
   limit: number = 20
 ): Promise<PropertyRecommendation[]> {
@@ -912,16 +912,8 @@ function extractFeatures(amenities: any): string[] {
 }
 
 // ============================================
-// Exports
+// Default Export
 // ============================================
-
-export {
-  getRecommendations,
-  getSimilarPropertyRecommendations,
-  getColdStartRecommendations,
-  invalidateUserCache,
-  invalidateAllCache,
-};
 
 export default {
   getRecommendations,
