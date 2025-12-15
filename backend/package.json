@@ -23,6 +23,7 @@
     "seed:demo": "tsx prisma/seed-demo-data.ts",
     "seed:marketplace": "tsx prisma/seed-marketplace-data.ts",
     "seed:matching": "tsx prisma/seed-matching-tests.ts",
+    "seed:real-estate": "tsx scripts/seed-real-estate-quick.ts",
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset"
   },
