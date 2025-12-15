@@ -299,3 +299,319 @@ export const getScrapByType = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'فشل في جلب البيانات' });
   }
 };
+
+// ============================================
+// Collection Requests - طلبات الجمع
+// ============================================
+
+/**
+ * إنشاء طلب جمع
+ * Create collection request
+ */
+export const createCollectionRequest = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const request = await scrapMarketplaceService.createCollectionRequest(userId, {
+      ...req.body,
+      preferredDate: new Date(req.body.preferredDate),
+      alternateDate: req.body.alternateDate ? new Date(req.body.alternateDate) : undefined,
+    });
+    res.status(201).json({ success: true, data: request });
+  } catch (error: any) {
+    console.error('Error creating collection request:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في إنشاء الطلب' });
+  }
+};
+
+/**
+ * الحصول على طلبات الجمع للمستخدم
+ * Get user's collection requests
+ */
+export const getUserCollections = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const status = req.query.status as string | undefined;
+    const requests = await scrapMarketplaceService.getUserCollectionRequests(userId, status);
+    res.json({ success: true, data: requests });
+  } catch (error: any) {
+    console.error('Error getting user collections:', error);
+    res.status(500).json({ success: false, error: 'فشل في جلب الطلبات' });
+  }
+};
+
+/**
+ * الحصول على طلبات الجمع المتاحة للجامعين
+ * Get available collections for collectors
+ */
+export const getAvailableCollections = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const governorate = req.query.governorate as string | undefined;
+    // Get collector profile ID from user
+    const collector = await scrapMarketplaceService.getCollectorStats(userId);
+    const requests = await scrapMarketplaceService.getAvailableCollections(collector.collector.id, governorate);
+    res.json({ success: true, data: requests });
+  } catch (error: any) {
+    console.error('Error getting available collections:', error);
+    res.status(500).json({ success: false, error: error.message || 'فشل في جلب الطلبات' });
+  }
+};
+
+/**
+ * قبول طلب جمع
+ * Accept collection request
+ */
+export const acceptCollection = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const { requestId } = req.params;
+    const collector = await scrapMarketplaceService.getCollectorStats(userId);
+    const updated = await scrapMarketplaceService.acceptCollectionRequest(collector.collector.id, requestId);
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Error accepting collection:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في قبول الطلب' });
+  }
+};
+
+/**
+ * تحديث حالة طلب الجمع
+ * Update collection status
+ */
+export const updateCollectionStatus = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const { requestId } = req.params;
+    const { status, ...data } = req.body;
+    const collector = await scrapMarketplaceService.getCollectorStats(userId);
+    const updated = await scrapMarketplaceService.updateCollectionStatus(collector.collector.id, requestId, status, data);
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Error updating collection status:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في تحديث الحالة' });
+  }
+};
+
+/**
+ * تقييم طلب الجمع
+ * Rate collection
+ */
+export const rateCollection = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const { requestId } = req.params;
+    const { rating, review, isRequester } = req.body;
+    const updated = await scrapMarketplaceService.rateCollection(userId, requestId, rating, review, isRequester);
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Error rating collection:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في التقييم' });
+  }
+};
+
+// ============================================
+// Collector Profile - ملف الجامع
+// ============================================
+
+/**
+ * التسجيل كجامع
+ * Register as collector
+ */
+export const registerCollector = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const collector = await scrapMarketplaceService.registerCollector(userId, req.body);
+    res.status(201).json({ success: true, data: collector });
+  } catch (error: any) {
+    console.error('Error registering collector:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في التسجيل' });
+  }
+};
+
+/**
+ * تحديث موقع الجامع
+ * Update collector location
+ */
+export const updateCollectorLocation = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const { latitude, longitude, isOnline } = req.body;
+    const updated = await scrapMarketplaceService.updateCollectorLocation(userId, latitude, longitude, isOnline);
+    res.json({ success: true, data: updated });
+  } catch (error: any) {
+    console.error('Error updating collector location:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في تحديث الموقع' });
+  }
+};
+
+/**
+ * الحصول على إحصائيات الجامع
+ * Get collector stats
+ */
+export const getCollectorStats = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const stats = await scrapMarketplaceService.getCollectorStats(userId);
+    res.json({ success: true, data: stats });
+  } catch (error: any) {
+    console.error('Error getting collector stats:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في جلب الإحصائيات' });
+  }
+};
+
+// ============================================
+// Material Prices - أسعار المواد
+// ============================================
+
+/**
+ * الحصول على أسعار المواد
+ * Get material prices
+ */
+export const getMaterialPrices = async (req: Request, res: Response) => {
+  try {
+    const category = req.query.category as string | undefined;
+    const governorate = req.query.governorate as string | undefined;
+    const prices = await scrapMarketplaceService.getMaterialPrices(category, governorate);
+    res.json({ success: true, data: prices });
+  } catch (error: any) {
+    console.error('Error getting material prices:', error);
+    res.status(500).json({ success: false, error: 'فشل في جلب الأسعار' });
+  }
+};
+
+/**
+ * إضافة/تحديث سعر مادة
+ * Upsert material price (admin)
+ */
+export const upsertMaterialPrice = async (req: Request, res: Response) => {
+  try {
+    const price = await scrapMarketplaceService.upsertMaterialPrice(req.body);
+    res.status(201).json({ success: true, data: price });
+  } catch (error: any) {
+    console.error('Error upserting material price:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في تحديث السعر' });
+  }
+};
+
+/**
+ * حساب قيمة الخردة
+ * Calculate scrap value
+ */
+export const calculateScrapValue = async (req: Request, res: Response) => {
+  try {
+    const { materials, governorate } = req.body;
+    const result = await scrapMarketplaceService.calculateScrapValue(materials, governorate);
+    res.json({ success: true, data: result });
+  } catch (error: any) {
+    console.error('Error calculating scrap value:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في الحساب' });
+  }
+};
+
+// ============================================
+// ESG Certificates - شهادات الاستدامة
+// ============================================
+
+/**
+ * إنشاء شهادة ESG
+ * Generate ESG certificate
+ */
+export const generateESGCertificate = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const { collectionRequestId, materials } = req.body;
+    const certificate = await scrapMarketplaceService.generateESGCertificate(userId, collectionRequestId, materials);
+    res.status(201).json({ success: true, data: certificate });
+  } catch (error: any) {
+    console.error('Error generating ESG certificate:', error);
+    res.status(400).json({ success: false, error: error.message || 'فشل في إنشاء الشهادة' });
+  }
+};
+
+/**
+ * الحصول على شهادات ESG للمستخدم
+ * Get user's ESG certificates
+ */
+export const getUserESGCertificates = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'يرجى تسجيل الدخول' });
+    }
+
+    const certificates = await scrapMarketplaceService.getUserESGCertificates(userId);
+    res.json({ success: true, data: certificates });
+  } catch (error: any) {
+    console.error('Error getting user ESG certificates:', error);
+    res.status(500).json({ success: false, error: 'فشل في جلب الشهادات' });
+  }
+};
+
+/**
+ * التحقق من شهادة ESG
+ * Verify ESG certificate
+ */
+export const verifyESGCertificate = async (req: Request, res: Response) => {
+  try {
+    const { certificateNumber } = req.params;
+    const certificate = await scrapMarketplaceService.verifyESGCertificate(certificateNumber);
+    res.json({ success: true, data: certificate });
+  } catch (error: any) {
+    console.error('Error verifying ESG certificate:', error);
+    res.status(404).json({ success: false, error: error.message || 'الشهادة غير موجودة' });
+  }
+};
+
+/**
+ * الحصول على إحصائيات شاملة
+ * Get comprehensive stats
+ */
+export const getComprehensiveStats = async (req: Request, res: Response) => {
+  try {
+    const stats = await scrapMarketplaceService.getComprehensiveStats();
+    res.json({ success: true, data: stats });
+  } catch (error: any) {
+    console.error('Error getting comprehensive stats:', error);
+    res.status(500).json({ success: false, error: 'فشل في جلب الإحصائيات' });
+  }
+};

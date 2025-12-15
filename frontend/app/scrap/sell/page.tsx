@@ -14,6 +14,7 @@ import {
   MetalType,
   ScrapPricingType,
 } from '@/lib/api/scrap-marketplace';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 // Category icons
 const SCRAP_TYPE_ICONS: Record<ScrapType, string> = {
@@ -335,6 +336,55 @@ export default function SellScrapPage() {
                     </div>
                   </>
                 )}
+
+                {/* Image Upload */}
+                <div className="border-t pt-6">
+                  <label className="block font-bold mb-2">صور المنتج</label>
+                  <p className="text-sm text-gray-500 mb-4">
+                    أضف صور واضحة للمنتج لزيادة فرص البيع (حتى 10 صور)
+                  </p>
+                  <ImageUpload
+                    multiple
+                    category="items"
+                    maxFiles={10}
+                    onUploadComplete={(urls) =>
+                      setFormData((f) => ({ ...f, images: [...f.images, ...urls] }))
+                    }
+                    onUploadError={(error) => setError(error)}
+                  />
+
+                  {/* Preview uploaded images */}
+                  {formData.images.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-600 mb-2">
+                        الصور المرفوعة ({formData.images.length})
+                      </p>
+                      <div className="grid grid-cols-4 gap-2">
+                        {formData.images.map((url, index) => (
+                          <div key={index} className="relative aspect-square">
+                            <img
+                              src={url}
+                              alt={`صورة ${index + 1}`}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData((f) => ({
+                                  ...f,
+                                  images: f.images.filter((_, i) => i !== index),
+                                }))
+                              }
+                              className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full text-sm hover:bg-red-600"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="mt-8 flex justify-between">
