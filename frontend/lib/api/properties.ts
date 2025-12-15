@@ -128,12 +128,12 @@ export const searchProperties = async (params?: PropertySearchParams): Promise<P
   if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
   if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder);
 
-  const response = await apiClient.get(\`/properties?\${queryParams.toString()}\`);
+  const response = await apiClient.get(`/properties?${queryParams.toString()}`);
   return response.data;
 };
 
 export const getProperty = async (id: string): Promise<PropertyResponse> => {
-  const response = await apiClient.get(\`/properties/\${id}\`);
+  const response = await apiClient.get(`/properties/${id}`);
   return response.data;
 };
 
@@ -148,12 +148,12 @@ export const getFavoriteProperties = async (): Promise<PropertiesResponse> => {
 };
 
 export const addToFavorites = async (propertyId: string): Promise<{ success: boolean }> => {
-  const response = await apiClient.post(\`/properties/\${propertyId}/favorite\`);
+  const response = await apiClient.post(`/properties/${propertyId}/favorite`);
   return response.data;
 };
 
 export const removeFromFavorites = async (propertyId: string): Promise<{ success: boolean }> => {
-  const response = await apiClient.delete(\`/properties/\${propertyId}/favorite\`);
+  const response = await apiClient.delete(`/properties/${propertyId}/favorite`);
   return response.data;
 };
 
@@ -163,11 +163,11 @@ export const createProperty = async (data: any): Promise<PropertyResponse> => {
 };
 
 export const updateProperty = async (id: string, data: any): Promise<PropertyResponse> => {
-  const response = await apiClient.put(\`/properties/\${id}\`, data);
+  const response = await apiClient.put(`/properties/${id}`, data);
   return response.data;
 };
 
 export const deleteProperty = async (id: string): Promise<{ success: boolean }> => {
-  const response = await apiClient.delete(\`/properties/\${id}\`);
+  const response = await apiClient.delete(`/properties/${id}`);
   return response.data;
 };
