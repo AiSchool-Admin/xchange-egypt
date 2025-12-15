@@ -88,7 +88,7 @@ const megaMenuData = {
     items: [
       { href: '/items', icon: '🛒', label: 'السوق العام', desc: 'تصفح جميع المنتجات' },
       { href: '/vehicles', icon: '🚗', label: 'سوق السيارات', desc: 'سيارات بنظام Escrow ومقايضة' },
-      { href: '/properties', icon: '🏠', label: 'سوق العقارات', desc: 'شقق وفيلات مع نظام Escrow وتحقق حكومي' },
+      { href: '/real-estate', icon: '🏠', label: 'سوق العقارات', desc: 'شقق وفيلات + التقييم الآلي (AVM) + المقايضة المتقدمة + التوصيات الذكية' },
       { href: '/mobiles', icon: '📱', label: 'سوق الموبايلات', desc: 'موبايلات مع IMEI موثق ومقايضة ذكية' },
       { href: '/auctions', icon: '🔨', label: 'المزادات', desc: 'مزادات حية ومباشرة' },
       { href: '/scrap', icon: '♻️', label: 'سوق التوالف', desc: 'خردة ومواد قابلة للتدوير' },
@@ -516,22 +516,30 @@ const categoriesData = [
     id: 'real-estate',
     name: 'العقارات',
     icon: '🏠',
-    href: '/properties',
+    href: '/real-estate',
     subcategories: [
       {
         title: 'سكني',
         items: [
-          { name: 'شقق', href: '/properties?type=APARTMENT' },
-          { name: 'فلل', href: '/properties?type=VILLA' },
-          { name: 'أراضي', href: '/properties?type=LAND' },
+          { name: 'شقق', href: '/real-estate?type=APARTMENT' },
+          { name: 'فلل', href: '/real-estate?type=VILLA' },
+          { name: 'أراضي', href: '/real-estate?type=LAND' },
         ]
       },
       {
         title: 'تجاري',
         items: [
-          { name: 'محلات', href: '/properties?type=SHOP' },
-          { name: 'مكاتب', href: '/properties?type=OFFICE' },
-          { name: 'مخازن', href: '/properties?type=WAREHOUSE' },
+          { name: 'محلات', href: '/real-estate?type=SHOP' },
+          { name: 'مكاتب', href: '/real-estate?type=OFFICE' },
+          { name: 'مخازن', href: '/real-estate?type=WAREHOUSE' },
+        ]
+      },
+      {
+        title: 'أدوات ذكية',
+        items: [
+          { name: '🤖 التوصيات الذكية', href: '/real-estate/recommendations' },
+          { name: '💰 التقييم الآلي (AVM)', href: '/real-estate/valuation' },
+          { name: '🔄 المقايضة المتقدمة', href: '/real-estate/barter' },
         ]
       },
     ],
@@ -1392,9 +1400,9 @@ export default function Navigation() {
                 سوق السيارات
               </Link>
               <Link
-                href="/properties"
+                href="/real-estate"
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
-                  isActive('/properties')
+                  isActive('/real-estate')
                     ? 'bg-white text-emerald-700 shadow-md'
                     : 'text-white/90 hover:bg-white/20 hover:text-white'
                 }`}
