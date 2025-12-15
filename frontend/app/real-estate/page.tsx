@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { searchProperties, RealEstateProperty } from '@/lib/api/properties';
+import { searchProperties, Property } from '@/lib/api/properties';
 
 // Property types
 const PROPERTY_TYPES = [
@@ -64,7 +64,7 @@ const ROOM_COUNTS = [
 ];
 
 export default function RealEstatePage() {
-  const [properties, setProperties] = useState<RealEstateProperty[]>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -111,16 +111,16 @@ export default function RealEstatePage() {
       let sortOrder: 'asc' | 'desc' = 'desc';
 
       if (sortBy === 'price_asc') {
-        sortField = 'salePrice';
+        sortField = 'price';
         sortOrder = 'asc';
       } else if (sortBy === 'price_desc') {
-        sortField = 'salePrice';
+        sortField = 'price';
         sortOrder = 'desc';
       } else if (sortBy === 'area_asc') {
-        sortField = 'areaSqm';
+        sortField = 'area';
         sortOrder = 'asc';
       } else if (sortBy === 'area_desc') {
-        sortField = 'areaSqm';
+        sortField = 'area';
         sortOrder = 'desc';
       }
 
@@ -129,24 +129,22 @@ export default function RealEstatePage() {
         page,
         limit: 12,
         search: searchQuery || undefined,
-        propertyType: propertyType || undefined,
-        listingType: listingType || undefined,
-        finishing: finishing || undefined,
-        view: view || undefined,
+        propertyTypes: propertyType ? [propertyType as any] : undefined,
+        listingType: listingType as any,
         bedrooms: rooms ? parseInt(rooms) : undefined,
         minArea: minArea ? parseInt(minArea) : undefined,
         maxArea: maxArea ? parseInt(maxArea) : undefined,
         minPrice: minPrice ? parseFloat(minPrice) : undefined,
         maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
         governorate: governorate || undefined,
-        sortBy: sortField,
+        sortBy: sortField as any,
         sortOrder,
       });
 
-      const propertiesList = response.data?.properties || [];
+      const propertiesList = response.properties || [];
       setProperties(propertiesList);
-      setTotalPages(response.data?.pagination?.totalPages || 1);
-      setTotalCount(response.data?.pagination?.total || 0);
+      setTotalPages(response.pagination?.totalPages || 1);
+      setTotalCount(response.pagination?.total || 0);
     } catch (err: any) {
       console.error('Error loading properties:', err);
       setError(err.response?.data?.message || 'فشل في تحميل العقارات');
@@ -519,10 +517,10 @@ export default function RealEstatePage() {
 
                         {/* Property Details */}
                         <div className="flex flex-wrap gap-3 mb-3 text-sm text-gray-600">
-                          {property.areaSqm && (
+                          {property.area && (
                             <span className="flex items-center gap-1">
                               <span>📐</span>
-                              {property.areaSqm} م²
+                              {property.area} م²
                             </span>
                           )}
                           {property.bedrooms && (
@@ -541,9 +539,9 @@ export default function RealEstatePage() {
 
                         {/* Tags */}
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {property.finishing && (
+                          {property.finishingLevel && (
                             <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs">
-                              {getFinishingLabel(property.finishing)}
+                              {getFinishingLabel(property.finishingLevel)}
                             </span>
                           )}
                           {property.floor && (
@@ -555,7 +553,7 @@ export default function RealEstatePage() {
 
                         <div className="flex items-center justify-between">
                           <p className="text-xl font-bold text-emerald-600">
-                            {property.salePrice ? `${formatPrice(property.salePrice)} ج.م` : property.rentPrice ? `${formatPrice(property.rentPrice)} ج.م/شهر` : 'اتصل للسعر'}
+                            {property.price ? `${formatPrice(property.price)} ج.م` : 'اتصل للسعر'}
                           </p>
                           <span className="text-xs text-gray-500">
                             📍 {property.governorate}
