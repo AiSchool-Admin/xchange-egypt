@@ -1,0 +1,729 @@
+// ═══════════════════════════════════════════════════════════════
+// XCHANGE SILVER MARKETPLACE - PRISMA SCHEMA
+// ═══════════════════════════════════════════════════════════════
+// Complete database schema for Egypt's first online used silver marketplace
+// Designed to solve the "craftsmanship loss" problem and enable P2P trading
+// ═══════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// USERS & AUTHENTICATION
+// ═══════════════════════════════════════════════════════════════
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  phone             String    @unique
+  passwordHash      String
+  fullName          String
+  nationalId        String?   @unique // Egyptian National ID for verification
+  nationalIdVerified Boolean  @default(false)
+  
+  // Profile
+  avatar            String?
+  dateOfBirth       DateTime?
+  city              String?
+  district          String?
+  
+  // Trust & Security
+  trustLevel        TrustLevel @default(NEW)
+  kycStatus         KYCStatus  @default(PENDING)
+  kycDocuments      Json?      // Store document references
+  twoFactorEnabled  Boolean    @default(false)
+  twoFactorSecret   String?
+  
+  // Preferences
+  preferredLanguage String     @default("ar")
+  notificationPrefs Json?
+  
+  // Timestamps
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  lastLoginAt       DateTime?
+  
+  // Relations
+  listings          SilverListing[]
+  purchases         SilverPurchase[]
+  valuationRequests ValuationRequest[]
+  tradeIns          TradeInRequest[]
+  savingsAccounts   SilverSavingsAccount[]
+  certificates      SilverCertificate[]
+  reviews           Review[]
+  reviewsReceived   Review[]             @relation("ReviewsReceived")
+  addresses         Address[]
+  bankAccounts      BankAccount[]
+  escrowTransactions EscrowTransaction[]
+  
+  @@index([email])
+  @@index([phone])
+  @@index([nationalId])
+  @@index([trustLevel])
+  @@index([createdAt])
+}
+
+enum TrustLevel {
+  NEW           // جديد - first listings limited
+  VERIFIED      // موثق - ID verified
+  TRUSTED       // موثوق - 5+ successful transactions
+  PROFESSIONAL  // بائع محترف - 50+ transactions, seller account
+}
+
+enum KYCStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type        AddressType
+  isDefault   Boolean  @default(false)
+  
+  // Address details
+  fullName    String
+  phone       String
+  governorate String
+  city        String
+  district    String
+  street      String
+  building    String?
+  floor       String?
+  apartment   String?
+  landmark    String?
+  
+  // Coordinates for delivery optimization
+  latitude    Float?
+  longitude   Float?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+enum AddressType {
+  HOME
+  WORK
+  OTHER
+}
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  bankName      String
+  accountName   String
+  accountNumber String
+  iban          String?
+  
+  isVerified    Boolean  @default(false)
+  isDefault     Boolean  @default(false)
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SILVER LISTINGS (المنتجات)
+// ═══════════════════════════════════════════════════════════════
+
+model SilverListing {
+  id                String         @id @default(cuid())
+  
+  // Seller
+  sellerId          String
+  seller            User           @relation(fields: [sellerId], references: [id])
+  
+  // Basic Info
+  title             String
+  description       String         @db.Text
+  category          SilverCategory
+  subcategory       String?        // e.g., "خاتم رجالي", "سلسلة نسائي"
+  
+  // Silver Details
+  purity            SilverPurity
+  weight            Float          // in grams
+  craftingCost      Float?         // المصنعية المدفوعة عند الشراء
+  originalPrice     Float?         // السعر الأصلي للشراء
+  purchaseDate      DateTime?      // تاريخ الشراء الأصلي
+  
+  // Condition
+  condition         ItemCondition
+  conditionNotes    String?        @db.Text
+  hasHallmark       Boolean        @default(false) // هل عليها دمغة؟
+  hallmarkDetails   String?
+  hasCertificate    Boolean        @default(false)
+  certificateId     String?
+  certificate       SilverCertificate? @relation(fields: [certificateId], references: [id])
+  
+  // Pricing
+  askingPrice       Float          // السعر المطلوب
+  minimumPrice      Float?         // أقل سعر مقبول
+  priceType         PriceType
+  
+  // Auto-calculated by system
+  rawSilverValue    Float?         // قيمة الفضة الخام فقط
+  suggestedPrice    Float?         // السعر المقترح من النظام
+  craftingValueRatio Float?        // نسبة الصنعة المحتسبة (0-100%)
+  
+  // Media
+  images            Json           // Array of image URLs
+  videos            Json?          // Optional video URLs
+  
+  // Status & Visibility
+  status            ListingStatus  @default(DRAFT)
+  publishedAt       DateTime?
+  expiresAt         DateTime?
+  
+  // Moderation
+  moderationStatus  ModerationStatus @default(PENDING)
+  moderationNotes   String?        @db.Text
+  moderatedAt       DateTime?
+  moderatedBy       String?
+  
+  // Engagement
+  viewCount         Int            @default(0)
+  favoriteCount     Int            @default(0)
+  inquiryCount      Int            @default(0)
+  
+  // Timestamps
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  
+  // Relations
+  valuationRequests ValuationRequest[]
+  purchases         SilverPurchase[]
+  tradeInOffers     TradeInRequest[]   @relation("TradeInTargetItem")
+  
+  @@index([sellerId])
+  @@index([category])
+  @@index([purity])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([askingPrice])
+  @@index([createdAt])
+  @@fulltext([title, description])
+}
+
+enum SilverCategory {
+  JEWELRY_MENS      // مجوهرات رجالية
+  JEWELRY_WOMENS    // مجوهرات نسائية
+  COINS             // عملات فضية
+  BULLION           // سبائك
+  UTENSILS          // أواني وصواني
+  ANTIQUES          // تحف وأنتيكات
+  RELIGIOUS         // مقتنيات دينية
+  OTHER             // أخرى
+}
+
+enum SilverPurity {
+  PURE_999          // 99.9% نقاء - للسبائك
+  STERLING_925      // 92.5% - الأكثر شيوعاً للمجوهرات
+  GRADE_900         // 90% - للعملات
+  GRADE_800         // 80% - تقليدي
+  GRADE_600         // 60% - حد أدنى قانوني
+  UNKNOWN           // غير معروف - يحتاج فحص
+}
+
+enum ItemCondition {
+  NEW               // جديد لم يستعمل
+  EXCELLENT         // ممتاز - علامات استعمال بسيطة جداً
+  VERY_GOOD         // جيد جداً - علامات استعمال واضحة لكن نظيف
+  GOOD              // جيد - آثار استعمال ملحوظة
+  FAIR              // مقبول - آثار استعمال كبيرة أو خدوش
+  POOR              // ضعيف - للصهر فقط
+}
+
+enum PriceType {
+  FIXED             // سعر ثابت
+  NEGOTIABLE        // قابل للتفاوض
+  AUCTION           // مزاد
+}
+
+enum ListingStatus {
+  DRAFT             // مسودة
+  PENDING_REVIEW    // في انتظار المراجعة
+  ACTIVE            // نشط ومعروض
+  SOLD              // تم البيع
+  RESERVED          // محجوز
+  EXPIRED           // منتهي
+  REMOVED           // محذوف
+  SUSPENDED         // معلق
+}
+
+enum ModerationStatus {
+  PENDING           // في انتظار المراجعة
+  APPROVED          // موافق عليه
+  REJECTED          // مرفوض
+  FLAGGED           // مُبلغ عنه - يحتاج مراجعة
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VALUATIONS & CERTIFICATES (التقييم والشهادات)
+// ═══════════════════════════════════════════════════════════════
+
+model ValuationRequest {
+  id            String              @id @default(cuid())
+  
+  // Requester
+  userId        String
+  user          User                @relation(fields: [userId], references: [id])
+  
+  // Item to value
+  listingId     String?
+  listing       SilverListing?      @relation(fields: [listingId], references: [id])
+  
+  // Or standalone valuation (for items not yet listed)
+  itemDetails   Json?               // Temporary details if no listing yet
+  images        Json?               // Temporary images
+  
+  // Valuation tier
+  tier          ValuationTier
+  fee           Float               // Fee paid for this valuation
+  
+  // Results
+  status        ValuationStatus     @default(PENDING)
+  valuedWeight  Float?
+  valuedPurity  SilverPurity?
+  rawValue      Float?              // قيمة الفضة الخام
+  craftingValue Float?              // قيمة الصنعة
+  totalValue    Float?              // القيمة الإجمالية
+  
+  expertNotes   String?             @db.Text
+  expertId      String?             // Internal expert who performed valuation
+  
+  // Certificate generation
+  certificateGenerated Boolean      @default(false)
+  certificateId String?
+  
+  createdAt     DateTime            @default(now())
+  completedAt   DateTime?
+  
+  @@index([userId])
+  @@index([listingId])
+  @@index([status])
+}
+
+enum ValuationTier {
+  BASIC         // 75 EGP - وزن + فحص بصري
+  STANDARD      // 225 EGP - + كثافة
+  ADVANCED      // 525 EGP - + XRF + 360 photos
+  PREMIUM       // 1,125 EGP - + تقرير كامل
+}
+
+enum ValuationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+model SilverCertificate {
+  id                String      @id @default(cuid())
+  certificateNumber String      @unique
+  
+  // Owner
+  userId            String
+  user              User        @relation(fields: [userId], references: [id])
+  
+  // Item certified
+  listingId         String?
+  listing           SilverListing[]
+  
+  // Certificate details
+  tier              ValuationTier
+  
+  // Test results
+  weight            Float
+  purity            SilverPurity
+  purityPercentage  Float       // Exact percentage from XRF
+  
+  visualGrade       String?     // A+, A, B, C, D
+  hasHallmark       Boolean
+  hallmarkDetails   String?
+  
+  // Non-destructive tests performed
+  xrfTested         Boolean     @default(false)
+  densityTested     Boolean     @default(false)
+  visualTested      Boolean     @default(true)
+  
+  // Valuation
+  rawSilverValue    Float
+  craftingValue     Float?
+  totalEstimate     Float
+  
+  // Media
+  photos360         Json?       // 360-degree photo URLs
+  testPhotos        Json?       // Photos of testing process
+  expertReport      String?     @db.Text
+  
+  // Validity
+  issuedAt          DateTime    @default(now())
+  expiresAt         DateTime?   // Certificates valid for 6 months
+  revokedAt         DateTime?
+  revocationReason  String?
+  
+  @@index([userId])
+  @@index([certificateNumber])
+  @@index([issuedAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PURCHASES & TRANSACTIONS (المعاملات)
+// ═══════════════════════════════════════════════════════════════
+
+model SilverPurchase {
+  id                String              @id @default(cuid())
+  
+  // Buyer & Seller
+  buyerId           String
+  buyer             User                @relation(fields: [buyerId], references: [id])
+  
+  listingId         String
+  listing           SilverListing       @relation(fields: [listingId], references: [id])
+  
+  // Pricing
+  agreedPrice       Float
+  platformFee       Float               // عمولة Xchange
+  paymentMethod     PaymentMethod
+  
+  // Escrow
+  escrowId          String?
+  escrow            EscrowTransaction?  @relation(fields: [escrowId], references: [id])
+  
+  // Delivery
+  deliveryMethod    DeliveryMethod
+  deliveryAddress   Json?
+  shippingFee       Float?
+  trackingNumber    String?
+  
+  // Status
+  status            PurchaseStatus      @default(PENDING)
+  
+  // Timestamps
+  createdAt         DateTime            @default(now())
+  paidAt            DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  cancellationReason String?
+  
+  // Post-purchase
+  buyerConfirmed    Boolean             @default(false)
+  disputeOpened     Boolean             @default(false)
+  
+  @@index([buyerId])
+  @@index([listingId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum PaymentMethod {
+  CARD              // بطاقة ائتمان
+  FAWRY             // فوري
+  INSTAPAY          // إنستاباي
+  BANK_TRANSFER     // تحويل بنكي
+  CASH_ON_DELIVERY  // الدفع عند الاستلام
+}
+
+enum DeliveryMethod {
+  BOSTA             // Bosta delivery
+  ARAMEX            // Aramex
+  EGYPT_POST        // البريد المصري
+  PICKUP            // استلام شخصي
+}
+
+enum PurchaseStatus {
+  PENDING           // في انتظار الدفع
+  PAID              // مدفوع
+  ESCROW_HELD       // محجوز في Escrow
+  SHIPPED           // تم الشحن
+  DELIVERED         // تم التوصيل
+  INSPECTION_PERIOD // فترة الفحص (5-7 days)
+  COMPLETED         // مكتمل
+  DISPUTED          // نزاع
+  CANCELLED         // ملغي
+  REFUNDED          // مسترد
+}
+
+model EscrowTransaction {
+  id                String           @id @default(cuid())
+  
+  userId            String
+  user              User             @relation(fields: [userId], references: [id])
+  
+  amount            Float
+  status            EscrowStatus     @default(HELD)
+  
+  purpose           String           // e.g., "Purchase #xyz"
+  
+  heldAt            DateTime         @default(now())
+  releasedAt        DateTime?
+  refundedAt        DateTime?
+  
+  purchases         SilverPurchase[]
+  
+  @@index([userId])
+  @@index([status])
+}
+
+enum EscrowStatus {
+  HELD              // محجوز
+  RELEASED          // تم الإفراج للبائع
+  REFUNDED          // مسترد للمشتري
+  DISPUTED          // في نزاع
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRADE-IN PROGRAM (برنامج الاستبدال)
+// ═══════════════════════════════════════════════════════════════
+
+model TradeInRequest {
+  id                  String             @id @default(cuid())
+  
+  // User trading in
+  userId              String
+  user                User               @relation(fields: [userId], references: [id])
+  
+  // Old item being traded
+  oldItemDescription  String             @db.Text
+  oldItemWeight       Float
+  oldItemPurity       SilverPurity
+  oldItemImages       Json
+  
+  // New item wanted
+  targetListingId     String?
+  targetListing       SilverListing?     @relation("TradeInTargetItem", fields: [targetListingId], references: [id])
+  
+  // Valuation
+  tradeInValue        Float?             // قيمة القطعة القديمة
+  creditOffered       Float?             // الرصيد المعروض (80-90% من القيمة)
+  
+  status              TradeInStatus      @default(PENDING)
+  
+  // Additional payment
+  additionalPayment   Float?             // دفعة إضافية إن كانت القطعة الجديدة أغلى
+  
+  createdAt           DateTime           @default(now())
+  approvedAt          DateTime?
+  completedAt         DateTime?
+  
+  @@index([userId])
+  @@index([status])
+}
+
+enum TradeInStatus {
+  PENDING           // في انتظار التقييم
+  VALUED            // تم التقييم
+  APPROVED          // موافق عليه
+  COMPLETED         // مكتمل
+  REJECTED          // مرفوض
+  CANCELLED         // ملغي
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SILVER SAVINGS PROGRAM (برنامج الادخار)
+// ═══════════════════════════════════════════════════════════════
+
+model SilverSavingsAccount {
+  id                String              @id @default(cuid())
+  
+  userId            String
+  user              User                @relation(fields: [userId], references: [id])
+  
+  accountName       String              // e.g., "حساب ادخار الزواج"
+  targetAmount      Float?              // الهدف المالي
+  targetGrams       Float?              // الهدف بالجرامات
+  
+  currentBalance    Float               @default(0) // in EGP
+  equivalentGrams   Float               @default(0) // at current silver price
+  
+  // Auto-invest settings
+  autoInvestEnabled Boolean             @default(false)
+  autoInvestAmount  Float?
+  autoInvestFrequency String?           // "weekly", "monthly"
+  nextAutoInvestAt  DateTime?
+  
+  // Storage
+  physicalStorage   Boolean             @default(false) // تخزين فيزيائي مقابل رسوم
+  storageFee        Float               @default(0)     // 0.5% annually
+  
+  status            SavingsStatus       @default(ACTIVE)
+  
+  createdAt         DateTime            @default(now())
+  closedAt          DateTime?
+  
+  // Relations
+  deposits          SavingsDeposit[]
+  withdrawals       SavingsWithdrawal[]
+  
+  @@index([userId])
+  @@index([status])
+}
+
+enum SavingsStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+model SavingsDeposit {
+  id              String                @id @default(cuid())
+  
+  accountId       String
+  account         SilverSavingsAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  amount          Float
+  silverPriceAt   Float                 // سعر الفضة وقت الإيداع
+  gramsAdded      Float                 // الجرامات المضافة
+  
+  method          PaymentMethod
+  transactionRef  String?
+  
+  createdAt       DateTime              @default(now())
+  
+  @@index([accountId])
+  @@index([createdAt])
+}
+
+model SavingsWithdrawal {
+  id              String                @id @default(cuid())
+  
+  accountId       String
+  account         SilverSavingsAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  amount          Float
+  type            WithdrawalType
+  
+  // For physical delivery
+  deliveryAddress Json?
+  trackingNumber  String?
+  
+  status          WithdrawalStatus      @default(PENDING)
+  
+  createdAt       DateTime              @default(now())
+  processedAt     DateTime?
+  
+  @@index([accountId])
+  @@index([status])
+}
+
+enum WithdrawalType {
+  CASH            // سحب نقدي
+  PHYSICAL        // استلام سبائك/مشغولات فضية
+  TRANSFER        // تحويل لحساب بنكي
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REVIEWS & RATINGS (التقييمات)
+// ═══════════════════════════════════════════════════════════════
+
+model Review {
+  id              String    @id @default(cuid())
+  
+  // Reviewer
+  reviewerId      String
+  reviewer        User      @relation(fields: [reviewerId], references: [id])
+  
+  // Reviewed user
+  reviewedUserId  String
+  reviewedUser    User      @relation("ReviewsReceived", fields: [reviewedUserId], references: [id])
+  
+  // Transaction reference
+  purchaseId      String?   // Reference to the purchase
+  
+  // Review details
+  rating          Int       // 1-5 stars
+  
+  // Specific ratings
+  accuracyRating  Int?      // دقة الوصف
+  communicationRating Int?  // التواصل
+  packagingRating Int?      // التغليف
+  speedRating     Int?      // سرعة الشحن
+  
+  comment         String?   @db.Text
+  
+  // Response from reviewed user
+  response        String?   @db.Text
+  respondedAt     DateTime?
+  
+  // Moderation
+  isVerified      Boolean   @default(false) // من معاملة حقيقية
+  isReported      Boolean   @default(false)
+  
+  createdAt       DateTime  @default(now())
+  
+  @@index([reviewerId])
+  @@index([reviewedUserId])
+  @@index([rating])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SILVER MARKET DATA (بيانات السوق)
+// ═══════════════════════════════════════════════════════════════
+
+model SilverPrice {
+  id          String   @id @default(cuid())
+  
+  // Global price
+  spotPrice   Float    // USD per troy ounce
+  
+  // Egypt-specific
+  egyptPrice  Float    // EGP per gram for 999 purity
+  sterling925 Float    // EGP per gram for 925
+  grade900    Float    // EGP per gram for 900
+  grade800    Float    // EGP per gram for 800
+  
+  // Metadata
+  source      String   // API source
+  currency    String   @default("EGP")
+  
+  timestamp   DateTime @default(now())
+  
+  @@index([timestamp])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SYSTEM & ADMIN
+// ═══════════════════════════════════════════════════════════════
+
+model SystemConfig {
+  key         String   @id
+  value       Json
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+// Predefined configs:
+// - platform_fee_percentage: 3-5%
+// - escrow_hold_days: 5-7 days
+// - min_trust_level_for_listing: NEW/VERIFIED
+// - max_listings_per_user_tier: { NEW: 3, VERIFIED: 10, TRUSTED: 50, PROFESSIONAL: unlimited }
+// - trade_in_credit_percentage: 80-90%
+// - storage_fee_annual_percentage: 0.5%
+// - crafting_value_recognition: { EXCELLENT: 50%, VERY_GOOD: 30%, GOOD: 15%, FAIR: 5%, POOR: 0% }
