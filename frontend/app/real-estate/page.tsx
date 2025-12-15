@@ -512,7 +512,7 @@ export default function RealEstatePage() {
                       </div>
                       <div className="p-4">
                         <h3 className="font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-emerald-600 transition-colors">
-                          {property.titleAr || property.title}
+                          {property.title}
                         </h3>
 
                         {/* Property Details */}
