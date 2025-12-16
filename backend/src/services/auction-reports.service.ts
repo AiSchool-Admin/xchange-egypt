@@ -380,32 +380,33 @@ export class AuctionReportsService {
   }> {
     const dateRange = this.getDateRange(period);
 
-    const alertStats = await prisma.auctionFraudAlert.groupBy({
+    // Using type assertions to work around Prisma groupBy TypeScript circular reference issue
+    const alertStats = await (prisma.auctionFraudAlert.groupBy as any)({
       by: ['status'],
       _count: true,
       where: {
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
-    });
+    }) as Array<{ status: string; _count: number }>;
 
-    const byType = await prisma.auctionFraudAlert.groupBy({
+    const byType = await (prisma.auctionFraudAlert.groupBy as any)({
       by: ['alertType'],
       _count: true,
       where: {
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
-    });
+    }) as Array<{ alertType: string; _count: number }>;
 
-    const suspiciousUsers = await prisma.auctionFraudAlert.groupBy({
+    const suspiciousUsers = await (prisma.auctionFraudAlert.groupBy as any)({
       by: ['userId'],
       _count: true,
       where: {
         createdAt: { gte: dateRange.start, lte: dateRange.end },
         userId: { not: null },
       },
-      orderBy: { _count: { userId: 'desc' } } as any,
+      orderBy: { _count: { userId: 'desc' } },
       take: 10,
-    });
+    }) as Array<{ userId: string | null; _count: number }>;
 
     const topSuspicious = await Promise.all(
       suspiciousUsers.map(async (u) => {
