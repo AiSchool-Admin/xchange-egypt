@@ -251,6 +251,61 @@ export default function SilverMarketplacePage() {
         </div>
       </div>
 
+      {/* Extended Services Section */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold text-center mb-6">خدمات سوق الفضة</h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <Link
+            href="/silver/valuation"
+            className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center hover:shadow-md hover:border-slate-300 transition-all"
+          >
+            <div className="text-3xl mb-2">🔬</div>
+            <h3 className="font-bold text-sm">التقييم الاحترافي</h3>
+            <p className="text-xs text-gray-500 mt-1">فحص وتوثيق القطع</p>
+          </Link>
+          <Link
+            href="/silver/trade-in"
+            className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center hover:shadow-md hover:border-slate-300 transition-all"
+          >
+            <div className="text-3xl mb-2">🔄</div>
+            <h3 className="font-bold text-sm">استبدال الفضة</h3>
+            <p className="text-xs text-gray-500 mt-1">بدّل القديم بالجديد</p>
+          </Link>
+          <Link
+            href="/silver/savings"
+            className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center hover:shadow-md hover:border-slate-300 transition-all"
+          >
+            <div className="text-3xl mb-2">💰</div>
+            <h3 className="font-bold text-sm">حساب التوفير</h3>
+            <p className="text-xs text-gray-500 mt-1">ادخر بالفضة</p>
+          </Link>
+          <Link
+            href="/silver/compare"
+            className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center hover:shadow-md hover:border-slate-300 transition-all"
+          >
+            <div className="text-3xl mb-2">⚖️</div>
+            <h3 className="font-bold text-sm">مقارنة القطع</h3>
+            <p className="text-xs text-gray-500 mt-1">قارن حتى 5 قطع</p>
+          </Link>
+          <Link
+            href="/silver/partners"
+            className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center hover:shadow-md hover:border-slate-300 transition-all"
+          >
+            <div className="text-3xl mb-2">🏪</div>
+            <h3 className="font-bold text-sm">المحلات الشريكة</h3>
+            <p className="text-xs text-gray-500 mt-1">صاغة معتمدين</p>
+          </Link>
+          <Link
+            href="/silver/orders"
+            className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 text-center hover:shadow-md hover:border-slate-300 transition-all"
+          >
+            <div className="text-3xl mb-2">📦</div>
+            <h3 className="font-bold text-sm">طلباتي</h3>
+            <p className="text-xs text-gray-500 mt-1">تتبع مشترياتك</p>
+          </Link>
+        </div>
+      </div>
+
       {/* Filters & Search */}
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
