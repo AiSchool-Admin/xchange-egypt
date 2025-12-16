@@ -371,7 +371,7 @@ export const shouldNotifyUser = async (
   }
 
   // Check type-specific preferences
-  const typePreferences = preferences.preferences as any;
+  const typePreferences = preferences.preferences;
   if (typePreferences[notificationType]) {
     const channelKey = channel.toLowerCase();
     if (typePreferences[notificationType][channelKey] === false) {

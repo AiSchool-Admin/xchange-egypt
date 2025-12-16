@@ -129,7 +129,7 @@ export async function awardXP(
   const userLevel = await getOrCreateUserLevel(userId);
 
   let currentXP = userLevel.currentXP + amount;
-  let totalXP = userLevel.totalXP + amount;
+  const totalXP = userLevel.totalXP + amount;
   let level = userLevel.level;
   let xpToNextLevel = userLevel.xpToNextLevel;
   let leveledUp = false;
@@ -217,7 +217,7 @@ export async function recordDailyLogin(userId: string): Promise<{
   }
 
   // Calculate XP with streak bonus
-  let xpAwarded = XP_REWARDS.DAILY_LOGIN;
+  const xpAwarded = XP_REWARDS.DAILY_LOGIN;
   let bonusXP = 0;
 
   if (currentStreak >= 7) {

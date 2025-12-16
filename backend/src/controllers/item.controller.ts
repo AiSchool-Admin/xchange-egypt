@@ -13,7 +13,7 @@ export const createItem = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const imageFiles = req.files as Express.Multer.File[] | undefined;
 
     // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
@@ -71,7 +71,7 @@ export const updateItem = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
     const updateData: any = {};
@@ -111,7 +111,7 @@ export const deleteItem = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     await itemService.deleteItem(id, userId);
 
@@ -160,7 +160,7 @@ export const getMyItems = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { page, limit } = req.query;
 
     const result = await itemService.getUserItems(
@@ -244,7 +244,7 @@ export const addItemImages = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const imageFiles = req.files as Express.Multer.File[];
 
     if (!imageFiles || imageFiles.length === 0) {
@@ -270,7 +270,7 @@ export const removeItemImages = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { imagesToRemove } = req.body;
 
     const item = await itemService.removeItemImages(id, userId, imagesToRemove);
@@ -343,7 +343,7 @@ export const promoteItem = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { tier, durationDays } = req.body;
 
     if (!tier) {
@@ -372,7 +372,7 @@ export const removePromotion = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const item = await itemService.removePromotion(id, userId);
 

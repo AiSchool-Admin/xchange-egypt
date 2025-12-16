@@ -127,7 +127,7 @@ export class SearchAlertsService {
     });
 
     // Build query
-    const filters = savedSearch.filters as any;
+    const filters = savedSearch.filters;
     const where: any = {
       status: 'ACTIVE',
       sellerId: { not: userId }, // Exclude own items
@@ -307,7 +307,7 @@ export class SearchAlertsService {
     const matchingSearches: string[] = [];
 
     for (const search of savedSearches) {
-      const filters = search.filters as any;
+      const filters = search.filters;
       let matches = true;
 
       // Check query match
@@ -431,7 +431,7 @@ export class SearchAlertsService {
       throw new Error('البحث المحفوظ غير موجود');
     }
 
-    const filters = savedSearch.filters as any;
+    const filters = savedSearch.filters;
     const where: any = {
       status: 'ACTIVE',
       sellerId: { not: userId },

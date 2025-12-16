@@ -403,7 +403,7 @@ async function recalculateTrustLevel(userId: string) {
       reputation.totalDeals >= threshold.minDeals &&
       reputation.overallScore >= threshold.minScore
     ) {
-      newLevel = level as TrustLevel;
+      newLevel = level;
       break;
     }
   }

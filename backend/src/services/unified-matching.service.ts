@@ -944,7 +944,7 @@ export const getMatchesForItem = async (
 
   if (!item) return [];
 
-  let allMatches: MatchResult[] = [];
+  const allMatches: MatchResult[] = [];
 
   // Find all match types
   if (['DIRECT_SALE', 'AUCTION', 'BARTER'].includes(item.listingType)) {

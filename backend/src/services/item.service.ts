@@ -171,7 +171,7 @@ export const createItem = async (
   }
 
   // Process images if provided
-  let processedImages: string[] = [];
+  const processedImages: string[] = [];
   if (imageFiles && imageFiles.length > 0) {
     for (const file of imageFiles) {
       try {

@@ -623,7 +623,7 @@ async function checkLevelUpgrade(facilitatorId: string) {
       facilitator.successfulDeals >= config.minDeals &&
       facilitator.avgRating >= config.minRating
     ) {
-      newLevel = level as FacilitatorLevel;
+      newLevel = level;
       break;
     }
   }

@@ -843,7 +843,7 @@ function aggregateByDay(
     if (!byDay.has(dateKey)) {
       byDay.set(dateKey, []);
     }
-    byDay.get(dateKey)!.push(item.estimatedValue);
+    byDay.get(dateKey).push(item.estimatedValue);
   });
 
   return Array.from(byDay.entries())

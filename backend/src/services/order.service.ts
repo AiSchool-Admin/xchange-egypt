@@ -254,7 +254,7 @@ export const createOrder = async (
         subtotal,
         shippingCost,
         total,
-        shippingAddressId: shippingAddressId!,
+        shippingAddressId: shippingAddressId,
         paymentMethod: data.paymentMethod,
         notes: data.notes,
         items: {
@@ -705,7 +705,7 @@ export const createAuctionOrder = async (
         subtotal,
         shippingCost,
         total,
-        shippingAddressId: shippingAddressId!,
+        shippingAddressId: shippingAddressId,
         paymentMethod: data.paymentMethod,
         notes: data.notes || `طلب من مزاد رقم ${auction.id}`,
         items: {

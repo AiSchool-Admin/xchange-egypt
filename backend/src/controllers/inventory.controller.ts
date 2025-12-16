@@ -19,7 +19,7 @@ export const getInventory = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { side, type, status, page, limit } = req.query;
 
     const result = await inventoryService.getUserInventory(userId, {
@@ -46,7 +46,7 @@ export const getStats = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const stats = await inventoryService.getInventoryStats(userId);
 
     return successResponse(res, stats, 'Stats retrieved successfully');
@@ -65,7 +65,7 @@ export const createItem = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const input = req.body;
 
     const item = await inventoryService.createInventoryItem(userId, input);
@@ -86,7 +86,7 @@ export const updateStatus = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { id } = req.params;
     const { status } = req.body;
 
@@ -108,7 +108,7 @@ export const deleteItem = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { id } = req.params;
 
     await inventoryService.deleteInventoryItem(id, userId);
@@ -129,7 +129,7 @@ export const findMatches = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { id } = req.params;
 
     const matches = await inventoryService.findMatchesForItem(id, userId);
@@ -197,7 +197,7 @@ export const getProximityMatches = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { type, limit } = req.query;
 
     const matches = await proximityService.getMatchesForUser(userId, {
@@ -303,7 +303,7 @@ export const adjustStock = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { id } = req.params;
     const { type, quantityChange, reason, notes, unitCost } = req.body;
 
@@ -332,7 +332,7 @@ export const getStockAdjustments = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { id } = req.params;
     const { page, limit } = req.query;
 
@@ -357,7 +357,7 @@ export const bulkImport = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { items } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -392,7 +392,7 @@ export const getLowStock = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { includeNegative, page, limit } = req.query;
 
     const result = await inventoryService.getLowStockItems(userId, {
@@ -417,7 +417,7 @@ export const updateStockSettings = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { id } = req.params;
     const { trackInventory, allowNegativeStock, lowStockThreshold, sku, barcode } = req.body;
 

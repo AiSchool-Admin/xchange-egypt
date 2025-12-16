@@ -463,7 +463,7 @@ export const deleteProperty = async (
  */
 function parseArrayParam<T extends string>(value: T | T[] | string | undefined): T[] | undefined {
   if (!value) return undefined;
-  if (Array.isArray(value)) return value as T[];
+  if (Array.isArray(value)) return value;
   // Handle comma-separated string
   if (typeof value === 'string' && value.includes(',')) {
     return value.split(',').map(v => v.trim()) as T[];
