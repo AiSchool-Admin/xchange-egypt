@@ -172,6 +172,7 @@ model User {
   auctionWatchlist          AuctionWatchlist[]        @relation("UserAuctionWatchlist")
   auctionDeposits           AuctionDeposit[]          @relation("UserAuctionDeposits")
   auctionSealedBids         AuctionSealedBid[]        @relation("UserSealedBids")
+  auctionProxyBids          AuctionProxyBid[]         @relation("UserProxyBids")
   disputesInitiated         AuctionDispute[]          @relation("DisputeInitiator")
   disputesReceived          AuctionDispute[]          @relation("DisputeRespondent")
   disputesResolved          AuctionDispute[]          @relation("DisputeResolver")
@@ -1430,6 +1431,7 @@ model Auction {
   watchlist         AuctionWatchlist[]   @relation("AuctionWatchlist")
   deposits          AuctionDeposit[]     @relation("AuctionDeposits")
   sealedBids        AuctionSealedBid[]   @relation("AuctionSealedBids")
+  proxyBids         AuctionProxyBid[]    @relation("AuctionProxyBids")
   disputes          AuctionDispute[]     @relation("AuctionDisputes")
   reviews           AuctionReview[]      @relation("AuctionReviews")
   fraudAlerts       AuctionFraudAlert[]  @relation("AuctionFraudAlerts")
@@ -7998,6 +8000,42 @@ model AuctionSealedBid {
   @@map("auction_sealed_bids")
   @@index([auctionId])
   @@index([bidderId])
+}
+
+// ============================================
+// المزايدة التلقائية - Proxy Bids
+// ============================================
+
+model AuctionProxyBid {
+  id                String            @id @default(uuid())
+  auctionId         String            @map("auction_id")
+  bidderId          String            @map("bidder_id")
+
+  // الحد الأقصى للمزايدة
+  maxBidAmount      Float             @map("max_bid_amount")
+  currentBidAmount  Float?            @map("current_bid_amount")
+
+  // حالة المزايدة التلقائية
+  isActive          Boolean           @default(true) @map("is_active")
+  bidCount          Int               @default(0) @map("bid_count")  // عدد المزايدات التلقائية
+
+  // إعدادات المزايدة
+  incrementStep     Float?            @map("increment_step")  // خطوة الزيادة (اختياري)
+
+  // الطوابع الزمنية
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  deactivatedAt     DateTime?         @map("deactivated_at")
+
+  // العلاقات
+  auction           Auction           @relation("AuctionProxyBids", fields: [auctionId], references: [id], onDelete: Cascade)
+  bidder            User              @relation("UserProxyBids", fields: [bidderId], references: [id], onDelete: Cascade)
+
+  @@unique([auctionId, bidderId])  // مزايدة تلقائية واحدة لكل مستخدم لكل مزاد
+  @@map("auction_proxy_bids")
+  @@index([auctionId])
+  @@index([bidderId])
+  @@index([isActive])
 }
 
 // ============================================
