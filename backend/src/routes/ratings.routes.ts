@@ -10,7 +10,7 @@
 
 import { Router } from 'express';
 import { Request, Response, NextFunction } from 'express';
-import { authenticate, optionalAuth } from '../middleware/auth.middleware';
+import { authenticate } from '../middleware/auth.middleware';
 import * as ratingService from '../services/unified-rating.service';
 import { successResponse } from '../utils/response';
 
@@ -27,12 +27,8 @@ const router = Router();
 router.get('/users/:userId', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { userId } = req.params;
-    const { type } = req.query;
 
-    const summary = await ratingService.getUserRatingSummary(
-      userId,
-      type as ratingService.RatingType
-    );
+    const summary = await ratingService.getUserRatingSummary(userId);
 
     return successResponse(res, summary, 'ملخص التقييمات');
   } catch (error) {
@@ -41,21 +37,20 @@ router.get('/users/:userId', async (req: Request, res: Response, next: NextFunct
 });
 
 /**
- * Get ratings for an entity (item, transaction, etc.)
- * GET /api/v1/ratings/entities/:entityId
+ * Get reviews for a user with pagination
+ * GET /api/v1/ratings/users/:userId/reviews
  */
-router.get('/entities/:entityId', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/users/:userId/reviews', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { entityId } = req.params;
-    const { limit, offset } = req.query;
+    const { userId } = req.params;
+    const { page, limit } = req.query;
 
-    const result = await ratingService.getEntityRatings(
-      entityId,
-      limit ? parseInt(limit as string, 10) : 10,
-      offset ? parseInt(offset as string, 10) : 0
-    );
+    const result = await ratingService.getUserReviews(userId, {
+      page: page ? parseInt(page as string, 10) : 1,
+      limit: limit ? parseInt(limit as string, 10) : 20,
+    });
 
-    return successResponse(res, result, 'تقييمات المنتج');
+    return successResponse(res, result, 'تقييمات المستخدم');
   } catch (error) {
     next(error);
   }
@@ -71,51 +66,48 @@ router.get('/entities/:entityId', async (req: Request, res: Response, next: Next
  */
 router.post('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const raterId = req.user!.id;
+    const reviewerId = (req as any).user.id;
     const {
-      ratedId,
+      reviewedId,
+      transactionId,
       ratingType,
-      entityId,
-      score,
-      categories,
-      review,
-      reviewAr,
-      isAnonymous,
-      images,
+      overallRating,
+      comment,
+      pros,
+      cons,
+      wouldRecommend,
     } = req.body;
 
-    if (!ratedId || !ratingType || !score) {
+    if (!reviewedId || !transactionId || !ratingType || !overallRating) {
       return res.status(400).json({
         success: false,
-        message: 'ratedId, ratingType, and score are required',
-        messageAr: 'معرف المستخدم ونوع التقييم والدرجة مطلوبة',
+        message: 'reviewedId, transactionId, ratingType, and overallRating are required',
+        messageAr: 'معرف المستخدم ومعرف المعاملة ونوع التقييم والتقييم مطلوبة',
       });
     }
 
-    if (score < 1 || score > 5) {
+    if (overallRating < 1 || overallRating > 5) {
       return res.status(400).json({
         success: false,
-        message: 'Score must be between 1 and 5',
-        messageAr: 'الدرجة يجب أن تكون بين 1 و 5',
+        message: 'Rating must be between 1 and 5',
+        messageAr: 'التقييم يجب أن يكون بين 1 و 5',
       });
     }
 
-    const rating = await ratingService.submitRating({
-      raterId,
-      ratedId,
+    const rating = await ratingService.submitRating(reviewerId, {
+      reviewedId,
+      transactionId,
       ratingType,
-      entityId,
-      score,
-      categories,
-      review,
-      reviewAr,
-      isAnonymous,
-      images,
+      overallRating,
+      comment,
+      pros,
+      cons,
+      wouldRecommend,
     });
 
     return successResponse(res, rating, 'تم إرسال التقييم بنجاح', 201);
   } catch (error: any) {
-    if (error.message.includes('already submitted')) {
+    if (error.message?.includes('already reviewed')) {
       return res.status(409).json({
         success: false,
         message: error.message,
@@ -127,16 +119,16 @@ router.post('/', authenticate, async (req: Request, res: Response, next: NextFun
 });
 
 /**
- * Respond to a rating
- * POST /api/v1/ratings/:ratingId/respond
+ * Respond to a review
+ * POST /api/v1/ratings/:reviewId/respond
  */
-router.post('/:ratingId/respond', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:reviewId/respond', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { ratingId } = req.params;
-    const responderId = req.user!.id;
-    const { responseText, responseTextAr } = req.body;
+    const { reviewId } = req.params;
+    const userId = (req as any).user.id;
+    const { response } = req.body;
 
-    if (!responseText) {
+    if (!response) {
       return res.status(400).json({
         success: false,
         message: 'Response text is required',
@@ -144,23 +136,18 @@ router.post('/:ratingId/respond', authenticate, async (req: Request, res: Respon
       });
     }
 
-    const response = await ratingService.respondToRating(
-      ratingId,
-      responderId,
-      responseText,
-      responseTextAr
-    );
+    const result = await ratingService.respondToReview(reviewId, userId, response);
 
-    return successResponse(res, response, 'تم إرسال الرد بنجاح');
+    return successResponse(res, result, 'تم إرسال الرد بنجاح');
   } catch (error: any) {
-    if (error.message.includes('not found')) {
+    if (error.message?.includes('not found')) {
       return res.status(404).json({
         success: false,
-        message: 'Rating not found',
+        message: 'Review not found',
         messageAr: 'التقييم غير موجود',
       });
     }
-    if (error.message.includes('only respond')) {
+    if (error.message?.includes('Only the reviewed user')) {
       return res.status(403).json({
         success: false,
         message: error.message,
@@ -172,13 +159,13 @@ router.post('/:ratingId/respond', authenticate, async (req: Request, res: Respon
 });
 
 /**
- * Report a rating as inappropriate
- * POST /api/v1/ratings/:ratingId/report
+ * Report a review as inappropriate
+ * POST /api/v1/ratings/:reviewId/report
  */
-router.post('/:ratingId/report', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:reviewId/report', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { ratingId } = req.params;
-    const reporterId = req.user!.id;
+    const { reviewId } = req.params;
+    const reporterId = (req as any).user.id;
     const { reason } = req.body;
 
     if (!reason) {
@@ -189,14 +176,14 @@ router.post('/:ratingId/report', authenticate, async (req: Request, res: Respons
       });
     }
 
-    await ratingService.reportRating(ratingId, reporterId, reason);
+    const result = await ratingService.reportReview(reviewId, reporterId, reason);
 
-    return successResponse(res, null, 'تم إرسال البلاغ بنجاح');
+    return successResponse(res, result, 'تم إرسال البلاغ بنجاح');
   } catch (error: any) {
-    if (error.message.includes('not found')) {
+    if (error.message?.includes('not found')) {
       return res.status(404).json({
         success: false,
-        message: 'Rating not found',
+        message: 'Review not found',
         messageAr: 'التقييم غير موجود',
       });
     }
@@ -205,20 +192,53 @@ router.post('/:ratingId/report', authenticate, async (req: Request, res: Respons
 });
 
 /**
- * Get my ratings (ratings I've received)
+ * Get my rating summary
  * GET /api/v1/ratings/me
  */
 router.get('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
-    const { type } = req.query;
+    const userId = (req as any).user.id;
 
-    const summary = await ratingService.getUserRatingSummary(
-      userId,
-      type as ratingService.RatingType
-    );
+    const summary = await ratingService.getUserRatingSummary(userId);
 
     return successResponse(res, summary, 'تقييماتي');
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Get reviews I've given
+ * GET /api/v1/ratings/me/given
+ */
+router.get('/me/given', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user.id;
+    const { page, limit } = req.query;
+
+    const result = await ratingService.getReviewsGiven(userId, {
+      page: page ? parseInt(page as string, 10) : 1,
+      limit: limit ? parseInt(limit as string, 10) : 20,
+    });
+
+    return successResponse(res, result, 'التقييمات التي أعطيتها');
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Check if user can review a transaction
+ * GET /api/v1/ratings/can-review/:transactionId
+ */
+router.get('/can-review/:transactionId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = (req as any).user.id;
+    const { transactionId } = req.params;
+
+    const canReview = await ratingService.canReviewTransaction(userId, transactionId);
+
+    return successResponse(res, { canReview }, canReview ? 'يمكنك التقييم' : 'لا يمكنك التقييم');
   } catch (error) {
     next(error);
   }

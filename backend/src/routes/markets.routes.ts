@@ -10,7 +10,7 @@
 
 import { Router } from 'express';
 import { Request, Response, NextFunction } from 'express';
-import { authenticate, optionalAuth } from '../middleware/auth.middleware';
+import { authenticate } from '../middleware/auth.middleware';
 import * as crossMarketService from '../services/cross-market.service';
 import { successResponse } from '../utils/response';
 
@@ -30,13 +30,13 @@ router.get('/search', async (req: Request, res: Response, next: NextFunction) =>
       q,
       query,
       markets,
-      minPrice,
-      maxPrice,
+      priceMin,
+      priceMax,
       governorate,
       condition,
       sortBy,
+      page,
       limit,
-      offset,
     } = req.query;
 
     const searchQuery = (q || query) as string;
@@ -52,13 +52,13 @@ router.get('/search', async (req: Request, res: Response, next: NextFunction) =>
     const results = await crossMarketService.universalSearch({
       query: searchQuery,
       markets: markets ? (markets as string).split(',') as crossMarketService.MarketType[] : undefined,
-      minPrice: minPrice ? parseFloat(minPrice as string) : undefined,
-      maxPrice: maxPrice ? parseFloat(maxPrice as string) : undefined,
+      priceMin: priceMin ? parseFloat(priceMin as string) : undefined,
+      priceMax: priceMax ? parseFloat(priceMax as string) : undefined,
       governorate: governorate as string,
       condition: condition as string,
       sortBy: sortBy as any,
+      page: page ? parseInt(page as string, 10) : 1,
       limit: limit ? parseInt(limit as string, 10) : 20,
-      offset: offset ? parseInt(offset as string, 10) : 0,
     });
 
     return successResponse(res, results, 'نتائج البحث');
@@ -132,14 +132,13 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
  */
 router.get('/recommendations', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
-    const { limit, excludeViewed } = req.query;
+    const userId = (req as any).user.id;
+    const { limit } = req.query;
 
-    const recommendations = await crossMarketService.getRecommendations({
+    const recommendations = await crossMarketService.getRecommendations(
       userId,
-      limit: limit ? parseInt(limit as string, 10) : 10,
-      excludeViewed: excludeViewed !== 'false',
-    });
+      limit ? parseInt(limit as string, 10) : 10
+    );
 
     return successResponse(res, recommendations, 'توصيات مخصصة');
   } catch (error) {
