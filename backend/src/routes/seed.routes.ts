@@ -942,8 +942,8 @@ router.get('/check-properties', async (_req, res) => {
  */
 router.post('/seed-silver', async (req, res) => {
   try {
-    // Import enums
-    const { SilverPurity, SilverCategory, SilverCondition, SilverItemStatus, SilverVerificationLevel } = await import('@prisma/client');
+    // Import enums (using correct names from schema)
+    const { SilverPurity, SilverItemCategory, SilverItemCondition, SilverListingStatus, SilverVerificationLevel } = await import('@prisma/client');
 
     // Check if silver data already exists
     const existingPrices = await prisma.silverPrice.count();
@@ -1105,10 +1105,10 @@ router.post('/seed-silver', async (req, res) => {
         sellerId: seller.id,
         title: 'خاتم فضة إسترليني 925 بتصميم كلاسيكي',
         description: 'خاتم فضة إسترليني أصلي عيار 925، تصميم كلاسيكي أنيق يناسب جميع المناسبات.',
-        category: SilverCategory.RING,
+        category: SilverItemCategory.RING,
         purity: SilverPurity.S925,
         weightGrams: 8.5,
-        condition: SilverCondition.NEW,
+        condition: SilverItemCondition.NEW,
         askingPrice: 650,
         images: SILVER_IMAGES.ring,
         governorate: 'القاهرة',
@@ -1121,10 +1121,10 @@ router.post('/seed-silver', async (req, res) => {
         sellerId: seller.id,
         title: 'خاتم فضة نقية 999 للرجال',
         description: 'خاتم رجالي من الفضة النقية عيار 999، تصميم عصري جريء. مثالي للهدايا الفاخرة.',
-        category: SilverCategory.RING,
+        category: SilverItemCategory.RING,
         purity: SilverPurity.S999,
         weightGrams: 15.2,
-        condition: SilverCondition.NEW,
+        condition: SilverItemCondition.NEW,
         askingPrice: 1150,
         images: SILVER_IMAGES.ring,
         governorate: 'الإسكندرية',
@@ -1137,10 +1137,10 @@ router.post('/seed-silver', async (req, res) => {
         sellerId: seller.id,
         title: 'سلسلة فضة إسترليني 925 مع تعليقة قلب',
         description: 'سلسلة فضة أنيقة مع تعليقة على شكل قلب. طول السلسلة 45 سم.',
-        category: SilverCategory.NECKLACE,
+        category: SilverItemCategory.NECKLACE,
         purity: SilverPurity.S925,
         weightGrams: 6.8,
-        condition: SilverCondition.NEW,
+        condition: SilverItemCondition.NEW,
         askingPrice: 580,
         images: SILVER_IMAGES.necklace,
         governorate: 'الجيزة',
@@ -1152,10 +1152,10 @@ router.post('/seed-silver', async (req, res) => {
         sellerId: seller.id,
         title: 'سلسلة فضة إيطالية ثقيلة للرجال',
         description: 'سلسلة فضة إيطالية أصلية عيار 925، وزن ثقيل للرجال. طول 60 سم.',
-        category: SilverCategory.NECKLACE,
+        category: SilverItemCategory.NECKLACE,
         purity: SilverPurity.S925,
         weightGrams: 45.0,
-        condition: SilverCondition.LIKE_NEW,
+        condition: SilverItemCondition.LIKE_NEW,
         askingPrice: 2800,
         images: SILVER_IMAGES.necklace,
         governorate: 'القاهرة',
@@ -1168,10 +1168,10 @@ router.post('/seed-silver', async (req, res) => {
         sellerId: seller.id,
         title: 'إسورة فضة كلاسيكية للسيدات',
         description: 'إسورة فضة إسترليني 925 بتصميم كلاسيكي رقيق. قطر داخلي 6.5 سم.',
-        category: SilverCategory.BRACELET,
+        category: SilverItemCategory.BRACELET,
         purity: SilverPurity.S925,
         weightGrams: 18.5,
-        condition: SilverCondition.GOOD,
+        condition: SilverItemCondition.GOOD,
         askingPrice: 1100,
         images: SILVER_IMAGES.bracelet,
         governorate: 'الإسكندرية',
@@ -1183,10 +1183,10 @@ router.post('/seed-silver', async (req, res) => {
         sellerId: seller.id,
         title: 'أقراط فضة مرصعة بالزركون',
         description: 'أقراط فضة إسترليني 925 مرصعة بأحجار الزركون اللامعة.',
-        category: SilverCategory.EARRING,
+        category: SilverItemCategory.EARRING,
         purity: SilverPurity.S925,
         weightGrams: 4.2,
-        condition: SilverCondition.NEW,
+        condition: SilverItemCondition.NEW,
         askingPrice: 420,
         images: SILVER_IMAGES.earring,
         governorate: 'القاهرة',
@@ -1198,10 +1198,10 @@ router.post('/seed-silver', async (req, res) => {
         sellerId: seller.id,
         title: 'عملة فضة أمريكية 1 أونصة - American Eagle',
         description: 'عملة American Silver Eagle أصلية، وزن 1 أونصة (31.1 جرام)، نقاء 999.',
-        category: SilverCategory.COIN,
+        category: SilverItemCategory.COIN,
         purity: SilverPurity.S999,
         weightGrams: 31.1,
-        condition: SilverCondition.NEW,
+        condition: SilverItemCondition.NEW,
         askingPrice: 2400,
         images: SILVER_IMAGES.coin,
         governorate: 'القاهرة',
@@ -1213,10 +1213,10 @@ router.post('/seed-silver', async (req, res) => {
         sellerId: seller.id,
         title: 'سبيكة فضة 100 جرام - نقاء 999',
         description: 'سبيكة فضة نقية 999، وزن 100 جرام بالضبط. مختومة ومعتمدة. مثالية للاستثمار.',
-        category: SilverCategory.BAR,
+        category: SilverItemCategory.BAR,
         purity: SilverPurity.S999,
         weightGrams: 100.0,
-        condition: SilverCondition.NEW,
+        condition: SilverItemCondition.NEW,
         askingPrice: 7200,
         images: SILVER_IMAGES.bar,
         governorate: 'الجيزة',
@@ -1246,7 +1246,7 @@ router.post('/seed-silver', async (req, res) => {
           ...itemData,
           rawValue,
           silverPriceAtListing: marketPrice,
-          status: SilverItemStatus.ACTIVE,
+          status: SilverListingStatus.ACTIVE,
           views: Math.floor(Math.random() * 500) + 50,
         },
       });
@@ -1308,10 +1308,9 @@ router.post('/seed-silver', async (req, res) => {
  */
 router.post('/reseed-silver', async (req, res) => {
   try {
-    // Delete existing silver data
+    // Delete existing silver data (in correct order for foreign key constraints)
     await prisma.silverCertificate.deleteMany({});
     await prisma.silverTransaction.deleteMany({});
-    await prisma.silverOffer.deleteMany({});
     await prisma.silverItem.deleteMany({});
     await prisma.silverPartner.deleteMany({});
     await prisma.silverPrice.deleteMany({});
@@ -1320,12 +1319,12 @@ router.post('/reseed-silver', async (req, res) => {
     const seedRes = await fetch(`http://localhost:${process.env.PORT || 5000}/api/v1/seed/seed-silver`, {
       method: 'POST',
     });
-    const result = await seedRes.json();
+    const result = await seedRes.json() as { data?: any };
 
     return res.json({
       success: true,
       message: '✨ تم إعادة تغذية سوق الفضة بنجاح!',
-      data: result.data,
+      data: result.data || null,
     });
   } catch (error: any) {
     console.error('Reseed silver error:', error);
