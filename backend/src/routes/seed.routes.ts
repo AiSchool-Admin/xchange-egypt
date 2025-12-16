@@ -936,4 +936,464 @@ router.get('/check-properties', async (_req, res) => {
   }
 });
 
+/**
+ * SEED SILVER MARKETPLACE
+ * تغذية سوق الفضة ببيانات تجريبية
+ */
+router.post('/seed-silver', async (req, res) => {
+  try {
+    // Import enums
+    const { SilverPurity, SilverCategory, SilverCondition, SilverItemStatus, SilverVerificationLevel } = await import('@prisma/client');
+
+    // Check if silver data already exists
+    const existingPrices = await prisma.silverPrice.count();
+    const existingItems = await prisma.silverItem.count();
+
+    if (existingItems > 0) {
+      return res.json({
+        success: false,
+        message: `بيانات الفضة موجودة بالفعل (${existingItems} قطعة). استخدم /reseed-silver لإعادة التهيئة.`,
+        data: {
+          existingPrices,
+          existingItems,
+        },
+      });
+    }
+
+    // ============================================
+    // 1. Seed Silver Prices
+    // ============================================
+    console.log('📊 Seeding Silver Prices...');
+
+    const silverPrices = [
+      { purity: SilverPurity.S999, buyPrice: 67.50, sellPrice: 65.00, source: 'market_api' },
+      { purity: SilverPurity.S925, buyPrice: 58.00, sellPrice: 55.50, source: 'market_api' },
+      { purity: SilverPurity.S900, buyPrice: 53.00, sellPrice: 50.50, source: 'market_api' },
+      { purity: SilverPurity.S800, buyPrice: 47.00, sellPrice: 45.00, source: 'market_api' },
+    ];
+
+    if (existingPrices === 0) {
+      for (const price of silverPrices) {
+        await prisma.silverPrice.create({ data: price });
+      }
+    }
+
+    // ============================================
+    // 2. Seed Silver Partners
+    // ============================================
+    console.log('🏪 Seeding Silver Partners...');
+
+    const existingPartners = await prisma.silverPartner.count();
+    const createdPartners: any[] = [];
+
+    if (existingPartners === 0) {
+      const silverPartners = [
+        {
+          name: 'El-Sagha Silver',
+          nameAr: 'الصاغة للفضيات',
+          description: 'أقدم وأشهر محل فضة في الصاغة',
+          descriptionAr: 'أقدم وأشهر محل فضة في الصاغة',
+          address: '15 شارع الصاغة، الحسين، القاهرة',
+          governorate: 'القاهرة',
+          city: 'الحسين',
+          phone: '01001234567',
+          whatsapp: '201001234567',
+          email: 'contact@elsagha-silver.eg',
+          certificationFee: 75,
+          offersCertification: true,
+          offersPickup: true,
+          offersRepair: true,
+          offersCleaning: true,
+          rating: 4.9,
+          totalReviews: 156,
+          isVerified: true,
+          isActive: true,
+          workingHours: 'السبت - الخميس: 10:00 ص - 10:00 م',
+        },
+        {
+          name: 'Alexandria Silver House',
+          nameAr: 'بيت الفضة الإسكندراني',
+          description: 'متخصصون في الفضة الإسترليني والأنتيك',
+          descriptionAr: 'متخصصون في الفضة الإسترليني والأنتيك منذ 1960',
+          address: '45 شارع الحرية، سموحة، الإسكندرية',
+          governorate: 'الإسكندرية',
+          city: 'سموحة',
+          phone: '01112345678',
+          whatsapp: '201112345678',
+          email: 'info@alex-silver.eg',
+          certificationFee: 100,
+          offersCertification: true,
+          offersPickup: false,
+          offersRepair: true,
+          offersCleaning: true,
+          rating: 4.7,
+          totalReviews: 89,
+          isVerified: true,
+          isActive: true,
+          workingHours: 'السبت - الخميس: 11:00 ص - 9:00 م',
+        },
+        {
+          name: 'Giza Precious Metals',
+          nameAr: 'الجيزة للمعادن الثمينة',
+          description: 'خبراء في تقييم وتوثيق الفضة والذهب',
+          descriptionAr: 'خبراء في تقييم وتوثيق الفضة والذهب',
+          address: '78 شارع الهرم، الجيزة',
+          governorate: 'الجيزة',
+          city: 'الهرم',
+          phone: '01223456789',
+          whatsapp: '201223456789',
+          email: 'giza-metals@example.eg',
+          certificationFee: 85,
+          offersCertification: true,
+          offersPickup: true,
+          offersRepair: false,
+          offersCleaning: true,
+          rating: 4.6,
+          totalReviews: 72,
+          isVerified: true,
+          isActive: true,
+          workingHours: 'يومياً: 10:00 ص - 8:00 م',
+        },
+      ];
+
+      for (const partner of silverPartners) {
+        const created = await prisma.silverPartner.create({ data: partner });
+        createdPartners.push(created);
+      }
+    } else {
+      const partners = await prisma.silverPartner.findMany();
+      createdPartners.push(...partners);
+    }
+
+    // ============================================
+    // 3. Get or Create Users for Sellers
+    // ============================================
+    console.log('👥 Getting users...');
+
+    let seller = await prisma.user.findFirst({ where: { email: 'seller@test.com' } });
+    if (!seller) {
+      seller = await prisma.user.findFirst();
+    }
+    if (!seller) {
+      seller = await prisma.user.create({
+        data: {
+          email: 'silver-seller@test.com',
+          passwordHash: '$2b$10$K7L1OJ45/4Y2nIvhRVpCe.FSmhDdWoXehVzJptJ/op0lSsvqNu9.m',
+          fullName: 'بائع الفضة التجريبي',
+          phone: '+201099999999',
+          emailVerified: true,
+        },
+      });
+    }
+
+    // ============================================
+    // 4. Seed Silver Items
+    // ============================================
+    console.log('💍 Seeding Silver Items...');
+
+    const SILVER_IMAGES = {
+      ring: ['https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&q=80'],
+      necklace: ['https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&q=80'],
+      bracelet: ['https://images.unsplash.com/photo-1573408301185-9146fe634ad0?w=800&q=80'],
+      earring: ['https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&q=80'],
+      coin: ['https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=800&q=80'],
+      bar: ['https://images.unsplash.com/photo-1589787168422-dc7418a3f730?w=800&q=80'],
+    };
+
+    const silverItems = [
+      {
+        sellerId: seller.id,
+        title: 'خاتم فضة إسترليني 925 بتصميم كلاسيكي',
+        description: 'خاتم فضة إسترليني أصلي عيار 925، تصميم كلاسيكي أنيق يناسب جميع المناسبات.',
+        category: SilverCategory.RING,
+        purity: SilverPurity.S925,
+        weightGrams: 8.5,
+        condition: SilverCondition.NEW,
+        askingPrice: 650,
+        images: SILVER_IMAGES.ring,
+        governorate: 'القاهرة',
+        city: 'مدينة نصر',
+        allowBarter: true,
+        allowGoldBarter: false,
+        verificationLevel: SilverVerificationLevel.VERIFIED,
+      },
+      {
+        sellerId: seller.id,
+        title: 'خاتم فضة نقية 999 للرجال',
+        description: 'خاتم رجالي من الفضة النقية عيار 999، تصميم عصري جريء. مثالي للهدايا الفاخرة.',
+        category: SilverCategory.RING,
+        purity: SilverPurity.S999,
+        weightGrams: 15.2,
+        condition: SilverCondition.NEW,
+        askingPrice: 1150,
+        images: SILVER_IMAGES.ring,
+        governorate: 'الإسكندرية',
+        city: 'سموحة',
+        allowBarter: true,
+        allowGoldBarter: true,
+        verificationLevel: SilverVerificationLevel.CERTIFIED,
+      },
+      {
+        sellerId: seller.id,
+        title: 'سلسلة فضة إسترليني 925 مع تعليقة قلب',
+        description: 'سلسلة فضة أنيقة مع تعليقة على شكل قلب. طول السلسلة 45 سم.',
+        category: SilverCategory.NECKLACE,
+        purity: SilverPurity.S925,
+        weightGrams: 6.8,
+        condition: SilverCondition.NEW,
+        askingPrice: 580,
+        images: SILVER_IMAGES.necklace,
+        governorate: 'الجيزة',
+        city: '6 أكتوبر',
+        allowBarter: true,
+        verificationLevel: SilverVerificationLevel.BASIC,
+      },
+      {
+        sellerId: seller.id,
+        title: 'سلسلة فضة إيطالية ثقيلة للرجال',
+        description: 'سلسلة فضة إيطالية أصلية عيار 925، وزن ثقيل للرجال. طول 60 سم.',
+        category: SilverCategory.NECKLACE,
+        purity: SilverPurity.S925,
+        weightGrams: 45.0,
+        condition: SilverCondition.LIKE_NEW,
+        askingPrice: 2800,
+        images: SILVER_IMAGES.necklace,
+        governorate: 'القاهرة',
+        city: 'المعادي',
+        allowBarter: true,
+        allowGoldBarter: true,
+        verificationLevel: SilverVerificationLevel.CERTIFIED,
+      },
+      {
+        sellerId: seller.id,
+        title: 'إسورة فضة كلاسيكية للسيدات',
+        description: 'إسورة فضة إسترليني 925 بتصميم كلاسيكي رقيق. قطر داخلي 6.5 سم.',
+        category: SilverCategory.BRACELET,
+        purity: SilverPurity.S925,
+        weightGrams: 18.5,
+        condition: SilverCondition.GOOD,
+        askingPrice: 1100,
+        images: SILVER_IMAGES.bracelet,
+        governorate: 'الإسكندرية',
+        city: 'المندرة',
+        allowBarter: true,
+        verificationLevel: SilverVerificationLevel.VERIFIED,
+      },
+      {
+        sellerId: seller.id,
+        title: 'أقراط فضة مرصعة بالزركون',
+        description: 'أقراط فضة إسترليني 925 مرصعة بأحجار الزركون اللامعة.',
+        category: SilverCategory.EARRING,
+        purity: SilverPurity.S925,
+        weightGrams: 4.2,
+        condition: SilverCondition.NEW,
+        askingPrice: 420,
+        images: SILVER_IMAGES.earring,
+        governorate: 'القاهرة',
+        city: 'التجمع الخامس',
+        allowBarter: true,
+        verificationLevel: SilverVerificationLevel.VERIFIED,
+      },
+      {
+        sellerId: seller.id,
+        title: 'عملة فضة أمريكية 1 أونصة - American Eagle',
+        description: 'عملة American Silver Eagle أصلية، وزن 1 أونصة (31.1 جرام)، نقاء 999.',
+        category: SilverCategory.COIN,
+        purity: SilverPurity.S999,
+        weightGrams: 31.1,
+        condition: SilverCondition.NEW,
+        askingPrice: 2400,
+        images: SILVER_IMAGES.coin,
+        governorate: 'القاهرة',
+        city: 'جاردن سيتي',
+        allowBarter: false,
+        verificationLevel: SilverVerificationLevel.CERTIFIED,
+      },
+      {
+        sellerId: seller.id,
+        title: 'سبيكة فضة 100 جرام - نقاء 999',
+        description: 'سبيكة فضة نقية 999، وزن 100 جرام بالضبط. مختومة ومعتمدة. مثالية للاستثمار.',
+        category: SilverCategory.BAR,
+        purity: SilverPurity.S999,
+        weightGrams: 100.0,
+        condition: SilverCondition.NEW,
+        askingPrice: 7200,
+        images: SILVER_IMAGES.bar,
+        governorate: 'الجيزة',
+        city: 'الشيخ زايد',
+        allowBarter: false,
+        verificationLevel: SilverVerificationLevel.CERTIFIED,
+      },
+    ];
+
+    // Get current silver prices for rawValue calculation
+    const currentPrices = await prisma.silverPrice.findMany({
+      orderBy: { timestamp: 'desc' },
+      distinct: ['purity'],
+    });
+    const priceMap: Record<string, number> = {};
+    currentPrices.forEach((p) => {
+      priceMap[p.purity] = p.buyPrice;
+    });
+
+    const createdItems: any[] = [];
+    for (const itemData of silverItems) {
+      const marketPrice = priceMap[itemData.purity] || 55;
+      const rawValue = itemData.weightGrams * marketPrice;
+
+      const item = await prisma.silverItem.create({
+        data: {
+          ...itemData,
+          rawValue,
+          silverPriceAtListing: marketPrice,
+          status: SilverItemStatus.ACTIVE,
+          views: Math.floor(Math.random() * 500) + 50,
+        },
+      });
+      createdItems.push(item);
+    }
+
+    // ============================================
+    // 5. Create some certificates
+    // ============================================
+    console.log('📜 Creating Certificates...');
+
+    const certifiedItems = createdItems.filter((i) => i.verificationLevel === SilverVerificationLevel.CERTIFIED);
+    for (const item of certifiedItems.slice(0, 3)) {
+      const partner = createdPartners[Math.floor(Math.random() * createdPartners.length)];
+
+      await prisma.silverCertificate.create({
+        data: {
+          itemId: item.id,
+          partnerId: partner.id,
+          certificateNumber: `SC-${Date.now()}-${Math.random().toString(36).substring(7).toUpperCase()}`,
+          verifiedPurity: item.purity,
+          verifiedWeight: item.weightGrams,
+          purityPercentage: item.purity === 'S999' ? 99.9 : item.purity === 'S925' ? 92.5 : 90.0,
+          isAuthentic: true,
+          notes: 'تم الفحص والتوثيق بنجاح',
+        },
+      });
+    }
+
+    // Get final counts
+    const finalPrices = await prisma.silverPrice.count();
+    const finalPartners = await prisma.silverPartner.count();
+    const finalItems = await prisma.silverItem.count();
+    const finalCerts = await prisma.silverCertificate.count();
+
+    return res.json({
+      success: true,
+      message: '✨ تم تغذية سوق الفضة بنجاح!',
+      data: {
+        silverPrices: finalPrices,
+        silverPartners: finalPartners,
+        silverItems: finalItems,
+        certificates: finalCerts,
+      },
+    });
+  } catch (error: any) {
+    console.error('Seed silver error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في تغذية سوق الفضة',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * RESEED SILVER MARKETPLACE
+ * إعادة تغذية سوق الفضة
+ */
+router.post('/reseed-silver', async (req, res) => {
+  try {
+    // Delete existing silver data
+    await prisma.silverCertificate.deleteMany({});
+    await prisma.silverTransaction.deleteMany({});
+    await prisma.silverOffer.deleteMany({});
+    await prisma.silverItem.deleteMany({});
+    await prisma.silverPartner.deleteMany({});
+    await prisma.silverPrice.deleteMany({});
+
+    // Call seed-silver endpoint
+    const seedRes = await fetch(`http://localhost:${process.env.PORT || 5000}/api/v1/seed/seed-silver`, {
+      method: 'POST',
+    });
+    const result = await seedRes.json();
+
+    return res.json({
+      success: true,
+      message: '✨ تم إعادة تغذية سوق الفضة بنجاح!',
+      data: result.data,
+    });
+  } catch (error: any) {
+    console.error('Reseed silver error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في إعادة تغذية سوق الفضة',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * CHECK SILVER MARKETPLACE DATA
+ * فحص بيانات سوق الفضة
+ */
+router.get('/check-silver', async (_req, res) => {
+  try {
+    const prices = await prisma.silverPrice.findMany();
+    const partners = await prisma.silverPartner.findMany();
+    const items = await prisma.silverItem.findMany({
+      include: {
+        seller: {
+          select: { id: true, fullName: true },
+        },
+      },
+    });
+    const certificates = await prisma.silverCertificate.count();
+
+    return res.json({
+      success: true,
+      message: 'تقرير سوق الفضة',
+      data: {
+        prices: prices.map((p) => ({
+          purity: p.purity,
+          buyPrice: p.buyPrice,
+          sellPrice: p.sellPrice,
+        })),
+        partners: partners.map((p) => ({
+          id: p.id,
+          name: p.nameAr,
+          governorate: p.governorate,
+          rating: p.rating,
+        })),
+        items: items.map((i) => ({
+          id: i.id,
+          title: i.title,
+          purity: i.purity,
+          weight: i.weightGrams,
+          price: i.askingPrice,
+          status: i.status,
+          seller: i.seller?.fullName,
+        })),
+        summary: {
+          totalPrices: prices.length,
+          totalPartners: partners.length,
+          totalItems: items.length,
+          totalCertificates: certificates,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.error('Check silver error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في جلب بيانات الفضة',
+      error: error.message,
+    });
+  }
+});
+
 export default router;
