@@ -613,6 +613,7 @@ export default function Navigation() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const languageMenuRef = useRef<HTMLDivElement>(null);
   const locationMenuRef = useRef<HTMLDivElement>(null);
+  const marketsScrollRef = useRef<HTMLDivElement>(null);
 
   // Fetch unread count
   useEffect(() => {
@@ -769,6 +770,20 @@ export default function Navigation() {
   const handleScrollCategories = () => {
     if (categoriesScrollRef.current) {
       categoriesScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+
+  // Scroll markets bar left (RTL: shows items on the right)
+  const handleScrollMarketsLeft = () => {
+    if (marketsScrollRef.current) {
+      marketsScrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+    }
+  };
+
+  // Scroll markets bar right (RTL: shows items on the left)
+  const handleScrollMarketsRight = () => {
+    if (marketsScrollRef.current) {
+      marketsScrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
     }
   };
 
@@ -1368,7 +1383,23 @@ export default function Navigation() {
             ============================================ */}
         <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 text-white shadow-lg">
           <div className="max-w-7xl mx-auto px-4">
-            <div className="flex items-center justify-center gap-1 py-3 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-1 py-3">
+              {/* Right Arrow (RTL: scrolls to show left items) */}
+              <button
+                onClick={handleScrollMarketsRight}
+                className="flex-shrink-0 p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="تمرير لليمين"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Scrollable Markets Container */}
+              <div
+                ref={marketsScrollRef}
+                className="flex-1 flex items-center justify-start gap-1 overflow-x-auto scrollbar-hide"
+              >
               <Link
                 href="/items"
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
@@ -1490,6 +1521,18 @@ export default function Navigation() {
                 <span className="text-lg">🔄</span>
                 المقايضات
               </Link>
+              </div>
+
+              {/* Left Arrow (RTL: scrolls to show right items) */}
+              <button
+                onClick={handleScrollMarketsLeft}
+                className="flex-shrink-0 p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                aria-label="تمرير لليسار"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
