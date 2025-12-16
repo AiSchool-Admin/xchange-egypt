@@ -168,6 +168,23 @@ model User {
   mobileFavorites           MobileFavorite[]          @relation("MobileFavorites")
   mobilePriceAlerts         MobilePriceAlert[]        @relation("MobilePriceAlerts")
 
+  // سوق المزادات المتقدم - Advanced Auction Marketplace Relations
+  auctionWatchlist          AuctionWatchlist[]        @relation("UserAuctionWatchlist")
+  auctionDeposits           AuctionDeposit[]          @relation("UserAuctionDeposits")
+  auctionSealedBids         AuctionSealedBid[]        @relation("UserSealedBids")
+  disputesInitiated         AuctionDispute[]          @relation("DisputeInitiator")
+  disputesReceived          AuctionDispute[]          @relation("DisputeRespondent")
+  disputesResolved          AuctionDispute[]          @relation("DisputeResolver")
+  disputeMessages           AuctionDisputeMessage[]   @relation("DisputeMessageSender")
+  auctionReviewsGiven       AuctionReview[]           @relation("AuctionReviewsGiven")
+  auctionReviewsReceived    AuctionReview[]           @relation("AuctionReviewsReceived")
+  fraudAlerts               AuctionFraudAlert[]       @relation("UserFraudAlerts")
+  fraudActionsBy            AuctionFraudAlert[]       @relation("FraudActionBy")
+  deviceFingerprints        DeviceFingerprint[]       @relation("UserDeviceFingerprints")
+  bidderProfile             BidderProfile?            @relation("UserBidderProfile")
+  auctionNotifications      AuctionNotification[]     @relation("UserAuctionNotifications")
+  auctionActivityLogs       AuctionActivityLog[]      @relation("UserAuctionActivityLogs")
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -1353,12 +1370,21 @@ model Auction {
   id                String        @id @default(uuid())
   listingId         String        @unique @map("listing_id")
 
+  // نوع المزاد والفئة
+  auctionType       AuctionType   @default(ENGLISH) @map("auction_type")
+  auctionCategory   AuctionCategory? @map("auction_category")
+
   // Pricing
   startingPrice     Float         @map("starting_price")
   currentPrice      Float         @map("current_price")
   buyNowPrice       Float?        @map("buy_now_price")
   reservePrice      Float?        @map("reserve_price")
   minBidIncrement   Float         @default(1.0) @map("min_bid_increment")
+
+  // متطلبات الإيداع
+  requiresDeposit   Boolean       @default(false) @map("requires_deposit")
+  depositAmount     Float?        @map("deposit_amount")
+  depositPercentage Float?        @map("deposit_percentage")
 
   // Timing
   startTime         DateTime      @map("start_time")
@@ -1377,6 +1403,15 @@ model Auction {
   totalBids         Int           @default(0) @map("total_bids")
   uniqueBidders     Int           @default(0) @map("unique_bidders")
   views             Int           @default(0)
+  watchlistCount    Int           @default(0) @map("watchlist_count")
+
+  // مزاد مميز
+  isFeatured        Boolean       @default(false) @map("is_featured")
+  featuredUntil     DateTime?     @map("featured_until")
+
+  // الموقع
+  governorate       String?
+  city              String?
 
   // Winner
   winnerId          String?       @map("winner_id")
@@ -1391,11 +1426,25 @@ model Auction {
   bids              AuctionBid[]
   winningBid        AuctionBid?   @relation("WinningBid", fields: [winningBidId], references: [id])
 
+  // علاقات جديدة - Advanced Auction Marketplace
+  watchlist         AuctionWatchlist[]   @relation("AuctionWatchlist")
+  deposits          AuctionDeposit[]     @relation("AuctionDeposits")
+  sealedBids        AuctionSealedBid[]   @relation("AuctionSealedBids")
+  disputes          AuctionDispute[]     @relation("AuctionDisputes")
+  reviews           AuctionReview[]      @relation("AuctionReviews")
+  fraudAlerts       AuctionFraudAlert[]  @relation("AuctionFraudAlerts")
+  notifications     AuctionNotification[] @relation("AuctionNotifications")
+  activityLogs      AuctionActivityLog[] @relation("AuctionActivityLogs")
+
   @@map("auctions")
   @@index([status])
   @@index([startTime])
   @@index([endTime])
   @@index([winnerId])
+  @@index([auctionType])
+  @@index([auctionCategory])
+  @@index([isFeatured])
+  @@index([governorate])
 }
 
 model AuctionBid {
@@ -7754,5 +7803,527 @@ model MobilePriceReference {
   @@map("mobile_price_references")
   @@unique([brand, model, storageGb])
   @@index([brand, model])
+}
+
+// ============================================
+// سوق المزادات المتقدم - Advanced Auction Marketplace
+// أفضل نظام مزادات في مصر والشرق الأوسط
+// ============================================
+
+// نوع المزاد
+enum AuctionType {
+  ENGLISH       // مزاد إنجليزي - المزايدة للأعلى
+  SEALED_BID    // مزاد مختوم - عرض واحد سري
+  DUTCH         // مزاد هولندي - السعر ينخفض
+}
+
+// فئات المزادات
+enum AuctionCategory {
+  CARS                // سيارات
+  REAL_ESTATE         // عقارات
+  MOBILE_PHONES       // موبايلات
+  GOLD_JEWELRY        // ذهب ومجوهرات
+  SILVER_ITEMS        // فضيات
+  ELECTRONICS         // إلكترونيات
+  FURNITURE           // أثاث
+  ANTIQUES            // تحف وآثار
+  ART                 // فنون
+  WATCHES             // ساعات
+  LUXURY_BAGS         // حقائب فاخرة
+  MACHINERY           // معدات وآلات
+  SCRAP               // خردة وتوالف
+  CUSTOMS             // مزادات جمارك
+  BANK_ASSETS         // أصول بنكية
+  OTHER               // أخرى
+}
+
+// حالة الإيداع
+enum AuctionDepositStatus {
+  PENDING             // في انتظار السداد
+  PAID                // تم السداد
+  HELD                // محتجز
+  REFUNDED            // تم الاسترداد
+  FORFEITED           // مصادر (لعدم إتمام الشراء)
+  APPLIED             // تم تطبيقه على المبلغ النهائي
+}
+
+// حالة النزاع
+enum AuctionDisputeStatus {
+  OPEN                // مفتوح
+  UNDER_REVIEW        // قيد المراجعة
+  EVIDENCE_REQUESTED  // طلب أدلة
+  ESCALATED           // تصعيد
+  RESOLVED_BUYER      // تم الحل لصالح المشتري
+  RESOLVED_SELLER     // تم الحل لصالح البائع
+  CLOSED              // مغلق
+}
+
+// نوع التنبيه بالاحتيال
+enum FraudAlertType {
+  SHILL_BIDDING           // مزايدة وهمية
+  MULTIPLE_ACCOUNTS       // حسابات متعددة
+  RAPID_BIDDING           // مزايدة سريعة مشبوهة
+  DEVICE_FINGERPRINT      // بصمة جهاز مشبوهة
+  PAYMENT_FRAUD           // احتيال دفع
+  SELLER_COLLUSION        // تواطؤ البائع
+  FAKE_LISTING            // قائمة مزيفة
+  SUSPICIOUS_PATTERN      // نمط مشبوه
+}
+
+// حالة تنبيه الاحتيال
+enum FraudAlertStatus {
+  DETECTED            // تم الكشف
+  INVESTIGATING       // قيد التحقيق
+  CONFIRMED           // مؤكد
+  FALSE_POSITIVE      // إنذار خاطئ
+  RESOLVED            // تم الحل
+  ACTION_TAKEN        // تم اتخاذ إجراء
+}
+
+// مستوى ثقة المزايد
+enum BidderTrustLevel {
+  NEW                 // جديد
+  BASIC               // أساسي
+  VERIFIED            // موثق
+  TRUSTED             // موثوق
+  POWER_BIDDER        // مزايد محترف
+  PREMIUM             // مميز
+}
+
+// ============================================
+// قائمة مراقبة المزادات - Auction Watchlist
+// ============================================
+
+model AuctionWatchlist {
+  id                String            @id @default(uuid())
+  userId            String            @map("user_id")
+  auctionId         String            @map("auction_id")
+
+  // إعدادات التنبيهات
+  notifyOnBid       Boolean           @default(true) @map("notify_on_bid")
+  notifyOnOutbid    Boolean           @default(true) @map("notify_on_outbid")
+  notifyOnEnding    Boolean           @default(true) @map("notify_on_ending")
+  notifyBeforeEnd   Int               @default(30) @map("notify_before_end")  // دقائق قبل الانتهاء
+
+  // حد السعر للتنبيه
+  priceThreshold    Float?            @map("price_threshold")
+
+  // الطوابع الزمنية
+  addedAt           DateTime          @default(now()) @map("added_at")
+
+  // العلاقات
+  user              User              @relation("UserAuctionWatchlist", fields: [userId], references: [id], onDelete: Cascade)
+  auction           Auction           @relation("AuctionWatchlist", fields: [auctionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, auctionId])
+  @@map("auction_watchlist")
+  @@index([userId])
+  @@index([auctionId])
+}
+
+// ============================================
+// الإيداعات والضمانات - Auction Deposits
+// ============================================
+
+model AuctionDeposit {
+  id                String              @id @default(uuid())
+  auctionId         String              @map("auction_id")
+  userId            String              @map("user_id")
+
+  // تفاصيل الإيداع
+  amount            Float               // مبلغ الإيداع
+  currency          String              @default("EGP")
+
+  // الحالة
+  status            AuctionDepositStatus @default(PENDING)
+
+  // بيانات الدفع
+  paymentMethod     String?             @map("payment_method")
+  paymentReference  String?             @map("payment_reference")
+  paidAt            DateTime?           @map("paid_at")
+
+  // الاسترداد
+  refundedAt        DateTime?           @map("refunded_at")
+  refundReference   String?             @map("refund_reference")
+  refundReason      String?             @map("refund_reason")
+
+  // مصادرة (إذا لم يتم الدفع)
+  forfeitedAt       DateTime?           @map("forfeited_at")
+  forfeitReason     String?             @map("forfeit_reason")
+
+  // الطوابع الزمنية
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  // العلاقات
+  auction           Auction             @relation("AuctionDeposits", fields: [auctionId], references: [id], onDelete: Cascade)
+  user              User                @relation("UserAuctionDeposits", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([auctionId, userId])
+  @@map("auction_deposits")
+  @@index([auctionId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// المزادات المختومة - Sealed Bids
+// ============================================
+
+model AuctionSealedBid {
+  id                String            @id @default(uuid())
+  auctionId         String            @map("auction_id")
+  bidderId          String            @map("bidder_id")
+
+  // العرض المختوم (مشفر)
+  encryptedAmount   String            @map("encrypted_amount")
+  bidHash           String            @map("bid_hash")  // للتحقق من سلامة البيانات
+
+  // العرض المفتوح (بعد انتهاء المزاد)
+  revealedAmount    Float?            @map("revealed_amount")
+  isRevealed        Boolean           @default(false) @map("is_revealed")
+  revealedAt        DateTime?         @map("revealed_at")
+
+  // ملاحظات
+  notes             String?
+
+  // الطوابع الزمنية
+  submittedAt       DateTime          @default(now()) @map("submitted_at")
+
+  // العلاقات
+  auction           Auction           @relation("AuctionSealedBids", fields: [auctionId], references: [id], onDelete: Cascade)
+  bidder            User              @relation("UserSealedBids", fields: [bidderId], references: [id], onDelete: Cascade)
+
+  @@unique([auctionId, bidderId])  // مزايدة مختومة واحدة لكل مستخدم
+  @@map("auction_sealed_bids")
+  @@index([auctionId])
+  @@index([bidderId])
+}
+
+// ============================================
+// النزاعات - Auction Disputes
+// ============================================
+
+model AuctionDispute {
+  id                String              @id @default(uuid())
+  auctionId         String              @map("auction_id")
+  initiatorId       String              @map("initiator_id")  // من بدأ النزاع
+  respondentId      String              @map("respondent_id") // الطرف الآخر
+
+  // تفاصيل النزاع
+  reason            String              // سبب النزاع
+  description       String              // وصف تفصيلي
+
+  // الحالة
+  status            AuctionDisputeStatus @default(OPEN)
+
+  // الأدلة
+  evidenceUrls      String[]            @default([]) @map("evidence_urls")
+
+  // القرار
+  resolution        String?             // نص القرار
+  resolvedById      String?             @map("resolved_by_id")
+  resolvedAt        DateTime?           @map("resolved_at")
+
+  // التعويض
+  compensationAmount Float?             @map("compensation_amount")
+  compensationPaidTo String?            @map("compensation_paid_to")
+
+  // الطوابع الزمنية
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  // العلاقات
+  auction           Auction             @relation("AuctionDisputes", fields: [auctionId], references: [id], onDelete: Cascade)
+  initiator         User                @relation("DisputeInitiator", fields: [initiatorId], references: [id])
+  respondent        User                @relation("DisputeRespondent", fields: [respondentId], references: [id])
+  resolvedBy        User?               @relation("DisputeResolver", fields: [resolvedById], references: [id])
+  messages          AuctionDisputeMessage[]
+
+  @@map("auction_disputes")
+  @@index([auctionId])
+  @@index([initiatorId])
+  @@index([status])
+}
+
+// رسائل النزاع
+model AuctionDisputeMessage {
+  id                String            @id @default(uuid())
+  disputeId         String            @map("dispute_id")
+  senderId          String            @map("sender_id")
+
+  // المحتوى
+  message           String
+  attachments       String[]          @default([])
+  isFromAdmin       Boolean           @default(false) @map("is_from_admin")
+
+  // الطوابع الزمنية
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  // العلاقات
+  dispute           AuctionDispute    @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+  sender            User              @relation("DisputeMessageSender", fields: [senderId], references: [id])
+
+  @@map("auction_dispute_messages")
+  @@index([disputeId])
+}
+
+// ============================================
+// تقييمات المزادات - Auction Reviews
+// ============================================
+
+model AuctionReview {
+  id                String            @id @default(uuid())
+  auctionId         String            @map("auction_id")
+  reviewerId        String            @map("reviewer_id")
+  revieweeId        String            @map("reviewee_id")
+
+  // التقييمات
+  overallRating     Float             @map("overall_rating")       // 1-5
+  accuracyRating    Float?            @map("accuracy_rating")      // دقة الوصف
+  communicationRating Float?          @map("communication_rating") // التواصل
+  shippingRating    Float?            @map("shipping_rating")      // الشحن
+  paymentRating     Float?            @map("payment_rating")       // سرعة الدفع
+
+  // التعليق
+  comment           String?
+
+  // الصور
+  images            String[]          @default([])
+
+  // الرد على التقييم
+  response          String?
+  respondedAt       DateTime?         @map("responded_at")
+
+  // الطوابع الزمنية
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  // العلاقات
+  auction           Auction           @relation("AuctionReviews", fields: [auctionId], references: [id], onDelete: Cascade)
+  reviewer          User              @relation("AuctionReviewsGiven", fields: [reviewerId], references: [id])
+  reviewee          User              @relation("AuctionReviewsReceived", fields: [revieweeId], references: [id])
+
+  @@unique([auctionId, reviewerId])  // تقييم واحد لكل مستخدم في المزاد
+  @@map("auction_reviews")
+  @@index([auctionId])
+  @@index([reviewerId])
+  @@index([revieweeId])
+}
+
+// ============================================
+// كشف الاحتيال - Fraud Detection
+// ============================================
+
+model AuctionFraudAlert {
+  id                String            @id @default(uuid())
+  auctionId         String?           @map("auction_id")
+  userId            String?           @map("user_id")
+  bidId             String?           @map("bid_id")
+
+  // نوع التنبيه
+  alertType         FraudAlertType    @map("alert_type")
+
+  // الحالة
+  status            FraudAlertStatus  @default(DETECTED)
+
+  // التفاصيل
+  description       String
+  confidence        Float             @default(0)  // 0-100 نسبة الثقة
+
+  // البيانات الفنية
+  deviceFingerprint String?           @map("device_fingerprint")
+  ipAddress         String?           @map("ip_address")
+  userAgent         String?           @map("user_agent")
+
+  // البيانات التحليلية
+  metadata          Json?             // بيانات إضافية للتحليل
+
+  // الإجراء المتخذ
+  actionTaken       String?           @map("action_taken")
+  actionById        String?           @map("action_by_id")
+  actionAt          DateTime?         @map("action_at")
+
+  // الطوابع الزمنية
+  detectedAt        DateTime          @default(now()) @map("detected_at")
+  resolvedAt        DateTime?         @map("resolved_at")
+
+  // العلاقات
+  auction           Auction?          @relation("AuctionFraudAlerts", fields: [auctionId], references: [id])
+  user              User?             @relation("UserFraudAlerts", fields: [userId], references: [id])
+  actionBy          User?             @relation("FraudActionBy", fields: [actionById], references: [id])
+
+  @@map("auction_fraud_alerts")
+  @@index([auctionId])
+  @@index([userId])
+  @@index([alertType])
+  @@index([status])
+}
+
+// بصمات الأجهزة
+model DeviceFingerprint {
+  id                String            @id @default(uuid())
+  userId            String            @map("user_id")
+
+  // بصمة الجهاز
+  fingerprint       String            @unique
+
+  // معلومات الجهاز
+  browser           String?
+  os                String?
+  device            String?
+  screenResolution  String?           @map("screen_resolution")
+  timezone          String?
+  language          String?
+
+  // العنوان
+  ipAddresses       String[]          @default([]) @map("ip_addresses")
+
+  // الحالة
+  isTrusted         Boolean           @default(false) @map("is_trusted")
+  isFlagged         Boolean           @default(false) @map("is_flagged")
+  flagReason        String?           @map("flag_reason")
+
+  // الاستخدام
+  firstSeenAt       DateTime          @default(now()) @map("first_seen_at")
+  lastSeenAt        DateTime          @default(now()) @map("last_seen_at")
+  usageCount        Int               @default(1) @map("usage_count")
+
+  // العلاقات
+  user              User              @relation("UserDeviceFingerprints", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("device_fingerprints")
+  @@index([userId])
+  @@index([fingerprint])
+  @@index([isFlagged])
+}
+
+// ============================================
+// ملف المزايد - Bidder Profile
+// ============================================
+
+model BidderProfile {
+  id                String            @id @default(uuid())
+  userId            String            @unique @map("user_id")
+
+  // مستوى الثقة
+  trustLevel        BidderTrustLevel  @default(NEW) @map("trust_level")
+  trustScore        Float             @default(0) @map("trust_score")  // 0-100
+
+  // الإحصائيات
+  totalBids         Int               @default(0) @map("total_bids")
+  totalWins         Int               @default(0) @map("total_wins")
+  totalLosses       Int               @default(0) @map("total_losses")
+  winRate           Float             @default(0) @map("win_rate")
+
+  // المبالغ
+  totalBidAmount    Float             @default(0) @map("total_bid_amount")
+  totalWonAmount    Float             @default(0) @map("total_won_amount")
+  totalPaidAmount   Float             @default(0) @map("total_paid_amount")
+
+  // السمعة
+  completionRate    Float             @default(100) @map("completion_rate")  // نسبة إتمام الصفقات
+  paymentSpeed      Float             @default(0) @map("payment_speed")      // متوسط سرعة الدفع بالساعات
+  disputeRate       Float             @default(0) @map("dispute_rate")       // نسبة النزاعات
+
+  // الحدود
+  maxBidLimit       Float?            @map("max_bid_limit")          // أقصى مبلغ للمزايدة
+  dailyBidLimit     Int               @default(50) @map("daily_bid_limit") // عدد المزايدات اليومية
+  requiresDeposit   Boolean           @default(false) @map("requires_deposit")
+  depositPercentage Float             @default(10) @map("deposit_percentage")
+
+  // التحقق
+  idVerified        Boolean           @default(false) @map("id_verified")
+  phoneVerified     Boolean           @default(false) @map("phone_verified")
+  addressVerified   Boolean           @default(false) @map("address_verified")
+  bankVerified      Boolean           @default(false) @map("bank_verified")
+
+  // الإيقاف
+  isSuspended       Boolean           @default(false) @map("is_suspended")
+  suspendedAt       DateTime?         @map("suspended_at")
+  suspendReason     String?           @map("suspend_reason")
+  suspendUntil      DateTime?         @map("suspend_until")
+
+  // الطوابع الزمنية
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  // العلاقات
+  user              User              @relation("UserBidderProfile", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bidder_profiles")
+  @@index([userId])
+  @@index([trustLevel])
+}
+
+// ============================================
+// إشعارات المزادات - Auction Notifications
+// ============================================
+
+model AuctionNotification {
+  id                String            @id @default(uuid())
+  userId            String            @map("user_id")
+  auctionId         String            @map("auction_id")
+
+  // نوع الإشعار
+  type              String            // BID_PLACED, OUTBID, AUCTION_ENDING, WON, LOST, etc.
+
+  // المحتوى
+  title             String
+  message           String
+
+  // الحالة
+  isRead            Boolean           @default(false) @map("is_read")
+  readAt            DateTime?         @map("read_at")
+
+  // البيانات الإضافية
+  metadata          Json?
+
+  // الطوابع الزمنية
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  // العلاقات
+  user              User              @relation("UserAuctionNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  auction           Auction           @relation("AuctionNotifications", fields: [auctionId], references: [id], onDelete: Cascade)
+
+  @@map("auction_notifications")
+  @@index([userId])
+  @@index([auctionId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ============================================
+// سجل نشاط المزادات - Auction Activity Log
+// ============================================
+
+model AuctionActivityLog {
+  id                String            @id @default(uuid())
+  auctionId         String            @map("auction_id")
+  userId            String?           @map("user_id")
+
+  // نوع النشاط
+  action            String            // VIEW, BID, WATCHLIST_ADD, SHARE, etc.
+
+  // التفاصيل
+  details           Json?
+
+  // البيانات الفنية
+  ipAddress         String?           @map("ip_address")
+  userAgent         String?           @map("user_agent")
+  deviceFingerprint String?           @map("device_fingerprint")
+
+  // الطوابع الزمنية
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  // العلاقات
+  auction           Auction           @relation("AuctionActivityLogs", fields: [auctionId], references: [id], onDelete: Cascade)
+  user              User?             @relation("UserAuctionActivityLogs", fields: [userId], references: [id])
+
+  @@map("auction_activity_logs")
+  @@index([auctionId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
 }
 

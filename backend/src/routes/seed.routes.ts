@@ -1395,4 +1395,488 @@ router.get('/check-silver', async (_req, res) => {
   }
 });
 
+/**
+ * SEED AUCTIONS MARKETPLACE
+ * تغذية سوق المزادات ببيانات تجريبية
+ */
+router.post('/seed-auctions', async (req, res) => {
+  try {
+    const { AuctionStatus, BidStatus, ListingType, ListingStatus, ItemStatus, ItemCondition } = await import('@prisma/client');
+
+    // Check if auction data already exists
+    const existingAuctions = await prisma.auction.count();
+
+    if (existingAuctions > 0) {
+      return res.json({
+        success: false,
+        message: `بيانات المزادات موجودة بالفعل (${existingAuctions} مزاد). استخدم /reseed-auctions لإعادة التهيئة.`,
+        data: {
+          existingAuctions,
+        },
+      });
+    }
+
+    // Get users for sellers and bidders
+    const users = await prisma.user.findMany({
+      take: 10,
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (users.length < 3) {
+      return res.status(400).json({
+        success: false,
+        message: 'لا يوجد عدد كافٍ من المستخدمين. يرجى تشغيل seed-users أولاً.',
+      });
+    }
+
+    const sellers = users.slice(0, 5);
+    const bidders = users.slice(2, 10);
+
+    // Get a category
+    let category = await prisma.category.findFirst();
+    if (!category) {
+      category = await prisma.category.create({
+        data: {
+          nameEn: 'General',
+          nameAr: 'عام',
+          slug: 'general',
+          isActive: true,
+        },
+      });
+    }
+
+    const now = new Date();
+    const hoursFromNow = (hours: number) => new Date(now.getTime() + hours * 60 * 60 * 1000);
+    const daysFromNow = (days: number) => new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+    const daysAgo = (days: number) => new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+    // Sample auction data
+    const auctionData = [
+      {
+        title: 'iPhone 15 Pro Max 256GB',
+        titleAr: 'آيفون 15 برو ماكس 256 جيجا',
+        description: 'آيفون 15 برو ماكس الجديد، ضمان أبل الرسمي',
+        images: ['https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?w=800'],
+        condition: ItemCondition.NEW,
+        estimatedValue: 65000,
+        governorate: 'Cairo',
+        city: 'Nasr City',
+        seller: sellers[0],
+        auction: {
+          startingPrice: 30000,
+          currentPrice: 42500,
+          buyNowPrice: 60000,
+          reservePrice: 45000,
+          minBidIncrement: 500,
+          startTime: daysAgo(2),
+          endTime: daysFromNow(5),
+          status: AuctionStatus.ACTIVE,
+          totalBids: 25,
+          uniqueBidders: 8,
+          views: 1250,
+          autoExtend: true,
+        },
+        bids: [
+          { bidder: 2, amount: 30500, time: -45 },
+          { bidder: 3, amount: 35000, time: -24 },
+          { bidder: 4, amount: 42500, time: -2 },
+        ],
+        featured: true,
+      },
+      {
+        title: 'MacBook Pro M3 14"',
+        titleAr: 'ماك بوك برو M3',
+        description: 'ماك بوك برو بمعالج M3، استخدام 3 أشهر',
+        images: ['https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=800'],
+        condition: ItemCondition.LIKE_NEW,
+        estimatedValue: 85000,
+        governorate: 'Alexandria',
+        city: 'Smouha',
+        seller: sellers[1],
+        auction: {
+          startingPrice: 45000,
+          currentPrice: 58000,
+          buyNowPrice: 80000,
+          reservePrice: 55000,
+          minBidIncrement: 1000,
+          startTime: daysAgo(1),
+          endTime: daysFromNow(4),
+          status: AuctionStatus.ACTIVE,
+          totalBids: 13,
+          uniqueBidders: 5,
+          views: 890,
+          autoExtend: true,
+        },
+        bids: [
+          { bidder: 3, amount: 46000, time: -22 },
+          { bidder: 5, amount: 52000, time: -10 },
+          { bidder: 2, amount: 58000, time: -1 },
+        ],
+        featured: true,
+      },
+      {
+        title: 'PlayStation 5 + 10 ألعاب',
+        titleAr: 'بلايستيشن 5 مع مجموعة ألعاب',
+        description: 'PS5 مع God of War, Spider-Man 2, FIFA 24',
+        images: ['https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=800'],
+        condition: ItemCondition.LIKE_NEW,
+        estimatedValue: 35000,
+        governorate: 'Giza',
+        city: '6th October City',
+        seller: sellers[2],
+        auction: {
+          startingPrice: 15000,
+          currentPrice: 22500,
+          buyNowPrice: 32000,
+          minBidIncrement: 500,
+          startTime: daysAgo(3),
+          endTime: daysFromNow(2),
+          status: AuctionStatus.ACTIVE,
+          totalBids: 15,
+          uniqueBidders: 6,
+          views: 2100,
+          autoExtend: true,
+        },
+        bids: [
+          { bidder: 4, amount: 15500, time: -68 },
+          { bidder: 2, amount: 19500, time: -36 },
+          { bidder: 5, amount: 22500, time: -8 },
+        ],
+        featured: true,
+      },
+      {
+        title: 'Apple Watch Ultra 2',
+        titleAr: 'ساعة أبل ألترا 2',
+        description: 'Apple Watch Ultra 2 الجديدة كلياً',
+        images: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800'],
+        condition: ItemCondition.NEW,
+        estimatedValue: 45000,
+        governorate: 'Cairo',
+        city: 'Maadi',
+        seller: sellers[3],
+        auction: {
+          startingPrice: 25000,
+          currentPrice: 36500,
+          buyNowPrice: 42000,
+          minBidIncrement: 500,
+          startTime: daysAgo(6),
+          endTime: hoursFromNow(4),
+          status: AuctionStatus.ACTIVE,
+          totalBids: 23,
+          uniqueBidders: 9,
+          views: 3200,
+          autoExtend: true,
+        },
+        bids: [
+          { bidder: 2, amount: 30000, time: -100 },
+          { bidder: 6, amount: 33500, time: -48 },
+          { bidder: 7, amount: 36500, time: -3 },
+        ],
+        featured: true,
+      },
+      {
+        title: 'Mercedes-Benz E200 2022',
+        titleAr: 'مرسيدس E200 موديل 2022',
+        description: 'مرسيدس E200 AMG Line، 15,000 كم',
+        images: ['https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800'],
+        condition: ItemCondition.EXCELLENT,
+        estimatedValue: 2200000,
+        governorate: 'Cairo',
+        city: 'New Cairo',
+        seller: sellers[4],
+        auction: {
+          startingPrice: 1500000,
+          currentPrice: 1800000,
+          buyNowPrice: 2100000,
+          reservePrice: 1700000,
+          minBidIncrement: 50000,
+          startTime: daysAgo(4),
+          endTime: daysFromNow(6),
+          status: AuctionStatus.ACTIVE,
+          totalBids: 6,
+          uniqueBidders: 3,
+          views: 4500,
+          autoExtend: true,
+        },
+        bids: [
+          { bidder: 3, amount: 1550000, time: -90 },
+          { bidder: 5, amount: 1700000, time: -48 },
+          { bidder: 2, amount: 1800000, time: -12 },
+        ],
+        featured: true,
+      },
+      {
+        title: 'طقم أنتيك فيكتوري',
+        titleAr: 'طقم صالون أنتيك نادر',
+        description: 'طقم صالون من العصر الفيكتوري، خشب ماهوجني منحوت يدوياً',
+        images: ['https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800'],
+        condition: ItemCondition.GOOD,
+        estimatedValue: 250000,
+        governorate: 'Cairo',
+        city: 'Zamalek',
+        seller: sellers[0],
+        auction: {
+          startingPrice: 100000,
+          currentPrice: 100000,
+          buyNowPrice: 230000,
+          reservePrice: 150000,
+          minBidIncrement: 10000,
+          startTime: daysFromNow(2),
+          endTime: daysFromNow(12),
+          status: AuctionStatus.SCHEDULED,
+          totalBids: 0,
+          uniqueBidders: 0,
+          views: 320,
+          autoExtend: true,
+        },
+        bids: [],
+        featured: true,
+      },
+    ];
+
+    let createdAuctions = 0;
+    let createdBids = 0;
+
+    for (const data of auctionData) {
+      try {
+        // Create Item
+        const item = await prisma.item.create({
+          data: {
+            sellerId: data.seller.id,
+            categoryId: category!.id,
+            title: data.title,
+            description: data.description,
+            condition: data.condition,
+            estimatedValue: data.estimatedValue,
+            images: data.images,
+            governorate: data.governorate,
+            city: data.city,
+            listingType: ListingType.AUCTION,
+            isFeatured: data.featured || false,
+            status: ItemStatus.ACTIVE,
+          },
+        });
+
+        // Create Listing
+        const listing = await prisma.listing.create({
+          data: {
+            itemId: item.id,
+            userId: data.seller.id,
+            listingType: ListingType.AUCTION,
+            price: data.auction.buyNowPrice || data.estimatedValue,
+            startingBid: data.auction.startingPrice,
+            currentBid: data.auction.currentPrice,
+            bidIncrement: data.auction.minBidIncrement,
+            status: ListingStatus.ACTIVE,
+            startDate: data.auction.startTime,
+            endDate: data.auction.endTime,
+          },
+        });
+
+        // Create Auction
+        const auction = await prisma.auction.create({
+          data: {
+            listingId: listing.id,
+            startingPrice: data.auction.startingPrice,
+            currentPrice: data.auction.currentPrice,
+            buyNowPrice: data.auction.buyNowPrice,
+            reservePrice: data.auction.reservePrice,
+            minBidIncrement: data.auction.minBidIncrement,
+            startTime: data.auction.startTime,
+            endTime: data.auction.endTime,
+            status: data.auction.status,
+            totalBids: data.auction.totalBids,
+            uniqueBidders: data.auction.uniqueBidders,
+            views: data.auction.views,
+            autoExtend: data.auction.autoExtend,
+          },
+        });
+
+        createdAuctions++;
+
+        // Create Bids
+        if (data.bids && data.bids.length > 0) {
+          for (let i = 0; i < data.bids.length; i++) {
+            const bidData = data.bids[i];
+            const bidder = bidders[bidData.bidder % bidders.length];
+            const bidTime = new Date(now.getTime() + bidData.time * 60 * 60 * 1000);
+            const isLastBid = i === data.bids.length - 1;
+            const status = isLastBid ? BidStatus.WINNING : BidStatus.OUTBID;
+
+            await prisma.auctionBid.create({
+              data: {
+                auctionId: auction.id,
+                listingId: listing.id,
+                bidderId: bidder.id,
+                bidAmount: bidData.amount,
+                status,
+                createdAt: bidTime,
+              },
+            });
+            createdBids++;
+          }
+        }
+      } catch (err: any) {
+        console.error(`Error creating auction "${data.title}":`, err.message);
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: '🔨 تم تغذية سوق المزادات بنجاح!',
+      data: {
+        auctionsCreated: createdAuctions,
+        bidsCreated: createdBids,
+        activeAuctions: auctionData.filter((a) => a.auction.status === AuctionStatus.ACTIVE).length,
+        scheduledAuctions: auctionData.filter((a) => a.auction.status === AuctionStatus.SCHEDULED).length,
+        featuredAuctions: auctionData.filter((a) => a.featured).length,
+      },
+    });
+  } catch (error: any) {
+    console.error('Seed auctions error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في تغذية سوق المزادات',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * RESEED AUCTIONS MARKETPLACE
+ * إعادة تغذية سوق المزادات
+ */
+router.post('/reseed-auctions', async (req, res) => {
+  try {
+    // Delete existing auction data in correct order for foreign key constraints
+    await prisma.auctionBid.deleteMany({});
+    await prisma.auctionWatchlist.deleteMany({}).catch(() => {});
+    await prisma.auctionDeposit.deleteMany({}).catch(() => {});
+    await prisma.sealedBid.deleteMany({}).catch(() => {});
+    await prisma.proxyBid.deleteMany({}).catch(() => {});
+    await prisma.auctionDispute.deleteMany({}).catch(() => {});
+    await prisma.auctionReview.deleteMany({}).catch(() => {});
+    await prisma.auction.deleteMany({});
+
+    // Delete associated listings and items (only auction types)
+    await prisma.listing.deleteMany({
+      where: { listingType: 'AUCTION' },
+    });
+    await prisma.item.deleteMany({
+      where: { listingType: 'AUCTION' },
+    });
+
+    // Call seed-auctions endpoint internally
+    const PORT = process.env.PORT || 5000;
+    const seedRes = await fetch(`http://localhost:${PORT}/api/v1/seed/seed-auctions`, {
+      method: 'POST',
+    });
+    const result = await seedRes.json() as { success: boolean; data?: any; message?: string };
+
+    if (result.success) {
+      return res.json({
+        success: true,
+        message: '🔨 تم إعادة تغذية سوق المزادات بنجاح!',
+        data: result.data,
+      });
+    } else {
+      return res.status(400).json(result);
+    }
+  } catch (error: any) {
+    console.error('Reseed auctions error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في إعادة تغذية سوق المزادات',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * CHECK AUCTIONS MARKETPLACE DATA
+ * فحص بيانات سوق المزادات
+ */
+router.get('/check-auctions', async (_req, res) => {
+  try {
+    const auctions = await prisma.auction.findMany({
+      include: {
+        listing: {
+          include: {
+            item: {
+              select: {
+                id: true,
+                title: true,
+                images: true,
+                governorate: true,
+              },
+            },
+            user: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+          },
+        },
+        bids: {
+          orderBy: { bidAmount: 'desc' },
+          take: 3,
+          include: {
+            bidder: {
+              select: { fullName: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const totalBids = await prisma.auctionBid.count();
+    const watchlistCount = await prisma.auctionWatchlist.count().catch(() => 0);
+    const depositsCount = await prisma.auctionDeposit.count().catch(() => 0);
+
+    // Group by status
+    const byStatus = auctions.reduce((acc, a) => {
+      acc[a.status] = (acc[a.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return res.json({
+      success: true,
+      message: 'تقرير سوق المزادات',
+      summary: {
+        totalAuctions: auctions.length,
+        totalBids,
+        totalWatchlist: watchlistCount,
+        totalDeposits: depositsCount,
+        byStatus,
+      },
+      auctions: auctions.map((a) => ({
+        id: a.id,
+        title: a.listing?.item?.title,
+        status: a.status,
+        currentPrice: a.currentPrice,
+        startingPrice: a.startingPrice,
+        buyNowPrice: a.buyNowPrice,
+        endTime: a.endTime,
+        totalBids: a.totalBids,
+        views: a.views,
+        seller: a.listing?.user?.fullName,
+        topBids: a.bids.map((b) => ({
+          amount: b.bidAmount,
+          bidder: b.bidder?.fullName,
+          status: b.status,
+        })),
+      })),
+    });
+  } catch (error: any) {
+    console.error('Check auctions error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'فشل في جلب بيانات المزادات',
+      error: error.message,
+    });
+  }
+});
+
 export default router;
