@@ -228,13 +228,34 @@ export default function PoolsPage() {
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Hero */}
-      <section className="bg-gradient-to-l from-emerald-600 via-green-500 to-teal-500 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold mb-3 flex items-center justify-center gap-3">
-            <span className="text-5xl">🤝</span>
-            صناديق المقايضة الجماعية
-          </h1>
-          <p className="text-xl text-white/90">اجمع قيمة منتجاتك مع آخرين للحصول على منتج أكبر!</p>
+      <section className="bg-gradient-to-l from-emerald-600 via-green-500 to-teal-500 text-white py-12 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-yellow-300 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="text-center lg:text-right">
+              <div className="flex items-center justify-center lg:justify-start gap-4 mb-4">
+                <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center text-4xl shadow-xl">
+                  🤝
+                </div>
+                <h1 className="text-4xl font-bold">صناديق المقايضة الجماعية</h1>
+              </div>
+              <p className="text-xl text-white/90 max-w-2xl">
+                اجمع قيمة منتجاتك مع آخرين للحصول على منتج أكبر! تعاون مع مستخدمين آخرين لتحقيق صفقات أكبر.
+              </p>
+            </div>
+            {user && (
+              <a
+                href="/pools/new"
+                className="px-8 py-4 bg-white text-emerald-600 rounded-2xl font-bold text-lg hover:bg-gray-100 transition shadow-xl flex items-center gap-3"
+              >
+                <span className="text-2xl">➕</span>
+                إنشاء صندوق جديد
+              </a>
+            )}
+          </div>
         </div>
       </section>
 
@@ -284,10 +305,19 @@ export default function PoolsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 bg-white rounded-2xl">
-                  <span className="text-6xl mb-4 block">📭</span>
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">لا توجد صناديق متاحة حالياً</h3>
-                  <p className="text-gray-500">كن أول من ينشئ صندوق مقايضة جماعية!</p>
+                <div className="text-center py-16 bg-white rounded-2xl shadow-sm">
+                  <span className="text-7xl mb-4 block">📭</span>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">لا توجد صناديق متاحة حالياً</h3>
+                  <p className="text-gray-500 mb-6">كن أول من ينشئ صندوق مقايضة جماعية!</p>
+                  {user && (
+                    <a
+                      href="/pools/new"
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-l from-emerald-500 to-green-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-green-600 transition shadow-lg"
+                    >
+                      <span className="text-xl">➕</span>
+                      إنشاء صندوق جديد
+                    </a>
+                  )}
                 </div>
               )
             )}
@@ -299,10 +329,26 @@ export default function PoolsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 bg-white rounded-2xl">
-                  <span className="text-6xl mb-4 block">📭</span>
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">لم تنضم لأي صندوق بعد</h3>
-                  <p className="text-gray-500">تصفح الصناديق المتاحة وانضم لأحدها</p>
+                <div className="text-center py-16 bg-white rounded-2xl shadow-sm">
+                  <span className="text-7xl mb-4 block">📭</span>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-2">لم تنضم لأي صندوق بعد</h3>
+                  <p className="text-gray-500 mb-6">تصفح الصناديق المتاحة وانضم لأحدها أو أنشئ صندوق جديد</p>
+                  <div className="flex flex-wrap gap-4 justify-center">
+                    <button
+                      onClick={() => setTab('open')}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
+                    >
+                      <span>🌍</span>
+                      تصفح الصناديق المتاحة
+                    </button>
+                    <a
+                      href="/pools/new"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-l from-emerald-500 to-green-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-green-600 transition shadow-lg"
+                    >
+                      <span>➕</span>
+                      إنشاء صندوق جديد
+                    </a>
+                  </div>
                 </div>
               )
             )}

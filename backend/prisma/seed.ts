@@ -78,6 +78,9 @@ async function main() {
     // Step 5: Seed demo data (depends on everything above)
     await runSeedScript('seed-demo-data.ts', 'Seeding Demo Data (Listings, Transactions, Barter)');
 
+    // Step 6: Seed barter marketplace data
+    await runSeedScript('seed-barter-marketplace.ts', 'Seeding Barter Marketplace (Items, Offers, Pools, Chains)');
+
     // Summary
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
@@ -93,6 +96,10 @@ async function main() {
     console.log('   • Active listings');
     console.log('   • Transaction history');
     console.log('   • Barter offers and exchanges');
+    console.log('   • Barter marketplace items');
+    console.log('   • Open barter offers');
+    console.log('   • Collective barter pools');
+    console.log('   • Multi-party barter chains');
     console.log('\n🔐 Demo Login Credentials:');
     console.log('   Individual: ahmed.mohamed@example.com / Password123!');
     console.log('   Business: contact@techstore.eg / Password123!');
