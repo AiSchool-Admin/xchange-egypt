@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -59,7 +59,7 @@ interface MobileListing {
   };
 }
 
-export default function MobilesPage() {
+function MobilesContent() {
   const searchParams = useSearchParams();
   const [listings, setListings] = useState<MobileListing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -407,5 +407,20 @@ export default function MobilesPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MobilesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center" dir="rtl">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">جاري تحميل سوق الموبايلات...</p>
+        </div>
+      </div>
+    }>
+      <MobilesContent />
+    </Suspense>
   );
 }

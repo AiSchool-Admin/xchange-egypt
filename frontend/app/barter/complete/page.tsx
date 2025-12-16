@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { findMyMatchingItem, BarterMatch, createBarterOffer } from '@/lib/api/barter';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
-export default function BarterCompletePage() {
+function BarterCompleteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -410,5 +410,20 @@ export default function BarterCompletePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BarterCompletePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-teal-600 border-t-transparent"></div>
+          <p className="mt-4 text-gray-600 text-lg">جاري التحميل...</p>
+        </div>
+      </div>
+    }>
+      <BarterCompleteContent />
+    </Suspense>
   );
 }

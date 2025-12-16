@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -56,7 +56,7 @@ const TRANSACTION_TYPE_LABELS: Record<string, string> = {
   BARTER: 'مقايضة',
 };
 
-export default function TransactionsPage() {
+function TransactionsContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -583,5 +583,17 @@ export default function TransactionsPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl text-gray-600">جاري التحميل...</div>
+      </div>
+    }>
+      <TransactionsContent />
+    </Suspense>
   );
 }

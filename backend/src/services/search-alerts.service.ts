@@ -5,6 +5,15 @@ import prisma from '../lib/prisma';
 // خدمة تنبيهات البحث
 // ============================================
 
+interface SavedSearchFilters {
+  categoryId?: string;
+  governorate?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  condition?: string;
+  type?: string;
+}
+
 export class SearchAlertsService {
   /**
    * Create saved search
@@ -127,7 +136,7 @@ export class SearchAlertsService {
     });
 
     // Build query
-    const filters = savedSearch.filters;
+    const filters = (savedSearch.filters || {}) as SavedSearchFilters;
     const where: any = {
       status: 'ACTIVE',
       sellerId: { not: userId }, // Exclude own items
@@ -431,7 +440,7 @@ export class SearchAlertsService {
       throw new Error('البحث المحفوظ غير موجود');
     }
 
-    const filters = savedSearch.filters;
+    const filters = (savedSearch.filters || {}) as SavedSearchFilters;
     const where: any = {
       status: 'ACTIVE',
       sellerId: { not: userId },
