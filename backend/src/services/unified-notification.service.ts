@@ -216,6 +216,7 @@ export const notifyTenderAwarded = async (
 
 /**
  * Notify about new message
+ * Note: NEW_MESSAGE is not in the NotificationType enum, using SYSTEM_ANNOUNCEMENT as fallback
  */
 export const notifyNewMessage = async (
   userId: string,
@@ -223,12 +224,12 @@ export const notifyNewMessage = async (
 ): Promise<void> => {
   await sendNotification({
     userId,
-    type: 'NEW_MESSAGE',
+    type: 'SYSTEM_ANNOUNCEMENT',
     title: `New message from ${messageData.senderName}`,
     titleAr: `رسالة جديدة من ${messageData.senderName}`,
     message: messageData.preview,
     messageAr: messageData.preview,
-    data: messageData,
+    data: { ...messageData, originalType: 'NEW_MESSAGE' },
     channels: ['WEBSOCKET', 'PUSH'],
     priority: 'normal',
   });
@@ -243,7 +244,7 @@ export const notifyNewReview = async (
 ): Promise<void> => {
   await sendNotification({
     userId,
-    type: 'REVIEW_RECEIVED',
+    type: 'USER_REVIEW_RECEIVED',
     title: `New ${reviewData.rating}-star review!`,
     titleAr: `تقييم جديد ${reviewData.rating} نجوم!`,
     message: `${reviewData.reviewerName} left you a review`,

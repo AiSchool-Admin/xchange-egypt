@@ -73,9 +73,6 @@ router.post('/', authenticate, async (req: Request, res: Response, next: NextFun
       ratingType,
       overallRating,
       comment,
-      pros,
-      cons,
-      wouldRecommend,
     } = req.body;
 
     if (!reviewedId || !transactionId || !ratingType || !overallRating) {
@@ -100,9 +97,6 @@ router.post('/', authenticate, async (req: Request, res: Response, next: NextFun
       ratingType,
       overallRating,
       comment,
-      pros,
-      cons,
-      wouldRecommend,
     });
 
     return successResponse(res, rating, 'تم إرسال التقييم بنجاح', 201);
