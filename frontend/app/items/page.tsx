@@ -16,6 +16,28 @@ import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 // ============================================
+// Cross-Market Navigation
+// ============================================
+const MARKET_TABS = [
+  { id: 'all', name: 'الكل', icon: '🛒', href: '/items', active: true },
+  { id: 'sale', name: 'للبيع', icon: '🏷️', listingType: 'DIRECT_SALE' },
+  { id: 'auction', name: 'مزادات', icon: '🔨', href: '/auctions' },
+  { id: 'barter', name: 'مقايضة', icon: '🔄', listingType: 'BARTER' },
+  { id: 'wanted', name: 'مطلوب', icon: '🔍', listingType: 'DIRECT_BUY' },
+  { id: 'tenders', name: 'مناقصات', icon: '📋', href: '/reverse-auctions' },
+];
+
+const SPECIALIZED_MARKETS = [
+  { id: 'cars', name: 'السيارات', icon: '🚗', href: '/cars', color: 'bg-blue-500' },
+  { id: 'properties', name: 'العقارات', icon: '🏠', href: '/properties', color: 'bg-emerald-500' },
+  { id: 'mobiles', name: 'الموبايلات', icon: '📱', href: '/mobiles', color: 'bg-violet-500' },
+  { id: 'gold', name: 'الذهب', icon: '💰', href: '/gold', color: 'bg-yellow-500' },
+  { id: 'silver', name: 'الفضة', icon: '🥈', href: '/silver', color: 'bg-slate-400' },
+  { id: 'luxury', name: 'الفاخر', icon: '👑', href: '/luxury', color: 'bg-purple-500' },
+  { id: 'scrap', name: 'التوالف', icon: '♻️', href: '/scrap', color: 'bg-green-500' },
+];
+
+// ============================================
 // Constants
 // ============================================
 const CONDITIONS = [
@@ -335,34 +357,102 @@ export default function ItemsPage() {
 
   const hasActiveFilters = selectedMainCategory || selectedCondition || selectedListingType || debouncedSearch || debouncedMinPrice || debouncedMaxPrice || location.governorateId;
 
+  // Get active market tab
+  const getActiveTab = () => {
+    if (!selectedListingType) return 'all';
+    const tab = MARKET_TABS.find(t => t.listingType === selectedListingType);
+    return tab?.id || 'all';
+  };
+
+  const handleTabClick = (tab: typeof MARKET_TABS[0]) => {
+    if (tab.href) {
+      router.push(tab.href);
+    } else if (tab.listingType) {
+      setSelectedListingType(tab.listingType);
+      setPage(1);
+    } else {
+      setSelectedListingType('');
+      setPage(1);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* ============================================
-          Header
+          Hero Header with Search
           ============================================ */}
-      <div className="bg-gradient-to-l from-primary-600 to-teal-600 text-white">
+      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          {/* Title & Actions */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold">{getCategoryName()}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-primary-100">
+              <h1 className="text-3xl md:text-4xl font-black">{getCategoryName()}</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-white/80">
                   {totalItems > 0 ? `${totalItems.toLocaleString('ar-EG')} منتج متاح` : 'تصفح المنتجات'}
                 </span>
                 {location.governorateId && (
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
                     📍 {locationLabel}
                   </span>
                 )}
               </div>
             </div>
-            <Link
-              href="/inventory/add"
-              className="bg-white text-primary-600 px-6 py-3 rounded-xl hover:bg-primary-50 transition font-bold flex items-center gap-2 shadow-lg"
-            >
-              <span>➕</span>
-              أضف إعلان جديد
-            </Link>
+            <div className="flex gap-3">
+              <Link
+                href="/barter"
+                className="bg-white/20 backdrop-blur-sm text-white px-5 py-3 rounded-xl hover:bg-white/30 transition font-bold flex items-center gap-2"
+              >
+                <span>🔄</span>
+                المقايضة
+              </Link>
+              <Link
+                href="/inventory/add"
+                className="bg-white text-emerald-600 px-6 py-3 rounded-xl hover:bg-emerald-50 transition font-bold flex items-center gap-2 shadow-lg"
+              >
+                <span>➕</span>
+                أضف إعلان
+              </Link>
+            </div>
+          </div>
+
+          {/* Market Type Tabs */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {MARKET_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  getActiveTab() === tab.id
+                    ? 'bg-white text-emerald-600 shadow-lg'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                {tab.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================
+          Specialized Markets Quick Links
+          ============================================ */}
+      <div className="bg-white border-b border-gray-100 py-3">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+            <span className="text-sm text-gray-500 whitespace-nowrap">الأسواق المتخصصة:</span>
+            {SPECIALIZED_MARKETS.map((market) => (
+              <Link
+                key={market.id}
+                href={market.href}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-medium text-gray-700 transition whitespace-nowrap"
+              >
+                <span>{market.icon}</span>
+                {market.name}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
