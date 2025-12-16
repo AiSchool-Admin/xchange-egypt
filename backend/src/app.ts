@@ -55,6 +55,9 @@ import goldRoutes from './routes/gold.routes';
 import silverRoutes from './routes/silver.routes';
 import carsRoutes from './routes/cars.routes';
 import mobileRoutes from './routes/mobile.routes';
+import marketsRoutes from './routes/markets.routes';
+import ratingsRoutes from './routes/ratings.routes';
+import tenderAdvancedRoutes from './routes/tender-advanced.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -348,6 +351,15 @@ app.use('/api/v1/cars', carsRoutes);
 
 // Mobile Marketplace Routes - سوق الموبايلات
 app.use('/api/v1/mobiles', mobileRoutes);
+
+// Markets - نقاط API الموحدة للأسواق
+app.use('/api/v1/markets', marketsRoutes);
+
+// Ratings - نظام التقييم الموحد
+app.use('/api/v1/ratings', ratingsRoutes);
+
+// Tenders Advanced - خدمات المناقصات المتقدمة
+app.use('/api/v1/tenders', tenderAdvancedRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

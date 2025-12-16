@@ -1,0 +1,560 @@
+// ====================================================
+// BARTER MARKETPLACE SCHEMA
+// مخطط قاعدة بيانات سوق المقايضة
+// ====================================================
+
+// ============================================
+// BARTER OFFER - عرض المقايضة
+// ============================================
+model BarterOffer {
+  id                    String    @id @default(cuid())
+
+  // Parties
+  offerorId             String
+  offeror               User      @relation("BarterOfferor", fields: [offerorId], references: [id])
+  offereeId             String
+  offeree               User      @relation("BarterOfferee", fields: [offereeId], references: [id])
+
+  // Items
+  offeredItemId         String
+  offeredItem           Item      @relation("OfferedItem", fields: [offeredItemId], references: [id])
+  requestedItemId       String
+  requestedItem         Item      @relation("RequestedItem", fields: [requestedItemId], references: [id])
+
+  // Cash adjustment
+  cashTopUp             Float?    @default(0)
+  cashTopUpDirection    CashDirection? @default(NONE)
+
+  // Value matching
+  offeredValueAtTime    Float?
+  requestedValueAtTime  Float?
+  valueMatchPercentage  Float?
+
+  // Messages
+  message               String?
+  messageAr             String?
+
+  // Status
+  status                BarterOfferStatus @default(PENDING)
+
+  // Counter offers
+  counterOfferId        String?   @unique
+  counterOffer          BarterOffer? @relation("CounterOffer", fields: [counterOfferId], references: [id])
+  originalOffer         BarterOffer? @relation("CounterOffer")
+
+  // Rejection
+  rejectionReason       String?
+
+  // Escrow
+  escrowId              String?   @unique
+  escrow                BarterEscrow? @relation(fields: [escrowId], references: [id])
+
+  // Timestamps
+  expiresAt             DateTime?
+  acceptedAt            DateTime?
+  rejectedAt            DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // History
+  history               BarterOfferHistory[]
+
+  // Reviews
+  reviews               BarterReview[]
+
+  @@index([offerorId])
+  @@index([offereeId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum BarterOfferStatus {
+  PENDING       // انتظار الرد
+  ACCEPTED      // مقبول
+  REJECTED      // مرفوض
+  COUNTERED     // عرض مضاد
+  EXPIRED       // منتهي
+  CANCELLED     // ملغي
+  IN_ESCROW     // في الضمان
+  COMPLETED     // مكتمل
+  DISPUTED      // متنازع عليه
+}
+
+enum CashDirection {
+  NONE          // لا يوجد
+  OFFERED       // من المعروض
+  REQUESTED     // من المطلوب
+}
+
+model BarterOfferHistory {
+  id            String    @id @default(cuid())
+  offerId       String
+  offer         BarterOffer @relation(fields: [offerId], references: [id])
+  action        String    // CREATED, VIEWED, COUNTERED, ACCEPTED, REJECTED, etc.
+  actorId       String
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+
+  @@index([offerId])
+}
+
+// ============================================
+// BARTER POOL - مجمع المقايضة
+// ============================================
+model BarterPool {
+  id                    String    @id @default(cuid())
+
+  // Creator
+  creatorId             String
+  creator               User      @relation(fields: [creatorId], references: [id])
+
+  // Pool details
+  title                 String
+  titleAr               String?
+  description           String?
+  descriptionAr         String?
+
+  // Target
+  targetDescription     String
+  targetCategoryId      String?
+  targetCategory        Category? @relation(fields: [targetCategoryId], references: [id])
+  targetMinValue        Float
+  targetMaxValue        Float
+
+  // Settings
+  maxParticipants       Int       @default(10)
+  isPublic              Boolean   @default(true)
+  inviteCode            String?   @unique
+  rules                 String?
+
+  // Timing
+  deadline              DateTime
+
+  // Status
+  status                BarterPoolStatus @default(OPEN)
+
+  // Participants
+  participants          BarterPoolParticipant[]
+
+  // Matching results
+  matches               BarterPoolMatch[]
+
+  // Timestamps
+  closedAt              DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([deadline])
+}
+
+enum BarterPoolStatus {
+  OPEN          // مفتوح للمشاركة
+  CLOSED        // مغلق للمطابقة
+  MATCHING      // جارٍ المطابقة
+  MATCHED       // تم المطابقة
+  IN_PROGRESS   // جارٍ التبادل
+  COMPLETED     // مكتمل
+  CANCELLED     // ملغي
+  EXPIRED       // منتهي
+}
+
+model BarterPoolParticipant {
+  id            String    @id @default(cuid())
+
+  poolId        String
+  pool          BarterPool @relation(fields: [poolId], references: [id])
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+
+  // Contribution
+  itemId        String
+  item          Item      @relation(fields: [itemId], references: [id])
+
+  message       String?
+
+  // Status
+  status        ParticipantStatus @default(ACTIVE)
+
+  // Timestamps
+  joinedAt      DateTime  @default(now())
+  leftAt        DateTime?
+
+  @@unique([poolId, userId])
+  @@index([poolId])
+  @@index([userId])
+}
+
+enum ParticipantStatus {
+  ACTIVE        // نشط
+  LEFT          // غادر
+  KICKED        // مطرود
+  MATCHED       // تم مطابقته
+}
+
+model BarterPoolMatch {
+  id            String    @id @default(cuid())
+
+  poolId        String
+  pool          BarterPool @relation(fields: [poolId], references: [id])
+
+  // Matching
+  matchType     MatchType
+  matchScore    Float
+
+  // Participants in this match
+  participantIds String[]
+
+  // Exchange details (JSON for flexibility)
+  exchangeGraph Json      // { "user1": { "gives": "item1", "receives": "item2" }, ... }
+  cashAdjustments Json?   // [{ "from": "user1", "to": "user2", "amount": 500 }, ...]
+
+  // Status
+  status        PoolMatchStatus @default(PROPOSED)
+
+  // Confirmations
+  confirmations Json?     // { "user1": true, "user2": false, ... }
+
+  // Timestamps
+  proposedAt    DateTime  @default(now())
+  confirmedAt   DateTime?
+  executedAt    DateTime?
+
+  @@index([poolId])
+  @@index([status])
+}
+
+enum MatchType {
+  BILATERAL     // ثنائي
+  TRIANGULAR    // ثلاثي
+  MULTI_PARTY   // متعدد الأطراف
+}
+
+enum PoolMatchStatus {
+  PROPOSED      // مقترح
+  AWAITING_CONFIRMATIONS // انتظار التأكيدات
+  CONFIRMED     // مؤكد
+  IN_ESCROW     // في الضمان
+  COMPLETED     // مكتمل
+  FAILED        // فشل
+  EXPIRED       // منتهي
+}
+
+// ============================================
+// BARTER CHAIN - سلسلة المقايضة
+// ============================================
+model BarterChain {
+  id            String    @id @default(cuid())
+
+  // Chain details
+  chainType     ChainType
+  participantCount Int
+  totalValue    Float
+  avgMatchScore Float
+
+  // Chain structure
+  chainGraph    Json      // Full chain representation
+  cashAdjustments Json?
+
+  // Status
+  status        ChainStatus @default(DISCOVERED)
+
+  // Participants
+  participantIds String[]
+
+  // Confirmations tracking
+  confirmations Json?
+
+  // Timing
+  expiresAt     DateTime
+
+  // Escrow
+  escrowId      String?   @unique
+
+  // Timestamps
+  discoveredAt  DateTime  @default(now())
+  confirmedAt   DateTime?
+  executedAt    DateTime?
+  completedAt   DateTime?
+
+  @@index([status])
+  @@index([expiresAt])
+}
+
+enum ChainType {
+  TRIANGULAR    // 3 أطراف
+  QUADRILATERAL // 4 أطراف
+  MULTI_PARTY   // 5+ أطراف
+}
+
+enum ChainStatus {
+  DISCOVERED    // تم اكتشافه
+  NOTIFIED      // تم إبلاغ المشاركين
+  AWAITING_CONFIRMATIONS // انتظار التأكيدات
+  CONFIRMED     // مؤكد من الجميع
+  IN_ESCROW     // في الضمان
+  IN_PROGRESS   // جارٍ التنفيذ
+  COMPLETED     // مكتمل
+  FAILED        // فشل
+  EXPIRED       // منتهي
+}
+
+// ============================================
+// BARTER ESCROW - ضمان المقايضة
+// ============================================
+model BarterEscrow {
+  id            String    @id @default(cuid())
+
+  // Type
+  escrowType    EscrowType @default(BILATERAL)
+
+  // Reference
+  barterOffer   BarterOffer?
+  barterChainId String?
+
+  // Parties
+  parties       BarterEscrowParty[]
+
+  // Cash held
+  cashHeld      Float     @default(0)
+
+  // Status
+  status        EscrowStatus @default(CREATED)
+
+  // Exchange point
+  exchangePointId String?
+
+  // Timing
+  deadline      DateTime
+
+  // Dispute
+  disputeId     String?   @unique
+  dispute       BarterDispute? @relation(fields: [disputeId], references: [id])
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+
+  @@index([status])
+}
+
+enum EscrowType {
+  BILATERAL     // ثنائي
+  MULTI_PARTY   // متعدد الأطراف
+}
+
+enum EscrowStatus {
+  CREATED       // تم الإنشاء
+  AWAITING_ITEMS // انتظار المنتجات
+  ITEMS_RECEIVED // تم استلام المنتجات
+  VERIFICATION  // جارٍ التحقق
+  AWAITING_DELIVERY // انتظار التسليم
+  IN_DELIVERY   // جارٍ التسليم
+  COMPLETED     // مكتمل
+  DISPUTED      // متنازع عليه
+  REFUNDED      // تم الاسترداد
+  CANCELLED     // ملغي
+}
+
+model BarterEscrowParty {
+  id            String    @id @default(cuid())
+
+  escrowId      String
+  escrow        BarterEscrow @relation(fields: [escrowId], references: [id])
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+
+  role          EscrowRole
+
+  // Item tracking
+  itemId        String?
+  itemDelivered Boolean   @default(false)
+  itemVerified  Boolean   @default(false)
+  itemReceived  Boolean   @default(false)
+
+  // Cash
+  cashDeposited Float     @default(0)
+  cashToReceive Float     @default(0)
+
+  // Confirmations
+  confirmedDelivery Boolean @default(false)
+  confirmedReceipt  Boolean @default(false)
+
+  // Timestamps
+  deliveredAt   DateTime?
+  receivedAt    DateTime?
+
+  @@unique([escrowId, userId])
+  @@index([escrowId])
+  @@index([userId])
+}
+
+enum EscrowRole {
+  OFFEROR       // العارض
+  OFFEREE       // المعروض عليه
+  CHAIN_PARTICIPANT // مشارك في السلسلة
+}
+
+// ============================================
+// BARTER DISPUTE - نزاعات المقايضة
+// ============================================
+model BarterDispute {
+  id            String    @id @default(cuid())
+
+  escrow        BarterEscrow?
+
+  // Parties
+  complainantId String
+  complainant   User      @relation("DisputeComplainant", fields: [complainantId], references: [id])
+  respondentId  String
+  respondent    User      @relation("DisputeRespondent", fields: [respondentId], references: [id])
+
+  // Dispute details
+  reason        DisputeReason
+  description   String
+  evidence      String[]  // URLs to photos/documents
+
+  // Status
+  status        DisputeStatus @default(OPENED)
+
+  // Resolution
+  resolution    String?
+  resolutionType ResolutionType?
+  resolvedById  String?
+
+  // Messages
+  messages      BarterDisputeMessage[]
+
+  // Timestamps
+  openedAt      DateTime  @default(now())
+  resolvedAt    DateTime?
+
+  @@index([status])
+}
+
+enum DisputeReason {
+  ITEM_NOT_AS_DESCRIBED   // المنتج لا يطابق الوصف
+  ITEM_NOT_RECEIVED       // لم يتم استلام المنتج
+  ITEM_DAMAGED            // المنتج تالف
+  COUNTERFEIT_ITEM        // منتج مزيف
+  WRONG_ITEM              // منتج خاطئ
+  DELIVERY_ISSUE          // مشكلة في التسليم
+  OTHER                   // أخرى
+}
+
+enum DisputeStatus {
+  OPENED        // مفتوح
+  UNDER_REVIEW  // قيد المراجعة
+  AWAITING_RESPONSE // انتظار الرد
+  MEDIATION     // وساطة
+  RESOLVED      // تم الحل
+  ESCALATED     // تم التصعيد
+  CLOSED        // مغلق
+}
+
+enum ResolutionType {
+  MUTUAL_AGREEMENT  // اتفاق متبادل
+  REFUND            // استرداد
+  PARTIAL_REFUND    // استرداد جزئي
+  EXCHANGE_PROCEED  // المضي قدماً في التبادل
+  CANCELLED         // إلغاء
+  ADMIN_DECISION    // قرار إداري
+}
+
+model BarterDisputeMessage {
+  id            String    @id @default(cuid())
+
+  disputeId     String
+  dispute       BarterDispute @relation(fields: [disputeId], references: [id])
+
+  senderId      String
+  sender        User      @relation(fields: [senderId], references: [id])
+
+  message       String
+  attachments   String[]
+  isAdmin       Boolean   @default(false)
+
+  createdAt     DateTime  @default(now())
+
+  @@index([disputeId])
+}
+
+// ============================================
+// BARTER REVIEW - تقييمات المقايضة
+// ============================================
+model BarterReview {
+  id            String    @id @default(cuid())
+
+  offerId       String
+  offer         BarterOffer @relation(fields: [offerId], references: [id])
+
+  reviewerId    String
+  reviewer      User      @relation("BarterReviewer", fields: [reviewerId], references: [id])
+
+  revieweeId    String
+  reviewee      User      @relation("BarterReviewee", fields: [revieweeId], references: [id])
+
+  // Ratings
+  overallRating Int       // 1-5
+  itemAccuracy  Int?      // 1-5
+  communication Int?      // 1-5
+  timeliness    Int?      // 1-5
+
+  // Review
+  comment       String?
+  commentAr     String?
+
+  // Flags
+  isPublic      Boolean   @default(true)
+
+  // Response
+  response      String?
+  responseAt    DateTime?
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+
+  @@unique([offerId, reviewerId])
+  @@index([revieweeId])
+}
+
+// ============================================
+// BARTER PREFERENCES - تفضيلات المقايضة
+// ============================================
+model BarterPreference {
+  id            String    @id @default(cuid())
+
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+
+  // What they're looking for
+  desiredCategories String[]
+  desiredKeywords   String[]
+  desiredMinValue   Float?
+  desiredMaxValue   Float?
+
+  // What they can offer
+  offerCategories   String[]
+
+  // Location preferences
+  governorates      String[]
+  maxDistance       Float?    // in km
+
+  // Notification settings
+  notifyOnMatch     Boolean   @default(true)
+  notifyOnOffer     Boolean   @default(true)
+  notifyOnChain     Boolean   @default(true)
+
+  // Auto-accept settings
+  autoAcceptMinMatch Float?   // Minimum match % for auto-accept
+
+  // Timestamps
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
