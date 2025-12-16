@@ -230,38 +230,17 @@ export class AuctionPaymentService {
 
   /**
    * معالجة الدفع من المحفظة
+   * ملاحظة: المحفظة غير مدعومة حالياً - يمكن تفعيلها لاحقاً
    */
   private async processWalletPayment(amount: number, userId: string, auctionId: string): Promise<PaymentResult> {
     console.log(`👛 Processing wallet payment: ${amount} EGP for user ${userId}`);
 
-    // التحقق من رصيد المحفظة
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { walletBalance: true },
-    });
-
-    if (!user || (user.walletBalance || 0) < amount) {
-      return {
-        success: false,
-        error: 'رصيد المحفظة غير كافٍ',
-        status: PaymentStatus.FAILED,
-      };
-    }
-
-    // خصم المبلغ من المحفظة
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        walletBalance: { decrement: amount },
-      },
-    });
-
-    const walletTransactionId = `WL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
+    // TODO: تفعيل نظام المحفظة في المستقبل
+    // حالياً نعيد خطأ لأن المحفظة غير مفعلة
     return {
-      success: true,
-      transactionId: walletTransactionId,
-      status: PaymentStatus.COMPLETED,
+      success: false,
+      error: 'نظام المحفظة غير مفعل حالياً. يرجى استخدام طريقة دفع أخرى.',
+      status: PaymentStatus.FAILED,
     };
   }
 
@@ -292,13 +271,9 @@ export class AuctionPaymentService {
         return { success: false, error: 'لا يمكن استرداد إيداع غير مدفوع' };
       }
 
-      // استرداد المبلغ للمحفظة
-      await prisma.user.update({
-        where: { id: deposit.userId },
-        data: {
-          walletBalance: { increment: deposit.amount },
-        },
-      });
+      // TODO: استرداد المبلغ للمحفظة عند تفعيل نظام المحفظة
+      // حالياً يتم الاسترداد عبر نفس طريقة الدفع الأصلية
+      console.log(`💰 Refunding ${deposit.amount} EGP to user ${deposit.userId}`);
 
       // تحديث حالة الإيداع
       await prisma.auctionDeposit.update({
@@ -369,7 +344,7 @@ export class AuctionPaymentService {
         // تحديث حالة الإيداع
         await prisma.auctionDeposit.update({
           where: { id: deposit.id },
-          data: { status: 'USED' },
+          data: { status: 'APPLIED' },
         });
       }
 

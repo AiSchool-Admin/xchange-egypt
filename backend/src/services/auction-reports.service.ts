@@ -77,7 +77,7 @@ export class AuctionReportsService {
     const totalAuctions = auctionStats.reduce((sum, stat) => sum + stat._count, 0);
     const activeAuctions = auctionStats.find(s => s.status === 'ACTIVE')?._count || 0;
     const endedAuctions = auctionStats.find(s => s.status === 'ENDED')?._count || 0;
-    const soldAuctions = auctionStats.find(s => s.status === 'SOLD')?._count || 0;
+    const soldAuctions = auctionStats.find(s => s.status === 'COMPLETED')?._count || 0;
     const cancelledAuctions = auctionStats.find(s => s.status === 'CANCELLED')?._count || 0;
 
     // إحصائيات المزايدات
@@ -99,7 +99,7 @@ export class AuctionReportsService {
     const revenueStats = await prisma.auction.aggregate({
       _sum: { currentPrice: true },
       where: {
-        status: 'SOLD',
+        status: 'COMPLETED',
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
     });
@@ -139,7 +139,7 @@ export class AuctionReportsService {
     const previousRevenue = await prisma.auction.aggregate({
       _sum: { currentPrice: true },
       where: {
-        status: 'SOLD',
+        status: 'COMPLETED',
         createdAt: { gte: previousRange.start, lte: previousRange.end },
       },
     });
@@ -211,7 +211,7 @@ export class AuctionReportsService {
         const soldCount = await prisma.auction.count({
           where: {
             auctionCategory: cat.auctionCategory,
-            status: 'SOLD',
+            status: 'COMPLETED',
             createdAt: { gte: dateRange.start, lte: dateRange.end },
           },
         });
@@ -273,7 +273,7 @@ export class AuctionReportsService {
         const soldAuctions = await prisma.auction.count({
           where: {
             listing: { userId: seller.userId },
-            status: 'SOLD',
+            status: 'COMPLETED',
             createdAt: { gte: dateRange.start, lte: dateRange.end },
           },
         });
@@ -282,13 +282,13 @@ export class AuctionReportsService {
           _sum: { currentPrice: true },
           where: {
             listing: { userId: seller.userId },
-            status: 'SOLD',
+            status: 'COMPLETED',
             createdAt: { gte: dateRange.start, lte: dateRange.end },
           },
         });
 
         const reviews = await prisma.auctionReview.aggregate({
-          _avg: { rating: true },
+          _avg: { overallRating: true },
           where: {
             revieweeId: seller.userId,
           },
@@ -300,7 +300,7 @@ export class AuctionReportsService {
           totalAuctions: seller._count,
           soldAuctions,
           totalValue: totalValue._sum.currentPrice || 0,
-          averageRating: Math.round((reviews._avg.rating || 0) * 10) / 10,
+          averageRating: Math.round((reviews._avg.overallRating || 0) * 10) / 10,
           successRate: seller._count > 0 ? Math.round((soldAuctions / seller._count) * 100) : 0,
         };
       })
@@ -334,8 +334,10 @@ export class AuctionReportsService {
     });
 
     const total = disputeStats.reduce((sum, stat) => sum + stat._count, 0);
-    const pending = disputeStats.find(s => s.status === 'OPEN' || s.status === 'IN_PROGRESS')?._count || 0;
-    const resolved = disputeStats.find(s => s.status === 'RESOLVED')?._count || 0;
+    const pendingStatuses = ['OPEN', 'UNDER_REVIEW', 'EVIDENCE_REQUESTED', 'ESCALATED'];
+    const resolvedStatuses = ['RESOLVED_BUYER', 'RESOLVED_SELLER', 'CLOSED'];
+    const pending = disputeStats.filter(s => pendingStatuses.includes(s.status)).reduce((sum, s) => sum + s._count, 0);
+    const resolved = disputeStats.filter(s => resolvedStatuses.includes(s.status)).reduce((sum, s) => sum + s._count, 0);
 
     const byReason = await prisma.auctionDispute.groupBy({
       by: ['reason'],
@@ -349,7 +351,7 @@ export class AuctionReportsService {
       by: ['resolution'],
       _count: true,
       where: {
-        status: 'RESOLVED',
+        status: { in: ['RESOLVED_BUYER', 'RESOLVED_SELLER', 'CLOSED'] },
         createdAt: { gte: dateRange.start, lte: dateRange.end },
       },
     });

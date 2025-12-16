@@ -65,7 +65,7 @@ export class AuctionNotificationService {
           type,
           title,
           message,
-          data: data || {},
+          metadata: data || {},
           isRead: false,
         },
       });
@@ -331,9 +331,9 @@ export class AuctionNotificationService {
       const watchlistItems = await prisma.auctionWatchlist.findMany({
         where: {
           auctionId,
-          ...(event === 'price_change' ? { notifyOnPriceChange: true } : {}),
-          ...(event === 'ending_soon' ? { notifyBeforeEnd: true } : {}),
-          ...(event === 'new_bid' ? { notifyOnNewBid: true } : {}),
+          ...(event === 'price_change' ? { notifyOnBid: true } : {}),
+          ...(event === 'ending_soon' ? { notifyOnEnding: true } : {}),
+          ...(event === 'new_bid' ? { notifyOnBid: true } : {}),
         },
         include: {
           auction: {

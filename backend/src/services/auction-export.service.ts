@@ -4,7 +4,6 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { ReportPeriod, auctionReportsService } from './auction-reports.service';
 
 const prisma = new PrismaClient();
 
@@ -172,8 +171,7 @@ export class AuctionExportService {
             user: { select: { id: true, fullName: true, email: true } },
           },
         },
-        winner: { select: { id: true, fullName: true, email: true } },
-        _count: { select: { bids: true, watchers: true } },
+        _count: { select: { bids: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -191,9 +189,9 @@ export class AuctionExportService {
       'الحالة': this.translateStatus(auction.status),
       'البائع': auction.listing?.user?.fullName || '',
       'البريد الإلكتروني للبائع': auction.listing?.user?.email || '',
-      'الفائز': auction.winner?.fullName || '-',
+      'الفائز': auction.winnerId || '-',
       'عدد المزايدات': auction._count.bids,
-      'عدد المتابعين': auction._count.watchers,
+      'عدد المتابعين': auction.watchlistCount,
       'تاريخ البداية': auction.startTime?.toISOString() || '',
       'تاريخ النهاية': auction.endTime?.toISOString() || '',
       'تاريخ الإنشاء': auction.createdAt.toISOString(),
@@ -238,10 +236,10 @@ export class AuctionExportService {
       'عنوان المزاد': bid.auction?.listing?.item?.title || '',
       'المزايد': bid.bidder?.fullName || '',
       'البريد الإلكتروني': bid.bidder?.email || '',
-      'مبلغ المزايدة': bid.amount,
-      'أعلى مزايد': bid.isLeading ? 'نعم' : 'لا',
+      'مبلغ المزايدة': bid.bidAmount,
+      'حالة المزايدة': bid.status,
       'مزايدة تلقائية': bid.isAutoBid ? 'نعم' : 'لا',
-      'الحد الأقصى للمزايدة': bid.maxAutoBidAmount || '-',
+      'الحد الأقصى للمزايدة': bid.maxAutoBid || '-',
       'تاريخ المزايدة': bid.createdAt.toISOString(),
     }));
   }
@@ -265,9 +263,9 @@ export class AuctionExportService {
         id: true,
         fullName: true,
         email: true,
-        phoneNumber: true,
+        phone: true,
         governorate: true,
-        isVerified: true,
+        emailVerified: true,
         createdAt: true,
         _count: {
           select: {
@@ -284,9 +282,9 @@ export class AuctionExportService {
       'معرف المستخدم': user.id,
       'الاسم': user.fullName,
       'البريد الإلكتروني': user.email,
-      'رقم الهاتف': user.phoneNumber || '-',
+      'رقم الهاتف': user.phone || '-',
       'المحافظة': user.governorate || '-',
-      'موثق': user.isVerified ? 'نعم' : 'لا',
+      'موثق': user.emailVerified ? 'نعم' : 'لا',
       'عدد المزايدات': user._count.auctionBids,
       'عدد الإعلانات': user._count.listings,
       'قائمة المتابعة': user._count.auctionWatchlist,
@@ -404,9 +402,9 @@ export class AuctionExportService {
         auction: {
           include: { listing: { include: { item: true } } },
         },
-        complainant: { select: { fullName: true, email: true } },
+        initiator: { select: { fullName: true, email: true } },
         respondent: { select: { fullName: true, email: true } },
-        assignedAdmin: { select: { fullName: true } },
+        resolvedBy: { select: { fullName: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -415,13 +413,13 @@ export class AuctionExportService {
       'معرف النزاع': dispute.id,
       'معرف المزاد': dispute.auctionId,
       'عنوان المزاد': dispute.auction?.listing?.item?.title || '',
-      'المُشتكي': dispute.complainant?.fullName || '',
+      'المُشتكي': dispute.initiator?.fullName || '',
       'المُشتكى عليه': dispute.respondent?.fullName || '',
       'السبب': dispute.reason || '',
       'الوصف': dispute.description || '',
       'الحالة': this.translateDisputeStatus(dispute.status),
       'القرار': dispute.resolution || '-',
-      'المسؤول': dispute.assignedAdmin?.fullName || '-',
+      'المسؤول': dispute.resolvedBy?.fullName || '-',
       'تاريخ الإنشاء': dispute.createdAt.toISOString(),
       'تاريخ الحل': dispute.resolvedAt?.toISOString() || '-',
     }));
@@ -461,9 +459,8 @@ export class AuctionExportService {
       'عنوان المزاد': review.auction?.listing?.item?.title || '',
       'المُقيِّم': review.reviewer?.fullName || '',
       'المُقيَّم': review.reviewee?.fullName || '',
-      'التقييم': review.rating,
+      'التقييم': review.overallRating,
       'التعليق': review.comment || '-',
-      'نوع التقييم': review.reviewType,
       'تاريخ التقييم': review.createdAt.toISOString(),
     }));
   }
@@ -488,7 +485,7 @@ export class AuctionExportService {
         },
         user: { select: { fullName: true, email: true } },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { addedAt: 'desc' },
     });
 
     return watchlist.map(item => ({
@@ -499,7 +496,7 @@ export class AuctionExportService {
       'عنوان المزاد': item.auction?.listing?.item?.title || '',
       'السعر الحالي': item.auction?.currentPrice || 0,
       'حالة المزاد': this.translateStatus(item.auction?.status || ''),
-      'تاريخ المتابعة': item.createdAt.toISOString(),
+      'تاريخ المتابعة': item.addedAt.toISOString(),
     }));
   }
 
@@ -563,90 +560,6 @@ ${JSON.stringify(data, null, 2)}
     return Buffer.from(content, 'utf-8');
   }
 
-  /**
-   * تصدير تقرير لوحة التحكم
-   */
-  async exportDashboardReport(period: ReportPeriod, format: ExportFormat): Promise<ExportResult> {
-    try {
-      const stats = await auctionReportsService.getDashboardStats(period);
-      const categoryPerformance = await auctionReportsService.getCategoryPerformance(period);
-      const topSellers = await auctionReportsService.getTopSellers(period);
-
-      const reportData = {
-        'تقرير لوحة التحكم': {
-          'الفترة': this.translatePeriod(period),
-          'تاريخ التصدير': new Date().toLocaleString('ar-EG'),
-        },
-        'إحصائيات المزادات': stats.auctions,
-        'إحصائيات المزايدات': stats.bids,
-        'الإيرادات': stats.revenue,
-        'المستخدمون': stats.users,
-        'الاتجاهات': stats.trends,
-        'أداء الفئات': categoryPerformance,
-        'أفضل البائعين': topSellers,
-      };
-
-      let exportedData: string | Buffer;
-      let mimeType: string;
-      let extension: string;
-
-      switch (format) {
-        case ExportFormat.JSON:
-          exportedData = JSON.stringify(reportData, null, 2);
-          mimeType = 'application/json';
-          extension = 'json';
-          break;
-        case ExportFormat.CSV:
-          // تحويل التقرير إلى CSV مسطح
-          const flatData = this.flattenReportData(reportData);
-          exportedData = this.convertToCSV(flatData);
-          mimeType = 'text/csv';
-          extension = 'csv';
-          break;
-        default:
-          exportedData = JSON.stringify(reportData, null, 2);
-          mimeType = 'application/json';
-          extension = 'json';
-      }
-
-      return {
-        success: true,
-        filename: `dashboard_report_${Date.now()}.${extension}`,
-        data: exportedData,
-        mimeType,
-      };
-
-    } catch (error: any) {
-      console.error('Dashboard export error:', error);
-      return { success: false, error: error.message };
-    }
-  }
-
-  /**
-   * تسطيح بيانات التقرير
-   */
-  private flattenReportData(data: any): any[] {
-    const result: any[] = [];
-
-    const flatten = (obj: any, prefix: string = '') => {
-      for (const [key, value] of Object.entries(obj)) {
-        const fullKey = prefix ? `${prefix} - ${key}` : key;
-        if (Array.isArray(value)) {
-          value.forEach((item, index) => {
-            result.push({ القسم: `${fullKey} [${index + 1}]`, ...item });
-          });
-        } else if (typeof value === 'object' && value !== null) {
-          flatten(value, fullKey);
-        } else {
-          result.push({ القسم: fullKey, القيمة: value });
-        }
-      }
-    };
-
-    flatten(data);
-    return result;
-  }
-
   // ============ وظائف الترجمة ============
 
   private translateAuctionType(type: string | null): string {
@@ -679,9 +592,8 @@ ${JSON.stringify(data, null, 2)}
       SCHEDULED: 'مجدول',
       ACTIVE: 'نشط',
       ENDED: 'منتهي',
-      SOLD: 'مباع',
+      COMPLETED: 'مكتمل',
       CANCELLED: 'ملغي',
-      PAUSED: 'متوقف',
     };
     return statuses[status] || status;
   }
@@ -690,9 +602,10 @@ ${JSON.stringify(data, null, 2)}
     const statuses: Record<string, string> = {
       PENDING: 'قيد الانتظار',
       PAID: 'مدفوع',
+      HELD: 'محتجز',
       REFUNDED: 'مسترد',
-      USED: 'مستخدم',
       FORFEITED: 'مصادر',
+      APPLIED: 'مطبق',
     };
     return statuses[status] || status;
   }
@@ -700,24 +613,14 @@ ${JSON.stringify(data, null, 2)}
   private translateDisputeStatus(status: string): string {
     const statuses: Record<string, string> = {
       OPEN: 'مفتوح',
-      IN_PROGRESS: 'قيد المعالجة',
-      RESOLVED: 'محلول',
+      UNDER_REVIEW: 'قيد المراجعة',
+      EVIDENCE_REQUESTED: 'طلب أدلة',
+      ESCALATED: 'تصعيد',
+      RESOLVED_BUYER: 'حل لصالح المشتري',
+      RESOLVED_SELLER: 'حل لصالح البائع',
       CLOSED: 'مغلق',
     };
     return statuses[status] || status;
-  }
-
-  private translatePeriod(period: ReportPeriod): string {
-    const periods: Record<string, string> = {
-      TODAY: 'اليوم',
-      WEEK: 'الأسبوع',
-      MONTH: 'الشهر',
-      QUARTER: 'الربع',
-      YEAR: 'السنة',
-      ALL_TIME: 'كل الوقت',
-      CUSTOM: 'مخصص',
-    };
-    return periods[period] || period;
   }
 
   private getExportTitle(dataType: ExportDataType): string {

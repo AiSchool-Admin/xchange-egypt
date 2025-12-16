@@ -52,12 +52,12 @@ export default function AdminAuctionsPage() {
         page: currentPage,
         limit: itemsPerPage,
       });
-      setAuctions(result.data || []);
+      setAuctions(result.data?.auctions || []);
 
       // حساب الإحصائيات
-      const allAuctions = result.data || [];
+      const allAuctions = result.data?.auctions || [];
       setStats({
-        total: result.pagination?.total || allAuctions.length,
+        total: result.data?.pagination?.total || allAuctions.length,
         active: allAuctions.filter((a: Auction) => a.status === 'ACTIVE').length,
         scheduled: allAuctions.filter((a: Auction) => a.status === 'SCHEDULED').length,
         ended: allAuctions.filter((a: Auction) => a.status === 'ENDED').length,

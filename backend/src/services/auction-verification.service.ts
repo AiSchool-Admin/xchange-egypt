@@ -111,8 +111,8 @@ export class AuctionVerificationService {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
-        isEmailVerified: true,
-        isPhoneVerified: true,
+        emailVerified: true,
+        phoneVerified: true,
         // TODO: إضافة حقول التحقق في نموذج المستخدم
       },
     });
@@ -129,7 +129,7 @@ export class AuctionVerificationService {
       return VerificationLevel.PREMIUM;
     } else if (hasVerifiedId) {
       return VerificationLevel.VERIFIED;
-    } else if (user.isEmailVerified && user.isPhoneVerified) {
+    } else if (user.emailVerified && user.phoneVerified) {
       return VerificationLevel.BASIC;
     }
 

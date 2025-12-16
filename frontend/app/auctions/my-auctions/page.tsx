@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { getUserAuctions, cancelAuction, Auction, AuctionStatus } from '@/lib/api/auctions';
+import { getMyAuctions, cancelAuction, Auction, AuctionStatus } from '@/lib/api/auctions';
 
 const statusLabels: Record<string, { label: string; color: string }> = {
   DRAFT: { label: 'مسودة', color: 'bg-gray-100 text-gray-700' },
@@ -45,8 +45,8 @@ export default function MyAuctionsPage() {
   const loadAuctions = async () => {
     try {
       setLoading(true);
-      const result = await getUserAuctions();
-      const auctionList = result.data || [];
+      const result = await getMyAuctions();
+      const auctionList = result.data?.auctions || [];
       setAuctions(auctionList);
 
       // حساب الإحصائيات
