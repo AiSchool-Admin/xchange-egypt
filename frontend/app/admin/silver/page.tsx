@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import apiClient from '@/lib/api';
+import apiClient from '@/lib/api/client';
 
 type Tab = 'listings' | 'kyc' | 'valuations' | 'tradeins' | 'disputes';
 

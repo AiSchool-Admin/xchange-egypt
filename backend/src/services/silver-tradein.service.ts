@@ -1,6 +1,9 @@
 /**
  * Silver Trade-In Service
  * خدمة استبدال الفضة القديمة بالجديدة
+ *
+ * Note: This is a placeholder implementation. The actual database tables
+ * need to be created via migration before full functionality.
  */
 
 import prisma from '../config/database';
@@ -13,6 +16,9 @@ const TRADE_IN_RATES = {
   FAIR: 0.80,      // 80%
   POOR: 0.75,      // 75%
 };
+
+// In-memory storage for development (replace with DB when tables are created)
+const tradeInsStore: Map<string, any> = new Map();
 
 export interface TradeInRequest {
   // Old item details
@@ -74,6 +80,15 @@ export const requestTradeIn = async (userId: string, data: TradeInRequest) => {
   if (data.targetItemId) {
     targetItem = await prisma.silverItem.findUnique({
       where: { id: data.targetItemId },
+      select: {
+        id: true,
+        title: true,
+        images: true,
+        askingPrice: true,
+        purity: true,
+        weightGrams: true,
+        status: true,
+      },
     });
 
     if (targetItem && targetItem.status !== 'ACTIVE') {
@@ -85,47 +100,46 @@ export const requestTradeIn = async (userId: string, data: TradeInRequest) => {
     }
   }
 
-  // Create trade-in request
-  const tradeIn = await prisma.silverTradeIn.create({
-    data: {
-      userId,
-      status: 'PENDING_REVIEW',
+  // Create trade-in request (in-memory)
+  const tradeIn = {
+    id: `trade-${Date.now()}`,
+    userId,
+    status: 'PENDING_REVIEW',
 
-      // Old item
-      oldItemDescription: data.oldItemDescription,
-      oldItemCategory: data.oldItemCategory,
-      oldItemPurity: data.oldItemPurity,
-      oldItemWeightGrams: data.oldItemWeightGrams,
-      oldItemCondition: data.oldItemCondition,
-      oldItemImages: data.oldItemImages,
+    // Old item
+    oldItemDescription: data.oldItemDescription,
+    oldItemCategory: data.oldItemCategory,
+    oldItemPurity: data.oldItemPurity,
+    oldItemWeightGrams: data.oldItemWeightGrams,
+    oldItemCondition: data.oldItemCondition,
+    oldItemImages: data.oldItemImages,
 
-      // Estimated valuation
-      estimatedMarketValue: valuation.marketValue,
-      estimatedCreditRate: valuation.creditRate,
-      estimatedCredit: valuation.tradeInCredit,
+    // Estimated valuation
+    estimatedMarketValue: valuation.marketValue,
+    estimatedCreditRate: valuation.creditRate,
+    estimatedCredit: valuation.tradeInCredit,
 
-      // Target item
-      targetItemId: data.targetItemId,
-      priceDifference: priceDifference > 0 ? priceDifference : 0,
+    // Target item
+    targetItemId: data.targetItemId,
+    priceDifference: priceDifference > 0 ? priceDifference : 0,
+    targetItem: targetItem ? {
+      id: targetItem.id,
+      title: targetItem.title,
+      images: targetItem.images,
+      askingPrice: targetItem.askingPrice,
+      purity: targetItem.purity,
+      weightGrams: targetItem.weightGrams,
+    } : null,
 
-      // Delivery
-      deliveryMethod: data.deliveryMethod,
-      pickupAddress: data.address,
-      preferredDate: data.preferredDate,
-    },
-    include: {
-      targetItem: {
-        select: {
-          id: true,
-          title: true,
-          images: true,
-          askingPrice: true,
-          purity: true,
-          weightGrams: true,
-        },
-      },
-    },
-  });
+    // Delivery
+    deliveryMethod: data.deliveryMethod,
+    pickupAddress: data.address,
+    preferredDate: data.preferredDate,
+
+    createdAt: new Date(),
+  };
+
+  tradeInsStore.set(tradeIn.id, tradeIn);
 
   return tradeIn;
 };
@@ -134,20 +148,16 @@ export const requestTradeIn = async (userId: string, data: TradeInRequest) => {
  * Get user's trade-in requests
  */
 export const getUserTradeIns = async (userId: string) => {
-  const tradeIns = await prisma.silverTradeIn.findMany({
-    where: { userId },
-    include: {
-      targetItem: {
-        select: {
-          id: true,
-          title: true,
-          images: true,
-          askingPrice: true,
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
+  const tradeIns: any[] = [];
+
+  tradeInsStore.forEach((tradeIn) => {
+    if (tradeIn.userId === userId) {
+      tradeIns.push(tradeIn);
+    }
   });
+
+  // Sort by createdAt desc
+  tradeIns.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return tradeIns;
 };
@@ -156,12 +166,7 @@ export const getUserTradeIns = async (userId: string) => {
  * Get trade-in by ID
  */
 export const getTradeInById = async (id: string, userId?: string) => {
-  const tradeIn = await prisma.silverTradeIn.findUnique({
-    where: { id },
-    include: {
-      targetItem: true,
-    },
-  });
+  const tradeIn = tradeInsStore.get(id);
 
   if (!tradeIn) return null;
 
@@ -176,9 +181,7 @@ export const getTradeInById = async (id: string, userId?: string) => {
  * Accept trade-in offer
  */
 export const acceptTradeInOffer = async (tradeInId: string, userId: string) => {
-  const tradeIn = await prisma.silverTradeIn.findUnique({
-    where: { id: tradeInId },
-  });
+  const tradeIn = tradeInsStore.get(tradeInId);
 
   if (!tradeIn) {
     throw new Error('Trade-in not found');
@@ -192,13 +195,9 @@ export const acceptTradeInOffer = async (tradeInId: string, userId: string) => {
     throw new Error('No offer to accept');
   }
 
-  const updated = await prisma.silverTradeIn.update({
-    where: { id: tradeInId },
-    data: {
-      status: 'OFFER_ACCEPTED',
-      acceptedAt: new Date(),
-    },
-  });
+  tradeIn.status = 'OFFER_ACCEPTED';
+  tradeIn.acceptedAt = new Date();
+  tradeInsStore.set(tradeInId, tradeIn);
 
   // If target item exists, reserve it
   if (tradeIn.targetItemId) {
@@ -208,7 +207,7 @@ export const acceptTradeInOffer = async (tradeInId: string, userId: string) => {
     });
   }
 
-  return updated;
+  return tradeIn;
 };
 
 /**
@@ -220,22 +219,31 @@ export const makeTradeInOffer = async (
   finalCredit: number,
   notes: string
 ) => {
-  const tradeIn = await prisma.silverTradeIn.update({
-    where: { id: tradeInId },
-    data: {
-      status: 'OFFER_MADE',
-      finalCredit,
-      assessmentNotes: notes,
-      assessedBy: adminId,
-      assessedAt: new Date(),
-      priceDifference: tradeIn.targetItemId
-        ? (await prisma.silverItem.findUnique({ where: { id: tradeIn.targetItemId } }))?.askingPrice! - finalCredit
-        : 0,
-    },
-    include: {
-      targetItem: true,
-    },
-  });
+  const tradeIn = tradeInsStore.get(tradeInId);
+
+  if (!tradeIn) {
+    throw new Error('Trade-in not found');
+  }
+
+  // Calculate new price difference if target item exists
+  let priceDiff = 0;
+  if (tradeIn.targetItemId) {
+    const targetItem = await prisma.silverItem.findUnique({
+      where: { id: tradeIn.targetItemId },
+    });
+    if (targetItem) {
+      priceDiff = targetItem.askingPrice - finalCredit;
+    }
+  }
+
+  tradeIn.status = 'OFFER_MADE';
+  tradeIn.finalCredit = finalCredit;
+  tradeIn.assessmentNotes = notes;
+  tradeIn.assessedBy = adminId;
+  tradeIn.assessedAt = new Date();
+  tradeIn.priceDifference = priceDiff > 0 ? priceDiff : 0;
+
+  tradeInsStore.set(tradeInId, tradeIn);
 
   return tradeIn;
 };
@@ -244,20 +252,24 @@ export const makeTradeInOffer = async (
  * Admin: Get pending trade-ins
  */
 export const getPendingTradeIns = async (page = 1, limit = 20) => {
-  const [tradeIns, total] = await Promise.all([
-    prisma.silverTradeIn.findMany({
-      where: { status: { in: ['PENDING_REVIEW', 'ITEM_RECEIVED'] } },
-      orderBy: { createdAt: 'asc' },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.silverTradeIn.count({
-      where: { status: { in: ['PENDING_REVIEW', 'ITEM_RECEIVED'] } },
-    }),
-  ]);
+  const pendingStatuses = ['PENDING_REVIEW', 'ITEM_RECEIVED'];
+  const tradeIns: any[] = [];
+
+  tradeInsStore.forEach((tradeIn) => {
+    if (pendingStatuses.includes(tradeIn.status)) {
+      tradeIns.push(tradeIn);
+    }
+  });
+
+  // Sort by createdAt asc (oldest first)
+  tradeIns.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  const total = tradeIns.length;
+  const start = (page - 1) * limit;
+  const paginatedTradeIns = tradeIns.slice(start, start + limit);
 
   return {
-    tradeIns,
+    tradeIns: paginatedTradeIns,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
 };

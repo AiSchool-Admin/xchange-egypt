@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import apiClient from '@/lib/api';
+import apiClient from '@/lib/api/client';
 
 export default function SilverSavingsPage() {
   const router = useRouter();

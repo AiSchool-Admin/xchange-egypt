@@ -1,6 +1,9 @@
 /**
  * Silver Valuation Service
  * خدمة التقييم الاحترافي للفضة
+ *
+ * Note: This is a placeholder implementation. The actual database tables
+ * need to be created via migration before full functionality.
  */
 
 import prisma from '../config/database';
@@ -53,6 +56,9 @@ export const VALUATION_LEVELS = {
   },
 };
 
+// In-memory storage for development (replace with DB when tables are created)
+const valuationsStore: Map<string, any> = new Map();
+
 export interface ValuationRequest {
   itemId?: string;
   level: keyof typeof VALUATION_LEVELS;
@@ -80,69 +86,76 @@ export const requestValuation = async (userId: string, data: ValuationRequest) =
     throw new Error('Invalid valuation level');
   }
 
-  // Create valuation request in SilverCertificate table
-  const valuation = await prisma.silverCertificate.create({
-    data: {
-      itemId: data.itemId || null,
-      certificateNumber: `VAL-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      issuedAt: new Date(),
-      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-      isAuthentic: false, // Will be updated after valuation
-      valuationType: data.level,
-      valuationFee: level.price,
-      valuationStatus: 'PENDING',
-      appointmentDate: data.appointmentDate,
-      appointmentTime: data.appointmentTime,
-      deliveryMethod: data.deliveryMethod,
-      partnerId: data.partnerId,
-      customerAddress: data.address,
-      customerNotes: data.notes,
-      requestedBy: userId,
-    },
-  });
+  // Get item details if itemId provided
+  let item = null;
+  if (data.itemId) {
+    item = await prisma.silverItem.findUnique({
+      where: { id: data.itemId },
+      select: {
+        id: true,
+        title: true,
+        images: true,
+        purity: true,
+        weightGrams: true,
+      },
+    });
+  }
 
-  return {
-    ...valuation,
+  // Create valuation request (in-memory)
+  const valuation = {
+    id: `val-${Date.now()}`,
+    itemId: data.itemId || null,
+    item,
+    certificateNumber: `VAL-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+    issuedAt: new Date(),
+    expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    isAuthentic: false, // Will be updated after valuation
+    valuationType: data.level,
+    valuationFee: level.price,
+    valuationStatus: 'PENDING',
+    appointmentDate: data.appointmentDate,
+    appointmentTime: data.appointmentTime,
+    deliveryMethod: data.deliveryMethod,
+    partnerId: data.partnerId,
+    customerAddress: data.address,
+    customerNotes: data.notes,
+    requestedBy: userId,
+    createdAt: new Date(),
     levelDetails: level,
   };
+
+  valuationsStore.set(valuation.id, valuation);
+
+  return valuation;
 };
 
 /**
  * Get user's valuation requests
  */
 export const getUserValuations = async (userId: string) => {
-  const valuations = await prisma.silverCertificate.findMany({
-    where: { requestedBy: userId },
-    include: {
-      item: {
-        select: {
-          id: true,
-          title: true,
-          images: true,
-          purity: true,
-          weightGrams: true,
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
+  const valuations: any[] = [];
+
+  valuationsStore.forEach((valuation) => {
+    if (valuation.requestedBy === userId) {
+      const levelDetails = VALUATION_LEVELS[valuation.valuationType as keyof typeof VALUATION_LEVELS] || null;
+      valuations.push({
+        ...valuation,
+        levelDetails,
+      });
+    }
   });
 
-  return valuations.map(v => ({
-    ...v,
-    levelDetails: VALUATION_LEVELS[v.valuationType as keyof typeof VALUATION_LEVELS] || null,
-  }));
+  // Sort by createdAt desc
+  valuations.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  return valuations;
 };
 
 /**
  * Get valuation by ID
  */
 export const getValuationById = async (id: string, userId?: string) => {
-  const valuation = await prisma.silverCertificate.findUnique({
-    where: { id },
-    include: {
-      item: true,
-    },
-  });
+  const valuation = valuationsStore.get(id);
 
   if (!valuation) return null;
 
@@ -176,24 +189,28 @@ export const completeValuation = async (
     isAuthentic: boolean;
   }
 ) => {
-  const valuation = await prisma.silverCertificate.update({
-    where: { id: valuationId },
-    data: {
-      valuationStatus: 'COMPLETED',
-      verifiedWeight: results.verifiedWeight,
-      verifiedPurity: results.verifiedPurity,
-      purityPercentage: results.purityPercentage,
-      craftsmanshipScore: results.craftsmanshipScore,
-      marketValue: results.marketValue,
-      suggestedPrice: results.suggestedPrice,
-      conditionGrade: results.condition,
-      expertNotes: results.notes,
-      valuationImages: results.images,
-      isAuthentic: results.isAuthentic,
-      completedAt: new Date(),
-      expertId,
-    },
-  });
+  const valuation = valuationsStore.get(valuationId);
+
+  if (!valuation) {
+    throw new Error('Valuation not found');
+  }
+
+  // Update valuation
+  valuation.valuationStatus = 'COMPLETED';
+  valuation.verifiedWeight = results.verifiedWeight;
+  valuation.verifiedPurity = results.verifiedPurity;
+  valuation.purityPercentage = results.purityPercentage;
+  valuation.craftsmanshipScore = results.craftsmanshipScore;
+  valuation.marketValue = results.marketValue;
+  valuation.suggestedPrice = results.suggestedPrice;
+  valuation.conditionGrade = results.condition;
+  valuation.expertNotes = results.notes;
+  valuation.valuationImages = results.images;
+  valuation.isAuthentic = results.isAuthentic;
+  valuation.completedAt = new Date();
+  valuation.expertId = expertId;
+
+  valuationsStore.set(valuationId, valuation);
 
   // Update item verification level if linked
   if (valuation.itemId) {
@@ -201,7 +218,6 @@ export const completeValuation = async (
       where: { id: valuation.itemId },
       data: {
         verificationLevel: results.isAuthentic ? 'CERTIFIED' : 'BASIC',
-        certificateId: valuation.id,
       },
     });
   }
@@ -213,35 +229,31 @@ export const completeValuation = async (
  * Get pending valuations (admin)
  */
 export const getPendingValuations = async (page = 1, limit = 20) => {
-  const [valuations, total] = await Promise.all([
-    prisma.silverCertificate.findMany({
-      where: { valuationStatus: 'PENDING' },
-      include: {
-        item: {
-          select: {
-            id: true,
-            title: true,
-            images: true,
-            purity: true,
-            weightGrams: true,
-          },
-        },
-      },
-      orderBy: [
-        { valuationType: 'desc' }, // Premium first
-        { createdAt: 'asc' },
-      ],
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.silverCertificate.count({ where: { valuationStatus: 'PENDING' } }),
-  ]);
+  const valuations: any[] = [];
+
+  valuationsStore.forEach((valuation) => {
+    if (valuation.valuationStatus === 'PENDING') {
+      valuations.push({
+        ...valuation,
+        levelDetails: VALUATION_LEVELS[valuation.valuationType as keyof typeof VALUATION_LEVELS] || null,
+      });
+    }
+  });
+
+  // Sort by valuationType desc (Premium first), then createdAt asc
+  const typeOrder: Record<string, number> = { PREMIUM: 4, ADVANCED: 3, STANDARD: 2, BASIC: 1 };
+  valuations.sort((a, b) => {
+    const typeCompare = (typeOrder[b.valuationType] || 0) - (typeOrder[a.valuationType] || 0);
+    if (typeCompare !== 0) return typeCompare;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+
+  const total = valuations.length;
+  const start = (page - 1) * limit;
+  const paginatedValuations = valuations.slice(start, start + limit);
 
   return {
-    valuations: valuations.map(v => ({
-      ...v,
-      levelDetails: VALUATION_LEVELS[v.valuationType as keyof typeof VALUATION_LEVELS] || null,
-    })),
+    valuations: paginatedValuations,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   };
 };

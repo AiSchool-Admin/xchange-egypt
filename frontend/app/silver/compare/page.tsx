@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import apiClient from '@/lib/api';
+import apiClient from '@/lib/api/client';
 
 const PURITY_LABELS: Record<string, string> = {
   S999: 'فضة نقية 999',

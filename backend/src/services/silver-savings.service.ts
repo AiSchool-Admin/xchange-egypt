@@ -1,63 +1,71 @@
 /**
  * Silver Savings Account Service
  * خدمة حساب التوفير بالفضة
+ *
+ * Note: This is a placeholder implementation. The actual database tables
+ * need to be created via migration before full functionality.
  */
 
-import prisma from '../config/database';
 import { getPriceByPurity } from './silver.service';
 
-const STORAGE_FEE_ANNUAL = 0.005; // 0.5% annual storage fee
 const MINIMUM_DEPOSIT = 100; // EGP
 const WITHDRAWAL_FEE = 0.01; // 1% withdrawal fee
 const PROCESSING_DAYS = 3; // Days for withdrawal processing
 
+// In-memory storage for development (replace with DB when tables are created)
+const accountsStore: Map<string, any> = new Map();
+const transactionsStore: Map<string, any[]> = new Map();
+
 export interface SavingsAccountCreate {
   accountName: string;
-  targetGoal?: number; // Target in grams
+  targetGoal?: number;
   targetDate?: Date;
-  autoInvestAmount?: number; // Monthly auto-invest in EGP
-  autoInvestDay?: number; // Day of month (1-28)
+  autoInvestAmount?: number;
+  autoInvestDay?: number;
 }
 
 export interface DepositRequest {
-  amount: number; // EGP
+  amount: number;
   paymentMethod: 'CARD' | 'FAWRY' | 'INSTAPAY' | 'BANK_TRANSFER';
   paymentReference?: string;
 }
 
 export interface WithdrawalRequest {
   type: 'CASH' | 'PHYSICAL' | 'PARTIAL';
-  grams?: number; // For partial/physical
-  deliveryAddress?: string; // For physical delivery
+  grams?: number;
+  deliveryAddress?: string;
 }
 
 /**
  * Create savings account
  */
 export const createSavingsAccount = async (userId: string, data: SavingsAccountCreate) => {
-  // Check if user already has an account
-  const existing = await prisma.silverSavingsAccount.findFirst({
-    where: { userId, isActive: true },
-  });
-
-  if (existing) {
+  const existing = accountsStore.get(userId);
+  if (existing?.isActive) {
     throw new Error('User already has an active savings account');
   }
 
-  const account = await prisma.silverSavingsAccount.create({
-    data: {
-      userId,
-      accountNumber: `SAV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-      accountName: data.accountName,
-      balanceGrams: 0,
-      balanceEGP: 0,
-      targetGoalGrams: data.targetGoal,
-      targetDate: data.targetDate,
-      autoInvestAmount: data.autoInvestAmount,
-      autoInvestDay: data.autoInvestDay,
-      isActive: true,
-    },
-  });
+  const account = {
+    id: `sav-${Date.now()}`,
+    userId,
+    accountNumber: `SAV-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+    accountName: data.accountName,
+    balanceGrams: 0,
+    balanceEGP: 0,
+    totalDeposited: 0,
+    totalWithdrawn: 0,
+    averagePurchasePrice: 0,
+    targetGoalGrams: data.targetGoal,
+    targetDate: data.targetDate,
+    autoInvestAmount: data.autoInvestAmount,
+    autoInvestDay: data.autoInvestDay,
+    pendingWithdrawal: 0,
+    isActive: true,
+    createdAt: new Date(),
+  };
+
+  accountsStore.set(userId, account);
+  transactionsStore.set(account.id, []);
 
   return account;
 };
@@ -66,26 +74,18 @@ export const createSavingsAccount = async (userId: string, data: SavingsAccountC
  * Get user's savings account
  */
 export const getSavingsAccount = async (userId: string) => {
-  const account = await prisma.silverSavingsAccount.findFirst({
-    where: { userId, isActive: true },
-  });
+  const account = accountsStore.get(userId);
+  if (!account?.isActive) return null;
 
-  if (!account) return null;
-
-  // Get current silver price
   const currentPrice = await getPriceByPurity('S999');
   const pricePerGram = currentPrice?.buyPrice || 65;
 
-  // Calculate current value
   const currentValue = account.balanceGrams * pricePerGram;
-
-  // Calculate profit/loss
   const profitLoss = currentValue - account.totalDeposited;
   const profitLossPercent = account.totalDeposited > 0
     ? (profitLoss / account.totalDeposited) * 100
     : 0;
 
-  // Calculate goal progress
   const goalProgress = account.targetGoalGrams
     ? (account.balanceGrams / account.targetGoalGrams) * 100
     : null;
@@ -108,47 +108,41 @@ export const deposit = async (userId: string, accountId: string, data: DepositRe
     throw new Error(`Minimum deposit is ${MINIMUM_DEPOSIT} EGP`);
   }
 
-  const account = await prisma.silverSavingsAccount.findFirst({
-    where: { id: accountId, userId, isActive: true },
-  });
-
-  if (!account) {
+  const account = accountsStore.get(userId);
+  if (!account || account.id !== accountId || !account.isActive) {
     throw new Error('Account not found');
   }
 
-  // Get current price
   const currentPrice = await getPriceByPurity('S999');
   const pricePerGram = currentPrice?.buyPrice || 65;
-
-  // Calculate grams purchased
   const gramsAdded = data.amount / pricePerGram;
 
-  // Create transaction
-  const transaction = await prisma.silverSavingsTransaction.create({
-    data: {
-      accountId,
-      type: 'DEPOSIT',
-      amountEGP: data.amount,
-      amountGrams: gramsAdded,
-      pricePerGram,
-      paymentMethod: data.paymentMethod,
-      paymentReference: data.paymentReference,
-      status: 'COMPLETED',
-    },
-  });
+  const transaction = {
+    id: `tx-${Date.now()}`,
+    accountId,
+    type: 'DEPOSIT',
+    amountEGP: data.amount,
+    amountGrams: gramsAdded,
+    pricePerGram,
+    paymentMethod: data.paymentMethod,
+    paymentReference: data.paymentReference,
+    status: 'COMPLETED',
+    createdAt: new Date(),
+  };
 
-  // Update account balance
-  await prisma.silverSavingsAccount.update({
-    where: { id: accountId },
-    data: {
-      balanceGrams: { increment: gramsAdded },
-      balanceEGP: { increment: data.amount },
-      totalDeposited: { increment: data.amount },
-      averagePurchasePrice: account.totalDeposited > 0
-        ? (account.averagePurchasePrice * account.totalDeposited + pricePerGram * data.amount) / (account.totalDeposited + data.amount)
-        : pricePerGram,
-    },
-  });
+  const transactions = transactionsStore.get(accountId) || [];
+  transactions.unshift(transaction);
+  transactionsStore.set(accountId, transactions);
+
+  // Update account
+  account.balanceGrams += gramsAdded;
+  account.balanceEGP += data.amount;
+  account.totalDeposited += data.amount;
+  account.averagePurchasePrice = account.totalDeposited > 0
+    ? (account.averagePurchasePrice * (account.totalDeposited - data.amount) + pricePerGram * data.amount) / account.totalDeposited
+    : pricePerGram;
+
+  accountsStore.set(userId, account);
 
   return {
     transaction,
@@ -165,15 +159,11 @@ export const requestWithdrawal = async (
   accountId: string,
   data: WithdrawalRequest
 ) => {
-  const account = await prisma.silverSavingsAccount.findFirst({
-    where: { id: accountId, userId, isActive: true },
-  });
-
-  if (!account) {
+  const account = accountsStore.get(userId);
+  if (!account || account.id !== accountId || !account.isActive) {
     throw new Error('Account not found');
   }
 
-  // Get current price
   const currentPrice = await getPriceByPurity('S999');
   const pricePerGram = currentPrice?.sellPrice || 63;
 
@@ -193,29 +183,27 @@ export const requestWithdrawal = async (
     egpAmount -= fee;
   }
 
-  // Create withdrawal request
-  const transaction = await prisma.silverSavingsTransaction.create({
-    data: {
-      accountId,
-      type: 'WITHDRAWAL',
-      withdrawalType: data.type,
-      amountGrams: gramsToWithdraw,
-      amountEGP: egpAmount,
-      pricePerGram,
-      fee: egpAmount * WITHDRAWAL_FEE,
-      deliveryAddress: data.deliveryAddress,
-      status: 'PENDING',
-      estimatedCompletion: new Date(Date.now() + PROCESSING_DAYS * 24 * 60 * 60 * 1000),
-    },
-  });
+  const transaction = {
+    id: `tx-${Date.now()}`,
+    accountId,
+    type: 'WITHDRAWAL',
+    withdrawalType: data.type,
+    amountGrams: gramsToWithdraw,
+    amountEGP: egpAmount,
+    pricePerGram,
+    fee: egpAmount * WITHDRAWAL_FEE,
+    deliveryAddress: data.deliveryAddress,
+    status: 'PENDING',
+    estimatedCompletion: new Date(Date.now() + PROCESSING_DAYS * 24 * 60 * 60 * 1000),
+    createdAt: new Date(),
+  };
 
-  // Update account (pending withdrawal)
-  await prisma.silverSavingsAccount.update({
-    where: { id: accountId },
-    data: {
-      pendingWithdrawal: gramsToWithdraw,
-    },
-  });
+  const transactions = transactionsStore.get(accountId) || [];
+  transactions.unshift(transaction);
+  transactionsStore.set(accountId, transactions);
+
+  account.pendingWithdrawal = gramsToWithdraw;
+  accountsStore.set(userId, account);
 
   return {
     transaction,
@@ -235,27 +223,23 @@ export const getAccountHistory = async (
   page = 1,
   limit = 20
 ) => {
-  const account = await prisma.silverSavingsAccount.findFirst({
-    where: { id: accountId, userId },
-  });
-
-  if (!account) {
+  const account = accountsStore.get(userId);
+  if (!account || account.id !== accountId) {
     throw new Error('Account not found');
   }
 
-  const [transactions, total] = await Promise.all([
-    prisma.silverSavingsTransaction.findMany({
-      where: { accountId },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.silverSavingsTransaction.count({ where: { accountId } }),
-  ]);
+  const allTransactions = transactionsStore.get(accountId) || [];
+  const start = (page - 1) * limit;
+  const transactions = allTransactions.slice(start, start + limit);
 
   return {
     transactions,
-    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    pagination: {
+      page,
+      limit,
+      total: allTransactions.length,
+      totalPages: Math.ceil(allTransactions.length / limit),
+    },
   };
 };
 
@@ -263,20 +247,20 @@ export const getAccountHistory = async (
  * Get price history for charts
  */
 export const getPriceHistory = async (days = 30) => {
-  const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  // Return mock data for now
+  const prices = [];
+  const now = Date.now();
+  const basePrice = 65;
 
-  const prices = await prisma.silverPrice.findMany({
-    where: {
-      purity: 'S999',
-      timestamp: { gte: startDate },
-    },
-    orderBy: { timestamp: 'asc' },
-    select: {
-      buyPrice: true,
-      sellPrice: true,
-      timestamp: true,
-    },
-  });
+  for (let i = days; i >= 0; i--) {
+    const date = new Date(now - i * 24 * 60 * 60 * 1000);
+    const variation = (Math.random() - 0.5) * 2; // +/- 1 EGP
+    prices.push({
+      buyPrice: basePrice + variation,
+      sellPrice: basePrice + variation - 2,
+      timestamp: date,
+    });
+  }
 
   return prices;
 };
@@ -291,9 +275,7 @@ export const calculateProjectedGrowth = async (
 ) => {
   const currentPrice = await getPriceByPurity('S999');
   const pricePerGram = currentPrice?.buyPrice || 65;
-
-  // Assume 5% annual silver price appreciation (conservative)
-  const monthlyGrowthRate = 0.05 / 12;
+  const monthlyGrowthRate = 0.05 / 12; // 5% annual
 
   let balance = currentGrams;
   const projections = [];

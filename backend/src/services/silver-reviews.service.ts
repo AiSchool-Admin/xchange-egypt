@@ -1,48 +1,53 @@
 /**
  * Silver Reviews & Ratings Service
  * خدمة المراجعات والتقييمات لسوق الفضة
+ *
+ * Uses existing Review model with Transaction
  */
 
 import prisma from '../config/database';
 
 export interface ReviewSubmission {
   transactionId: string;
-  rating: number; // 1-5
-  descriptionAccuracy: number; // 1-5
-  communication: number; // 1-5
-  packagingQuality: number; // 1-5
-  shippingSpeed: number; // 1-5
+  rating: number;
+  descriptionAccuracy: number;
+  communication: number;
+  packagingQuality: number;
+  shippingSpeed: number;
   comment?: string;
   images?: string[];
 }
 
 /**
- * Submit review for a transaction
+ * Submit review for a silver transaction
+ * Note: Creates a general Transaction record to link the review
  */
 export const submitReview = async (userId: string, data: ReviewSubmission) => {
-  // Get transaction and verify user is buyer
-  const transaction = await prisma.silverTransaction.findUnique({
+  // Get silver transaction and verify user is buyer
+  const silverTx = await prisma.silverTransaction.findUnique({
     where: { id: data.transactionId },
     include: { item: true },
   });
 
-  if (!transaction) {
+  if (!silverTx) {
     throw new Error('Transaction not found');
   }
 
-  if (transaction.buyerId !== userId) {
+  if (silverTx.buyerId !== userId) {
     throw new Error('Only buyer can review');
   }
 
-  if (transaction.status !== 'COMPLETED') {
+  if (silverTx.status !== 'COMPLETED') {
     throw new Error('Can only review completed transactions');
   }
 
-  // Check if already reviewed
+  // Check if already reviewed by checking if a review exists for this user and seller
+  // for a recent transaction
   const existingReview = await prisma.review.findFirst({
     where: {
       reviewerId: userId,
-      transactionId: data.transactionId,
+      reviewedId: silverTx.sellerId,
+      createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }, // Last 7 days
     },
   });
 
@@ -50,33 +55,44 @@ export const submitReview = async (userId: string, data: ReviewSubmission) => {
     throw new Error('Already reviewed');
   }
 
-  // Calculate overall rating
-  const overallRating = (
-    data.rating +
-    data.descriptionAccuracy +
-    data.communication +
-    data.packagingQuality +
-    data.shippingSpeed
-  ) / 5;
+  // Find or create a general transaction record to link the review
+  let transaction = await prisma.transaction.findFirst({
+    where: {
+      buyerId: silverTx.buyerId,
+      sellerId: silverTx.sellerId,
+      createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+    },
+  });
+
+  if (!transaction) {
+    // Create a placeholder transaction for the review
+    transaction = await prisma.transaction.create({
+      data: {
+        buyerId: silverTx.buyerId,
+        sellerId: silverTx.sellerId,
+        status: 'COMPLETED',
+        totalAmount: silverTx.totalAmount,
+        platformFee: silverTx.buyerCommission,
+        netAmount: silverTx.itemPrice,
+      },
+    });
+  }
 
   // Create review
   const review = await prisma.review.create({
     data: {
+      transactionId: transaction.id,
       reviewerId: userId,
-      reviewedId: transaction.sellerId,
-      transactionId: data.transactionId,
-      itemId: transaction.itemId,
-      rating: Math.round(overallRating * 10) / 10,
-      comment: data.comment,
+      reviewedId: silverTx.sellerId,
+      reviewType: 'SELLER_REVIEW',
+      overallRating: Math.round(data.rating),
+      itemAsDescribed: data.descriptionAccuracy,
+      communication: data.communication,
+      shippingSpeed: data.shippingSpeed,
+      packaging: data.packagingQuality,
+      comment: data.comment || '',
+      images: data.images || [],
       isVerifiedPurchase: true,
-      metadata: {
-        descriptionAccuracy: data.descriptionAccuracy,
-        communication: data.communication,
-        packagingQuality: data.packagingQuality,
-        shippingSpeed: data.shippingSpeed,
-        images: data.images,
-        marketplace: 'silver',
-      },
     },
     include: {
       reviewer: {
@@ -87,15 +103,15 @@ export const submitReview = async (userId: string, data: ReviewSubmission) => {
 
   // Update seller's average rating
   const sellerReviews = await prisma.review.aggregate({
-    where: { reviewedId: transaction.sellerId },
-    _avg: { rating: true },
+    where: { reviewedId: silverTx.sellerId },
+    _avg: { overallRating: true },
     _count: true,
   });
 
   await prisma.user.update({
-    where: { id: transaction.sellerId },
+    where: { id: silverTx.sellerId },
     data: {
-      rating: sellerReviews._avg.rating || 0,
+      rating: sellerReviews._avg.overallRating || 0,
       totalReviews: sellerReviews._count,
     },
   });
@@ -110,13 +126,9 @@ export const getSellerReviews = async (
   sellerId: string,
   page = 1,
   limit = 10,
-  marketplace?: string
+  _marketplace?: string
 ) => {
-  const where: any = { reviewedId: sellerId };
-
-  if (marketplace) {
-    where.metadata = { path: ['marketplace'], equals: marketplace };
-  }
+  const where = { reviewedId: sellerId };
 
   const [reviews, total] = await Promise.all([
     prisma.review.findMany({
@@ -125,6 +137,7 @@ export const getSellerReviews = async (
         reviewer: {
           select: { id: true, fullName: true, avatar: true },
         },
+        response: true,
       },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * limit,
@@ -136,7 +149,12 @@ export const getSellerReviews = async (
   // Calculate category averages
   const allReviews = await prisma.review.findMany({
     where: { reviewedId: sellerId },
-    select: { metadata: true },
+    select: {
+      itemAsDescribed: true,
+      communication: true,
+      packaging: true,
+      shippingSpeed: true,
+    },
   });
 
   const categoryAverages = {
@@ -146,23 +164,24 @@ export const getSellerReviews = async (
     shippingSpeed: 0,
   };
 
-  let count = 0;
-  allReviews.forEach(r => {
-    const meta = r.metadata as any;
-    if (meta?.descriptionAccuracy) {
-      categoryAverages.descriptionAccuracy += meta.descriptionAccuracy;
-      categoryAverages.communication += meta.communication || 0;
-      categoryAverages.packagingQuality += meta.packagingQuality || 0;
-      categoryAverages.shippingSpeed += meta.shippingSpeed || 0;
-      count++;
-    }
-  });
+  if (allReviews.length > 0) {
+    let count = 0;
+    allReviews.forEach(r => {
+      if (r.itemAsDescribed) {
+        categoryAverages.descriptionAccuracy += r.itemAsDescribed;
+        categoryAverages.communication += r.communication || 0;
+        categoryAverages.packagingQuality += r.packaging || 0;
+        categoryAverages.shippingSpeed += r.shippingSpeed || 0;
+        count++;
+      }
+    });
 
-  if (count > 0) {
-    categoryAverages.descriptionAccuracy /= count;
-    categoryAverages.communication /= count;
-    categoryAverages.packagingQuality /= count;
-    categoryAverages.shippingSpeed /= count;
+    if (count > 0) {
+      categoryAverages.descriptionAccuracy /= count;
+      categoryAverages.communication /= count;
+      categoryAverages.packagingQuality /= count;
+      categoryAverages.shippingSpeed /= count;
+    }
   }
 
   return {
@@ -173,17 +192,26 @@ export const getSellerReviews = async (
 };
 
 /**
- * Get reviews for an item
+ * Get reviews for an item - returns reviews for the seller
  */
 export const getItemReviews = async (itemId: string) => {
+  const item = await prisma.silverItem.findUnique({
+    where: { id: itemId },
+    select: { sellerId: true },
+  });
+
+  if (!item) return [];
+
   const reviews = await prisma.review.findMany({
-    where: { itemId },
+    where: { reviewedId: item.sellerId },
     include: {
       reviewer: {
         select: { id: true, fullName: true, avatar: true },
       },
+      response: true,
     },
     orderBy: { createdAt: 'desc' },
+    take: 5,
   });
 
   return reviews;
@@ -195,7 +223,7 @@ export const getItemReviews = async (itemId: string) => {
 export const respondToReview = async (
   reviewId: string,
   sellerId: string,
-  response: string
+  responseText: string
 ) => {
   const review = await prisma.review.findUnique({
     where: { id: reviewId },
@@ -209,15 +237,22 @@ export const respondToReview = async (
     throw new Error('Unauthorized');
   }
 
-  const updated = await prisma.review.update({
-    where: { id: reviewId },
-    data: {
-      sellerResponse: response,
-      sellerRespondedAt: new Date(),
+  // Create or update response
+  const response = await prisma.reviewResponse.upsert({
+    where: { reviewId },
+    update: {
+      message: responseText,
+      isEdited: true,
+      editedAt: new Date(),
+    },
+    create: {
+      reviewId,
+      responderId: sellerId,
+      message: responseText,
     },
   });
 
-  return updated;
+  return { ...review, response };
 };
 
 /**
@@ -228,13 +263,21 @@ export const reportReview = async (
   userId: string,
   reason: string
 ) => {
+  // Create a report record
+  await prisma.reviewReport.create({
+    data: {
+      reviewId,
+      reporterId: userId,
+      reason: 'OTHER',
+      description: reason,
+    },
+  });
+
+  // Increment report count
   const review = await prisma.review.update({
     where: { id: reviewId },
     data: {
-      isReported: true,
-      reportReason: reason,
-      reportedBy: userId,
-      reportedAt: new Date(),
+      reportCount: { increment: 1 },
     },
   });
 
@@ -251,20 +294,16 @@ export const getSellerRatingSummary = async (sellerId: string) => {
   });
 
   // Get rating distribution
-  const distribution = await prisma.review.groupBy({
-    by: ['rating'],
+  const reviews = await prisma.review.findMany({
     where: { reviewedId: sellerId },
-    _count: true,
+    select: { overallRating: true },
   });
 
-  const ratingDistribution = {
-    5: 0, 4: 0, 3: 0, 2: 0, 1: 0,
-  };
+  const ratingDistribution: Record<number, number> = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
 
-  distribution.forEach(d => {
-    const rounded = Math.round(d.rating);
-    if (rounded >= 1 && rounded <= 5) {
-      ratingDistribution[rounded as keyof typeof ratingDistribution] = d._count;
+  reviews.forEach(r => {
+    if (r.overallRating >= 1 && r.overallRating <= 5) {
+      ratingDistribution[r.overallRating]++;
     }
   });
 
