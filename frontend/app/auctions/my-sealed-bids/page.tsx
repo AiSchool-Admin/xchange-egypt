@@ -173,7 +173,7 @@ export default function MySealedBidsPage() {
             {filteredBids.map((bid) => {
               const auction = bid.auction;
               const item = auction?.item || (auction as any)?.listing?.item;
-              const primaryImage = item?.images?.[0]?.url;
+              const primaryImage = item?.images?.[0] ? (typeof item.images[0] === 'string' ? item.images[0] : item.images[0].url) : undefined;
               const isEnded = auction ? new Date(auction.endTime) < new Date() : false;
 
               return (

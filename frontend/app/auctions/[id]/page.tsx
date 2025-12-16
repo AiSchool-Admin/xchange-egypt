@@ -503,7 +503,7 @@ export default function AuctionDetailsPage() {
             <div className="bg-white rounded-lg shadow-sm overflow-hidden">
               <div className="relative h-96 bg-gray-200">
                 {item.images && item.images.length > 0 ? (
-                  <img src={item.images[selectedImage]?.url} alt={item.title} className="w-full h-full object-contain" />
+                  <img src={typeof item.images[selectedImage] === 'string' ? item.images[selectedImage] : item.images[selectedImage]?.url} alt={item.title} className="w-full h-full object-contain" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
                     <span className="text-6xl">🔨</span>

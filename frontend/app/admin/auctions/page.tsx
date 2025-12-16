@@ -9,9 +9,8 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   SCHEDULED: { label: 'مجدول', color: 'bg-blue-100 text-blue-700' },
   ACTIVE: { label: 'نشط', color: 'bg-green-100 text-green-700' },
   ENDED: { label: 'انتهى', color: 'bg-purple-100 text-purple-700' },
-  SOLD: { label: 'تم البيع', color: 'bg-emerald-100 text-emerald-700' },
+  COMPLETED: { label: 'مكتمل', color: 'bg-emerald-100 text-emerald-700' },
   CANCELLED: { label: 'ملغي', color: 'bg-red-100 text-red-700' },
-  FAILED: { label: 'فشل', color: 'bg-orange-100 text-orange-700' },
 };
 
 export default function AdminAuctionsPage() {
@@ -22,7 +21,7 @@ export default function AdminAuctionsPage() {
     active: 0,
     scheduled: 0,
     ended: 0,
-    sold: 0,
+    completed: 0,
     totalValue: 0,
     totalBids: 0,
     totalDeposits: 0,
@@ -61,7 +60,7 @@ export default function AdminAuctionsPage() {
         active: allAuctions.filter((a: Auction) => a.status === 'ACTIVE').length,
         scheduled: allAuctions.filter((a: Auction) => a.status === 'SCHEDULED').length,
         ended: allAuctions.filter((a: Auction) => a.status === 'ENDED').length,
-        sold: allAuctions.filter((a: Auction) => a.status === 'SOLD').length,
+        completed: allAuctions.filter((a: Auction) => a.status === 'COMPLETED').length,
         totalValue: allAuctions.reduce((sum: number, a: Auction) => sum + (a.currentPrice || 0), 0),
         totalBids: allAuctions.reduce((sum: number, a: Auction) => sum + (a.totalBids || 0), 0),
         totalDeposits: 0,
@@ -172,8 +171,8 @@ export default function AdminAuctionsPage() {
             <div className="text-xs text-gray-500">انتهى</div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-2xl font-bold text-emerald-600">{stats.sold}</div>
-            <div className="text-xs text-gray-500">تم البيع</div>
+            <div className="text-2xl font-bold text-emerald-600">{stats.completed}</div>
+            <div className="text-xs text-gray-500">مكتمل</div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <div className="text-2xl font-bold text-orange-600">{stats.totalBids}</div>
@@ -212,7 +211,7 @@ export default function AdminAuctionsPage() {
                 <option value="ACTIVE">نشط</option>
                 <option value="SCHEDULED">مجدول</option>
                 <option value="ENDED">انتهى</option>
-                <option value="SOLD">تم البيع</option>
+                <option value="COMPLETED">مكتمل</option>
                 <option value="CANCELLED">ملغي</option>
               </select>
             </div>
@@ -344,7 +343,7 @@ export default function AdminAuctionsPage() {
                         <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                           {auction.listing?.item?.images?.[0] ? (
                             <img
-                              src={auction.listing.item.images[0]}
+                              src={typeof auction.listing.item.images[0] === 'string' ? auction.listing.item.images[0] : auction.listing.item.images[0].url}
                               alt=""
                               className="w-full h-full object-cover"
                             />

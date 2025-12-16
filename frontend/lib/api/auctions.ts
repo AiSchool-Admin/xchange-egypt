@@ -6,7 +6,7 @@ import apiClient from './client';
 
 export type AuctionType = 'ENGLISH' | 'SEALED_BID' | 'DUTCH';
 export type AuctionCategory = 'GENERAL' | 'CARS' | 'PROPERTIES' | 'ELECTRONICS' | 'ANTIQUES' | 'ART' | 'JEWELRY' | 'COLLECTIBLES' | 'INDUSTRIAL';
-export type AuctionStatus = 'PENDING' | 'ACTIVE' | 'ENDED' | 'CANCELLED' | 'COMPLETED';
+export type AuctionStatus = 'DRAFT' | 'SCHEDULED' | 'ACTIVE' | 'ENDED' | 'CANCELLED' | 'COMPLETED';
 export type DepositStatus = 'PENDING' | 'PAID' | 'REFUNDED' | 'FORFEITED' | 'APPLIED';
 export type DisputeStatus = 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'ESCALATED' | 'CLOSED';
 
@@ -31,6 +31,9 @@ export interface Auction {
   watchlistCount: number;
   winnerId?: string;
   bidCount: number;
+  totalBids?: number;
+  uniqueBidders?: number;
+  views?: number;
   governorate?: string;
   city?: string;
   item: {
@@ -38,7 +41,7 @@ export interface Auction {
     title: string;
     description: string;
     condition: string;
-    images: Array<{ id: string; url: string; isPrimary: boolean }>;
+    images: Array<string | { id: string; url: string; isPrimary: boolean }>;
     category: {
       id: string;
       nameEn: string;
@@ -53,6 +56,12 @@ export interface Auction {
   };
   listing?: {
     item: Auction['item'];
+    user?: {
+      id: string;
+      fullName: string;
+      userType: string;
+      rating?: number;
+    };
   };
   bids?: Array<{
     id: string;
@@ -155,10 +164,20 @@ export interface AuctionReview {
 }
 
 export interface CreateAuctionData {
-  itemId: string;
+  itemId?: string;
+  // Item data (when creating item and auction together)
+  title?: string;
+  description?: string;
+  condition?: 'NEW' | 'LIKE_NEW' | 'GOOD' | 'FAIR' | 'POOR';
+  categoryId?: string;
+  images?: string[];
+  governorate?: string;
+  city?: string;
+  // Auction settings
   startingPrice: number;
   reservePrice?: number;
   buyNowPrice?: number;
+  minBidIncrement?: number;
   startTime: string;
   endTime: string;
   auctionType?: AuctionType;
@@ -166,6 +185,9 @@ export interface CreateAuctionData {
   requiresDeposit?: boolean;
   depositAmount?: number;
   depositPercentage?: number;
+  autoExtend?: boolean;
+  extensionMinutes?: number;
+  isFeatured?: boolean;
 }
 
 export interface PlaceBidData {

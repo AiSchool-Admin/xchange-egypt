@@ -90,8 +90,8 @@ export default function CreateAuctionPage() {
 
   const loadCategories = async () => {
     try {
-      const data = await getCategories();
-      setCategories(data);
+      const response = await getCategories();
+      setCategories(response.data);
     } catch (error) {
       console.error('Error loading categories:', error);
     }

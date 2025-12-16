@@ -148,7 +148,10 @@ export default function WatchlistPage() {
                 const auctionItem = auction?.item || (auction as any)?.listing?.item;
                 if (!auctionItem) return null;
 
-                const primaryImage = auctionItem.images?.find((img: any) => img.isPrimary)?.url || auctionItem.images?.[0]?.url;
+                const getImageUrl = (img: any) => typeof img === 'string' ? img : img?.url;
+                const primaryImage = auctionItem.images?.find((img: any) => typeof img !== 'string' && img.isPrimary)
+                  ? getImageUrl(auctionItem.images.find((img: any) => typeof img !== 'string' && img.isPrimary))
+                  : auctionItem.images?.[0] ? getImageUrl(auctionItem.images[0]) : undefined;
                 const isEnded = new Date(auction.endTime) < new Date();
                 const hasStarted = new Date(auction.startTime) < new Date();
 

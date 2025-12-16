@@ -171,8 +171,8 @@ export default function DepositsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-gray-200 rounded-lg flex-shrink-0">
-                            {item?.images?.[0]?.url ? (
-                              <img src={item.images[0].url} alt={item?.title} className="w-full h-full object-cover rounded-lg" />
+                            {item?.images?.[0] ? (
+                              <img src={typeof item.images[0] === 'string' ? item.images[0] : item.images[0].url} alt={item?.title} className="w-full h-full object-cover rounded-lg" />
                             ) : (
                               <span className="w-full h-full flex items-center justify-center text-gray-400 text-xl">🔨</span>
                             )}

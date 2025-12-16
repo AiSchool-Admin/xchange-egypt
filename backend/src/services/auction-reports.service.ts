@@ -403,7 +403,7 @@ export class AuctionReportsService {
         createdAt: { gte: dateRange.start, lte: dateRange.end },
         userId: { not: null },
       },
-      orderBy: { _count: { userId: 'desc' } },
+      orderBy: { _count: { userId: 'desc' } } as any,
       take: 10,
     });
 
@@ -424,8 +424,8 @@ export class AuctionReportsService {
     return {
       totalAlerts: alertStats.reduce((sum, s) => sum + s._count, 0),
       confirmedFraud: alertStats.find(s => s.status === 'CONFIRMED')?._count || 0,
-      falsePositives: alertStats.find(s => s.status === 'DISMISSED')?._count || 0,
-      pending: alertStats.find(s => s.status === 'PENDING')?._count || 0,
+      falsePositives: alertStats.find(s => s.status === 'FALSE_POSITIVE')?._count || 0,
+      pending: alertStats.find(s => s.status === 'DETECTED' || s.status === 'INVESTIGATING')?._count || 0,
       byType: byType.map(t => ({ type: t.alertType, count: t._count })),
       topSuspiciousUsers: topSuspicious,
     };

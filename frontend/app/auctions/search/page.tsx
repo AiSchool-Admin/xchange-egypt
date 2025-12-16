@@ -93,7 +93,7 @@ export default function AdvancedSearchPage() {
         limit: itemsPerPage,
       });
 
-      let filtered = result.data || [];
+      let filtered = result.data?.auctions || [];
 
       // تطبيق الفلاتر المحلية
       if (filters.auctionType) {
@@ -135,7 +135,7 @@ export default function AdvancedSearchPage() {
       });
 
       setAuctions(filtered);
-      setTotalResults(result.pagination?.total || filtered.length);
+      setTotalResults(result.data?.pagination?.total || filtered.length);
     } catch (error) {
       console.error('Search error:', error);
     } finally {
@@ -398,7 +398,7 @@ export default function AdvancedSearchPage() {
                       <div className="relative h-48">
                         {auction.listing?.item?.images?.[0] ? (
                           <img
-                            src={auction.listing.item.images[0]}
+                            src={typeof auction.listing.item.images[0] === 'string' ? auction.listing.item.images[0] : auction.listing.item.images[0].url}
                             alt={auction.listing.item.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                           />

@@ -11,12 +11,11 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   SCHEDULED: { label: 'مجدول', color: 'bg-blue-100 text-blue-700' },
   ACTIVE: { label: 'نشط', color: 'bg-green-100 text-green-700' },
   ENDED: { label: 'انتهى', color: 'bg-purple-100 text-purple-700' },
-  SOLD: { label: 'تم البيع', color: 'bg-emerald-100 text-emerald-700' },
+  COMPLETED: { label: 'مكتمل', color: 'bg-emerald-100 text-emerald-700' },
   CANCELLED: { label: 'ملغي', color: 'bg-red-100 text-red-700' },
-  FAILED: { label: 'فشل', color: 'bg-orange-100 text-orange-700' },
 };
 
-type TabType = 'all' | 'active' | 'scheduled' | 'ended' | 'sold';
+type TabType = 'all' | 'active' | 'scheduled' | 'ended' | 'completed';
 
 export default function MyAuctionsPage() {
   const router = useRouter();
@@ -29,7 +28,7 @@ export default function MyAuctionsPage() {
     active: 0,
     scheduled: 0,
     ended: 0,
-    sold: 0,
+    completed: 0,
     totalEarnings: 0,
     totalBids: 0,
   });
@@ -53,9 +52,9 @@ export default function MyAuctionsPage() {
       const active = auctionList.filter((a: Auction) => a.status === 'ACTIVE').length;
       const scheduled = auctionList.filter((a: Auction) => a.status === 'SCHEDULED').length;
       const ended = auctionList.filter((a: Auction) => a.status === 'ENDED').length;
-      const sold = auctionList.filter((a: Auction) => a.status === 'SOLD').length;
+      const completed = auctionList.filter((a: Auction) => a.status === 'COMPLETED').length;
       const totalEarnings = auctionList
-        .filter((a: Auction) => a.status === 'SOLD')
+        .filter((a: Auction) => a.status === 'COMPLETED')
         .reduce((sum: number, a: Auction) => sum + (a.currentPrice || 0), 0);
       const totalBids = auctionList.reduce((sum: number, a: Auction) => sum + (a.totalBids || 0), 0);
 
@@ -64,7 +63,7 @@ export default function MyAuctionsPage() {
         active,
         scheduled,
         ended,
-        sold,
+        completed,
         totalEarnings,
         totalBids,
       });
@@ -90,8 +89,8 @@ export default function MyAuctionsPage() {
     if (activeTab === 'all') return true;
     if (activeTab === 'active') return auction.status === 'ACTIVE';
     if (activeTab === 'scheduled') return auction.status === 'SCHEDULED';
-    if (activeTab === 'ended') return auction.status === 'ENDED' || auction.status === 'FAILED';
-    if (activeTab === 'sold') return auction.status === 'SOLD';
+    if (activeTab === 'ended') return auction.status === 'ENDED' || auction.status === 'CANCELLED';
+    if (activeTab === 'completed') return auction.status === 'COMPLETED';
     return true;
   });
 
@@ -165,8 +164,8 @@ export default function MyAuctionsPage() {
             <div className="text-sm text-gray-500">مجدول</div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
-            <div className="text-3xl font-bold text-emerald-600">{stats.sold}</div>
-            <div className="text-sm text-gray-500">تم بيعها</div>
+            <div className="text-3xl font-bold text-emerald-600">{stats.completed}</div>
+            <div className="text-sm text-gray-500">مكتمل</div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <div className="text-3xl font-bold text-purple-600">{stats.totalBids}</div>
@@ -189,7 +188,7 @@ export default function MyAuctionsPage() {
               { key: 'active', label: 'نشط', count: stats.active },
               { key: 'scheduled', label: 'مجدول', count: stats.scheduled },
               { key: 'ended', label: 'انتهى', count: stats.ended },
-              { key: 'sold', label: 'تم البيع', count: stats.sold },
+              { key: 'completed', label: 'مكتمل', count: stats.completed },
             ].map(tab => (
               <button
                 key={tab.key}
@@ -225,7 +224,7 @@ export default function MyAuctionsPage() {
               {activeTab === 'all'
                 ? 'لم تقم بإنشاء أي مزادات بعد'
                 : `لا توجد مزادات في قسم "${
-                    { active: 'نشط', scheduled: 'مجدول', ended: 'انتهى', sold: 'تم البيع' }[activeTab]
+                    { active: 'نشط', scheduled: 'مجدول', ended: 'انتهى', completed: 'مكتمل' }[activeTab]
                   }"`}
             </p>
             <Link
@@ -244,7 +243,7 @@ export default function MyAuctionsPage() {
                   <div className="w-48 h-40 flex-shrink-0">
                     {auction.listing?.item?.images?.[0] ? (
                       <img
-                        src={auction.listing.item.images[0]}
+                        src={typeof auction.listing.item.images[0] === 'string' ? auction.listing.item.images[0] : auction.listing.item.images[0].url}
                         alt={auction.listing.item.title}
                         className="w-full h-full object-cover"
                       />
