@@ -10,7 +10,6 @@
  * - Trending items
  */
 
-import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 
 // ============================================
@@ -19,8 +18,8 @@ import prisma from '../lib/prisma';
 
 export type MarketType =
   | 'GENERAL'
-  | 'CARS'
-  | 'PROPERTIES'
+  | 'VEHICLES'
+  | 'REAL_ESTATE'
   | 'MOBILES'
   | 'AUCTIONS'
   | 'TENDERS'
@@ -31,84 +30,38 @@ export type MarketType =
   | 'SCRAP';
 
 export interface UniversalSearchParams {
-  query: string;
+  query?: string;
   markets?: MarketType[];
-  minPrice?: number;
-  maxPrice?: number;
   governorate?: string;
+  city?: string;
+  priceMin?: number;
+  priceMax?: number;
   condition?: string;
-  sortBy?: 'price_asc' | 'price_desc' | 'recent' | 'relevance';
+  sortBy?: 'relevance' | 'price_asc' | 'price_desc' | 'date' | 'popularity';
+  page?: number;
   limit?: number;
-  offset?: number;
 }
 
 export interface SearchResult {
   id: string;
-  title: string;
-  description?: string;
-  price?: number;
-  estimatedValue?: number;
   market: MarketType;
-  marketIcon: string;
-  marketNameAr: string;
+  title: string;
+  description: string;
+  price: number | null;
+  currency: string;
   images: string[];
-  governorate?: string;
-  condition?: string;
-  listingType?: string;
-  createdAt: Date;
-  seller?: {
+  location: {
+    governorate: string;
+    city?: string;
+  };
+  seller: {
     id: string;
     name: string;
-    rating?: number;
+    rating: number;
   };
+  createdAt: Date;
   url: string;
 }
-
-export interface MarketStats {
-  market: MarketType;
-  totalItems: number;
-  activeItems: number;
-  avgPrice: number;
-  minPrice: number;
-  maxPrice: number;
-  totalTransactions: number;
-  trendingUp: boolean;
-}
-
-export interface TrendingItem {
-  id: string;
-  title: string;
-  market: MarketType;
-  price: number;
-  views: number;
-  saves: number;
-  imageUrl?: string;
-  url: string;
-}
-
-export interface RecommendationParams {
-  userId: string;
-  limit?: number;
-  excludeViewed?: boolean;
-}
-
-// ============================================
-// Market Metadata
-// ============================================
-
-const MARKET_METADATA: Record<MarketType, { icon: string; nameAr: string; baseUrl: string }> = {
-  GENERAL: { icon: '🛒', nameAr: 'السوق العام', baseUrl: '/items' },
-  CARS: { icon: '🚗', nameAr: 'السيارات', baseUrl: '/cars' },
-  PROPERTIES: { icon: '🏠', nameAr: 'العقارات', baseUrl: '/properties' },
-  MOBILES: { icon: '📱', nameAr: 'الموبايلات', baseUrl: '/mobiles' },
-  AUCTIONS: { icon: '🔨', nameAr: 'المزادات', baseUrl: '/auctions' },
-  TENDERS: { icon: '📋', nameAr: 'المناقصات', baseUrl: '/reverse-auctions' },
-  BARTER: { icon: '🔄', nameAr: 'المقايضة', baseUrl: '/pools' },
-  GOLD: { icon: '🥇', nameAr: 'الذهب', baseUrl: '/gold' },
-  SILVER: { icon: '🥈', nameAr: 'الفضة', baseUrl: '/silver' },
-  LUXURY: { icon: '💎', nameAr: 'الرفاهية', baseUrl: '/luxury' },
-  SCRAP: { icon: '♻️', nameAr: 'الخردة', baseUrl: '/scrap' },
-};
 
 // ============================================
 // Universal Search
@@ -117,590 +70,526 @@ const MARKET_METADATA: Record<MarketType, { icon: string; nameAr: string; baseUr
 /**
  * Search across all markets
  */
-export const universalSearch = async (params: UniversalSearchParams): Promise<{
+export const universalSearch = async (
+  params: UniversalSearchParams
+): Promise<{
   results: SearchResult[];
   total: number;
-  facets: Record<MarketType, number>;
+  markets: Record<MarketType, number>;
+  pagination: { page: number; limit: number; totalPages: number };
 }> => {
   const {
     query,
-    markets = Object.keys(MARKET_METADATA) as MarketType[],
-    minPrice,
-    maxPrice,
+    markets = ['GENERAL', 'VEHICLES', 'REAL_ESTATE', 'MOBILES', 'AUCTIONS', 'GOLD', 'SILVER'],
     governorate,
-    condition,
-    sortBy = 'relevance',
+    priceMin,
+    priceMax,
+    page = 1,
     limit = 20,
-    offset = 0,
   } = params;
 
   const results: SearchResult[] = [];
-  const facets: Record<MarketType, number> = {} as Record<MarketType, number>;
-
-  // Build base where clause for items
-  const baseWhere: Prisma.ItemWhereInput = {
-    status: 'ACTIVE',
-    OR: [
-      { title: { contains: query, mode: 'insensitive' } },
-      { description: { contains: query, mode: 'insensitive' } },
-    ],
-    ...(minPrice && { estimatedValue: { gte: minPrice } }),
-    ...(maxPrice && { estimatedValue: { lte: maxPrice } }),
-    ...(governorate && { governorate }),
-    ...(condition && { condition: condition as any }),
+  const marketCounts: Record<MarketType, number> = {
+    GENERAL: 0,
+    VEHICLES: 0,
+    REAL_ESTATE: 0,
+    MOBILES: 0,
+    AUCTIONS: 0,
+    TENDERS: 0,
+    BARTER: 0,
+    GOLD: 0,
+    SILVER: 0,
+    LUXURY: 0,
+    SCRAP: 0,
   };
 
-  // Search in general items
-  if (markets.includes('GENERAL') || markets.includes('LUXURY')) {
-    const items = await prisma.item.findMany({
-      where: baseWhere,
-      include: {
-        images: true,
-        seller: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
-        category: true,
-      },
-      take: limit,
-      skip: offset,
-      orderBy: getOrderBy(sortBy),
-    });
-
-    const itemCount = await prisma.item.count({ where: baseWhere });
-    facets.GENERAL = itemCount;
-
-    // Separate luxury items
-    const luxuryItems = items.filter(i => (i.estimatedValue || 0) >= 50000);
-    const regularItems = items.filter(i => (i.estimatedValue || 0) < 50000);
-
-    facets.LUXURY = luxuryItems.length;
-
-    regularItems.forEach(item => {
-      results.push(transformItemToSearchResult(item, 'GENERAL'));
-    });
-
-    luxuryItems.forEach(item => {
-      results.push(transformItemToSearchResult(item, 'LUXURY'));
-    });
+  // Search General Market (Items)
+  if (markets.includes('GENERAL')) {
+    const items = await searchGeneralMarket(query, governorate, priceMin, priceMax);
+    results.push(...items);
+    marketCounts.GENERAL = items.length;
   }
 
-  // Search in cars
-  if (markets.includes('CARS')) {
-    const cars = await prisma.car.findMany({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-        ...(minPrice && { price: { gte: minPrice } }),
-        ...(maxPrice && { price: { lte: maxPrice } }),
-        ...(governorate && { governorate }),
-      },
-      include: {
-        images: true,
-        seller: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
-      },
-      take: Math.min(limit, 10),
-    });
-
-    facets.CARS = await prisma.car.count({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-      },
-    });
-
-    cars.forEach(car => {
-      results.push({
-        id: car.id,
-        title: car.title,
-        description: car.description || undefined,
-        price: car.price,
-        market: 'CARS',
-        marketIcon: MARKET_METADATA.CARS.icon,
-        marketNameAr: MARKET_METADATA.CARS.nameAr,
-        images: car.images?.map((img: any) => img.url) || [],
-        governorate: car.governorate || undefined,
-        condition: car.condition || undefined,
-        createdAt: car.createdAt,
-        seller: car.seller ? {
-          id: car.seller.id,
-          name: car.seller.fullName || '',
-        } : undefined,
-        url: `/cars/${car.id}`,
-      });
-    });
-  }
-
-  // Search in properties
-  if (markets.includes('PROPERTIES')) {
-    const properties = await prisma.property.findMany({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-        ...(minPrice && { price: { gte: minPrice } }),
-        ...(maxPrice && { price: { lte: maxPrice } }),
-        ...(governorate && { governorate }),
-      },
-      include: {
-        images: true,
-        seller: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
-      },
-      take: Math.min(limit, 10),
-    });
-
-    facets.PROPERTIES = await prisma.property.count({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-      },
-    });
-
-    properties.forEach(property => {
-      results.push({
-        id: property.id,
-        title: property.title,
-        description: property.description || undefined,
-        price: property.price,
-        market: 'PROPERTIES',
-        marketIcon: MARKET_METADATA.PROPERTIES.icon,
-        marketNameAr: MARKET_METADATA.PROPERTIES.nameAr,
-        images: property.images?.map((img: any) => img.url) || [],
-        governorate: property.governorate || undefined,
-        createdAt: property.createdAt,
-        seller: property.seller ? {
-          id: property.seller.id,
-          name: property.seller.fullName || '',
-        } : undefined,
-        url: `/properties/${property.id}`,
-      });
-    });
-  }
-
-  // Search in auctions
-  if (markets.includes('AUCTIONS')) {
-    const auctions = await prisma.auction.findMany({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-        ...(minPrice && { currentBid: { gte: minPrice } }),
-        ...(maxPrice && { currentBid: { lte: maxPrice } }),
-      },
-      include: {
-        item: {
-          include: {
-            images: true,
-          },
-        },
-        seller: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
-      },
-      take: Math.min(limit, 10),
-    });
-
-    facets.AUCTIONS = await prisma.auction.count({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-        ],
-      },
-    });
-
-    auctions.forEach(auction => {
-      results.push({
-        id: auction.id,
-        title: auction.title,
-        description: auction.description || undefined,
-        price: auction.currentBid,
-        market: 'AUCTIONS',
-        marketIcon: MARKET_METADATA.AUCTIONS.icon,
-        marketNameAr: MARKET_METADATA.AUCTIONS.nameAr,
-        images: auction.item?.images?.map((img: any) => img.url) || [],
-        createdAt: auction.createdAt,
-        seller: auction.seller ? {
-          id: auction.seller.id,
-          name: auction.seller.fullName || '',
-        } : undefined,
-        url: `/auctions/${auction.id}`,
-      });
-    });
-  }
-
-  // Search in gold items
+  // Search Gold
   if (markets.includes('GOLD')) {
-    const goldItems = await prisma.goldItem.findMany({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { titleAr: { contains: query, mode: 'insensitive' } },
-        ],
-        ...(minPrice && { totalPrice: { gte: minPrice } }),
-        ...(maxPrice && { totalPrice: { lte: maxPrice } }),
-      },
-      include: {
-        seller: {
-          select: {
-            id: true,
-            fullName: true,
-          },
-        },
-      },
-      take: Math.min(limit, 10),
-    });
-
-    facets.GOLD = await prisma.goldItem.count({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { titleAr: { contains: query, mode: 'insensitive' } },
-        ],
-      },
-    });
-
-    goldItems.forEach(item => {
-      results.push({
-        id: item.id,
-        title: item.titleAr || item.title,
-        description: item.descriptionAr || item.description || undefined,
-        price: item.totalPrice,
-        market: 'GOLD',
-        marketIcon: MARKET_METADATA.GOLD.icon,
-        marketNameAr: MARKET_METADATA.GOLD.nameAr,
-        images: item.images || [],
-        condition: item.condition || undefined,
-        createdAt: item.createdAt,
-        seller: item.seller ? {
-          id: item.seller.id,
-          name: item.seller.fullName || '',
-        } : undefined,
-        url: `/gold/${item.id}`,
-      });
-    });
+    const goldItems = await searchGold(query, governorate);
+    results.push(...goldItems);
+    marketCounts.GOLD = goldItems.length;
   }
 
-  // Sort all results
-  const sortedResults = sortResults(results, sortBy);
+  // Search Silver
+  if (markets.includes('SILVER')) {
+    const silverItems = await searchSilver(query, governorate);
+    results.push(...silverItems);
+    marketCounts.SILVER = silverItems.length;
+  }
+
+  // Search Real Estate
+  if (markets.includes('REAL_ESTATE')) {
+    const properties = await searchRealEstate(query, governorate, priceMin, priceMax);
+    results.push(...properties);
+    marketCounts.REAL_ESTATE = properties.length;
+  }
+
+  // Sort results
+  const sortedResults = sortResults(results, params.sortBy || 'relevance');
+
+  // Paginate
+  const startIndex = (page - 1) * limit;
+  const paginatedResults = sortedResults.slice(startIndex, startIndex + limit);
+  const total = results.length;
 
   return {
-    results: sortedResults.slice(offset, offset + limit),
-    total: Object.values(facets).reduce((a, b) => a + b, 0),
-    facets,
+    results: paginatedResults,
+    total,
+    markets: marketCounts,
+    pagination: {
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
   };
 };
+
+// ============================================
+// Market-Specific Search Functions
+// ============================================
+
+async function searchGeneralMarket(
+  query?: string,
+  governorate?: string,
+  priceMin?: number,
+  priceMax?: number
+): Promise<SearchResult[]> {
+  const where: any = { status: 'ACTIVE' };
+
+  if (query) {
+    where.OR = [
+      { title: { contains: query, mode: 'insensitive' } },
+      { description: { contains: query, mode: 'insensitive' } },
+    ];
+  }
+
+  if (governorate) {
+    where.governorate = governorate;
+  }
+
+  if (priceMin !== undefined || priceMax !== undefined) {
+    where.price = {};
+    if (priceMin !== undefined) where.price.gte = priceMin;
+    if (priceMax !== undefined) where.price.lte = priceMax;
+  }
+
+  const items = await prisma.item.findMany({
+    where,
+    take: 50,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      seller: {
+        select: { id: true, fullName: true, rating: true },
+      },
+    },
+  });
+
+  return items.map((item) => ({
+    id: item.id,
+    market: 'GENERAL' as MarketType,
+    title: item.title,
+    description: item.description || '',
+    price: item.price,
+    currency: 'EGP',
+    images: item.images || [],
+    location: {
+      governorate: item.governorate || '',
+      city: item.city || undefined,
+    },
+    seller: {
+      id: item.seller.id,
+      name: item.seller.fullName,
+      rating: item.seller.rating,
+    },
+    createdAt: item.createdAt,
+    url: `/items/${item.id}`,
+  }));
+}
+
+async function searchRealEstate(
+  query?: string,
+  governorate?: string,
+  priceMin?: number,
+  priceMax?: number
+): Promise<SearchResult[]> {
+  const where: any = { status: 'ACTIVE' };
+
+  if (query) {
+    where.OR = [
+      { title: { contains: query, mode: 'insensitive' } },
+      { description: { contains: query, mode: 'insensitive' } },
+    ];
+  }
+
+  if (governorate) {
+    where.governorate = governorate;
+  }
+
+  if (priceMin !== undefined || priceMax !== undefined) {
+    where.salePrice = {};
+    if (priceMin !== undefined) where.salePrice.gte = priceMin;
+    if (priceMax !== undefined) where.salePrice.lte = priceMax;
+  }
+
+  const properties = await prisma.property.findMany({
+    where,
+    take: 50,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      owner: {
+        select: { id: true, fullName: true, rating: true },
+      },
+    },
+  });
+
+  return properties.map((property) => ({
+    id: property.id,
+    market: 'REAL_ESTATE' as MarketType,
+    title: property.title,
+    description: property.description || '',
+    price: property.salePrice,
+    currency: 'EGP',
+    images: (property.images as string[]) || [],
+    location: {
+      governorate: property.governorate || '',
+      city: property.city || undefined,
+    },
+    seller: {
+      id: property.owner.id,
+      name: property.owner.fullName,
+      rating: property.owner.rating,
+    },
+    createdAt: property.createdAt,
+    url: `/properties/${property.id}`,
+  }));
+}
+
+async function searchGold(query?: string, governorate?: string): Promise<SearchResult[]> {
+  const where: any = { status: 'ACTIVE' };
+
+  if (query) {
+    where.OR = [
+      { title: { contains: query, mode: 'insensitive' } },
+      { description: { contains: query, mode: 'insensitive' } },
+    ];
+  }
+
+  if (governorate) {
+    where.governorate = governorate;
+  }
+
+  const goldItems = await prisma.goldItem.findMany({
+    where,
+    take: 50,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      seller: {
+        select: { id: true, fullName: true, rating: true },
+      },
+    },
+  });
+
+  return goldItems.map((item) => ({
+    id: item.id,
+    market: 'GOLD' as MarketType,
+    title: item.title,
+    description: item.description || '',
+    price: item.totalAskingPrice,
+    currency: 'EGP',
+    images: item.images || [],
+    location: {
+      governorate: item.governorate || '',
+      city: item.city || undefined,
+    },
+    seller: {
+      id: item.seller.id,
+      name: item.seller.fullName,
+      rating: item.seller.rating,
+    },
+    createdAt: item.createdAt,
+    url: `/gold/${item.id}`,
+  }));
+}
+
+async function searchSilver(query?: string, governorate?: string): Promise<SearchResult[]> {
+  const where: any = { status: 'ACTIVE' };
+
+  if (query) {
+    where.OR = [
+      { title: { contains: query, mode: 'insensitive' } },
+      { description: { contains: query, mode: 'insensitive' } },
+    ];
+  }
+
+  if (governorate) {
+    where.governorate = governorate;
+  }
+
+  const silverItems = await prisma.silverItem.findMany({
+    where,
+    take: 50,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      seller: {
+        select: { id: true, fullName: true, rating: true },
+      },
+    },
+  });
+
+  return silverItems.map((item) => ({
+    id: item.id,
+    market: 'SILVER' as MarketType,
+    title: item.title,
+    description: item.description || '',
+    price: item.totalAskingPrice,
+    currency: 'EGP',
+    images: item.images || [],
+    location: {
+      governorate: item.governorate || '',
+      city: item.city || undefined,
+    },
+    seller: {
+      id: item.seller.id,
+      name: item.seller.fullName,
+      rating: item.seller.rating,
+    },
+    createdAt: item.createdAt,
+    url: `/silver/${item.id}`,
+  }));
+}
+
+function sortResults(
+  results: SearchResult[],
+  sortBy: 'relevance' | 'price_asc' | 'price_desc' | 'date' | 'popularity'
+): SearchResult[] {
+  switch (sortBy) {
+    case 'price_asc':
+      return [...results].sort((a, b) => (a.price || 0) - (b.price || 0));
+    case 'price_desc':
+      return [...results].sort((a, b) => (b.price || 0) - (a.price || 0));
+    case 'date':
+      return [...results].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    case 'popularity':
+      return [...results].sort((a, b) => b.seller.rating - a.seller.rating);
+    case 'relevance':
+    default:
+      return results;
+  }
+}
 
 // ============================================
 // Market Statistics
 // ============================================
 
 /**
- * Get statistics for all markets
+ * Get statistics across all markets
  */
-export const getMarketStatistics = async (): Promise<MarketStats[]> => {
-  const stats: MarketStats[] = [];
+export const getMarketStatistics = async (): Promise<{
+  markets: Record<MarketType, { totalListings: number; totalValue: number }>;
+  totals: { listings: number; value: number };
+}> => {
+  const stats: Record<MarketType, { totalListings: number; totalValue: number }> = {
+    GENERAL: { totalListings: 0, totalValue: 0 },
+    VEHICLES: { totalListings: 0, totalValue: 0 },
+    REAL_ESTATE: { totalListings: 0, totalValue: 0 },
+    MOBILES: { totalListings: 0, totalValue: 0 },
+    AUCTIONS: { totalListings: 0, totalValue: 0 },
+    TENDERS: { totalListings: 0, totalValue: 0 },
+    BARTER: { totalListings: 0, totalValue: 0 },
+    GOLD: { totalListings: 0, totalValue: 0 },
+    SILVER: { totalListings: 0, totalValue: 0 },
+    LUXURY: { totalListings: 0, totalValue: 0 },
+    SCRAP: { totalListings: 0, totalValue: 0 },
+  };
 
-  // General market stats
-  const generalItems = await prisma.item.aggregate({
+  // General market
+  const generalStats = await prisma.item.aggregate({
     where: { status: 'ACTIVE' },
     _count: true,
-    _avg: { estimatedValue: true },
-    _min: { estimatedValue: true },
-    _max: { estimatedValue: true },
+    _sum: { price: true },
   });
+  stats.GENERAL = {
+    totalListings: generalStats._count,
+    totalValue: generalStats._sum.price || 0,
+  };
 
-  stats.push({
-    market: 'GENERAL',
-    totalItems: generalItems._count,
-    activeItems: generalItems._count,
-    avgPrice: generalItems._avg.estimatedValue || 0,
-    minPrice: generalItems._min.estimatedValue || 0,
-    maxPrice: generalItems._max.estimatedValue || 0,
-    totalTransactions: 0, // TODO: Calculate from transactions
-    trendingUp: true,
-  });
-
-  // Cars market stats
-  const carStats = await prisma.car.aggregate({
-    where: { status: 'ACTIVE' },
-    _count: true,
-    _avg: { price: true },
-    _min: { price: true },
-    _max: { price: true },
-  });
-
-  stats.push({
-    market: 'CARS',
-    totalItems: carStats._count,
-    activeItems: carStats._count,
-    avgPrice: carStats._avg.price || 0,
-    minPrice: carStats._min.price || 0,
-    maxPrice: carStats._max.price || 0,
-    totalTransactions: 0,
-    trendingUp: true,
-  });
-
-  // Properties market stats
-  const propertyStats = await prisma.property.aggregate({
-    where: { status: 'ACTIVE' },
-    _count: true,
-    _avg: { price: true },
-    _min: { price: true },
-    _max: { price: true },
-  });
-
-  stats.push({
-    market: 'PROPERTIES',
-    totalItems: propertyStats._count,
-    activeItems: propertyStats._count,
-    avgPrice: propertyStats._avg.price || 0,
-    minPrice: propertyStats._min.price || 0,
-    maxPrice: propertyStats._max.price || 0,
-    totalTransactions: 0,
-    trendingUp: true,
-  });
-
-  // Auctions stats
-  const auctionStats = await prisma.auction.aggregate({
-    where: { status: 'ACTIVE' },
-    _count: true,
-    _avg: { currentBid: true },
-    _min: { startingPrice: true },
-    _max: { currentBid: true },
-  });
-
-  stats.push({
-    market: 'AUCTIONS',
-    totalItems: auctionStats._count,
-    activeItems: auctionStats._count,
-    avgPrice: auctionStats._avg.currentBid || 0,
-    minPrice: auctionStats._min.startingPrice || 0,
-    maxPrice: auctionStats._max.currentBid || 0,
-    totalTransactions: 0,
-    trendingUp: true,
-  });
-
-  // Gold stats
+  // Gold market
   const goldStats = await prisma.goldItem.aggregate({
     where: { status: 'ACTIVE' },
     _count: true,
-    _avg: { totalPrice: true },
-    _min: { totalPrice: true },
-    _max: { totalPrice: true },
+    _sum: { totalAskingPrice: true },
   });
+  stats.GOLD = {
+    totalListings: goldStats._count,
+    totalValue: goldStats._sum.totalAskingPrice || 0,
+  };
 
-  stats.push({
-    market: 'GOLD',
-    totalItems: goldStats._count,
-    activeItems: goldStats._count,
-    avgPrice: goldStats._avg.totalPrice || 0,
-    minPrice: goldStats._min.totalPrice || 0,
-    maxPrice: goldStats._max.totalPrice || 0,
-    totalTransactions: 0,
-    trendingUp: true,
+  // Silver market
+  const silverStats = await prisma.silverItem.aggregate({
+    where: { status: 'ACTIVE' },
+    _count: true,
+    _sum: { totalAskingPrice: true },
   });
+  stats.SILVER = {
+    totalListings: silverStats._count,
+    totalValue: silverStats._sum.totalAskingPrice || 0,
+  };
 
-  return stats;
+  // Real Estate
+  const propertyStats = await prisma.property.aggregate({
+    where: { status: 'ACTIVE' },
+    _count: true,
+    _sum: { salePrice: true },
+  });
+  stats.REAL_ESTATE = {
+    totalListings: propertyStats._count,
+    totalValue: propertyStats._sum.salePrice || 0,
+  };
+
+  // Auctions
+  const auctionStats = await prisma.auction.aggregate({
+    where: { status: 'ACTIVE' },
+    _count: true,
+    _sum: { currentPrice: true },
+  });
+  stats.AUCTIONS = {
+    totalListings: auctionStats._count,
+    totalValue: auctionStats._sum.currentPrice || 0,
+  };
+
+  // Tenders
+  const tenderStats = await prisma.reverseAuction.aggregate({
+    where: { status: 'ACTIVE' },
+    _count: true,
+    _sum: { maxBudget: true },
+  });
+  stats.TENDERS = {
+    totalListings: tenderStats._count,
+    totalValue: tenderStats._sum.maxBudget || 0,
+  };
+
+  // Calculate totals
+  const totals = Object.values(stats).reduce(
+    (acc, market) => ({
+      listings: acc.listings + market.totalListings,
+      value: acc.value + market.totalValue,
+    }),
+    { listings: 0, value: 0 }
+  );
+
+  return { markets: stats, totals };
 };
+
+// ============================================
+// Trending Items
+// ============================================
 
 /**
- * Get trending items across all markets
+ * Get trending items across markets
  */
-export const getTrendingItems = async (limit = 10): Promise<TrendingItem[]> => {
-  const trending: TrendingItem[] = [];
+export const getTrendingItems = async (limit: number = 20): Promise<SearchResult[]> => {
+  const results: SearchResult[] = [];
 
-  // Get recent items with activity (views would need a view tracking system)
-  // For now, get recently created items with high values
-  const items = await prisma.item.findMany({
-    where: {
-      status: 'ACTIVE',
-      createdAt: {
-        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-      },
-    },
-    include: {
-      images: true,
-      _count: {
-        select: {
-          favorites: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
+  // Get trending items from general market (most viewed)
+  const trendingItems = await prisma.item.findMany({
+    where: { status: 'ACTIVE' },
     take: limit,
+    orderBy: { views: 'desc' },
+    include: {
+      seller: {
+        select: { id: true, fullName: true, rating: true },
+      },
+    },
   });
 
-  items.forEach(item => {
-    const isLuxury = (item.estimatedValue || 0) >= 50000;
-    trending.push({
+  results.push(
+    ...trendingItems.map((item) => ({
       id: item.id,
+      market: 'GENERAL' as MarketType,
       title: item.title,
-      market: isLuxury ? 'LUXURY' : 'GENERAL',
-      price: item.estimatedValue || 0,
-      views: 0, // TODO: Implement view tracking
-      saves: item._count.favorites,
-      imageUrl: item.images[0]?.url,
-      url: isLuxury ? `/luxury/${item.id}` : `/items/${item.id}`,
-    });
-  });
+      description: item.description || '',
+      price: item.price,
+      currency: 'EGP',
+      images: item.images || [],
+      location: {
+        governorate: item.governorate || '',
+        city: item.city || undefined,
+      },
+      seller: {
+        id: item.seller.id,
+        name: item.seller.fullName,
+        rating: item.seller.rating,
+      },
+      createdAt: item.createdAt,
+      url: `/items/${item.id}`,
+    }))
+  );
 
-  return trending;
+  return results;
 };
+
+// ============================================
+// Recommendations
+// ============================================
 
 /**
  * Get personalized recommendations for a user
  */
-export const getRecommendations = async (params: RecommendationParams): Promise<SearchResult[]> => {
-  const { userId, limit = 10, excludeViewed = true } = params;
-
-  // Get user's recent activity
-  const userFavorites = await prisma.favorite.findMany({
-    where: { userId },
-    include: {
-      item: {
-        include: {
-          category: true,
-        },
-      },
-    },
-    take: 20,
-    orderBy: { createdAt: 'desc' },
-  });
-
-  // Extract preferred categories
-  const preferredCategories = [...new Set(
-    userFavorites
-      .map(f => f.item?.categoryId)
-      .filter(Boolean)
-  )];
-
-  // Get user's governorate from profile
+export const getRecommendations = async (
+  userId: string,
+  limit: number = 10
+): Promise<SearchResult[]> => {
+  // Get user's location preference
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { governorate: true },
+    select: { governorate: true, city: true },
   });
 
-  // Find similar items
-  const recommendations = await prisma.item.findMany({
+  if (!user) {
+    return getTrendingItems(limit);
+  }
+
+  // Get items from user's governorate
+  const localItems = await prisma.item.findMany({
     where: {
       status: 'ACTIVE',
-      ...(preferredCategories.length > 0 && {
-        categoryId: { in: preferredCategories as string[] },
-      }),
-      ...(user?.governorate && { governorate: user.governorate }),
-      // Exclude user's own items
+      governorate: user.governorate || undefined,
       sellerId: { not: userId },
-      // Exclude favorited items
-      ...(excludeViewed && {
-        id: { notIn: userFavorites.map(f => f.itemId).filter(Boolean) as string[] },
-      }),
-    },
-    include: {
-      images: true,
-      seller: {
-        select: {
-          id: true,
-          fullName: true,
-        },
-      },
-      category: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
     },
     take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      seller: {
+        select: { id: true, fullName: true, rating: true },
+      },
+    },
   });
 
-  return recommendations.map(item => transformItemToSearchResult(item, 'GENERAL'));
-};
-
-// ============================================
-// Helper Functions
-// ============================================
-
-function transformItemToSearchResult(item: any, market: MarketType): SearchResult {
-  const metadata = MARKET_METADATA[market];
-  return {
+  return localItems.map((item) => ({
     id: item.id,
+    market: 'GENERAL' as MarketType,
     title: item.title,
-    description: item.description || undefined,
+    description: item.description || '',
     price: item.price,
-    estimatedValue: item.estimatedValue,
-    market,
-    marketIcon: metadata.icon,
-    marketNameAr: metadata.nameAr,
-    images: item.images?.map((img: any) => img.url) || [],
-    governorate: item.governorate || undefined,
-    condition: item.condition || undefined,
-    listingType: item.listingType || undefined,
-    createdAt: item.createdAt,
-    seller: item.seller ? {
+    currency: 'EGP',
+    images: item.images || [],
+    location: {
+      governorate: item.governorate || '',
+      city: item.city || undefined,
+    },
+    seller: {
       id: item.seller.id,
-      name: item.seller.fullName || '',
+      name: item.seller.fullName,
       rating: item.seller.rating,
-    } : undefined,
-    url: `${metadata.baseUrl}/${item.id}`,
-  };
-}
-
-function getOrderBy(sortBy: string): Prisma.ItemOrderByWithRelationInput {
-  switch (sortBy) {
-    case 'price_asc':
-      return { estimatedValue: 'asc' };
-    case 'price_desc':
-      return { estimatedValue: 'desc' };
-    case 'recent':
-      return { createdAt: 'desc' };
-    default:
-      return { createdAt: 'desc' };
-  }
-}
-
-function sortResults(results: SearchResult[], sortBy: string): SearchResult[] {
-  return results.sort((a, b) => {
-    switch (sortBy) {
-      case 'price_asc':
-        return (a.price || a.estimatedValue || 0) - (b.price || b.estimatedValue || 0);
-      case 'price_desc':
-        return (b.price || b.estimatedValue || 0) - (a.price || a.estimatedValue || 0);
-      case 'recent':
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      default:
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-  });
-}
+    },
+    createdAt: item.createdAt,
+    url: `/items/${item.id}`,
+  }));
+};

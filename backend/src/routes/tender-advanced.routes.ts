@@ -11,7 +11,7 @@
 
 import { Router, Request, Response, NextFunction } from 'express';
 import * as tenderAdvancedService from '../services/tender-advanced.service';
-import { authMiddleware, optionalAuth } from '../middleware/auth.middleware';
+import { authenticate, optionalAuth } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -25,7 +25,7 @@ const router = Router();
  */
 router.post(
   '/service-requests',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as any).user.id;
@@ -47,7 +47,7 @@ router.post(
  */
 router.get(
   '/service-requests',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const filters = {
@@ -99,7 +99,7 @@ router.get(
  */
 router.post(
   '/service-requests/:id/quotes',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const providerId = (req as any).user.id;
@@ -124,7 +124,7 @@ router.post(
  */
 router.get(
   '/service-requests/:id/quotes',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const requesterId = (req as any).user.id;
@@ -145,7 +145,7 @@ router.get(
  */
 router.post(
   '/service-requests/:id/quotes/:quoteId/accept',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const requesterId = (req as any).user.id;
@@ -175,7 +175,7 @@ router.post(
  */
 router.post(
   '/tenders/:id/bids/:bidId/evaluate',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const evaluatorId = (req as any).user.id;
@@ -202,7 +202,7 @@ router.post(
  */
 router.get(
   '/tenders/:id/evaluations',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const evaluatorId = (req as any).user.id;
@@ -227,7 +227,7 @@ router.get(
  */
 router.get(
   '/contracts',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as any).user.id;
@@ -254,7 +254,7 @@ router.get(
  */
 router.get(
   '/contracts/:id',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as any).user.id;
@@ -275,7 +275,7 @@ router.get(
  */
 router.post(
   '/contracts/:id/sign',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as any).user.id;
@@ -297,7 +297,7 @@ router.post(
  */
 router.post(
   '/contracts/:id/milestones/:milestoneId/complete',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const vendorId = (req as any).user.id;
@@ -324,7 +324,7 @@ router.post(
  */
 router.post(
   '/contracts/:id/milestones/:milestoneId/approve',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const buyerId = (req as any).user.id;
@@ -350,7 +350,7 @@ router.post(
  */
 router.post(
   '/contracts/:id/milestones/:milestoneId/reject',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const buyerId = (req as any).user.id;
@@ -435,7 +435,7 @@ router.get(
  */
 router.get(
   '/dashboard',
-  authMiddleware,
+  authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userId = (req as any).user.id;

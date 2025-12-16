@@ -9,43 +9,35 @@
  * - WebSocket real-time updates
  */
 
-import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
-import * as pushService from './push.service';
 import { Server as SocketIOServer } from 'socket.io';
 
 // ============================================
 // Types
 // ============================================
 
-export type NotificationType =
-  | 'AUCTION_BID'
-  | 'AUCTION_WON'
-  | 'AUCTION_OUTBID'
-  | 'AUCTION_ENDING'
-  | 'BARTER_MATCH'
-  | 'BARTER_OFFER'
-  | 'BARTER_ACCEPTED'
-  | 'BARTER_REJECTED'
-  | 'BARTER_COUNTER'
-  | 'TENDER_BID'
-  | 'TENDER_AWARDED'
-  | 'PRICE_ALERT'
-  | 'PRICE_DROP'
-  | 'NEW_MESSAGE'
-  | 'ORDER_UPDATE'
-  | 'PAYMENT_RECEIVED'
-  | 'PAYMENT_RELEASED'
-  | 'ITEM_SOLD'
-  | 'ITEM_FAVORITED'
-  | 'REVIEW_RECEIVED'
-  | 'BADGE_EARNED'
-  | 'SYSTEM_ANNOUNCEMENT'
-  | 'MARKET_UPDATE';
-
 export type NotificationChannel = 'IN_APP' | 'PUSH' | 'EMAIL' | 'WEBSOCKET';
 
-export type NotificationPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+export type NotificationType =
+  | 'ITEM_SOLD'
+  | 'ITEM_PURCHASED'
+  | 'PRICE_DROP'
+  | 'NEW_MESSAGE'
+  | 'BARTER_MATCH'
+  | 'BARTER_OFFER_RECEIVED'
+  | 'BARTER_OFFER_ACCEPTED'
+  | 'BARTER_OFFER_REJECTED'
+  | 'AUCTION_BID'
+  | 'AUCTION_OUTBID'
+  | 'AUCTION_WON'
+  | 'AUCTION_ENDED'
+  | 'TENDER_BID'
+  | 'TENDER_AWARDED'
+  | 'NEW_REVIEW'
+  | 'PAYMENT_RECEIVED'
+  | 'PAYMENT_SENT'
+  | 'ORDER_STATUS'
+  | 'SYSTEM';
 
 export interface NotificationPayload {
   userId: string;
@@ -54,64 +46,24 @@ export interface NotificationPayload {
   titleAr: string;
   message: string;
   messageAr: string;
-  priority?: NotificationPriority;
+  data?: Record<string, any>;
   channels?: NotificationChannel[];
-  entityType?: string;
-  entityId?: string;
-  actionUrl?: string;
-  actionText?: string;
-  actionTextAr?: string;
-  imageUrl?: string;
-  metadata?: Record<string, any>;
-  expiresAt?: Date;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
 }
 
-export interface BulkNotificationPayload extends Omit<NotificationPayload, 'userId'> {
-  userIds: string[];
-}
-
-// ============================================
-// Notification Templates
-// ============================================
-
-const NOTIFICATION_TEMPLATES: Record<NotificationType, {
-  defaultChannels: NotificationChannel[];
-  defaultPriority: NotificationPriority;
-}> = {
-  AUCTION_BID: { defaultChannels: ['IN_APP', 'WEBSOCKET'], defaultPriority: 'MEDIUM' },
-  AUCTION_WON: { defaultChannels: ['IN_APP', 'PUSH', 'EMAIL'], defaultPriority: 'HIGH' },
-  AUCTION_OUTBID: { defaultChannels: ['IN_APP', 'PUSH', 'WEBSOCKET'], defaultPriority: 'HIGH' },
-  AUCTION_ENDING: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'MEDIUM' },
-  BARTER_MATCH: { defaultChannels: ['IN_APP', 'PUSH', 'WEBSOCKET'], defaultPriority: 'HIGH' },
-  BARTER_OFFER: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'MEDIUM' },
-  BARTER_ACCEPTED: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'HIGH' },
-  BARTER_REJECTED: { defaultChannels: ['IN_APP'], defaultPriority: 'MEDIUM' },
-  BARTER_COUNTER: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'MEDIUM' },
-  TENDER_BID: { defaultChannels: ['IN_APP', 'WEBSOCKET'], defaultPriority: 'MEDIUM' },
-  TENDER_AWARDED: { defaultChannels: ['IN_APP', 'PUSH', 'EMAIL'], defaultPriority: 'HIGH' },
-  PRICE_ALERT: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'MEDIUM' },
-  PRICE_DROP: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'MEDIUM' },
-  NEW_MESSAGE: { defaultChannels: ['IN_APP', 'PUSH', 'WEBSOCKET'], defaultPriority: 'MEDIUM' },
-  ORDER_UPDATE: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'MEDIUM' },
-  PAYMENT_RECEIVED: { defaultChannels: ['IN_APP', 'PUSH', 'EMAIL'], defaultPriority: 'HIGH' },
-  PAYMENT_RELEASED: { defaultChannels: ['IN_APP', 'PUSH', 'EMAIL'], defaultPriority: 'HIGH' },
-  ITEM_SOLD: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'HIGH' },
-  ITEM_FAVORITED: { defaultChannels: ['IN_APP'], defaultPriority: 'LOW' },
-  REVIEW_RECEIVED: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'MEDIUM' },
-  BADGE_EARNED: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'MEDIUM' },
-  SYSTEM_ANNOUNCEMENT: { defaultChannels: ['IN_APP', 'PUSH'], defaultPriority: 'MEDIUM' },
-  MARKET_UPDATE: { defaultChannels: ['IN_APP'], defaultPriority: 'LOW' },
-};
-
-// Global WebSocket instance
+// Store for Socket.IO instance
 let io: SocketIOServer | null = null;
 
 // ============================================
-// Initialize WebSocket
+// Initialization
 // ============================================
 
-export const initializeWebSocket = (socketServer: SocketIOServer) => {
-  io = socketServer;
+/**
+ * Initialize the notification service with Socket.IO
+ */
+export const initializeNotificationService = (socketIO: SocketIOServer): void => {
+  io = socketIO;
+  console.log('✅ Unified Notification Service initialized');
 };
 
 // ============================================
@@ -119,374 +71,276 @@ export const initializeWebSocket = (socketServer: SocketIOServer) => {
 // ============================================
 
 /**
- * Send notification to a single user
+ * Send a notification through all specified channels
  */
 export const sendNotification = async (payload: NotificationPayload): Promise<void> => {
-  const template = NOTIFICATION_TEMPLATES[payload.type];
-  const channels = payload.channels || template.defaultChannels;
-  const priority = payload.priority || template.defaultPriority;
+  const {
+    userId,
+    type,
+    title,
+    titleAr,
+    message,
+    messageAr,
+    data = {},
+    channels = ['IN_APP', 'WEBSOCKET'],
+    priority = 'normal',
+  } = payload;
 
-  // Check user notification preferences
-  const userPrefs = await getUserNotificationPreferences(payload.userId);
-
-  // Send through each enabled channel
-  const promises: Promise<void>[] = [];
-
-  if (channels.includes('IN_APP') && userPrefs.inApp) {
-    promises.push(sendInAppNotification(payload, priority));
+  // Create in-app notification
+  if (channels.includes('IN_APP')) {
+    await createInAppNotification(userId, type, title, titleAr, message, messageAr, data);
   }
 
-  if (channels.includes('PUSH') && userPrefs.push) {
-    promises.push(sendPushNotification(payload));
+  // Send WebSocket notification
+  if (channels.includes('WEBSOCKET') && io) {
+    sendWebSocketNotification(userId, { type, title, titleAr, message, messageAr, data, priority });
   }
 
-  if (channels.includes('EMAIL') && userPrefs.email) {
-    promises.push(sendEmailNotification(payload));
-  }
-
-  if (channels.includes('WEBSOCKET') && userPrefs.websocket) {
-    promises.push(sendWebSocketNotification(payload));
-  }
-
-  await Promise.allSettled(promises);
-};
-
-/**
- * Send notification to multiple users
- */
-export const sendBulkNotification = async (payload: BulkNotificationPayload): Promise<void> => {
-  const { userIds, ...notificationData } = payload;
-
-  // Process in batches to avoid overwhelming the system
-  const batchSize = 100;
-  for (let i = 0; i < userIds.length; i += batchSize) {
-    const batch = userIds.slice(i, i + batchSize);
-
-    await Promise.allSettled(
-      batch.map(userId => sendNotification({ ...notificationData, userId }))
-    );
+  // Push notification would go here (requires additional setup)
+  if (channels.includes('PUSH')) {
+    await sendPushNotification(userId, title, message, data);
   }
 };
 
-// ============================================
-// Channel-Specific Senders
-// ============================================
-
 /**
- * Send in-app notification (stored in database)
+ * Create an in-app notification record
  */
-const sendInAppNotification = async (
-  payload: NotificationPayload,
-  priority: NotificationPriority
-): Promise<void> => {
+async function createInAppNotification(
+  userId: string,
+  type: NotificationType,
+  title: string,
+  titleAr: string,
+  message: string,
+  messageAr: string,
+  data: Record<string, any>
+): Promise<void> {
   await prisma.notification.create({
     data: {
-      userId: payload.userId,
-      type: payload.type as any,
-      title: payload.titleAr || payload.title,
-      message: payload.messageAr || payload.message,
-      priority: priority as any,
-      entityType: payload.entityType,
-      entityId: payload.entityId,
-      actionUrl: payload.actionUrl,
-      actionText: payload.actionTextAr || payload.actionText,
-      metadata: payload.metadata as Prisma.JsonValue,
-      expiresAt: payload.expiresAt,
+      userId,
+      type,
+      title,
+      message,
+      data: { titleAr, messageAr, ...data },
+      read: false,
     },
   });
-};
-
-/**
- * Send push notification
- */
-const sendPushNotification = async (payload: NotificationPayload): Promise<void> => {
-  try {
-    // Get user's push tokens
-    const tokens = await prisma.pushToken.findMany({
-      where: { userId: payload.userId },
-    });
-
-    if (tokens.length === 0) return;
-
-    await pushService.sendPushNotification({
-      tokens: tokens.map(t => t.token),
-      title: payload.titleAr || payload.title,
-      body: payload.messageAr || payload.message,
-      data: {
-        type: payload.type,
-        entityType: payload.entityType,
-        entityId: payload.entityId,
-        actionUrl: payload.actionUrl,
-        ...payload.metadata,
-      },
-      imageUrl: payload.imageUrl,
-    });
-  } catch (error) {
-    console.error('Push notification error:', error);
-  }
-};
-
-/**
- * Send email notification
- */
-const sendEmailNotification = async (payload: NotificationPayload): Promise<void> => {
-  try {
-    // Get user's email
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: { email: true, fullName: true },
-    });
-
-    if (!user?.email) return;
-
-    // TODO: Implement email sending
-    // For now, just log
-    console.log(`📧 Email notification to ${user.email}: ${payload.title}`);
-  } catch (error) {
-    console.error('Email notification error:', error);
-  }
-};
-
-/**
- * Send WebSocket real-time notification
- */
-const sendWebSocketNotification = async (payload: NotificationPayload): Promise<void> => {
-  if (!io) {
-    console.warn('WebSocket not initialized for notifications');
-    return;
-  }
-
-  io.to(`user:${payload.userId}`).emit('notification', {
-    type: payload.type,
-    title: payload.titleAr || payload.title,
-    message: payload.messageAr || payload.message,
-    entityType: payload.entityType,
-    entityId: payload.entityId,
-    actionUrl: payload.actionUrl,
-    imageUrl: payload.imageUrl,
-    metadata: payload.metadata,
-    timestamp: new Date().toISOString(),
-  });
-};
-
-// ============================================
-// User Preferences
-// ============================================
-
-interface UserNotificationPreferences {
-  inApp: boolean;
-  push: boolean;
-  email: boolean;
-  websocket: boolean;
 }
 
-const getUserNotificationPreferences = async (userId: string): Promise<UserNotificationPreferences> => {
-  // Default preferences - all enabled
-  const defaults: UserNotificationPreferences = {
-    inApp: true,
-    push: true,
-    email: true,
-    websocket: true,
-  };
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { notificationSettings: true },
-    });
-
-    if (user?.notificationSettings) {
-      const settings = user.notificationSettings as any;
-      return {
-        inApp: settings.inApp !== false,
-        push: settings.push !== false,
-        email: settings.email !== false,
-        websocket: settings.websocket !== false,
-      };
-    }
-  } catch (error) {
-    console.error('Error fetching notification preferences:', error);
+/**
+ * Send real-time WebSocket notification
+ */
+function sendWebSocketNotification(
+  userId: string,
+  notification: {
+    type: NotificationType;
+    title: string;
+    titleAr: string;
+    message: string;
+    messageAr: string;
+    data: Record<string, any>;
+    priority: string;
   }
+): void {
+  if (io) {
+    io.to(`user:${userId}`).emit('notification', {
+      ...notification,
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
 
-  return defaults;
-};
+/**
+ * Send push notification (placeholder)
+ */
+async function sendPushNotification(
+  userId: string,
+  title: string,
+  message: string,
+  data: Record<string, any>
+): Promise<void> {
+  // Get user's push subscriptions
+  const subscriptions = await prisma.pushSubscription.findMany({
+    where: { userId },
+  });
+
+  // Would send push notifications here
+  // For now, just log
+  if (subscriptions.length > 0) {
+    console.log(`Push notification to user ${userId}: ${title}`);
+  }
+}
 
 // ============================================
 // Convenience Functions for Common Notifications
 // ============================================
 
 /**
- * Notify user of new barter match
+ * Notify about a new barter match
  */
 export const notifyBarterMatch = async (
   userId: string,
-  matchedItemTitle: string,
-  matchId: string
+  matchData: { offerId: string; matchedItemTitle: string }
 ): Promise<void> => {
   await sendNotification({
     userId,
     type: 'BARTER_MATCH',
     title: 'New Barter Match!',
-    titleAr: 'مطابقة جديدة!',
-    message: `Your item matched with "${matchedItemTitle}"`,
-    messageAr: `منتجك متطابق مع "${matchedItemTitle}"`,
-    entityType: 'BARTER_MATCH',
-    entityId: matchId,
-    actionUrl: `/barter/matches/${matchId}`,
-    actionText: 'View Match',
-    actionTextAr: 'عرض المطابقة',
+    titleAr: 'تطابق مقايضة جديد!',
+    message: `Found a match for your item: ${matchData.matchedItemTitle}`,
+    messageAr: `تم العثور على تطابق: ${matchData.matchedItemTitle}`,
+    data: matchData,
+    channels: ['IN_APP', 'WEBSOCKET', 'PUSH'],
+    priority: 'high',
   });
 };
 
 /**
- * Notify user they were outbid
+ * Notify about auction outbid
  */
 export const notifyAuctionOutbid = async (
   userId: string,
-  auctionTitle: string,
-  auctionId: string,
-  newBidAmount: number
+  auctionData: { auctionId: string; itemTitle: string; currentBid: number }
 ): Promise<void> => {
   await sendNotification({
     userId,
     type: 'AUCTION_OUTBID',
-    title: 'You were outbid!',
-    titleAr: 'تم تجاوز مزايدتك!',
-    message: `Someone placed a higher bid of ${newBidAmount} EGP on "${auctionTitle}"`,
-    messageAr: `مزايدة أعلى بقيمة ${newBidAmount} ج.م على "${auctionTitle}"`,
-    entityType: 'AUCTION',
-    entityId: auctionId,
-    actionUrl: `/auctions/${auctionId}`,
-    actionText: 'Bid Again',
-    actionTextAr: 'زايد مرة أخرى',
-    metadata: { newBidAmount },
+    title: 'You have been outbid!',
+    titleAr: 'تم تجاوز عرضك!',
+    message: `Someone placed a higher bid on "${auctionData.itemTitle}"`,
+    messageAr: `قام شخص بوضع عرض أعلى على "${auctionData.itemTitle}"`,
+    data: auctionData,
+    channels: ['IN_APP', 'WEBSOCKET', 'PUSH'],
+    priority: 'urgent',
   });
 };
 
 /**
- * Notify auction winner
+ * Notify about tender awarded
  */
-export const notifyAuctionWon = async (
+export const notifyTenderAwarded = async (
   userId: string,
-  auctionTitle: string,
-  auctionId: string,
-  winningBid: number
+  tenderData: { tenderId: string; tenderTitle: string; bidAmount: number }
 ): Promise<void> => {
   await sendNotification({
     userId,
-    type: 'AUCTION_WON',
-    title: 'Congratulations! You won the auction!',
-    titleAr: 'تهانينا! فزت بالمزاد!',
-    message: `You won "${auctionTitle}" with a bid of ${winningBid} EGP`,
-    messageAr: `فزت بـ "${auctionTitle}" بمزايدة ${winningBid} ج.م`,
-    entityType: 'AUCTION',
-    entityId: auctionId,
-    actionUrl: `/auctions/${auctionId}`,
-    actionText: 'Complete Purchase',
-    actionTextAr: 'إتمام الشراء',
-    metadata: { winningBid },
-    priority: 'URGENT',
+    type: 'TENDER_AWARDED',
+    title: 'Congratulations! You won the tender!',
+    titleAr: 'تهانينا! لقد فزت بالمناقصة!',
+    message: `Your bid of ${tenderData.bidAmount} EGP on "${tenderData.tenderTitle}" was accepted`,
+    messageAr: `تم قبول عرضك بقيمة ${tenderData.bidAmount} ج.م على "${tenderData.tenderTitle}"`,
+    data: tenderData,
+    channels: ['IN_APP', 'WEBSOCKET', 'PUSH', 'EMAIL'],
+    priority: 'high',
   });
 };
 
 /**
- * Notify seller of new message
+ * Notify about new message
  */
 export const notifyNewMessage = async (
   userId: string,
-  senderName: string,
-  chatId: string,
-  preview: string
+  messageData: { senderId: string; senderName: string; preview: string; conversationId: string }
 ): Promise<void> => {
   await sendNotification({
     userId,
     type: 'NEW_MESSAGE',
-    title: `New message from ${senderName}`,
-    titleAr: `رسالة جديدة من ${senderName}`,
-    message: preview.substring(0, 100) + (preview.length > 100 ? '...' : ''),
-    messageAr: preview.substring(0, 100) + (preview.length > 100 ? '...' : ''),
-    entityType: 'CHAT',
-    entityId: chatId,
-    actionUrl: `/chat/${chatId}`,
-    actionText: 'Reply',
-    actionTextAr: 'رد',
+    title: `New message from ${messageData.senderName}`,
+    titleAr: `رسالة جديدة من ${messageData.senderName}`,
+    message: messageData.preview,
+    messageAr: messageData.preview,
+    data: messageData,
+    channels: ['WEBSOCKET', 'PUSH'],
+    priority: 'normal',
   });
 };
 
 /**
- * Notify price drop on favorited item
+ * Notify about new review
  */
-export const notifyPriceDrop = async (
+export const notifyNewReview = async (
   userId: string,
-  itemTitle: string,
-  itemId: string,
-  oldPrice: number,
-  newPrice: number
+  reviewData: { reviewerId: string; reviewerName: string; rating: number; itemTitle?: string }
 ): Promise<void> => {
-  const discount = Math.round(((oldPrice - newPrice) / oldPrice) * 100);
-
   await sendNotification({
     userId,
-    type: 'PRICE_DROP',
-    title: 'Price Drop Alert!',
-    titleAr: 'تنبيه انخفاض السعر!',
-    message: `"${itemTitle}" price dropped ${discount}% to ${newPrice} EGP`,
-    messageAr: `انخفض سعر "${itemTitle}" بنسبة ${discount}% إلى ${newPrice} ج.م`,
-    entityType: 'ITEM',
-    entityId: itemId,
-    actionUrl: `/items/${itemId}`,
-    actionText: 'View Item',
-    actionTextAr: 'عرض المنتج',
-    metadata: { oldPrice, newPrice, discount },
+    type: 'NEW_REVIEW',
+    title: `New ${reviewData.rating}-star review!`,
+    titleAr: `تقييم جديد ${reviewData.rating} نجوم!`,
+    message: `${reviewData.reviewerName} left you a review`,
+    messageAr: `${reviewData.reviewerName} ترك لك تقييماً`,
+    data: reviewData,
+    channels: ['IN_APP', 'WEBSOCKET'],
+    priority: 'normal',
+  });
+};
+
+// ============================================
+// User Notification Management
+// ============================================
+
+/**
+ * Get user's notifications
+ */
+export const getUserNotifications = async (
+  userId: string,
+  options: { unreadOnly?: boolean; page?: number; limit?: number } = {}
+): Promise<{ notifications: any[]; unreadCount: number; total: number }> => {
+  const { unreadOnly = false, page = 1, limit = 20 } = options;
+  const skip = (page - 1) * limit;
+
+  const where: any = { userId };
+  if (unreadOnly) {
+    where.read = false;
+  }
+
+  const [notifications, unreadCount, total] = await Promise.all([
+    prisma.notification.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.notification.count({ where: { userId, read: false } }),
+    prisma.notification.count({ where }),
+  ]);
+
+  return { notifications, unreadCount, total };
+};
+
+/**
+ * Mark notification as read
+ */
+export const markAsRead = async (notificationId: string, userId: string): Promise<void> => {
+  await prisma.notification.updateMany({
+    where: { id: notificationId, userId },
+    data: { read: true },
   });
 };
 
 /**
- * Notify user of payment received
+ * Mark all notifications as read
  */
-export const notifyPaymentReceived = async (
-  userId: string,
-  amount: number,
-  transactionId: string
-): Promise<void> => {
-  await sendNotification({
-    userId,
-    type: 'PAYMENT_RECEIVED',
-    title: 'Payment Received!',
-    titleAr: 'تم استلام الدفع!',
-    message: `You received a payment of ${amount} EGP`,
-    messageAr: `تم استلام دفعة بقيمة ${amount} ج.م`,
-    entityType: 'TRANSACTION',
-    entityId: transactionId,
-    actionUrl: `/transactions/${transactionId}`,
-    actionText: 'View Details',
-    actionTextAr: 'عرض التفاصيل',
-    metadata: { amount },
-    priority: 'HIGH',
+export const markAllAsRead = async (userId: string): Promise<void> => {
+  await prisma.notification.updateMany({
+    where: { userId, read: false },
+    data: { read: true },
   });
 };
 
 /**
- * Notify user of badge earned
+ * Delete a notification
  */
-export const notifyBadgeEarned = async (
-  userId: string,
-  badgeName: string,
-  badgeNameAr: string,
-  badgeId: string
-): Promise<void> => {
-  await sendNotification({
-    userId,
-    type: 'BADGE_EARNED',
-    title: 'New Badge Earned!',
-    titleAr: 'شارة جديدة!',
-    message: `You earned the "${badgeName}" badge`,
-    messageAr: `حصلت على شارة "${badgeNameAr}"`,
-    entityType: 'BADGE',
-    entityId: badgeId,
-    actionUrl: '/profile/badges',
-    actionText: 'View Badge',
-    actionTextAr: 'عرض الشارة',
-    metadata: { badgeName, badgeNameAr },
+export const deleteNotification = async (notificationId: string, userId: string): Promise<void> => {
+  await prisma.notification.deleteMany({
+    where: { id: notificationId, userId },
+  });
+};
+
+/**
+ * Get unread count for a user
+ */
+export const getUnreadCount = async (userId: string): Promise<number> => {
+  return prisma.notification.count({
+    where: { userId, read: false },
   });
 };
