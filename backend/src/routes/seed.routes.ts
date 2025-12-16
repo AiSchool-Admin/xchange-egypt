@@ -1579,7 +1579,7 @@ router.post('/seed-auctions', async (req, res) => {
         titleAr: 'مرسيدس E200 موديل 2022',
         description: 'مرسيدس E200 AMG Line، 15,000 كم',
         images: ['https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?w=800'],
-        condition: ItemCondition.EXCELLENT,
+        condition: ItemCondition.LIKE_NEW,
         estimatedValue: 2200000,
         governorate: 'Cairo',
         city: 'New Cairo',
@@ -1752,8 +1752,7 @@ router.post('/reseed-auctions', async (req, res) => {
     await prisma.auctionBid.deleteMany({});
     await prisma.auctionWatchlist.deleteMany({}).catch(() => {});
     await prisma.auctionDeposit.deleteMany({}).catch(() => {});
-    await prisma.sealedBid.deleteMany({}).catch(() => {});
-    await prisma.proxyBid.deleteMany({}).catch(() => {});
+    await prisma.auctionSealedBid.deleteMany({}).catch(() => {});
     await prisma.auctionDispute.deleteMany({}).catch(() => {});
     await prisma.auctionReview.deleteMany({}).catch(() => {});
     await prisma.auction.deleteMany({});
