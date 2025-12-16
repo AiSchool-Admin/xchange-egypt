@@ -103,17 +103,23 @@ export default function CreatePoolPage() {
     setError('');
 
     try {
+      const targetVal = parseFloat(targetValue);
+      const deadlineDays = deadline
+        ? Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        : 30;
+
       await createBarterPool({
-        name: poolName,
+        title: poolName,
         description: poolDescription,
-        targetItemDescription: targetDescription,
-        targetValue: parseFloat(targetValue),
-        categoryId: targetCategory || undefined,
-        contributedItemIds: selectedItems,
-        minParticipants,
+        targetDescription: targetDescription,
+        targetCategoryId: targetCategory || undefined,
+        targetMinValue: targetVal * 0.9,
+        targetMaxValue: targetVal * 1.1,
         maxParticipants,
-        deadline: deadline ? new Date(deadline).toISOString() : undefined,
-        isPublic,
+        deadlineDays: Math.max(1, deadlineDays),
+        initialContribution: selectedItems.length > 0 ? {
+          itemId: selectedItems[0],
+        } : undefined,
       });
 
       router.push('/pools?success=created');
