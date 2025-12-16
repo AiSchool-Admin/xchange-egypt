@@ -10,6 +10,7 @@
  */
 
 import prisma from '../lib/prisma';
+import { NotificationType } from '@prisma/client';
 import { Server as SocketIOServer } from 'socket.io';
 
 // ============================================
@@ -17,27 +18,6 @@ import { Server as SocketIOServer } from 'socket.io';
 // ============================================
 
 export type NotificationChannel = 'IN_APP' | 'PUSH' | 'EMAIL' | 'WEBSOCKET';
-
-export type NotificationType =
-  | 'ITEM_SOLD'
-  | 'ITEM_PURCHASED'
-  | 'PRICE_DROP'
-  | 'NEW_MESSAGE'
-  | 'BARTER_MATCH'
-  | 'BARTER_OFFER_RECEIVED'
-  | 'BARTER_OFFER_ACCEPTED'
-  | 'BARTER_OFFER_REJECTED'
-  | 'AUCTION_BID'
-  | 'AUCTION_OUTBID'
-  | 'AUCTION_WON'
-  | 'AUCTION_ENDED'
-  | 'TENDER_BID'
-  | 'TENDER_AWARDED'
-  | 'NEW_REVIEW'
-  | 'PAYMENT_RECEIVED'
-  | 'PAYMENT_SENT'
-  | 'ORDER_STATUS'
-  | 'SYSTEM';
 
 export interface NotificationPayload {
   userId: string;
@@ -63,7 +43,7 @@ let io: SocketIOServer | null = null;
  */
 export const initializeNotificationService = (socketIO: SocketIOServer): void => {
   io = socketIO;
-  console.log('✅ Unified Notification Service initialized');
+  console.log('Unified Notification Service initialized');
 };
 
 // ============================================
@@ -120,8 +100,8 @@ async function createInAppNotification(
       type,
       title,
       message,
-      data: { titleAr, messageAr, ...data },
-      read: false,
+      metadata: { titleAr, messageAr, ...data },
+      isRead: false,
     },
   });
 }
@@ -223,7 +203,7 @@ export const notifyTenderAwarded = async (
 ): Promise<void> => {
   await sendNotification({
     userId,
-    type: 'TENDER_AWARDED',
+    type: 'REVERSE_AUCTION_AWARDED',
     title: 'Congratulations! You won the tender!',
     titleAr: 'تهانينا! لقد فزت بالمناقصة!',
     message: `Your bid of ${tenderData.bidAmount} EGP on "${tenderData.tenderTitle}" was accepted`,
@@ -263,7 +243,7 @@ export const notifyNewReview = async (
 ): Promise<void> => {
   await sendNotification({
     userId,
-    type: 'NEW_REVIEW',
+    type: 'REVIEW_RECEIVED',
     title: `New ${reviewData.rating}-star review!`,
     titleAr: `تقييم جديد ${reviewData.rating} نجوم!`,
     message: `${reviewData.reviewerName} left you a review`,
@@ -290,7 +270,7 @@ export const getUserNotifications = async (
 
   const where: any = { userId };
   if (unreadOnly) {
-    where.read = false;
+    where.isRead = false;
   }
 
   const [notifications, unreadCount, total] = await Promise.all([
@@ -300,7 +280,7 @@ export const getUserNotifications = async (
       take: limit,
       orderBy: { createdAt: 'desc' },
     }),
-    prisma.notification.count({ where: { userId, read: false } }),
+    prisma.notification.count({ where: { userId, isRead: false } }),
     prisma.notification.count({ where }),
   ]);
 
@@ -313,7 +293,7 @@ export const getUserNotifications = async (
 export const markAsRead = async (notificationId: string, userId: string): Promise<void> => {
   await prisma.notification.updateMany({
     where: { id: notificationId, userId },
-    data: { read: true },
+    data: { isRead: true, readAt: new Date() },
   });
 };
 
@@ -322,8 +302,8 @@ export const markAsRead = async (notificationId: string, userId: string): Promis
  */
 export const markAllAsRead = async (userId: string): Promise<void> => {
   await prisma.notification.updateMany({
-    where: { userId, read: false },
-    data: { read: true },
+    where: { userId, isRead: false },
+    data: { isRead: true, readAt: new Date() },
   });
 };
 
@@ -341,6 +321,6 @@ export const deleteNotification = async (notificationId: string, userId: string)
  */
 export const getUnreadCount = async (userId: string): Promise<number> => {
   return prisma.notification.count({
-    where: { userId, read: false },
+    where: { userId, isRead: false },
   });
 };

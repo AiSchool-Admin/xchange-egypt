@@ -175,9 +175,9 @@ async function searchGeneralMarket(
   }
 
   if (priceMin !== undefined || priceMax !== undefined) {
-    where.price = {};
-    if (priceMin !== undefined) where.price.gte = priceMin;
-    if (priceMax !== undefined) where.price.lte = priceMax;
+    where.estimatedValue = {};
+    if (priceMin !== undefined) where.estimatedValue.gte = priceMin;
+    if (priceMax !== undefined) where.estimatedValue.lte = priceMax;
   }
 
   const items = await prisma.item.findMany({
@@ -196,7 +196,7 @@ async function searchGeneralMarket(
     market: 'GENERAL' as MarketType,
     title: item.title,
     description: item.description || '',
-    price: item.price,
+    price: item.estimatedValue,
     currency: 'EGP',
     images: item.images || [],
     location: {
@@ -348,7 +348,7 @@ async function searchSilver(query?: string, governorate?: string): Promise<Searc
     market: 'SILVER' as MarketType,
     title: item.title,
     description: item.description || '',
-    price: item.totalAskingPrice,
+    price: item.askingPrice,
     currency: 'EGP',
     images: item.images || [],
     location: {
@@ -413,11 +413,11 @@ export const getMarketStatistics = async (): Promise<{
   const generalStats = await prisma.item.aggregate({
     where: { status: 'ACTIVE' },
     _count: true,
-    _sum: { price: true },
+    _sum: { estimatedValue: true },
   });
   stats.GENERAL = {
     totalListings: generalStats._count,
-    totalValue: generalStats._sum.price || 0,
+    totalValue: generalStats._sum.estimatedValue || 0,
   };
 
   // Gold market
@@ -435,11 +435,11 @@ export const getMarketStatistics = async (): Promise<{
   const silverStats = await prisma.silverItem.aggregate({
     where: { status: 'ACTIVE' },
     _count: true,
-    _sum: { totalAskingPrice: true },
+    _sum: { askingPrice: true },
   });
   stats.SILVER = {
     totalListings: silverStats._count,
-    totalValue: silverStats._sum.totalAskingPrice || 0,
+    totalValue: silverStats._sum.askingPrice || 0,
   };
 
   // Real Estate
@@ -515,7 +515,7 @@ export const getTrendingItems = async (limit: number = 20): Promise<SearchResult
       market: 'GENERAL' as MarketType,
       title: item.title,
       description: item.description || '',
-      price: item.price,
+      price: item.estimatedValue,
       currency: 'EGP',
       images: item.images || [],
       location: {
@@ -577,7 +577,7 @@ export const getRecommendations = async (
     market: 'GENERAL' as MarketType,
     title: item.title,
     description: item.description || '',
-    price: item.price,
+    price: item.estimatedValue,
     currency: 'EGP',
     images: item.images || [],
     location: {
