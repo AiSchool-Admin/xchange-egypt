@@ -180,18 +180,22 @@ export default function SellSilverPage() {
     setSubmitting(true);
 
     try {
+      const weightGrams = parseFloat(formData.weightGrams);
+      const pricePerGram = parseFloat(formData.pricePerGram);
+      const totalAskingPrice = weightGrams * pricePerGram;
+
       const res = await apiClient.post('/silver/items', {
         title: formData.title,
         description: formData.description,
         purity: formData.purity,
         category: formData.category,
         condition: formData.condition,
-        weightGrams: parseFloat(formData.weightGrams),
-        askingPricePerGram: parseFloat(formData.pricePerGram),
+        weightGrams: weightGrams,
+        askingPrice: totalAskingPrice,
         images: formData.images,
         allowBarter: formData.allowBarter,
         allowGoldBarter: formData.allowGoldBarter,
-        barterDescription: formData.barterDescription,
+        barterPreferences: formData.barterDescription,
       });
 
       // Redirect to the new item

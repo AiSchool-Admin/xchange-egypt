@@ -152,8 +152,8 @@ export default function SilverItemPage() {
       return;
     }
 
-    // TODO: Implement purchase flow with escrow
-    alert('سيتم تفعيل خاصية الشراء قريباً');
+    // Redirect to purchase page
+    router.push(`/silver/${params.id}/purchase`);
   };
 
   const formatPrice = (price: number) => {
