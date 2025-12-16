@@ -462,6 +462,45 @@ export default function AuctionsPage() {
         </div>
       )}
 
+      {/* خدمات المزادات - Auction Services */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">خدمات المزادات</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+          <Link href="/auctions/create" className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-center group">
+            <div className="text-3xl mb-2">➕</div>
+            <div className="text-sm font-medium text-gray-700 group-hover:text-purple-600">إنشاء مزاد</div>
+          </Link>
+          <Link href="/auctions/my-auctions" className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-center group">
+            <div className="text-3xl mb-2">📋</div>
+            <div className="text-sm font-medium text-gray-700 group-hover:text-purple-600">مزاداتي</div>
+          </Link>
+          <Link href="/auctions/watchlist" className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-center group">
+            <div className="text-3xl mb-2">❤️</div>
+            <div className="text-sm font-medium text-gray-700 group-hover:text-purple-600">المراقبة</div>
+          </Link>
+          <Link href="/auctions/deposits" className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-center group">
+            <div className="text-3xl mb-2">💰</div>
+            <div className="text-sm font-medium text-gray-700 group-hover:text-purple-600">الإيداعات</div>
+          </Link>
+          <Link href="/auctions/my-sealed-bids" className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-center group">
+            <div className="text-3xl mb-2">📦</div>
+            <div className="text-sm font-medium text-gray-700 group-hover:text-purple-600">عروضي المختومة</div>
+          </Link>
+          <Link href="/auctions/disputes" className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-center group">
+            <div className="text-3xl mb-2">⚖️</div>
+            <div className="text-sm font-medium text-gray-700 group-hover:text-purple-600">النزاعات</div>
+          </Link>
+          <Link href="/auctions/reviews" className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-center group">
+            <div className="text-3xl mb-2">⭐</div>
+            <div className="text-sm font-medium text-gray-700 group-hover:text-purple-600">التقييمات</div>
+          </Link>
+          <Link href="/auctions/notifications" className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition text-center group">
+            <div className="text-3xl mb-2">🔔</div>
+            <div className="text-sm font-medium text-gray-700 group-hover:text-purple-600">الإشعارات</div>
+          </Link>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Filters Sidebar */}
