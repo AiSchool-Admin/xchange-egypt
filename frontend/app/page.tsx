@@ -605,7 +605,22 @@ export default function HomePage() {
             {loading ? (
               Array.from({ length: 8 }).map((_, i) => <ItemCardSkeleton key={i} />)
             ) : featuredItems.length > 0 ? (
-              featuredItems.map((item) => <ItemCard key={item.id} item={item} />)
+              featuredItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType={item.listingType as any}
+                  category={item.category?.nameAr}
+                  seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
+                  createdAt={item.createdAt}
+                  isFeatured
+                />
+              ))
             ) : (
               <div className="col-span-full text-center py-12 text-gray-500">
                 لا توجد منتجات مميزة حالياً
@@ -640,7 +655,21 @@ export default function HomePage() {
             {loading ? (
               Array.from({ length: 12 }).map((_, i) => <ItemCardSkeleton key={i} />)
             ) : latestItems.length > 0 ? (
-              latestItems.map((item) => <ItemCard key={item.id} item={item} compact />)
+              latestItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  price={item.estimatedValue || 0}
+                  images={item.images?.map(img => img.url) || []}
+                  condition={item.condition}
+                  governorate={item.governorate}
+                  listingType={item.listingType as any}
+                  category={item.category?.nameAr}
+                  createdAt={item.createdAt}
+                  variant="compact"
+                />
+              ))
             ) : (
               <div className="col-span-full text-center py-12 text-gray-500">
                 لا توجد منتجات حالياً
