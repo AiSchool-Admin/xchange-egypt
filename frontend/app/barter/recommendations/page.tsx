@@ -235,11 +235,6 @@ export default function RecommendationsPage() {
                           منتجك الذي ستعرضه
                         </p>
                         <h4 className="font-bold text-gray-900">{rec.offeredItemTitle}</h4>
-                        {rec.offeredItemValue && (
-                          <p className="text-orange-600 font-bold mt-1">
-                            {rec.offeredItemValue.toLocaleString('ar-EG')} ج.م
-                          </p>
-                        )}
                       </div>
 
                       <div className="flex justify-center">
@@ -255,11 +250,6 @@ export default function RecommendationsPage() {
                           ما ستحصل عليه
                         </p>
                         <h4 className="font-bold text-gray-900">{rec.requestedItemTitle}</h4>
-                        {rec.requestedItemValue && (
-                          <p className="text-green-600 font-bold mt-1">
-                            {rec.requestedItemValue.toLocaleString('ar-EG')} ج.م
-                          </p>
-                        )}
                       </div>
                     </div>
 
