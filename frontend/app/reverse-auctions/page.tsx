@@ -60,7 +60,7 @@ export default function ReverseAuctionsPage() {
   const [appliedAuctions, setAppliedAuctions] = useState<ReverseAuction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [categories, setCategories] = useState<{ id: string; nameAr: string }[]>([]);
   const [filters, setFilters] = useState<Filters>({
     search: '',
