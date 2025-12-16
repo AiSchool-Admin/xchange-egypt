@@ -1,0 +1,1883 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// XCHANGE TENDER MARKETPLACE - PRISMA SCHEMA
+// ═══════════════════════════════════════════════════════════════════════════════
+// أفضل سوق مناقصات في العالم - Complete database schema
+// Supports: G2B • B2B • B2C • C2C • C2B
+// Features: Reverse Auctions • Smart Matching • Escrow • Vendor Rating
+// ═══════════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// USERS & AUTHENTICATION (المستخدمين والمصادقة)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model User {
+  id                    String          @id @default(cuid())
+  email                 String          @unique
+  phone                 String          @unique
+  passwordHash          String
+  fullName              String
+  fullNameAr            String?
+
+  // Identity Verification
+  nationalId            String?         @unique
+  nationalIdVerified    Boolean         @default(false)
+  commercialRegister    String?         @unique  // السجل التجاري
+  taxId                 String?         @unique  // الرقم الضريبي
+
+  avatar                String?
+  dateOfBirth           DateTime?
+
+  // Location
+  governorate           String?
+  city                  String?
+  district              String?
+  address               String?
+
+  // User Type
+  userType              UserType        @default(INDIVIDUAL)
+
+  // Trust & Verification
+  trustLevel            TrustLevel      @default(NEW)
+  trustScore            Float           @default(0)  // 0-100
+  kycStatus             KYCStatus       @default(PENDING)
+  kycDocuments          Json?
+  kycVerifiedAt         DateTime?
+
+  // Statistics
+  totalTendersCreated   Int             @default(0)
+  totalBidsSubmitted    Int             @default(0)
+  totalContractsWon     Int             @default(0)
+  totalContractValue    Float           @default(0)
+  averageRating         Float           @default(0)
+  completionRate        Float           @default(0)  // نسبة إتمام العقود
+  onTimeDeliveryRate    Float           @default(0)  // نسبة التسليم في الوقت
+
+  // Preferences
+  language              String          @default("ar")
+  notificationPrefs     Json?
+
+  // Status
+  isActive              Boolean         @default(true)
+  isSuspended           Boolean         @default(false)
+  suspendedReason       String?
+  suspendedAt           DateTime?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  lastLoginAt           DateTime?
+
+  // Relations
+  vendorProfile         Vendor?
+  tenders               Tender[]
+  bids                  Bid[]
+  auctionBids           ReverseAuctionBid[]
+  contracts             Contract[]      @relation("ContractBuyer")
+  contractsAsVendor     Contract[]      @relation("ContractVendor")
+  serviceRequests       ServiceRequest[]
+  quotes                Quote[]
+  reviews               Review[]        @relation("ReviewGiver")
+  reviewsReceived       Review[]        @relation("ReviewReceiver")
+  escrowTransactions    EscrowTransaction[]
+  notifications         Notification[]
+  watchlist             TenderWatchlist[]
+  savedSearches         SavedSearch[]
+  messages              Message[]       @relation("MessageSender")
+  receivedMessages      Message[]       @relation("MessageReceiver")
+  disputes              Dispute[]       @relation("DisputeOpener")
+  disputesAsOther       Dispute[]       @relation("DisputeOther")
+  bankAccounts          BankAccount[]
+  addresses             Address[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([userType])
+  @@index([trustLevel])
+  @@index([governorate, city])
+  @@fulltext([fullName, fullNameAr])
+}
+
+enum UserType {
+  INDIVIDUAL          // فرد
+  COMPANY             // شركة
+  GOVERNMENT          // جهة حكومية
+  FREELANCER          // فريلانسر
+  CONTRACTOR          // مقاول
+}
+
+enum TrustLevel {
+  NEW                 // جديد
+  VERIFIED            // موثق الهوية
+  TRUSTED             // موثوق - 5+ عقود ناجحة
+  PROFESSIONAL        // محترف - 25+ عقود
+  ELITE               // نخبة - 100+ عقود + تقييم 4.8+
+}
+
+enum KYCStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VENDOR PROFILE (ملف المورد/المقاول)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Vendor {
+  id                    String          @id @default(cuid())
+  userId                String          @unique
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Business Info
+  companyName           String
+  companyNameAr         String?
+  companySize           CompanySize
+  yearEstablished       Int?
+  employeeCount         String?         // "1-10", "11-50", etc.
+  annualRevenue         String?         // Revenue range
+
+  // Description
+  bio                   String?         @db.Text
+  bioAr                 String?         @db.Text
+
+  // Contact
+  website               String?
+  linkedIn              String?
+
+  // Location & Coverage
+  headquarters          String?
+  operatingGovernorate  String[]        // المحافظات التي يعمل بها
+
+  // Specializations
+  categories            TenderCategory[]
+  specializations       String[]        // تخصصات محددة
+  keywords              String[]        // كلمات مفتاحية للبحث
+
+  // Certifications & Documents
+  certifications        Certification[]
+  portfolio             PortfolioItem[]
+
+  // Performance Metrics
+  trustScore            Float           @default(0)     // 0-100
+  responseRate          Float           @default(0)     // معدل الاستجابة للمناقصات
+  responseTime          Float?          // متوسط وقت الاستجابة بالساعات
+  winRate               Float           @default(0)     // معدل الفوز
+  completedProjects     Int             @default(0)
+  totalContractValue    Float           @default(0)
+  onTimeDelivery        Float           @default(0)     // نسبة التسليم في الوقت
+  qualityScore          Float           @default(0)     // متوسط تقييم الجودة
+
+  // Ratings (1-5)
+  averageRating         Float           @default(0)
+  totalReviews          Int             @default(0)
+  qualityRating         Float           @default(0)
+  communicationRating   Float           @default(0)
+  timelinessRating      Float           @default(0)
+  valueRating           Float           @default(0)
+
+  // Verification
+  isVerified            Boolean         @default(false)
+  verificationLevel     VendorVerificationLevel @default(BASIC)
+  verifiedAt            DateTime?
+
+  // Subscription
+  subscriptionTier      SubscriptionTier @default(FREE)
+  subscriptionExpiry    DateTime?
+
+  // Status
+  isActive              Boolean         @default(true)
+  isFeatured            Boolean         @default(false)
+  featuredUntil         DateTime?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  // Relations
+  bids                  Bid[]
+  auctionBids           ReverseAuctionBid[]
+  quotes                Quote[]
+  contracts             Contract[]
+  invitations           TenderInvitation[]
+
+  @@index([companyName])
+  @@index([categories])
+  @@index([operatingGovernorate])
+  @@index([trustScore])
+  @@index([averageRating])
+  @@index([isVerified])
+  @@index([subscriptionTier])
+  @@fulltext([companyName, companyNameAr, bio, bioAr])
+}
+
+enum CompanySize {
+  MICRO               // أقل من 10 موظفين
+  SMALL               // 10-49
+  MEDIUM              // 50-249
+  LARGE               // 250+
+  ENTERPRISE          // 1000+
+}
+
+enum VendorVerificationLevel {
+  BASIC               // بيانات أساسية
+  DOCUMENTS           // وثائق موثقة
+  SITE_VISIT          // زيارة ميدانية
+  PREMIUM             // تحقق متقدم
+}
+
+enum SubscriptionTier {
+  FREE                // مجاني
+  BASIC               // أساسي - 199 ج.م/شهر
+  PROFESSIONAL        // احترافي - 499 ج.م/شهر
+  ENTERPRISE          // مؤسسي - 999 ج.م/شهر
+}
+
+model Certification {
+  id                    String          @id @default(cuid())
+  vendorId              String
+  vendor                Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  name                  String
+  nameAr                String?
+  issuingAuthority      String
+  certificateNumber     String?
+  issueDate             DateTime
+  expiryDate            DateTime?
+  documentUrl           String?
+
+  isVerified            Boolean         @default(false)
+  verifiedAt            DateTime?
+
+  createdAt             DateTime        @default(now())
+
+  @@index([vendorId])
+  @@index([expiryDate])
+}
+
+model PortfolioItem {
+  id                    String          @id @default(cuid())
+  vendorId              String
+  vendor                Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  title                 String
+  titleAr               String?
+  description           String?         @db.Text
+  descriptionAr         String?         @db.Text
+
+  category              TenderCategory
+  clientName            String?
+  contractValue         Float?
+  startDate             DateTime?
+  endDate               DateTime?
+  duration              String?
+
+  images                String[]
+  documents             String[]
+  videoUrl              String?
+
+  isPublic              Boolean         @default(true)
+  isFeatured            Boolean         @default(false)
+
+  createdAt             DateTime        @default(now())
+
+  @@index([vendorId])
+  @@index([category])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TENDERS (المناقصات)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Tender {
+  id                    String          @id @default(cuid())
+  referenceNumber       String          @unique @default(cuid())  // رقم المناقصة
+
+  // Owner
+  ownerId               String
+  owner                 User            @relation(fields: [ownerId], references: [id])
+
+  // Basic Info
+  title                 String
+  titleAr               String?
+  description           String          @db.Text
+  descriptionAr         String?         @db.Text
+
+  // Classification
+  tenderType            TenderType
+  category              TenderCategory
+  subcategory           String?
+  businessType          BusinessType    // G2B, B2B, etc.
+
+  // Budget & Pricing
+  budgetType            BudgetType
+  budgetMin             Float?
+  budgetMax             Float?
+  budgetFixed           Float?
+  currency              String          @default("EGP")
+  showBudget            Boolean         @default(true)
+
+  // Timeline
+  publishDate           DateTime        @default(now())
+  submissionDeadline    DateTime
+  questionDeadline      DateTime?       // آخر موعد للاستفسارات
+  awardDate             DateTime?       // تاريخ الترسية المتوقع
+  projectStartDate      DateTime?
+  projectEndDate        DateTime?
+  projectDuration       String?         // e.g., "3 أشهر"
+
+  // Location
+  governorate           String?
+  city                  String?
+  district              String?
+  fullAddress           String?
+  isRemote              Boolean         @default(false)
+
+  // Requirements
+  requirements          String?         @db.Text
+  requirementsAr        String?         @db.Text
+  qualifications        String[]        // المؤهلات المطلوبة
+  experience            String?         // الخبرة المطلوبة
+
+  // Documents
+  documents             TenderDocument[]
+  termsAndConditions    String?         @db.Text
+
+  // Tender Settings
+  visibility            TenderVisibility @default(PUBLIC)
+  isNegotiable          Boolean         @default(false)
+  allowPartialBids      Boolean         @default(false)  // السماح بالعروض الجزئية
+  requireDeposit        Boolean         @default(false)
+  depositAmount         Float?
+  depositPercentage     Float?
+
+  // Evaluation Criteria
+  evaluationCriteria    EvaluationCriteria[]
+  evaluationMethod      EvaluationMethod @default(LOWEST_PRICE)
+
+  // Status
+  status                TenderStatus    @default(DRAFT)
+
+  // Reverse Auction (if applicable)
+  hasReverseAuction     Boolean         @default(false)
+  reverseAuction        ReverseAuction?
+
+  // Statistics
+  viewCount             Int             @default(0)
+  bidCount              Int             @default(0)
+  watchlistCount        Int             @default(0)
+  questionCount         Int             @default(0)
+
+  // Moderation
+  moderationStatus      ModerationStatus @default(PENDING)
+  moderationNotes       String?
+  moderatedAt           DateTime?
+  moderatedBy           String?
+
+  // Featured
+  isFeatured            Boolean         @default(false)
+  featuredUntil         DateTime?
+
+  // Results
+  winnerId              String?
+  winningBidId          String?
+  awardedAt             DateTime?
+  awardNotes            String?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  publishedAt           DateTime?
+  closedAt              DateTime?
+  cancelledAt           DateTime?
+  cancellationReason    String?
+
+  // Relations
+  bids                  Bid[]
+  questions             TenderQuestion[]
+  invitations           TenderInvitation[]
+  watchlist             TenderWatchlist[]
+  contract              Contract?
+
+  @@index([ownerId])
+  @@index([category])
+  @@index([businessType])
+  @@index([status])
+  @@index([submissionDeadline])
+  @@index([governorate, city])
+  @@index([budgetMin, budgetMax])
+  @@index([isFeatured])
+  @@fulltext([title, titleAr, description, descriptionAr])
+}
+
+enum TenderType {
+  OPEN                  // مناقصة عامة مفتوحة
+  RESTRICTED            // مناقصة محدودة
+  NEGOTIATED            // مناقصة تفاوضية
+  RFQ                   // طلب عرض سعر
+  RFP                   // طلب عرض فني ومالي
+  RFI                   // طلب معلومات
+  FRAMEWORK             // اتفاقية إطارية
+  EMERGENCY             // مناقصة طارئة
+  REVERSE_AUCTION       // مزاد عكسي
+}
+
+enum TenderCategory {
+  // البناء والتشييد
+  CONSTRUCTION          // أعمال البناء
+  INFRASTRUCTURE        // البنية التحتية
+  ROADS_BRIDGES         // طرق وكباري
+  ELECTRICAL            // أعمال كهربائية
+  PLUMBING              // أعمال السباكة
+  HVAC                  // تكييف وتبريد
+  FINISHING             // تشطيبات
+  LANDSCAPING           // تنسيق حدائق
+
+  // تكنولوجيا المعلومات
+  IT_SOFTWARE           // برمجيات
+  IT_HARDWARE           // أجهزة وعتاد
+  IT_SERVICES           // خدمات IT
+  CYBERSECURITY         // أمن سيبراني
+  CLOUD_SERVICES        // خدمات سحابية
+  NETWORKING            // شبكات
+
+  // التوريدات
+  OFFICE_SUPPLIES       // مستلزمات مكتبية
+  MEDICAL_SUPPLIES      // مستلزمات طبية
+  FOOD_CATERING         // تموين وإعاشة
+  FURNITURE             // أثاث
+  VEHICLES              // مركبات
+  MACHINERY             // معدات وآلات
+  RAW_MATERIALS         // مواد خام
+
+  // الخدمات
+  CONSULTING            // استشارات
+  LEGAL                 // خدمات قانونية
+  ACCOUNTING            // محاسبة ومراجعة
+  MARKETING             // تسويق وإعلان
+  TRAINING              // تدريب
+  SECURITY_SERVICES     // خدمات أمنية
+  CLEANING              // تنظيف وصيانة
+  TRANSPORT             // نقل ولوجستيات
+
+  // قطاعات متخصصة
+  HEALTHCARE            // رعاية صحية
+  EDUCATION             // تعليم
+  ENERGY                // طاقة
+  TELECOM               // اتصالات
+  MANUFACTURING         // تصنيع
+  AGRICULTURE           // زراعة
+
+  // خدمات شخصية (C2C/C2B)
+  HOME_SERVICES         // خدمات منزلية
+  MAINTENANCE           // صيانة
+  DESIGN                // تصميم
+  PHOTOGRAPHY           // تصوير
+  EVENTS                // تنظيم فعاليات
+  MOVING                // نقل عفش
+
+  OTHER                 // أخرى
+}
+
+enum BusinessType {
+  G2B                   // حكومة → شركات
+  B2B                   // شركة → شركات
+  B2C                   // شركة → أفراد
+  C2B                   // فرد → شركات
+  C2C                   // فرد → أفراد
+}
+
+enum BudgetType {
+  FIXED                 // ميزانية محددة
+  RANGE                 // نطاق سعري
+  OPEN                  // مفتوح للعروض
+  HOURLY                // بالساعة
+  DAILY                 // باليوم
+  MONTHLY               // بالشهر
+}
+
+enum TenderVisibility {
+  PUBLIC                // عامة
+  PRIVATE               // خاصة (بدعوة فقط)
+  MEMBERS_ONLY          // للأعضاء المشتركين فقط
+  VERIFIED_ONLY         // للموردين الموثقين فقط
+}
+
+enum TenderStatus {
+  DRAFT                 // مسودة
+  PENDING_APPROVAL      // في انتظار الموافقة
+  PUBLISHED             // منشورة
+  ACTIVE                // نشطة (فترة استقبال العروض)
+  EVALUATION            // في مرحلة التقييم
+  AWARDED               // تم الترسية
+  CONTRACTED            // تم التعاقد
+  IN_PROGRESS           // قيد التنفيذ
+  COMPLETED             // مكتملة
+  CANCELLED             // ملغاة
+  SUSPENDED             // معلقة
+  NO_BIDS               // لم ترد عروض
+  FAILED                // فشلت (لم يُختر فائز)
+}
+
+enum EvaluationMethod {
+  LOWEST_PRICE          // أقل سعر
+  BEST_VALUE            // أفضل قيمة (سعر + جودة)
+  QUALITY_BASED         // على أساس الجودة
+  WEIGHTED_CRITERIA     // معايير موزونة
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+model TenderDocument {
+  id                    String          @id @default(cuid())
+  tenderId              String
+  tender                Tender          @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  name                  String
+  nameAr                String?
+  type                  DocumentType
+  url                   String
+  size                  Int?            // bytes
+  mimeType              String?
+
+  isPublic              Boolean         @default(true)
+  downloadCount         Int             @default(0)
+
+  uploadedAt            DateTime        @default(now())
+
+  @@index([tenderId])
+  @@index([type])
+}
+
+enum DocumentType {
+  SPECIFICATIONS        // المواصفات
+  BOQ                   // جدول الكميات
+  DRAWINGS              // الرسومات
+  TERMS_CONDITIONS      // الشروط والأحكام
+  TECHNICAL_SPECS       // المواصفات الفنية
+  SAMPLE_CONTRACT       // نموذج العقد
+  SITE_PHOTOS           // صور الموقع
+  OTHER                 // أخرى
+}
+
+model EvaluationCriteria {
+  id                    String          @id @default(cuid())
+  tenderId              String
+  tender                Tender          @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  name                  String          // اسم المعيار
+  nameAr                String?
+  description           String?
+  weight                Float           // الوزن النسبي (0-100)
+  maxScore              Int             @default(100)
+
+  order                 Int             @default(0)
+
+  @@index([tenderId])
+}
+
+model TenderQuestion {
+  id                    String          @id @default(cuid())
+  tenderId              String
+  tender                Tender          @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  askerId               String
+  question              String          @db.Text
+
+  answer                String?         @db.Text
+  answeredAt            DateTime?
+  answeredBy            String?
+
+  isPublic              Boolean         @default(true)  // ظاهر لجميع المتقدمين
+
+  createdAt             DateTime        @default(now())
+
+  @@index([tenderId])
+  @@index([askerId])
+}
+
+model TenderInvitation {
+  id                    String          @id @default(cuid())
+  tenderId              String
+  tender                Tender          @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  vendorId              String
+  vendor                Vendor          @relation(fields: [vendorId], references: [id])
+
+  status                InvitationStatus @default(PENDING)
+  message               String?
+
+  sentAt                DateTime        @default(now())
+  respondedAt           DateTime?
+
+  @@unique([tenderId, vendorId])
+  @@index([tenderId])
+  @@index([vendorId])
+  @@index([status])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+model TenderWatchlist {
+  id                    String          @id @default(cuid())
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tenderId              String
+  tender                Tender          @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  notifyOnUpdate        Boolean         @default(true)
+  notifyBeforeDeadline  Boolean         @default(true)
+  notifyHoursBefore     Int             @default(24)
+
+  addedAt               DateTime        @default(now())
+
+  @@unique([userId, tenderId])
+  @@index([userId])
+  @@index([tenderId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BIDS (العروض)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Bid {
+  id                    String          @id @default(cuid())
+  referenceNumber       String          @unique @default(cuid())
+
+  tenderId              String
+  tender                Tender          @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  bidderId              String
+  bidder                User            @relation(fields: [bidderId], references: [id])
+
+  vendorId              String?
+  vendor                Vendor?         @relation(fields: [vendorId], references: [id])
+
+  // Pricing
+  totalPrice            Float
+  currency              String          @default("EGP")
+  priceBreakdown        Json?           // تفصيل السعر
+
+  // Timeline
+  proposedStartDate     DateTime?
+  proposedEndDate       DateTime?
+  proposedDuration      String?
+  deliveryTime          String?         // وقت التسليم
+
+  // Warranty & Support
+  warrantyPeriod        String?         // فترة الضمان
+  supportTerms          String?         // شروط الدعم
+
+  // Technical Proposal
+  technicalProposal     String?         @db.Text
+  methodology           String?         @db.Text  // منهجية العمل
+  teamDescription       String?         @db.Text  // وصف الفريق
+
+  // Documents
+  documents             BidDocument[]
+
+  // Status
+  status                BidStatus       @default(DRAFT)
+
+  // Evaluation
+  technicalScore        Float?          // النقاط الفنية
+  financialScore        Float?          // النقاط المالية
+  totalScore            Float?          // المجموع
+  evaluationNotes       String?
+  evaluatedAt           DateTime?
+  evaluatedBy           String?
+
+  // Ranking
+  rank                  Int?            // الترتيب بين العروض
+
+  // Flags
+  isWinning             Boolean         @default(false)
+  isShortlisted         Boolean         @default(false)
+  isWithdrawn           Boolean         @default(false)
+  withdrawnAt           DateTime?
+  withdrawalReason      String?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  submittedAt           DateTime?
+
+  @@index([tenderId])
+  @@index([bidderId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([totalPrice])
+  @@index([isWinning])
+}
+
+enum BidStatus {
+  DRAFT                 // مسودة
+  SUBMITTED             // مقدم
+  UNDER_REVIEW          // قيد المراجعة
+  SHORTLISTED           // في القائمة المختصرة
+  ACCEPTED              // مقبول (فائز)
+  REJECTED              // مرفوض
+  WITHDRAWN             // تم السحب
+  DISQUALIFIED          // مستبعد
+}
+
+model BidDocument {
+  id                    String          @id @default(cuid())
+  bidId                 String
+  bid                   Bid             @relation(fields: [bidId], references: [id], onDelete: Cascade)
+
+  name                  String
+  type                  BidDocumentType
+  url                   String
+  size                  Int?
+  mimeType              String?
+
+  uploadedAt            DateTime        @default(now())
+
+  @@index([bidId])
+}
+
+enum BidDocumentType {
+  TECHNICAL_PROPOSAL    // العرض الفني
+  FINANCIAL_PROPOSAL    // العرض المالي
+  COMPANY_PROFILE       // ملف الشركة
+  CERTIFICATIONS        // الشهادات
+  EXPERIENCE            // سابقة الأعمال
+  TEAM_CVS              // السير الذاتية
+  SAMPLES               // عينات
+  OTHER                 // أخرى
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REVERSE AUCTION (المزاد العكسي)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model ReverseAuction {
+  id                    String          @id @default(cuid())
+
+  tenderId              String          @unique
+  tender                Tender          @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  // Timing
+  startTime             DateTime
+  endTime               DateTime
+  extendOnBid           Boolean         @default(true)
+  extensionMinutes      Int             @default(3)
+  maxExtensions         Int             @default(10)
+  currentExtensions     Int             @default(0)
+
+  // Pricing Rules
+  startingPrice         Float           // سعر البداية (الحد الأقصى)
+  reservePrice          Float?          // السعر الأدنى المقبول
+  minimumDecrement      Float           // الحد الأدنى لخفض السعر
+  decrementPercentage   Float?          // نسبة خفض السعر
+
+  // Status
+  status                ReverseAuctionStatus @default(SCHEDULED)
+  currentPrice          Float?
+  currentWinnerId       String?
+
+  // Statistics
+  totalBids             Int             @default(0)
+  uniqueBidders         Int             @default(0)
+  priceDropPercentage   Float?          // نسبة انخفاض السعر
+
+  // Deposit
+  requireDeposit        Boolean         @default(true)
+  depositAmount         Float?
+  depositPercentage     Float?          @default(5)
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  completedAt           DateTime?
+
+  // Relations
+  bids                  ReverseAuctionBid[]
+  deposits              AuctionDeposit[]
+
+  @@index([status])
+  @@index([startTime])
+  @@index([endTime])
+}
+
+enum ReverseAuctionStatus {
+  SCHEDULED             // مجدول
+  ACTIVE                // نشط
+  EXTENDED              // ممدد
+  ENDED                 // انتهى
+  AWARDED               // تم الترسية
+  CANCELLED             // ملغي
+  NO_BIDS               // لم ترد عروض
+}
+
+model ReverseAuctionBid {
+  id                    String          @id @default(cuid())
+
+  auctionId             String
+  auction               ReverseAuction  @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+
+  bidderId              String
+  bidder                User            @relation(fields: [bidderId], references: [id])
+
+  vendorId              String?
+  vendor                Vendor?         @relation(fields: [vendorId], references: [id])
+
+  amount                Float
+
+  // Status
+  isWinning             Boolean         @default(false)
+  isOutbid              Boolean         @default(false)
+
+  // Rank at time of bid
+  rankAtBid             Int?
+
+  // Metadata
+  ipAddress             String?
+  deviceInfo            Json?
+
+  createdAt             DateTime        @default(now())
+
+  @@index([auctionId])
+  @@index([bidderId])
+  @@index([amount])
+  @@index([createdAt])
+  @@index([isWinning])
+}
+
+model AuctionDeposit {
+  id                    String          @id @default(cuid())
+
+  auctionId             String
+  auction               ReverseAuction  @relation(fields: [auctionId], references: [id])
+
+  userId                String
+
+  amount                Float
+  status                DepositStatus   @default(PENDING)
+
+  paymentMethod         PaymentMethod?
+  transactionRef        String?
+
+  paidAt                DateTime?
+  refundedAt            DateTime?
+  refundReason          String?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@unique([auctionId, userId])
+  @@index([auctionId])
+  @@index([userId])
+  @@index([status])
+}
+
+enum DepositStatus {
+  PENDING
+  PAID
+  HELD
+  REFUNDED
+  FORFEITED             // مصادر
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE REQUESTS (طلبات الخدمات - C2C/C2B)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model ServiceRequest {
+  id                    String          @id @default(cuid())
+  referenceNumber       String          @unique @default(cuid())
+
+  requesterId           String
+  requester             User            @relation(fields: [requesterId], references: [id])
+
+  // Basic Info
+  title                 String
+  titleAr               String?
+  description           String          @db.Text
+  descriptionAr         String?         @db.Text
+
+  // Category
+  category              TenderCategory
+  subcategory           String?
+
+  // Budget
+  budgetType            BudgetType
+  budgetMin             Float?
+  budgetMax             Float?
+  budgetFixed           Float?
+
+  // Location
+  governorate           String
+  city                  String
+  district              String?
+  fullAddress           String?
+
+  // Timing
+  urgency               ServiceUrgency  @default(NORMAL)
+  preferredDate         DateTime?
+  preferredTimeSlot     String?         // e.g., "morning", "afternoon"
+  flexibleDate          Boolean         @default(true)
+
+  // Requirements
+  requirements          String?         @db.Text
+  photos                String[]
+
+  // Status
+  status                ServiceRequestStatus @default(OPEN)
+
+  // Matching
+  autoMatch             Boolean         @default(true)  // مطابقة تلقائية مع مقدمي الخدمات
+  maxQuotes             Int             @default(5)
+
+  // Statistics
+  viewCount             Int             @default(0)
+  quoteCount            Int             @default(0)
+
+  // Result
+  selectedQuoteId       String?
+  selectedProviderId    String?
+  completedAt           DateTime?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  expiresAt             DateTime?
+
+  // Relations
+  quotes                Quote[]
+  contract              Contract?       @relation("ServiceContract")
+
+  @@index([requesterId])
+  @@index([category])
+  @@index([governorate, city])
+  @@index([status])
+  @@index([urgency])
+  @@fulltext([title, titleAr, description, descriptionAr])
+}
+
+enum ServiceUrgency {
+  FLEXIBLE              // مرن
+  NORMAL                // عادي
+  URGENT                // عاجل
+  EMERGENCY             // طوارئ
+}
+
+enum ServiceRequestStatus {
+  OPEN                  // مفتوح لاستقبال العروض
+  REVIEWING             // في مرحلة المراجعة
+  ACCEPTED              // تم قبول عرض
+  IN_PROGRESS           // قيد التنفيذ
+  COMPLETED             // مكتمل
+  CANCELLED             // ملغي
+  EXPIRED               // منتهي الصلاحية
+}
+
+model Quote {
+  id                    String          @id @default(cuid())
+
+  serviceRequestId      String
+  serviceRequest        ServiceRequest  @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+
+  providerId            String
+  provider              User            @relation(fields: [providerId], references: [id])
+
+  vendorId              String?
+  vendor                Vendor?         @relation(fields: [vendorId], references: [id])
+
+  // Pricing
+  price                 Float
+  priceType             PriceType       @default(FIXED)
+  priceBreakdown        String?
+
+  // Details
+  description           String?         @db.Text
+  estimatedDuration     String?
+  availableDate         DateTime?
+  availableTimeSlot     String?
+
+  // Status
+  status                QuoteStatus     @default(PENDING)
+
+  // Communication
+  message               String?         @db.Text
+
+  isSelected            Boolean         @default(false)
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  expiresAt             DateTime?
+
+  @@index([serviceRequestId])
+  @@index([providerId])
+  @@index([status])
+}
+
+enum PriceType {
+  FIXED                 // سعر ثابت
+  HOURLY                // بالساعة
+  PER_UNIT              // بالوحدة
+  NEGOTIABLE            // قابل للتفاوض
+}
+
+enum QuoteStatus {
+  PENDING               // في انتظار الرد
+  VIEWED                // تم المشاهدة
+  ACCEPTED              // مقبول
+  REJECTED              // مرفوض
+  WITHDRAWN             // تم السحب
+  EXPIRED               // منتهي
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONTRACTS (العقود)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Contract {
+  id                    String          @id @default(cuid())
+  contractNumber        String          @unique @default(cuid())
+
+  // Parties
+  buyerId               String
+  buyer                 User            @relation("ContractBuyer", fields: [buyerId], references: [id])
+
+  vendorUserId          String
+  vendorUser            User            @relation("ContractVendor", fields: [vendorUserId], references: [id])
+
+  vendorId              String?
+  vendor                Vendor?         @relation(fields: [vendorId], references: [id])
+
+  // Source
+  tenderId              String?         @unique
+  tender                Tender?         @relation(fields: [tenderId], references: [id])
+
+  serviceRequestId      String?         @unique
+  serviceRequest        ServiceRequest? @relation("ServiceContract", fields: [serviceRequestId], references: [id])
+
+  // Contract Details
+  title                 String
+  description           String?         @db.Text
+
+  // Value
+  totalValue            Float
+  currency              String          @default("EGP")
+
+  // Timeline
+  startDate             DateTime
+  endDate               DateTime
+  duration              String?
+
+  // Terms
+  termsAndConditions    String?         @db.Text
+  specialConditions     String?         @db.Text
+  paymentTerms          String?
+
+  // Documents
+  documents             ContractDocument[]
+
+  // Milestones
+  milestones            Milestone[]
+
+  // Status
+  status                ContractStatus  @default(DRAFT)
+
+  // Signatures
+  buyerSignedAt         DateTime?
+  vendorSignedAt        DateTime?
+
+  // Amendments
+  amendments            ContractAmendment[]
+
+  // Escrow
+  escrowEnabled         Boolean         @default(true)
+  escrowTransactions    EscrowTransaction[]
+
+  // Completion
+  completedAt           DateTime?
+  completionNotes       String?
+
+  // Cancellation
+  cancelledAt           DateTime?
+  cancellationReason    String?
+  cancelledBy           String?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  // Relations
+  disputes              Dispute[]
+  reviews               Review[]
+
+  @@index([buyerId])
+  @@index([vendorUserId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+enum ContractStatus {
+  DRAFT                 // مسودة
+  PENDING_BUYER         // في انتظار توقيع المشتري
+  PENDING_VENDOR        // في انتظار توقيع المورد
+  ACTIVE                // نشط
+  IN_PROGRESS           // قيد التنفيذ
+  ON_HOLD               // معلق
+  COMPLETED             // مكتمل
+  TERMINATED            // منهي
+  CANCELLED             // ملغي
+  DISPUTED              // متنازع عليه
+}
+
+model ContractDocument {
+  id                    String          @id @default(cuid())
+  contractId            String
+  contract              Contract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  name                  String
+  type                  String
+  url                   String
+  size                  Int?
+
+  uploadedBy            String
+  uploadedAt            DateTime        @default(now())
+
+  @@index([contractId])
+}
+
+model ContractAmendment {
+  id                    String          @id @default(cuid())
+  contractId            String
+  contract              Contract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  amendmentNumber       Int
+  description           String          @db.Text
+  changes               Json            // التغييرات
+
+  previousValue         Float?
+  newValue              Float?
+
+  previousEndDate       DateTime?
+  newEndDate            DateTime?
+
+  status                AmendmentStatus @default(PENDING)
+
+  requestedBy           String
+  requestedAt           DateTime        @default(now())
+
+  approvedBy            String?
+  approvedAt            DateTime?
+
+  @@index([contractId])
+}
+
+enum AmendmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MILESTONES (مراحل التنفيذ)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Milestone {
+  id                    String          @id @default(cuid())
+  contractId            String
+  contract              Contract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  // Details
+  title                 String
+  titleAr               String?
+  description           String?         @db.Text
+
+  // Order
+  order                 Int
+
+  // Value
+  amount                Float
+  percentage            Float?          // نسبة من قيمة العقد
+
+  // Timeline
+  dueDate               DateTime
+
+  // Deliverables
+  deliverables          String[]
+
+  // Status
+  status                MilestoneStatus @default(PENDING)
+
+  // Completion
+  completedAt           DateTime?
+  completionNotes       String?
+
+  // Approval
+  approvedAt            DateTime?
+  approvedBy            String?
+  rejectionReason       String?
+
+  // Payment
+  paymentStatus         MilestonePaymentStatus @default(UNPAID)
+  paidAt                DateTime?
+
+  // Escrow
+  escrowId              String?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([contractId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+enum MilestoneStatus {
+  PENDING               // في الانتظار
+  IN_PROGRESS           // قيد التنفيذ
+  SUBMITTED             // تم التسليم
+  UNDER_REVIEW          // قيد المراجعة
+  APPROVED              // معتمد
+  REJECTED              // مرفوض
+  OVERDUE               // متأخر
+}
+
+enum MilestonePaymentStatus {
+  UNPAID                // غير مدفوع
+  HELD                  // محجوز في Escrow
+  RELEASED              // تم التحرير
+  REFUNDED              // مسترد
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ESCROW SYSTEM (نظام الضمان)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model EscrowTransaction {
+  id                    String          @id @default(cuid())
+  referenceNumber       String          @unique @default(cuid())
+
+  contractId            String
+  contract              Contract        @relation(fields: [contractId], references: [id])
+
+  payerId               String
+  payer                 User            @relation(fields: [payerId], references: [id])
+
+  // Amount
+  amount                Float
+  currency              String          @default("EGP")
+
+  // Type
+  type                  EscrowType
+
+  // Related milestone
+  milestoneId           String?
+
+  // Status
+  status                EscrowStatus    @default(PENDING)
+
+  // Payment
+  paymentMethod         PaymentMethod?
+  paymentRef            String?
+
+  // Release conditions
+  releaseConditions     String?
+
+  // Timestamps
+  createdAt             DateTime        @default(now())
+  paidAt                DateTime?
+  heldAt                DateTime?
+  releasedAt            DateTime?
+  refundedAt            DateTime?
+
+  // Notes
+  notes                 String?
+
+  @@index([contractId])
+  @@index([payerId])
+  @@index([status])
+}
+
+enum EscrowType {
+  FULL_AMOUNT           // المبلغ الكامل
+  MILESTONE             // مرحلة
+  DEPOSIT               // وديعة
+  PARTIAL               // جزئي
+}
+
+enum EscrowStatus {
+  PENDING               // في الانتظار
+  PAID                  // مدفوع
+  HELD                  // محجوز
+  RELEASED              // محرر
+  REFUNDED              // مسترد
+  DISPUTED              // متنازع عليه
+}
+
+enum PaymentMethod {
+  CARD                  // بطاقة
+  FAWRY                 // فوري
+  INSTAPAY              // إنستاباي
+  BANK_TRANSFER         // تحويل بنكي
+  WALLET                // محفظة إلكترونية
+  CASH_ON_DELIVERY      // الدفع عند الاستلام
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DISPUTES (النزاعات)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Dispute {
+  id                    String          @id @default(cuid())
+  referenceNumber       String          @unique @default(cuid())
+
+  contractId            String
+  contract              Contract        @relation(fields: [contractId], references: [id])
+
+  // Parties
+  openedById            String
+  openedBy              User            @relation("DisputeOpener", fields: [openedById], references: [id])
+
+  otherPartyId          String
+  otherParty            User            @relation("DisputeOther", fields: [otherPartyId], references: [id])
+
+  // Details
+  type                  DisputeType
+  title                 String
+  description           String          @db.Text
+
+  // Evidence
+  evidence              DisputeEvidence[]
+
+  // Amount in dispute
+  disputedAmount        Float?
+
+  // Status
+  status                DisputeStatus   @default(OPEN)
+
+  // Resolution
+  resolution            String?         @db.Text
+  resolvedAmount        Float?
+  resolutionType        ResolutionType?
+
+  resolvedAt            DateTime?
+  resolvedBy            String?
+
+  // Communication
+  messages              DisputeMessage[]
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([contractId])
+  @@index([openedById])
+  @@index([status])
+}
+
+enum DisputeType {
+  QUALITY               // جودة العمل
+  DELIVERY              // التسليم
+  PAYMENT               // الدفع
+  SCOPE                 // نطاق العمل
+  COMMUNICATION         // التواصل
+  CONTRACT_TERMS        // شروط العقد
+  OTHER                 // أخرى
+}
+
+enum DisputeStatus {
+  OPEN                  // مفتوح
+  UNDER_REVIEW          // قيد المراجعة
+  MEDIATION             // وساطة
+  ESCALATED             // تصعيد
+  RESOLVED              // تم الحل
+  CLOSED                // مغلق
+}
+
+enum ResolutionType {
+  FULL_REFUND           // استرداد كامل
+  PARTIAL_REFUND        // استرداد جزئي
+  REWORK                // إعادة العمل
+  MUTUAL_AGREEMENT      // اتفاق متبادل
+  ADMIN_DECISION        // قرار إداري
+  WITHDRAWN             // تم السحب
+}
+
+model DisputeEvidence {
+  id                    String          @id @default(cuid())
+  disputeId             String
+  dispute               Dispute         @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  uploadedById          String
+
+  type                  EvidenceType
+  title                 String
+  description           String?
+  url                   String
+
+  uploadedAt            DateTime        @default(now())
+
+  @@index([disputeId])
+}
+
+enum EvidenceType {
+  DOCUMENT
+  IMAGE
+  VIDEO
+  SCREENSHOT
+  MESSAGE
+  OTHER
+}
+
+model DisputeMessage {
+  id                    String          @id @default(cuid())
+  disputeId             String
+  dispute               Dispute         @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  senderId              String
+  isAdmin               Boolean         @default(false)
+
+  message               String          @db.Text
+  attachments           String[]
+
+  createdAt             DateTime        @default(now())
+
+  @@index([disputeId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REVIEWS & RATINGS (التقييمات)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Review {
+  id                    String          @id @default(cuid())
+
+  // Contract reference
+  contractId            String
+  contract              Contract        @relation(fields: [contractId], references: [id])
+
+  // Parties
+  reviewerId            String
+  reviewer              User            @relation("ReviewGiver", fields: [reviewerId], references: [id])
+
+  revieweeId            String
+  reviewee              User            @relation("ReviewReceiver", fields: [revieweeId], references: [id])
+
+  // Ratings (1-5)
+  overallRating         Int
+  qualityRating         Int?            // جودة العمل
+  communicationRating   Int?            // التواصل
+  timelinessRating      Int?            // الالتزام بالوقت
+  valueRating           Int?            // القيمة مقابل السعر
+  professionalismRating Int?            // الاحترافية
+
+  // Review content
+  title                 String?
+  comment               String?         @db.Text
+
+  // Pros & Cons
+  pros                  String[]
+  cons                  String[]
+
+  // Would recommend?
+  wouldRecommend        Boolean?
+
+  // Response
+  response              String?         @db.Text
+  respondedAt           DateTime?
+
+  // Verification
+  isVerified            Boolean         @default(false)  // تم التحقق من إتمام العقد
+
+  // Moderation
+  isPublic              Boolean         @default(true)
+  isReported            Boolean         @default(false)
+  reportReason          String?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@unique([contractId, reviewerId])
+  @@index([reviewerId])
+  @@index([revieweeId])
+  @@index([overallRating])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MESSAGING (الرسائل)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Message {
+  id                    String          @id @default(cuid())
+
+  senderId              String
+  sender                User            @relation("MessageSender", fields: [senderId], references: [id])
+
+  receiverId            String
+  receiver              User            @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  // Context
+  tenderId              String?
+  serviceRequestId      String?
+  contractId            String?
+
+  // Content
+  content               String          @db.Text
+  attachments           String[]
+
+  // Status
+  isRead                Boolean         @default(false)
+  readAt                DateTime?
+
+  // Deletion
+  deletedBySender       Boolean         @default(false)
+  deletedByReceiver     Boolean         @default(false)
+
+  createdAt             DateTime        @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([tenderId])
+  @@index([contractId])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS (الإشعارات)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Notification {
+  id                    String          @id @default(cuid())
+
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type                  NotificationType
+  title                 String
+  titleAr               String?
+  message               String
+  messageAr             String?
+
+  // Reference
+  relatedType           String?         // tender, bid, contract, etc.
+  relatedId             String?
+  actionUrl             String?
+
+  // Delivery
+  channels              String[]        // ["email", "push", "sms"]
+
+  // Status
+  isRead                Boolean         @default(false)
+  readAt                DateTime?
+
+  // Sent status
+  emailSent             Boolean         @default(false)
+  smsSent               Boolean         @default(false)
+  pushSent              Boolean         @default(false)
+
+  createdAt             DateTime        @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  // Tender notifications
+  TENDER_PUBLISHED
+  TENDER_UPDATED
+  TENDER_CLOSING_SOON
+  TENDER_CLOSED
+  TENDER_AWARDED
+  TENDER_CANCELLED
+
+  // Bid notifications
+  NEW_BID_RECEIVED
+  BID_ACCEPTED
+  BID_REJECTED
+  BID_SHORTLISTED
+  OUTBID                // تم المزايدة عليك
+
+  // Auction notifications
+  AUCTION_STARTING
+  AUCTION_ENDING_SOON
+  AUCTION_EXTENDED
+  AUCTION_WON
+  AUCTION_LOST
+
+  // Service request notifications
+  NEW_SERVICE_REQUEST
+  NEW_QUOTE_RECEIVED
+  QUOTE_ACCEPTED
+  QUOTE_REJECTED
+
+  // Contract notifications
+  CONTRACT_CREATED
+  CONTRACT_SIGNED
+  CONTRACT_STARTED
+  CONTRACT_COMPLETED
+
+  // Milestone notifications
+  MILESTONE_DUE
+  MILESTONE_SUBMITTED
+  MILESTONE_APPROVED
+  MILESTONE_REJECTED
+
+  // Payment notifications
+  PAYMENT_RECEIVED
+  PAYMENT_RELEASED
+  PAYMENT_OVERDUE
+  DEPOSIT_REFUNDED
+
+  // Dispute notifications
+  DISPUTE_OPENED
+  DISPUTE_UPDATED
+  DISPUTE_RESOLVED
+
+  // Review notifications
+  REVIEW_RECEIVED
+  REVIEW_RESPONSE
+
+  // System notifications
+  ACCOUNT_VERIFIED
+  SUBSCRIPTION_EXPIRING
+  SYSTEM_ANNOUNCEMENT
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SAVED SEARCHES & ALERTS (البحث المحفوظ والتنبيهات)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model SavedSearch {
+  id                    String          @id @default(cuid())
+
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name                  String
+
+  // Search criteria
+  searchType            SearchType
+  criteria              Json            // الفلاتر المحفوظة
+
+  // Alert settings
+  alertEnabled          Boolean         @default(true)
+  alertFrequency        AlertFrequency  @default(INSTANT)
+
+  lastAlertSent         DateTime?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([userId])
+  @@index([searchType])
+}
+
+enum SearchType {
+  TENDER
+  SERVICE_REQUEST
+  VENDOR
+}
+
+enum AlertFrequency {
+  INSTANT               // فوري
+  DAILY                 // يومي
+  WEEKLY                // أسبوعي
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SUPPORTING MODELS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model Address {
+  id                    String          @id @default(cuid())
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type                  AddressType     @default(PRIMARY)
+  isDefault             Boolean         @default(false)
+
+  label                 String?         // "المكتب الرئيسي", "المخزن", etc.
+
+  governorate           String
+  city                  String
+  district              String?
+  street                String?
+  building              String?
+  floor                 String?
+  apartment             String?
+  landmark              String?
+  postalCode            String?
+
+  latitude              Float?
+  longitude             Float?
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([userId])
+}
+
+enum AddressType {
+  PRIMARY
+  BILLING
+  SHIPPING
+  WORK_SITE
+}
+
+model BankAccount {
+  id                    String          @id @default(cuid())
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bankName              String
+  bankNameAr            String?
+  accountName           String
+  accountNumber         String
+  iban                  String?
+  swiftCode             String?
+
+  isDefault             Boolean         @default(false)
+  isVerified            Boolean         @default(false)
+
+  createdAt             DateTime        @default(now())
+
+  @@index([userId])
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SYSTEM CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model SystemConfig {
+  key                   String          @id
+  value                 Json
+  description           String?
+  updatedAt             DateTime        @updatedAt
+  updatedBy             String?
+}
+
+// Default configs to create:
+// - platform_fees: { tenderPostingFee: 0, bidSubmissionFee: 0, successFee: 0.02, escrowFee: 0.005 }
+// - auction_rules: { minDecrement: 1000, extensionMinutes: 3, maxExtensions: 10 }
+// - deposit_rules: { percentage: 5, minAmount: 1000, maxAmount: 100000 }
+// - subscription_prices: { basic: 199, professional: 499, enterprise: 999 }
+// - categories_enabled: [list of enabled categories]
+// - governorates: [list of Egyptian governorates]
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANALYTICS & REPORTING
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model TenderAnalytics {
+  id                    String          @id @default(cuid())
+  tenderId              String          @unique
+
+  // Views
+  totalViews            Int             @default(0)
+  uniqueViews           Int             @default(0)
+
+  // Engagement
+  watchlistAdds         Int             @default(0)
+  documentDownloads     Int             @default(0)
+  questionsAsked        Int             @default(0)
+
+  // Bids
+  bidsReceived          Int             @default(0)
+  averageBidAmount      Float?
+  lowestBidAmount       Float?
+  highestBidAmount      Float?
+
+  // Sources
+  viewsBySource         Json?           // { direct: 100, search: 50, email: 30 }
+  viewsByGovernorate    Json?           // { cairo: 200, giza: 150 }
+
+  // Time analytics
+  viewsByHour           Json?           // Peak hours
+  viewsByDay            Json?           // Peak days
+
+  updatedAt             DateTime        @updatedAt
+}
+
+model PlatformAnalytics {
+  id                    String          @id @default(cuid())
+  date                  DateTime        @unique @db.Date
+
+  // Tenders
+  tendersPublished      Int             @default(0)
+  tendersAwarded        Int             @default(0)
+  tendersCancelled      Int             @default(0)
+  totalTenderValue      Float           @default(0)
+  averageTenderValue    Float           @default(0)
+
+  // Bids
+  bidsSubmitted         Int             @default(0)
+  averageBidsPerTender  Float           @default(0)
+
+  // Auctions
+  auctionsHeld          Int             @default(0)
+  averagePriceReduction Float           @default(0)  // نسبة خفض السعر
+
+  // Service Requests
+  serviceRequestsCreated Int            @default(0)
+  quotesSubmitted       Int             @default(0)
+
+  // Users
+  newUsers              Int             @default(0)
+  activeUsers           Int             @default(0)
+  newVendors            Int             @default(0)
+
+  // Contracts
+  contractsSigned       Int             @default(0)
+  contractsCompleted    Int             @default(0)
+  totalContractValue    Float           @default(0)
+
+  // Revenue
+  platformRevenue       Float           @default(0)
+  escrowVolume          Float           @default(0)
+
+  createdAt             DateTime        @default(now())
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id                    String          @id @default(cuid())
+
+  userId                String?
+  userEmail             String?
+
+  action                String
+  entityType            String          // tender, bid, contract, etc.
+  entityId              String?
+
+  oldValue              Json?
+  newValue              Json?
+
+  ipAddress             String?
+  userAgent             String?
+
+  createdAt             DateTime        @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
