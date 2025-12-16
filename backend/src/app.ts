@@ -53,6 +53,7 @@ import installmentRoutes from './routes/installment.routes';
 import badgeRoutes from './routes/badge.routes';
 import goldRoutes from './routes/gold.routes';
 import silverRoutes from './routes/silver.routes';
+import silverExtendedRoutes from './routes/silver-extended.routes';
 import carsRoutes from './routes/cars.routes';
 import mobileRoutes from './routes/mobile.routes';
 
@@ -342,6 +343,7 @@ app.use('/api/v1/gold', goldRoutes);
 
 // Silver Marketplace - سوق الفضة
 app.use('/api/v1/silver', silverRoutes);
+app.use('/api/v1/silver', silverExtendedRoutes);
 
 // Cars Marketplace - سوق السيارات
 app.use('/api/v1/cars', carsRoutes);
