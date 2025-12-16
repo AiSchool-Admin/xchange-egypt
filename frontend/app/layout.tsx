@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/lib/contexts/AuthContext';
 import { SocketProvider } from '@/lib/contexts/SocketContext';
@@ -6,11 +6,16 @@ import Navigation from '@/components/Navigation';
 import FloatingAssistant from '@/components/FloatingAssistant';
 import PWAProvider from '@/components/pwa/PWAProvider';
 
+export const viewport: Viewport = {
+  themeColor: '#10b981',
+  width: 'device-width',
+  initialScale: 1,
+};
+
 export const metadata: Metadata = {
   title: 'Xchange - منصة التبادل والمقايضة في مصر',
   description: 'بيع واشتري ومبادلة في مصر - منصة التبادل والمقايضة الأولى',
   manifest: '/manifest.json',
-  themeColor: '#10b981',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
