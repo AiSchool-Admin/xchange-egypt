@@ -142,7 +142,7 @@ export const createSmartProposal = async (
         userId: participant.userId,
         type: 'BARTER_MATCH',
         title: '🔄 اقتراح مقايضة ذكية!',
-        message: `تم اكتشاف فرصة مقايضة تناسبك - نسبة التطابق ${Math.round(bestMatch.score * 100)}%`,
+        message: `تم اكتشاف فرصة مقايضة تناسبك - نسبة التطابق ${Math.round((bestMatch as any).score * 100 || 90)}%`,
         entityType: 'BARTER_CHAIN',
         entityId: proposal.id,
       });

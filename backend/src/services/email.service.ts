@@ -4,7 +4,6 @@
  * Handles email sending using Nodemailer
  */
 
-import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import nodemailer from 'nodemailer';
 
@@ -85,7 +84,7 @@ export const queueEmail = async (options: EmailOptions): Promise<any> => {
       htmlBody: html,
       textBody: text,
       templateName,
-      templateData: templateData as Prisma.JsonValue,
+      templateData: templateData as any,
       priority,
       scheduledFor,
       userId,
