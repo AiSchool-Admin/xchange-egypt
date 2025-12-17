@@ -55,7 +55,7 @@ const sendSMS = async (phone: string, message: string): Promise<SMSResponse> => 
         }
       );
 
-      const result = await response.json();
+      const result: any = await response.json();
 
       if (response.ok) {
         console.log(`✅ SMS sent to ${phone}, SID: ${result.sid}`);
@@ -86,7 +86,7 @@ const sendSMS = async (phone: string, message: string): Promise<SMSResponse> => 
         }),
       });
 
-      const result = await response.json();
+      const result: any = await response.json();
       if (result.code === '1901') {
         return { success: true, messageId: result.job_id };
       }
@@ -150,7 +150,7 @@ const sendPushNotification = async (
       }),
     });
 
-    const result = await response.json();
+    const result: any = await response.json();
 
     if (response.ok) {
       console.log(`✅ Push sent to ${tokens.length} devices, success: ${result.success}, failure: ${result.failure}`);
@@ -322,26 +322,18 @@ export const dispatch = async (input: DispatchNotificationInput): Promise<{
   }
 
   // PUSH notification
+  // Note: Push notifications require FCM token storage in database
+  // For now, logging only - add pushToken table or fcmToken field to User model to enable
   if (
     channels.includes('PUSH') &&
     (await notificationService.shouldNotifyUser(userId, type, 'PUSH'))
   ) {
     try {
-      // Get user's FCM tokens
-      const userTokens = await prisma.pushToken.findMany({
-        where: { userId, isActive: true },
-      });
-
-      if (userTokens.length > 0 && process.env.FIREBASE_SERVER_KEY) {
-        const pushResult = await sendPushNotification(
-          userTokens.map(t => t.token),
-          title,
-          message,
-          { type, entityType, entityId, actionUrl }
-        );
-        results.push = pushResult.success;
-      } else if (!process.env.FIREBASE_SERVER_KEY) {
+      if (!process.env.FIREBASE_SERVER_KEY) {
         console.log(`🔔 Push (Not Configured): Title: ${title}, Message: ${message.substring(0, 50)}...`);
+      } else {
+        // Push notifications ready - need FCM token storage to be implemented
+        console.log(`🔔 Push (Token Storage Needed): User ${userId}, Title: ${title}`);
       }
     } catch (error) {
       console.error('Push notification failed:', error);
