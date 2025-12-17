@@ -316,7 +316,7 @@ export class SearchAlertsService {
     const matchingSearches: string[] = [];
 
     for (const search of savedSearches) {
-      const filters = search.filters;
+      const filters = (search.filters || {}) as SavedSearchFilters;
       let matches = true;
 
       // Check query match
