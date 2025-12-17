@@ -176,11 +176,11 @@ BEGIN
     -- =====================================================
     RAISE NOTICE '📍 Creating shipping addresses...';
 
-    -- Create shipping addresses for test users
+    -- Create shipping addresses for test users (only for users with address)
     INSERT INTO shipping_addresses (id, user_id, full_name, phone, address, city, governorate, is_default, created_at, updated_at)
-    SELECT gen_random_uuid()::TEXT, id, full_name, phone, address, city, governorate, true, NOW(), NOW()
+    SELECT gen_random_uuid()::TEXT, id, full_name, phone, COALESCE(address, city || ', ' || governorate), city, governorate, true, NOW(), NOW()
     FROM users
-    WHERE email LIKE 'test%@xchange.eg'
+    WHERE email LIKE 'test%@xchange.eg' AND city IS NOT NULL AND governorate IS NOT NULL
     ON CONFLICT DO NOTHING;
 
     SELECT id INTO v_addr10_id FROM shipping_addresses WHERE user_id = v_user10_id LIMIT 1;
