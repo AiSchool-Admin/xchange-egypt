@@ -177,7 +177,7 @@ BEGIN
     RAISE NOTICE '📍 Creating shipping addresses...';
 
     -- Create shipping addresses for test users
-    INSERT INTO shipping_addresses (id, user_id, full_name, phone, street, city, governorate, is_default, created_at, updated_at)
+    INSERT INTO shipping_addresses (id, user_id, full_name, phone, address, city, governorate, is_default, created_at, updated_at)
     SELECT gen_random_uuid()::TEXT, id, full_name, phone, address, city, governorate, true, NOW(), NOW()
     FROM users
     WHERE email LIKE 'test%@xchange.eg'
