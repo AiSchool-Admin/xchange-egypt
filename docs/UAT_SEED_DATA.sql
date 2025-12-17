@@ -283,7 +283,7 @@ BEGIN
     RETURNING id INTO v_auction1_id;
 
     -- Create bids
-    INSERT INTO auction_bids (id, listing_id, auction_id, bidder_id, amount, status, created_at)
+    INSERT INTO auction_bids (id, listing_id, auction_id, bidder_id, bid_amount, status, created_at)
     VALUES
         (gen_random_uuid()::TEXT, v_auction_listing1_id, v_auction1_id, v_user5_id, 85000, 'OUTBID', NOW() - INTERVAL '2 hours'),
         (gen_random_uuid()::TEXT, v_auction_listing1_id, v_auction1_id, v_user10_id, 90000, 'OUTBID', NOW() - INTERVAL '1 hour'),
@@ -301,10 +301,10 @@ BEGIN
     RETURNING id INTO v_reverse_auction_id;
 
     -- Create bids on tender
-    INSERT INTO reverse_auction_bids (id, reverse_auction_id, seller_id, item_id, price_per_unit, total_price, delivery_days, warranty, notes, status, created_at, updated_at)
+    INSERT INTO reverse_auction_bids (id, reverse_auction_id, seller_id, item_id, bid_amount, item_condition, delivery_option, delivery_days, notes, status, created_at, updated_at)
     VALUES
-        (gen_random_uuid()::TEXT, v_reverse_auction_id, v_user1_id, v_item1_2_id, 14000, 1400000, 14, 'ضمان سنة', 'Dell Latitude 5540, original with warranty', 'ACTIVE', NOW(), NOW()),
-        (gen_random_uuid()::TEXT, v_reverse_auction_id, v_user8_id, v_item8_2_id, 13500, 1350000, 10, 'ضمان سنتين', 'HP ProBook 450 G10, brand new', 'ACTIVE', NOW(), NOW());
+        (gen_random_uuid()::TEXT, v_reverse_auction_id, v_user1_id, v_item1_2_id, 1400000, 'NEW', 'DELIVERY', 14, 'Dell Latitude 5540, ضمان سنة', 'ACTIVE', NOW(), NOW()),
+        (gen_random_uuid()::TEXT, v_reverse_auction_id, v_user8_id, v_item8_2_id, 1350000, 'NEW', 'DELIVERY', 10, 'HP ProBook 450 G10, ضمان سنتين', 'ACTIVE', NOW(), NOW());
 
     RAISE NOTICE '   ✅ Created tender with 2 bids';
 
