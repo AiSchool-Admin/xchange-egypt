@@ -370,7 +370,7 @@ BEGIN
     (gen_random_uuid()::TEXT, lst2, u10, u1, 'DIRECT_SALE', 95000, 'CARD', 'COMPLETED', 'SHIPPED', 'TRK005678', NOW() - INTERVAL '3 days', NOW(), NULL),
     (gen_random_uuid()::TEXT, lst6, u10, u1, 'DIRECT_SALE', 8500, 'COD', 'PENDING', 'PENDING', NULL, NOW(), NOW(), NULL),
     (gen_random_uuid()::TEXT, lst5, u5, u8, 'DIRECT_SALE', 42000, 'CARD', 'PENDING', 'PENDING', NULL, NOW(), NOW(), NULL),
-    (gen_random_uuid()::TEXT, lst14, u1, u2, 'BARTER', NULL, NULL, 'COMPLETED', 'COMPLETED', NULL, NOW() - INTERVAL '10 days', NOW(), NOW() - INTERVAL '8 days');
+    (gen_random_uuid()::TEXT, lst14, u1, u2, 'BARTER', NULL, NULL, 'COMPLETED', 'DELIVERED', NULL, NOW() - INTERVAL '10 days', NOW(), NOW() - INTERVAL '8 days');
 
     RAISE NOTICE '✅ Created 5 transactions';
 
