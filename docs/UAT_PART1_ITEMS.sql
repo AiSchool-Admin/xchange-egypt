@@ -13,16 +13,16 @@ DECLARE
     cat_appliances TEXT; cat_sports TEXT; cat_books TEXT;
 BEGIN
     -- =========== GET USERS ===========
-    SELECT id INTO u1 FROM users WHERE email = 'test1@xchange.eg';
-    SELECT id INTO u2 FROM users WHERE email = 'test2@xchange.eg';
-    SELECT id INTO u3 FROM users WHERE email = 'test3@xchange.eg';
-    SELECT id INTO u4 FROM users WHERE email = 'test4@xchange.eg';
-    SELECT id INTO u5 FROM users WHERE email = 'test5@xchange.eg';
-    SELECT id INTO u6 FROM users WHERE email = 'test6@xchange.eg';
-    SELECT id INTO u7 FROM users WHERE email = 'test7@xchange.eg';
-    SELECT id INTO u8 FROM users WHERE email = 'test8@xchange.eg';
-    SELECT id INTO u9 FROM users WHERE email = 'test9@xchange.eg';
-    SELECT id INTO u10 FROM users WHERE email = 'test10@xchange.eg';
+    SELECT id INTO u1 FROM users WHERE email = 'test1@xchange.eg' LIMIT 1;
+    SELECT id INTO u2 FROM users WHERE email = 'test2@xchange.eg' LIMIT 1;
+    SELECT id INTO u3 FROM users WHERE email = 'test3@xchange.eg' LIMIT 1;
+    SELECT id INTO u4 FROM users WHERE email = 'test4@xchange.eg' LIMIT 1;
+    SELECT id INTO u5 FROM users WHERE email = 'test5@xchange.eg' LIMIT 1;
+    SELECT id INTO u6 FROM users WHERE email = 'test6@xchange.eg' LIMIT 1;
+    SELECT id INTO u7 FROM users WHERE email = 'test7@xchange.eg' LIMIT 1;
+    SELECT id INTO u8 FROM users WHERE email = 'test8@xchange.eg' LIMIT 1;
+    SELECT id INTO u9 FROM users WHERE email = 'test9@xchange.eg' LIMIT 1;
+    SELECT id INTO u10 FROM users WHERE email = 'test10@xchange.eg' LIMIT 1;
 
     -- =========== GET CATEGORIES ===========
     SELECT id INTO cat_electronics FROM categories WHERE slug = 'electronics' OR name_en ILIKE '%electron%' LIMIT 1;
