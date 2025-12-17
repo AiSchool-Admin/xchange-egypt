@@ -94,7 +94,7 @@ export const initiatePayment = async (
         body: JSON.stringify(requestData),
       });
 
-      const result = await response.json();
+      const result: any = await response.json();
 
       if (result.transactionId) {
         transactionId = result.transactionId;
@@ -159,7 +159,7 @@ export const verifyPayment = async (transactionId: string): Promise<PaymentVerif
         body: JSON.stringify(requestData),
       });
 
-      const result = await response.json();
+      const result: any = await response.json();
 
       if (result.status) {
         status = result.status;

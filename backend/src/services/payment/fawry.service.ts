@@ -105,7 +105,7 @@ export const createFawryPayment = async (
         body: JSON.stringify(requestBody),
       });
 
-      const result = await response.json();
+      const result: any = await response.json();
 
       if (result.referenceNumber) {
         referenceNumber = result.referenceNumber;
@@ -170,7 +170,7 @@ export const checkPaymentStatus = async (referenceNumber: string): Promise<Fawry
         }
       );
 
-      const result = await response.json();
+      const result: any = await response.json();
 
       if (result.paymentStatus) {
         status = result.paymentStatus;
