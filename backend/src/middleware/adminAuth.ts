@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { verifyAdminAccessToken } from '../utils/adminJwt';
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { AdminRole, AdminStatus } from '@prisma/client';
 
 // Extended Request type with admin

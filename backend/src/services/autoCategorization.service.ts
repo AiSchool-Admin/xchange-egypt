@@ -6,7 +6,7 @@
  * Based on title, description, and keywords
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { normalizeArabic } from '../utils/arabicSearch';
 
 // ============================================

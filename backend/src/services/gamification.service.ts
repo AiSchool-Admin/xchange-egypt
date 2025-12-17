@@ -4,7 +4,7 @@
  */
 
 import { AchievementCategory, AchievementRarity, ChallengeType } from '@prisma/client';
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import * as walletService from './wallet.service';
 
 // ============================================

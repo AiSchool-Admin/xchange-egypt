@@ -11,6 +11,165 @@ import { generateEmailTemplate } from '../utils/email-templates';
 import prisma from '../lib/prisma';
 
 // ============================================
+// SMS Service
+// ============================================
+
+interface SMSResponse {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+/**
+ * Send SMS using configured provider
+ * Supports Twilio and local Egyptian providers
+ */
+const sendSMS = async (phone: string, message: string): Promise<SMSResponse> => {
+  const provider = process.env.SMS_PROVIDER || 'twilio';
+
+  try {
+    if (provider === 'twilio') {
+      // Twilio SMS
+      const accountSid = process.env.TWILIO_ACCOUNT_SID;
+      const authToken = process.env.TWILIO_AUTH_TOKEN;
+      const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+
+      if (!accountSid || !authToken || !fromNumber) {
+        console.warn('Twilio credentials not configured');
+        return { success: false, error: 'SMS provider not configured' };
+      }
+
+      const response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            To: phone,
+            From: fromNumber,
+            Body: message,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log(`✅ SMS sent to ${phone}, SID: ${result.sid}`);
+        return { success: true, messageId: result.sid };
+      } else {
+        console.error(`❌ SMS failed: ${result.message}`);
+        return { success: false, error: result.message };
+      }
+    } else if (provider === 'victorylink') {
+      // Victory Link (Egyptian provider)
+      const apiKey = process.env.VICTORYLINK_API_KEY;
+      const senderId = process.env.VICTORYLINK_SENDER_ID || 'Xchange';
+
+      if (!apiKey) {
+        return { success: false, error: 'VictoryLink API key not configured' };
+      }
+
+      const response = await fetch('https://smsmisr.com/api/v2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: process.env.VICTORYLINK_USERNAME,
+          password: apiKey,
+          sender: senderId,
+          mobile: phone,
+          message,
+          language: 'arabic',
+        }),
+      });
+
+      const result = await response.json();
+      if (result.code === '1901') {
+        return { success: true, messageId: result.job_id };
+      }
+      return { success: false, error: result.message };
+    }
+
+    return { success: false, error: 'Unknown SMS provider' };
+  } catch (error: any) {
+    console.error('SMS send error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// ============================================
+// Push Notification Service
+// ============================================
+
+interface PushResponse {
+  success: boolean;
+  successCount?: number;
+  failureCount?: number;
+  error?: string;
+}
+
+/**
+ * Send push notification using Firebase Cloud Messaging
+ */
+const sendPushNotification = async (
+  tokens: string[],
+  title: string,
+  body: string,
+  data?: Record<string, any>
+): Promise<PushResponse> => {
+  const serverKey = process.env.FIREBASE_SERVER_KEY;
+
+  if (!serverKey) {
+    console.warn('Firebase server key not configured');
+    return { success: false, error: 'Push notifications not configured' };
+  }
+
+  try {
+    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `key=${serverKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        registration_ids: tokens,
+        notification: {
+          title,
+          body,
+          sound: 'default',
+          badge: 1,
+        },
+        data: {
+          ...data,
+          click_action: 'FLUTTER_NOTIFICATION_CLICK',
+        },
+        priority: 'high',
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      console.log(`✅ Push sent to ${tokens.length} devices, success: ${result.success}, failure: ${result.failure}`);
+      return {
+        success: result.success > 0,
+        successCount: result.success,
+        failureCount: result.failure,
+      };
+    } else {
+      console.error(`❌ Push failed:`, result);
+      return { success: false, error: result.error || 'FCM error' };
+    }
+  } catch (error: any) {
+    console.error('Push notification error:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// ============================================
 // Types
 // ============================================
 
@@ -139,22 +298,54 @@ export const dispatch = async (input: DispatchNotificationInput): Promise<{
     }
   }
 
-  // SMS notification (future implementation)
+  // SMS notification
   if (
     channels.includes('SMS') &&
     (await notificationService.shouldNotifyUser(userId, type, 'SMS'))
   ) {
-    // TODO: Implement SMS service
-    results.sms = false;
+    try {
+      const userPhone = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { phone: true },
+      });
+
+      if (userPhone?.phone && process.env.SMS_API_KEY) {
+        // Send SMS using configured provider (Twilio or local provider)
+        const smsResponse = await sendSMS(userPhone.phone, message);
+        results.sms = smsResponse.success;
+      } else if (!process.env.SMS_API_KEY) {
+        console.log(`📱 SMS (Not Configured): To: ${userPhone?.phone}, Message: ${message.substring(0, 50)}...`);
+      }
+    } catch (error) {
+      console.error('SMS notification failed:', error);
+    }
   }
 
-  // PUSH notification (future implementation)
+  // PUSH notification
   if (
     channels.includes('PUSH') &&
     (await notificationService.shouldNotifyUser(userId, type, 'PUSH'))
   ) {
-    // TODO: Implement push notification service
-    results.push = false;
+    try {
+      // Get user's FCM tokens
+      const userTokens = await prisma.pushToken.findMany({
+        where: { userId, isActive: true },
+      });
+
+      if (userTokens.length > 0 && process.env.FIREBASE_SERVER_KEY) {
+        const pushResult = await sendPushNotification(
+          userTokens.map(t => t.token),
+          title,
+          message,
+          { type, entityType, entityId, actionUrl }
+        );
+        results.push = pushResult.success;
+      } else if (!process.env.FIREBASE_SERVER_KEY) {
+        console.log(`🔔 Push (Not Configured): Title: ${title}, Message: ${message.substring(0, 50)}...`);
+      }
+    } catch (error) {
+      console.error('Push notification failed:', error);
+    }
   }
 
   return results;

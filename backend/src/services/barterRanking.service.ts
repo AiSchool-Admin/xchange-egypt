@@ -11,7 +11,7 @@
  * - Likelihood of acceptance
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { ItemCondition } from '@prisma/client';
 
 // ============================================

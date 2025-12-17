@@ -3,7 +3,7 @@
  * خدمة سوق الذهب
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // Commission rates
 const BUYER_COMMISSION_RATE = 0.007; // 0.7%

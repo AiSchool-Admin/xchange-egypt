@@ -4,7 +4,7 @@
  * Business logic for reviews and ratings system
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import * as notificationDispatcher from './notification-dispatcher.service';
 
