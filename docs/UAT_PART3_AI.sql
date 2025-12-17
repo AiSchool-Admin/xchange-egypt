@@ -53,26 +53,26 @@ BEGIN
     -- =========== 1. PRICE PREDICTIONS (توقعات الأسعار) ===========
     RAISE NOTICE 'Creating price predictions...';
 
-    INSERT INTO price_predictions (id, item_id, category_id, condition, predicted_price, confidence_score, price_range_min, price_range_max, market_trend, demand_level, seasonal_factor, pricing_strategy, factors, created_at, updated_at) VALUES
+    INSERT INTO price_predictions (id, item_id, category_id, condition, predicted_price, confidence_score, price_range_min, price_range_max, market_trend, demand_level, seasonal_factor, price_strategy, recommendations, sample_size, data_quality, model_version, created_at) VALUES
     -- Mobile phone predictions
-    (gen_random_uuid()::TEXT, item_ref1, cat_mobile, 'NEW', 73500, 0.92, 70000, 78000, 'STABLE', 'HIGH', 1.0, 'COMPETITIVE', '{"brand": "Apple", "model": "iPhone 15 Pro", "demand": "high", "competition": "medium"}', NOW(), NOW()),
-    (gen_random_uuid()::TEXT, item_ref8, cat_mobile, 'LIKE_NEW', 43000, 0.88, 40000, 46000, 'DOWN', 'MEDIUM', 0.95, 'VALUE', '{"brand": "Apple", "model": "iPhone 14 Pro", "battery": "92%", "age": "1 year"}', NOW(), NOW()),
-    (gen_random_uuid()::TEXT, item_ref2, cat_mobile, 'LIKE_NEW', 58000, 0.85, 54000, 62000, 'STABLE', 'HIGH', 1.0, 'COMPETITIVE', '{"brand": "Samsung", "model": "S24 Ultra", "condition": "excellent"}', NOW(), NOW()),
+    (gen_random_uuid()::TEXT, item_ref1, cat_mobile, 'NEW', 73500, 0.92, 70000, 78000, 'STABLE', 'HIGH', 1.0, 'COMPETITIVE', '{"brand": "Apple", "model": "iPhone 15 Pro", "demand": "high", "competition": "medium"}', 150, 'EXCELLENT', 'v2.1', NOW()),
+    (gen_random_uuid()::TEXT, item_ref8, cat_mobile, 'LIKE_NEW', 43000, 0.88, 40000, 46000, 'DOWN', 'MEDIUM', 0.95, 'VALUE', '{"brand": "Apple", "model": "iPhone 14 Pro", "battery": "92%", "age": "1 year"}', 120, 'GOOD', 'v2.1', NOW()),
+    (gen_random_uuid()::TEXT, item_ref2, cat_mobile, 'LIKE_NEW', 58000, 0.85, 54000, 62000, 'STABLE', 'HIGH', 1.0, 'COMPETITIVE', '{"brand": "Samsung", "model": "S24 Ultra", "condition": "excellent"}', 100, 'GOOD', 'v2.1', NOW()),
 
     -- Electronics predictions
-    (gen_random_uuid()::TEXT, item_ref3, cat_electronics, 'NEW', 44000, 0.90, 42000, 47000, 'STABLE', 'MEDIUM', 1.0, 'PREMIUM', '{"brand": "Apple", "model": "iPad Pro 12.9", "includes": "Apple Pencil"}', NOW(), NOW()),
-    (gen_random_uuid()::TEXT, item_ref1, cat_electronics, 'NEW', 93000, 0.94, 90000, 98000, 'UP', 'HIGH', 1.05, 'PREMIUM', '{"brand": "Apple", "model": "MacBook Pro M3", "specs": "high-end"}', NOW(), NOW()),
+    (gen_random_uuid()::TEXT, item_ref3, cat_electronics, 'NEW', 44000, 0.90, 42000, 47000, 'STABLE', 'MEDIUM', 1.0, 'PREMIUM', '{"brand": "Apple", "model": "iPad Pro 12.9", "includes": "Apple Pencil"}', 80, 'GOOD', 'v2.1', NOW()),
+    (gen_random_uuid()::TEXT, item_ref1, cat_electronics, 'NEW', 93000, 0.94, 90000, 98000, 'UP', 'HIGH', 1.05, 'PREMIUM', '{"brand": "Apple", "model": "MacBook Pro M3", "specs": "high-end"}', 200, 'EXCELLENT', 'v2.1', NOW()),
 
     -- Furniture predictions
-    (gen_random_uuid()::TEXT, item_ref7, cat_furniture, 'NEW', 33000, 0.82, 30000, 38000, 'STABLE', 'MEDIUM', 1.0, 'COMPETITIVE', '{"type": "office", "material": "wood", "brand": "local"}', NOW(), NOW()),
-    (gen_random_uuid()::TEXT, item_ref2, cat_furniture, 'LIKE_NEW', 23000, 0.78, 20000, 27000, 'DOWN', 'LOW', 0.9, 'VALUE', '{"type": "sofa", "material": "leather", "age": "2 years"}', NOW(), NOW()),
+    (gen_random_uuid()::TEXT, item_ref7, cat_furniture, 'NEW', 33000, 0.82, 30000, 38000, 'STABLE', 'MEDIUM', 1.0, 'COMPETITIVE', '{"type": "office", "material": "wood", "brand": "local"}', 60, 'GOOD', 'v2.1', NOW()),
+    (gen_random_uuid()::TEXT, item_ref2, cat_furniture, 'LIKE_NEW', 23000, 0.78, 20000, 27000, 'DOWN', 'LOW', 0.9, 'VALUE', '{"type": "sofa", "material": "leather", "age": "2 years"}', 45, 'LIMITED', 'v2.1', NOW()),
 
     -- Vehicle predictions
-    (gen_random_uuid()::TEXT, item_ref9, cat_vehicles, 'LIKE_NEW', 920000, 0.86, 880000, 980000, 'DOWN', 'MEDIUM', 0.95, 'COMPETITIVE', '{"brand": "Toyota", "model": "Camry 2022", "km": "30000"}', NOW(), NOW()),
-    (gen_random_uuid()::TEXT, item_ref9, cat_vehicles, 'NEW', 1150000, 0.91, 1100000, 1250000, 'UP', 'HIGH', 1.1, 'PREMIUM', '{"brand": "Hyundai", "model": "Tucson 2023", "condition": "zero"}', NOW(), NOW()),
+    (gen_random_uuid()::TEXT, item_ref9, cat_vehicles, 'LIKE_NEW', 920000, 0.86, 880000, 980000, 'DOWN', 'MEDIUM', 0.95, 'COMPETITIVE', '{"brand": "Toyota", "model": "Camry 2022", "km": "30000"}', 90, 'GOOD', 'v2.1', NOW()),
+    (gen_random_uuid()::TEXT, item_ref9, cat_vehicles, 'NEW', 1150000, 0.91, 1100000, 1250000, 'UP', 'HIGH', 1.1, 'PREMIUM', '{"brand": "Hyundai", "model": "Tucson 2023", "condition": "zero"}', 110, 'EXCELLENT', 'v2.1', NOW()),
 
     -- Luxury predictions
-    (gen_random_uuid()::TEXT, item_ref5, cat_electronics, 'NEW', 82000, 0.75, 75000, 95000, 'STABLE', 'LOW', 1.0, 'PREMIUM', '{"brand": "Louis Vuitton", "type": "bag", "edition": "limited"}', NOW(), NOW())
+    (gen_random_uuid()::TEXT, item_ref5, cat_electronics, 'NEW', 82000, 0.75, 75000, 95000, 'STABLE', 'LOW', 1.0, 'PREMIUM', '{"brand": "Louis Vuitton", "type": "bag", "edition": "limited"}', 30, 'LIMITED', 'v2.1', NOW())
     ON CONFLICT DO NOTHING;
 
     RAISE NOTICE '✅ 10 Price Predictions created';
@@ -105,7 +105,7 @@ BEGIN
     -- =========== 3. SAVED SEARCHES (البحث المحفوظ) ===========
     RAISE NOTICE 'Creating saved searches...';
 
-    INSERT INTO saved_searches (id, user_id, name, query, filters, notify_on_match, created_at, updated_at) VALUES
+    INSERT INTO saved_searches (id, user_id, name, query, filters, notify_on_new, created_at, updated_at) VALUES
     (gen_random_uuid()::TEXT, u1, 'ايفون 15 برو اقل من 75000', 'ايفون 15 برو', '{"condition": "NEW", "price_max": 75000}', true, NOW(), NOW()),
     (gen_random_uuid()::TEXT, u2, 'سامسونج للمقايضة', 'سامسونج S24', '{"listing_type": "BARTER"}', true, NOW(), NOW()),
     (gen_random_uuid()::TEXT, u3, 'كاميرات احترافية', 'كاميرا سوني كانون', '{"price_min": 50000, "condition": "LIKE_NEW"}', true, NOW(), NOW()),
@@ -119,12 +119,12 @@ BEGIN
     -- =========== 4. AI CONVERSATIONS (محادثات المساعد الذكي) ===========
     RAISE NOTICE 'Creating AI conversations...';
 
-    INSERT INTO ai_conversations (id, user_id, conversation_type, title, status, language, created_at, updated_at) VALUES
-    (gen_random_uuid()::TEXT, u1, 'LISTING_CREATION', 'مساعدة في إنشاء إعلان آيفون', 'CLOSED', 'ar', NOW() - INTERVAL '1 day', NOW()),
-    (gen_random_uuid()::TEXT, u2, 'MARKETPLACE_HELP', 'استفسار عن المقايضة الذكية', 'CLOSED', 'ar', NOW() - INTERVAL '2 days', NOW()),
-    (gen_random_uuid()::TEXT, u3, 'LISTING_CREATION', 'Help creating camera listing', 'ACTIVE', 'en', NOW(), NOW()),
-    (gen_random_uuid()::TEXT, u5, 'MARKETPLACE_HELP', 'كيفية البيع بالمزاد', 'CLOSED', 'ar', NOW() - INTERVAL '3 days', NOW()),
-    (gen_random_uuid()::TEXT, u6, 'LISTING_CREATION', 'إنشاء مناقصة لابتوبات', 'ACTIVE', 'ar', NOW(), NOW())
+    INSERT INTO ai_conversations (id, user_id, context, title, status, created_at, updated_at) VALUES
+    (gen_random_uuid()::TEXT, u1, 'listing', 'مساعدة في إنشاء إعلان آيفون', 'CLOSED', NOW() - INTERVAL '1 day', NOW()),
+    (gen_random_uuid()::TEXT, u2, 'barter', 'استفسار عن المقايضة الذكية', 'CLOSED', NOW() - INTERVAL '2 days', NOW()),
+    (gen_random_uuid()::TEXT, u3, 'listing', 'Help creating camera listing', 'ACTIVE', NOW(), NOW()),
+    (gen_random_uuid()::TEXT, u5, 'help', 'كيفية البيع بالمزاد', 'CLOSED', NOW() - INTERVAL '3 days', NOW()),
+    (gen_random_uuid()::TEXT, u6, 'listing', 'إنشاء مناقصة لابتوبات', 'ACTIVE', NOW(), NOW())
     RETURNING id INTO ai_conv1;
 
     SELECT id INTO ai_conv1 FROM ai_conversations WHERE user_id = u1 ORDER BY created_at DESC LIMIT 1;
@@ -268,26 +268,26 @@ BEGIN
     -- =========== 6. AI LISTING DRAFTS (مسودات الإعلانات الذكية) ===========
     RAISE NOTICE 'Creating AI listing drafts...';
 
-    INSERT INTO ai_listing_drafts (id, user_id, conversation_id, suggested_title, suggested_description, suggested_category_id, suggested_price, suggested_condition, status, created_at, updated_at) VALUES
-    (gen_random_uuid()::TEXT, u1, ai_conv1, 'آيفون 15 برو ماكس 256GB تيتانيوم أسود - جديد بالكرتونة', 'iPhone 15 Pro Max 256GB Titanium Black
+    INSERT INTO ai_listing_drafts (id, user_id, source_type, source_text, generated_title, generated_desc, generated_category, generated_tags, estimated_price, confidence, detected_brand, detected_model, detected_condition, status, created_at, updated_at) VALUES
+    (gen_random_uuid()::TEXT, u1, 'TEXT', 'بيع آيفون 15 برو ماكس 256 جيجا تيتانيوم أسود جديد بالكرتونة ضمان سنة', 'آيفون 15 برو ماكس 256GB تيتانيوم أسود - جديد بالكرتونة', 'iPhone 15 Pro Max 256GB Titanium Black
 جديد بالكرتونة الأصلية
 ضمان سنة من Apple
 جميع الملحقات الأصلية متوفرة
 لون: أسود تيتانيوم
 الشاشة: 6.7 انش Super Retina XDR
 الكاميرا: 48MP Pro camera system
-البطارية: جديدة 100%', cat_mobile, 75000, 'NEW', 'CONVERTED', NOW() - INTERVAL '1 day', NOW()),
+البطارية: جديدة 100%', 'mobile-phones', ARRAY['iPhone', 'Apple', '15 Pro Max', 'Titanium', '256GB'], 75000, 0.95, 'Apple', 'iPhone 15 Pro Max', 'NEW', 'PUBLISHED', NOW() - INTERVAL '1 day', NOW()),
 
-    (gen_random_uuid()::TEXT, u3, ai_conv3, 'Sony A7IV Professional Camera with 24-70mm Lens', 'Sony Alpha A7IV Full Frame Mirrorless Camera
+    (gen_random_uuid()::TEXT, u3, 'IMAGE', 'https://storage.xchange.eg/ai-uploads/camera-sony-a7iv.jpg', 'Sony A7IV Professional Camera with 24-70mm Lens', 'Sony Alpha A7IV Full Frame Mirrorless Camera
 Includes: Sony FE 24-70mm f/2.8 GM Lens
 Condition: Like New
 Shutter Count: ~5000
 Original Box & Accessories
 Perfect for professional photography and videography
 4K 60fps Video Recording
-33MP Full Frame Sensor', cat_electronics, 120000, 'LIKE_NEW', 'DRAFT', NOW(), NOW()),
+33MP Full Frame Sensor', 'electronics', ARRAY['Sony', 'Camera', 'A7IV', 'Mirrorless', 'Professional'], 120000, 0.88, 'Sony', 'Alpha A7IV', 'LIKE_NEW', 'DRAFT', NOW(), NOW()),
 
-    (gen_random_uuid()::TEXT, u6, ai_conv5, 'مناقصة: 50 لابتوب Dell/HP للشركة', 'مطلوب 50 لابتوب للشركة
+    (gen_random_uuid()::TEXT, u6, 'VOICE', 'https://storage.xchange.eg/ai-uploads/voice-tender-laptops.mp3', 'مناقصة: 50 لابتوب Dell/HP للشركة', 'مطلوب 50 لابتوب للشركة
 المواصفات المطلوبة:
 - الماركة: Dell أو HP
 - المعالج: Intel Core i7 الجيل 12 أو أحدث
@@ -297,7 +297,7 @@ Perfect for professional photography and videography
 - الضمان: سنتين على الأقل
 
 الميزانية: 750,000 جنيه
-التسليم: خلال 14 يوم', cat_electronics, 750000, 'NEW', 'DRAFT', NOW(), NOW())
+التسليم: خلال 14 يوم', 'computers', ARRAY['Laptop', 'Dell', 'HP', 'Corporate', 'Bulk'], 750000, 0.92, 'Dell/HP', 'Business Laptop i7', 'NEW', 'DRAFT', NOW(), NOW())
     ON CONFLICT DO NOTHING;
 
     RAISE NOTICE '✅ 3 AI Listing Drafts created';
