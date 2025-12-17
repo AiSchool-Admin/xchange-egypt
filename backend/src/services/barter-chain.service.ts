@@ -457,30 +457,49 @@ export const executeBarterChain = async (chainId: string, userId: string): Promi
             });
           }
 
-          // Create transaction record for each exchange
-          const transaction = await prisma.transaction.create({
-            data: {
-              buyerId: participant.userId,
-              sellerId: participant.receivingItem?.sellerId || participant.userId,
-              itemId: participant.receivingItemId || participant.givingItemId,
-              type: 'BARTER',
-              status: 'COMPLETED',
-              amount: participant.givingItem?.estimatedValue || 0,
-              paymentMethod: 'BARTER_EXCHANGE',
-              paymentStatus: 'COMPLETED',
-              completedAt: new Date(),
-            },
-          });
+          // Find listing for the item to create transaction record
+          const itemId = participant.receivingItemId || participant.givingItemId;
+          if (itemId) {
+            const listing = await prisma.listing.findFirst({
+              where: { itemId },
+            });
 
-          // Send completion notification
-          await createNotification({
-            userId: participant.userId,
-            type: 'BARTER_COMPLETED',
-            title: '🎉 اكتملت المقايضة بنجاح!',
-            message: 'تمت عملية المقايضة بنجاح. شكراً لاستخدام منصة Xchange!',
-            entityType: 'TRANSACTION',
-            entityId: transaction.id,
-          });
+            if (listing) {
+              // Create transaction record for each exchange
+              const transaction = await prisma.transaction.create({
+                data: {
+                  listingId: listing.id,
+                  buyerId: participant.userId,
+                  sellerId: participant.receivingItem?.sellerId || participant.userId,
+                  transactionType: 'BARTER',
+                  amount: participant.givingItem?.estimatedValue || 0,
+                  paymentMethod: 'BARTER_EXCHANGE',
+                  paymentStatus: 'COMPLETED',
+                  completedAt: new Date(),
+                },
+              });
+
+              // Send completion notification
+              await createNotification({
+                userId: participant.userId,
+                type: 'BARTER_COMPLETED',
+                title: '🎉 اكتملت المقايضة بنجاح!',
+                message: 'تمت عملية المقايضة بنجاح. شكراً لاستخدام منصة Xchange!',
+                entityType: 'TRANSACTION',
+                entityId: transaction.id,
+              });
+            } else {
+              // No listing found, just send notification without transaction
+              await createNotification({
+                userId: participant.userId,
+                type: 'BARTER_COMPLETED',
+                title: '🎉 اكتملت المقايضة بنجاح!',
+                message: 'تمت عملية المقايضة بنجاح. شكراً لاستخدام منصة Xchange!',
+                entityType: 'BARTER_CHAIN',
+                entityId: chainId,
+              });
+            }
+          }
         } catch (error) {
           console.error(`Failed to process participant ${participant.userId}:`, error);
         }
