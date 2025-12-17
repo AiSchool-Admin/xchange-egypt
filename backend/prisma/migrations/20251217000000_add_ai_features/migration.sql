@@ -8,14 +8,14 @@
 -- 4. AI Listing Drafts (مسودات الإعلانات الذكية)
 -- =====================================================
 
--- CreateEnum: AI Conversation Status
+-- CreateEnum: AI Conversation Status (if not exists)
 DO $$ BEGIN
     CREATE TYPE "AIConversationStatus" AS ENUM ('ACTIVE', 'CLOSED', 'ARCHIVED');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- CreateEnum: AI Message Role
+-- CreateEnum: AI Message Role (if not exists)
 DO $$ BEGIN
     CREATE TYPE "AIMessageRole" AS ENUM ('USER', 'ASSISTANT', 'SYSTEM');
 EXCEPTION
@@ -26,7 +26,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS "price_predictions" (
     "id" TEXT NOT NULL,
     "category_id" TEXT NOT NULL,
-    "condition" "ItemCondition" NOT NULL,
+    "condition" "ItemCondition" NOT NULL DEFAULT 'GOOD',
     "title" TEXT,
     "description" TEXT,
 
@@ -43,9 +43,9 @@ CREATE TABLE IF NOT EXISTS "price_predictions" (
     "competition_level" TEXT,
 
     -- Data sources
-    "sample_size" INTEGER NOT NULL,
-    "data_quality" TEXT NOT NULL,
-    "model_version" TEXT NOT NULL,
+    "sample_size" INTEGER NOT NULL DEFAULT 0,
+    "data_quality" TEXT NOT NULL DEFAULT 'LIMITED',
+    "model_version" TEXT NOT NULL DEFAULT 'v1.0',
 
     -- Recommendations
     "suggested_price" DOUBLE PRECISION,
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS "ai_messages" (
     "confidence" DOUBLE PRECISION,
 
     -- Actions suggested
-    "suggested_items" TEXT[],
+    "suggested_items" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "suggested_action" TEXT,
 
     -- Timestamps
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS "ai_listing_drafts" (
     "user_id" TEXT NOT NULL,
 
     -- Source
-    "source_type" TEXT NOT NULL,
+    "source_type" TEXT NOT NULL DEFAULT 'TEXT',
     "source_url" TEXT,
     "source_text" TEXT,
 
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS "ai_listing_drafts" (
     "generated_title" TEXT,
     "generated_desc" TEXT,
     "generated_category" TEXT,
-    "generated_tags" TEXT[],
+    "generated_tags" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "estimated_price" DOUBLE PRECISION,
     "confidence" DOUBLE PRECISION,
 
@@ -148,15 +148,25 @@ CREATE TABLE IF NOT EXISTS "ai_listing_drafts" (
     CONSTRAINT "ai_listing_drafts_pkey" PRIMARY KEY ("id")
 );
 
--- AddForeignKey: price_predictions -> categories
-ALTER TABLE "price_predictions"
-ADD CONSTRAINT "price_predictions_category_id_fkey"
-FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey: price_predictions -> categories (only if table exists and constraint doesn't exist)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'categories') THEN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'price_predictions_category_id_fkey') THEN
+            ALTER TABLE "price_predictions"
+            ADD CONSTRAINT "price_predictions_category_id_fkey"
+            FOREIGN KEY ("category_id") REFERENCES "categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+        END IF;
+    END IF;
+END $$;
 
 -- AddForeignKey: ai_messages -> ai_conversations
-ALTER TABLE "ai_messages"
-ADD CONSTRAINT "ai_messages_conversation_id_fkey"
-FOREIGN KEY ("conversation_id") REFERENCES "ai_conversations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'ai_messages_conversation_id_fkey') THEN
+        ALTER TABLE "ai_messages"
+        ADD CONSTRAINT "ai_messages_conversation_id_fkey"
+        FOREIGN KEY ("conversation_id") REFERENCES "ai_conversations"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- CreateIndexes: price_predictions
 CREATE INDEX IF NOT EXISTS "price_predictions_category_id_idx" ON "price_predictions"("category_id");
@@ -177,12 +187,3 @@ CREATE INDEX IF NOT EXISTS "ai_messages_created_at_idx" ON "ai_messages"("create
 CREATE INDEX IF NOT EXISTS "ai_listing_drafts_user_id_idx" ON "ai_listing_drafts"("user_id");
 CREATE INDEX IF NOT EXISTS "ai_listing_drafts_status_idx" ON "ai_listing_drafts"("status");
 CREATE INDEX IF NOT EXISTS "ai_listing_drafts_created_at_idx" ON "ai_listing_drafts"("created_at");
-
--- Success message
-DO $$ BEGIN
-    RAISE NOTICE '✅ AI Features tables created successfully!';
-    RAISE NOTICE '   - price_predictions';
-    RAISE NOTICE '   - ai_conversations';
-    RAISE NOTICE '   - ai_messages';
-    RAISE NOTICE '   - ai_listing_drafts';
-END $$;
