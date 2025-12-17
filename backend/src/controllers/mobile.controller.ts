@@ -4,13 +4,13 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient, MobileListingStatus, MobileTransactionStatus, MobileBarterProposalStatus } from '@prisma/client';
+import { PrismaClient, MobileListingStatus, MobileTransactionStatus, MobileBarterProposalStatus, MobileBrand } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // Interface for barter preferences JSON
 interface BarterPreferences {
-  wanted_brands?: string[];
+  wanted_brands?: MobileBrand[];
   min_value_percent?: number;
   max_value_percent?: number;
 }
