@@ -296,8 +296,8 @@ BEGIN
     -- =====================================================
     RAISE NOTICE '📢 Creating reverse auction (tender)...';
 
-    INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, quantity, max_budget, status, expires_at, governorate, city, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, v_user6_id, 'مناقصة: 100 لابتوب للشركة', 'نحتاج 100 لابتوب Dell أو HP للشركة، مواصفات: Core i5، 8GB RAM، 256GB SSD.', v_computers_id, 100, 1500000, 'ACTIVE', NOW() + INTERVAL '14 days', 'Cairo', 'Maadi', NOW(), NOW())
+    INSERT INTO reverse_auctions (id, buyer_id, title, description, category_id, condition, quantity, max_budget, status, end_date, location, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, v_user6_id, 'مناقصة: 100 لابتوب للشركة', 'نحتاج 100 لابتوب Dell أو HP للشركة، مواصفات: Core i5، 8GB RAM، 256GB SSD.', v_computers_id, 'NEW', 100, 1500000, 'ACTIVE', NOW() + INTERVAL '14 days', 'Cairo, Maadi', NOW(), NOW())
     RETURNING id INTO v_reverse_auction_id;
 
     -- Create bids on tender
