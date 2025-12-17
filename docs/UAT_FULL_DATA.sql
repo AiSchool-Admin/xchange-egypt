@@ -392,19 +392,19 @@ BEGIN
     -- Reverse auction notifications
     (gen_random_uuid()::TEXT, u6, 'REVERSE_AUCTION_NEW_BID', 'MEDIUM', 'عروض جديدة على مناقصتك!', 'تم استلام 3 عروض على مناقصة اللابتوبات', 'REVERSE_AUCTION', rev1, false, NOW()),
     (gen_random_uuid()::TEXT, u7, 'REVERSE_AUCTION_NEW_BID', 'MEDIUM', 'عروض جديدة على مناقصتك!', 'تم استلام 2 عروض على مناقصة الشاشات', 'REVERSE_AUCTION', rev2, false, NOW()),
-    -- Order notifications
-    (gen_random_uuid()::TEXT, u10, 'ORDER_SHIPPED', 'MEDIUM', 'تم شحن طلبك!', 'طلب MacBook Pro في الطريق إليك', 'ORDER', ord2, false, NOW()),
-    (gen_random_uuid()::TEXT, u10, 'ORDER_DELIVERED', 'MEDIUM', 'تم تسليم طلبك!', 'تم تسليم طلب iPhone 14 Pro بنجاح', 'ORDER', ord1, true, NOW() - INTERVAL '2 days'),
+    -- Transaction notifications
+    (gen_random_uuid()::TEXT, u10, 'TRANSACTION_SHIPPED', 'MEDIUM', 'تم شحن طلبك!', 'طلب MacBook Pro في الطريق إليك', 'ORDER', ord2, false, NOW()),
+    (gen_random_uuid()::TEXT, u10, 'TRANSACTION_DELIVERED', 'MEDIUM', 'تم تسليم طلبك!', 'تم تسليم طلب iPhone 14 Pro بنجاح', 'ORDER', ord1, true, NOW() - INTERVAL '2 days'),
     (gen_random_uuid()::TEXT, u8, 'ITEM_SOLD', 'HIGH', 'تم بيع منتجك!', 'تم بيع iPhone 14 Pro بمبلغ 45,000 جنيه', 'ORDER', ord1, true, NOW() - INTERVAL '7 days'),
     (gen_random_uuid()::TEXT, u1, 'ITEM_SOLD', 'HIGH', 'تم بيع منتجك!', 'تم بيع MacBook Pro بمبلغ 95,000 جنيه', 'ORDER', ord2, false, NOW() - INTERVAL '3 days'),
     -- Price alerts
-    (gen_random_uuid()::TEXT, u10, 'PRICE_DROP', 'MEDIUM', 'انخفاض سعر!', 'انخفض سعر AirPods Pro من 9000 إلى 8500', 'ITEM', item25, false, NOW()),
-    (gen_random_uuid()::TEXT, u5, 'PRICE_DROP', 'MEDIUM', 'انخفاض سعر!', 'انخفض سعر شاومي 14 من 45000 إلى 42000', 'ITEM', item18, false, NOW()),
+    (gen_random_uuid()::TEXT, u10, 'ITEM_PRICE_DROP', 'MEDIUM', 'انخفاض سعر!', 'انخفض سعر AirPods Pro من 9000 إلى 8500', 'ITEM', item25, false, NOW()),
+    (gen_random_uuid()::TEXT, u5, 'ITEM_PRICE_DROP', 'MEDIUM', 'انخفاض سعر!', 'انخفض سعر شاومي 14 من 45000 إلى 42000', 'ITEM', item18, false, NOW()),
     -- Review requests
-    (gen_random_uuid()::TEXT, u10, 'REVIEW_REQUEST', 'LOW', 'قيّم تجربتك', 'كيف كانت تجربتك مع منى الموبايلات؟', 'USER', u8, false, NOW()),
+    (gen_random_uuid()::TEXT, u10, 'USER_REVIEW_RECEIVED', 'LOW', 'قيّم تجربتك', 'كيف كانت تجربتك مع منى الموبايلات؟', 'USER', u8, false, NOW()),
     -- Welcome
-    (gen_random_uuid()::TEXT, u1, 'SYSTEM', 'LOW', 'مرحباً بك!', 'شكراً لانضمامك لمنصة Xchange', NULL, NULL, true, NOW() - INTERVAL '30 days'),
-    (gen_random_uuid()::TEXT, u2, 'SYSTEM', 'LOW', 'مرحباً بك!', 'شكراً لانضمامك لمنصة Xchange', NULL, NULL, true, NOW() - INTERVAL '30 days');
+    (gen_random_uuid()::TEXT, u1, 'SYSTEM_ANNOUNCEMENT', 'LOW', 'مرحباً بك!', 'شكراً لانضمامك لمنصة Xchange', NULL, NULL, true, NOW() - INTERVAL '30 days'),
+    (gen_random_uuid()::TEXT, u2, 'SYSTEM_ANNOUNCEMENT', 'LOW', 'مرحباً بك!', 'شكراً لانضمامك لمنصة Xchange', NULL, NULL, true, NOW() - INTERVAL '30 days');
 
     RAISE NOTICE '✅ Created 20 notifications';
 
