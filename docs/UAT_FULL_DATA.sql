@@ -313,8 +313,8 @@ BEGIN
     -- =========== CREATE SHIPPING ADDRESSES ===========
     RAISE NOTICE 'Creating shipping addresses...';
 
-    INSERT INTO shipping_addresses (id, user_id, full_name, phone, street, city, governorate, is_default, created_at, updated_at)
-    SELECT gen_random_uuid()::TEXT, id, full_name, COALESCE(phone, '+20100000000'), COALESCE(address, city), city, governorate, true, NOW(), NOW()
+    INSERT INTO shipping_addresses (id, user_id, full_name, phone, address, city, governorate, is_default, created_at, updated_at)
+    SELECT gen_random_uuid()::TEXT, id, full_name, COALESCE(phone, '+20100000000'), COALESCE(address, city || ', ' || governorate), city, governorate, true, NOW(), NOW()
     FROM users WHERE email LIKE 'test%@xchange.eg' AND city IS NOT NULL
     ON CONFLICT DO NOTHING;
 
