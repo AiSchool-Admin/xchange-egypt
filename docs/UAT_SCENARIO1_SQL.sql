@@ -6,10 +6,12 @@
 -- البائع: test1@xchange.eg (أحمد التاجر)
 -- المشتري: test10@xchange.eg (هدى المشتريات)
 -- =====================================================
+-- تم التحقق من أسماء الأعمدة في: 2024-12-18
+-- =====================================================
 
 DO $$
 DECLARE
-    -- معرفات المستخدمين الموجودين
+    -- معرفات المستخدمين
     v_seller_id TEXT;
     v_buyer_id TEXT;
     v_seller_name TEXT;
@@ -18,8 +20,8 @@ DECLARE
     -- معرفات المحافظ
     v_seller_wallet_id TEXT;
     v_buyer_wallet_id TEXT;
-    v_seller_balance DECIMAL;
-    v_buyer_balance DECIMAL;
+    v_seller_balance DECIMAL := 0;
+    v_buyer_balance DECIMAL := 0;
 
     -- معرفات المنتجات
     v_category_id TEXT;
@@ -27,10 +29,9 @@ DECLARE
     v_item_id TEXT;
     v_listing_id TEXT;
 
-    -- معرفات الطلب
-    v_order_id TEXT;
-    v_escrow_id TEXT;
+    -- معرفات الطلب والمعاملات
     v_transaction_id TEXT;
+    v_escrow_id TEXT;
     v_review_id TEXT;
 
     -- القيم
@@ -48,62 +49,57 @@ BEGIN
     -- الخطوة 1.1: جلب البائع (أحمد التاجر - test1@xchange.eg)
     -- ═══════════════════════════════════════════════════════════════
     RAISE NOTICE '';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    RAISE NOTICE '📌 الخطوة 1.1: التحقق من البائع (أحمد التاجر)';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    RAISE NOTICE '📌 الخطوة 1.1: التحقق من البائع';
 
     SELECT id, COALESCE(full_name, 'أحمد التاجر') INTO v_seller_id, v_seller_name
     FROM users WHERE email = 'test1@xchange.eg' LIMIT 1;
 
     IF v_seller_id IS NULL THEN
-        RAISE EXCEPTION '❌ البائع test1@xchange.eg غير موجود! شغّل UAT_SEED_DATA.sql أولاً';
+        RAISE EXCEPTION '❌ البائع test1@xchange.eg غير موجود!';
     END IF;
 
     RAISE NOTICE '✅ البائع: % (ID: %)', v_seller_name, v_seller_id;
 
-    -- التحقق من محفظة البائع أو إنشاؤها
+    -- التحقق من محفظة البائع
     SELECT id, balance INTO v_seller_wallet_id, v_seller_balance
     FROM wallets WHERE user_id = v_seller_id LIMIT 1;
 
     IF v_seller_wallet_id IS NULL THEN
-        v_seller_wallet_id := 'wallet-seller-' || gen_random_uuid()::TEXT;
+        v_seller_wallet_id := 'uat1-wallet-s-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
         INSERT INTO wallets (id, user_id, balance, frozen_balance, lifetime_earned, lifetime_spent, created_at, updated_at)
         VALUES (v_seller_wallet_id, v_seller_id, 0, 0, 0, 0, NOW(), NOW());
         v_seller_balance := 0;
-        RAISE NOTICE '✅ تم إنشاء محفظة للبائع برصيد 0';
+        RAISE NOTICE '✅ تم إنشاء محفظة للبائع';
     ELSE
         RAISE NOTICE '✅ محفظة البائع موجودة - الرصيد: % ج.م', v_seller_balance;
     END IF;
 
     -- ═══════════════════════════════════════════════════════════════
-    -- الخطوة 1.1ب: جلب المشتري (هدى المشتريات - test10@xchange.eg)
+    -- الخطوة 1.1ب: جلب المشتري (هدى المشتريات)
     -- ═══════════════════════════════════════════════════════════════
     RAISE NOTICE '';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    RAISE NOTICE '📌 الخطوة 1.1ب: التحقق من المشتري (هدى المشتريات)';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    RAISE NOTICE '📌 الخطوة 1.1ب: التحقق من المشتري';
 
     SELECT id, COALESCE(full_name, 'هدى المشتريات') INTO v_buyer_id, v_buyer_name
     FROM users WHERE email = 'test10@xchange.eg' LIMIT 1;
 
     IF v_buyer_id IS NULL THEN
-        RAISE EXCEPTION '❌ المشتري test10@xchange.eg غير موجود! شغّل UAT_SEED_DATA.sql أولاً';
+        RAISE EXCEPTION '❌ المشتري test10@xchange.eg غير موجود!';
     END IF;
 
     RAISE NOTICE '✅ المشتري: % (ID: %)', v_buyer_name, v_buyer_id;
 
-    -- التحقق من محفظة المشتري أو إنشاؤها مع رصيد
+    -- التحقق من محفظة المشتري
     SELECT id, balance INTO v_buyer_wallet_id, v_buyer_balance
     FROM wallets WHERE user_id = v_buyer_id LIMIT 1;
 
     IF v_buyer_wallet_id IS NULL THEN
-        v_buyer_wallet_id := 'wallet-buyer-' || gen_random_uuid()::TEXT;
+        v_buyer_wallet_id := 'uat1-wallet-b-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
         INSERT INTO wallets (id, user_id, balance, frozen_balance, lifetime_earned, lifetime_spent, created_at, updated_at)
         VALUES (v_buyer_wallet_id, v_buyer_id, 100000, 0, 0, 0, NOW(), NOW());
         v_buyer_balance := 100000;
         RAISE NOTICE '✅ تم إنشاء محفظة للمشتري برصيد 100,000 ج.م';
     ELSE
-        -- تأكد من وجود رصيد كافي
         IF v_buyer_balance < v_item_price THEN
             UPDATE wallets SET balance = 100000, updated_at = NOW() WHERE id = v_buyer_wallet_id;
             v_buyer_balance := 100000;
@@ -114,503 +110,323 @@ BEGIN
     END IF;
 
     -- ═══════════════════════════════════════════════════════════════
-    -- الخطوة 1.2: إنشاء المنتج (iPhone 14 Pro Max)
+    -- الخطوة 1.2: إنشاء المنتج
     -- ═══════════════════════════════════════════════════════════════
     RAISE NOTICE '';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    RAISE NOTICE '📌 الخطوة 1.2: إنشاء المنتج (iPhone 14 Pro Max)';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    RAISE NOTICE '📌 الخطوة 1.2: إنشاء المنتج';
 
-    -- الحصول على فئة الإلكترونيات
+    -- الحصول على فئة (باستخدام name_ar و name_en)
     SELECT id, name_ar INTO v_category_id, v_category_name FROM categories
-    WHERE name_ar ILIKE '%إلكترونيات%' OR name_en ILIKE '%electronics%' OR name_ar ILIKE '%هواتف%' OR name_en ILIKE '%phones%'
+    WHERE name_ar ILIKE '%إلكترونيات%' OR name_en ILIKE '%electronics%'
+       OR name_ar ILIKE '%هواتف%' OR name_en ILIKE '%phones%'
     LIMIT 1;
 
     IF v_category_id IS NULL THEN
         SELECT id, name_ar INTO v_category_id, v_category_name FROM categories LIMIT 1;
     END IF;
 
-    RAISE NOTICE 'ℹ️  الفئة: % (ID: %)', v_category_name, v_category_id;
+    IF v_category_id IS NULL THEN
+        RAISE EXCEPTION '❌ لا توجد فئات في قاعدة البيانات!';
+    END IF;
 
-    -- إنشاء المنتج
+    RAISE NOTICE '✅ الفئة: % (ID: %)', v_category_name, v_category_id;
+
+    -- إنشاء المنتج (بدون governorate/city - يستخدم location)
     v_item_id := 'uat1-item-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
 
     INSERT INTO items (
-        id, title, description,
-        category_id, seller_id,
-        estimated_value, condition,
-        governorate, city,
-        status, open_to_exchange,
-        images,
+        id, seller_id, title, description,
+        category_id, condition, estimated_value,
+        location, images, status,
         created_at, updated_at
     ) VALUES (
         v_item_id,
-        'iPhone 14 Pro Max 256GB - Deep Purple',
-        'آيفون 14 برو ماكس 256 جيجا، لون بنفسجي غامق (Deep Purple).
-استخدام شهرين فقط، حالة ممتازة مثل الجديد.
-البطارية 98% - بدون أي خدوش.
-يشمل:
-- العلبة الأصلية
-- الشاحن والكابل
-- فاتورة الشراء
-- ضمان أبل حتى نوفمبر 2025
-
-📍 المعاينة متاحة في مدينة نصر
-📞 التواصل واتساب فقط',
-        v_category_id,
         v_seller_id,
-        v_item_price,
+        'iPhone 14 Pro Max 256GB - UAT Test',
+        'آيفون 14 برو ماكس 256 جيجا، لون بنفسجي غامق. استخدام شهرين فقط، حالة ممتازة.',
+        v_category_id,
         'LIKE_NEW',
-        'القاهرة',
-        'مدينة نصر',
+        v_item_price,
+        'القاهرة - مدينة نصر',
+        ARRAY['https://example.com/iphone1.jpg'],
         'ACTIVE',
-        false,
-        ARRAY[
-            'https://images.unsplash.com/photo-1678652197831-2d180705cd2c?w=800',
-            'https://images.unsplash.com/photo-1678652197831-2d180705cd2c?w=800'
-        ],
         NOW(),
         NOW()
     );
 
-    RAISE NOTICE '✅ تم إنشاء المنتج بنجاح';
-    RAISE NOTICE '   📱 المنتج: iPhone 14 Pro Max 256GB';
-    RAISE NOTICE '   💰 السعر: % ج.م', v_item_price;
-    RAISE NOTICE '   🏷️  الحالة: LIKE_NEW';
-    RAISE NOTICE '   🆔 ID: %', v_item_id;
+    RAISE NOTICE '✅ تم إنشاء المنتج: %', v_item_id;
 
     -- ═══════════════════════════════════════════════════════════════
     -- الخطوة 1.3: إنشاء قائمة البيع (Listing)
     -- ═══════════════════════════════════════════════════════════════
     RAISE NOTICE '';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    RAISE NOTICE '📌 الخطوة 1.3: إنشاء قائمة البيع (Listing)';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    RAISE NOTICE '📌 الخطوة 1.3: إنشاء قائمة البيع';
 
     v_listing_id := 'uat1-listing-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
 
+    -- listings تستخدم listing_type و views (وليس status و views_count)
     INSERT INTO listings (
         id, item_id, user_id,
-        price, currency,
-        status, allow_barter, allow_negotiation,
-        minimum_price,
-        views_count,
+        listing_type, price, currency,
+        status, views,
         created_at, updated_at
     ) VALUES (
         v_listing_id,
         v_item_id,
         v_seller_id,
+        'DIRECT_SALE',
         v_item_price,
         'EGP',
         'ACTIVE',
-        false,
-        true,
-        40000,
         0,
         NOW(),
         NOW()
     );
 
-    RAISE NOTICE '✅ تم إنشاء قائمة البيع';
-    RAISE NOTICE '   💵 السعر: % ج.م', v_item_price;
-    RAISE NOTICE '   📉 أقل سعر للتفاوض: 40,000 ج.م';
-    RAISE NOTICE '   🔄 المقايضة: غير متاحة';
-    RAISE NOTICE '   🆔 ID: %', v_listing_id;
+    RAISE NOTICE '✅ تم إنشاء القائمة: % - السعر: % ج.م', v_listing_id, v_item_price;
 
     -- ═══════════════════════════════════════════════════════════════
-    -- الخطوة 1.4: محاكاة بحث المشتري ومشاهدة المنتج
+    -- الخطوة 1.4: محاكاة مشاهدة المنتج
     -- ═══════════════════════════════════════════════════════════════
     RAISE NOTICE '';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    RAISE NOTICE '📌 الخطوة 1.4: المشتري يبحث ويشاهد المنتج';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    RAISE NOTICE '📌 الخطوة 1.4: المشتري يشاهد المنتج';
 
-    UPDATE listings SET views_count = views_count + 1 WHERE id = v_listing_id;
+    UPDATE listings SET views = views + 1 WHERE id = v_listing_id;
+    UPDATE items SET views = views + 1 WHERE id = v_item_id;
 
-    RAISE NOTICE '✅ % شاهد المنتج', v_buyer_name;
-    RAISE NOTICE '   🔍 بحث عن: iPhone 14';
-    RAISE NOTICE '   👁️  المشاهدات: 1';
+    RAISE NOTICE '✅ تم تسجيل المشاهدة';
 
     -- ═══════════════════════════════════════════════════════════════
-    -- الخطوة 1.5 + 1.6: إنشاء الطلب مع Escrow
+    -- الخطوة 1.5: إنشاء المعاملة (Transaction)
     -- ═══════════════════════════════════════════════════════════════
     RAISE NOTICE '';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    RAISE NOTICE '📌 الخطوة 1.5 + 1.6: المشتري يُنشئ الطلب';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    RAISE NOTICE '📌 الخطوة 1.5: إنشاء معاملة الشراء';
 
-    v_order_id := 'uat1-order-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
+    v_transaction_id := 'uat1-trans-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
 
-    INSERT INTO orders (
-        id, buyer_id, seller_id,
-        listing_id, item_id,
-        total_amount, currency,
-        status, payment_method, payment_status,
-        shipping_address,
+    -- transactions تستخدم listing_id, transaction_type, payment_status, delivery_status
+    INSERT INTO transactions (
+        id, listing_id,
+        buyer_id, seller_id,
+        transaction_type, amount, currency,
+        payment_method, payment_status, delivery_status,
         created_at, updated_at
     ) VALUES (
-        v_order_id,
+        v_transaction_id,
+        v_listing_id,
         v_buyer_id,
         v_seller_id,
-        v_listing_id,
-        v_item_id,
+        'DIRECT_SALE',
         v_item_price,
         'EGP',
-        'PENDING',
         'WALLET',
         'PENDING',
-        jsonb_build_object(
-            'name', v_buyer_name,
-            'governorate', 'القاهرة',
-            'city', 'مصر الجديدة',
-            'street', '30 شارع الميرغني',
-            'building', '15',
-            'floor', '3',
-            'apartment', '5',
-            'phone', '+201000000010',
-            'notes', 'برجاء الاتصال قبل الوصول'
-        ),
+        'PENDING',
         NOW(),
         NOW()
     );
 
-    RAISE NOTICE '✅ تم إنشاء الطلب';
-    RAISE NOTICE '   🆔 Order ID: %', v_order_id;
-    RAISE NOTICE '   📦 الحالة: PENDING';
+    RAISE NOTICE '✅ تم إنشاء المعاملة: %', v_transaction_id;
 
     -- خصم المبلغ من محفظة المشتري
-    UPDATE wallets
-    SET balance = balance - v_item_price, updated_at = NOW()
+    UPDATE wallets SET balance = balance - v_item_price, updated_at = NOW()
     WHERE id = v_buyer_wallet_id;
 
     RAISE NOTICE '✅ تم خصم % ج.م من محفظة المشتري', v_item_price;
-    RAISE NOTICE '   💰 الرصيد الجديد: % ج.م', (v_buyer_balance - v_item_price);
 
-    -- إنشاء سجل Escrow
+    -- ═══════════════════════════════════════════════════════════════
+    -- الخطوة 1.6: إنشاء Escrow
+    -- ═══════════════════════════════════════════════════════════════
+    RAISE NOTICE '';
+    RAISE NOTICE '📌 الخطوة 1.6: حجز المبلغ في Escrow';
+
     v_escrow_id := 'uat1-escrow-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
 
-    INSERT INTO escrow_transactions (
-        id, order_id,
+    -- escrows (وليس escrow_transactions)
+    INSERT INTO escrows (
+        id, escrow_type,
         buyer_id, seller_id,
         amount, currency,
-        status,
+        transaction_id, item_id,
+        status, funded_at,
         created_at, updated_at
     ) VALUES (
         v_escrow_id,
-        v_order_id,
+        'DIRECT_SALE',
         v_buyer_id,
         v_seller_id,
         v_item_price,
         'EGP',
-        'HELD',
+        v_transaction_id,
+        v_item_id,
+        'FUNDED',
+        NOW(),
         NOW(),
         NOW()
     );
 
-    RAISE NOTICE '✅ تم حجز المبلغ في Escrow';
-    RAISE NOTICE '   🔒 Escrow ID: %', v_escrow_id;
-    RAISE NOTICE '   💵 المبلغ المحجوز: % ج.م', v_item_price;
+    -- تحديث حالة الدفع
+    UPDATE transactions SET payment_status = 'HELD' WHERE id = v_transaction_id;
 
-    UPDATE orders SET payment_status = 'ESCROW', updated_at = NOW() WHERE id = v_order_id;
+    RAISE NOTICE '✅ تم حجز المبلغ في Escrow: %', v_escrow_id;
 
-    -- إشعار للبائع
-    INSERT INTO notifications (id, user_id, type, title, message, data, read, created_at)
+    -- إشعار للبائع (notifications تستخدم is_read و metadata)
+    INSERT INTO notifications (id, user_id, type, title, message, metadata, is_read, created_at)
     VALUES (
         'uat1-notif-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8),
         v_seller_id,
-        'NEW_ORDER',
-        '🎉 طلب جديد!',
-        'لديك طلب شراء جديد لـ iPhone 14 Pro Max من ' || v_buyer_name,
-        jsonb_build_object('orderId', v_order_id, 'amount', v_item_price),
-        false, NOW()
+        'TRANSACTION',
+        'طلب شراء جديد!',
+        'لديك طلب شراء جديد لـ iPhone 14 Pro Max',
+        jsonb_build_object('transactionId', v_transaction_id, 'amount', v_item_price),
+        false,
+        NOW()
     );
 
     RAISE NOTICE '✅ تم إرسال إشعار للبائع';
 
     -- ═══════════════════════════════════════════════════════════════
-    -- الخطوة 1.7: تأكيد الطلب من البائع
+    -- الخطوة 1.7: تأكيد وشحن الطلب
     -- ═══════════════════════════════════════════════════════════════
     RAISE NOTICE '';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    RAISE NOTICE '📌 الخطوة 1.7: البائع يؤكد الطلب';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    RAISE NOTICE '📌 الخطوة 1.7: البائع يؤكد ويشحن';
 
-    UPDATE orders
-    SET status = 'CONFIRMED',
-        estimated_delivery = NOW() + INTERVAL '3 days',
+    UPDATE transactions
+    SET delivery_status = 'SHIPPED',
+        tracking_number = 'ARX-EG-' || UPPER(SUBSTRING(v_transaction_id, 12, 8)),
         updated_at = NOW()
-    WHERE id = v_order_id;
+    WHERE id = v_transaction_id;
 
-    RAISE NOTICE '✅ % أكد الطلب', v_seller_name;
-    RAISE NOTICE '   📦 الحالة: PENDING → CONFIRMED';
-    RAISE NOTICE '   📅 التسليم المتوقع: خلال 3 أيام';
-
-    -- إشعار للمشتري
-    INSERT INTO notifications (id, user_id, type, title, message, data, read, created_at)
+    -- إشعار المشتري
+    INSERT INTO notifications (id, user_id, type, title, message, metadata, is_read, created_at)
     VALUES (
         'uat1-notif-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8),
         v_buyer_id,
-        'ORDER_CONFIRMED',
-        '✅ تم تأكيد طلبك',
-        'قام ' || v_seller_name || ' بتأكيد طلبك. سيتم الشحن خلال 24-48 ساعة.',
-        jsonb_build_object('orderId', v_order_id),
-        false, NOW()
+        'TRANSACTION',
+        'تم شحن طلبك!',
+        'طلبك في الطريق - رقم التتبع: ARX-EG-' || UPPER(SUBSTRING(v_transaction_id, 12, 8)),
+        jsonb_build_object('transactionId', v_transaction_id),
+        false,
+        NOW()
     );
-
-    RAISE NOTICE '✅ تم إرسال إشعار للمشتري';
-
-    -- ═══════════════════════════════════════════════════════════════
-    -- الخطوة 1.8: شحن الطلب
-    -- ═══════════════════════════════════════════════════════════════
-    RAISE NOTICE '';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    RAISE NOTICE '📌 الخطوة 1.8: البائع يشحن الطلب';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-
-    UPDATE orders
-    SET status = 'SHIPPED',
-        tracking_number = 'ARX-EG-' || UPPER(SUBSTRING(v_order_id, 12, 8)),
-        shipping_company = 'Aramex',
-        shipped_at = NOW(),
-        updated_at = NOW()
-    WHERE id = v_order_id;
 
     RAISE NOTICE '✅ تم شحن الطلب';
-    RAISE NOTICE '   📦 الحالة: CONFIRMED → SHIPPED';
-    RAISE NOTICE '   🚚 شركة الشحن: Aramex';
-    RAISE NOTICE '   📋 رقم التتبع: ARX-EG-%', UPPER(SUBSTRING(v_order_id, 12, 8));
-
-    -- إشعار المشتري بالشحن
-    INSERT INTO notifications (id, user_id, type, title, message, data, read, created_at)
-    VALUES (
-        'uat1-notif-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8),
-        v_buyer_id,
-        'ORDER_SHIPPED',
-        '🚚 طلبك في الطريق!',
-        'تم شحن طلبك عبر Aramex. رقم التتبع: ARX-EG-' || UPPER(SUBSTRING(v_order_id, 12, 8)),
-        jsonb_build_object('orderId', v_order_id, 'trackingNumber', 'ARX-EG-' || UPPER(SUBSTRING(v_order_id, 12, 8)), 'carrier', 'Aramex'),
-        false, NOW()
-    );
-
-    RAISE NOTICE '✅ تم إرسال إشعار الشحن للمشتري';
 
     -- ═══════════════════════════════════════════════════════════════
-    -- الخطوة 1.9: استلام الطلب والتقييم
+    -- الخطوة 1.8: استلام الطلب
     -- ═══════════════════════════════════════════════════════════════
     RAISE NOTICE '';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
-    RAISE NOTICE '📌 الخطوة 1.9: المشتري يستلم ويُقيّم';
-    RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+    RAISE NOTICE '📌 الخطوة 1.8: المشتري يستلم';
 
-    -- تحديث حالة الطلب
-    UPDATE orders
-    SET status = 'DELIVERED',
+    -- تحديث المعاملة
+    UPDATE transactions
+    SET delivery_status = 'DELIVERED',
         payment_status = 'COMPLETED',
-        delivered_at = NOW(),
+        completed_at = NOW(),
         updated_at = NOW()
-    WHERE id = v_order_id;
-
-    RAISE NOTICE '✅ % أكد الاستلام', v_buyer_name;
-    RAISE NOTICE '   📦 الحالة: SHIPPED → DELIVERED';
+    WHERE id = v_transaction_id;
 
     -- تحرير Escrow
-    UPDATE escrow_transactions
+    UPDATE escrows
     SET status = 'RELEASED',
         released_at = NOW(),
         updated_at = NOW()
     WHERE id = v_escrow_id;
 
-    RAISE NOTICE '✅ تم تحرير المبلغ من Escrow';
-
     -- تحويل المبلغ للبائع
-    UPDATE wallets
-    SET balance = balance + v_seller_amount,
-        updated_at = NOW()
+    UPDATE wallets SET balance = balance + v_seller_amount, updated_at = NOW()
     WHERE id = v_seller_wallet_id;
 
-    RAISE NOTICE '✅ تم تحويل % ج.م إلى محفظة البائع', v_seller_amount;
-    RAISE NOTICE '   💰 رسوم المنصة (5%%): % ج.م', v_platform_fee;
+    RAISE NOTICE '✅ تم تحويل % ج.م للبائع', v_seller_amount;
 
-    -- تسجيل المعاملة
-    v_transaction_id := 'uat1-trans-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
-
-    INSERT INTO transactions (
-        id, order_id,
-        from_user_id, to_user_id,
-        amount, currency,
-        type, status,
-        platform_fee,
-        created_at
-    ) VALUES (
-        v_transaction_id,
-        v_order_id,
-        v_buyer_id,
-        v_seller_id,
-        v_item_price,
-        'EGP',
-        'PURCHASE',
-        'COMPLETED',
-        v_platform_fee,
-        NOW()
-    );
-
-    RAISE NOTICE '✅ تم تسجيل المعاملة: %', v_transaction_id;
-
-    -- تحديث حالة المنتج
+    -- تحديث حالة المنتج والقائمة
     UPDATE items SET status = 'SOLD', updated_at = NOW() WHERE id = v_item_id;
     UPDATE listings SET status = 'SOLD', updated_at = NOW() WHERE id = v_listing_id;
 
     RAISE NOTICE '✅ تم تحديث حالة المنتج إلى SOLD';
 
-    -- إضافة التقييم
+    -- ═══════════════════════════════════════════════════════════════
+    -- الخطوة 1.9: التقييم
+    -- ═══════════════════════════════════════════════════════════════
+    RAISE NOTICE '';
+    RAISE NOTICE '📌 الخطوة 1.9: إضافة التقييم';
+
     v_review_id := 'uat1-review-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
 
-    INSERT INTO reviews (id, order_id, reviewer_id, reviewed_id, rating, comment, created_at)
-    VALUES (
+    -- reviews تستخدم transaction_id و overall_rating
+    INSERT INTO reviews (
+        id, transaction_id,
+        reviewer_id, reviewed_id,
+        review_type, overall_rating,
+        comment, is_verified_purchase,
+        created_at, updated_at
+    ) VALUES (
         v_review_id,
-        v_order_id,
+        v_transaction_id,
         v_buyer_id,
         v_seller_id,
+        'SELLER_REVIEW',
         5,
-        'تجربة شراء ممتازة! 🌟
-المنتج وصل بحالة ممتازة ومطابق للوصف تماماً.
-البائع متعاون جداً والتوصيل كان سريع.
-أنصح بالتعامل معه بشدة!',
+        'تجربة شراء ممتازة! المنتج مطابق للوصف والبائع متعاون.',
+        true,
+        NOW(),
         NOW()
     );
 
-    RAISE NOTICE '✅ تم إضافة التقييم';
-    RAISE NOTICE '   ⭐ التقييم: 5/5 نجوم';
-
-    -- منح نقاط XChange
-    INSERT INTO exchange_points (id, user_id, points, type, description, reference_id, created_at)
-    VALUES (
-        'uat1-points-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8),
-        v_buyer_id,
-        450,
-        'PURCHASE_REWARD',
-        'مكافأة شراء ناجح - iPhone 14 Pro Max',
-        v_order_id,
-        NOW()
-    );
-
-    RAISE NOTICE '✅ تم منح 450 نقطة XChange للمشتري';
+    RAISE NOTICE '✅ تم إضافة تقييم 5 نجوم';
 
     -- إشعار البائع بإتمام البيع
-    INSERT INTO notifications (id, user_id, type, title, message, data, read, created_at)
+    INSERT INTO notifications (id, user_id, type, title, message, metadata, is_read, created_at)
     VALUES (
         'uat1-notif-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8),
         v_seller_id,
-        'ORDER_COMPLETED',
-        '💰 تم إتمام البيع!',
-        'تهانينا! تم تحويل ' || v_seller_amount || ' ج.م إلى محفظتك. حصلت على تقييم 5 نجوم!',
-        jsonb_build_object('orderId', v_order_id, 'amount', v_seller_amount, 'rating', 5),
-        false, NOW()
+        'TRANSACTION',
+        'تم إتمام البيع!',
+        'تهانينا! تم تحويل ' || v_seller_amount || ' ج.م إلى محفظتك',
+        jsonb_build_object('transactionId', v_transaction_id, 'amount', v_seller_amount),
+        false,
+        NOW()
     );
 
     -- ═══════════════════════════════════════════════════════════════
     -- ملخص النتائج
     -- ═══════════════════════════════════════════════════════════════
     RAISE NOTICE '';
-    RAISE NOTICE '';
-    RAISE NOTICE '╔══════════════════════════════════════════════════════════════════╗';
-    RAISE NOTICE '║            📊 ملخص نتائج السيناريو الأول                         ║';
-    RAISE NOTICE '╠══════════════════════════════════════════════════════════════════╣';
-    RAISE NOTICE '║                                                                  ║';
-    RAISE NOTICE '║  👤 البائع: % (%)', v_seller_name, 'test1@xchange.eg';
-    RAISE NOTICE '║     💰 الرصيد السابق: % ج.م', COALESCE(v_seller_balance, 0);
-    RAISE NOTICE '║     💰 الرصيد الحالي: % ج.م (+%)', COALESCE(v_seller_balance, 0) + v_seller_amount, v_seller_amount;
-    RAISE NOTICE '║                                                                  ║';
-    RAISE NOTICE '║  👤 المشتري: % (%)', v_buyer_name, 'test10@xchange.eg';
-    RAISE NOTICE '║     💰 الرصيد السابق: % ج.م', v_buyer_balance;
-    RAISE NOTICE '║     💰 الرصيد الحالي: % ج.م (-% ج.م)', v_buyer_balance - v_item_price, v_item_price;
-    RAISE NOTICE '║     🏆 نقاط XChange: +450 نقطة';
-    RAISE NOTICE '║                                                                  ║';
-    RAISE NOTICE '║  📱 المنتج: iPhone 14 Pro Max 256GB';
-    RAISE NOTICE '║     🆔 Item ID: %', v_item_id;
-    RAISE NOTICE '║     📋 Listing ID: %', v_listing_id;
-    RAISE NOTICE '║     🏷️  الحالة: SOLD';
-    RAISE NOTICE '║                                                                  ║';
-    RAISE NOTICE '║  📦 الطلب:';
-    RAISE NOTICE '║     🆔 Order ID: %', v_order_id;
-    RAISE NOTICE '║     📋 الحالة: DELIVERED ✅';
-    RAISE NOTICE '║     💵 المبلغ: % ج.م', v_item_price;
-    RAISE NOTICE '║                                                                  ║';
-    RAISE NOTICE '║  💰 المعاملة المالية:';
-    RAISE NOTICE '║     🆔 Transaction ID: %', v_transaction_id;
-    RAISE NOTICE '║     💵 إجمالي: % ج.م', v_item_price;
-    RAISE NOTICE '║     🏦 رسوم المنصة (5%%): % ج.م', v_platform_fee;
-    RAISE NOTICE '║     💸 صافي البائع: % ج.م', v_seller_amount;
-    RAISE NOTICE '║                                                                  ║';
-    RAISE NOTICE '║  ⭐ التقييم: 5/5 نجوم';
-    RAISE NOTICE '║                                                                  ║';
-    RAISE NOTICE '╚══════════════════════════════════════════════════════════════════╝';
-    RAISE NOTICE '';
+    RAISE NOTICE '══════════════════════════════════════════════════════════════════';
+    RAISE NOTICE '📊 ملخص نتائج السيناريو الأول';
+    RAISE NOTICE '══════════════════════════════════════════════════════════════════';
+    RAISE NOTICE '👤 البائع: % - رصيد جديد: % ج.م', v_seller_name, v_seller_balance + v_seller_amount;
+    RAISE NOTICE '👤 المشتري: % - رصيد جديد: % ج.م', v_buyer_name, v_buyer_balance - v_item_price;
+    RAISE NOTICE '📱 المنتج: % - الحالة: SOLD', v_item_id;
+    RAISE NOTICE '💳 المعاملة: % - المبلغ: % ج.م', v_transaction_id, v_item_price;
+    RAISE NOTICE '🏦 رسوم المنصة: % ج.م (5%%)', v_platform_fee;
+    RAISE NOTICE '⭐ التقييم: 5/5 نجوم';
+    RAISE NOTICE '══════════════════════════════════════════════════════════════════';
     RAISE NOTICE '✅ اكتمل السيناريو الأول بنجاح!';
-    RAISE NOTICE '';
+    RAISE NOTICE '══════════════════════════════════════════════════════════════════';
 
 END $$;
 
 -- ═══════════════════════════════════════════════════════════════════
--- 🔍 استعلامات للتحقق من النتائج
+-- 🔍 استعلامات التحقق
 -- ═══════════════════════════════════════════════════════════════════
 
--- 1. عرض المستخدمين المستخدمين في الاختبار
 SELECT '👥 المستخدمون:' as section;
 SELECT id, email, full_name, governorate, city
-FROM users
-WHERE email IN ('test1@xchange.eg', 'test10@xchange.eg');
+FROM users WHERE email IN ('test1@xchange.eg', 'test10@xchange.eg');
 
--- 2. عرض أرصدة المحافظ
 SELECT '💰 المحافظ:' as section;
-SELECT w.id, u.email, u.full_name, w.balance, w.frozen_balance
-FROM wallets w
-JOIN users u ON w.user_id = u.id
+SELECT w.id, u.email, u.full_name, w.balance
+FROM wallets w JOIN users u ON w.user_id = u.id
 WHERE u.email IN ('test1@xchange.eg', 'test10@xchange.eg');
 
--- 3. عرض الطلب الذي تم إنشاؤه
-SELECT '📦 الطلبات الأخيرة:' as section;
-SELECT
-    o.id,
-    o.status,
-    o.payment_status,
-    o.total_amount,
-    o.tracking_number,
-    o.created_at
-FROM orders o
-WHERE o.id LIKE 'uat1-%'
-ORDER BY o.created_at DESC
-LIMIT 3;
+SELECT '📦 المعاملات الأخيرة:' as section;
+SELECT id, transaction_type, payment_status, delivery_status, amount
+FROM transactions WHERE id LIKE 'uat1-%' ORDER BY created_at DESC LIMIT 5;
 
--- 4. عرض المعاملات
-SELECT '💳 المعاملات:' as section;
-SELECT id, type, status, amount, platform_fee, created_at
-FROM transactions
-WHERE id LIKE 'uat1-%'
-ORDER BY created_at DESC
-LIMIT 3;
-
--- 5. عرض التقييمات
 SELECT '⭐ التقييمات:' as section;
-SELECT
-    r.id,
-    r.rating,
-    LEFT(r.comment, 50) || '...' as comment_preview,
-    u.email as reviewer
-FROM reviews r
-JOIN users u ON r.reviewer_id = u.id
-WHERE r.id LIKE 'uat1-%';
+SELECT id, overall_rating, LEFT(comment, 40) as comment_preview
+FROM reviews WHERE id LIKE 'uat1-%';
 
--- 6. عرض الإشعارات
 SELECT '🔔 الإشعارات:' as section;
-SELECT
-    n.id,
-    u.email,
-    n.type,
-    n.title,
-    n.read,
-    n.created_at
-FROM notifications n
-JOIN users u ON n.user_id = u.id
-WHERE n.id LIKE 'uat1-%'
-ORDER BY n.created_at DESC;
+SELECT id, type, title, is_read FROM notifications WHERE id LIKE 'uat1-%';
