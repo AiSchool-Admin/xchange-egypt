@@ -147,6 +147,17 @@ const PLATFORM_MARKETS = [
     stats: { listings: 1800, daily: 45 },
     features: ['أسعار حية', 'استلام منزلي', 'ESG'],
   },
+  {
+    id: 'services',
+    name: 'سوق الخدمات',
+    nameEn: 'Services',
+    description: 'خدمات احترافية مع ضمان Xchange Protect',
+    icon: '🔧',
+    href: '/services',
+    gradient: 'from-indigo-500 to-blue-600',
+    stats: { listings: 2500, daily: 65 },
+    features: ['Xchange Protect', 'مقدمين معتمدين', 'دفع آمن'],
+  },
 ];
 
 // ============================================
@@ -481,7 +492,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">
-              🏪 11 سوق متخصص في مكان واحد
+              🏪 12 سوق متخصص في مكان واحد
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               كل سوق مصمم بعناية لتجربة شراء وبيع مثالية مع ميزات فريدة وحماية كاملة
