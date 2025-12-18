@@ -125,7 +125,7 @@ BEGIN
     (gen_random_uuid()::TEXT, u3, 'listing', 'Help creating camera listing', 'ACTIVE', NOW(), NOW()),
     (gen_random_uuid()::TEXT, u5, 'help', 'كيفية البيع بالمزاد', 'CLOSED', NOW() - INTERVAL '3 days', NOW()),
     (gen_random_uuid()::TEXT, u6, 'listing', 'إنشاء مناقصة لابتوبات', 'ACTIVE', NOW(), NOW())
-    RETURNING id INTO ai_conv1;
+    ON CONFLICT DO NOTHING;
 
     SELECT id INTO ai_conv1 FROM ai_conversations WHERE user_id = u1 ORDER BY created_at DESC LIMIT 1;
     SELECT id INTO ai_conv2 FROM ai_conversations WHERE user_id = u2 ORDER BY created_at DESC LIMIT 1;
