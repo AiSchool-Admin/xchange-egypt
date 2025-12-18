@@ -67,8 +67,8 @@ BEGIN
 
     IF v_seller_wallet_id IS NULL THEN
         v_seller_wallet_id := 'wallet-seller-' || gen_random_uuid()::TEXT;
-        INSERT INTO wallets (id, user_id, balance, currency, created_at, updated_at)
-        VALUES (v_seller_wallet_id, v_seller_id, 0, 'EGP', NOW(), NOW());
+        INSERT INTO wallets (id, user_id, balance, frozen_balance, lifetime_earned, lifetime_spent, created_at, updated_at)
+        VALUES (v_seller_wallet_id, v_seller_id, 0, 0, 0, 0, NOW(), NOW());
         v_seller_balance := 0;
         RAISE NOTICE '✅ تم إنشاء محفظة للبائع برصيد 0';
     ELSE
@@ -98,8 +98,8 @@ BEGIN
 
     IF v_buyer_wallet_id IS NULL THEN
         v_buyer_wallet_id := 'wallet-buyer-' || gen_random_uuid()::TEXT;
-        INSERT INTO wallets (id, user_id, balance, currency, created_at, updated_at)
-        VALUES (v_buyer_wallet_id, v_buyer_id, 100000, 'EGP', NOW(), NOW());
+        INSERT INTO wallets (id, user_id, balance, frozen_balance, lifetime_earned, lifetime_spent, created_at, updated_at)
+        VALUES (v_buyer_wallet_id, v_buyer_id, 100000, 0, 0, 0, NOW(), NOW());
         v_buyer_balance := 100000;
         RAISE NOTICE '✅ تم إنشاء محفظة للمشتري برصيد 100,000 ج.م';
     ELSE
@@ -563,7 +563,7 @@ WHERE email IN ('test1@xchange.eg', 'test10@xchange.eg');
 
 -- 2. عرض أرصدة المحافظ
 SELECT '💰 المحافظ:' as section;
-SELECT w.id, u.email, u.full_name, w.balance, w.currency
+SELECT w.id, u.email, u.full_name, w.balance, w.frozen_balance
 FROM wallets w
 JOIN users u ON w.user_id = u.id
 WHERE u.email IN ('test1@xchange.eg', 'test10@xchange.eg');
