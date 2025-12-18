@@ -436,7 +436,7 @@ BEGIN
     -- محاكاة دفع Instapay
     RAISE NOTICE '';
     RAISE NOTICE 'جاري معالجة دفع Instapay...';
-    RAISE NOTICE 'رقم المرجع: INSTA-AUCTION-' || UPPER(SUBSTRING(v_auction_id, 13, 8));
+    RAISE NOTICE 'رقم المرجع: INSTA-AUCTION-%', UPPER(SUBSTRING(v_auction_id, 13, 8));
 
     -- إنشاء Escrow
     v_escrow_id := 'uat2-escrow-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
