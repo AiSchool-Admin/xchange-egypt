@@ -266,8 +266,8 @@ BEGIN
         NOW()
     );
 
-    -- تحديث حالة الدفع
-    UPDATE transactions SET payment_status = 'HELD' WHERE id = v_transaction_id;
+    -- ملاحظة: PaymentStatus يبقى PENDING حتى يتم التسليم ثم يصبح COMPLETED
+    -- (لا يوجد HELD في PaymentStatus enum)
 
     RAISE NOTICE '✅ تم حجز المبلغ في Escrow: %', v_escrow_id;
 
@@ -341,8 +341,10 @@ BEGIN
     RAISE NOTICE '✅ تم تحويل % ج.م للبائع', v_seller_amount;
 
     -- تحديث حالة المنتج والقائمة
+    -- ItemStatus: DRAFT, ACTIVE, SOLD, TRADED, ARCHIVED, DELETED
+    -- ListingStatus: ACTIVE, COMPLETED, CANCELLED, EXPIRED
     UPDATE items SET status = 'SOLD', updated_at = NOW() WHERE id = v_item_id;
-    UPDATE listings SET status = 'SOLD', updated_at = NOW() WHERE id = v_listing_id;
+    UPDATE listings SET status = 'COMPLETED', updated_at = NOW() WHERE id = v_listing_id;
 
     RAISE NOTICE '✅ تم تحديث حالة المنتج إلى SOLD';
 
