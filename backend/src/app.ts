@@ -58,6 +58,7 @@ import mobileRoutes from './routes/mobile.routes';
 import marketsRoutes from './routes/markets.routes';
 import ratingsRoutes from './routes/ratings.routes';
 import tenderAdvancedRoutes from './routes/tender-advanced.routes';
+import transportRoutes from './routes/transport.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -360,6 +361,9 @@ app.use('/api/v1/ratings', ratingsRoutes);
 
 // Tenders Advanced - خدمات المناقصات المتقدمة
 app.use('/api/v1/tenders', tenderAdvancedRoutes);
+
+// Transport - نظام النقل الذكي ومقارنة الأسعار
+app.use('/api/v1/transport', transportRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
