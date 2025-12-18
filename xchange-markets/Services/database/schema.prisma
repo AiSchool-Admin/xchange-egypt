@@ -1,0 +1,1434 @@
+// ============================================
+// Xchange Services Marketplace - Database Schema
+// سوق الخدمات - مخطط قاعدة البيانات
+// ============================================
+// This schema extends the main Xchange schema with services-specific models
+// Copy these models to the main backend/prisma/schema.prisma file
+
+// ============================================
+// Services Marketplace Enums
+// ============================================
+
+enum ServiceProviderStatus {
+  PENDING_VERIFICATION  // في انتظار التحقق
+  VERIFIED              // تم التحقق
+  SUSPENDED             // موقوف
+  REJECTED              // مرفوض
+  BANNED                // محظور
+}
+
+enum VerificationLevel {
+  BASIC                 // Level 1: ID verified only
+  TRUSTED               // Level 2: Background check + 4.5★ + 20 bookings
+  PRO                   // Level 3: Certifications + 4.8★ + 50 bookings
+  ELITE                 // Level 4: Top 5%, special training
+  XCHANGE_CERTIFIED     // Level 5: Xchange Academy graduate
+}
+
+enum ProviderSubscriptionTier {
+  FREE                  // 20% commission, basic listing
+  TRUSTED               // 300 EGP/month, 15% commission, priority
+  PRO                   // 700 EGP/month, 12% commission, Pro badge
+  ELITE                 // 1500 EGP/month, 10% commission, guaranteed same-day
+}
+
+enum ServicePricingType {
+  FIXED                 // سعر ثابت
+  HOURLY                // بالساعة
+  DAILY                 // باليوم
+  QUOTE_BASED           // حسب الاتفاق
+  STARTING_FROM         // يبدأ من
+  PACKAGE               // باقة
+}
+
+enum ServiceLocationType {
+  AT_PROVIDER           // في موقع مقدم الخدمة
+  AT_CUSTOMER           // في موقع العميل
+  ONLINE                // عبر الإنترنت
+  BOTH                  // الاثنان
+}
+
+enum BookingStatus {
+  PENDING               // في الانتظار
+  CONFIRMED             // تم التأكيد
+  PROVIDER_ON_WAY       // مقدم الخدمة في الطريق
+  IN_PROGRESS           // قيد التنفيذ
+  COMPLETED             // مكتمل
+  CANCELLED_BY_CUSTOMER // ملغي من العميل
+  CANCELLED_BY_PROVIDER // ملغي من مقدم الخدمة
+  NO_SHOW               // لم يحضر
+  DISPUTED              // متنازع عليه
+  REFUNDED              // تم الاسترداد
+}
+
+enum ServiceBookingPaymentStatus {
+  PENDING               // في الانتظار
+  HELD_IN_ESCROW        // محجوز في الضمان
+  PARTIALLY_RELEASED    // تم تحرير جزء
+  RELEASED              // تم التحرير
+  REFUNDED              // تم الاسترداد
+  DISPUTED              // متنازع عليه
+}
+
+enum ProtectLevel {
+  NONE                  // بدون حماية
+  BASIC                 // 14 days, free, re-service only
+  STANDARD              // 30 days, +5%, refund or re-service
+  PREMIUM               // 90 days, +10%, refund + compensation
+  ELITE                 // 365 days, +15%, full coverage + insurance
+}
+
+enum ServiceDisputeStatus {
+  OPEN                  // مفتوح
+  UNDER_REVIEW          // قيد المراجعة
+  AWAITING_PROVIDER     // في انتظار رد مقدم الخدمة
+  AWAITING_CUSTOMER     // في انتظار رد العميل
+  MEDIATION             // وساطة
+  RESOLVED_REFUND       // تم الحل - استرداد
+  RESOLVED_PARTIAL      // تم الحل - جزئي
+  RESOLVED_NO_REFUND    // تم الحل - بدون استرداد
+  CLOSED                // مغلق
+}
+
+enum ServiceMilestoneStatus {
+  PENDING               // في الانتظار
+  IN_PROGRESS           // قيد التنفيذ
+  COMPLETED             // مكتمل
+  APPROVED              // معتمد من العميل
+  DISPUTED              // متنازع عليه
+}
+
+enum LinkedMarketplace {
+  CARS                  // سوق السيارات
+  PROPERTIES            // سوق العقارات
+  MOBILES               // سوق الموبايلات
+  GOLD                  // سوق الذهب
+  SILVER                // سوق الفضة
+  LUXURY                // سوق الرفاهية
+  SCRAP                 // سوق التوالف
+  AUCTIONS              // المزادات
+  TENDERS               // المناقصات
+  BARTER                // المقايضة
+  GENERAL               // عام
+}
+
+enum CustomerSubscriptionType {
+  HOME_BASIC            // 300 EGP/month: monthly cleaning + 2 maintenance visits
+  HOME_STANDARD         // 600 EGP/month: + AC, priority, 20% discount
+  HOME_PREMIUM          // 1200 EGP/month: + 24/7 emergency, annual maintenance
+  CAR_BASIC             // 200 EGP/month: oil change + car wash monthly
+  CAR_STANDARD          // 400 EGP/month: + inspection + minor repairs
+  CAR_PREMIUM           // 800 EGP/month: + roadside assistance 24/7
+  BUSINESS_CUSTOM       // Custom pricing for businesses
+}
+
+enum CustomerSubscriptionStatus {
+  ACTIVE                // نشط
+  PAUSED                // متوقف مؤقتاً
+  CANCELLED             // ملغي
+  EXPIRED               // منتهي
+}
+
+enum CertificationType {
+  PROFESSIONAL_LICENSE  // رخصة مهنية
+  TRADE_CERTIFICATE     // شهادة حرفة
+  ACADEMIC_DEGREE       // شهادة أكاديمية
+  TRAINING_CERTIFICATE  // شهادة تدريب
+  XCHANGE_ACADEMY       // شهادة أكاديمية إكسشينج
+  INDUSTRY_CERTIFICATION // شهادة صناعية
+  INSURANCE_CERTIFICATE // شهادة تأمين
+}
+
+enum AcademyCourseStatus {
+  DRAFT                 // مسودة
+  PUBLISHED             // منشور
+  ARCHIVED              // مؤرشف
+}
+
+enum CourseEnrollmentStatus {
+  ENROLLED              // مسجل
+  IN_PROGRESS           // قيد الدراسة
+  COMPLETED             // مكتمل
+  CERTIFIED             // حاصل على الشهادة
+  DROPPED               // انسحب
+}
+
+// ============================================
+// Service Provider Model
+// نموذج مقدم الخدمة
+// ============================================
+
+model ServiceProvider {
+  id                    String                    @id @default(uuid())
+  userId                String                    @unique @map("user_id")
+
+  // Basic Info
+  displayNameAr         String                    @map("display_name_ar")
+  displayNameEn         String?                   @map("display_name_en")
+  bioAr                 String?                   @map("bio_ar")
+  bioEn                 String?                   @map("bio_en")
+  profileImage          String?                   @map("profile_image")
+  coverImage            String?                   @map("cover_image")
+
+  // Business Info
+  businessType          String?                   @map("business_type") // INDIVIDUAL, COMPANY, FREELANCER
+  businessName          String?                   @map("business_name")
+  businessNameAr        String?                   @map("business_name_ar")
+  commercialRegNo       String?                   @map("commercial_reg_no")
+  taxId                 String?                   @map("tax_id")
+
+  // Contact
+  phone                 String
+  alternatePhone        String?                   @map("alternate_phone")
+  whatsapp              String?
+  email                 String
+  website               String?
+
+  // Location
+  governorate           String
+  city                  String
+  district              String?
+  address               String?
+  latitude              Float?
+  longitude             Float?
+  serviceRadius         Int?                      @map("service_radius") // km
+
+  // Verification
+  status                ServiceProviderStatus     @default(PENDING_VERIFICATION)
+  verificationLevel     VerificationLevel         @default(BASIC)
+  nationalIdNumber      String?                   @map("national_id_number")
+  nationalIdImage       String?                   @map("national_id_image")
+  nationalIdVerified    Boolean                   @default(false) @map("national_id_verified")
+  selfieWithId          String?                   @map("selfie_with_id")
+  backgroundCheckPassed Boolean?                  @map("background_check_passed")
+  backgroundCheckDate   DateTime?                 @map("background_check_date")
+
+  // Subscription
+  subscriptionTier      ProviderSubscriptionTier  @default(FREE)
+  subscriptionStartDate DateTime?                 @map("subscription_start_date")
+  subscriptionEndDate   DateTime?                 @map("subscription_end_date")
+  commissionRate        Float                     @default(0.20) @map("commission_rate") // 20% default
+
+  // Stats
+  rating                Float                     @default(0)
+  totalReviews          Int                       @default(0) @map("total_reviews")
+  totalBookings         Int                       @default(0) @map("total_bookings")
+  completedBookings     Int                       @default(0) @map("completed_bookings")
+  cancelledBookings     Int                       @default(0) @map("cancelled_bookings")
+  completionRate        Float                     @default(0) @map("completion_rate")
+  responseTime          Int?                      @map("response_time") // minutes
+  totalEarnings         Float                     @default(0) @map("total_earnings")
+
+  // Settings
+  isAvailable           Boolean                   @default(true) @map("is_available")
+  acceptsInstantBooking Boolean                   @default(false) @map("accepts_instant_booking")
+  acceptsExpressService Boolean                   @default(false) @map("accepts_express_service")
+  expressResponseTime   Int?                      @map("express_response_time") // minutes
+
+  // Bank Info for Payouts
+  bankName              String?                   @map("bank_name")
+  bankAccountName       String?                   @map("bank_account_name")
+  bankAccountNumber     String?                   @map("bank_account_number")
+  bankIban              String?                   @map("bank_iban")
+
+  // Timestamps
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  verifiedAt            DateTime?                 @map("verified_at")
+  lastActiveAt          DateTime?                 @map("last_active_at")
+
+  // Relations
+  user                  User                      @relation("ServiceProviderUser", fields: [userId], references: [id], onDelete: Cascade)
+  services              Service[]
+  bookings              ServiceBooking[]          @relation("ProviderBookings")
+  reviews               ServiceReview[]           @relation("ProviderReviews")
+  availability          ProviderAvailability[]
+  certifications        ProviderCertification[]
+  serviceAreas          ProviderServiceArea[]
+  payouts               ProviderPayout[]
+  academyEnrollments    AcademyEnrollment[]
+
+  @@map("service_providers")
+  @@index([userId])
+  @@index([status])
+  @@index([verificationLevel])
+  @@index([subscriptionTier])
+  @@index([governorate, city])
+  @@index([rating])
+  @@index([isAvailable])
+}
+
+// ============================================
+// Service Category Model
+// نموذج فئة الخدمة
+// ============================================
+
+model ServiceCategory {
+  id                    String                    @id @default(uuid())
+  nameAr                String                    @map("name_ar")
+  nameEn                String                    @map("name_en")
+  slug                  String                    @unique
+  descriptionAr         String?                   @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+  icon                  String?
+  image                 String?
+
+  // Hierarchy
+  parentId              String?                   @map("parent_id")
+  order                 Int                       @default(0)
+  level                 Int                       @default(1) // 1=main, 2=sub, 3=detail
+
+  // Linked Marketplace
+  linkedMarketplace     LinkedMarketplace?        @map("linked_marketplace")
+
+  // Commission
+  defaultCommissionRate Float                     @default(0.15) @map("default_commission_rate")
+
+  // Settings
+  isActive              Boolean                   @default(true) @map("is_active")
+  isFeatured            Boolean                   @default(false) @map("is_featured")
+  requiresCertification Boolean                   @default(false) @map("requires_certification")
+
+  // Timestamps
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  parent                ServiceCategory?          @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children              ServiceCategory[]         @relation("CategoryHierarchy")
+  services              Service[]
+  recommendations       ServiceRecommendationRule[]
+
+  @@map("service_categories")
+  @@index([slug])
+  @@index([parentId])
+  @@index([linkedMarketplace])
+  @@index([isActive])
+}
+
+// ============================================
+// Service Model
+// نموذج الخدمة
+// ============================================
+
+model Service {
+  id                    String                    @id @default(uuid())
+  providerId            String                    @map("provider_id")
+  categoryId            String                    @map("category_id")
+
+  // Basic Info
+  titleAr               String                    @map("title_ar")
+  titleEn               String?                   @map("title_en")
+  descriptionAr         String                    @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+  shortDescriptionAr    String?                   @map("short_description_ar")
+  shortDescriptionEn    String?                   @map("short_description_en")
+
+  // Media
+  images                String[]                  @default([])
+  videos                String[]                  @default([])
+
+  // Pricing
+  pricingType           ServicePricingType        @default(FIXED) @map("pricing_type")
+  price                 Float                     // Base price
+  priceMax              Float?                    @map("price_max") // For range pricing
+  currency              String                    @default("EGP")
+
+  // Duration
+  durationMinutes       Int?                      @map("duration_minutes")
+  durationHours         Float?                    @map("duration_hours")
+  durationDays          Int?                      @map("duration_days")
+
+  // Location
+  locationType          ServiceLocationType       @default(BOTH) @map("location_type")
+
+  // What's Included
+  includedItemsAr       String[]                  @default([]) @map("included_items_ar")
+  includedItemsEn       String[]                  @default([]) @map("included_items_en")
+
+  // What's Not Included
+  excludedItemsAr       String[]                  @default([]) @map("excluded_items_ar")
+  excludedItemsEn       String[]                  @default([]) @map("excluded_items_en")
+
+  // Requirements
+  requirementsAr        String[]                  @default([]) @map("requirements_ar")
+  requirementsEn        String[]                  @default([]) @map("requirements_en")
+
+  // Tags for search
+  tags                  String[]                  @default([])
+  tagsAr                String[]                  @default([]) @map("tags_ar")
+
+  // Linked Marketplace
+  linkedMarketplace     LinkedMarketplace?        @map("linked_marketplace")
+
+  // Stats
+  rating                Float                     @default(0)
+  totalReviews          Int                       @default(0) @map("total_reviews")
+  totalBookings         Int                       @default(0) @map("total_bookings")
+  viewCount             Int                       @default(0) @map("view_count")
+
+  // Settings
+  isActive              Boolean                   @default(true) @map("is_active")
+  isFeatured            Boolean                   @default(false) @map("is_featured")
+  acceptsInstantBooking Boolean                   @default(false) @map("accepts_instant_booking")
+  acceptsExpressService Boolean                   @default(false) @map("accepts_express_service")
+  expressExtraCharge    Float?                    @map("express_extra_charge") // percentage
+
+  // Xchange Protect
+  protectAvailable      Boolean                   @default(true) @map("protect_available")
+
+  // Timestamps
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  provider              ServiceProvider           @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  category              ServiceCategory           @relation(fields: [categoryId], references: [id])
+  bookings              ServiceBooking[]
+  reviews               ServiceReview[]
+  addOns                ServiceAddOn[]
+  packages              ServicePackage[]
+
+  @@map("services")
+  @@index([providerId])
+  @@index([categoryId])
+  @@index([linkedMarketplace])
+  @@index([isActive])
+  @@index([rating])
+  @@index([price])
+}
+
+// ============================================
+// Service Add-On Model
+// نموذج الإضافات على الخدمة
+// ============================================
+
+model ServiceAddOn {
+  id                    String                    @id @default(uuid())
+  serviceId             String                    @map("service_id")
+
+  nameAr                String                    @map("name_ar")
+  nameEn                String?                   @map("name_en")
+  descriptionAr         String?                   @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+
+  price                 Float
+  isRequired            Boolean                   @default(false) @map("is_required")
+  isActive              Boolean                   @default(true) @map("is_active")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  service               Service                   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("service_add_ons")
+  @@index([serviceId])
+}
+
+// ============================================
+// Service Package Model
+// نموذج الباقات
+// ============================================
+
+model ServicePackage {
+  id                    String                    @id @default(uuid())
+  serviceId             String                    @map("service_id")
+
+  nameAr                String                    @map("name_ar")
+  nameEn                String?                   @map("name_en")
+  descriptionAr         String?                   @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+
+  price                 Float
+  originalPrice         Float?                    @map("original_price") // For showing discount
+  includedItemsAr       String[]                  @default([]) @map("included_items_ar")
+  includedItemsEn       String[]                  @default([]) @map("included_items_en")
+
+  isPopular             Boolean                   @default(false) @map("is_popular")
+  isActive              Boolean                   @default(true) @map("is_active")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  service               Service                   @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("service_packages")
+  @@index([serviceId])
+}
+
+// ============================================
+// Service Booking Model
+// نموذج الحجز
+// ============================================
+
+model ServiceBooking {
+  id                    String                    @id @default(uuid())
+  bookingNumber         String                    @unique @map("booking_number") // XB-YYYYMMDD-XXXXX
+
+  customerId            String                    @map("customer_id")
+  providerId            String                    @map("provider_id")
+  serviceId             String                    @map("service_id")
+
+  // Scheduling
+  scheduledDate         DateTime                  @map("scheduled_date")
+  scheduledTimeStart    String                    @map("scheduled_time_start") // "14:00"
+  scheduledTimeEnd      String?                   @map("scheduled_time_end")   // "16:00"
+  actualStartTime       DateTime?                 @map("actual_start_time")
+  actualEndTime         DateTime?                 @map("actual_end_time")
+
+  // Location
+  locationType          ServiceLocationType       @map("location_type")
+  serviceAddress        String?                   @map("service_address")
+  serviceCity           String?                   @map("service_city")
+  serviceGovernorate    String?                   @map("service_governorate")
+  serviceLatitude       Float?                    @map("service_latitude")
+  serviceLongitude      Float?                    @map("service_longitude")
+
+  // Pricing
+  basePrice             Float                     @map("base_price")
+  addOnsPrice           Float                     @default(0) @map("add_ons_price")
+  expressCharge         Float                     @default(0) @map("express_charge")
+  protectCharge         Float                     @default(0) @map("protect_charge")
+  discountAmount        Float                     @default(0) @map("discount_amount")
+  discountCode          String?                   @map("discount_code")
+  subtotal              Float
+  commissionAmount      Float                     @map("commission_amount")
+  providerPayout        Float                     @map("provider_payout")
+  totalAmount           Float                     @map("total_amount")
+
+  // Payment
+  paymentStatus         ServiceBookingPaymentStatus @default(PENDING) @map("payment_status")
+  paidWithCash          Float                     @default(0) @map("paid_with_cash")
+  paidWithCredits       Float                     @default(0) @map("paid_with_credits") // Trade Credits
+  paymentMethod         String?                   @map("payment_method") // CARD, CASH, WALLET, CREDITS
+  paymentReference      String?                   @map("payment_reference")
+
+  // Xchange Protect
+  protectLevel          ProtectLevel              @default(NONE) @map("protect_level")
+  protectExpiresAt      DateTime?                 @map("protect_expires_at")
+
+  // Status
+  status                BookingStatus             @default(PENDING)
+  isExpressService      Boolean                   @default(false) @map("is_express_service")
+
+  // Customer Notes
+  customerNotes         String?                   @map("customer_notes")
+
+  // Provider Notes (internal)
+  providerNotes         String?                   @map("provider_notes")
+
+  // Before/After Photos
+  beforePhotos          String[]                  @default([]) @map("before_photos")
+  afterPhotos           String[]                  @default([]) @map("after_photos")
+
+  // Cancellation
+  cancelledAt           DateTime?                 @map("cancelled_at")
+  cancelledBy           String?                   @map("cancelled_by") // CUSTOMER, PROVIDER, SYSTEM
+  cancellationReason    String?                   @map("cancellation_reason")
+
+  // Linked Product (if came from product recommendation)
+  linkedProductId       String?                   @map("linked_product_id")
+  linkedProductType     String?                   @map("linked_product_type") // CAR, PROPERTY, MOBILE, etc.
+
+  // Timestamps
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+  confirmedAt           DateTime?                 @map("confirmed_at")
+  completedAt           DateTime?                 @map("completed_at")
+
+  // Relations
+  customer              User                      @relation("CustomerBookings", fields: [customerId], references: [id])
+  provider              ServiceProvider           @relation("ProviderBookings", fields: [providerId], references: [id])
+  service               Service                   @relation(fields: [serviceId], references: [id])
+  escrow                ServiceEscrow?
+  review                ServiceReview?
+  dispute               ServiceDispute?
+  milestones            ServiceBookingMilestone[]
+  statusHistory         BookingStatusHistory[]
+  selectedAddOns        BookingAddOn[]
+  chat                  ServiceChat?
+
+  @@map("service_bookings")
+  @@index([customerId])
+  @@index([providerId])
+  @@index([serviceId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([paymentStatus])
+  @@index([bookingNumber])
+}
+
+// ============================================
+// Booking Add-Ons Selected
+// ============================================
+
+model BookingAddOn {
+  id                    String                    @id @default(uuid())
+  bookingId             String                    @map("booking_id")
+  addOnName             String                    @map("add_on_name")
+  addOnPrice            Float                     @map("add_on_price")
+
+  booking               ServiceBooking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("booking_add_ons")
+  @@index([bookingId])
+}
+
+// ============================================
+// Booking Status History
+// ============================================
+
+model BookingStatusHistory {
+  id                    String                    @id @default(uuid())
+  bookingId             String                    @map("booking_id")
+
+  fromStatus            BookingStatus?            @map("from_status")
+  toStatus              BookingStatus             @map("to_status")
+  changedBy             String?                   @map("changed_by") // userId or 'SYSTEM'
+  note                  String?
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  booking               ServiceBooking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("booking_status_history")
+  @@index([bookingId])
+}
+
+// ============================================
+// Service Booking Milestones (for large projects)
+// ============================================
+
+model ServiceBookingMilestone {
+  id                    String                    @id @default(uuid())
+  bookingId             String                    @map("booking_id")
+
+  titleAr               String                    @map("title_ar")
+  titleEn               String?                   @map("title_en")
+  descriptionAr         String?                   @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+
+  amount                Float                     // Amount for this milestone
+  percentage            Float                     // Percentage of total (e.g., 25%)
+  order                 Int                       // Milestone order
+
+  status                ServiceMilestoneStatus    @default(PENDING)
+  dueDate               DateTime?                 @map("due_date")
+  completedAt           DateTime?                 @map("completed_at")
+  approvedAt            DateTime?                 @map("approved_at")
+
+  evidence              String[]                  @default([]) // Photos/files
+  customerFeedback      String?                   @map("customer_feedback")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  booking               ServiceBooking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("service_booking_milestones")
+  @@index([bookingId])
+  @@index([status])
+}
+
+// ============================================
+// Service Escrow Model
+// نموذج الضمان للخدمات
+// ============================================
+
+model ServiceEscrow {
+  id                    String                    @id @default(uuid())
+  bookingId             String                    @unique @map("booking_id")
+
+  // Amounts
+  totalAmount           Float                     @map("total_amount")
+  heldAmount            Float                     @map("held_amount")
+  releasedAmount        Float                     @default(0) @map("released_amount")
+  refundedAmount        Float                     @default(0) @map("refunded_amount")
+
+  // Credits if used
+  creditsHeld           Float                     @default(0) @map("credits_held")
+  creditsReleased       Float                     @default(0) @map("credits_released")
+
+  currency              String                    @default("EGP")
+
+  // Status
+  status                ServiceBookingPaymentStatus @default(PENDING)
+
+  // Timeline
+  heldAt                DateTime?                 @map("held_at")
+  releasedAt            DateTime?                 @map("released_at")
+  refundedAt            DateTime?                 @map("refunded_at")
+
+  // Auto-release
+  autoReleaseAt         DateTime?                 @map("auto_release_at")
+  autoReleaseHours      Int                       @default(48) @map("auto_release_hours")
+
+  // Timestamps
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  booking               ServiceBooking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  transactions          ServiceEscrowTransaction[]
+
+  @@map("service_escrows")
+  @@index([bookingId])
+  @@index([status])
+}
+
+// ============================================
+// Service Escrow Transactions
+// ============================================
+
+model ServiceEscrowTransaction {
+  id                    String                    @id @default(uuid())
+  escrowId              String                    @map("escrow_id")
+
+  type                  String                    // HOLD, RELEASE, REFUND, PARTIAL_RELEASE
+  amount                Float
+  creditsAmount         Float                     @default(0) @map("credits_amount")
+
+  description           String?
+  performedBy           String?                   @map("performed_by") // userId or 'SYSTEM'
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  escrow                ServiceEscrow             @relation(fields: [escrowId], references: [id], onDelete: Cascade)
+
+  @@map("service_escrow_transactions")
+  @@index([escrowId])
+}
+
+// ============================================
+// Service Review Model
+// نموذج تقييم الخدمة
+// ============================================
+
+model ServiceReview {
+  id                    String                    @id @default(uuid())
+  bookingId             String                    @unique @map("booking_id")
+  serviceId             String                    @map("service_id")
+  providerId            String                    @map("provider_id")
+  customerId            String                    @map("customer_id")
+
+  // Ratings (1-5)
+  overallRating         Float                     @map("overall_rating")
+  qualityRating         Float?                    @map("quality_rating")
+  punctualityRating     Float?                    @map("punctuality_rating")
+  communicationRating   Float?                    @map("communication_rating")
+  valueRating           Float?                    @map("value_rating")
+
+  // Review Content
+  reviewText            String?                   @map("review_text")
+  reviewImages          String[]                  @default([]) @map("review_images")
+  reviewVideos          String[]                  @default([]) @map("review_videos")
+
+  // Provider Response
+  providerResponse      String?                   @map("provider_response")
+  providerRespondedAt   DateTime?                 @map("provider_responded_at")
+
+  // Verification
+  isVerified            Boolean                   @default(true) @map("is_verified") // From completed booking
+
+  // Moderation
+  isVisible             Boolean                   @default(true) @map("is_visible")
+  isFlagged             Boolean                   @default(false) @map("is_flagged")
+  flagReason            String?                   @map("flag_reason")
+
+  // Helpfulness
+  helpfulCount          Int                       @default(0) @map("helpful_count")
+  notHelpfulCount       Int                       @default(0) @map("not_helpful_count")
+
+  // Timestamps
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  booking               ServiceBooking            @relation(fields: [bookingId], references: [id])
+  service               Service                   @relation(fields: [serviceId], references: [id])
+  provider              ServiceProvider           @relation("ProviderReviews", fields: [providerId], references: [id])
+  customer              User                      @relation("ServiceReviewCustomer", fields: [customerId], references: [id])
+  votes                 ServiceReviewVote[]
+
+  @@map("service_reviews")
+  @@index([serviceId])
+  @@index([providerId])
+  @@index([customerId])
+  @@index([overallRating])
+  @@index([createdAt])
+}
+
+// ============================================
+// Service Review Votes
+// ============================================
+
+model ServiceReviewVote {
+  id                    String                    @id @default(uuid())
+  reviewId              String                    @map("review_id")
+  userId                String                    @map("user_id")
+
+  isHelpful             Boolean                   @map("is_helpful")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  review                ServiceReview             @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  @@map("service_review_votes")
+}
+
+// ============================================
+// Service Dispute Model
+// نموذج النزاع
+// ============================================
+
+model ServiceDispute {
+  id                    String                    @id @default(uuid())
+  disputeNumber         String                    @unique @map("dispute_number") // XD-YYYYMMDD-XXXXX
+  bookingId             String                    @unique @map("booking_id")
+
+  // Parties
+  initiatorId           String                    @map("initiator_id") // Customer or Provider
+  initiatorType         String                    @map("initiator_type") // CUSTOMER, PROVIDER
+
+  // Dispute Details
+  reason                String                    // Category: QUALITY, NO_SHOW, INCOMPLETE, DAMAGE, etc.
+  descriptionAr         String                    @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+  evidence              String[]                  @default([]) // Photos/videos
+
+  // Status
+  status                ServiceDisputeStatus      @default(OPEN)
+
+  // Resolution
+  resolutionType        String?                   @map("resolution_type") // FULL_REFUND, PARTIAL_REFUND, NO_REFUND, RE_SERVICE
+  resolutionAmount      Float?                    @map("resolution_amount")
+  resolutionNotes       String?                   @map("resolution_notes")
+  resolvedBy            String?                   @map("resolved_by")
+  resolvedAt            DateTime?                 @map("resolved_at")
+
+  // Communication
+  customerStatement     String?                   @map("customer_statement")
+  providerStatement     String?                   @map("provider_statement")
+
+  // Timestamps
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  // Relations
+  booking               ServiceBooking            @relation(fields: [bookingId], references: [id])
+  messages              DisputeMessage[]
+
+  @@map("service_disputes")
+  @@index([bookingId])
+  @@index([status])
+  @@index([initiatorId])
+}
+
+// ============================================
+// Dispute Messages
+// ============================================
+
+model DisputeMessage {
+  id                    String                    @id @default(uuid())
+  disputeId             String                    @map("dispute_id")
+
+  senderId              String                    @map("sender_id")
+  senderType            String                    @map("sender_type") // CUSTOMER, PROVIDER, ADMIN
+
+  message               String
+  attachments           String[]                  @default([])
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  dispute               ServiceDispute            @relation(fields: [disputeId], references: [id], onDelete: Cascade)
+
+  @@map("dispute_messages")
+  @@index([disputeId])
+}
+
+// ============================================
+// Provider Availability Model
+// ============================================
+
+model ProviderAvailability {
+  id                    String                    @id @default(uuid())
+  providerId            String                    @map("provider_id")
+
+  dayOfWeek             Int                       @map("day_of_week") // 0=Sunday, 6=Saturday
+  startTime             String                    @map("start_time") // "09:00"
+  endTime               String                    @map("end_time")   // "17:00"
+  isAvailable           Boolean                   @default(true) @map("is_available")
+
+  provider              ServiceProvider           @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_availability")
+  @@index([providerId])
+}
+
+// ============================================
+// Provider Service Areas
+// ============================================
+
+model ProviderServiceArea {
+  id                    String                    @id @default(uuid())
+  providerId            String                    @map("provider_id")
+
+  governorate           String
+  city                  String?
+  district              String?
+  extraCharge           Float                     @default(0) @map("extra_charge") // Additional charge for this area
+
+  provider              ServiceProvider           @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_service_areas")
+  @@index([providerId])
+  @@index([governorate])
+}
+
+// ============================================
+// Provider Certifications
+// ============================================
+
+model ProviderCertification {
+  id                    String                    @id @default(uuid())
+  providerId            String                    @map("provider_id")
+
+  type                  CertificationType
+  titleAr               String                    @map("title_ar")
+  titleEn               String?                   @map("title_en")
+  issuingAuthority      String                    @map("issuing_authority")
+  certificateNumber     String?                   @map("certificate_number")
+  certificateImage      String?                   @map("certificate_image")
+
+  issuedAt              DateTime                  @map("issued_at")
+  expiresAt             DateTime?                 @map("expires_at")
+
+  isVerified            Boolean                   @default(false) @map("is_verified")
+  verifiedAt            DateTime?                 @map("verified_at")
+  verifiedBy            String?                   @map("verified_by")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  provider              ServiceProvider           @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_certifications")
+  @@index([providerId])
+  @@index([type])
+}
+
+// ============================================
+// Provider Payouts
+// ============================================
+
+model ProviderPayout {
+  id                    String                    @id @default(uuid())
+  providerId            String                    @map("provider_id")
+
+  amount                Float
+  currency              String                    @default("EGP")
+
+  status                String                    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+
+  bankName              String                    @map("bank_name")
+  bankAccountNumber     String                    @map("bank_account_number")
+  bankAccountName       String                    @map("bank_account_name")
+
+  transactionReference  String?                   @map("transaction_reference")
+  failureReason         String?                   @map("failure_reason")
+
+  requestedAt           DateTime                  @default(now()) @map("requested_at")
+  processedAt           DateTime?                 @map("processed_at")
+  completedAt           DateTime?                 @map("completed_at")
+
+  provider              ServiceProvider           @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_payouts")
+  @@index([providerId])
+  @@index([status])
+}
+
+// ============================================
+// Service Recommendation Rules
+// نظام التوصيات الذكية
+// ============================================
+
+model ServiceRecommendationRule {
+  id                    String                    @id @default(uuid())
+
+  // Trigger
+  triggerEvent          String                    @map("trigger_event") // PRODUCT_LISTED, PRODUCT_PURCHASED, AUCTION_WON, BARTER_COMPLETED
+  productType           LinkedMarketplace         @map("product_type")
+
+  // Target Service Category
+  serviceCategoryId     String                    @map("service_category_id")
+
+  // Timing
+  timing                String                    // BEFORE_LISTING, BEFORE_PAYMENT, AFTER_PURCHASE, UPON_RECEIPT
+
+  // Display
+  titleAr               String                    @map("title_ar")
+  titleEn               String?                   @map("title_en")
+  descriptionAr         String?                   @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+
+  // Incentive
+  discountPercentage    Float?                    @map("discount_percentage")
+  priority              Int                       @default(0) // Higher = more important
+
+  isActive              Boolean                   @default(true) @map("is_active")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  serviceCategory       ServiceCategory           @relation(fields: [serviceCategoryId], references: [id])
+
+  @@map("service_recommendation_rules")
+  @@index([triggerEvent])
+  @@index([productType])
+  @@index([isActive])
+}
+
+// ============================================
+// Customer Service Subscriptions
+// اشتراكات العملاء في الصيانة
+// ============================================
+
+model CustomerServiceSubscription {
+  id                    String                    @id @default(uuid())
+  customerId            String                    @map("customer_id")
+
+  type                  CustomerSubscriptionType
+  status                CustomerSubscriptionStatus @default(ACTIVE)
+
+  monthlyPrice          Float                     @map("monthly_price")
+  currency              String                    @default("EGP")
+
+  // Usage
+  includedBookings      Int                       @map("included_bookings")
+  usedBookings          Int                       @default(0) @map("used_bookings")
+  discountPercentage    Float                     @default(0) @map("discount_percentage")
+
+  // Billing
+  startDate             DateTime                  @map("start_date")
+  endDate               DateTime?                 @map("end_date")
+  nextBillingDate       DateTime                  @map("next_billing_date")
+
+  // Auto-renew
+  autoRenew             Boolean                   @default(true) @map("auto_renew")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  customer              User                      @relation("CustomerServiceSubscriptions", fields: [customerId], references: [id])
+  usageHistory          SubscriptionUsage[]
+
+  @@map("customer_service_subscriptions")
+  @@index([customerId])
+  @@index([status])
+}
+
+// ============================================
+// Subscription Usage History
+// ============================================
+
+model SubscriptionUsage {
+  id                    String                    @id @default(uuid())
+  subscriptionId        String                    @map("subscription_id")
+  bookingId             String?                   @map("booking_id")
+
+  usedAt                DateTime                  @default(now()) @map("used_at")
+
+  subscription          CustomerServiceSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("subscription_usage")
+  @@index([subscriptionId])
+}
+
+// ============================================
+// Service Chat
+// دردشة الحجز
+// ============================================
+
+model ServiceChat {
+  id                    String                    @id @default(uuid())
+  bookingId             String                    @unique @map("booking_id")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  booking               ServiceBooking            @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  messages              ServiceChatMessage[]
+
+  @@map("service_chats")
+}
+
+model ServiceChatMessage {
+  id                    String                    @id @default(uuid())
+  chatId                String                    @map("chat_id")
+
+  senderId              String                    @map("sender_id")
+  senderType            String                    @map("sender_type") // CUSTOMER, PROVIDER
+
+  message               String?
+  attachments           String[]                  @default([])
+
+  isRead                Boolean                   @default(false) @map("is_read")
+  readAt                DateTime?                 @map("read_at")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  chat                  ServiceChat               @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@map("service_chat_messages")
+  @@index([chatId])
+  @@index([senderId])
+}
+
+// ============================================
+// Xchange Academy
+// أكاديمية إكسشينج
+// ============================================
+
+model AcademyCourse {
+  id                    String                    @id @default(uuid())
+
+  titleAr               String                    @map("title_ar")
+  titleEn               String?                   @map("title_en")
+  descriptionAr         String                    @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+
+  // Content
+  thumbnailImage        String?                   @map("thumbnail_image")
+  durationHours         Float                     @map("duration_hours")
+
+  // Categorization
+  categoryId            String?                   @map("category_id") // Service category this course is for
+  level                 String                    @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
+
+  // Certification
+  certificationType     CertificationType?        @map("certification_type")
+  providesCertification Boolean                   @default(true) @map("provides_certification")
+
+  // Pricing
+  price                 Float                     @default(0) // 0 = free
+  currency              String                    @default("EGP")
+
+  // Status
+  status                AcademyCourseStatus       @default(DRAFT)
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  modules               AcademyModule[]
+  enrollments           AcademyEnrollment[]
+
+  @@map("academy_courses")
+  @@index([status])
+  @@index([categoryId])
+}
+
+model AcademyModule {
+  id                    String                    @id @default(uuid())
+  courseId              String                    @map("course_id")
+
+  titleAr               String                    @map("title_ar")
+  titleEn               String?                   @map("title_en")
+  descriptionAr         String?                   @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+
+  order                 Int
+  durationMinutes       Int                       @map("duration_minutes")
+
+  // Content
+  videoUrl              String?                   @map("video_url")
+  contentAr             String?                   @map("content_ar") // Rich text content
+  contentEn             String?                   @map("content_en")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  course                AcademyCourse             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  quizzes               AcademyQuiz[]
+
+  @@map("academy_modules")
+  @@index([courseId])
+}
+
+model AcademyQuiz {
+  id                    String                    @id @default(uuid())
+  moduleId              String                    @map("module_id")
+
+  questionAr            String                    @map("question_ar")
+  questionEn            String?                   @map("question_en")
+
+  optionsAr             String[]                  @map("options_ar")
+  optionsEn             String[]                  @default([]) @map("options_en")
+
+  correctOptionIndex    Int                       @map("correct_option_index")
+  explanationAr         String?                   @map("explanation_ar")
+  explanationEn         String?                   @map("explanation_en")
+
+  order                 Int
+
+  module                AcademyModule             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@map("academy_quizzes")
+  @@index([moduleId])
+}
+
+model AcademyEnrollment {
+  id                    String                    @id @default(uuid())
+  courseId              String                    @map("course_id")
+  providerId            String                    @map("provider_id")
+
+  status                CourseEnrollmentStatus    @default(ENROLLED)
+  progress              Float                     @default(0) // 0-100%
+
+  // Completion
+  completedModules      String[]                  @default([]) @map("completed_modules") // moduleIds
+  quizScores            Json?                     @map("quiz_scores") // {moduleId: score}
+
+  // Certificate
+  certificateId         String?                   @map("certificate_id")
+  certificateIssuedAt   DateTime?                 @map("certificate_issued_at")
+
+  enrolledAt            DateTime                  @default(now()) @map("enrolled_at")
+  completedAt           DateTime?                 @map("completed_at")
+
+  course                AcademyCourse             @relation(fields: [courseId], references: [id])
+  provider              ServiceProvider           @relation(fields: [providerId], references: [id])
+
+  @@unique([courseId, providerId])
+  @@map("academy_enrollments")
+  @@index([providerId])
+  @@index([status])
+}
+
+// ============================================
+// AI Chatbot Conversations
+// محادثات الذكاء الاصطناعي
+// ============================================
+
+model ChatbotConversation {
+  id                    String                    @id @default(uuid())
+  userId                String?                   @map("user_id")
+  sessionId             String                    @map("session_id")
+
+  // Context
+  currentIntent         String?                   @map("current_intent") // BOOKING, INQUIRY, COMPLAINT, GENERAL
+  currentServiceId      String?                   @map("current_service_id")
+  currentProviderId     String?                   @map("current_provider_id")
+
+  // Status
+  isActive              Boolean                   @default(true) @map("is_active")
+  handedOffToHuman      Boolean                   @default(false) @map("handed_off_to_human")
+  handedOffAt           DateTime?                 @map("handed_off_at")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  messages              ChatbotMessage[]
+
+  @@map("chatbot_conversations")
+  @@index([userId])
+  @@index([sessionId])
+  @@index([isActive])
+}
+
+model ChatbotMessage {
+  id                    String                    @id @default(uuid())
+  conversationId        String                    @map("conversation_id")
+
+  role                  String                    // USER, ASSISTANT, SYSTEM
+  content               String
+
+  // Intent Recognition
+  detectedIntent        String?                   @map("detected_intent")
+  detectedEntities      Json?                     @map("detected_entities")
+  confidence            Float?
+
+  // If it led to an action
+  actionTaken           String?                   @map("action_taken") // BOOKING_CREATED, SEARCH_PERFORMED, etc.
+  actionData            Json?                     @map("action_data")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  conversation          ChatbotConversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("chatbot_messages")
+  @@index([conversationId])
+}
+
+// ============================================
+// Predictive Maintenance Alerts
+// تنبيهات الصيانة التنبؤية
+// ============================================
+
+model PredictiveMaintenanceAlert {
+  id                    String                    @id @default(uuid())
+  userId                String                    @map("user_id")
+
+  // Related Product
+  productId             String                    @map("product_id")
+  productType           LinkedMarketplace         @map("product_type")
+
+  // Alert Details
+  serviceCategoryId     String                    @map("service_category_id")
+  titleAr               String                    @map("title_ar")
+  titleEn               String?                   @map("title_en")
+  descriptionAr         String                    @map("description_ar")
+  descriptionEn         String?                   @map("description_en")
+
+  // Prediction
+  predictedDate         DateTime                  @map("predicted_date")
+  confidence            Float                     // 0-1
+
+  // Incentive
+  discountCode          String?                   @map("discount_code")
+  discountPercentage    Float?                    @map("discount_percentage")
+  discountExpiresAt     DateTime?                 @map("discount_expires_at")
+
+  // Status
+  isRead                Boolean                   @default(false) @map("is_read")
+  isDismissed           Boolean                   @default(false) @map("is_dismissed")
+  wasActedUpon          Boolean                   @default(false) @map("was_acted_upon")
+  bookingId             String?                   @map("booking_id") // If user booked
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  @@map("predictive_maintenance_alerts")
+  @@index([userId])
+  @@index([productType])
+  @@index([isRead])
+}
+
+// ============================================
+// Service Favorites
+// ============================================
+
+model ServiceFavorite {
+  id                    String                    @id @default(uuid())
+  userId                String                    @map("user_id")
+  serviceId             String                    @map("service_id")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  @@unique([userId, serviceId])
+  @@map("service_favorites")
+  @@index([userId])
+}
+
+// ============================================
+// Service Search History
+// ============================================
+
+model ServiceSearchHistory {
+  id                    String                    @id @default(uuid())
+  userId                String?                   @map("user_id")
+  sessionId             String?                   @map("session_id")
+
+  query                 String
+  filters               Json?
+  resultsCount          Int                       @map("results_count")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  @@map("service_search_history")
+  @@index([userId])
+  @@index([query])
+}
+
+// ============================================
+// Express Service Pool
+// مجموعة الخدمة السريعة
+// ============================================
+
+model ExpressServicePool {
+  id                    String                    @id @default(uuid())
+  providerId            String                    @map("provider_id")
+
+  // Current location (for real-time tracking)
+  currentLatitude       Float                     @map("current_latitude")
+  currentLongitude      Float                     @map("current_longitude")
+  lastLocationUpdate    DateTime                  @map("last_location_update")
+
+  // Availability
+  isOnline              Boolean                   @default(false) @map("is_online")
+  isAvailable           Boolean                   @default(true) @map("is_available") // Not currently on a job
+
+  // Service types available for express
+  serviceIds            String[]                  @map("service_ids")
+
+  // Stats
+  averageResponseTime   Int?                      @map("average_response_time") // minutes
+  completedExpressJobs  Int                       @default(0) @map("completed_express_jobs")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  @@map("express_service_pool")
+  @@index([providerId])
+  @@index([isOnline, isAvailable])
+}
+
+// ============================================
+// Service Notifications
+// إشعارات الخدمات
+// ============================================
+
+model ServiceNotification {
+  id                    String                    @id @default(uuid())
+  userId                String                    @map("user_id")
+
+  type                  String                    // BOOKING_REQUEST, BOOKING_CONFIRMED, PROVIDER_ON_WAY, etc.
+  titleAr               String                    @map("title_ar")
+  titleEn               String?                   @map("title_en")
+  bodyAr                String                    @map("body_ar")
+  bodyEn                String?                   @map("body_en")
+
+  // Related entities
+  bookingId             String?                   @map("booking_id")
+  serviceId             String?                   @map("service_id")
+  providerId            String?                   @map("provider_id")
+
+  // Deep link
+  deepLink              String?                   @map("deep_link")
+
+  // Status
+  isRead                Boolean                   @default(false) @map("is_read")
+  readAt                DateTime?                 @map("read_at")
+
+  createdAt             DateTime                  @default(now()) @map("created_at")
+
+  @@map("service_notifications")
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+}
+
+// ============================================
+// Trade Credits Extension for Wallet
+// إضافة الكريديت للمحفظة
+// ============================================
+
+// Note: This extends the existing Wallet model
+// Add these fields to the Wallet model in the main schema:
+//
+// tradeCredits        Float       @default(0) @map("trade_credits")
+// lifetimeCreditsEarned Float    @default(0) @map("lifetime_credits_earned")
+// lifetimeCreditsSpent  Float    @default(0) @map("lifetime_credits_spent")
+// creditsExpiryDate     DateTime? @map("credits_expiry_date")
+//
+// Add these to WalletTransactionType enum:
+// TRADE_CREDITS_EARNED    // من بيع منتج
+// TRADE_CREDITS_SPENT     // على حجز خدمة
+// TRADE_CREDITS_EXPIRED   // انتهت صلاحيتها
+// TRADE_CREDITS_TRANSFERRED // تحويل لمستخدم آخر
+
+// ============================================
+// User Relations Extension
+// ============================================
+
+// Note: Add these relations to the User model in the main schema:
+//
+// serviceProvider         ServiceProvider?        @relation("ServiceProviderUser")
+// serviceBookingsAsCustomer ServiceBooking[]      @relation("CustomerBookings")
+// serviceReviewsGiven     ServiceReview[]         @relation("ServiceReviewCustomer")
+// serviceSubscriptions    CustomerServiceSubscription[] @relation("CustomerServiceSubscriptions")
