@@ -243,6 +243,7 @@ BEGIN
     v_escrow_id := 'uat1-escrow-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
 
     -- escrows (وليس escrow_transactions)
+    -- EscrowType enum: SALE, BARTER, BARTER_CHAIN, SERVICE
     INSERT INTO escrows (
         id, escrow_type,
         buyer_id, seller_id,
@@ -252,7 +253,7 @@ BEGIN
         created_at, updated_at
     ) VALUES (
         v_escrow_id,
-        'DIRECT_SALE',
+        'SALE',
         v_buyer_id,
         v_seller_id,
         v_item_price,
