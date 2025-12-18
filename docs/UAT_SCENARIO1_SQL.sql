@@ -52,7 +52,7 @@ BEGIN
     RAISE NOTICE '📌 الخطوة 1.1: التحقق من البائع (أحمد التاجر)';
     RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
 
-    SELECT id, COALESCE(name, full_name, 'أحمد التاجر') INTO v_seller_id, v_seller_name
+    SELECT id, COALESCE(full_name, 'أحمد التاجر') INTO v_seller_id, v_seller_name
     FROM users WHERE email = 'test1@xchange.eg' LIMIT 1;
 
     IF v_seller_id IS NULL THEN
@@ -83,7 +83,7 @@ BEGIN
     RAISE NOTICE '📌 الخطوة 1.1ب: التحقق من المشتري (هدى المشتريات)';
     RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
 
-    SELECT id, COALESCE(name, full_name, 'هدى المشتريات') INTO v_buyer_id, v_buyer_name
+    SELECT id, COALESCE(full_name, 'هدى المشتريات') INTO v_buyer_id, v_buyer_name
     FROM users WHERE email = 'test10@xchange.eg' LIMIT 1;
 
     IF v_buyer_id IS NULL THEN
@@ -557,13 +557,13 @@ END $$;
 
 -- 1. عرض المستخدمين المستخدمين في الاختبار
 SELECT '👥 المستخدمون:' as section;
-SELECT id, email, COALESCE(name, full_name) as name, governorate, city
+SELECT id, email, full_name, governorate, city
 FROM users
 WHERE email IN ('test1@xchange.eg', 'test10@xchange.eg');
 
 -- 2. عرض أرصدة المحافظ
 SELECT '💰 المحافظ:' as section;
-SELECT w.id, u.email, COALESCE(u.name, u.full_name) as name, w.balance, w.currency
+SELECT w.id, u.email, u.full_name, w.balance, w.currency
 FROM wallets w
 JOIN users u ON w.user_id = u.id
 WHERE u.email IN ('test1@xchange.eg', 'test10@xchange.eg');
