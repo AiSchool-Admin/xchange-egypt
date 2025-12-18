@@ -16,16 +16,16 @@ DECLARE
     search_sugg1 TEXT; search_sugg2 TEXT;
 BEGIN
     -- =========== GET USERS ===========
-    SELECT id INTO u1 FROM users WHERE email = 'test1@xchange.eg';
-    SELECT id INTO u2 FROM users WHERE email = 'test2@xchange.eg';
-    SELECT id INTO u3 FROM users WHERE email = 'test3@xchange.eg';
-    SELECT id INTO u4 FROM users WHERE email = 'test4@xchange.eg';
-    SELECT id INTO u5 FROM users WHERE email = 'test5@xchange.eg';
-    SELECT id INTO u6 FROM users WHERE email = 'test6@xchange.eg';
-    SELECT id INTO u7 FROM users WHERE email = 'test7@xchange.eg';
-    SELECT id INTO u8 FROM users WHERE email = 'test8@xchange.eg';
-    SELECT id INTO u9 FROM users WHERE email = 'test9@xchange.eg';
-    SELECT id INTO u10 FROM users WHERE email = 'test10@xchange.eg';
+    SELECT id INTO u1 FROM users WHERE email = 'test1@xchange.eg' LIMIT 1;
+    SELECT id INTO u2 FROM users WHERE email = 'test2@xchange.eg' LIMIT 1;
+    SELECT id INTO u3 FROM users WHERE email = 'test3@xchange.eg' LIMIT 1;
+    SELECT id INTO u4 FROM users WHERE email = 'test4@xchange.eg' LIMIT 1;
+    SELECT id INTO u5 FROM users WHERE email = 'test5@xchange.eg' LIMIT 1;
+    SELECT id INTO u6 FROM users WHERE email = 'test6@xchange.eg' LIMIT 1;
+    SELECT id INTO u7 FROM users WHERE email = 'test7@xchange.eg' LIMIT 1;
+    SELECT id INTO u8 FROM users WHERE email = 'test8@xchange.eg' LIMIT 1;
+    SELECT id INTO u9 FROM users WHERE email = 'test9@xchange.eg' LIMIT 1;
+    SELECT id INTO u10 FROM users WHERE email = 'test10@xchange.eg' LIMIT 1;
 
     -- =========== GET CATEGORIES ===========
     SELECT id INTO cat_electronics FROM categories WHERE is_active = true LIMIT 1;
@@ -125,7 +125,7 @@ BEGIN
     (gen_random_uuid()::TEXT, u3, 'listing', 'Help creating camera listing', 'ACTIVE', NOW(), NOW()),
     (gen_random_uuid()::TEXT, u5, 'help', 'كيفية البيع بالمزاد', 'CLOSED', NOW() - INTERVAL '3 days', NOW()),
     (gen_random_uuid()::TEXT, u6, 'listing', 'إنشاء مناقصة لابتوبات', 'ACTIVE', NOW(), NOW())
-    RETURNING id INTO ai_conv1;
+    ON CONFLICT DO NOTHING;
 
     SELECT id INTO ai_conv1 FROM ai_conversations WHERE user_id = u1 ORDER BY created_at DESC LIMIT 1;
     SELECT id INTO ai_conv2 FROM ai_conversations WHERE user_id = u2 ORDER BY created_at DESC LIMIT 1;

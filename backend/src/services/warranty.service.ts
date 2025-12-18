@@ -9,7 +9,7 @@
  * - Claim management
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { WarrantyType, WarrantyStatus, WarrantyClaimStatus } from '@prisma/client';
 
 // ============================================

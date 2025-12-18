@@ -12,7 +12,7 @@
  */
 
 import { Server as SocketIOServer } from 'socket.io';
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types

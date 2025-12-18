@@ -1,4 +1,4 @@
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { AdminRole, AdminStatus, UserStatus, ItemStatus, OrderStatus } from '@prisma/client';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateAdminAccessToken, generateAdminRefreshToken, verifyAdminRefreshToken } from '../utils/adminJwt';

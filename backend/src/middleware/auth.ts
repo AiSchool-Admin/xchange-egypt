@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { verifyAccessToken } from '../utils/jwt';
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { UserType } from '@prisma/client';
 
 // Extended Request type with user

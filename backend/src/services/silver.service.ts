@@ -3,7 +3,7 @@
  * خدمة سوق الفضة
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // Commission rates - Higher than gold due to lower transaction values
 const BUYER_COMMISSION_RATE = 0.02; // 2%

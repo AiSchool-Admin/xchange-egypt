@@ -4,7 +4,7 @@
  */
 
 import { FacilitatorLevel, FacilitatorStatus } from '@prisma/client';
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Configuration

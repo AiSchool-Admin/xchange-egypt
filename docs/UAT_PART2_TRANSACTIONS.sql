@@ -34,16 +34,16 @@ DECLARE
     item_ref1 TEXT; item_ref2 TEXT; item_ref3 TEXT; item_ref4 TEXT; item_ref5 TEXT;
 BEGIN
     -- =========== GET USERS ===========
-    SELECT id INTO u1 FROM users WHERE email = 'test1@xchange.eg';
-    SELECT id INTO u2 FROM users WHERE email = 'test2@xchange.eg';
-    SELECT id INTO u3 FROM users WHERE email = 'test3@xchange.eg';
-    SELECT id INTO u4 FROM users WHERE email = 'test4@xchange.eg';
-    SELECT id INTO u5 FROM users WHERE email = 'test5@xchange.eg';
-    SELECT id INTO u6 FROM users WHERE email = 'test6@xchange.eg';
-    SELECT id INTO u7 FROM users WHERE email = 'test7@xchange.eg';
-    SELECT id INTO u8 FROM users WHERE email = 'test8@xchange.eg';
-    SELECT id INTO u9 FROM users WHERE email = 'test9@xchange.eg';
-    SELECT id INTO u10 FROM users WHERE email = 'test10@xchange.eg';
+    SELECT id INTO u1 FROM users WHERE email = 'test1@xchange.eg' LIMIT 1;
+    SELECT id INTO u2 FROM users WHERE email = 'test2@xchange.eg' LIMIT 1;
+    SELECT id INTO u3 FROM users WHERE email = 'test3@xchange.eg' LIMIT 1;
+    SELECT id INTO u4 FROM users WHERE email = 'test4@xchange.eg' LIMIT 1;
+    SELECT id INTO u5 FROM users WHERE email = 'test5@xchange.eg' LIMIT 1;
+    SELECT id INTO u6 FROM users WHERE email = 'test6@xchange.eg' LIMIT 1;
+    SELECT id INTO u7 FROM users WHERE email = 'test7@xchange.eg' LIMIT 1;
+    SELECT id INTO u8 FROM users WHERE email = 'test8@xchange.eg' LIMIT 1;
+    SELECT id INTO u9 FROM users WHERE email = 'test9@xchange.eg' LIMIT 1;
+    SELECT id INTO u10 FROM users WHERE email = 'test10@xchange.eg' LIMIT 1;
 
     -- =========== GET CATEGORIES ===========
     SELECT id INTO cat_electronics FROM categories WHERE is_active = true LIMIT 1;
@@ -77,13 +77,11 @@ BEGIN
     -- Direct Sale listings for payment testing
     INSERT INTO listings (id, item_id, user_id, listing_type, price, status, created_at, updated_at)
     SELECT gen_random_uuid()::TEXT, i.id, i.seller_id, 'DIRECT_SALE', i.estimated_value, 'ACTIVE', NOW(), NOW()
-    FROM items i WHERE i.seller_id = u1 AND i.id NOT IN (SELECT item_id FROM listings WHERE item_id IS NOT NULL) LIMIT 3
-    RETURNING id INTO new_lst1;
+    FROM items i WHERE i.seller_id = u1 AND i.id NOT IN (SELECT item_id FROM listings WHERE item_id IS NOT NULL) LIMIT 1;
 
     INSERT INTO listings (id, item_id, user_id, listing_type, price, status, created_at, updated_at)
     SELECT gen_random_uuid()::TEXT, i.id, i.seller_id, 'DIRECT_SALE', i.estimated_value, 'ACTIVE', NOW(), NOW()
-    FROM items i WHERE i.seller_id = u8 AND i.id NOT IN (SELECT item_id FROM listings WHERE item_id IS NOT NULL) LIMIT 3
-    RETURNING id INTO new_lst2;
+    FROM items i WHERE i.seller_id = u8 AND i.id NOT IN (SELECT item_id FROM listings WHERE item_id IS NOT NULL) LIMIT 1;
 
     -- Get created listings
     SELECT id INTO new_lst1 FROM listings WHERE user_id = u1 AND status = 'ACTIVE' ORDER BY created_at DESC LIMIT 1;
@@ -126,7 +124,7 @@ BEGIN
     (gen_random_uuid()::TEXT, u3, 'مطلوب 30 تابلت iPad', 'للمدرسة - تعليمي', cat_electronics, 'NEW', 30, 450000, 'ACTIVE', NOW() + INTERVAL '12 days', 'Giza, Dokki', 5, 5, NOW(), NOW()),
     (gen_random_uuid()::TEXT, u10, 'مطلوب 10 طابعات HP LaserJet', 'للمكتب', cat_electronics, 'NEW', 10, 80000, 'ACTIVE', NOW() + INTERVAL '7 days', 'Cairo, Heliopolis', 2, 2, NOW(), NOW()),
     (gen_random_uuid()::TEXT, u5, 'مطلوب سيرفر Dell PowerEdge', 'للداتا سنتر', cat_electronics, 'NEW', 2, 300000, 'ACTIVE', NOW() + INTERVAL '30 days', 'Cairo, Zamalek', 3, 3, NOW(), NOW())
-    RETURNING id INTO new_rev1;
+    ON CONFLICT DO NOTHING;
 
     -- Get all reverse auctions
     SELECT id INTO new_rev1 FROM reverse_auctions WHERE status = 'ACTIVE' ORDER BY created_at DESC LIMIT 1 OFFSET 0;
@@ -165,7 +163,7 @@ BEGIN
     (gen_random_uuid()::TEXT, u8, u10, ARRAY[item_ref4], 45000, 'PENDING', 'موبايل مقابل موبايل', NOW() + INTERVAL '3 days', NOW(), NOW()),
     (gen_random_uuid()::TEXT, u9, u1, ARRAY[item_ref1], 950000, 'ACCEPTED', 'سيارة مقابل سيارة أخرى + فرق', NOW() + INTERVAL '30 days', NOW(), NOW()),
     (gen_random_uuid()::TEXT, u10, u4, ARRAY[item_ref1], 25000, 'PENDING', 'ثلاجة مقابل غسالة', NOW() + INTERVAL '7 days', NOW(), NOW())
-    RETURNING id INTO new_barter1;
+    ON CONFLICT DO NOTHING;
 
     RAISE NOTICE '✅ 10 barter offers created';
 
@@ -176,7 +174,7 @@ BEGIN
     (gen_random_uuid()::TEXT, 'CYCLE', 4, 0.88, '2.1', 'سلسلة رباعية: u1←u2←u3←u4←u1', 'PENDING', NOW() + INTERVAL '5 days', NOW(), NOW()),
     (gen_random_uuid()::TEXT, 'PATH', 3, 0.95, '2.1', 'سلسلة ثلاثية: u5→u6→u7', 'ACCEPTED', NOW() + INTERVAL '7 days', NOW(), NOW()),
     (gen_random_uuid()::TEXT, 'CYCLE', 5, 0.82, '2.1', 'سلسلة خماسية كبيرة', 'PROPOSED', NOW() + INTERVAL '10 days', NOW(), NOW())
-    RETURNING id INTO new_chain1;
+    ON CONFLICT DO NOTHING;
 
     SELECT id INTO new_chain1 FROM barter_chains ORDER BY created_at DESC LIMIT 1 OFFSET 0;
     SELECT id INTO new_chain2 FROM barter_chains ORDER BY created_at DESC LIMIT 1 OFFSET 1;

@@ -5,7 +5,7 @@
  * sorting, full-text search, and AI-powered search
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { NotFoundError, BadRequestError } from '../utils/errors';
 
 // ============================================

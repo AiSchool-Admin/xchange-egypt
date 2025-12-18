@@ -37,16 +37,16 @@ DECLARE
     trx1 TEXT; trx2 TEXT; trx3 TEXT; trx4 TEXT; trx5 TEXT;
 BEGIN
     -- =========== GET USERS ===========
-    SELECT id INTO u1 FROM users WHERE email = 'test1@xchange.eg';
-    SELECT id INTO u2 FROM users WHERE email = 'test2@xchange.eg';
-    SELECT id INTO u3 FROM users WHERE email = 'test3@xchange.eg';
-    SELECT id INTO u4 FROM users WHERE email = 'test4@xchange.eg';
-    SELECT id INTO u5 FROM users WHERE email = 'test5@xchange.eg';
-    SELECT id INTO u6 FROM users WHERE email = 'test6@xchange.eg';
-    SELECT id INTO u7 FROM users WHERE email = 'test7@xchange.eg';
-    SELECT id INTO u8 FROM users WHERE email = 'test8@xchange.eg';
-    SELECT id INTO u9 FROM users WHERE email = 'test9@xchange.eg';
-    SELECT id INTO u10 FROM users WHERE email = 'test10@xchange.eg';
+    SELECT id INTO u1 FROM users WHERE email = 'test1@xchange.eg' LIMIT 1;
+    SELECT id INTO u2 FROM users WHERE email = 'test2@xchange.eg' LIMIT 1;
+    SELECT id INTO u3 FROM users WHERE email = 'test3@xchange.eg' LIMIT 1;
+    SELECT id INTO u4 FROM users WHERE email = 'test4@xchange.eg' LIMIT 1;
+    SELECT id INTO u5 FROM users WHERE email = 'test5@xchange.eg' LIMIT 1;
+    SELECT id INTO u6 FROM users WHERE email = 'test6@xchange.eg' LIMIT 1;
+    SELECT id INTO u7 FROM users WHERE email = 'test7@xchange.eg' LIMIT 1;
+    SELECT id INTO u8 FROM users WHERE email = 'test8@xchange.eg' LIMIT 1;
+    SELECT id INTO u9 FROM users WHERE email = 'test9@xchange.eg' LIMIT 1;
+    SELECT id INTO u10 FROM users WHERE email = 'test10@xchange.eg' LIMIT 1;
 
     -- =========== GET CATEGORIES ===========
     SELECT id INTO cat_electronics FROM categories WHERE slug = 'electronics' OR name_en ILIKE '%electron%' LIMIT 1;
@@ -68,105 +68,105 @@ BEGIN
     RAISE NOTICE 'Creating items...';
 
     -- User 1 (أحمد التاجر) - إلكترونيات
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u1, 'آيفون 15 برو ماكس 256GB', 'جديد بالكرتونة ضمان سنة - تيتانيوم', cat_mobile, 'NEW', 75000, 'Cairo, Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=iPhone15'], NOW(), NOW()) RETURNING id INTO item1;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u1, 'آيفون 15 برو ماكس 256GB', 'جديد بالكرتونة ضمان سنة - تيتانيوم', cat_mobile, 'NEW', 75000, 'Cairo', 'Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=iPhone15'], NOW(), NOW()) RETURNING id INTO item1;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u1, 'ماك بوك برو M3 14 انش', '16GB RAM - 512GB SSD', cat_computers, 'NEW', 95000, 'Cairo, Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=MacBook'], NOW(), NOW()) RETURNING id INTO item2;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u1, 'ماك بوك برو M3 14 انش', '16GB RAM - 512GB SSD', cat_computers, 'NEW', 95000, 'Cairo', 'Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=MacBook'], NOW(), NOW()) RETURNING id INTO item2;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u1, 'آيباد برو 12.9 M2', 'مع Apple Pencil 2', cat_electronics, 'NEW', 45000, 'Cairo, Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=iPad'], NOW(), NOW()) RETURNING id INTO item3;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u1, 'آيباد برو 12.9 M2', 'مع Apple Pencil 2', cat_electronics, 'NEW', 45000, 'Cairo', 'Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=iPad'], NOW(), NOW()) RETURNING id INTO item3;
 
     -- User 2 (سارة المقايضة) - للمقايضة
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u2, 'سامسونج S24 Ultra 512GB', 'للمقايضة بآيفون - حالة ممتازة', cat_mobile, 'LIKE_NEW', 60000, 'Alexandria, Smouha', 'ACTIVE', ARRAY['https://placehold.co/400?text=S24'], NOW(), NOW()) RETURNING id INTO item4;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u2, 'سامسونج S24 Ultra 512GB', 'للمقايضة بآيفون - حالة ممتازة', cat_mobile, 'LIKE_NEW', 60000, 'Alexandria', 'Smouha', 'ACTIVE', ARRAY['https://placehold.co/400?text=S24'], NOW(), NOW()) RETURNING id INTO item4;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u2, 'أريكة جلد طبيعي إيطالي', 'للمقايضة بطاولة سفرة', cat_furniture, 'LIKE_NEW', 25000, 'Alexandria, Smouha', 'ACTIVE', ARRAY['https://placehold.co/400?text=Sofa'], NOW(), NOW()) RETURNING id INTO item5;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u2, 'أريكة جلد طبيعي إيطالي', 'للمقايضة بطاولة سفرة', cat_furniture, 'LIKE_NEW', 25000, 'Alexandria', 'Smouha', 'ACTIVE', ARRAY['https://placehold.co/400?text=Sofa'], NOW(), NOW()) RETURNING id INTO item5;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u2, 'بلايستيشن 5 ديجيتال', 'مع 2 يد تحكم و5 ألعاب', cat_electronics, 'LIKE_NEW', 28000, 'Alexandria, Smouha', 'ACTIVE', ARRAY['https://placehold.co/400?text=PS5'], NOW(), NOW()) RETURNING id INTO item6;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u2, 'بلايستيشن 5 ديجيتال', 'مع 2 يد تحكم و5 ألعاب', cat_electronics, 'LIKE_NEW', 28000, 'Alexandria', 'Smouha', 'ACTIVE', ARRAY['https://placehold.co/400?text=PS5'], NOW(), NOW()) RETURNING id INTO item6;
 
     -- User 3 (محمد المزادات) - للمزادات
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u3, 'كاميرا سوني A7IV', 'مع عدسة 24-70mm f/2.8', cat_electronics, 'LIKE_NEW', 120000, 'Giza, Dokki', 'ACTIVE', ARRAY['https://placehold.co/400?text=SonyA7'], NOW(), NOW()) RETURNING id INTO item7;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u3, 'كاميرا سوني A7IV', 'مع عدسة 24-70mm f/2.8', cat_electronics, 'LIKE_NEW', 120000, 'Giza', 'Dokki', 'ACTIVE', ARRAY['https://placehold.co/400?text=SonyA7'], NOW(), NOW()) RETURNING id INTO item7;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u3, 'ساعة رولكس صبمارينر', 'أصلية مع الأوراق', cat_electronics, 'LIKE_NEW', 850000, 'Giza, Dokki', 'ACTIVE', ARRAY['https://placehold.co/400?text=Rolex'], NOW(), NOW()) RETURNING id INTO item8;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u3, 'ساعة رولكس صبمارينر', 'أصلية مع الأوراق', cat_electronics, 'LIKE_NEW', 850000, 'Giza', 'Dokki', 'ACTIVE', ARRAY['https://placehold.co/400?text=Rolex'], NOW(), NOW()) RETURNING id INTO item8;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u3, 'لوحة فنية أصلية', 'للفنان محمود سعيد', cat_furniture, 'GOOD', 500000, 'Giza, Dokki', 'ACTIVE', ARRAY['https://placehold.co/400?text=Art'], NOW(), NOW()) RETURNING id INTO item9;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u3, 'لوحة فنية أصلية', 'للفنان محمود سعيد', cat_furniture, 'GOOD', 500000, 'Giza', 'Dokki', 'ACTIVE', ARRAY['https://placehold.co/400?text=Art'], NOW(), NOW()) RETURNING id INTO item9;
 
     -- User 4 (فاطمة الخردة)
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u4, 'خردة نحاس 50 كيلو', 'نحاس نظيف للبيع', cat_electronics, 'FAIR', 15000, 'Cairo, Shubra', 'ACTIVE', ARRAY['https://placehold.co/400?text=Copper'], NOW(), NOW()) RETURNING id INTO item10;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u4, 'خردة نحاس 50 كيلو', 'نحاس نظيف للبيع', cat_electronics, 'FAIR', 15000, 'Cairo', 'Shubra', 'ACTIVE', ARRAY['https://placehold.co/400?text=Copper'], NOW(), NOW()) RETURNING id INTO item10;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u4, 'خردة ألومنيوم 100 كيلو', 'ألومنيوم صناعي', cat_electronics, 'FAIR', 8000, 'Cairo, Shubra', 'ACTIVE', ARRAY['https://placehold.co/400?text=Aluminum'], NOW(), NOW()) RETURNING id INTO item11;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u4, 'خردة ألومنيوم 100 كيلو', 'ألومنيوم صناعي', cat_electronics, 'FAIR', 8000, 'Cairo', 'Shubra', 'ACTIVE', ARRAY['https://placehold.co/400?text=Aluminum'], NOW(), NOW()) RETURNING id INTO item11;
 
     -- User 5 (كريم الفاخر)
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u5, 'شنطة لويس فيتون أصلية', 'Limited Edition', cat_clothes, 'NEW', 85000, 'Cairo, Zamalek', 'ACTIVE', ARRAY['https://placehold.co/400?text=LV'], NOW(), NOW()) RETURNING id INTO item12;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u5, 'شنطة لويس فيتون أصلية', 'Limited Edition', cat_clothes, 'NEW', 85000, 'Cairo', 'Zamalek', 'ACTIVE', ARRAY['https://placehold.co/400?text=LV'], NOW(), NOW()) RETURNING id INTO item12;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u5, 'نظارة قوتشي 2024', 'موديل جديد', cat_clothes, 'NEW', 12000, 'Cairo, Zamalek', 'ACTIVE', ARRAY['https://placehold.co/400?text=Gucci'], NOW(), NOW()) RETURNING id INTO item13;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u5, 'نظارة قوتشي 2024', 'موديل جديد', cat_clothes, 'NEW', 12000, 'Cairo', 'Zamalek', 'ACTIVE', ARRAY['https://placehold.co/400?text=Gucci'], NOW(), NOW()) RETURNING id INTO item13;
 
     -- User 6 (نورا المناقصات)
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u6, 'مطلوب 50 لابتوب Dell', 'للشركة - مواصفات عالية', cat_computers, 'NEW', 750000, 'Cairo, Maadi', 'ACTIVE', ARRAY['https://placehold.co/400?text=Laptops'], NOW(), NOW()) RETURNING id INTO item14;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u6, 'مطلوب 50 لابتوب Dell', 'للشركة - مواصفات عالية', cat_computers, 'NEW', 750000, 'Cairo', 'Maadi', 'ACTIVE', ARRAY['https://placehold.co/400?text=Laptops'], NOW(), NOW()) RETURNING id INTO item14;
 
     -- User 7 (ياسر العقارات)
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u7, 'مكتب إداري فاخر', 'مع كرسي ومكتبة', cat_furniture, 'NEW', 35000, 'Cairo, New Cairo', 'ACTIVE', ARRAY['https://placehold.co/400?text=Office'], NOW(), NOW()) RETURNING id INTO item15;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u7, 'مكتب إداري فاخر', 'مع كرسي ومكتبة', cat_furniture, 'NEW', 35000, 'Cairo', 'New Cairo', 'ACTIVE', ARRAY['https://placehold.co/400?text=Office'], NOW(), NOW()) RETURNING id INTO item15;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u7, 'غرفة نوم كاملة', 'خشب زان أحمر', cat_furniture, 'NEW', 65000, 'Cairo, New Cairo', 'ACTIVE', ARRAY['https://placehold.co/400?text=Bedroom'], NOW(), NOW()) RETURNING id INTO item16;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u7, 'غرفة نوم كاملة', 'خشب زان أحمر', cat_furniture, 'NEW', 65000, 'Cairo', 'New Cairo', 'ACTIVE', ARRAY['https://placehold.co/400?text=Bedroom'], NOW(), NOW()) RETURNING id INTO item16;
 
     -- User 8 (منى الموبايلات)
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u8, 'آيفون 14 برو 256GB', 'مستعمل - بطارية 92%', cat_mobile, 'LIKE_NEW', 45000, 'Alexandria, Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=iPhone14'], NOW(), NOW()) RETURNING id INTO item17;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u8, 'آيفون 14 برو 256GB', 'مستعمل - بطارية 92%', cat_mobile, 'LIKE_NEW', 45000, 'Alexandria', 'Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=iPhone14'], NOW(), NOW()) RETURNING id INTO item17;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u8, 'شاومي 14 Ultra', 'جديد بالكرتونة', cat_mobile, 'NEW', 42000, 'Alexandria, Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=Xiaomi'], NOW(), NOW()) RETURNING id INTO item18;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u8, 'شاومي 14 Ultra', 'جديد بالكرتونة', cat_mobile, 'NEW', 42000, 'Alexandria', 'Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=Xiaomi'], NOW(), NOW()) RETURNING id INTO item18;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u8, 'سامسونج Z Fold 5', 'حالة ممتازة', cat_mobile, 'LIKE_NEW', 55000, 'Alexandria, Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=Fold5'], NOW(), NOW()) RETURNING id INTO item19;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u8, 'سامسونج Z Fold 5', 'حالة ممتازة', cat_mobile, 'LIKE_NEW', 55000, 'Alexandria', 'Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=Fold5'], NOW(), NOW()) RETURNING id INTO item19;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u8, 'أوبو فايند X7', 'جديد', cat_mobile, 'NEW', 38000, 'Alexandria, Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=Oppo'], NOW(), NOW()) RETURNING id INTO item20;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u8, 'أوبو فايند X7', 'جديد', cat_mobile, 'NEW', 38000, 'Alexandria', 'Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=Oppo'], NOW(), NOW()) RETURNING id INTO item20;
 
     -- User 9 (علي السيارات)
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u9, 'تويوتا كامري 2022', 'فل كامل - 30000 كم', cat_vehicles, 'LIKE_NEW', 950000, 'Giza, 6th October', 'ACTIVE', ARRAY['https://placehold.co/400?text=Camry'], NOW(), NOW()) RETURNING id INTO item21;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u9, 'تويوتا كامري 2022', 'فل كامل - 30000 كم', cat_vehicles, 'LIKE_NEW', 950000, 'Giza', '6th of October', 'ACTIVE', ARRAY['https://placehold.co/400?text=Camry'], NOW(), NOW()) RETURNING id INTO item21;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u9, 'هيونداي توسان 2023', 'زيرو - أول مالك', cat_vehicles, 'NEW', 1200000, 'Giza, 6th October', 'ACTIVE', ARRAY['https://placehold.co/400?text=Tucson'], NOW(), NOW()) RETURNING id INTO item22;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u9, 'هيونداي توسان 2023', 'زيرو - أول مالك', cat_vehicles, 'NEW', 1200000, 'Giza', '6th of October', 'ACTIVE', ARRAY['https://placehold.co/400?text=Tucson'], NOW(), NOW()) RETURNING id INTO item22;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u9, 'كيا سبورتاج 2021', '50000 كم - حالة ممتازة', cat_vehicles, 'GOOD', 850000, 'Giza, 6th October', 'ACTIVE', ARRAY['https://placehold.co/400?text=Sportage'], NOW(), NOW()) RETURNING id INTO item23;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u9, 'كيا سبورتاج 2021', '50000 كم - حالة ممتازة', cat_vehicles, 'GOOD', 850000, 'Giza', '6th of October', 'ACTIVE', ARRAY['https://placehold.co/400?text=Sportage'], NOW(), NOW()) RETURNING id INTO item23;
 
     -- User 10 (هدى المشتريات)
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u10, 'أبحث عن ثلاجة سامسونج', 'مطلوب 18-22 قدم', cat_electronics, 'GOOD', 25000, 'Cairo, Heliopolis', 'ACTIVE', ARRAY['https://placehold.co/400?text=Wanted'], NOW(), NOW()) RETURNING id INTO item24;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u10, 'أبحث عن ثلاجة سامسونج', 'مطلوب 18-22 قدم', cat_electronics, 'GOOD', 25000, 'Cairo', 'Heliopolis', 'ACTIVE', ARRAY['https://placehold.co/400?text=Wanted'], NOW(), NOW()) RETURNING id INTO item24;
 
     -- More items for variety
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u1, 'AirPods Pro 2', 'جديد بالكرتونة', cat_electronics, 'NEW', 8500, 'Cairo, Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=AirPods'], NOW(), NOW()) RETURNING id INTO item25;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u1, 'AirPods Pro 2', 'جديد بالكرتونة', cat_electronics, 'NEW', 8500, 'Cairo', 'Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=AirPods'], NOW(), NOW()) RETURNING id INTO item25;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u1, 'Apple Watch Ultra 2', 'جديدة', cat_electronics, 'NEW', 35000, 'Cairo, Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=Watch'], NOW(), NOW()) RETURNING id INTO item26;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u1, 'Apple Watch Ultra 2', 'جديدة', cat_electronics, 'NEW', 35000, 'Cairo', 'Nasr City', 'ACTIVE', ARRAY['https://placehold.co/400?text=Watch'], NOW(), NOW()) RETURNING id INTO item26;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u3, 'درون DJI Mavic 3', 'مع 3 بطاريات', cat_electronics, 'LIKE_NEW', 75000, 'Giza, Dokki', 'ACTIVE', ARRAY['https://placehold.co/400?text=Drone'], NOW(), NOW()) RETURNING id INTO item27;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u3, 'درون DJI Mavic 3', 'مع 3 بطاريات', cat_electronics, 'LIKE_NEW', 75000, 'Giza', 'Dokki', 'ACTIVE', ARRAY['https://placehold.co/400?text=Drone'], NOW(), NOW()) RETURNING id INTO item27;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u5, 'حذاء نايك اير جوردان', 'Limited Edition', cat_clothes, 'NEW', 15000, 'Cairo, Zamalek', 'ACTIVE', ARRAY['https://placehold.co/400?text=Jordan'], NOW(), NOW()) RETURNING id INTO item28;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u5, 'حذاء نايك اير جوردان', 'Limited Edition', cat_clothes, 'NEW', 15000, 'Cairo', 'Zamalek', 'ACTIVE', ARRAY['https://placehold.co/400?text=Jordan'], NOW(), NOW()) RETURNING id INTO item28;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u7, 'تلفزيون LG OLED 65', 'موديل 2024', cat_electronics, 'NEW', 55000, 'Cairo, New Cairo', 'ACTIVE', ARRAY['https://placehold.co/400?text=LGTV'], NOW(), NOW()) RETURNING id INTO item29;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u7, 'تلفزيون LG OLED 65', 'موديل 2024', cat_electronics, 'NEW', 55000, 'Cairo', 'New Cairo', 'ACTIVE', ARRAY['https://placehold.co/400?text=LGTV'], NOW(), NOW()) RETURNING id INTO item29;
 
-    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, location, status, images, created_at, updated_at)
-    VALUES (gen_random_uuid()::TEXT, u8, 'جوجل بيكسل 8 برو', 'جديد', cat_mobile, 'NEW', 40000, 'Alexandria, Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=Pixel8'], NOW(), NOW()) RETURNING id INTO item30;
+    INSERT INTO items (id, seller_id, title, description, category_id, condition, estimated_value, governorate, city, status, images, created_at, updated_at)
+    VALUES (gen_random_uuid()::TEXT, u8, 'جوجل بيكسل 8 برو', 'جديد', cat_mobile, 'NEW', 40000, 'Alexandria', 'Sidi Gaber', 'ACTIVE', ARRAY['https://placehold.co/400?text=Pixel8'], NOW(), NOW()) RETURNING id INTO item30;
 
     RAISE NOTICE '✅ Created 30 items';
 

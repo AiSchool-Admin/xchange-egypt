@@ -1,4 +1,4 @@
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { UserType } from '@prisma/client';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, generatePasswordResetToken, verifyPasswordResetToken } from '../utils/jwt';
