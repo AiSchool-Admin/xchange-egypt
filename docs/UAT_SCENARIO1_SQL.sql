@@ -122,12 +122,12 @@ BEGIN
     RAISE NOTICE '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
 
     -- الحصول على فئة الإلكترونيات
-    SELECT id, name INTO v_category_id, v_category_name FROM categories
-    WHERE name ILIKE '%إلكترونيات%' OR name ILIKE '%electronics%' OR name ILIKE '%هواتف%' OR name ILIKE '%phones%'
+    SELECT id, name_ar INTO v_category_id, v_category_name FROM categories
+    WHERE name_ar ILIKE '%إلكترونيات%' OR name_en ILIKE '%electronics%' OR name_ar ILIKE '%هواتف%' OR name_en ILIKE '%phones%'
     LIMIT 1;
 
     IF v_category_id IS NULL THEN
-        SELECT id, name INTO v_category_id, v_category_name FROM categories LIMIT 1;
+        SELECT id, name_ar INTO v_category_id, v_category_name FROM categories LIMIT 1;
     END IF;
 
     RAISE NOTICE 'ℹ️  الفئة: % (ID: %)', v_category_name, v_category_id;
