@@ -11,7 +11,7 @@ const SAMPLE_PROVIDER = {
   title: 'فني كهرباء معتمد',
   avatar: '👨‍🔧',
   rating: 4.9,
-  reviews: 156,
+  reviewsCount: 156,
   completedJobs: 234,
   responseTime: '30 دقيقة',
   memberSince: '2023',
@@ -66,7 +66,7 @@ export default function ProviderProfilePage() {
               </div>
               <p className="text-white/80 mb-4">{provider.title}</p>
               <div className="flex flex-wrap gap-4 text-white/90 text-sm">
-                <span>⭐ {provider.rating} ({provider.reviews} مراجعة)</span>
+                <span>⭐ {provider.rating} ({provider.reviewsCount} مراجعة)</span>
                 <span>✅ {provider.completedJobs} خدمة مكتملة</span>
                 <span>⏱️ رد خلال {provider.responseTime}</span>
                 <span>📅 عضو منذ {provider.memberSince}</span>
