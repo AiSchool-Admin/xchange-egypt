@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 
@@ -14,7 +14,8 @@ const SAMPLE_RESULTS = [
   { id: '6', name: 'فاطمة محمد', service: 'تجميل', category: 'beauty', rating: 4.9, reviews: 167, price: 160 },
 ];
 
-export default function ServicesSearchPage() {
+// Search content component that uses useSearchParams
+function SearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const query = searchParams.get('q') || '';
@@ -32,7 +33,7 @@ export default function ServicesSearchPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <>
       {/* Header */}
       <section className="bg-gradient-to-r from-indigo-600 to-blue-600 py-8">
         <div className="max-w-7xl mx-auto px-4">
@@ -122,6 +123,29 @@ export default function ServicesSearchPage() {
           )}
         </div>
       </section>
+    </>
+  );
+}
+
+// Loading fallback
+function SearchLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="rtl">
+      <div className="text-center">
+        <div className="animate-spin text-4xl mb-4">🔍</div>
+        <p className="text-gray-500">جاري البحث...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense
+export default function ServicesSearchPage() {
+  return (
+    <div className="min-h-screen bg-gray-50" dir="rtl">
+      <Suspense fallback={<SearchLoading />}>
+        <SearchContent />
+      </Suspense>
     </div>
   );
 }
