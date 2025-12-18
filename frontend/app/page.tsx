@@ -158,6 +158,17 @@ const PLATFORM_MARKETS = [
     stats: { listings: 2500, daily: 65 },
     features: ['Xchange Protect', 'مقدمين معتمدين', 'دفع آمن'],
   },
+  {
+    id: 'transport',
+    name: 'النقل الذكي',
+    nameEn: 'Transport',
+    description: 'قارن أسعار Uber, Careem, Bolt وأكثر',
+    icon: '🚕',
+    href: '/rides',
+    gradient: 'from-purple-500 to-indigo-600',
+    stats: { listings: 50000, daily: 5000 },
+    features: ['6 تطبيقات', 'وفر 40%', 'حجز فوري'],
+  },
 ];
 
 // ============================================
@@ -492,7 +503,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">
-              🏪 12 سوق متخصص في مكان واحد
+              🏪 13 سوق متخصص في مكان واحد
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               كل سوق مصمم بعناية لتجربة شراء وبيع مثالية مع ميزات فريدة وحماية كاملة
