@@ -127,29 +127,40 @@ const EGYPTIAN_HOLIDAYS = [
   // Eid dates vary - checked dynamically
 ];
 
-// Deep links for providers
+// Deep links for providers - with correct URL schemes and web fallbacks
 const DEEP_LINKS: Record<string, (pickup: Location, dropoff: Location, product: string) => string> = {
   UBER: (pickup, dropoff, product) => {
-    const productId = product === 'UberX' ? '' : `&product_id=${product.toLowerCase()}`;
-    return `uber://?action=setPickup&pickup[latitude]=${pickup.lat}&pickup[longitude]=${pickup.lng}&dropoff[latitude]=${dropoff.lat}&dropoff[longitude]=${dropoff.lng}${productId}`;
+    // Uber universal link that works on both mobile and web
+    const pickupLat = pickup.lat.toFixed(6);
+    const pickupLng = pickup.lng.toFixed(6);
+    const dropoffLat = dropoff.lat.toFixed(6);
+    const dropoffLng = dropoff.lng.toFixed(6);
+    return `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${pickupLat}&pickup[longitude]=${pickupLng}&dropoff[latitude]=${dropoffLat}&dropoff[longitude]=${dropoffLng}`;
   },
   CAREEM: (pickup, dropoff, product) => {
-    return `careem://booking?pickup_lat=${pickup.lat}&pickup_lng=${pickup.lng}&dropoff_lat=${dropoff.lat}&dropoff_lng=${dropoff.lng}&car_type=${product.toLowerCase()}`;
+    // Careem web booking link
+    return `https://app.careem.com/rides?pickup_latitude=${pickup.lat}&pickup_longitude=${pickup.lng}&dropoff_latitude=${dropoff.lat}&dropoff_longitude=${dropoff.lng}`;
   },
   BOLT: (pickup, dropoff, product) => {
-    return `bolt://ride?pickup_lat=${pickup.lat}&pickup_lng=${pickup.lng}&dest_lat=${dropoff.lat}&dest_lng=${dropoff.lng}`;
+    // Bolt web link
+    return `https://bolt.eu/ride/?pickup_lat=${pickup.lat}&pickup_lng=${pickup.lng}&dest_lat=${dropoff.lat}&dest_lng=${dropoff.lng}`;
   },
   INDRIVE: (pickup, dropoff) => {
-    return `indrive://order?from_lat=${pickup.lat}&from_lng=${pickup.lng}&to_lat=${dropoff.lat}&to_lng=${dropoff.lng}`;
+    // inDrive web link - note: inDrive doesn't have a direct booking deep link
+    // Users need to open the app and enter addresses manually
+    return `https://indrive.com/en/home/`;
   },
   DIDI: (pickup, dropoff) => {
-    return `didiglobal://ride?flat=${pickup.lat}&flng=${pickup.lng}&tlat=${dropoff.lat}&tlng=${dropoff.lng}`;
+    // DiDi web link
+    return `https://web.didiglobal.com/`;
   },
   SWVL: () => {
-    return 'swvl://routes'; // Swvl uses fixed routes
+    // Swvl web app
+    return 'https://swvl.com/';
   },
   HALAN: (pickup, dropoff) => {
-    return `halan://ride?pickup_lat=${pickup.lat}&pickup_lng=${pickup.lng}&dropoff_lat=${dropoff.lat}&dropoff_lng=${dropoff.lng}`;
+    // Halan web link
+    return 'https://www.hfrweb.com/';
   },
 };
 

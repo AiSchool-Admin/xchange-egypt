@@ -1,45 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
-
-// Dynamically import Leaflet components (no SSR)
-const MapContainer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-
-const TileLayer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-
-const Marker = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Marker),
-  { ssr: false }
-);
-
-const Popup = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Popup),
-  { ssr: false }
-);
-
-const useMapEvents = dynamic(
-  () => import('react-leaflet').then((mod) => {
-    // Return a component that uses the hook
-    const MapEventsComponent = ({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) => {
-      mod.useMapEvents({
-        click: (e: any) => {
-          onMapClick(e.latlng.lat, e.latlng.lng);
-        },
-      });
-      return null;
-    };
-    return MapEventsComponent;
-  }),
-  { ssr: false }
-) as React.ComponentType<{ onMapClick: (lat: number, lng: number) => void }>;
 
 // Egypt default center (Cairo)
 const EGYPT_CENTER: [number, number] = [30.0444, 31.2357];
@@ -77,14 +40,33 @@ interface RideLocationPickerProps {
   otherLocation?: RideLocation | null;
 }
 
-// Separate component for map events
-const MapClickHandler = dynamic(
-  () => Promise.resolve(({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) => {
-    // We need to use a workaround since hooks can't be used in dynamically imported components directly
-    // This will be handled via the map's click event instead
-    return null;
-  }),
-  { ssr: false }
+// Reverse geocode to get address from coordinates
+const getAddressFromCoords = async (lat: number, lng: number): Promise<string> => {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`
+    );
+    const data = await response.json();
+    return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  } catch {
+    return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  }
+};
+
+// Dynamic import of the Map component
+const LocationPickerMap = dynamic(
+  () => import('./LocationPickerMap'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-gray-500 text-sm">جاري تحميل الخريطة...</p>
+        </div>
+      </div>
+    )
+  }
 );
 
 export default function RideLocationPicker({
@@ -94,86 +76,26 @@ export default function RideLocationPicker({
   onClose,
   otherLocation,
 }: RideLocationPickerProps) {
-  const [isClient, setIsClient] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<RideLocation | null>(value);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
-  const [pickupIcon, setPickupIcon] = useState<any>(null);
-  const [dropoffIcon, setDropoffIcon] = useState<any>(null);
-  const [mapInstance, setMapInstance] = useState<any>(null);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(
+    value ? [value.lat, value.lng] : EGYPT_CENTER
+  );
 
-  useEffect(() => {
-    setIsClient(true);
-    // Create custom icons for pickup and dropoff
-    if (typeof window !== 'undefined') {
-      import('leaflet').then((L) => {
-        const createIcon = (color: string, emoji: string) => {
-          return L.divIcon({
-            html: `
-              <div style="
-                width: 40px;
-                height: 40px;
-                background: ${color};
-                border-radius: 50% 50% 50% 0;
-                transform: rotate(-45deg);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                border: 3px solid white;
-              ">
-                <span style="transform: rotate(45deg); font-size: 18px;">${emoji}</span>
-              </div>
-            `,
-            className: 'custom-marker',
-            iconSize: [40, 40],
-            iconAnchor: [20, 40],
-            popupAnchor: [0, -40],
-          });
-        };
-
-        setPickupIcon(createIcon('#22c55e', '🟢'));
-        setDropoffIcon(createIcon('#ef4444', '🔴'));
-      });
-    }
-  }, []);
-
-  // Attach click handler to map instance
-  useEffect(() => {
-    if (mapInstance) {
-      const handleClick = async (e: any) => {
-        const { lat, lng } = e.latlng;
-        setIsLoadingAddress(true);
-        const address = await getAddressFromCoords(lat, lng);
-        const location: RideLocation = {
-          lat,
-          lng,
-          name: address.split(',')[0] || 'موقع على الخريطة',
-          address,
-        };
-        setSelectedLocation(location);
-        setIsLoadingAddress(false);
-      };
-
-      mapInstance.on('click', handleClick);
-      return () => {
-        mapInstance.off('click', handleClick);
-      };
-    }
-  }, [mapInstance]);
-
-  // Reverse geocode to get address from coordinates
-  const getAddressFromCoords = async (lat: number, lng: number): Promise<string> => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`
-      );
-      const data = await response.json();
-      return data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    } catch {
-      return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-    }
+  // Handle map click
+  const handleMapClick = async (lat: number, lng: number) => {
+    setIsLoadingAddress(true);
+    const address = await getAddressFromCoords(lat, lng);
+    const location: RideLocation = {
+      lat,
+      lng,
+      name: address.split(',')[0] || 'موقع على الخريطة',
+      address,
+    };
+    setSelectedLocation(location);
+    setIsLoadingAddress(false);
   };
 
   // Get current GPS location
@@ -197,13 +119,9 @@ export default function RideLocationPicker({
           address,
         };
         setSelectedLocation(location);
+        setMapCenter([latitude, longitude]);
         setIsLoadingAddress(false);
         setIsGettingLocation(false);
-
-        // Center map on location
-        if (mapInstance) {
-          mapInstance.setView([latitude, longitude], 15);
-        }
       },
       (error) => {
         console.error('Error getting location:', error);
@@ -222,9 +140,7 @@ export default function RideLocationPicker({
       name: loc.name,
       nameEn: loc.nameEn,
     });
-    if (mapInstance) {
-      mapInstance.setView([loc.lat, loc.lng], 15);
-    }
+    setMapCenter([loc.lat, loc.lng]);
   };
 
   // Filter popular locations
@@ -243,17 +159,6 @@ export default function RideLocationPicker({
       onClose();
     }
   };
-
-  if (!isClient) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-8">
-          <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-gray-500">جاري تحميل الخريطة...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" dir="rtl">
@@ -345,68 +250,27 @@ export default function RideLocationPicker({
           </div>
 
           {/* Map */}
-          <div className="flex-1 relative">
-            <MapContainer
-              center={value ? [value.lat, value.lng] : EGYPT_CENTER}
+          <div className="flex-1 relative min-h-[400px]">
+            <LocationPickerMap
+              center={mapCenter}
               zoom={value ? 15 : DEFAULT_ZOOM}
-              style={{ height: '100%', width: '100%', minHeight: '400px' }}
-              ref={(map: any) => {
-                if (map && !mapInstance) {
-                  setMapInstance(map);
-                }
-              }}
-            >
-              <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                attribution='&copy; OpenStreetMap &copy; CARTO'
-              />
-
-              {/* Selected location marker */}
-              {selectedLocation && pickupIcon && dropoffIcon && (
-                <Marker
-                  position={[selectedLocation.lat, selectedLocation.lng]}
-                  icon={mode === 'pickup' ? pickupIcon : dropoffIcon}
-                >
-                  <Popup>
-                    <div className="text-center p-2" dir="rtl">
-                      <p className="font-bold">{selectedLocation.name}</p>
-                      {selectedLocation.address && (
-                        <p className="text-xs text-gray-500 mt-1">{selectedLocation.address}</p>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              )}
-
-              {/* Other location marker (pickup or dropoff) */}
-              {otherLocation && pickupIcon && dropoffIcon && (
-                <Marker
-                  position={[otherLocation.lat, otherLocation.lng]}
-                  icon={mode === 'pickup' ? dropoffIcon : pickupIcon}
-                  opacity={0.6}
-                >
-                  <Popup>
-                    <div className="text-center p-2" dir="rtl">
-                      <p className="font-bold">{otherLocation.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {mode === 'pickup' ? 'الوجهة' : 'نقطة الانطلاق'}
-                      </p>
-                    </div>
-                  </Popup>
-                </Marker>
-              )}
-            </MapContainer>
+              selectedLocation={selectedLocation}
+              otherLocation={otherLocation}
+              mode={mode}
+              onMapClick={handleMapClick}
+              onCenterChange={setMapCenter}
+            />
 
             {/* Loading address indicator */}
             {isLoadingAddress && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/90 px-4 py-2 rounded-full shadow-lg flex items-center gap-2 z-[1000]">
                 <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                 <span className="text-sm">جاري تحديد العنوان...</span>
               </div>
             )}
 
             {/* Instructions overlay */}
-            <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-xs bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4">
+            <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-xs bg-white/95 backdrop-blur-sm rounded-xl shadow-lg p-4 z-[1000]">
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span className="text-lg">👆</span>
                 <span>اضغط على أي نقطة في الخريطة لتحديدها</span>
