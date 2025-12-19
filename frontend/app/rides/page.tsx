@@ -290,12 +290,33 @@ export default function RidesPage() {
   const [routeInfo, setRouteInfo] = useState<{distanceKm: number; durationMin: number; trafficCondition: string} | null>(null);
   const [surgeInfo, setSurgeInfo] = useState<{multiplier: number; demandLevel: string; tips: string[]} | null>(null);
   const [recommendation, setRecommendation] = useState<{provider: string; product: string; price: number; reason: string} | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Refs to prevent infinite loops and rate limiting
+  const fetchedForRef = useRef<string>('');
+  const lastFetchTimeRef = useRef<number>(0);
 
   // Generate offers when both locations are set - NOW USES API
   const generateOffers = useCallback(async () => {
     if (!pickup || !dropoff) return;
 
+    // Create a unique key for this pickup/dropoff combination
+    const locationKey = `${pickup.lat},${pickup.lng}-${dropoff.lat},${dropoff.lng}`;
+
+    // Prevent duplicate fetches for same locations
+    if (fetchedForRef.current === locationKey) return;
+
+    // Rate limit: wait at least 3 seconds between requests
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < 3000) {
+      console.log('Rate limiting: waiting before next request');
+      return;
+    }
+
     setLoading(true);
+    setApiError(null);
+    fetchedForRef.current = locationKey;
+    lastFetchTimeRef.current = now;
 
     try {
       // Call the real API
@@ -304,6 +325,17 @@ export default function RidesPage() {
         `pickupLat=${pickup.lat}&pickupLng=${pickup.lng}` +
         `&dropoffLat=${dropoff.lat}&dropoffLng=${dropoff.lng}`
       );
+
+      // Handle rate limiting
+      if (response.status === 429) {
+        setApiError('تم تجاوز الحد المسموح من الطلبات. يرجى الانتظار دقيقة ثم المحاولة مرة أخرى.');
+        setLoading(false);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -369,22 +401,24 @@ export default function RidesPage() {
 
       setOffers(newOffers);
 
-      // Save to recent searches
-      const newRecent = [{ pickup, dropoff }, ...recentSearches.filter(
-        r => r.pickup.name !== pickup.name || r.dropoff.name !== dropoff.name
-      )].slice(0, 5);
-      setRecentSearches(newRecent);
-      localStorage.setItem('xchange_recent_rides', JSON.stringify(newRecent));
+      // Save to recent searches (use functional update to avoid dependency)
+      setRecentSearches(prev => {
+        const newRecent = [{ pickup, dropoff }, ...prev.filter(
+          r => r.pickup.name !== pickup.name || r.dropoff.name !== dropoff.name
+        )].slice(0, 5);
+        localStorage.setItem('xchange_recent_rides', JSON.stringify(newRecent));
+        return newRecent;
+      });
 
     } catch (error) {
       console.error('Error fetching estimates:', error);
-      // Fallback to show error
+      setApiError('حدث خطأ أثناء جلب الأسعار. يرجى المحاولة مرة أخرى.');
       setOffers([]);
     } finally {
       setLoading(false);
     }
 
-  }, [pickup, dropoff, recentSearches]);
+  }, [pickup, dropoff]);
 
   // Helper to get icon for vehicle type
   const getTypeIcon = (type: string): string => {
@@ -667,7 +701,7 @@ export default function RidesPage() {
       </section>
 
       {/* Results Section */}
-      {(loading || offers.length > 0) && (
+      {(loading || offers.length > 0 || apiError) && (
         <section className="py-8">
           <div className="max-w-7xl mx-auto px-4">
             {loading ? (
@@ -681,6 +715,27 @@ export default function RidesPage() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">جاري البحث عن أفضل الأسعار</h3>
                 <p className="text-gray-500">نقارن 7 تطبيقات في وقت واحد...</p>
+              </div>
+            ) : apiError ? (
+              <div className="text-center py-16">
+                <div className="w-24 h-24 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center text-5xl">
+                  ⚠️
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">عذراً!</h3>
+                <p className="text-gray-600 mb-6">{apiError}</p>
+                <button
+                  onClick={() => {
+                    setApiError(null);
+                    fetchedForRef.current = ''; // Reset to allow retry
+                    lastFetchTimeRef.current = 0; // Reset rate limit
+                    if (pickup && dropoff) {
+                      generateOffers();
+                    }
+                  }}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium"
+                >
+                  🔄 حاول مرة أخرى
+                </button>
               </div>
             ) : (
               <>
