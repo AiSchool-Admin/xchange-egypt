@@ -3,6 +3,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the location picker (no SSR for Leaflet)
+const RideLocationPicker = dynamic(
+  () => import('@/components/rides/RideLocationPicker'),
+  { ssr: false }
+);
 
 // API Base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xchange-egypt-production.up.railway.app/api/v1';
@@ -262,6 +269,7 @@ export default function RidesPage() {
   const [loading, setLoading] = useState(false);
   const [sortBy, setSortBy] = useState<'recommended' | 'price' | 'eta'>('recommended');
   const [filterCategory, setFilterCategory] = useState<'all' | 'economy' | 'comfort' | 'premium' | 'bus'>('all');
+  const [showMapPicker, setShowMapPicker] = useState<'pickup' | 'dropoff' | null>(null);
   const [showPriceBreakdown, setShowPriceBreakdown] = useState<string | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<Location[]>([]);
   const [recentSearches, setRecentSearches] = useState<{pickup: Location, dropoff: Location}[]>([]);
@@ -481,9 +489,19 @@ export default function RidesPage() {
             <div className="grid md:grid-cols-2 gap-4">
               {/* Pickup Input */}
               <div className="relative">
-                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-                  <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                  نقطة الانطلاق
+                <label className="flex items-center justify-between text-sm font-bold text-gray-700 mb-2">
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                    نقطة الانطلاق
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowMapPicker('pickup')}
+                    className="text-purple-600 hover:text-purple-700 flex items-center gap-1 font-medium"
+                  >
+                    <span>🗺️</span>
+                    <span>حدد على الخريطة</span>
+                  </button>
                 </label>
                 <input
                   type="text"
@@ -548,9 +566,19 @@ export default function RidesPage() {
 
               {/* Dropoff Input */}
               <div className="relative">
-                <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
-                  <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-                  الوجهة
+                <label className="flex items-center justify-between text-sm font-bold text-gray-700 mb-2">
+                  <span className="flex items-center gap-2">
+                    <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+                    الوجهة
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowMapPicker('dropoff')}
+                    className="text-purple-600 hover:text-purple-700 flex items-center gap-1 font-medium"
+                  >
+                    <span>🗺️</span>
+                    <span>حدد على الخريطة</span>
+                  </button>
                 </label>
                 <input
                   type="text"
@@ -972,6 +1000,25 @@ export default function RidesPage() {
         <div
           className="fixed inset-0 z-20"
           onClick={() => setActiveInput(null)}
+        />
+      )}
+
+      {/* Map Location Picker Modal */}
+      {showMapPicker && (
+        <RideLocationPicker
+          mode={showMapPicker}
+          value={showMapPicker === 'pickup' ? pickup : dropoff}
+          onChange={(location) => {
+            if (showMapPicker === 'pickup') {
+              setPickup(location);
+              setPickupSearch('');
+            } else {
+              setDropoff(location);
+              setDropoffSearch('');
+            }
+          }}
+          onClose={() => setShowMapPicker(null)}
+          otherLocation={showMapPicker === 'pickup' ? dropoff : pickup}
         />
       )}
     </div>
