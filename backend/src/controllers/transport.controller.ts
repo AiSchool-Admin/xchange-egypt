@@ -324,7 +324,10 @@ export const getPriceEstimates = async (req: Request, res: Response) => {
       features: e.features,
       capacity: e.capacity,
       deepLink: e.deepLink,
-      webFallbackUrl: PROVIDER_CONFIGS[e.provider.toUpperCase() as TransportProvider]?.webUrl || '',
+      webFallbackUrl: e.webFallbackUrl || PROVIDER_CONFIGS[e.provider.toUpperCase() as TransportProvider]?.webUrl || '',
+      // Booking capability - whether app supports direct booking via deep link
+      supportsDirectDeepLink: e.supportsDirectDeepLink,
+      appScheme: e.appScheme,
       expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
     }));
 

@@ -11,6 +11,9 @@ const RideLocationPicker = dynamic(
   { ssr: false }
 );
 
+// Import booking fallback modal for apps without direct deep links
+import BookingFallbackModal from '@/components/rides/BookingFallbackModal';
+
 // API Base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xchange-egypt-production.up.railway.app/api/v1';
 
@@ -212,6 +215,9 @@ interface RideOffer {
   isCheapest: boolean;
   isFastest: boolean;
   score: number;
+  // Booking capability
+  supportsDirectDeepLink: boolean;
+  appScheme?: string;
 }
 
 // ============================================
@@ -273,6 +279,7 @@ export default function RidesPage() {
   const [showPriceBreakdown, setShowPriceBreakdown] = useState<string | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<Location[]>([]);
   const [recentSearches, setRecentSearches] = useState<{pickup: Location, dropoff: Location}[]>([]);
+  const [bookingFallbackOffer, setBookingFallbackOffer] = useState<RideOffer | null>(null);
 
   // Refs
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -381,6 +388,9 @@ export default function RidesPage() {
           isCheapest: false,
           isFastest: false,
           score: estimate.recommendationScore,
+          // Booking capability
+          supportsDirectDeepLink: estimate.supportsDirectDeepLink ?? true,
+          appScheme: estimate.appScheme,
           // Extra data from API
           features: estimate.features,
           capacity: estimate.capacity,
@@ -465,11 +475,17 @@ export default function RidesPage() {
 
   // Handle booking
   const handleBook = (offer: RideOffer) => {
-    // Try deep link first, then web fallback
-    window.location.href = offer.deepLink;
-    setTimeout(() => {
-      window.location.href = offer.webFallback;
-    }, 2500);
+    // Check if provider supports direct deep links
+    if (offer.supportsDirectDeepLink) {
+      // Try deep link first, then web fallback
+      window.location.href = offer.deepLink;
+      setTimeout(() => {
+        window.location.href = offer.webFallback;
+      }, 2500);
+    } else {
+      // Show fallback modal with address copying for unsupported apps
+      setBookingFallbackOffer(offer);
+    }
   };
 
   // Save address
@@ -969,8 +985,15 @@ export default function RidesPage() {
                         onClick={() => handleBook(offer)}
                         className={`w-full py-4 ${offer.providerBgColor} ${offer.providerBgColor === 'bg-yellow-500' ? 'text-black' : 'text-white'} rounded-xl font-bold text-lg hover:opacity-90 transition-all active:scale-95 shadow-lg`}
                       >
-                        احجز الآن
+                        {offer.supportsDirectDeepLink ? 'احجز الآن' : '📋 احجز (نسخ العنوان)'}
                       </button>
+
+                      {/* Indicator for apps needing manual address entry */}
+                      {!offer.supportsDirectDeepLink && (
+                        <p className="text-xs text-center text-gray-500 mt-2">
+                          💡 سيتم نسخ العنوان ثم فتح التطبيق
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1074,6 +1097,34 @@ export default function RidesPage() {
           }}
           onClose={() => setShowMapPicker(null)}
           otherLocation={showMapPicker === 'pickup' ? dropoff : pickup}
+        />
+      )}
+
+      {/* Booking Fallback Modal for apps without direct deep links */}
+      {bookingFallbackOffer && pickup && dropoff && (
+        <BookingFallbackModal
+          provider={{
+            name: bookingFallbackOffer.providerName,
+            nameAr: bookingFallbackOffer.providerNameAr,
+            emoji: bookingFallbackOffer.providerEmoji,
+            color: bookingFallbackOffer.providerColor,
+            bgColor: bookingFallbackOffer.providerBgColor,
+          }}
+          pickup={{
+            name: pickup.name,
+            nameEn: pickup.nameEn,
+            lat: pickup.lat,
+            lng: pickup.lng,
+          }}
+          dropoff={{
+            name: dropoff.name,
+            nameEn: dropoff.nameEn,
+            lat: dropoff.lat,
+            lng: dropoff.lng,
+          }}
+          price={bookingFallbackOffer.price}
+          onClose={() => setBookingFallbackOffer(null)}
+          webFallbackUrl={bookingFallbackOffer.webFallback}
         />
       )}
     </div>

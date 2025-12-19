@@ -62,6 +62,10 @@ export interface PriceEstimate {
   features: string[];
   capacity: number;
   deepLink: string;
+  // Booking capability info
+  supportsDirectDeepLink: boolean;
+  webFallbackUrl: string;
+  appScheme?: string;
 }
 
 export interface TrainingDataPoint {
@@ -127,42 +131,95 @@ const EGYPTIAN_HOLIDAYS = [
   // Eid dates vary - checked dynamically
 ];
 
-// Deep links for providers - with correct URL schemes and web fallbacks
-const DEEP_LINKS: Record<string, (pickup: Location, dropoff: Location, product: string) => string> = {
-  UBER: (pickup, dropoff, product) => {
-    // Uber universal link that works on both mobile and web
-    const pickupLat = pickup.lat.toFixed(6);
-    const pickupLng = pickup.lng.toFixed(6);
-    const dropoffLat = dropoff.lat.toFixed(6);
-    const dropoffLng = dropoff.lng.toFixed(6);
-    return `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${pickupLat}&pickup[longitude]=${pickupLng}&dropoff[latitude]=${dropoffLat}&dropoff[longitude]=${dropoffLng}`;
+// Provider booking capabilities
+interface ProviderBookingInfo {
+  supportsDirectDeepLink: boolean;
+  deepLinkGenerator: (pickup: Location, dropoff: Location, product: string) => string;
+  webFallbackUrl: string;
+  appScheme: string;
+  appStoreUrl: string;
+  playStoreUrl: string;
+}
+
+const PROVIDER_BOOKING_INFO: Record<string, ProviderBookingInfo> = {
+  UBER: {
+    supportsDirectDeepLink: true,
+    deepLinkGenerator: (pickup, dropoff, product) => {
+      const pickupLat = pickup.lat.toFixed(6);
+      const pickupLng = pickup.lng.toFixed(6);
+      const dropoffLat = dropoff.lat.toFixed(6);
+      const dropoffLng = dropoff.lng.toFixed(6);
+      return `https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${pickupLat}&pickup[longitude]=${pickupLng}&dropoff[latitude]=${dropoffLat}&dropoff[longitude]=${dropoffLng}`;
+    },
+    webFallbackUrl: 'https://m.uber.com',
+    appScheme: 'uber://',
+    appStoreUrl: 'https://apps.apple.com/app/uber/id368677368',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.ubercab',
   },
-  CAREEM: (pickup, dropoff, product) => {
-    // Careem web booking link
-    return `https://app.careem.com/rides?pickup_latitude=${pickup.lat}&pickup_longitude=${pickup.lng}&dropoff_latitude=${dropoff.lat}&dropoff_longitude=${dropoff.lng}`;
+  CAREEM: {
+    supportsDirectDeepLink: true,
+    deepLinkGenerator: (pickup, dropoff, product) => {
+      return `https://app.careem.com/rides?pickup_latitude=${pickup.lat}&pickup_longitude=${pickup.lng}&dropoff_latitude=${dropoff.lat}&dropoff_longitude=${dropoff.lng}`;
+    },
+    webFallbackUrl: 'https://app.careem.com',
+    appScheme: 'careem://',
+    appStoreUrl: 'https://apps.apple.com/app/careem/id592978487',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.careem.acma',
   },
-  BOLT: (pickup, dropoff, product) => {
-    // Bolt web link
-    return `https://bolt.eu/ride/?pickup_lat=${pickup.lat}&pickup_lng=${pickup.lng}&dest_lat=${dropoff.lat}&dest_lng=${dropoff.lng}`;
+  BOLT: {
+    supportsDirectDeepLink: true,
+    deepLinkGenerator: (pickup, dropoff, product) => {
+      return `https://bolt.eu/ride/?pickup_lat=${pickup.lat}&pickup_lng=${pickup.lng}&dest_lat=${dropoff.lat}&dest_lng=${dropoff.lng}`;
+    },
+    webFallbackUrl: 'https://bolt.eu',
+    appScheme: 'bolt://',
+    appStoreUrl: 'https://apps.apple.com/app/bolt-request-a-ride/id675033630',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=ee.mtakso.client',
   },
-  INDRIVE: (pickup, dropoff) => {
-    // inDrive web link - note: inDrive doesn't have a direct booking deep link
-    // Users need to open the app and enter addresses manually
-    return `https://indrive.com/en/home/`;
+  INDRIVE: {
+    supportsDirectDeepLink: false, // inDrive doesn't support direct booking links
+    deepLinkGenerator: () => 'REQUIRES_ADDRESS_COPY', // Special flag
+    webFallbackUrl: 'https://indrive.com/en/home/',
+    appScheme: 'indrive://',
+    appStoreUrl: 'https://apps.apple.com/app/indrive-ride-deals-delivery/id789066289',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=sinet.startup.inDriver',
   },
-  DIDI: (pickup, dropoff) => {
-    // DiDi web link
-    return `https://web.didiglobal.com/`;
+  DIDI: {
+    supportsDirectDeepLink: false, // DiDi Egypt doesn't have direct booking links
+    deepLinkGenerator: () => 'REQUIRES_ADDRESS_COPY',
+    webFallbackUrl: 'https://web.didiglobal.com/',
+    appScheme: 'didiglobal://',
+    appStoreUrl: 'https://apps.apple.com/app/didi-rider/id1489604832',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.didiglobal.passenger',
   },
-  SWVL: () => {
-    // Swvl web app
-    return 'https://swvl.com/';
+  SWVL: {
+    supportsDirectDeepLink: false, // Swvl uses route-based booking
+    deepLinkGenerator: () => 'REQUIRES_ADDRESS_COPY',
+    webFallbackUrl: 'https://swvl.com/',
+    appScheme: 'swvl://',
+    appStoreUrl: 'https://apps.apple.com/app/swvl-bus-car-booking-app/id1210151498',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.swvl.rider',
   },
-  HALAN: (pickup, dropoff) => {
-    // Halan web link
-    return 'https://www.hfrweb.com/';
+  HALAN: {
+    supportsDirectDeepLink: false, // Halan doesn't have direct deep links
+    deepLinkGenerator: () => 'REQUIRES_ADDRESS_COPY',
+    webFallbackUrl: 'https://www.hfrweb.com/',
+    appScheme: 'halan://',
+    appStoreUrl: 'https://apps.apple.com/app/halan/id1434633092',
+    playStoreUrl: 'https://play.google.com/store/apps/details?id=com.mwasalat.halan',
   },
 };
+
+// Legacy deep links export for backwards compatibility
+const DEEP_LINKS: Record<string, (pickup: Location, dropoff: Location, product: string) => string> = {};
+for (const [key, info] of Object.entries(PROVIDER_BOOKING_INFO)) {
+  DEEP_LINKS[key] = info.deepLinkGenerator;
+}
+
+// Export helper to check if provider supports direct booking
+export function getProviderBookingInfo(provider: string): ProviderBookingInfo | null {
+  return PROVIDER_BOOKING_INFO[provider] || null;
+}
 
 // ============================================
 // AI Pricing Simulator Class
@@ -235,6 +292,9 @@ export class AIPricingSimulator {
           max: Math.round(priceBreakdown.finalPrice * (1 + rangePercentage)),
         };
 
+        // Get booking info for this provider
+        const bookingInfo = PROVIDER_BOOKING_INFO[providerKey];
+
         estimates.push({
           provider: providerData.provider,
           providerAr: providerData.providerAr,
@@ -253,6 +313,10 @@ export class AIPricingSimulator {
           features: productData.features,
           capacity: productData.capacity,
           deepLink,
+          // Booking capability info
+          supportsDirectDeepLink: bookingInfo?.supportsDirectDeepLink ?? false,
+          webFallbackUrl: bookingInfo?.webFallbackUrl ?? '',
+          appScheme: bookingInfo?.appScheme,
         });
       }
     }
