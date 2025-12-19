@@ -13,6 +13,7 @@ const RideLocationPicker = dynamic(
 
 // Import booking fallback modal for apps without direct deep links
 import BookingFallbackModal from '@/components/rides/BookingFallbackModal';
+import SmartBookingHandler from '@/components/rides/SmartBookingHandler';
 
 // API Base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xchange-egypt-production.up.railway.app/api/v1';
@@ -280,9 +281,24 @@ export default function RidesPage() {
   const [savedAddresses, setSavedAddresses] = useState<Location[]>([]);
   const [recentSearches, setRecentSearches] = useState<{pickup: Location, dropoff: Location}[]>([]);
   const [bookingFallbackOffer, setBookingFallbackOffer] = useState<RideOffer | null>(null);
+  const [smartBookingOffer, setSmartBookingOffer] = useState<RideOffer | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Refs
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+      const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      setIsMobile(isMobileDevice || isTouchDevice);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Load saved data
   useEffect(() => {
@@ -483,8 +499,14 @@ export default function RidesPage() {
         window.location.href = offer.webFallback;
       }, 2500);
     } else {
-      // Show fallback modal with address copying for unsupported apps
-      setBookingFallbackOffer(offer);
+      // For apps without direct deep links:
+      // On mobile: Use smart booking (auto-copy + open app)
+      // On desktop: Show fallback modal
+      if (isMobile) {
+        setSmartBookingOffer(offer);
+      } else {
+        setBookingFallbackOffer(offer);
+      }
     }
   };
 
@@ -983,15 +1005,27 @@ export default function RidesPage() {
                       {/* Book Button */}
                       <button
                         onClick={() => handleBook(offer)}
-                        className={`w-full py-4 ${offer.providerBgColor} ${offer.providerBgColor === 'bg-yellow-500' ? 'text-black' : 'text-white'} rounded-xl font-bold text-lg hover:opacity-90 transition-all active:scale-95 shadow-lg`}
+                        className={`w-full py-4 ${offer.providerBgColor} ${offer.providerBgColor === 'bg-yellow-500' ? 'text-black' : 'text-white'} rounded-xl font-bold text-lg hover:opacity-90 transition-all active:scale-95 shadow-lg flex items-center justify-center gap-2`}
                       >
-                        {offer.supportsDirectDeepLink ? 'احجز الآن' : '📋 احجز (نسخ العنوان)'}
+                        {offer.supportsDirectDeepLink ? (
+                          <>
+                            <span>🚀</span>
+                            <span>احجز الآن</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>📱</span>
+                            <span>افتح في التطبيق</span>
+                          </>
+                        )}
                       </button>
 
                       {/* Indicator for apps needing manual address entry */}
                       {!offer.supportsDirectDeepLink && (
                         <p className="text-xs text-center text-gray-500 mt-2">
-                          💡 سيتم نسخ العنوان ثم فتح التطبيق
+                          {isMobile
+                            ? '💡 سيتم نسخ العناوين تلقائياً وفتح التطبيق'
+                            : '💡 سيتم نسخ العناوين ثم فتح التطبيق'}
                         </p>
                       )}
                     </div>
@@ -1100,7 +1134,32 @@ export default function RidesPage() {
         />
       )}
 
-      {/* Booking Fallback Modal for apps without direct deep links */}
+      {/* Smart Booking Handler for mobile - auto copy addresses and open app */}
+      {smartBookingOffer && pickup && dropoff && (
+        <SmartBookingHandler
+          providerName={smartBookingOffer.providerName}
+          providerNameAr={smartBookingOffer.providerNameAr}
+          providerEmoji={smartBookingOffer.providerEmoji}
+          providerBgColor={smartBookingOffer.providerBgColor}
+          pickup={{
+            name: pickup.name,
+            nameEn: pickup.nameEn,
+            lat: pickup.lat,
+            lng: pickup.lng,
+          }}
+          dropoff={{
+            name: dropoff.name,
+            nameEn: dropoff.nameEn,
+            lat: dropoff.lat,
+            lng: dropoff.lng,
+          }}
+          appScheme={smartBookingOffer.appScheme || 'indrive://'}
+          webFallbackUrl={smartBookingOffer.webFallback}
+          onComplete={() => setSmartBookingOffer(null)}
+        />
+      )}
+
+      {/* Booking Fallback Modal for desktop users */}
       {bookingFallbackOffer && pickup && dropoff && (
         <BookingFallbackModal
           provider={{
