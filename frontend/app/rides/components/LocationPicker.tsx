@@ -12,13 +12,7 @@ import {
   ChevronLeftIcon
 } from '@heroicons/react/24/outline';
 
-// Declare Google Maps types
-declare global {
-  interface Window {
-    google: typeof google;
-    initGoogleMaps: () => void;
-  }
-}
+// Google Maps types are provided by @types/google.maps
 
 interface Location {
   lat: number;
