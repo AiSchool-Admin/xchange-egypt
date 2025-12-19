@@ -4,6 +4,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+// API Base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xchange-egypt-production.up.railway.app/api/v1';
+
 // ============================================
 // Transport Providers Configuration
 // ============================================
@@ -275,105 +278,118 @@ export default function RidesPage() {
     if (recent) setRecentSearches(JSON.parse(recent).slice(0, 5));
   }, []);
 
-  // Generate offers when both locations are set
+  // State for API data
+  const [routeInfo, setRouteInfo] = useState<{distanceKm: number; durationMin: number; trafficCondition: string} | null>(null);
+  const [surgeInfo, setSurgeInfo] = useState<{multiplier: number; demandLevel: string; tips: string[]} | null>(null);
+  const [recommendation, setRecommendation] = useState<{provider: string; product: string; price: number; reason: string} | null>(null);
+
+  // Generate offers when both locations are set - NOW USES API
   const generateOffers = useCallback(async () => {
     if (!pickup || !dropoff) return;
 
     setLoading(true);
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      // Call the real API
+      const response = await fetch(
+        `${API_URL}/transport/estimates?` +
+        `pickupLat=${pickup.lat}&pickupLng=${pickup.lng}` +
+        `&dropoffLat=${dropoff.lat}&dropoffLng=${dropoff.lng}`
+      );
 
-    const distance = calculateDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
-    const duration = Math.round(distance * 2.5 + 8); // ~2.5 min/km + 8 min buffer
-    const baseSurge = getSurgeMultiplier();
+      const data = await response.json();
 
-    const newOffers: RideOffer[] = [];
-    let minPrice = Infinity;
-    let minEta = Infinity;
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch estimates');
+      }
 
-    // Generate offer for each provider and type
-    Object.values(PROVIDERS).forEach((provider) => {
-      provider.types.forEach((type) => {
-        const surge = baseSurge + (Math.random() * 0.2 - 0.1);
-        const distanceFare = distance * type.perKm;
-        const timeFare = duration * type.perMin;
-        let price = Math.round((type.baseFare + distanceFare + timeFare) * surge);
-        price = Math.max(price, type.minFare);
+      // Store route and surge info
+      setRouteInfo(data.data.route);
+      setSurgeInfo(data.data.surge);
+      setRecommendation(data.data.recommendation);
 
-        const hasDiscount = Math.random() > 0.75;
-        const discount = hasDiscount ? Math.round(10 + Math.random() * 20) : 0;
-        const originalPrice = hasDiscount ? Math.round(price / (1 - discount/100)) : undefined;
+      // Transform API response to RideOffer format
+      const newOffers: RideOffer[] = data.data.estimates.map((estimate: any) => {
+        const providerKey = estimate.provider.toLowerCase();
+        const provider = PROVIDERS[providerKey as keyof typeof PROVIDERS] || PROVIDERS.uber;
 
-        const eta = Math.round(2 + Math.random() * 10);
-        const confidence = Math.round(80 + Math.random() * 20);
-
-        // Track min price and eta
-        if (price < minPrice) minPrice = price;
-        if (eta < minEta) minEta = eta;
-
-        // Calculate recommendation score
-        const priceScore = (1 - price / 200) * 40;
-        const etaScore = (1 - eta / 15) * 20;
-        const confidenceScore = (confidence / 100) * 30;
-        const reliabilityScore = provider.id === 'uber' || provider.id === 'careem' ? 10 : 5;
-        const totalScore = priceScore + etaScore + confidenceScore + reliabilityScore;
-
-        newOffers.push({
-          id: `${provider.id}-${type.id}-${Date.now()}`,
-          providerId: provider.id,
-          providerName: provider.name,
-          providerNameAr: provider.nameAr,
-          providerEmoji: provider.emoji,
-          providerColor: provider.color,
-          providerBgColor: provider.bgColor,
-          typeId: type.id,
-          typeName: type.name,
-          typeNameAr: type.nameAr,
-          typeIcon: type.icon,
-          category: type.category,
-          price,
-          originalPrice,
-          discount: hasDiscount ? discount : undefined,
-          baseFare: type.baseFare,
-          distanceFare: Math.round(distanceFare),
-          timeFare: Math.round(timeFare),
-          surgeMultiplier: Math.round(surge * 100) / 100,
-          eta,
-          confidence,
-          deepLink: generateDeepLink(provider, pickup, dropoff),
-          webFallback: provider.webFallback,
-          isRecommended: false,
+        return {
+          id: estimate.id,
+          providerId: providerKey,
+          providerName: estimate.providerName,
+          providerNameAr: estimate.providerNameAr,
+          providerEmoji: provider?.emoji || '🚗',
+          providerColor: provider?.color || '#000',
+          providerBgColor: provider?.bgColor || 'bg-gray-500',
+          typeId: estimate.vehicleTypeName.toLowerCase(),
+          typeName: estimate.vehicleTypeName,
+          typeNameAr: estimate.vehicleTypeNameAr,
+          typeIcon: getTypeIcon(estimate.vehicleType),
+          category: estimate.vehicleType.toLowerCase(),
+          price: estimate.price,
+          originalPrice: estimate.originalPrice,
+          discount: undefined,
+          baseFare: estimate.priceBreakdown.baseFare,
+          distanceFare: estimate.priceBreakdown.distanceFare,
+          timeFare: estimate.priceBreakdown.timeFare,
+          surgeMultiplier: estimate.priceBreakdown.surgeMultiplier,
+          eta: estimate.etaMinutes,
+          confidence: estimate.confidenceScore,
+          deepLink: estimate.deepLink,
+          webFallback: estimate.webFallbackUrl,
+          isRecommended: estimate.isRecommended,
           isCheapest: false,
           isFastest: false,
-          score: totalScore,
-        });
+          score: estimate.recommendationScore,
+          // Extra data from API
+          features: estimate.features,
+          capacity: estimate.capacity,
+          surgeReason: estimate.surgeInfo?.reason,
+          priceRange: estimate.priceRange,
+        };
       });
-    });
 
-    // Mark special offers
-    newOffers.forEach((offer) => {
-      offer.isCheapest = offer.price === minPrice;
-      offer.isFastest = offer.eta === minEta;
-    });
+      // Mark cheapest and fastest
+      if (newOffers.length > 0) {
+        const minPrice = Math.min(...newOffers.map(o => o.price));
+        const minEta = Math.min(...newOffers.map(o => o.eta));
+        newOffers.forEach(offer => {
+          offer.isCheapest = offer.price === minPrice;
+          offer.isFastest = offer.eta === minEta;
+        });
+      }
 
-    // Mark recommended (highest score)
-    const sortedByScore = [...newOffers].sort((a, b) => b.score - a.score);
-    if (sortedByScore.length > 0) {
-      sortedByScore[0].isRecommended = true;
+      setOffers(newOffers);
+
+      // Save to recent searches
+      const newRecent = [{ pickup, dropoff }, ...recentSearches.filter(
+        r => r.pickup.name !== pickup.name || r.dropoff.name !== dropoff.name
+      )].slice(0, 5);
+      setRecentSearches(newRecent);
+      localStorage.setItem('xchange_recent_rides', JSON.stringify(newRecent));
+
+    } catch (error) {
+      console.error('Error fetching estimates:', error);
+      // Fallback to show error
+      setOffers([]);
+    } finally {
+      setLoading(false);
     }
 
-    setOffers(newOffers);
-    setLoading(false);
-
-    // Save to recent searches
-    const newRecent = [{ pickup, dropoff }, ...recentSearches.filter(
-      r => r.pickup.name !== pickup.name || r.dropoff.name !== dropoff.name
-    )].slice(0, 5);
-    setRecentSearches(newRecent);
-    localStorage.setItem('xchange_recent_rides', JSON.stringify(newRecent));
-
   }, [pickup, dropoff, recentSearches]);
+
+  // Helper to get icon for vehicle type
+  const getTypeIcon = (type: string): string => {
+    const icons: Record<string, string> = {
+      'ECONOMY': '🚗',
+      'COMFORT': '🚙',
+      'PREMIUM': '🖤',
+      'XL': '🚐',
+      'BUS': '🚌',
+      'BIKE': '🛵',
+    };
+    return icons[type] || '🚗';
+  };
 
   useEffect(() => {
     if (pickup && dropoff) {
@@ -640,6 +656,44 @@ export default function RidesPage() {
               </div>
             ) : (
               <>
+                {/* Route Info Bar */}
+                {routeInfo && (
+                  <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">📍</span>
+                        <div>
+                          <div className="text-sm opacity-80">المسافة</div>
+                          <div className="font-bold">{routeInfo.distanceKm} كم</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">⏱️</span>
+                        <div>
+                          <div className="text-sm opacity-80">الوقت المتوقع</div>
+                          <div className="font-bold">{routeInfo.durationMin} دقيقة</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🚦</span>
+                        <div>
+                          <div className="text-sm opacity-80">حالة المرور</div>
+                          <div className="font-bold">{routeInfo.trafficCondition === 'light' ? 'خفيف' : routeInfo.trafficCondition === 'moderate' ? 'متوسط' : 'مزدحم'}</div>
+                        </div>
+                      </div>
+                    </div>
+                    {surgeInfo && surgeInfo.multiplier > 1.1 && (
+                      <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-lg">
+                        <span className="text-xl">🔥</span>
+                        <div>
+                          <div className="text-sm">Surge x{surgeInfo.multiplier}</div>
+                          <div className="text-xs opacity-80">{surgeInfo.demandLevel === 'HIGH' ? 'طلب مرتفع' : 'طلب متوسط'}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Stats Bar */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   <div className="bg-white rounded-xl p-4 shadow-sm text-center border-2 border-transparent hover:border-purple-200 transition-colors">
@@ -659,6 +713,20 @@ export default function RidesPage() {
                     <div className="text-sm text-gray-500">متوسط السعر</div>
                   </div>
                 </div>
+
+                {/* Recommendation Banner */}
+                {recommendation && (
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl p-4 mb-6 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">🎯</span>
+                      <div>
+                        <div className="font-bold text-lg">نوصي بـ {recommendation.provider} {recommendation.product}</div>
+                        <div className="text-sm opacity-90">{recommendation.reason}</div>
+                      </div>
+                    </div>
+                    <div className="text-3xl font-black">{recommendation.price} ج.م</div>
+                  </div>
+                )}
 
                 {/* Filters */}
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
