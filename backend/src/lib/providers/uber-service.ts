@@ -111,7 +111,7 @@ export class UberService implements IProviderService {
       throw new Error(`Uber OAuth failed: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as { access_token: string; expires_in: number };
     this.accessToken = data.access_token;
     this.tokenExpiry = new Date(Date.now() + (data.expires_in - 60) * 1000);
 
