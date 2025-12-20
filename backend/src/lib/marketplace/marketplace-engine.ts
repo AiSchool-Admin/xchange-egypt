@@ -135,11 +135,119 @@ export class MarketplaceEngine {
 
   /**
    * إشعار المزودين بطلب جديد
+   * الإستراتيجية: إرسال لجميع مزودي الخدمة في مصر
+   * مع ترتيب الأولوية: المحافظة ← المدينة ← الحي
    */
   private async notifyProvidersOfNewRequest(data: CreateRequestInput): Promise<void> {
-    // Find providers in the coverage area
-    // Send push notifications
-    // Send SMS/WhatsApp if configured
+    // Get all active providers in Egypt who support this service type
+    // const allProviders = await prisma.serviceProvider.findMany({
+    //   where: {
+    //     isActive: true,
+    //     serviceTypes: { has: data.serviceType },
+    //   },
+    // });
+
+    // Calculate priority score for each provider based on location match
+    // Priority: Same district > Same city > Same governorate > Other areas in Egypt
+    const calculateProviderPriority = (provider: ServiceProvider): number => {
+      const pickupGov = data.pickup.governorate;
+      const pickupCity = data.pickup.city;
+
+      // Check if provider covers the pickup governorate
+      const coversGovernorate = provider.coverageAreas.includes(pickupGov);
+
+      if (coversGovernorate) {
+        // Highest priority - same governorate
+        // Additional logic could check city/district if stored
+        return 100;
+      }
+
+      // Lower priority - other areas in Egypt
+      return 50;
+    };
+
+    // Sort providers by priority (highest first)
+    // const sortedProviders = allProviders.sort((a, b) =>
+    //   calculateProviderPriority(b) - calculateProviderPriority(a)
+    // );
+
+    // Send notifications to ALL providers (Egypt-wide)
+    // Priority determines notification order and prominence
+    // sortedProviders.forEach(async (provider, index) => {
+    //   const priority = calculateProviderPriority(provider);
+    //   const isHighPriority = priority >= 100;
+    //
+    //   // Create notification
+    //   await prisma.marketplaceNotification.create({
+    //     data: {
+    //       userId: provider.userId,
+    //       type: 'NEW_REQUEST',
+    //       title: 'New Service Request',
+    //       titleAr: 'طلب خدمة جديد',
+    //       message: isHighPriority
+    //         ? `New ${data.serviceType} request in your area!`
+    //         : `New ${data.serviceType} request available`,
+    //       messageAr: isHighPriority
+    //         ? `طلب ${data.serviceType === 'SHIPPING' ? 'شحن' : 'رحلة'} جديد في منطقتك!`
+    //         : `طلب ${data.serviceType === 'SHIPPING' ? 'شحن' : 'رحلة'} جديد متاح`,
+    //       data: {
+    //         requestId: 'request_id',
+    //         priority,
+    //         serviceType: data.serviceType,
+    //         pickupGov: data.pickup.governorate,
+    //         pickupCity: data.pickup.city,
+    //       },
+    //     },
+    //   });
+    //
+    //   // Send push notification
+    //   // High priority providers get immediate push
+    //   // Lower priority may be batched or delayed
+    //   if (isHighPriority) {
+    //     await sendPushNotification(provider.userId, { ... });
+    //   }
+    //
+    //   // SMS/WhatsApp for high priority only
+    //   if (isHighPriority && provider.phone) {
+    //     await sendWhatsAppNotification(provider.phone, { ... });
+    //   }
+    // });
+  }
+
+  /**
+   * الحصول على مزودي الخدمة مرتبين حسب الأولوية
+   * الترتيب: نفس الحي ← نفس المدينة ← نفس المحافظة ← باقي مصر
+   */
+  async getProvidersForRequest(
+    requestId: string,
+    pickup: Location
+  ): Promise<{ provider: ServiceProvider; priority: 'HIGH' | 'MEDIUM' | 'LOW' }[]> {
+    // const allProviders = await prisma.serviceProvider.findMany({
+    //   where: { isActive: true },
+    // });
+
+    // const providersWithPriority = allProviders.map(provider => {
+    //   let priority: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
+    //
+    //   // Check coverage match
+    //   if (provider.coverageAreas.includes(pickup.governorate)) {
+    //     priority = 'HIGH';
+    //   } else if (provider.coverageAreas.some(area =>
+    //     ADJACENT_GOVERNORATES[pickup.governorate]?.includes(area)
+    //   )) {
+    //     priority = 'MEDIUM';
+    //   }
+    //
+    //   return { provider, priority };
+    // });
+
+    // // Sort: HIGH first, then MEDIUM, then LOW
+    // return providersWithPriority.sort((a, b) => {
+    //   const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+    //   return priorityOrder[a.priority] - priorityOrder[b.priority];
+    // });
+
+    return [];
   }
 
   /**
