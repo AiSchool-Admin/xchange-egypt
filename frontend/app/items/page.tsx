@@ -12,8 +12,14 @@ interface CategoryWithChildren extends Category {
 }
 import LocationSelector, { LocationSelection } from '@/components/LocationSelector';
 import { getLocationLabel, getGovernorateNameAr, getCityNameAr, getDistrictNameAr } from '@/lib/data/egyptLocations';
-import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
+import ItemCard, { ItemCardSkeleton, ItemCardProps } from '@/components/ui/ItemCard';
 import { useAuth } from '@/lib/contexts/AuthContext';
+
+// New enhanced components
+import SmartSearch from '@/components/items/SmartSearch';
+import QuickViewModal from '@/components/items/QuickViewModal';
+import PriceRangeSlider from '@/components/items/PriceRangeSlider';
+import RecentlyViewed, { addToRecentlyViewed } from '@/components/items/RecentlyViewed';
 
 // ============================================
 // Cross-Market Navigation
@@ -116,6 +122,22 @@ function ItemsContent() {
   // View
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Quick View Modal
+  const [quickViewItem, setQuickViewItem] = useState<{
+    id: string;
+    title: string;
+    description?: string;
+    price: number;
+    images: string[];
+    condition?: string;
+    governorate?: string;
+    city?: string;
+    category?: string;
+    seller?: { id: string; name: string; avatar?: string; rating?: number };
+    listingType?: string;
+    createdAt?: string;
+  } | null>(null);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -310,6 +332,49 @@ function ItemsContent() {
     setPage(1);
   };
 
+  // Handle quick view
+  const handleQuickView = (item: ItemCardProps) => {
+    const images: string[] = [];
+    if (item.images) {
+      item.images.forEach(img => {
+        if (typeof img === 'string') {
+          images.push(img);
+        } else if (img && typeof img === 'object' && 'url' in img) {
+          images.push(img.url);
+        }
+      });
+    }
+
+    setQuickViewItem({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      price: item.price,
+      images,
+      condition: item.condition,
+      governorate: item.governorate,
+      city: item.city,
+      category: item.category,
+      seller: item.seller,
+      listingType: item.listingType,
+      createdAt: item.createdAt,
+    });
+
+    // Also add to recently viewed
+    addToRecentlyViewed({
+      id: item.id,
+      title: item.title,
+      price: item.price,
+      image: images[0],
+    });
+  };
+
+  // Handle price range change
+  const handlePriceRangeChange = (min: number, max: number) => {
+    setMinPrice(min > 0 ? min.toString() : '');
+    setMaxPrice(max < 1000000 ? max.toString() : '');
+  };
+
   // Handle main category change - reset subcategories
   const handleMainCategoryChange = (categoryId: string) => {
     setSelectedMainCategory(categoryId);
@@ -458,23 +523,32 @@ function ItemsContent() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Recently Viewed Section */}
+        <RecentlyViewed maxItems={6} />
+
         {/* ============================================
             Top Bar - Search & Sort
             ============================================ */}
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <input
-                type="text"
+            {/* Smart Search with Autocomplete */}
+            <div className="flex-1">
+              <SmartSearch
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث عن المنتجات..."
-                className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border-2 border-gray-200 focus:border-primary-500 transition-all outline-none placeholder-gray-500 text-gray-900"
+                onChange={setSearch}
+                onSearch={(value) => {
+                  setSearch(value);
+                  setDebouncedSearch(value);
+                  setPage(1);
+                }}
+                placeholder="ابحث عن أي منتج... ايفون، سيارة، شقة..."
+                categories={categories.map(c => ({
+                  id: c.id,
+                  nameAr: c.nameAr,
+                  slug: c.slug,
+                  itemCount: 0, // Could be populated from API
+                }))}
               />
-              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
             </div>
 
             {/* Filter Toggle - Mobile */}
@@ -670,27 +744,17 @@ function ItemsContent() {
                 </div>
               </div>
 
-              {/* Price Range */}
+              {/* Price Range Slider */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-3">💰 السعر (ج.م)</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="number"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    placeholder="من"
-                    min="0"
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                  />
-                  <input
-                    type="number"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    placeholder="إلى"
-                    min="0"
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                  />
-                </div>
+                <PriceRangeSlider
+                  min={0}
+                  max={1000000}
+                  minValue={minPrice ? parseInt(minPrice) : 0}
+                  maxValue={maxPrice ? parseInt(maxPrice) : 1000000}
+                  onChange={handlePriceRangeChange}
+                  step={100}
+                />
               </div>
 
               {/* Active Filters Summary */}
@@ -789,15 +853,19 @@ function ItemsContent() {
                       key={item.id}
                       id={item.id}
                       title={item.title}
+                      description={item.description}
                       price={item.estimatedValue || 0}
                       images={item.images?.map(img => img.url) || []}
                       condition={item.condition}
                       governorate={item.governorate}
+                      city={item.city}
                       listingType={item.listingType as any}
                       category={item.category?.nameAr}
                       seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
                       createdAt={item.createdAt}
                       variant={viewMode === 'list' ? 'horizontal' : 'default'}
+                      showQuickView={true}
+                      onQuickView={handleQuickView}
                     />
                   ))}
                 </div>
@@ -853,6 +921,13 @@ function ItemsContent() {
           </div>
         </div>
       </div>
+
+      {/* Quick View Modal */}
+      <QuickViewModal
+        isOpen={!!quickViewItem}
+        onClose={() => setQuickViewItem(null)}
+        item={quickViewItem}
+      />
     </div>
   );
 }
