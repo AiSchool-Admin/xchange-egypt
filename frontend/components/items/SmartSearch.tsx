@@ -95,7 +95,9 @@ export default function SmartSearch({
     };
 
     recognition.onresult = (event: any) => {
-      const transcript = event.results[0][0].transcript;
+      let transcript = event.results[0][0].transcript;
+      // Remove trailing punctuation (period, comma, Arabic punctuation) that speech recognition adds
+      transcript = transcript.replace(/[.\u060C\u061B\u061F،؛؟,;?!]+$/g, '').trim();
       onChange(transcript);
       onSearch(transcript);
       setIsListening(false);
