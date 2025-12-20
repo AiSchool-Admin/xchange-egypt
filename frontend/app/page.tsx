@@ -10,6 +10,14 @@ import { getAuctions, Auction } from '@/lib/api/auctions';
 import apiClient from '@/lib/api/client';
 import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
 
+// New enhanced components
+import AnimatedCounter from '@/components/landing/AnimatedCounter';
+import ScrollReveal from '@/components/landing/ScrollReveal';
+import HowItWorks from '@/components/landing/HowItWorks';
+import FAQ from '@/components/landing/FAQ';
+import TrustedPartners from '@/components/landing/TrustedPartners';
+import LiveActivityFeed from '@/components/landing/LiveActivityFeed';
+
 // ============================================
 // Platform Statistics (Live Data)
 // ============================================
@@ -471,25 +479,33 @@ export default function HomePage() {
       </section>
 
       {/* ============================================
-          Live Statistics Bar
+          Live Statistics Bar - With Animated Counters
           ============================================ */}
-      <section className="bg-white border-b border-gray-100 py-4">
+      <section className="bg-white border-b border-gray-100 py-6">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-            <div className="text-center">
-              <div className="text-2xl md:text-3xl font-black text-emerald-600">{formatNumber(liveStats.activeListings)}</div>
+            <div className="text-center group">
+              <div className="text-2xl md:text-3xl font-black text-emerald-600 group-hover:scale-110 transition-transform">
+                <AnimatedCounter end={liveStats.activeListings} suffix="+" />
+              </div>
               <div className="text-sm text-gray-500">إعلان نشط</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl md:text-3xl font-black text-blue-600">{formatNumber(liveStats.totalUsers)}</div>
+            <div className="text-center group">
+              <div className="text-2xl md:text-3xl font-black text-blue-600 group-hover:scale-110 transition-transform">
+                <AnimatedCounter end={liveStats.totalUsers} suffix="+" />
+              </div>
               <div className="text-sm text-gray-500">مستخدم</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl md:text-3xl font-black text-purple-600">{formatNumber(liveStats.totalTransactions)}</div>
+            <div className="text-center group">
+              <div className="text-2xl md:text-3xl font-black text-purple-600 group-hover:scale-110 transition-transform">
+                <AnimatedCounter end={liveStats.totalTransactions} suffix="+" />
+              </div>
               <div className="text-sm text-gray-500">صفقة ناجحة</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl md:text-3xl font-black text-amber-600">{liveStats.successRate}%</div>
+            <div className="text-center group">
+              <div className="text-2xl md:text-3xl font-black text-amber-600 group-hover:scale-110 transition-transform">
+                <AnimatedCounter end={98} suffix="%" decimals={1} />
+              </div>
               <div className="text-sm text-gray-500">نسبة النجاح</div>
             </div>
           </div>
@@ -501,23 +517,25 @@ export default function HomePage() {
           ============================================ */}
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white" ref={marketsRef}>
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">
-              🏪 13 سوق متخصص في مكان واحد
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              كل سوق مصمم بعناية لتجربة شراء وبيع مثالية مع ميزات فريدة وحماية كاملة
-            </p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">
+                🏪 13 سوق متخصص في مكان واحد
+              </h2>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                كل سوق مصمم بعناية لتجربة شراء وبيع مثالية مع ميزات فريدة وحماية كاملة
+              </p>
+            </div>
+          </ScrollReveal>
 
           {/* Markets Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {PLATFORM_MARKETS.map((market) => (
-              <Link
-                key={market.id}
-                href={market.href}
-                className="group relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-transparent overflow-hidden"
-              >
+            {PLATFORM_MARKETS.map((market, index) => (
+              <ScrollReveal key={market.id} delay={index * 50} animation="scale">
+                <Link
+                  href={market.href}
+                  className="group relative bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-transparent overflow-hidden block h-full"
+                >
                 {/* Gradient Overlay on Hover */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${market.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
 
@@ -564,39 +582,46 @@ export default function HomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </div>
-              </Link>
+                </Link>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* ============================================
+          How It Works Section - NEW
+          ============================================ */}
+      <HowItWorks />
+
+      {/* ============================================
           Trust & Security Section
           ============================================ */}
       <section className="py-16 bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-900 text-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black mb-4">
-              🛡️ لماذا XChange؟
-            </h2>
-            <p className="text-lg text-white/80 max-w-2xl mx-auto">
-              نحن نضع أمانك وثقتك في المقام الأول مع نظام حماية متكامل
-            </p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-black mb-4">
+                🛡️ لماذا XChange؟
+              </h2>
+              <p className="text-lg text-white/80 max-w-2xl mx-auto">
+                نحن نضع أمانك وثقتك في المقام الأول مع نظام حماية متكامل
+              </p>
+            </div>
+          </ScrollReveal>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {TRUST_FEATURES.map((feature, index) => (
-              <div
-                key={index}
-                className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white/20 transition-colors"
-              >
-                <div className="text-5xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                <p className="text-white/70 text-sm mb-4">{feature.description}</p>
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-sm font-bold">
-                  {feature.stat}
+              <ScrollReveal key={index} delay={index * 100} animation="fadeUp">
+                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white/20 transition-colors h-full">
+                  <div className="text-5xl mb-4">{feature.icon}</div>
+                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
+                  <p className="text-white/70 text-sm mb-4">{feature.description}</p>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-sm font-bold">
+                    {feature.stat}
+                  </div>
                 </div>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -807,6 +832,16 @@ export default function HomePage() {
       </section>
 
       {/* ============================================
+          Trusted Partners Section - NEW
+          ============================================ */}
+      <TrustedPartners />
+
+      {/* ============================================
+          FAQ Section - NEW
+          ============================================ */}
+      <FAQ />
+
+      {/* ============================================
           CTA Section
           ============================================ */}
       <section className="py-20 bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
@@ -874,6 +909,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ============================================
+          Live Activity Feed - Floating Component
+          ============================================ */}
+      <LiveActivityFeed />
     </div>
   );
 }
