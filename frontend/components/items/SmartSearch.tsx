@@ -48,6 +48,10 @@ export default function SmartSearch({
 }: SmartSearchProps) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Voice search state
+  const [isListening, setIsListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [isFocused, setIsFocused] = useState(false);
@@ -66,6 +70,48 @@ export default function SmartSearch({
       }
     }
   }, []);
+
+  // Check for voice search support
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      setVoiceSupported(!!SpeechRecognition);
+    }
+  }, []);
+
+  // Voice search function
+  const startVoiceSearch = useCallback(() => {
+    if (!voiceSupported) return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = 'ar-EG'; // Arabic (Egypt)
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      onChange(transcript);
+      onSearch(transcript);
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Voice search error:', event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  }, [voiceSupported, onChange, onSearch]);
 
   // Save to search history
   const saveToHistory = useCallback((searchText: string) => {
@@ -236,15 +282,31 @@ export default function SmartSearch({
           className="w-full pl-24 pr-5 py-4 bg-white rounded-2xl border-2 border-gray-200 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition-all outline-none placeholder-gray-400 text-gray-900 text-lg shadow-sm"
         />
 
-        {/* Voice Search Button (placeholder) */}
-        <button
-          className="absolute left-14 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-emerald-600 transition-colors"
-          title="البحث الصوتي"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-          </svg>
-        </button>
+        {/* Voice Search Button */}
+        {voiceSupported && (
+          <button
+            onClick={startVoiceSearch}
+            disabled={isListening}
+            className={`absolute left-14 top-1/2 -translate-y-1/2 p-2 transition-all ${
+              isListening
+                ? 'text-red-500 animate-pulse'
+                : 'text-gray-400 hover:text-emerald-600'
+            }`}
+            title={isListening ? 'جاري الاستماع...' : 'البحث الصوتي'}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+          </button>
+        )}
+
+        {/* Listening Indicator */}
+        {isListening && (
+          <div className="absolute left-24 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <span className="w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+            <span className="text-sm text-red-500 font-medium">تحدث الآن...</span>
+          </div>
+        )}
 
         {/* Search Button */}
         <button
