@@ -538,6 +538,10 @@ export default function RidesPage() {
               <p className="text-white/80 mt-2">قارن أسعار 7 تطبيقات نقل واحجز الأرخص فوراً</p>
             </div>
             <div className="flex gap-3">
+              <Link href="/marketplace" className="px-4 py-2 bg-yellow-400 text-black rounded-xl hover:bg-yellow-300 transition-colors flex items-center gap-2 font-bold">
+                <span>📦</span>
+                <span className="hidden md:inline">الشحن</span>
+              </Link>
               <Link href="/rides/addresses" className="px-4 py-2 bg-white/20 text-white rounded-xl hover:bg-white/30 transition-colors flex items-center gap-2">
                 <span>📍</span>
                 <span className="hidden md:inline">عناويني</span>
