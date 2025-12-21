@@ -25,9 +25,13 @@
     "tests/**"
   ],
   "rules": {
-    "@typescript-eslint/no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_",
+      "caughtErrorsIgnorePattern": "^_"
+    }],
     "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/no-unsafe-assignment": "off",
     "@typescript-eslint/no-unsafe-member-access": "off",
@@ -41,7 +45,7 @@
     "@typescript-eslint/no-redundant-type-constituents": "off",
     "@typescript-eslint/unbound-method": "off",
     "@typescript-eslint/no-require-imports": "off",
-    "no-console": "off",
+    "no-console": ["warn", { "allow": ["warn", "error", "info"] }],
     "prefer-const": "error",
     "no-var": "error",
     "eqeqeq": ["error", "always"],
