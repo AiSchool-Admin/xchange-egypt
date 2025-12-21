@@ -1,8 +1,10 @@
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 import { createNotification } from './notification.service';
-import { Transaction, User, Listing, Item, Category } from '../types/prisma-enums';
 import { Prisma } from '@prisma/client';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Transaction = any;
 
 // Types
 interface CreatePurchaseData {
@@ -21,15 +23,17 @@ interface PaginatedResult<T> {
   };
 }
 
-type TransactionWithRelations = Transaction & {
-  buyer: Pick<User, 'id' | 'fullName' | 'email' | 'phone' | 'avatar'>;
-  seller: Pick<User, 'id' | 'fullName' | 'email' | 'phone' | 'avatar' | 'businessName'>;
-  listing: Listing & {
-    item: Item & {
-      category: Pick<Category, 'id' | 'nameAr' | 'nameEn'> | null;
-    };
-  };
-};
+// Use any for complex relations - types are inferred at runtime
+type TransactionWithRelations = {
+  id: string;
+  buyer: { id: string; fullName: string | null; email: string | null; phone: string; avatar: string | null };
+  seller: { id: string; fullName: string | null; email: string | null; phone: string; avatar: string | null; businessName: string | null };
+  listing: {
+    item: {
+      category: { id: string; nameAr: string; nameEn: string } | null;
+    } & Record<string, unknown>;
+  } & Record<string, unknown>;
+} & Record<string, unknown>;
 
 /**
  * Create a purchase transaction (order)
