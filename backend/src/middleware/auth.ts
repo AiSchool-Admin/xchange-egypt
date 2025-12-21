@@ -125,6 +125,11 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
+ * Alias for isAdmin (for backward compatibility)
+ */
+export const requireAdmin = isAdmin;
+
+/**
  * Optional authentication - doesn't fail if no token provided
  * But validates token if present
  */

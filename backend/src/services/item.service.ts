@@ -1,4 +1,4 @@
-import { ItemCondition, PromotionTier } from '@prisma/client';
+import { ItemCondition, PromotionTier } from '../types/prisma-enums';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { processItemImage } from '../utils/image';
 import { itemEvents } from '../events/item.events';
@@ -592,13 +592,14 @@ export const searchItems = async (
 
   // Price range filtering (using estimatedValue field)
   if (minPrice !== undefined || maxPrice !== undefined) {
-    where.estimatedValue = {};
+    const priceFilter: { gte?: number; lte?: number } = {};
     if (minPrice !== undefined) {
-      where.estimatedValue.gte = minPrice;
+      priceFilter.gte = minPrice;
     }
     if (maxPrice !== undefined) {
-      where.estimatedValue.lte = maxPrice;
+      priceFilter.lte = maxPrice;
     }
+    where.estimatedValue = priceFilter;
   }
 
   // Status filtering
@@ -658,46 +659,50 @@ export const searchItems = async (
 
   // Area range
   if (params.minArea !== undefined || params.maxArea !== undefined) {
-    where.areaInSqm = {};
+    const areaFilter: { gte?: number; lte?: number } = {};
     if (params.minArea !== undefined) {
-      where.areaInSqm.gte = params.minArea;
+      areaFilter.gte = params.minArea;
     }
     if (params.maxArea !== undefined) {
-      where.areaInSqm.lte = params.maxArea;
+      areaFilter.lte = params.maxArea;
     }
+    where.areaInSqm = areaFilter;
   }
 
   // Bedrooms range
   if (params.minBedrooms !== undefined || params.maxBedrooms !== undefined) {
-    where.bedrooms = {};
+    const bedroomsFilter: { gte?: number; lte?: number } = {};
     if (params.minBedrooms !== undefined) {
-      where.bedrooms.gte = params.minBedrooms;
+      bedroomsFilter.gte = params.minBedrooms;
     }
     if (params.maxBedrooms !== undefined) {
-      where.bedrooms.lte = params.maxBedrooms;
+      bedroomsFilter.lte = params.maxBedrooms;
     }
+    where.bedrooms = bedroomsFilter;
   }
 
   // Bathrooms range
   if (params.minBathrooms !== undefined || params.maxBathrooms !== undefined) {
-    where.bathrooms = {};
+    const bathroomsFilter: { gte?: number; lte?: number } = {};
     if (params.minBathrooms !== undefined) {
-      where.bathrooms.gte = params.minBathrooms;
+      bathroomsFilter.gte = params.minBathrooms;
     }
     if (params.maxBathrooms !== undefined) {
-      where.bathrooms.lte = params.maxBathrooms;
+      bathroomsFilter.lte = params.maxBathrooms;
     }
+    where.bathrooms = bathroomsFilter;
   }
 
   // Floor range
   if (params.minFloor !== undefined || params.maxFloor !== undefined) {
-    where.floorNumber = {};
+    const floorFilter: { gte?: number; lte?: number } = {};
     if (params.minFloor !== undefined) {
-      where.floorNumber.gte = params.minFloor;
+      floorFilter.gte = params.minFloor;
     }
     if (params.maxFloor !== undefined) {
-      where.floorNumber.lte = params.maxFloor;
+      floorFilter.lte = params.maxFloor;
     }
+    where.floorNumber = floorFilter;
   }
 
   // Property amenities
@@ -730,24 +735,26 @@ export const searchItems = async (
 
   // Year range
   if (params.minYear !== undefined || params.maxYear !== undefined) {
-    where.vehicleYear = {};
+    const yearFilter: { gte?: number; lte?: number } = {};
     if (params.minYear !== undefined) {
-      where.vehicleYear.gte = params.minYear;
+      yearFilter.gte = params.minYear;
     }
     if (params.maxYear !== undefined) {
-      where.vehicleYear.lte = params.maxYear;
+      yearFilter.lte = params.maxYear;
     }
+    where.vehicleYear = yearFilter;
   }
 
   // Kilometers range
   if (params.minKilometers !== undefined || params.maxKilometers !== undefined) {
-    where.vehicleKilometers = {};
+    const kilometersFilter: { gte?: number; lte?: number } = {};
     if (params.minKilometers !== undefined) {
-      where.vehicleKilometers.gte = params.minKilometers;
+      kilometersFilter.gte = params.minKilometers;
     }
     if (params.maxKilometers !== undefined) {
-      where.vehicleKilometers.lte = params.maxKilometers;
+      kilometersFilter.lte = params.maxKilometers;
     }
+    where.vehicleKilometers = kilometersFilter;
   }
 
   if (params.fuelType) {

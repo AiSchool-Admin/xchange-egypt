@@ -48,6 +48,7 @@ export const ItemStatus = {
   RESERVED: 'RESERVED',
   PENDING_REVIEW: 'PENDING_REVIEW',
   REJECTED: 'REJECTED',
+  DELETED: 'DELETED',
 } as const;
 export type ItemStatus = typeof ItemStatus[keyof typeof ItemStatus];
 
@@ -137,6 +138,8 @@ export const BarterChainStatus = {
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
   EXPIRED: 'EXPIRED',
+  REJECTED: 'REJECTED',
+  ACCEPTED: 'ACCEPTED',
 } as const;
 export type BarterChainStatus = typeof BarterChainStatus[keyof typeof BarterChainStatus];
 
@@ -146,6 +149,8 @@ export const ParticipantStatus = {
   REJECTED: 'REJECTED',
   DELIVERED: 'DELIVERED',
   RECEIVED: 'RECEIVED',
+  ACCEPTED: 'ACCEPTED',
+  COMPLETED: 'COMPLETED',
 } as const;
 export type ParticipantStatus = typeof ParticipantStatus[keyof typeof ParticipantStatus];
 
@@ -156,6 +161,9 @@ export const BarterPoolStatus = {
   EXECUTING: 'EXECUTING',
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
+  MATCHED: 'MATCHED',
+  NEGOTIATING: 'NEGOTIATING',
+  FAILED: 'FAILED',
 } as const;
 export type BarterPoolStatus = typeof BarterPoolStatus[keyof typeof BarterPoolStatus];
 
@@ -169,6 +177,7 @@ export const AuctionStatus = {
   CANCELLED: 'CANCELLED',
   SOLD: 'SOLD',
   NO_SALE: 'NO_SALE',
+  COMPLETED: 'COMPLETED',
 } as const;
 export type AuctionStatus = typeof AuctionStatus[keyof typeof AuctionStatus];
 
@@ -206,10 +215,9 @@ export type ReverseAuctionBidStatus = typeof ReverseAuctionBidStatus[keyof typeo
 // Lock Types
 // ========================================
 export const LockType = {
-  EXCHANGE: 'EXCHANGE',
-  ESCROW: 'ESCROW',
-  CHAIN: 'CHAIN',
-  AUCTION: 'AUCTION',
+  SOFT: 'SOFT',
+  HARD: 'HARD',
+  RESERVED: 'RESERVED',
 } as const;
 export type LockType = typeof LockType[keyof typeof LockType];
 
@@ -232,6 +240,10 @@ export const EscrowStatus = {
   DISPUTED: 'DISPUTED',
   REFUNDED: 'REFUNDED',
   CANCELLED: 'CANCELLED',
+  CREATED: 'CREATED',
+  PENDING_DELIVERY: 'PENDING_DELIVERY',
+  INSPECTION: 'INSPECTION',
+  EXPIRED: 'EXPIRED',
 } as const;
 export type EscrowStatus = typeof EscrowStatus[keyof typeof EscrowStatus];
 
@@ -268,6 +280,8 @@ export const DisputeResolution = {
   REPLACEMENT: 'REPLACEMENT',
   NO_ACTION: 'NO_ACTION',
   MUTUAL_AGREEMENT: 'MUTUAL_AGREEMENT',
+  BUYER_FAVORED: 'BUYER_FAVORED',
+  SELLER_FAVORED: 'SELLER_FAVORED',
 } as const;
 export type DisputeResolution = typeof DisputeResolution[keyof typeof DisputeResolution];
 
@@ -299,9 +313,9 @@ export type BadgeType = typeof BadgeType[keyof typeof BadgeType];
 export const CashFlowStatus = {
   PENDING: 'PENDING',
   COMPLETED: 'COMPLETED',
-  CANCELLED: 'CANCELLED',
-  DISPUTED: 'DISPUTED',
+  FAILED: 'FAILED',
   REFUNDED: 'REFUNDED',
+  CANCELLED: 'CANCELLED',
 } as const;
 export type CashFlowStatus = typeof CashFlowStatus[keyof typeof CashFlowStatus];
 
@@ -313,6 +327,8 @@ export const CashFlowType = {
   REFUND: 'REFUND',
   FEE: 'FEE',
   ADJUSTMENT: 'ADJUSTMENT',
+  CHAIN_BALANCE: 'CHAIN_BALANCE',
+  COMMISSION: 'COMMISSION',
 } as const;
 export type CashFlowType = typeof CashFlowType[keyof typeof CashFlowType];
 
@@ -332,6 +348,7 @@ export const FacilitatorStatus = {
   ACTIVE: 'ACTIVE',
   SUSPENDED: 'SUSPENDED',
   INACTIVE: 'INACTIVE',
+  REVOKED: 'REVOKED',
 } as const;
 export type FacilitatorStatus = typeof FacilitatorStatus[keyof typeof FacilitatorStatus];
 
@@ -345,6 +362,10 @@ export const InspectionType = {
   SPECIALIZED: 'SPECIALIZED',
   PRE_PURCHASE: 'PRE_PURCHASE',
   FINAL: 'FINAL',
+  BASIC: 'BASIC',
+  PRE_RENTAL: 'PRE_RENTAL',
+  CHECKIN: 'CHECKIN',
+  CHECKOUT: 'CHECKOUT',
 } as const;
 export type InspectionType = typeof InspectionType[keyof typeof InspectionType];
 
@@ -354,6 +375,7 @@ export const InspectionStatus = {
   COMPLETED: 'COMPLETED',
   CANCELLED: 'CANCELLED',
   FAILED: 'FAILED',
+  REQUESTED: 'REQUESTED',
 } as const;
 export type InspectionStatus = typeof InspectionStatus[keyof typeof InspectionStatus];
 
@@ -367,12 +389,16 @@ export const InspectionRecommendation = {
 export type InspectionRecommendation = typeof InspectionRecommendation[keyof typeof InspectionRecommendation];
 
 export const PropertyStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
   AVAILABLE: 'AVAILABLE',
   UNDER_OFFER: 'UNDER_OFFER',
+  RESERVED: 'RESERVED',
   SOLD: 'SOLD',
   RENTED: 'RENTED',
   OFF_MARKET: 'OFF_MARKET',
   PENDING_VERIFICATION: 'PENDING_VERIFICATION',
+  REJECTED: 'REJECTED',
 } as const;
 export type PropertyStatus = typeof PropertyStatus[keyof typeof PropertyStatus];
 
@@ -382,8 +408,185 @@ export const PropertyVerificationLevel = {
   STANDARD: 'STANDARD',
   PREMIUM: 'PREMIUM',
   CERTIFIED: 'CERTIFIED',
+  FIELD_VERIFIED: 'FIELD_VERIFIED',
+  DOCUMENTS_VERIFIED: 'DOCUMENTS_VERIFIED',
+  GOVERNMENT_VERIFIED: 'GOVERNMENT_VERIFIED',
 } as const;
 export type PropertyVerificationLevel = typeof PropertyVerificationLevel[keyof typeof PropertyVerificationLevel];
+
+export const PropertyType = {
+  APARTMENT: 'APARTMENT',
+  VILLA: 'VILLA',
+  TOWNHOUSE: 'TOWNHOUSE',
+  TWIN_HOUSE: 'TWIN_HOUSE',
+  DUPLEX: 'DUPLEX',
+  PENTHOUSE: 'PENTHOUSE',
+  STUDIO: 'STUDIO',
+  CHALET: 'CHALET',
+  LAND: 'LAND',
+  OFFICE: 'OFFICE',
+  SHOP: 'SHOP',
+  WAREHOUSE: 'WAREHOUSE',
+  BUILDING: 'BUILDING',
+  FARM: 'FARM',
+  ROOF: 'ROOF',
+} as const;
+export type PropertyType = typeof PropertyType[keyof typeof PropertyType];
+
+export const TitleType = {
+  REGISTERED: 'REGISTERED',
+  PRELIMINARY: 'PRELIMINARY',
+  POA: 'POA',
+} as const;
+export type TitleType = typeof TitleType[keyof typeof TitleType];
+
+export const FinishingLevel = {
+  SUPER_LUX: 'SUPER_LUX',
+  LUX: 'LUX',
+  SEMI_FINISHED: 'SEMI_FINISHED',
+  UNFINISHED: 'UNFINISHED',
+  CORE_SHELL: 'CORE_SHELL',
+} as const;
+export type FinishingLevel = typeof FinishingLevel[keyof typeof FinishingLevel];
+
+export const FurnishedStatus = {
+  FURNISHED: 'FURNISHED',
+  SEMI_FURNISHED: 'SEMI_FURNISHED',
+  UNFURNISHED: 'UNFURNISHED',
+} as const;
+export type FurnishedStatus = typeof FurnishedStatus[keyof typeof FurnishedStatus];
+
+export const PropertyListingType = {
+  SALE: 'SALE',
+  RENT: 'RENT',
+  BOTH: 'BOTH',
+} as const;
+export type PropertyListingType = typeof PropertyListingType[keyof typeof PropertyListingType];
+
+export const PropertyDeliveryStatus = {
+  READY: 'READY',
+  UNDER_CONSTRUCTION: 'UNDER_CONSTRUCTION',
+  OFF_PLAN: 'OFF_PLAN',
+} as const;
+export type PropertyDeliveryStatus = typeof PropertyDeliveryStatus[keyof typeof PropertyDeliveryStatus];
+
+export const PropertyEscrowStatus = {
+  NOT_INITIATED: 'NOT_INITIATED',
+  PENDING_DEPOSIT: 'PENDING_DEPOSIT',
+  DEPOSITED: 'DEPOSITED',
+  VERIFICATION_IN_PROGRESS: 'VERIFICATION_IN_PROGRESS',
+  VERIFIED: 'VERIFIED',
+  RELEASED: 'RELEASED',
+  REFUNDED: 'REFUNDED',
+  DISPUTED: 'DISPUTED',
+} as const;
+export type PropertyEscrowStatus = typeof PropertyEscrowStatus[keyof typeof PropertyEscrowStatus];
+
+export const PropertyBarterStatus = {
+  PENDING: 'PENDING',
+  VIEWED: 'VIEWED',
+  COUNTER_OFFERED: 'COUNTER_OFFERED',
+  ACCEPTED: 'ACCEPTED',
+  APPRAISAL_PENDING: 'APPRAISAL_PENDING',
+  LEGAL_REVIEW: 'LEGAL_REVIEW',
+  ESCROW_PENDING: 'ESCROW_PENDING',
+  REGISTRATION_PENDING: 'REGISTRATION_PENDING',
+  COMPLETED: 'COMPLETED',
+  REJECTED: 'REJECTED',
+  EXPIRED: 'EXPIRED',
+} as const;
+export type PropertyBarterStatus = typeof PropertyBarterStatus[keyof typeof PropertyBarterStatus];
+
+export const RentalContractStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  RENEWED: 'RENEWED',
+  TERMINATED: 'TERMINATED',
+  EXPIRED: 'EXPIRED',
+  DISPUTED: 'DISPUTED',
+} as const;
+export type RentalContractStatus = typeof RentalContractStatus[keyof typeof RentalContractStatus];
+
+export const RentalContractType = {
+  NEW_RENT: 'NEW_RENT',
+  OLD_RENT: 'OLD_RENT',
+} as const;
+export type RentalContractType = typeof RentalContractType[keyof typeof RentalContractType];
+
+// ========================================
+// Scrap Marketplace Types
+// ========================================
+export const ScrapType = {
+  ELECTRONICS: 'ELECTRONICS',
+  HOME_APPLIANCES: 'HOME_APPLIANCES',
+  COMPUTERS: 'COMPUTERS',
+  PHONES: 'PHONES',
+  CABLES_WIRES: 'CABLES_WIRES',
+  MOTORS: 'MOTORS',
+  BATTERIES: 'BATTERIES',
+  METAL_SCRAP: 'METAL_SCRAP',
+  CAR_PARTS: 'CAR_PARTS',
+  FURNITURE_PARTS: 'FURNITURE_PARTS',
+  WOOD: 'WOOD',
+  PLASTIC: 'PLASTIC',
+  TEXTILES: 'TEXTILES',
+  PAPER: 'PAPER',
+  GLASS: 'GLASS',
+  OTHER: 'OTHER',
+} as const;
+export type ScrapType = typeof ScrapType[keyof typeof ScrapType];
+
+export const ScrapCondition = {
+  TOTALLY_DAMAGED: 'TOTALLY_DAMAGED',
+  NOT_WORKING: 'NOT_WORKING',
+  PARTIALLY_WORKING: 'PARTIALLY_WORKING',
+  WORKING_OLD: 'WORKING_OLD',
+} as const;
+export type ScrapCondition = typeof ScrapCondition[keyof typeof ScrapCondition];
+
+export const MetalType = {
+  COPPER: 'COPPER',
+  ALUMINUM: 'ALUMINUM',
+  IRON: 'IRON',
+  STEEL: 'STEEL',
+  BRASS: 'BRASS',
+  BRONZE: 'BRONZE',
+  LEAD: 'LEAD',
+  ZINC: 'ZINC',
+  NICKEL: 'NICKEL',
+  TIN: 'TIN',
+  GOLD: 'GOLD',
+  SILVER: 'SILVER',
+  STAINLESS_STEEL: 'STAINLESS_STEEL',
+  MIXED: 'MIXED',
+} as const;
+export type MetalType = typeof MetalType[keyof typeof MetalType];
+
+export const ScrapPricingType = {
+  PER_PIECE: 'PER_PIECE',
+  PER_KG: 'PER_KG',
+  PER_LOT: 'PER_LOT',
+  REVERSE_AUCTION: 'REVERSE_AUCTION',
+} as const;
+export type ScrapPricingType = typeof ScrapPricingType[keyof typeof ScrapPricingType];
+
+export const ScrapDealerType = {
+  INDIVIDUAL_COLLECTOR: 'INDIVIDUAL_COLLECTOR',
+  SCRAP_DEALER: 'SCRAP_DEALER',
+  RECYCLING_COMPANY: 'RECYCLING_COMPANY',
+  REPAIR_TECHNICIAN: 'REPAIR_TECHNICIAN',
+  FACTORY: 'FACTORY',
+  EXPORT_COMPANY: 'EXPORT_COMPANY',
+} as const;
+export type ScrapDealerType = typeof ScrapDealerType[keyof typeof ScrapDealerType];
+
+export const ScrapDealerStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  SUSPENDED: 'SUSPENDED',
+} as const;
+export type ScrapDealerStatus = typeof ScrapDealerStatus[keyof typeof ScrapDealerStatus];
 
 // ========================================
 // Admin Types
@@ -472,13 +675,18 @@ export type MobileBarterProposalStatus = typeof MobileBarterProposalStatus[keyof
 // ========================================
 export const NotificationType = {
   SYSTEM: 'SYSTEM',
+  SYSTEM_ANNOUNCEMENT: 'SYSTEM_ANNOUNCEMENT',
   MESSAGE: 'MESSAGE',
   OFFER: 'OFFER',
   ORDER: 'ORDER',
   PAYMENT: 'PAYMENT',
   REVIEW: 'REVIEW',
+  USER_REVIEW_RECEIVED: 'USER_REVIEW_RECEIVED',
   ALERT: 'ALERT',
   PROMOTION: 'PROMOTION',
+  BARTER_MATCH: 'BARTER_MATCH',
+  AUCTION_OUTBID: 'AUCTION_OUTBID',
+  REVERSE_AUCTION_AWARDED: 'REVERSE_AUCTION_AWARDED',
 } as const;
 export type NotificationType = typeof NotificationType[keyof typeof NotificationType];
 
@@ -552,13 +760,26 @@ export const WalletTransactionType = {
   WITHDRAWAL: 'WITHDRAWAL',
   TRANSFER_IN: 'TRANSFER_IN',
   TRANSFER_OUT: 'TRANSFER_OUT',
+  SENT_TO_USER: 'SENT_TO_USER',
+  RECEIVED_FROM_USER: 'RECEIVED_FROM_USER',
   PAYMENT: 'PAYMENT',
   REFUND: 'REFUND',
   ESCROW_HOLD: 'ESCROW_HOLD',
   ESCROW_RELEASE: 'ESCROW_RELEASE',
+  ESCROW_FREEZE: 'ESCROW_FREEZE',
+  ESCROW_REFUND: 'ESCROW_REFUND',
   CASHBACK: 'CASHBACK',
   BONUS: 'BONUS',
   FEE: 'FEE',
+  REWARD_SIGNUP: 'REWARD_SIGNUP',
+  REWARD_FIRST_DEAL: 'REWARD_FIRST_DEAL',
+  REWARD_REFERRAL: 'REWARD_REFERRAL',
+  REWARD_REVIEW: 'REWARD_REVIEW',
+  REWARD_DAILY_LOGIN: 'REWARD_DAILY_LOGIN',
+  REWARD_ACHIEVEMENT: 'REWARD_ACHIEVEMENT',
+  REWARD_CHALLENGE: 'REWARD_CHALLENGE',
+  PROMOTE_LISTING: 'PROMOTE_LISTING',
+  UNLOCK_CONTACT: 'UNLOCK_CONTACT',
 } as const;
 export type WalletTransactionType = typeof WalletTransactionType[keyof typeof WalletTransactionType];
 
@@ -576,10 +797,17 @@ export type WalletTransactionStatus = typeof WalletTransactionStatus[keyof typeo
 // ========================================
 export const TrustLevel = {
   NEW: 'NEW',
+  NEWCOMER: 'NEWCOMER',
   BASIC: 'BASIC',
+  BRONZE: 'BRONZE',
+  SILVER: 'SILVER',
   VERIFIED: 'VERIFIED',
   TRUSTED: 'TRUSTED',
   PREMIUM: 'PREMIUM',
+  GOLD: 'GOLD',
+  PLATINUM: 'PLATINUM',
+  DIAMOND: 'DIAMOND',
+  ELITE: 'ELITE',
 } as const;
 export type TrustLevel = typeof TrustLevel[keyof typeof TrustLevel];
 
@@ -588,9 +816,15 @@ export type TrustLevel = typeof TrustLevel[keyof typeof TrustLevel];
 // ========================================
 export const VerificationLevel = {
   NONE: 'NONE',
+  UNVERIFIED: 'UNVERIFIED',
+  BASIC: 'BASIC',
   EMAIL: 'EMAIL',
   PHONE: 'PHONE',
   ID: 'ID',
+  VERIFIED: 'VERIFIED',
+  BUSINESS: 'BUSINESS',
+  PREMIUM: 'PREMIUM',
+  TRUSTED: 'TRUSTED',
   FULL: 'FULL',
 } as const;
 export type VerificationLevel = typeof VerificationLevel[keyof typeof VerificationLevel];
@@ -636,6 +870,128 @@ export const ServiceQuoteStatus = {
   WITHDRAWN: 'WITHDRAWN',
 } as const;
 export type ServiceQuoteStatus = typeof ServiceQuoteStatus[keyof typeof ServiceQuoteStatus];
+
+// ========================================
+// Flash Deal Types
+// ========================================
+export const FlashDealStatus = {
+  SCHEDULED: 'SCHEDULED',
+  ACTIVE: 'ACTIVE',
+  ENDED: 'ENDED',
+  SOLD_OUT: 'SOLD_OUT',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type FlashDealStatus = typeof FlashDealStatus[keyof typeof FlashDealStatus];
+
+// ========================================
+// Gamification Types
+// ========================================
+export const AchievementCategory = {
+  TRADING: 'TRADING',
+  BARTER: 'BARTER',
+  SOCIAL: 'SOCIAL',
+  REPUTATION: 'REPUTATION',
+  SPECIAL: 'SPECIAL',
+  SEASONAL: 'SEASONAL',
+} as const;
+export type AchievementCategory = typeof AchievementCategory[keyof typeof AchievementCategory];
+
+export const AchievementRarity = {
+  COMMON: 'COMMON',
+  UNCOMMON: 'UNCOMMON',
+  RARE: 'RARE',
+  EPIC: 'EPIC',
+  LEGENDARY: 'LEGENDARY',
+} as const;
+export type AchievementRarity = typeof AchievementRarity[keyof typeof AchievementRarity];
+
+export const ChallengeType = {
+  DAILY: 'DAILY',
+  WEEKLY: 'WEEKLY',
+  MONTHLY: 'MONTHLY',
+  SPECIAL: 'SPECIAL',
+} as const;
+export type ChallengeType = typeof ChallengeType[keyof typeof ChallengeType];
+
+// ========================================
+// Group Buy Types
+// ========================================
+export const GroupBuyStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  TARGET_REACHED: 'TARGET_REACHED',
+  CONFIRMED: 'CONFIRMED',
+  COMPLETED: 'COMPLETED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type GroupBuyStatus = typeof GroupBuyStatus[keyof typeof GroupBuyStatus];
+
+// ========================================
+// Subscription Types
+// ========================================
+export const SubscriptionTier = {
+  FREE: 'FREE',
+  BASIC: 'BASIC',
+  PROFESSIONAL: 'PROFESSIONAL',
+  BUSINESS: 'BUSINESS',
+  ENTERPRISE: 'ENTERPRISE',
+} as const;
+export type SubscriptionTier = typeof SubscriptionTier[keyof typeof SubscriptionTier];
+
+export const SubscriptionStatus = {
+  ACTIVE: 'ACTIVE',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED',
+  PAUSED: 'PAUSED',
+  PENDING: 'PENDING',
+} as const;
+export type SubscriptionStatus = typeof SubscriptionStatus[keyof typeof SubscriptionStatus];
+
+// ========================================
+// Warranty Types
+// ========================================
+export const WarrantyType = {
+  SELLER_WARRANTY: 'SELLER_WARRANTY',
+  PLATFORM_WARRANTY: 'PLATFORM_WARRANTY',
+  EXTENDED_WARRANTY: 'EXTENDED_WARRANTY',
+  INSURANCE: 'INSURANCE',
+} as const;
+export type WarrantyType = typeof WarrantyType[keyof typeof WarrantyType];
+
+export const WarrantyStatus = {
+  ACTIVE: 'ACTIVE',
+  EXPIRED: 'EXPIRED',
+  CLAIMED: 'CLAIMED',
+  VOIDED: 'VOIDED',
+} as const;
+export type WarrantyStatus = typeof WarrantyStatus[keyof typeof WarrantyStatus];
+
+export const WarrantyClaimStatus = {
+  PENDING: 'PENDING',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  PROCESSING: 'PROCESSING',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  CLOSED: 'CLOSED',
+  REFUNDED: 'REFUNDED',
+  REPLACED: 'REPLACED',
+} as const;
+export type WarrantyClaimStatus = typeof WarrantyClaimStatus[keyof typeof WarrantyClaimStatus];
+
+// ========================================
+// Product Authenticity Types
+// ========================================
+export const AuthenticityStatus = {
+  PENDING: 'PENDING',
+  VERIFIED: 'VERIFIED',
+  SUSPICIOUS: 'SUSPICIOUS',
+  COUNTERFEIT: 'COUNTERFEIT',
+  INCONCLUSIVE: 'INCONCLUSIVE',
+} as const;
+export type AuthenticityStatus = typeof AuthenticityStatus[keyof typeof AuthenticityStatus];
 
 // ========================================
 // Gold Types
@@ -714,3 +1070,221 @@ export const GoldDeliveryMethod = {
   ESCROW_MEETUP: 'ESCROW_MEETUP',
 } as const;
 export type GoldDeliveryMethod = typeof GoldDeliveryMethod[keyof typeof GoldDeliveryMethod];
+
+// ========================================
+// Rental Types
+// ========================================
+export const RentalPaymentStatus = {
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  OVERDUE: 'OVERDUE',
+  CANCELLED: 'CANCELLED',
+  REFUNDED: 'REFUNDED',
+} as const;
+export type RentalPaymentStatus = typeof RentalPaymentStatus[keyof typeof RentalPaymentStatus];
+
+export const RentalDisputeStatus = {
+  OPEN: 'OPEN',
+  UNDER_REVIEW: 'UNDER_REVIEW',
+  RESOLVED: 'RESOLVED',
+  ESCALATED: 'ESCALATED',
+  CLOSED: 'CLOSED',
+} as const;
+export type RentalDisputeStatus = typeof RentalDisputeStatus[keyof typeof RentalDisputeStatus];
+
+// ========================================
+// Prisma Model Type Placeholders
+// ========================================
+// These interfaces provide type definitions when Prisma client is not generated
+
+export interface RentalContract {
+  id: string;
+  propertyId: string;
+  landlordId: string;
+  tenantId: string;
+  startDate: Date;
+  endDate: Date;
+  monthlyRent: number;
+  securityDeposit: number;
+  annualIncreasePercent: number | null;
+  protectDeposit: boolean;
+  requireCheckinInspection: boolean;
+  contractType: RentalContractType;
+  status: RentalContractStatus;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RentalPayment {
+  id: string;
+  contractId: string;
+  amount: number;
+  dueDate: Date;
+  paidDate: Date | null;
+  status: RentalPaymentStatus;
+  paymentMethod: string | null;
+  transactionId: string | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Property {
+  id: string;
+  ownerId: string;
+  title: string;
+  description: string | null;
+  propertyType: PropertyType;
+  titleType: TitleType | null;
+  governorate: string;
+  city: string;
+  district: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  areaSqm: number | null;
+  buildingAge: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  floor: number | null;
+  totalFloors: number | null;
+  finishingLevel: FinishingLevel | null;
+  furnishedStatus: FurnishedStatus | null;
+  amenities: string[];
+  images: string[];
+  documents: string[];
+  listingType: PropertyListingType;
+  salePrice: number | null;
+  monthlyRent: number | null;
+  estimatedValue: number | null;
+  openForBarter: boolean;
+  barterPreferences: Record<string, unknown> | null;
+  verificationLevel: PropertyVerificationLevel;
+  status: PropertyStatus;
+  viewsCount: number;
+  favoritesCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface User {
+  id: string;
+  phone: string;
+  email: string | null;
+  fullName: string | null;
+  avatar: string | null;
+  businessName: string | null;
+  userType: UserType;
+  status: UserStatus;
+  rating: number;
+  reviewCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FieldInspection {
+  id: string;
+  propertyId: string | null;
+  itemId: string | null;
+  requesterId: string;
+  inspectorId: string | null;
+  type: InspectionType;
+  status: InspectionStatus;
+  scheduledAt: Date | null;
+  completedAt: Date | null;
+  report: Record<string, unknown> | null;
+  recommendation: InspectionRecommendation | null;
+  photos: string[];
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RentalDispute {
+  id: string;
+  contractId: string;
+  raisedById: string;
+  type: string;
+  description: string;
+  evidence: string[];
+  status: RentalDisputeStatus;
+  resolution: string | null;
+  resolvedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Category {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  slug: string;
+  icon: string | null;
+  image: string | null;
+  parentId: string | null;
+  order: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Item {
+  id: string;
+  sellerId: string;
+  categoryId: string | null;
+  title: string;
+  description: string | null;
+  condition: ItemCondition;
+  type: ItemType;
+  status: ItemStatus;
+  images: string[];
+  videos: string[];
+  basePrice: number | null;
+  currency: string;
+  location: string | null;
+  governorate: string | null;
+  city: string | null;
+  viewsCount: number;
+  favoritesCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Listing {
+  id: string;
+  itemId: string;
+  sellerId: string;
+  listingType: ListingType;
+  status: ListingStatus;
+  price: number | null;
+  currency: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  negotiable: boolean;
+  expiresAt: Date | null;
+  promotionTier: PromotionTier | null;
+  promotedAt: Date | null;
+  promotionExpiresAt: Date | null;
+  viewsCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Transaction {
+  id: string;
+  buyerId: string;
+  sellerId: string;
+  listingId: string;
+  amount: number;
+  currency: string;
+  status: OrderStatus;
+  paymentMethod: PaymentMethod | null;
+  paymentStatus: PaymentStatus | null;
+  paidAt: Date | null;
+  deliveryStatus: DeliveryStatus | null;
+  deliveredAt: Date | null;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}

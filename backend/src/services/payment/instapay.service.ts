@@ -1,4 +1,4 @@
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus } from '../../types/prisma-enums';
 import crypto from 'crypto';
 import prisma from '../../lib/prisma';
 
@@ -9,6 +9,18 @@ const INSTAPAY_CONFIG = {
   secretKey: process.env.INSTAPAY_SECRET_KEY || '',
   merchantId: process.env.INSTAPAY_MERCHANT_ID || '',
 };
+
+export interface InstaPayPaymentResponse {
+  success: boolean;
+  transactionId: string;
+  paymentUrl?: string;
+  expiresAt?: Date;
+  status?: 'PENDING' | 'COMPLETED' | 'FAILED' | 'EXPIRED';
+  amount?: number;
+  paidAt?: Date;
+  referenceNumber?: string;
+  message?: string;
+}
 
 interface PaymentInitiateResponse {
   success: boolean;
@@ -23,6 +35,8 @@ interface PaymentVerifyResponse {
   transactionId: string;
   amount: number;
   paidAt?: Date;
+  verified?: boolean;
+  message?: string;
 }
 
 /**
@@ -241,7 +255,7 @@ export const handleCallback = async (payload: {
       },
     });
 
-    return { success: true, message: 'Payment confirmed' };
+    return { success: true, message: 'Payment confirmed', orderId: order.id };
   } else if (payload.status === 'FAILED') {
     // Optionally update order or create notification
     await prisma.notification.create({
@@ -259,4 +273,11 @@ export const handleCallback = async (payload: {
   }
 
   return { success: true, message: 'Callback processed' };
+};
+
+// Export service object
+export const instapayService = {
+  initiatePayment,
+  verifyPayment,
+  handleCallback,
 };

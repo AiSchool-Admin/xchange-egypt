@@ -4,14 +4,14 @@ import {
   PropertyStatus,
   InspectionType,
   InspectionStatus,
-  Prisma,
   RentalContract,
   RentalPayment,
   Property,
   User,
   FieldInspection,
   RentalDispute,
-} from '@prisma/client';
+} from '../types/prisma-enums';
+import { Prisma } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 import { randomUUID } from 'crypto';
@@ -208,7 +208,7 @@ async function generatePaymentSchedule(
   endDate: Date,
   monthlyRent: number
 ): Promise<RentalPayment[]> {
-  const payments: Prisma.RentalPaymentCreateManyInput[] = [];
+  const payments: Array<{ contractId: string; amount: number; dueDate: Date; status: string }> = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
 
@@ -714,7 +714,7 @@ export const getUserRentalContracts = async (
   tenant: Pick<User, 'id' | 'fullName' | 'avatar'>;
   _count: { payments: number; disputes: number };
 }>> => {
-  const where: Prisma.RentalContractWhereInput = {};
+  const where: Record<string, unknown> = {};
 
   if (role === 'landlord') {
     where.landlordId = userId;

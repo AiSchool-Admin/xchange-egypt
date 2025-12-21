@@ -10,7 +10,7 @@
  */
 
 import prisma from '../lib/prisma';
-import { NotificationType } from '@prisma/client';
+import { NotificationType } from '../types/prisma-enums';
 import { Server as SocketIOServer } from 'socket.io';
 
 // ============================================

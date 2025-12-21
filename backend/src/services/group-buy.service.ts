@@ -10,7 +10,7 @@
  */
 
 import prisma from '../lib/prisma';
-import { GroupBuyStatus } from '@prisma/client';
+import { GroupBuyStatus } from '../types/prisma-enums';
 
 // ============================================
 // Types

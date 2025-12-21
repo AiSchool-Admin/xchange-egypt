@@ -1,7 +1,8 @@
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 import { createNotification } from './notification.service';
-import { Prisma, Transaction, User, Listing, Item, Category } from '@prisma/client';
+import { Transaction, User, Listing, Item, Category } from '../types/prisma-enums';
+import { Prisma } from '@prisma/client';
 
 // Types
 interface CreatePurchaseData {
@@ -36,7 +37,7 @@ type TransactionWithRelations = Transaction & {
 export const createPurchase = async (
   buyerId: string,
   purchaseData: CreatePurchaseData
-): Promise<TransactionWithRelations> => {
+): Promise<{ transaction: any; item: any; message: string }> => {
   // Get listing with item and seller information
   const listing = await prisma.listing.findUnique({
     where: { id: purchaseData.listingId },
@@ -151,7 +152,7 @@ export const buyItemDirectly = async (
     phoneNumber: string;
     notes?: string;
   }
-): Promise<TransactionWithRelations> => {
+): Promise<{ transaction: any; item: any; message: string }> => {
   // Get item with seller information
   const item = await prisma.item.findUnique({
     where: { id: purchaseData.itemId },

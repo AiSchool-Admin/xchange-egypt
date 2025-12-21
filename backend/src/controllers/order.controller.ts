@@ -51,7 +51,18 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
     const userId = req.user!.id;
     const { shippingAddressId, shippingAddress, paymentMethod, notes } = req.body as {
       shippingAddressId?: string;
-      shippingAddress?: Record<string, unknown>;
+      shippingAddress?: {
+        fullName: string;
+        phone: string;
+        street: string;
+        buildingName?: string;
+        buildingNumber?: string;
+        floor?: string;
+        apartmentNumber?: string;
+        landmark?: string;
+        city: string;
+        governorate: string;
+      };
       paymentMethod: PaymentMethod;
       notes?: string;
     };
@@ -106,7 +117,15 @@ export const getShippingAddresses = async (req: Request, res: Response, next: Ne
 export const createShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const addressData = req.body as Record<string, unknown>;
+    const addressData = req.body as {
+      fullName: string;
+      phone: string;
+      address: string;
+      city: string;
+      governorate: string;
+      postalCode?: string;
+      isDefault?: boolean;
+    };
 
     const address = await orderService.createShippingAddress(userId, addressData);
     return successResponse(res, address, 'Address created successfully', 201);
@@ -171,7 +190,18 @@ export const createAuctionOrder = async (req: Request, res: Response, next: Next
     const { auctionId, shippingAddressId, shippingAddress, paymentMethod, notes } = req.body as {
       auctionId: string;
       shippingAddressId?: string;
-      shippingAddress?: Record<string, unknown>;
+      shippingAddress?: {
+        fullName: string;
+        phone: string;
+        street: string;
+        buildingName?: string;
+        buildingNumber?: string;
+        floor?: string;
+        apartmentNumber?: string;
+        landmark?: string;
+        city: string;
+        governorate: string;
+      };
       paymentMethod: PaymentMethod;
       notes?: string;
     };

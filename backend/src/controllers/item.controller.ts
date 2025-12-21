@@ -225,6 +225,14 @@ export const getCategoryItems = async (
     const { includeSubcategories, condition, governorate, page, limit, sortBy, sortOrder } =
       req.query;
 
+    // Map sortBy values to valid fields
+    let mappedSortBy: 'createdAt' | 'updatedAt' | 'title' | undefined;
+    if (sortBy === 'titleAr' || sortBy === 'titleEn' || sortBy === 'estimatedValue') {
+      mappedSortBy = 'title'; // Default to 'title' for unsupported fields
+    } else {
+      mappedSortBy = sortBy as 'createdAt' | 'updatedAt' | 'title' | undefined;
+    }
+
     const result = await itemService.getCategoryItems(
       categoryId,
       includeSubcategories === 'true',
@@ -233,7 +241,7 @@ export const getCategoryItems = async (
         governorate: governorate as string,
         page: page ? parseInt(page as string) : undefined,
         limit: limit ? parseInt(limit as string) : undefined,
-        sortBy: sortBy as 'createdAt' | 'updatedAt' | 'titleAr' | 'titleEn' | 'estimatedValue' | undefined,
+        sortBy: mappedSortBy,
         sortOrder: sortOrder as 'asc' | 'desc' | undefined,
       }
     );

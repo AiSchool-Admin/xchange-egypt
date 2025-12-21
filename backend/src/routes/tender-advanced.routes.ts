@@ -54,13 +54,13 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const filters = {
-        category: req.query.category as string | undefined,
-        governorate: req.query.governorate as string,
-        city: req.query.city as string,
-        urgency: req.query.urgency as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT' | undefined,
+        category: req.query.category ? (String(req.query.category) as tenderAdvancedService.ServiceCategory) : undefined,
+        governorate: req.query.governorate ? String(req.query.governorate) : undefined,
+        city: req.query.city ? String(req.query.city) : undefined,
+        urgency: req.query.urgency ? (req.query.urgency as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT') : undefined,
         budgetMin: req.query.budgetMin ? parseFloat(req.query.budgetMin as string) : undefined,
         budgetMax: req.query.budgetMax ? parseFloat(req.query.budgetMax as string) : undefined,
-        status: req.query.status as string,
+        status: req.query.status ? String(req.query.status) : undefined,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
       };
@@ -419,11 +419,11 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const filters = {
-        category: req.query.category as string,
-        governorate: req.query.governorate as string,
+        category: req.query.category ? (String(req.query.category) as tenderAdvancedService.ServiceCategory) : undefined,
+        governorate: req.query.governorate ? String(req.query.governorate) : undefined,
         minRating: req.query.minRating ? parseFloat(req.query.minRating as string) : undefined,
         verified: req.query.verified === 'true',
-        search: req.query.search as string,
+        search: req.query.search ? String(req.query.search) : undefined,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
       };

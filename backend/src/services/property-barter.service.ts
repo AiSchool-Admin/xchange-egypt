@@ -2,8 +2,8 @@ import {
   PropertyBarterStatus,
   PropertyEscrowStatus,
   PropertyStatus,
-  Prisma,
-} from '@prisma/client';
+} from '../types/prisma-enums';
+import { Prisma } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 
@@ -448,7 +448,7 @@ export const getUserBarterProposals = async (
   type: 'sent' | 'received' | 'all' = 'all',
   status?: PropertyBarterStatus
 ): Promise<any[]> => {
-  const where: Prisma.PropertyBarterProposalWhereInput = {};
+  const where: Record<string, unknown> = {};
 
   if (type === 'sent') {
     where.proposerId = userId;

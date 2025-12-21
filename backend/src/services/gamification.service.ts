@@ -3,7 +3,7 @@
  * خدمة التلعيب والإنجازات
  */
 
-import { AchievementCategory, AchievementRarity, ChallengeType } from '@prisma/client';
+import { AchievementCategory, AchievementRarity, ChallengeType } from '../types/prisma-enums';
 import prisma from '../lib/prisma';
 import * as walletService from './wallet.service';
 
@@ -261,10 +261,33 @@ export async function recordDailyLogin(userId: string): Promise<{
 // ============================================
 
 /**
+ * Interface for achievement progress
+ */
+export interface AchievementProgress {
+  id: string;
+  code: string;
+  nameAr: string;
+  nameEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  icon: string;
+  category: AchievementCategory;
+  rarity: AchievementRarity;
+  isSecret: boolean;
+  progress: number;
+  requirement: number | string;
+  isCompleted: boolean;
+  completedAt?: Date | null;
+  rewardsClaimed?: boolean;
+  xpReward?: number;
+  coinReward?: number;
+}
+
+/**
  * Get all achievements with user progress
  * الحصول على جميع الإنجازات مع تقدم المستخدم
  */
-export async function getAchievementsWithProgress(userId: string) {
+export async function getAchievementsWithProgress(userId: string): Promise<AchievementProgress[]> {
   const userLevel = await getOrCreateUserLevel(userId);
 
   const allAchievements = await prisma.achievement.findMany({
@@ -281,7 +304,7 @@ export async function getAchievementsWithProgress(userId: string) {
   );
 
   return allAchievements.map(achievement => {
-    const userAchievement = userAchievementMap.get(achievement.id);
+    const userAchievement = userAchievementMap.get(achievement.id) as { progress: number; isCompleted: boolean; completedAt: Date | null; rewardsClaimed: boolean } | undefined;
 
     // Hide secret achievements that aren't completed
     if (achievement.isSecret && (!userAchievement || !userAchievement.isCompleted)) {
@@ -296,19 +319,23 @@ export async function getAchievementsWithProgress(userId: string) {
         category: achievement.category,
         rarity: achievement.rarity,
         isSecret: true,
-        progress: 0,
-        requirement: '???',
+        progress: 0 as number,
+        requirement: '???' as string | number,
         isCompleted: false,
-      };
+        completedAt: undefined,
+        rewardsClaimed: false,
+        xpReward: achievement.xpReward,
+        coinReward: achievement.coinReward,
+      } as AchievementProgress;
     }
 
     return {
       ...achievement,
-      progress: userAchievement?.progress || 0,
-      isCompleted: userAchievement?.isCompleted || false,
-      completedAt: userAchievement?.completedAt,
-      rewardsClaimed: userAchievement?.rewardsClaimed || false,
-    };
+      progress: (userAchievement?.progress || 0) as number,
+      isCompleted: (userAchievement?.isCompleted || false) as boolean,
+      completedAt: userAchievement?.completedAt || undefined,
+      rewardsClaimed: (userAchievement?.rewardsClaimed || false) as boolean,
+    } as AchievementProgress;
   });
 }
 
@@ -487,15 +514,15 @@ export async function getActiveChallenges(userId: string) {
   );
 
   return challenges.map(challenge => {
-    const participation = participationMap.get(challenge.id);
+    const participation = participationMap.get(challenge.id) as { currentValue: number; isCompleted: boolean; rewardsClaimed: boolean } | undefined;
     const timeRemaining = challenge.endDate.getTime() - now.getTime();
 
     return {
       ...challenge,
-      currentValue: participation?.currentValue || 0,
-      isCompleted: participation?.isCompleted || false,
-      rewardsClaimed: participation?.rewardsClaimed || false,
-      progress: Math.min(100, ((participation?.currentValue || 0) / challenge.targetValue) * 100),
+      currentValue: (participation?.currentValue || 0) as number,
+      isCompleted: (participation?.isCompleted || false) as boolean,
+      rewardsClaimed: (participation?.rewardsClaimed || false) as boolean,
+      progress: Math.min(100, ((participation?.currentValue || 0) / challenge.targetValue) * 100) as number,
       timeRemaining,
       timeRemainingText: formatTimeRemaining(timeRemaining),
     };

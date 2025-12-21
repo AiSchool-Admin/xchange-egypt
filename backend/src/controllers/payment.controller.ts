@@ -202,12 +202,15 @@ export const initiateInstapay = async (req: Request, res: Response, next: NextFu
     // Get order to verify ownership and get amount
     const order = await orderService.getOrderById(userId, orderId);
 
-    const result = await instapayService.initiatePayment({
+    const result = await instapayService.initiatePayment(
       orderId,
-      amount: order.total,
-      customerName: order.user.fullName,
-      customerPhone: order.user.phone || '',
-    });
+      order.total,
+      {
+        email: order.user.email || '',
+        phone: order.user.phone || '',
+        name: order.user.fullName || '',
+      }
+    );
 
     return successResponse(res, result, 'Payment initiated successfully');
   } catch (error) {
@@ -271,26 +274,15 @@ export const createFawryPayment = async (req: Request, res: Response, next: Next
     // Get order to verify ownership and get amount
     const order = await orderService.getOrderById(userId, orderId);
 
-    const result = await fawryService.createPayment({
-      merchantRefNum: orderId,
-      amount: order.total,
-      customerEmail: order.user.email,
-      customerMobile: order.user.phone || '',
-      customerName: order.user.fullName,
-      description: `Payment for order ${orderId}`,
-      items: order.items?.map((item: any) => ({
-        itemId: item.id,
-        description: item.title || item.name,
-        price: item.price,
-        quantity: item.quantity,
-      })) || [{
-        itemId: orderId,
-        description: `Order ${orderId}`,
-        price: order.total,
-        quantity: 1,
-      }],
-      paymentMethod: paymentMethod || 'CARD',
-    });
+    const result = await fawryService.createPayment(
+      orderId,
+      order.total,
+      {
+        email: order.user.email || '',
+        phone: order.user.phone || '',
+        name: order.user.fullName || '',
+      }
+    );
 
     return successResponse(res, result, 'Fawry reference created successfully');
   } catch (error) {

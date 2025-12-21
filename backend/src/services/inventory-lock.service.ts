@@ -10,7 +10,7 @@
  * - RESERVED: Item reserved for specific chain/offer
  */
 
-import { LockType, LockStatus } from '@prisma/client';
+import { LockType, LockStatus } from '../types/prisma-enums';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 

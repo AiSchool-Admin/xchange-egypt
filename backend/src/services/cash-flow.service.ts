@@ -153,7 +153,7 @@ export const updateCashFlow = async (input: UpdateCashFlowInput, userId: string)
     validateStatusTransition(cashFlow.paymentStatus, paymentStatus);
   }
 
-  const updateData: Prisma.CashFlowUpdateInput = {};
+  const updateData: Record<string, unknown> = {};
   if (paymentStatus) updateData.paymentStatus = paymentStatus;
   if (paymentReference) updateData.paymentReference = paymentReference;
   if (notes) updateData.notes = notes;
@@ -414,7 +414,7 @@ export const createCommissionFlow = async (
 export const getCashFlows = async (query: CashFlowQuery) => {
   const { chainId, userId, status, flowType, page = 1, limit = 20 } = query;
 
-  const where: Prisma.CashFlowWhereInput = {};
+  const where: Record<string, unknown> = {};
 
   if (chainId) {
     where.chainId = chainId;

@@ -10,7 +10,7 @@
  */
 
 import prisma from '../lib/prisma';
-import { AuthenticityStatus } from '@prisma/client';
+import { AuthenticityStatus } from '../types/prisma-enums';
 import crypto from 'crypto';
 
 // ============================================

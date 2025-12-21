@@ -7,7 +7,7 @@ import {
   ScrapDealerType,
   ScrapDealerStatus,
   ItemStatus,
-} from '@prisma/client';
+} from '../types/prisma-enums';
 
 // ============================================
 // سوق التوالف - Scrap Marketplace Service

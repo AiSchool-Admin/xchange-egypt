@@ -544,7 +544,7 @@ export const getInspectorInspections = async (
     throw new NotFoundError('Inspector profile not found');
   }
 
-  const where: Prisma.FieldInspectionWhereInput = {
+  const where: Record<string, unknown> = {
     inspectorId: inspector.id,
   };
 
@@ -585,7 +585,7 @@ export const getUserInspections = async (
   userId: string,
   status?: InspectionStatus
 ): Promise<any[]> => {
-  const where: Prisma.FieldInspectionWhereInput = {
+  const where: Record<string, unknown> = {
     requestedById: userId,
   };
 

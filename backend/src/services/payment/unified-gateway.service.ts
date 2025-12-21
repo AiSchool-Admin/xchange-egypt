@@ -440,16 +440,15 @@ export class UnifiedPaymentGateway {
       });
     }
 
-    const result: FawryPaymentResponse = await fawryService.createPayment({
-      merchantRefNum: request.orderId,
-      customerMobile: request.customer.phone,
-      customerEmail: request.customer.email,
-      customerName: `${request.customer.firstName} ${request.customer.lastName}`,
-      amount: request.amount,
-      description: `دفع لطلب ${request.orderId}`,
-      items: fawryItems,
-      paymentMethod: request.method === PaymentMethod.FAWRY_CASH ? 'CASH' : 'CARD',
-    });
+    const result: FawryPaymentResponse = await fawryService.createPayment(
+      request.orderId,
+      request.amount,
+      {
+        email: request.customer.email,
+        phone: request.customer.phone,
+        name: `${request.customer.firstName} ${request.customer.lastName}`,
+      }
+    );
 
     if (result.success) {
       return {
@@ -737,13 +736,15 @@ export class UnifiedPaymentGateway {
    * Handle InstaPay payment
    */
   private async handleInstaPayPayment(request: UnifiedPaymentRequest): Promise<UnifiedPaymentResponse> {
-    const result: InstaPayPaymentResponse = await instapayService.initiatePayment({
-      orderId: request.orderId,
-      amount: request.amount,
-      customerName: `${request.customer.firstName} ${request.customer.lastName}`,
-      customerPhone: request.customer.phone,
-      description: `دفع لطلب ${request.orderId}`,
-    });
+    const result: InstaPayPaymentResponse = await instapayService.initiatePayment(
+      request.orderId,
+      request.amount,
+      {
+        email: request.customer.email,
+        phone: request.customer.phone,
+        name: `${request.customer.firstName} ${request.customer.lastName}`,
+      }
+    );
 
     if (result.success) {
       return {

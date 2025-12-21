@@ -49,6 +49,12 @@ router.get('/search', async (req: Request, res: Response, next: NextFunction) =>
       });
     }
 
+    // Map 'newest' to 'date' for sort parameter
+    let sortValue = (sortBy as string) || 'relevance';
+    if (sortValue === 'newest') {
+      sortValue = 'date';
+    }
+
     const results = await crossMarketService.universalSearch({
       query: searchQuery,
       markets: markets ? (markets as string).split(',') as crossMarketService.MarketType[] : undefined,
@@ -56,7 +62,7 @@ router.get('/search', async (req: Request, res: Response, next: NextFunction) =>
       priceMax: priceMax ? parseFloat(priceMax as string) : undefined,
       governorate: governorate as string,
       condition: condition as string,
-      sortBy: sortBy as 'relevance' | 'price_asc' | 'price_desc' | 'newest',
+      sortBy: sortValue as 'relevance' | 'price_asc' | 'price_desc' | 'date',
       page: page ? parseInt(page as string, 10) : 1,
       limit: limit ? parseInt(limit as string, 10) : 20,
     });

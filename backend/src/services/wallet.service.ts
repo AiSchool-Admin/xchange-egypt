@@ -3,7 +3,7 @@
  * خدمة محفظة XCoin - نظام العملة الداخلية للمنصة
  */
 
-import { WalletTransactionType, WalletTransactionStatus } from '@prisma/client';
+import { WalletTransactionType, WalletTransactionStatus } from '../types/prisma-enums';
 import prisma from '../lib/prisma';
 
 // ============================================

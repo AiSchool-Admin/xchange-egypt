@@ -11,7 +11,7 @@
  */
 
 import prisma from '../lib/prisma';
-import { ItemCondition, ListingType } from '@prisma/client';
+import { ItemCondition, ListingType } from '../types/prisma-enums';
 
 // ============================================
 // Types

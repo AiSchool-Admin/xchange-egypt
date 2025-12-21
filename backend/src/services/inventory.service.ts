@@ -5,7 +5,7 @@
  * Supports goods, services, and cash items with multiple listing types.
  */
 
-import { ItemType, ItemCondition, MarketType } from '@prisma/client';
+import { ItemType, ItemCondition, MarketType } from '../types/prisma-enums';
 import prisma from '../lib/prisma';
 import * as proximityMatching from './proximity-matching.service';
 import { notifyDirectPurchaseMatches } from './smart-matching.service';

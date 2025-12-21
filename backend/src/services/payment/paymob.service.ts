@@ -119,7 +119,7 @@ export interface PaymobPaymentResult {
   kioskReference?: string;
   walletRedirectUrl?: string;
   message: string;
-  rawResponse?: any;
+  rawResponse?: Record<string, unknown>;
 }
 
 export interface PaymobCallback {
@@ -198,7 +198,7 @@ export class PaymobService {
         throw new Error(`Paymob authentication failed: ${response.statusText}`);
       }
 
-      const data: PaymobAuthResponse = await response.json();
+      const data = await response.json() as PaymobAuthResponse;
       this.authToken = data.token;
       // Token is valid for 1 hour, we'll refresh after 50 minutes
       this.tokenExpiry = new Date(Date.now() + 50 * 60 * 1000);
@@ -245,7 +245,7 @@ export class PaymobService {
         throw new Error(`Failed to create Paymob order: ${JSON.stringify(errorData)}`);
       }
 
-      return await response.json();
+      return await response.json() as PaymobOrderResponse;
     } catch (error) {
       console.error('Paymob order creation error:', error);
       throw new Error('فشل في إنشاء الطلب في باي موب');
@@ -299,7 +299,7 @@ export class PaymobService {
         throw new Error(`Failed to generate payment key: ${JSON.stringify(errorData)}`);
       }
 
-      const data: PaymobPaymentKeyResponse = await response.json();
+      const data = await response.json() as PaymobPaymentKeyResponse;
       return data.token;
     } catch (error) {
       console.error('Paymob payment key error:', error);
@@ -384,12 +384,12 @@ export class PaymobService {
         throw new Error('Failed to initiate wallet payment');
       }
 
-      const walletData = await walletResponse.json();
+      const walletData = await walletResponse.json() as Record<string, unknown>;
 
       return {
         success: true,
         orderId: order.id.toString(),
-        walletRedirectUrl: walletData.redirect_url,
+        walletRedirectUrl: walletData.redirect_url as string,
         transactionId: walletData.id?.toString(),
         message: 'تم إرسال طلب الدفع للمحفظة',
       };
@@ -439,14 +439,15 @@ export class PaymobService {
         throw new Error('Failed to initiate kiosk payment');
       }
 
-      const kioskData = await kioskResponse.json();
+      const kioskData = await kioskResponse.json() as Record<string, unknown>;
+      const kioskDataObj = kioskData.data as Record<string, unknown> | undefined;
 
       return {
         success: true,
         orderId: order.id.toString(),
-        kioskReference: kioskData.data?.bill_reference?.toString(),
+        kioskReference: kioskDataObj?.bill_reference?.toString(),
         transactionId: kioskData.id?.toString(),
-        message: `رقم المرجع للدفع: ${kioskData.data?.bill_reference}`,
+        message: `رقم المرجع للدفع: ${kioskDataObj?.bill_reference}`,
       };
     } catch (error) {
       console.error('Kiosk payment initiation error:', error);
@@ -573,7 +574,14 @@ export class PaymobService {
         throw new Error('Failed to get transaction status');
       }
 
-      const data = await response.json();
+      const data = await response.json() as {
+        is_voided?: boolean;
+        is_refunded?: boolean;
+        success?: boolean;
+        pending?: boolean;
+        amount_cents?: number;
+        data?: { message?: string };
+      };
 
       let status: PaymobStatus;
       if (data.is_voided) {
@@ -632,7 +640,7 @@ export class PaymobService {
         throw new Error('Refund failed');
       }
 
-      const data = await response.json();
+      const data = await response.json() as { id?: number };
 
       return {
         success: true,

@@ -1,4 +1,4 @@
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus } from '../../types/prisma-enums';
 import crypto from 'crypto';
 import prisma from '../../lib/prisma';
 
@@ -9,7 +9,7 @@ const FAWRY_CONFIG = {
   securityKey: process.env.FAWRY_SECURITY_KEY || '',
 };
 
-interface FawryPaymentResponse {
+export interface FawryPaymentResponse {
   success: boolean;
   referenceNumber: string;
   expiryDate: Date;
@@ -17,6 +17,9 @@ interface FawryPaymentResponse {
     ar: string;
     en: string;
   };
+  fawryRefNumber?: string;
+  paymentUrl?: string;
+  message?: string;
 }
 
 interface FawryStatusResponse {
@@ -25,6 +28,7 @@ interface FawryStatusResponse {
   referenceNumber: string;
   amount: number;
   paidAt?: Date;
+  message?: string;
 }
 
 /**
@@ -41,7 +45,7 @@ const generateFawrySignature = (data: string[]): string => {
 /**
  * Create Fawry payment reference
  */
-export const createFawryPayment = async (
+const createPayment = async (
   orderId: string,
   amount: number,
   customerData: {
@@ -224,7 +228,7 @@ export const checkPaymentStatus = async (referenceNumber: string): Promise<Fawry
 /**
  * Handle Fawry callback/webhook
  */
-export const handleFawryCallback = async (payload: {
+const handleCallback = async (payload: {
   referenceNumber: string;
   orderStatus: string;
   fawryRefNumber: string;
@@ -275,7 +279,7 @@ export const handleFawryCallback = async (payload: {
       },
     });
 
-    return { success: true, message: 'Payment confirmed' };
+    return { success: true, message: 'Payment confirmed', merchantRefNum: order.id };
   } else if (payload.orderStatus === 'EXPIRED') {
     await prisma.notification.create({
       data: {
@@ -293,3 +297,13 @@ export const handleFawryCallback = async (payload: {
 
   return { success: true, message: 'Callback processed' };
 };
+
+// Export service object
+export const fawryService = {
+  createPayment,
+  checkPaymentStatus,
+  handleCallback,
+};
+
+// Re-export functions directly
+export { createPayment, handleCallback };

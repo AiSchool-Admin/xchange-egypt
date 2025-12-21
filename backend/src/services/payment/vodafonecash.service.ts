@@ -58,7 +58,7 @@ export interface VodafoneCashPaymentResponse {
   status: VodafoneCashStatus;
   message: string;
   expiresAt?: Date;
-  rawResponse?: any;
+  rawResponse?: Record<string, unknown>;
 }
 
 export interface VodafoneCashCallback {
@@ -108,7 +108,7 @@ export class VodafoneCashService {
    * Generate request signature
    * إنشاء توقيع الطلب
    */
-  private generateSignature(data: Record<string, any>): string {
+  private generateSignature(data: Record<string, unknown>): string {
     const sortedKeys = Object.keys(data).sort();
     const signatureString = sortedKeys.map((key) => `${key}=${data[key]}`).join('&');
 
@@ -163,7 +163,7 @@ export class VodafoneCashService {
         throw new Error(`Vodafone Cash authentication failed: ${response.statusText}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as { accessToken: string };
       this.accessToken = data.accessToken;
       // Token is valid for 30 minutes, we'll refresh after 25 minutes
       this.tokenExpiry = new Date(Date.now() + 25 * 60 * 1000);
@@ -221,7 +221,10 @@ export class VodafoneCashService {
         throw new Error(`Payment initiation failed: ${JSON.stringify(errorData)}`);
       }
 
-      const data = await response.json();
+      const data = await response.json() as {
+        transactionId?: string;
+        referenceNumber?: string;
+      };
 
       return {
         success: true,
@@ -274,9 +277,13 @@ export class VodafoneCashService {
         throw new Error('Failed to check payment status');
       }
 
-      const data = await response.json();
+      const data = await response.json() as {
+        transactionId?: string;
+        referenceNumber?: string;
+        status?: string;
+      };
 
-      const status = this.mapStatus(data.status);
+      const status = this.mapStatus(data.status || '');
 
       return {
         success: status === VodafoneCashStatus.SUCCESS,
@@ -367,7 +374,10 @@ export class VodafoneCashService {
         throw new Error('Refund failed');
       }
 
-      const data = await response.json();
+      const data = await response.json() as {
+        refundTransactionId?: string;
+        referenceNumber?: string;
+      };
 
       return {
         success: true,
@@ -415,7 +425,10 @@ export class VodafoneCashService {
         throw new Error('Failed to get merchant balance');
       }
 
-      const data = await response.json();
+      const data = await response.json() as {
+        balance?: number;
+        lastUpdated?: string;
+      };
 
       return {
         success: true,
@@ -483,11 +496,25 @@ export class VodafoneCashService {
         throw new Error('Failed to get transaction history');
       }
 
-      const data = await response.json();
+      const data = await response.json() as {
+        transactions?: Array<{
+          transactionId?: string;
+          referenceNumber?: string;
+          amount?: number;
+          status?: string;
+          type?: string;
+          customerPhone?: string;
+          merchantId?: string;
+          createdAt?: string;
+          completedAt?: string;
+          description?: string;
+        }>;
+        total?: number;
+      };
 
       return {
         success: true,
-        transactions: data.transactions.map((tx: any) => ({
+        transactions: (data.transactions || []).map((tx) => ({
           transactionId: tx.transactionId,
           referenceNumber: tx.referenceNumber,
           amount: tx.amount,
