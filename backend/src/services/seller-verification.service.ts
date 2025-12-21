@@ -66,32 +66,11 @@ const LEVEL_CONFIG: Record<VerificationLevel, {
   benefits: string[];
   validityMonths: number | null;
 }> = {
-  NONE: {
-    name: 'None',
-    nameAr: 'بدون توثيق',
-    requirements: [],
-    benefits: [],
-    validityMonths: null,
-  },
   UNVERIFIED: {
     name: 'Unverified',
     nameAr: 'غير موثق',
     requirements: [],
     benefits: ['Basic listing'],
-    validityMonths: null,
-  },
-  EMAIL: {
-    name: 'Email Verified',
-    nameAr: 'موثق البريد الإلكتروني',
-    requirements: ['Verified email'],
-    benefits: ['Email verification badge'],
-    validityMonths: null,
-  },
-  PHONE: {
-    name: 'Phone Verified',
-    nameAr: 'موثق الهاتف',
-    requirements: ['Verified phone'],
-    benefits: ['Phone verification badge'],
     validityMonths: null,
   },
   BASIC: {
@@ -100,13 +79,6 @@ const LEVEL_CONFIG: Record<VerificationLevel, {
     requirements: ['Verified email', 'Verified phone'],
     benefits: ['More listings', 'Basic badge'],
     validityMonths: null,
-  },
-  ID: {
-    name: 'ID Verified',
-    nameAr: 'موثق الهوية',
-    requirements: ['National ID or Passport', 'Selfie verification'],
-    benefits: ['ID verification badge', 'Higher trust'],
-    validityMonths: 24,
   },
   VERIFIED: {
     name: 'Verified',
@@ -135,13 +107,6 @@ const LEVEL_CONFIG: Record<VerificationLevel, {
     requirements: ['Platform partnership agreement', 'Performance review'],
     benefits: ['Trusted badge', 'Exclusive features', 'Revenue sharing'],
     validityMonths: 12,
-  },
-  FULL: {
-    name: 'Fully Verified',
-    nameAr: 'موثق بالكامل',
-    requirements: ['All verifications complete'],
-    benefits: ['Full verification badge', 'Maximum trust'],
-    validityMonths: 24,
   },
 };
 

@@ -782,14 +782,9 @@ export type WalletTransactionStatus = typeof WalletTransactionStatus[keyof typeo
 // Trust Types
 // ========================================
 export const TrustLevel = {
-  NEW: 'NEW',
   NEWCOMER: 'NEWCOMER',
-  BASIC: 'BASIC',
   BRONZE: 'BRONZE',
   SILVER: 'SILVER',
-  VERIFIED: 'VERIFIED',
-  TRUSTED: 'TRUSTED',
-  PREMIUM: 'PREMIUM',
   GOLD: 'GOLD',
   PLATINUM: 'PLATINUM',
   DIAMOND: 'DIAMOND',
@@ -801,25 +796,21 @@ export type TrustLevel = typeof TrustLevel[keyof typeof TrustLevel];
 // Verification Types
 // ========================================
 export const VerificationLevel = {
-  NONE: 'NONE',
   UNVERIFIED: 'UNVERIFIED',
   BASIC: 'BASIC',
-  EMAIL: 'EMAIL',
-  PHONE: 'PHONE',
-  ID: 'ID',
   VERIFIED: 'VERIFIED',
   BUSINESS: 'BUSINESS',
   PREMIUM: 'PREMIUM',
   TRUSTED: 'TRUSTED',
-  FULL: 'FULL',
 } as const;
 export type VerificationLevel = typeof VerificationLevel[keyof typeof VerificationLevel];
 
 export const VerificationStatus = {
   PENDING: 'PENDING',
-  VERIFIED: 'VERIFIED',
+  APPROVED: 'APPROVED',
   REJECTED: 'REJECTED',
   EXPIRED: 'EXPIRED',
+  REVOKED: 'REVOKED',
 } as const;
 export type VerificationStatus = typeof VerificationStatus[keyof typeof VerificationStatus];
 
