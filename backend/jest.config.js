@@ -49,16 +49,6 @@ module.exports = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
-    // Skip tests that require Prisma/Database until properly configured
-    'auth.service.test.ts',
-    'auction.service.test.ts',
-    'barter.service.test.ts',
-    'payment.service.test.ts',
-    // Integration tests that need database
-    'auth.test.ts',
-    'category.test.ts',
-    'matching.test.ts',
-    'api.endpoints.test.ts',
   ],
 
   // Reporters
