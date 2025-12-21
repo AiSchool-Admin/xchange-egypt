@@ -174,16 +174,29 @@ let io: SocketIOServer | null = null;
 // Key: `${userId}:${matchedItemId}:${matchType}`
 const notificationCache = new Map<string, number>();
 
-// Clean old entries every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, timestamp] of notificationCache.entries()) {
-    if (now - timestamp > NOTIFICATION_COOLDOWN_MS) {
-      notificationCache.delete(key);
-    }
+// Clean old entries every 10 minutes (only in non-test environment)
+let cacheCleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+const startCacheCleanup = () => {
+  if (cacheCleanupInterval || process.env.NODE_ENV === 'test') return;
+
+  cacheCleanupInterval = setInterval(() => {
+    const now = Date.now();
+    Array.from(notificationCache.entries()).forEach(([key, timestamp]) => {
+      if (now - timestamp > NOTIFICATION_COOLDOWN_MS) {
+        notificationCache.delete(key);
+      }
+    });
+    console.log(`[UnifiedMatching] Cache cleaned, ${notificationCache.size} entries remaining`);
+  }, 10 * 60 * 1000);
+};
+
+export const stopCacheCleanup = () => {
+  if (cacheCleanupInterval) {
+    clearInterval(cacheCleanupInterval);
+    cacheCleanupInterval = null;
   }
-  console.log(`[UnifiedMatching] Cache cleaned, ${notificationCache.size} entries remaining`);
-}, 10 * 60 * 1000);
+};
 
 // ============================================
 // Initialization
@@ -196,6 +209,9 @@ export const initUnifiedMatching = (socketServer?: SocketIOServer): void => {
   if (socketServer) {
     io = socketServer;
   }
+
+  // Start cache cleanup interval
+  startCacheCleanup();
 
   console.log('[UnifiedMatching] Initializing unified matching service...');
 
@@ -584,22 +600,49 @@ const calculateMatchScore = (
   }
 
   // 4. Keyword Score (تطابق الكلمات)
+  // Check both directions: source keywords against target, and target keywords against source
   let keywordScore = 0;
   const sourceText = `${sourceItem.title || ''} ${sourceItem.description || ''}`.toLowerCase();
   const targetText = `${targetItem.title || ''} ${targetItem.description || ''}`.toLowerCase();
-  const desiredKeywords = (sourceItem.desiredKeywords || sourceItem.desiredItemTitle || '').toLowerCase();
 
-  if (desiredKeywords) {
-    const keywords = desiredKeywords.split(/[\s,،]+/).filter((k: string) => k.length > 2);
+  // Source's desired keywords against target's content
+  const sourceDesiredKeywords = (sourceItem.desiredKeywords || sourceItem.desiredItemTitle || '').toLowerCase();
+  // Target's desired keywords against source's content
+  const targetDesiredKeywords = (targetItem.desiredKeywords || targetItem.desiredItemTitle || '').toLowerCase();
+
+  let bestMatchScore = 0;
+  let matchedKeywordsList: string[] = [];
+
+  // Check source's keywords against target
+  if (sourceDesiredKeywords) {
+    const keywords = sourceDesiredKeywords.split(/[\s,،]+/).filter((k: string) => k.length > 2);
     const matchedKeywords = keywords.filter((kw: string) => targetText.includes(kw));
-
     if (keywords.length > 0) {
-      keywordScore = matchedKeywords.length / keywords.length;
-      if (matchedKeywords.length > 0) {
-        reasonsAr.push(`تطابق: ${matchedKeywords.slice(0, 3).join('، ')}`);
-        reasons.push(`Matched: ${matchedKeywords.slice(0, 3).join(', ')}`);
+      const score = matchedKeywords.length / keywords.length;
+      if (score > bestMatchScore) {
+        bestMatchScore = score;
+        matchedKeywordsList = matchedKeywords;
       }
     }
+  }
+
+  // Check target's keywords against source (reverse matching for buyer-to-seller)
+  if (targetDesiredKeywords) {
+    const keywords = targetDesiredKeywords.split(/[\s,،]+/).filter((k: string) => k.length > 2);
+    const matchedKeywords = keywords.filter((kw: string) => sourceText.includes(kw));
+    if (keywords.length > 0) {
+      const score = matchedKeywords.length / keywords.length;
+      if (score > bestMatchScore) {
+        bestMatchScore = score;
+        matchedKeywordsList = matchedKeywords;
+      }
+    }
+  }
+
+  keywordScore = bestMatchScore;
+  if (matchedKeywordsList.length > 0) {
+    reasonsAr.push(`تطابق: ${matchedKeywordsList.slice(0, 3).join('، ')}`);
+    reasons.push(`Matched: ${matchedKeywordsList.slice(0, 3).join(', ')}`);
   }
 
   // 5. Check for mutual barter match

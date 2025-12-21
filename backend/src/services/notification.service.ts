@@ -4,7 +4,6 @@
  * Handles in-app notifications
  */
 
-import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { NotFoundError } from '../utils/errors';
 
@@ -61,7 +60,7 @@ export const createNotification = async (
       entityId,
       actionUrl,
       actionText,
-      metadata: metadata as Prisma.JsonValue,
+      metadata: metadata as unknown,
       expiresAt,
     },
   });
@@ -86,7 +85,7 @@ export const createBulkNotifications = async (
     entityId: input.entityId,
     actionUrl: input.actionUrl,
     actionText: input.actionText,
-    metadata: input.metadata as Prisma.JsonValue,
+    metadata: input.metadata as unknown,
     expiresAt: input.expiresAt,
   }));
 
@@ -120,7 +119,7 @@ export const getUserNotifications = async (
 
   const skip = (page - 1) * limit;
 
-  const where: Prisma.NotificationWhereInput = {
+  const where: Record<string, unknown> = {
     userId,
   };
 
@@ -329,7 +328,7 @@ export const updatePreferences = async (
     where: { userId },
     data: {
       ...updates,
-      preferences: updates.preferences as Prisma.JsonValue,
+      preferences: updates.preferences as unknown,
     },
   });
 
