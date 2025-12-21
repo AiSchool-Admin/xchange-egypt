@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as orderService from '../services/order.service';
 import { successResponse } from '../utils/response';
-import { OrderStatus, PaymentMethod } from '@prisma/client';
+import { OrderStatus, PaymentMethod } from '../types';
 
 /**
  * Get user's orders

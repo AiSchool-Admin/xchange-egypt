@@ -3,7 +3,7 @@
  * خدمة صناديق المقايضة الجماعية
  */
 
-import { BarterPoolStatus } from '@prisma/client';
+import { BarterPoolStatus } from '../types';
 import prisma from '../lib/prisma';
 
 // ============================================

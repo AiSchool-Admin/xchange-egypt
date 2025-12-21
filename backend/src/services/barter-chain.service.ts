@@ -5,7 +5,7 @@
  * Handles proposal, acceptance, rejection, and execution
  */
 
-import { BarterChainStatus, ParticipantStatus, LockType, ItemStatus } from '@prisma/client';
+import { BarterChainStatus, ParticipantStatus, LockType, ItemStatus } from '../types';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import * as matchingService from './barter-matching.service';
 import * as lockService from './inventory-lock.service';

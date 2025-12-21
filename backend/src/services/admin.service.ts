@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import { AdminRole, AdminStatus, UserStatus, ItemStatus, OrderStatus } from '@prisma/client';
+import { AdminRole, AdminStatus, UserStatus, ItemStatus, OrderStatus } from '../types';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateAdminAccessToken, generateAdminRefreshToken, verifyAdminRefreshToken } from '../utils/adminJwt';
 import { BadRequestError, NotFoundError, UnauthorizedError } from '../utils/errors';

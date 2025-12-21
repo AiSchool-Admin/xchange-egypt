@@ -13,7 +13,7 @@
  * Note: If any preference is not available, lower scores are still possible
  */
 
-import { LockType } from '@prisma/client';
+import { LockType } from '../types';
 import * as lockService from './inventory-lock.service';
 import * as cashFlowService from './cash-flow.service';
 import { calculateLocationScore, formatDistance, getDistanceTier } from '../utils/geo.utils';

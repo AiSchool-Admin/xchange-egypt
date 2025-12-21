@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import { UserType } from '@prisma/client';
+import { UserType } from '../types';
 import { hashPassword, comparePassword } from '../utils/password';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken, generatePasswordResetToken, verifyPasswordResetToken } from '../utils/jwt';
 import {

@@ -10,7 +10,8 @@
  * Provides full audit trail for all cash transactions
  */
 
-import { CashFlowStatus, CashFlowType, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { CashFlowStatus, CashFlowType } from '../types';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 

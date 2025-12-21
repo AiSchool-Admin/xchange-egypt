@@ -1,11 +1,11 @@
+import { Prisma } from '@prisma/client';
 import {
   InspectionType,
   InspectionStatus,
   InspectionRecommendation,
   PropertyStatus,
   PropertyVerificationLevel,
-  Prisma,
-} from '@prisma/client';
+} from '../types';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 

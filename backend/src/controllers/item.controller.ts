@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as itemService from '../services/item.service';
 import { successResponse } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
-import { ItemCondition, PromotionTier } from '@prisma/client';
+import { ItemCondition, PromotionTier } from '../types';
 
 /**
  * Create a new item
