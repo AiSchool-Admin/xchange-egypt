@@ -798,7 +798,7 @@ export class AnalyticsService {
       },
       select: {
         amount: true,
-        type: true,
+        transactionType: true,
       },
     });
 
