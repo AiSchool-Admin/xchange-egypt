@@ -343,5 +343,103 @@
   "toast": {
     "matchFound": "Match Found!",
     "matchScore": "Match Score"
+  },
+  "howItWorks": {
+    "title": "⚡ How Does XChange Work?",
+    "subtitle": "Get started in minutes! Simple and secure process from start to finish",
+    "tabs": {
+      "buy": "How to Buy",
+      "sell": "How to Sell",
+      "barter": "How to Trade"
+    },
+    "buy": {
+      "step1": { "title": "Search for what you want", "description": "Use smart search and advanced filters to find the perfect product" },
+      "step2": { "title": "Contact the seller", "description": "Message the seller directly or request to inspect the product before buying" },
+      "step3": { "title": "Pay safely", "description": "Your money is protected by the escrow system until you receive and verify the product" },
+      "step4": { "title": "Receive your product", "description": "Receive the product, verify it matches the description, then confirm receipt" }
+    },
+    "sell": {
+      "step1": { "title": "Photo your product", "description": "Take clear photos and write an accurate description of your product" },
+      "step2": { "title": "Set the price", "description": "Use the smart price suggestion or set your own price" },
+      "step3": { "title": "Publish your listing", "description": "Choose the right category and publish your listing for thousands of buyers to see" },
+      "step4": { "title": "Get paid", "description": "After the buyer confirms receipt, your money is transferred directly" }
+    },
+    "barter": {
+      "step1": { "title": "Add your product for barter", "description": "Specify the product you want to exchange and what you're looking for" },
+      "step2": { "title": "AI searches for you", "description": "Our system finds the best matching offers from thousands of users" },
+      "step3": { "title": "Accept the offer", "description": "Review offers and choose the best one. You can add a cash difference" },
+      "step4": { "title": "Complete the trade", "description": "Exchange products with escrow system protection" }
+    },
+    "cta": {
+      "buy": "Start Shopping Now",
+      "sell": "Add Your First Listing",
+      "barter": "Start Trading"
+    }
+  },
+  "faq": {
+    "title": "❓ Frequently Asked Questions",
+    "subtitle": "Everything you need to know about XChange",
+    "questions": {
+      "free": {
+        "question": "Is XChange free?",
+        "answer": "Yes! Registration and posting listings is completely free. We only charge a small commission when a deal is successfully completed (1-3% depending on category)."
+      },
+      "escrow": {
+        "question": "How does the Escrow system work?",
+        "answer": "When the buyer pays, the money is held in a secure account. It's only transferred to the seller after the buyer confirms receipt and that the product matches the description. This protects both parties."
+      },
+      "authentic": {
+        "question": "How do I ensure the product is authentic?",
+        "answer": "We provide specialized inspections per category: IMEI check for mobiles, XRF testing for gold, 150-point inspection for cars, and Entrupy verification for luxury brands."
+      },
+      "smartBarter": {
+        "question": "What is Smart Barter?",
+        "answer": "An AI system that finds perfect barter deals for you. It supports direct barter (A↔B) and multi-party chains (A→B→C→A) with the option to add cash difference."
+      },
+      "sellTime": {
+        "question": "How long does it take to sell a product?",
+        "answer": "It depends on the product, but average selling time is 2-5 days. You can speed this up using paid promotion or competitive pricing."
+      },
+      "installments": {
+        "question": "Can I buy on installments?",
+        "answer": "Yes! We offer installment options in partnership with approved banks and financing companies. Available for cars, real estate, and mobiles."
+      },
+      "fraud": {
+        "question": "How do I protect myself from fraud?",
+        "answer": "Always use the escrow system for payment, verify seller authentication, request to inspect the product, and never pay outside the platform. Our team is available 24/7 for any inquiries."
+      },
+      "mobileApp": {
+        "question": "Is there a mobile app?",
+        "answer": "We're working on launching iOS and Android apps soon. Currently the website is fully responsive and works smoothly on mobile."
+      }
+    },
+    "contact": {
+      "text": "Didn't find an answer to your question?",
+      "button": "Contact Us"
+    }
+  },
+  "liveActivity": {
+    "types": {
+      "sale": "Sold",
+      "barter": "Traded",
+      "auction": "New Bid",
+      "signup": "Joined Platform"
+    },
+    "joinedPlatform": "Joined the platform",
+    "currency": {
+      "million": "M EGP",
+      "thousand": "K EGP",
+      "egp": "EGP"
+    },
+    "timeAgo": {
+      "now": "Now",
+      "1min": "1 min ago",
+      "2min": "2 min ago",
+      "3min": "3 min ago",
+      "5min": "5 min ago",
+      "7min": "7 min ago",
+      "8min": "8 min ago",
+      "10min": "10 min ago"
+    }
   }
 }

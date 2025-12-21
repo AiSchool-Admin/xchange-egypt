@@ -1,45 +1,24 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import ScrollReveal from './ScrollReveal';
 
-const FAQS = [
-  {
-    question: 'هل XChange مجاني؟',
-    answer: 'نعم! التسجيل ونشر الإعلانات مجاني تماماً. نأخذ عمولة صغيرة فقط عند إتمام الصفقة بنجاح (1-3% حسب الفئة).',
-  },
-  {
-    question: 'كيف يعمل نظام الضمان (Escrow)؟',
-    answer: 'عندما يدفع المشتري، تُحفظ الأموال في حساب آمن. لا تُحوّل للبائع إلا بعد تأكيد المشتري استلام المنتج ومطابقته للوصف. هذا يحمي الطرفين.',
-  },
-  {
-    question: 'كيف أضمن أن المنتج أصلي؟',
-    answer: 'نوفر فحوصات متخصصة حسب الفئة: فحص IMEI للموبايلات، فحص XRF للذهب، فحص 150 نقطة للسيارات، وفحص Entrupy للماركات الفاخرة.',
-  },
-  {
-    question: 'ما هي المقايضة الذكية؟',
-    answer: 'نظام ذكاء اصطناعي يجد لك صفقات مقايضة مثالية. يدعم المقايضة المباشرة (A↔B) وسلاسل متعددة الأطراف (A→B→C→A) مع إمكانية إضافة فرق نقدي.',
-  },
-  {
-    question: 'كم يستغرق بيع منتج؟',
-    answer: 'يعتمد على المنتج، لكن متوسط وقت البيع 2-5 أيام. يمكنك تسريع ذلك باستخدام الترويج المدفوع أو تسعير تنافسي.',
-  },
-  {
-    question: 'هل يمكنني الشراء بالتقسيط؟',
-    answer: 'نعم! نوفر خيارات تقسيط بالتعاون مع بنوك وشركات تمويل معتمدة. متاح للسيارات، العقارات، والموبايلات.',
-  },
-  {
-    question: 'كيف أحمي نفسي من الاحتيال؟',
-    answer: 'استخدم دائماً نظام الضمان للدفع، تحقق من توثيق البائع، اطلب معاينة المنتج، ولا تدفع خارج المنصة. فريقنا متاح 24/7 لأي استفسار.',
-  },
-  {
-    question: 'هل يوجد تطبيق موبايل؟',
-    answer: 'نعمل على إطلاق تطبيقات iOS و Android قريباً. حالياً الموقع متجاوب بالكامل ويعمل بسلاسة على الموبايل.',
-  },
+const FAQ_KEYS = [
+  'free',
+  'escrow',
+  'authentic',
+  'smartBarter',
+  'sellTime',
+  'installments',
+  'fraud',
+  'mobileApp',
 ];
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const t = useTranslations('faq');
+  const locale = useLocale();
 
   return (
     <section className="py-20 bg-white">
@@ -47,25 +26,25 @@ export default function FAQ() {
         <ScrollReveal>
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">
-              ❓ الأسئلة الشائعة
+              {t('title')}
             </h2>
             <p className="text-lg text-gray-600">
-              كل ما تحتاج معرفته عن XChange
+              {t('subtitle')}
             </p>
           </div>
         </ScrollReveal>
 
         <div className="space-y-4">
-          {FAQS.map((faq, index) => (
-            <ScrollReveal key={index} delay={index * 50}>
+          {FAQ_KEYS.map((key, index) => (
+            <ScrollReveal key={key} delay={index * 50}>
               <div className="border border-gray-200 rounded-2xl overflow-hidden hover:border-emerald-300 transition-colors">
                 <button
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                  className="w-full px-6 py-5 flex items-center justify-between text-right bg-white hover:bg-gray-50 transition-colors"
+                  className={`w-full px-6 py-5 flex items-center justify-between ${locale === 'ar' ? 'text-right' : 'text-left'} bg-white hover:bg-gray-50 transition-colors`}
                 >
-                  <span className="font-bold text-gray-900 text-lg">{faq.question}</span>
+                  <span className="font-bold text-gray-900 text-lg">{t(`questions.${key}.question`)}</span>
                   <span
-                    className={`w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 mr-4 transition-transform ${
+                    className={`w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 ${locale === 'ar' ? 'mr-4' : 'ml-4'} transition-transform ${
                       openIndex === index ? 'rotate-180' : ''
                     }`}
                   >
@@ -81,7 +60,7 @@ export default function FAQ() {
                   }`}
                 >
                   <div className="px-6 pb-5 text-gray-600 leading-relaxed">
-                    {faq.answer}
+                    {t(`questions.${key}.answer`)}
                   </div>
                 </div>
               </div>
@@ -92,12 +71,12 @@ export default function FAQ() {
         {/* Contact CTA */}
         <ScrollReveal delay={400}>
           <div className="text-center mt-12 p-8 bg-gray-50 rounded-2xl">
-            <p className="text-gray-600 mb-4">لم تجد إجابة لسؤالك؟</p>
+            <p className="text-gray-600 mb-4">{t('contact.text')}</p>
             <a
               href="/contact"
               className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors"
             >
-              💬 تواصل معنا
+              💬 {t('contact.button')}
             </a>
           </div>
         </ScrollReveal>
