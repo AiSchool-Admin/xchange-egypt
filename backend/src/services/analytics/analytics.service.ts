@@ -806,7 +806,7 @@ export class AnalyticsService {
     let totalRevenue = 0;
 
     transactions.forEach((t) => {
-      const type = t.type || 'DIRECT_SALE';
+      const type = t.transactionType || 'DIRECT_SALE';
       const existing = typeMap.get(type) || { revenue: 0, count: 0 };
       typeMap.set(type, {
         revenue: existing.revenue + (t.amount || 0),

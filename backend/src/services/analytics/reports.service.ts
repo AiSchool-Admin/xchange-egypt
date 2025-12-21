@@ -811,10 +811,10 @@ export class ReportsService {
         where: { lastLoginAt: { gte: startDate, lte: endDate } },
       }),
       prisma.user.count({
-        where: { isVerified: true },
+        where: { emailVerified: true },
       }),
       prisma.user.count({
-        where: { status: 'BANNED' },
+        where: { status: 'SUSPENDED' },
       }),
       prisma.order.findMany({
         where: {
