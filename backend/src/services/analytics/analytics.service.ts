@@ -642,8 +642,8 @@ export class AnalyticsService {
       if (item?.category) {
         const catId = item.category.id;
         const existing = categoryMap.get(catId) || {
-          name: item.category.name,
-          nameAr: item.category.nameAr || item.category.name,
+          name: item.category.nameEn,
+          nameAr: item.category.nameAr || item.category.nameEn,
           revenue: 0,
           orders: 0,
         };
@@ -671,7 +671,7 @@ export class AnalyticsService {
   private async getSalesByGovernorate(start: Date, end: Date): Promise<GovernorateSales[]> {
     const orders = await prisma.order.findMany({
       where: {
-        paymentStatus: 'COMPLETED',
+        status: { in: ['PAID', 'DELIVERED'] },
         createdAt: { gte: start, lte: end },
       },
       include: {
@@ -706,7 +706,7 @@ export class AnalyticsService {
   private async getSalesByPaymentMethod(start: Date, end: Date): Promise<PaymentMethodSales[]> {
     const orders = await prisma.order.findMany({
       where: {
-        paymentStatus: 'COMPLETED',
+        status: { in: ['PAID', 'DELIVERED'] },
         createdAt: { gte: start, lte: end },
       },
       select: {
@@ -768,7 +768,7 @@ export class AnalyticsService {
           title: item.title,
           sales: 0,
           revenue: 0,
-          category: item.category?.name || 'Unknown',
+          category: item.category?.nameEn || 'Unknown',
         };
         itemMap.set(itemId, {
           ...existing,
@@ -1067,8 +1067,8 @@ export class AnalyticsService {
       if (l.item?.category) {
         const catId = l.item.category.id;
         const existing = categoryMap.get(catId) || {
-          name: l.item.category.name,
-          nameAr: l.item.category.nameAr || l.item.category.name,
+          name: l.item.category.nameEn,
+          nameAr: l.item.category.nameAr || l.item.category.nameEn,
           count: 0,
           totalPrice: 0,
         };

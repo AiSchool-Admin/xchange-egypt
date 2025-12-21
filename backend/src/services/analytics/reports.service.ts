@@ -429,7 +429,7 @@ export class ReportsService {
       prisma.order.findMany({
         where: {
           createdAt: { gte: startDate, lte: endDate },
-          status: { in: ['COMPLETED', 'DELIVERED'] },
+          status: { in: ['PAID', 'DELIVERED'] },
         },
       }),
       prisma.transaction.aggregate({
@@ -578,8 +578,8 @@ export class ReportsService {
       if (item?.category) {
         const catId = item.category.id;
         const existing = categoryMap.get(catId) || {
-          name: item.category.name,
-          nameAr: item.category.nameAr || item.category.name,
+          name: item.category.nameEn,
+          nameAr: item.category.nameAr || item.category.nameEn,
           revenue: 0,
           orders: 0,
           products: new Map(),
@@ -636,7 +636,7 @@ export class ReportsService {
     const orders = await prisma.order.findMany({
       where: {
         createdAt: { gte: startDate, lte: endDate },
-        status: { in: ['COMPLETED', 'DELIVERED'] },
+        status: { in: ['PAID', 'DELIVERED'] },
       },
       include: {
         shippingAddress: true,
@@ -689,7 +689,7 @@ export class ReportsService {
     const orders = await prisma.order.findMany({
       where: {
         createdAt: { gte: startDate, lte: endDate },
-        status: { in: ['COMPLETED', 'DELIVERED'] },
+        status: { in: ['PAID', 'DELIVERED'] },
       },
       select: {
         total: true,
@@ -771,7 +771,7 @@ export class ReportsService {
         const productId = item.id;
         const existing = productMap.get(productId) || {
           title: item.title,
-          category: item.category?.name || 'Unknown',
+          category: item.category?.nameEn || 'Unknown',
           unitsSold: 0,
           revenue: 0,
         };
@@ -818,7 +818,7 @@ export class ReportsService {
       prisma.order.findMany({
         where: {
           createdAt: { gte: startDate, lte: endDate },
-          status: { in: ['COMPLETED', 'DELIVERED'] },
+          status: { in: ['PAID', 'DELIVERED'] },
         },
       }),
     ]);
