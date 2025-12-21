@@ -678,7 +678,7 @@ describeIfPrisma('Smart Matching System - التوافق الذكي', () => {
 // ============================================
 // Notification Tests (Integration with WebSocket)
 // ============================================
-describe('Match Notifications - إشعارات التطابق', () => {
+describeIfPrisma('Match Notifications - إشعارات التطابق', () => {
   const db = getTestDb();
 
   beforeAll(async () => {
