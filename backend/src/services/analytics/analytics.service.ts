@@ -1035,15 +1035,19 @@ export class AnalyticsService {
   }
 
   private async getPendingListings(): Promise<number> {
+    // ListingStatus only has: ACTIVE, COMPLETED, CANCELLED, EXPIRED
+    // Using ACTIVE for pending (active listings waiting for sale)
     return prisma.listing.count({
-      where: { status: 'PENDING' },
+      where: { status: 'ACTIVE' },
     });
   }
 
   private async getSoldListings(start: Date, end: Date): Promise<number> {
+    // ListingStatus only has: ACTIVE, COMPLETED, CANCELLED, EXPIRED
+    // Using COMPLETED for sold items
     return prisma.listing.count({
       where: {
-        status: 'SOLD',
+        status: 'COMPLETED',
         updatedAt: { gte: start, lte: end },
       },
     });
@@ -1126,7 +1130,7 @@ export class AnalyticsService {
     // Listings that resulted in sales / total listings
     const [total, sold] = await Promise.all([
       prisma.listing.count(),
-      prisma.listing.count({ where: { status: 'SOLD' } }),
+      prisma.listing.count({ where: { status: 'COMPLETED' } }),
     ]);
 
     return total > 0 ? (sold / total) * 100 : 0;
