@@ -572,6 +572,7 @@ export default function Navigation() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { onMatchFound, offMatchFound } = useSocket();
+  const t = useTranslations();
 
   // State
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -834,7 +835,7 @@ export default function Navigation() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setSearchFocused(true)}
                   onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
-                  placeholder="ابحث عن منتجات، سيارات، موبايلات..."
+                  placeholder={t('nav.searchPlaceholder')}
                   className="w-full px-4 py-2.5 bg-transparent outline-none text-gray-700 placeholder-gray-400"
                 />
                 <button
@@ -851,7 +852,7 @@ export default function Navigation() {
                   {/* Search Suggestions */}
                   {searchQuery.length >= 2 && searchSuggestions.length > 0 && (
                     <div className="p-3 border-b border-gray-100">
-                      <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">اقتراحات البحث</h4>
+                      <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">{t('nav.searchSuggestions')}</h4>
                       {searchSuggestions.map((suggestion, i) => (
                         <button
                           key={i}
@@ -873,13 +874,13 @@ export default function Navigation() {
                   {searchQuery.length < 2 && recentSearches.length > 0 && (
                     <div className="p-3 border-b border-gray-100">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-xs font-bold text-gray-400 uppercase">عمليات البحث الأخيرة</h4>
+                        <h4 className="text-xs font-bold text-gray-400 uppercase">{t('nav.recentSearches')}</h4>
                         <button
                           type="button"
                           onClick={() => setRecentSearches([])}
                           className="text-xs text-primary-600 hover:underline"
                         >
-                          مسح الكل
+                          {t('nav.clearAll')}
                         </button>
                       </div>
                       {recentSearches.map((search, i) => (
@@ -901,7 +902,7 @@ export default function Navigation() {
 
                   {/* Trending Searches */}
                   <div className="p-3">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">الأكثر بحثاً</h4>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase mb-2">{t('nav.trending')}</h4>
                     <div className="flex flex-wrap gap-2">
                       {trendingSearches.map((trend, i) => (
                         <button
@@ -935,7 +936,7 @@ export default function Navigation() {
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <span>تصفح</span>
+                  <span>{t('nav.browse')}</span>
                   <Icons.ChevronDown />
                 </button>
 
@@ -1127,7 +1128,7 @@ export default function Navigation() {
                     className="hidden md:flex items-center gap-2 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-xl font-medium transition-colors"
                   >
                     <span>📊</span>
-                    <span>لوحة التحكم</span>
+                    <span>{t('nav.dashboard')}</span>
                   </Link>
 
                   {/* Add Listing Button */}
@@ -1136,7 +1137,7 @@ export default function Navigation() {
                     className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all shadow-button hover:shadow-button-hover"
                   >
                     <span>➕</span>
-                    <span className="hidden md:inline">أضف إعلان</span>
+                    <span className="hidden md:inline">{t('nav.addListing')}</span>
                   </Link>
 
                   {/* User Menu */}
@@ -1164,13 +1165,13 @@ export default function Navigation() {
                     href="/login"
                     className="hidden sm:block px-4 py-2.5 text-gray-700 hover:bg-gray-50 rounded-xl font-medium transition-colors"
                   >
-                    تسجيل الدخول
+                    {t('common.login')}
                   </Link>
                   <Link
                     href="/register"
                     className="px-4 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all shadow-button hover:shadow-button-hover"
                   >
-                    إنشاء حساب
+                    {t('common.register')}
                   </Link>
                 </>
               )}
@@ -1192,7 +1193,7 @@ export default function Navigation() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث في XChange..."
+                placeholder={t('nav.searchInXchange')}
                 className="w-full px-4 py-3 bg-gray-50 rounded-xl text-gray-700 placeholder-gray-400 outline-none focus:bg-white focus:ring-2 focus:ring-primary-500/20 transition-all"
               />
               <button
@@ -1380,7 +1381,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">🛒</span>
-                السوق العام
+                {t('nav.generalMarket')}
               </Link>
               <Link
                 href="/cars"
@@ -1391,7 +1392,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">🚗</span>
-                سوق السيارات
+                {t('nav.carsMarket')}
               </Link>
               <Link
                 href="/properties"
@@ -1402,7 +1403,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">🏠</span>
-                سوق العقارات
+                {t('nav.propertiesMarket')}
               </Link>
               <Link
                 href="/mobiles"
@@ -1413,7 +1414,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">📱</span>
-                سوق الموبايلات
+                {t('nav.mobilesMarket')}
               </Link>
               <Link
                 href="/auctions"
@@ -1424,7 +1425,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">🔨</span>
-                المزادات
+                {t('nav.auctionsMarket')}
               </Link>
               <Link
                 href="/reverse-auctions"
@@ -1435,7 +1436,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">📋</span>
-                المناقصات
+                {t('nav.tendersMarket')}
               </Link>
               <Link
                 href="/luxury"
@@ -1446,7 +1447,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">👑</span>
-                سوق الفاخر
+                {t('nav.luxuryMarket')}
               </Link>
               <Link
                 href="/scrap"
@@ -1457,7 +1458,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">♻️</span>
-                سوق التوالف
+                {t('nav.scrapMarket')}
               </Link>
               <Link
                 href="/gold"
@@ -1468,7 +1469,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">💰</span>
-                سوق الذهب
+                {t('nav.goldMarket')}
               </Link>
               <Link
                 href="/silver"
@@ -1479,7 +1480,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">🥈</span>
-                سوق الفضة
+                {t('nav.silverMarket')}
               </Link>
               <Link
                 href="/barter"
@@ -1490,7 +1491,7 @@ export default function Navigation() {
                 }`}
               >
                 <span className="text-lg">🔄</span>
-                المقايضات
+                {t('nav.barterMarket')}
               </Link>
               </div>
 
@@ -1621,7 +1622,7 @@ export default function Navigation() {
                       onClick={handleLogout}
                       className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl font-medium transition-colors"
                     >
-                      خروج
+                      {t('common.logout')}
                     </button>
                   </div>
                 ) : (
@@ -1630,13 +1631,13 @@ export default function Navigation() {
                       href="/login"
                       className="px-4 py-3 border border-gray-200 text-gray-700 rounded-xl font-medium text-center"
                     >
-                      تسجيل الدخول
+                      {t('common.login')}
                     </Link>
                     <Link
                       href="/register"
                       className="px-4 py-3 bg-primary-500 text-white rounded-xl font-medium text-center"
                     >
-                      إنشاء حساب
+                      {t('common.register')}
                     </Link>
                   </div>
                 )}
@@ -1658,7 +1659,7 @@ export default function Navigation() {
             }`}
           >
             <Icons.Home active={pathname === '/'} />
-            <span className="text-xs mt-1 font-medium">الرئيسية</span>
+            <span className="text-xs mt-1 font-medium">{t('mobileNav.home')}</span>
           </Link>
 
           {/* Browse */}
@@ -1669,7 +1670,7 @@ export default function Navigation() {
             }`}
           >
             <Icons.Grid active={isActive('/items')} />
-            <span className="text-xs mt-1 font-medium">تصفح</span>
+            <span className="text-xs mt-1 font-medium">{t('mobileNav.browse')}</span>
           </Link>
 
           {/* Add - Center Button */}
@@ -1688,7 +1689,7 @@ export default function Navigation() {
             }`}
           >
             <Icons.MessageCircle active={isActive('/messages')} />
-            <span className="text-xs mt-1 font-medium">رسائل</span>
+            <span className="text-xs mt-1 font-medium">{t('mobileNav.messages')}</span>
           </Link>
 
           {/* Profile */}
@@ -1705,7 +1706,7 @@ export default function Navigation() {
             ) : (
               <Icons.User active={isActive('/dashboard')} />
             )}
-            <span className="text-xs mt-1 font-medium">حسابي</span>
+            <span className="text-xs mt-1 font-medium">{t('mobileNav.account')}</span>
           </Link>
         </div>
       </div>

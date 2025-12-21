@@ -24,7 +24,10 @@
     "price": "السعر",
     "location": "الموقع",
     "date": "التاريخ",
-    "egp": "ج.م"
+    "egp": "ج.م",
+    "allEgypt": "كل مصر",
+    "moreGovernorates": "المزيد من المحافظات",
+    "selectLocation": "اختر موقعك"
   },
   "nav": {
     "home": "الرئيسية",
@@ -40,7 +43,82 @@
     "messages": "الرسائل",
     "notifications": "الإشعارات",
     "favorites": "المفضلة",
-    "cart": "السلة"
+    "cart": "السلة",
+    "dashboard": "لوحة التحكم",
+    "addListing": "أضف إعلان",
+    "searchPlaceholder": "ابحث عن منتجات، سيارات، موبايلات...",
+    "searchInXchange": "ابحث في XChange...",
+    "searchSuggestions": "اقتراحات البحث",
+    "recentSearches": "عمليات البحث الأخيرة",
+    "clearAll": "مسح الكل",
+    "trending": "الأكثر بحثاً",
+    "markets": "الأسواق",
+    "generalMarket": "السوق العام",
+    "carsMarket": "سوق السيارات",
+    "propertiesMarket": "سوق العقارات",
+    "mobilesMarket": "سوق الموبايلات",
+    "auctionsMarket": "المزادات",
+    "tendersMarket": "المناقصات",
+    "luxuryMarket": "السوق الفاخر",
+    "scrapMarket": "سوق التوالف",
+    "goldMarket": "سوق الذهب",
+    "silverMarket": "سوق الفضة",
+    "barterMarket": "المقايضات",
+    "escrow": "نظام الضمان",
+    "installments": "التقسيط",
+    "delivery": "التوصيل",
+    "badges": "الشارات",
+    "compare": "المقارنة",
+    "inventory": "مخزوني",
+    "myBarters": "مقايضاتي",
+    "alerts": "التنبيهات",
+    "sellWithAI": "بيع بالذكاء الصناعي",
+    "aiAssistant": "المساعد الذكي",
+    "browseAll": "تصفح الكل"
+  },
+  "categories": {
+    "electronics": "الإلكترونيات",
+    "vehicles": "سيارات",
+    "furniture": "أثاث",
+    "mensFashion": "أزياء الرجال",
+    "womensFashion": "أزياء النساء",
+    "kidsFashion": "أزياء الأطفال",
+    "beautyPerfume": "لوازم الجمال والبرفيوم",
+    "homeAppliances": "أجهزة منزلية",
+    "sports": "الرياضة",
+    "realEstate": "العقارات",
+    "artCollectibles": "الفن والمقتنيات",
+    "smartphones": "الهواتف الذكية",
+    "computers": "أجهزة كمبيوتر",
+    "tvs": "أجهزة التلفزيون",
+    "cameras": "كاميرات",
+    "carsForSale": "سيارات للبيع",
+    "spareParts": "قطع غيار",
+    "motorcycles": "دراجات",
+    "carAccessories": "اكسسوارات السيارات",
+    "bedroom": "غرف النوم",
+    "livingRoom": "غرف المعيشة",
+    "diningRoom": "السفرة",
+    "office": "المكتب",
+    "clothing": "ملابس",
+    "sportswear": "ملابس رياضية",
+    "shoes": "أحذية",
+    "bags": "شنط",
+    "accessories": "إكسسوارات",
+    "makeup": "المكياج",
+    "skincare": "العناية بالبشرة",
+    "perfumes": "العطور",
+    "haircare": "العناية بالشعر",
+    "largeAppliances": "أجهزة كبيرة",
+    "kitchenAppliances": "أجهزة المطبخ",
+    "smallAppliances": "أجهزة صغيرة",
+    "sportsEquipment": "معدات رياضية",
+    "residential": "سكني",
+    "commercial": "تجاري",
+    "antiques": "التحف",
+    "collectibles": "المقتنيات",
+    "showMore": "+ المزيد",
+    "showProducts": "عرض المنتجات"
   },
   "home": {
     "hero": {
@@ -50,26 +128,14 @@
       "voiceSearch": "البحث الصوتي"
     },
     "categories": {
-      "title": "الفئات",
-      "electronics": "إلكترونيات",
-      "vehicles": "سيارات",
-      "property": "عقارات",
-      "fashion": "أزياء",
-      "furniture": "أثاث",
-      "services": "خدمات",
-      "other": "أخرى"
+      "title": "الفئات"
     },
     "featured": {
       "title": "منتجات مميزة",
       "viewAll": "عرض الكل"
     },
     "markets": {
-      "title": "أسواقنا",
-      "generalMarket": "السوق العام",
-      "barterMarket": "سوق المقايضة",
-      "auctionMarket": "سوق المزادات",
-      "servicesMarket": "سوق الخدمات",
-      "transportMarket": "سوق النقل"
+      "title": "أسواقنا"
     }
   },
   "items": {
@@ -177,5 +243,15 @@
     "help": "المساعدة",
     "faq": "الأسئلة الشائعة",
     "copyright": "© 2024 Xchange Egypt. جميع الحقوق محفوظة"
+  },
+  "mobileNav": {
+    "home": "الرئيسية",
+    "browse": "تصفح",
+    "messages": "رسائل",
+    "account": "حسابي"
+  },
+  "toast": {
+    "matchFound": "تم العثور على مطابقة!",
+    "matchScore": "نسبة التوافق"
   }
 }

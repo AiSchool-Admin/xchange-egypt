@@ -24,7 +24,10 @@
     "price": "Price",
     "location": "Location",
     "date": "Date",
-    "egp": "EGP"
+    "egp": "EGP",
+    "allEgypt": "All Egypt",
+    "moreGovernorates": "More Governorates",
+    "selectLocation": "Select Location"
   },
   "nav": {
     "home": "Home",
@@ -40,7 +43,82 @@
     "messages": "Messages",
     "notifications": "Notifications",
     "favorites": "Favorites",
-    "cart": "Cart"
+    "cart": "Cart",
+    "dashboard": "Dashboard",
+    "addListing": "Add Listing",
+    "searchPlaceholder": "Search for products, cars, mobiles...",
+    "searchInXchange": "Search in Xchange...",
+    "searchSuggestions": "Search Suggestions",
+    "recentSearches": "Recent Searches",
+    "clearAll": "Clear All",
+    "trending": "Trending",
+    "markets": "Markets",
+    "generalMarket": "General Market",
+    "carsMarket": "Cars Market",
+    "propertiesMarket": "Properties Market",
+    "mobilesMarket": "Mobiles Market",
+    "auctionsMarket": "Auctions",
+    "tendersMarket": "Tenders",
+    "luxuryMarket": "Luxury Market",
+    "scrapMarket": "Scrap Market",
+    "goldMarket": "Gold Market",
+    "silverMarket": "Silver Market",
+    "barterMarket": "Barter",
+    "escrow": "Escrow System",
+    "installments": "Installments",
+    "delivery": "Delivery",
+    "badges": "Badges",
+    "compare": "Compare",
+    "inventory": "My Inventory",
+    "myBarters": "My Barters",
+    "alerts": "Alerts",
+    "sellWithAI": "Sell with AI",
+    "aiAssistant": "AI Assistant",
+    "browseAll": "Browse All"
+  },
+  "categories": {
+    "electronics": "Electronics",
+    "vehicles": "Vehicles",
+    "furniture": "Furniture",
+    "mensFashion": "Men's Fashion",
+    "womensFashion": "Women's Fashion",
+    "kidsFashion": "Kids Fashion",
+    "beautyPerfume": "Beauty & Perfume",
+    "homeAppliances": "Home Appliances",
+    "sports": "Sports",
+    "realEstate": "Real Estate",
+    "artCollectibles": "Art & Collectibles",
+    "smartphones": "Smartphones",
+    "computers": "Computers",
+    "tvs": "TVs",
+    "cameras": "Cameras",
+    "carsForSale": "Cars for Sale",
+    "spareParts": "Spare Parts",
+    "motorcycles": "Motorcycles",
+    "carAccessories": "Car Accessories",
+    "bedroom": "Bedroom",
+    "livingRoom": "Living Room",
+    "diningRoom": "Dining Room",
+    "office": "Office",
+    "clothing": "Clothing",
+    "sportswear": "Sportswear",
+    "shoes": "Shoes",
+    "bags": "Bags",
+    "accessories": "Accessories",
+    "makeup": "Makeup",
+    "skincare": "Skincare",
+    "perfumes": "Perfumes",
+    "haircare": "Haircare",
+    "largeAppliances": "Large Appliances",
+    "kitchenAppliances": "Kitchen Appliances",
+    "smallAppliances": "Small Appliances",
+    "sportsEquipment": "Sports Equipment",
+    "residential": "Residential",
+    "commercial": "Commercial",
+    "antiques": "Antiques",
+    "collectibles": "Collectibles",
+    "showMore": "+ More",
+    "showProducts": "Show Products"
   },
   "home": {
     "hero": {
@@ -50,26 +128,14 @@
       "voiceSearch": "Voice Search"
     },
     "categories": {
-      "title": "Categories",
-      "electronics": "Electronics",
-      "vehicles": "Vehicles",
-      "property": "Property",
-      "fashion": "Fashion",
-      "furniture": "Furniture",
-      "services": "Services",
-      "other": "Other"
+      "title": "Categories"
     },
     "featured": {
       "title": "Featured Products",
       "viewAll": "View All"
     },
     "markets": {
-      "title": "Our Markets",
-      "generalMarket": "General Market",
-      "barterMarket": "Barter Market",
-      "auctionMarket": "Auction Market",
-      "servicesMarket": "Services Market",
-      "transportMarket": "Transport Market"
+      "title": "Our Markets"
     }
   },
   "items": {
@@ -177,5 +243,15 @@
     "help": "Help",
     "faq": "FAQ",
     "copyright": "© 2024 Xchange Egypt. All rights reserved"
+  },
+  "mobileNav": {
+    "home": "Home",
+    "browse": "Browse",
+    "messages": "Messages",
+    "account": "Account"
+  },
+  "toast": {
+    "matchFound": "Match Found!",
+    "matchScore": "Match Score"
   }
 }
