@@ -248,10 +248,10 @@ export const EscrowStatus = {
 export type EscrowStatus = typeof EscrowStatus[keyof typeof EscrowStatus];
 
 export const EscrowType = {
-  ITEM_SALE: 'ITEM_SALE',
+  SALE: 'SALE',
   BARTER: 'BARTER',
+  BARTER_CHAIN: 'BARTER_CHAIN',
   SERVICE: 'SERVICE',
-  AUCTION: 'AUCTION',
 } as const;
 export type EscrowType = typeof EscrowType[keyof typeof EscrowType];
 
@@ -265,23 +265,26 @@ export const DisputeStatus = {
 export type DisputeStatus = typeof DisputeStatus[keyof typeof DisputeStatus];
 
 export const DisputeReason = {
-  NOT_AS_DESCRIBED: 'NOT_AS_DESCRIBED',
-  NOT_RECEIVED: 'NOT_RECEIVED',
-  DAMAGED: 'DAMAGED',
+  ITEM_NOT_RECEIVED: 'ITEM_NOT_RECEIVED',
+  ITEM_NOT_AS_DESCRIBED: 'ITEM_NOT_AS_DESCRIBED',
+  ITEM_DAMAGED: 'ITEM_DAMAGED',
   WRONG_ITEM: 'WRONG_ITEM',
+  PARTIAL_DELIVERY: 'PARTIAL_DELIVERY',
   QUALITY_ISSUE: 'QUALITY_ISSUE',
+  COUNTERFEIT: 'COUNTERFEIT',
+  SELLER_NOT_RESPONDING: 'SELLER_NOT_RESPONDING',
+  BUYER_NOT_RESPONDING: 'BUYER_NOT_RESPONDING',
+  PAYMENT_ISSUE: 'PAYMENT_ISSUE',
   OTHER: 'OTHER',
 } as const;
 export type DisputeReason = typeof DisputeReason[keyof typeof DisputeReason];
 
 export const DisputeResolution = {
-  FULL_REFUND: 'FULL_REFUND',
-  PARTIAL_REFUND: 'PARTIAL_REFUND',
-  REPLACEMENT: 'REPLACEMENT',
-  NO_ACTION: 'NO_ACTION',
-  MUTUAL_AGREEMENT: 'MUTUAL_AGREEMENT',
   BUYER_FAVORED: 'BUYER_FAVORED',
   SELLER_FAVORED: 'SELLER_FAVORED',
+  PARTIAL_REFUND: 'PARTIAL_REFUND',
+  MUTUAL_AGREEMENT: 'MUTUAL_AGREEMENT',
+  NO_RESOLUTION: 'NO_RESOLUTION',
 } as const;
 export type DisputeResolution = typeof DisputeResolution[keyof typeof DisputeResolution];
 
@@ -314,15 +317,10 @@ export const CashFlowStatus = {
 export type CashFlowStatus = typeof CashFlowStatus[keyof typeof CashFlowStatus];
 
 export const CashFlowType = {
-  DEPOSIT: 'DEPOSIT',
-  WITHDRAWAL: 'WITHDRAWAL',
-  TRANSFER: 'TRANSFER',
-  PAYMENT: 'PAYMENT',
-  REFUND: 'REFUND',
-  FEE: 'FEE',
-  ADJUSTMENT: 'ADJUSTMENT',
   CHAIN_BALANCE: 'CHAIN_BALANCE',
   COMMISSION: 'COMMISSION',
+  SHIPPING_FEE: 'SHIPPING_FEE',
+  ADJUSTMENT: 'ADJUSTMENT',
 } as const;
 export type CashFlowType = typeof CashFlowType[keyof typeof CashFlowType];
 
@@ -350,13 +348,10 @@ export type FacilitatorStatus = typeof FacilitatorStatus[keyof typeof Facilitato
 // Field Inspection Types
 // ========================================
 export const InspectionType = {
+  BASIC: 'BASIC',
   STANDARD: 'STANDARD',
   COMPREHENSIVE: 'COMPREHENSIVE',
-  TECHNICAL: 'TECHNICAL',
-  SPECIALIZED: 'SPECIALIZED',
   PRE_PURCHASE: 'PRE_PURCHASE',
-  FINAL: 'FINAL',
-  BASIC: 'BASIC',
   PRE_RENTAL: 'PRE_RENTAL',
   CHECKIN: 'CHECKIN',
   CHECKOUT: 'CHECKOUT',
@@ -374,11 +369,10 @@ export const InspectionStatus = {
 export type InspectionStatus = typeof InspectionStatus[keyof typeof InspectionStatus];
 
 export const InspectionRecommendation = {
-  APPROVE: 'APPROVE',
-  APPROVE_WITH_CONDITIONS: 'APPROVE_WITH_CONDITIONS',
-  REJECT: 'REJECT',
-  REQUIRES_REVIEW: 'REQUIRES_REVIEW',
-  DEFER: 'DEFER',
+  HIGHLY_RECOMMENDED: 'HIGHLY_RECOMMENDED',
+  RECOMMENDED: 'RECOMMENDED',
+  NEEDS_ATTENTION: 'NEEDS_ATTENTION',
+  NOT_RECOMMENDED: 'NOT_RECOMMENDED',
 } as const;
 export type InspectionRecommendation = typeof InspectionRecommendation[keyof typeof InspectionRecommendation];
 
