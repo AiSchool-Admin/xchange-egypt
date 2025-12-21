@@ -3,9 +3,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { useSocket } from '@/lib/contexts/SocketContext';
 import { getUnreadCount } from '@/lib/api/notifications';
+import LanguageSwitcher from './LanguageSwitcher';
 
 // ============================================
 // Icons - Lucide-style SVG Icons
@@ -594,8 +596,6 @@ export default function Navigation() {
     'ساعة أبل',
     'ايباد برو',
   ]);
-  const [language, setLanguage] = useState<'ar' | 'en'>('ar');
-  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
   const [locationMenuOpen, setLocationMenuOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState({
     governorate: 'كل مصر',
@@ -611,7 +611,6 @@ export default function Navigation() {
   const categoriesScrollRef = useRef<HTMLDivElement>(null);
   const categoryRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const languageMenuRef = useRef<HTMLDivElement>(null);
   const locationMenuRef = useRef<HTMLDivElement>(null);
   const marketsScrollRef = useRef<HTMLDivElement>(null);
 
@@ -663,9 +662,6 @@ export default function Navigation() {
     const handleClickOutside = (event: MouseEvent) => {
       if (megaMenuRef.current && !megaMenuRef.current.contains(event.target as Node)) {
         setMegaMenuOpen(false);
-      }
-      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target as Node)) {
-        setLanguageMenuOpen(false);
       }
       if (locationMenuRef.current && !locationMenuRef.current.contains(event.target as Node)) {
         setLocationMenuOpen(false);
@@ -810,7 +806,7 @@ export default function Navigation() {
       {/* ============================================
           Desktop & Tablet Navigation
           ============================================ */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50" dir="rtl">
+      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16 gap-4">
             {/* Logo */}
@@ -1095,32 +1091,7 @@ export default function Navigation() {
               </div>
 
               {/* Language Switcher */}
-              <div className="relative" ref={languageMenuRef}>
-                <button
-                  onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
-                  className="flex items-center gap-1 px-2.5 py-2 text-gray-600 hover:bg-gray-50 rounded-xl transition-colors"
-                >
-                  <Icons.Globe />
-                  <span className="text-sm font-medium">{language === 'ar' ? 'ع' : 'EN'}</span>
-                </button>
-
-                {languageMenuOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-36 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50">
-                    <button
-                      onClick={() => { setLanguage('ar'); setLanguageMenuOpen(false); }}
-                      className={`w-full text-right px-4 py-3 transition-colors flex items-center gap-2 ${language === 'ar' ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
-                    >
-                      <span>🇪🇬</span> العربية
-                    </button>
-                    <button
-                      onClick={() => { setLanguage('en'); setLanguageMenuOpen(false); }}
-                      className={`w-full text-right px-4 py-3 transition-colors flex items-center gap-2 ${language === 'en' ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'}`}
-                    >
-                      <span>🇬🇧</span> English
-                    </button>
-                  </div>
-                )}
-              </div>
+              <LanguageSwitcher />
 
               {/* Shopping Cart */}
               <Link

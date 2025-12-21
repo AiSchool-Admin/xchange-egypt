@@ -1,0 +1,181 @@
+{
+  "common": {
+    "appName": "Xchange",
+    "search": "Search",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "profile": "Profile",
+    "settings": "Settings",
+    "home": "Home",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "more": "More",
+    "less": "Less",
+    "all": "All",
+    "filter": "Filter",
+    "sort": "Sort",
+    "price": "Price",
+    "location": "Location",
+    "date": "Date",
+    "egp": "EGP"
+  },
+  "nav": {
+    "home": "Home",
+    "browse": "Browse",
+    "sell": "Sell",
+    "barter": "Barter",
+    "auctions": "Auctions",
+    "services": "Services",
+    "transport": "Transport",
+    "myAccount": "My Account",
+    "myItems": "My Items",
+    "myOrders": "My Orders",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "favorites": "Favorites",
+    "cart": "Cart"
+  },
+  "home": {
+    "hero": {
+      "title": "Egypt's #1 Exchange & Barter Platform",
+      "subtitle": "Buy, sell, or trade anything easily and safely",
+      "searchPlaceholder": "Search for a product...",
+      "voiceSearch": "Voice Search"
+    },
+    "categories": {
+      "title": "Categories",
+      "electronics": "Electronics",
+      "vehicles": "Vehicles",
+      "property": "Property",
+      "fashion": "Fashion",
+      "furniture": "Furniture",
+      "services": "Services",
+      "other": "Other"
+    },
+    "featured": {
+      "title": "Featured Products",
+      "viewAll": "View All"
+    },
+    "markets": {
+      "title": "Our Markets",
+      "generalMarket": "General Market",
+      "barterMarket": "Barter Market",
+      "auctionMarket": "Auction Market",
+      "servicesMarket": "Services Market",
+      "transportMarket": "Transport Market"
+    }
+  },
+  "items": {
+    "condition": {
+      "new": "New",
+      "likeNew": "Like New",
+      "good": "Good",
+      "fair": "Fair",
+      "forParts": "For Parts"
+    },
+    "status": {
+      "available": "Available",
+      "sold": "Sold",
+      "reserved": "Reserved",
+      "pending": "Pending"
+    },
+    "details": {
+      "description": "Description",
+      "specifications": "Specifications",
+      "sellerInfo": "Seller Information",
+      "location": "Location",
+      "postedOn": "Posted On",
+      "views": "Views",
+      "contactSeller": "Contact Seller",
+      "makeOffer": "Make Offer",
+      "buyNow": "Buy Now",
+      "addToCart": "Add to Cart",
+      "addToFavorites": "Add to Favorites"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Login",
+      "email": "Email",
+      "password": "Password",
+      "rememberMe": "Remember Me",
+      "forgotPassword": "Forgot Password?",
+      "noAccount": "Don't have an account?",
+      "loginButton": "Login"
+    },
+    "register": {
+      "title": "Create New Account",
+      "fullName": "Full Name",
+      "email": "Email",
+      "phone": "Phone Number",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "agreeTerms": "I agree to the Terms and Conditions",
+      "haveAccount": "Already have an account?",
+      "registerButton": "Register"
+    }
+  },
+  "seller": {
+    "dashboard": {
+      "title": "Seller Dashboard",
+      "totalSales": "Total Sales",
+      "activeListings": "Active Listings",
+      "pendingOrders": "Pending Orders",
+      "rating": "Rating",
+      "revenue": "Revenue",
+      "forecast": "Forecast",
+      "recommendations": "Recommendations"
+    }
+  },
+  "pwa": {
+    "install": {
+      "title": "Install Xchange App",
+      "subtitle": "Add the app to your home screen for quick access",
+      "offlineFeature": "Works Offline",
+      "notificationsFeature": "Push Notifications",
+      "installButton": "Install Now",
+      "laterButton": "Later"
+    },
+    "ios": {
+      "title": "Add Xchange to Home Screen",
+      "step1": "Tap",
+      "step1Icon": "at the bottom",
+      "step2": "Select \"Add to Home Screen\""
+    }
+  },
+  "download": {
+    "title": "Download the App",
+    "subtitle": "Egypt's #1 Exchange & Barter Platform",
+    "installed": "App Installed!",
+    "installedSubtitle": "You can open it from your home screen",
+    "iosTitle": "Install on iPhone",
+    "androidTitle": "Install on Android",
+    "desktopTitle": "Open on your phone",
+    "scanQR": "Scan the QR Code with your phone camera",
+    "copyLink": "Copy",
+    "linkCopied": "Link copied!",
+    "features": {
+      "title": "App Features",
+      "offline": "Works Offline",
+      "notifications": "Push Notifications",
+      "fast": "Fast & Light",
+      "noStore": "No App Store Needed"
+    }
+  },
+  "footer": {
+    "about": "About Us",
+    "contact": "Contact Us",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy",
+    "help": "Help",
+    "faq": "FAQ",
+    "copyright": "© 2024 Xchange Egypt. All rights reserved"
+  }
+}

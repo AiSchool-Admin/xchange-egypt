@@ -1,0 +1,181 @@
+{
+  "common": {
+    "appName": "Xchange",
+    "search": "بحث",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "logout": "تسجيل الخروج",
+    "profile": "الملف الشخصي",
+    "settings": "الإعدادات",
+    "home": "الرئيسية",
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ",
+    "success": "تم بنجاح",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "view": "عرض",
+    "more": "المزيد",
+    "less": "أقل",
+    "all": "الكل",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "price": "السعر",
+    "location": "الموقع",
+    "date": "التاريخ",
+    "egp": "ج.م"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "browse": "تصفح",
+    "sell": "بيع",
+    "barter": "مقايضة",
+    "auctions": "مزادات",
+    "services": "خدمات",
+    "transport": "نقل",
+    "myAccount": "حسابي",
+    "myItems": "منتجاتي",
+    "myOrders": "طلباتي",
+    "messages": "الرسائل",
+    "notifications": "الإشعارات",
+    "favorites": "المفضلة",
+    "cart": "السلة"
+  },
+  "home": {
+    "hero": {
+      "title": "منصة التبادل والمقايضة الأولى في مصر",
+      "subtitle": "بيع، اشتري، أو بادل أي شيء بسهولة وأمان",
+      "searchPlaceholder": "ابحث عن منتج...",
+      "voiceSearch": "البحث الصوتي"
+    },
+    "categories": {
+      "title": "الفئات",
+      "electronics": "إلكترونيات",
+      "vehicles": "سيارات",
+      "property": "عقارات",
+      "fashion": "أزياء",
+      "furniture": "أثاث",
+      "services": "خدمات",
+      "other": "أخرى"
+    },
+    "featured": {
+      "title": "منتجات مميزة",
+      "viewAll": "عرض الكل"
+    },
+    "markets": {
+      "title": "أسواقنا",
+      "generalMarket": "السوق العام",
+      "barterMarket": "سوق المقايضة",
+      "auctionMarket": "سوق المزادات",
+      "servicesMarket": "سوق الخدمات",
+      "transportMarket": "سوق النقل"
+    }
+  },
+  "items": {
+    "condition": {
+      "new": "جديد",
+      "likeNew": "كالجديد",
+      "good": "جيد",
+      "fair": "مقبول",
+      "forParts": "للقطع"
+    },
+    "status": {
+      "available": "متاح",
+      "sold": "تم البيع",
+      "reserved": "محجوز",
+      "pending": "قيد الانتظار"
+    },
+    "details": {
+      "description": "الوصف",
+      "specifications": "المواصفات",
+      "sellerInfo": "معلومات البائع",
+      "location": "الموقع",
+      "postedOn": "تاريخ النشر",
+      "views": "المشاهدات",
+      "contactSeller": "تواصل مع البائع",
+      "makeOffer": "قدم عرض",
+      "buyNow": "اشتري الآن",
+      "addToCart": "أضف للسلة",
+      "addToFavorites": "أضف للمفضلة"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "تسجيل الدخول",
+      "email": "البريد الإلكتروني",
+      "password": "كلمة المرور",
+      "rememberMe": "تذكرني",
+      "forgotPassword": "نسيت كلمة المرور؟",
+      "noAccount": "ليس لديك حساب؟",
+      "loginButton": "دخول"
+    },
+    "register": {
+      "title": "إنشاء حساب جديد",
+      "fullName": "الاسم الكامل",
+      "email": "البريد الإلكتروني",
+      "phone": "رقم الهاتف",
+      "password": "كلمة المرور",
+      "confirmPassword": "تأكيد كلمة المرور",
+      "agreeTerms": "أوافق على الشروط والأحكام",
+      "haveAccount": "لديك حساب بالفعل؟",
+      "registerButton": "إنشاء حساب"
+    }
+  },
+  "seller": {
+    "dashboard": {
+      "title": "لوحة تحكم البائع",
+      "totalSales": "إجمالي المبيعات",
+      "activeListings": "الإعلانات النشطة",
+      "pendingOrders": "الطلبات المعلقة",
+      "rating": "التقييم",
+      "revenue": "الإيرادات",
+      "forecast": "التوقعات",
+      "recommendations": "التوصيات"
+    }
+  },
+  "pwa": {
+    "install": {
+      "title": "حمّل تطبيق Xchange",
+      "subtitle": "أضف التطبيق للشاشة الرئيسية للوصول السريع",
+      "offlineFeature": "يعمل بدون إنترنت",
+      "notificationsFeature": "إشعارات فورية",
+      "installButton": "تثبيت الآن",
+      "laterButton": "لاحقاً"
+    },
+    "ios": {
+      "title": "أضف Xchange للشاشة الرئيسية",
+      "step1": "اضغط على",
+      "step1Icon": "في الأسفل",
+      "step2": "اختر \"إضافة إلى الشاشة الرئيسية\""
+    }
+  },
+  "download": {
+    "title": "حمّل التطبيق",
+    "subtitle": "منصة التبادل والمقايضة الأولى في مصر",
+    "installed": "التطبيق مثبت!",
+    "installedSubtitle": "يمكنك فتحه من الشاشة الرئيسية",
+    "iosTitle": "تثبيت التطبيق على iPhone",
+    "androidTitle": "تثبيت التطبيق على Android",
+    "desktopTitle": "افتح على موبايلك",
+    "scanQR": "امسح الـ QR Code بكاميرا موبايلك",
+    "copyLink": "نسخ",
+    "linkCopied": "تم نسخ الرابط!",
+    "features": {
+      "title": "مميزات التطبيق",
+      "offline": "يعمل بدون إنترنت",
+      "notifications": "إشعارات فورية",
+      "fast": "سريع وخفيف",
+      "noStore": "لا يحتاج متجر"
+    }
+  },
+  "footer": {
+    "about": "من نحن",
+    "contact": "اتصل بنا",
+    "terms": "الشروط والأحكام",
+    "privacy": "سياسة الخصوصية",
+    "help": "المساعدة",
+    "faq": "الأسئلة الشائعة",
+    "copyright": "© 2024 Xchange Egypt. جميع الحقوق محفوظة"
+  }
+}
