@@ -9,7 +9,7 @@
  * - Auto-renewal management
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { SubscriptionTier, SubscriptionStatus } from '@prisma/client';
 import { creditWallet } from './wallet.service';
 

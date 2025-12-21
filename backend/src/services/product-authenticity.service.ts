@@ -9,7 +9,7 @@
  * - Authenticity certificates
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { AuthenticityStatus } from '@prisma/client';
 import crypto from 'crypto';
 

@@ -22,7 +22,7 @@ export const createReverseAuction = async (
   next: NextFunction
 ) => {
   try {
-    const buyerId = req.user!.id;
+    const buyerId = req.user.id;
     const auctionData = req.body;
 
     const auction = await reverseAuctionService.createReverseAuction(buyerId, auctionData);
@@ -95,7 +95,7 @@ export const updateReverseAuction = async (
 ) => {
   try {
     const { id } = req.params;
-    const buyerId = req.user!.id;
+    const buyerId = req.user.id;
     const updateData = req.body;
 
     const auction = await reverseAuctionService.updateReverseAuction(id, buyerId, updateData);
@@ -117,7 +117,7 @@ export const cancelReverseAuction = async (
 ) => {
   try {
     const { id } = req.params;
-    const buyerId = req.user!.id;
+    const buyerId = req.user.id;
 
     const auction = await reverseAuctionService.cancelReverseAuction(id, buyerId);
 
@@ -138,7 +138,7 @@ export const deleteReverseAuction = async (
 ) => {
   try {
     const { id } = req.params;
-    const buyerId = req.user!.id;
+    const buyerId = req.user.id;
 
     await reverseAuctionService.deleteReverseAuction(id, buyerId);
 
@@ -163,7 +163,7 @@ export const submitBid = async (
 ) => {
   try {
     const { id: reverseAuctionId } = req.params;
-    const sellerId = req.user!.id;
+    const sellerId = req.user.id;
     const bidData = {
       ...req.body,
       reverseAuctionId,
@@ -213,7 +213,7 @@ export const updateBid = async (
 ) => {
   try {
     const { bidId } = req.params;
-    const sellerId = req.user!.id;
+    const sellerId = req.user.id;
     const updateData = req.body;
 
     const bid = await reverseAuctionService.updateBid(bidId, sellerId, updateData);
@@ -235,7 +235,7 @@ export const withdrawBid = async (
 ) => {
   try {
     const { bidId } = req.params;
-    const sellerId = req.user!.id;
+    const sellerId = req.user.id;
 
     const bid = await reverseAuctionService.withdrawBid(bidId, sellerId);
 
@@ -255,7 +255,7 @@ export const getMyBids = async (
   next: NextFunction
 ) => {
   try {
-    const sellerId = req.user!.id;
+    const sellerId = req.user.id;
     const filters = {
       status: req.query.status as string | undefined,
       page: req.query.page ? parseInt(req.query.page as string) : 1,
@@ -286,7 +286,7 @@ export const awardAuction = async (
   try {
     const { id } = req.params;
     const { bidId } = req.body;
-    const buyerId = req.user!.id;
+    const buyerId = req.user.id;
 
     const auction = await reverseAuctionService.awardAuction(id, bidId, buyerId);
 
@@ -307,7 +307,7 @@ export const completeAuction = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const auction = await reverseAuctionService.completeAuction(id, userId);
 
@@ -331,7 +331,7 @@ export const getStatistics = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const stats = await reverseAuctionService.getAuctionStatistics(userId);
 

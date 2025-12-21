@@ -10,7 +10,7 @@ import { successResponse } from '../utils/response';
  */
 export const initiateInstapay = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { orderId } = req.body;
 
     // Get order to verify ownership and get amount
@@ -62,7 +62,7 @@ export const instapayCallback = async (req: Request, res: Response, next: NextFu
  */
 export const createFawryPayment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { orderId } = req.body;
 
     // Get order to verify ownership and get amount

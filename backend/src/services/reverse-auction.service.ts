@@ -370,8 +370,8 @@ export const getReverseAuctionById = async (
       },
     });
     // Update the auction object with corrected values
-    (auction as any).totalBids = actualBidCount;
-    (auction as any).lowestBid = actualLowestBid;
+    (auction).totalBids = actualBidCount;
+    (auction).lowestBid = actualLowestBid;
   } else {
     // Just increment views
     await prisma.reverseAuction.update({
@@ -382,7 +382,7 @@ export const getReverseAuctionById = async (
 
   // Hide buyer's private notes unless viewer is the buyer
   if (userId !== auction.buyerId) {
-    delete (auction as any).buyerNotes;
+    delete (auction).buyerNotes;
   }
 
   return auction;

@@ -65,7 +65,7 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
     const adminReq = req as AdminRequest;
     const { refreshToken } = req.body;
 
-    await adminService.logoutAdmin(adminReq.adminId!, refreshToken);
+    await adminService.logoutAdmin(adminReq.adminId, refreshToken);
 
     return successResponse(res, null, 'تم تسجيل الخروج بنجاح');
   } catch (error) {
@@ -216,7 +216,7 @@ export const updateAdmin = async (req: Request, res: Response, next: NextFunctio
     const { adminId } = req.params;
     const updateData = req.body;
 
-    const admin = await adminService.updateAdmin(adminId, updateData, adminReq.adminId!);
+    const admin = await adminService.updateAdmin(adminId, updateData, adminReq.adminId);
 
     return successResponse(res, { admin }, 'تم تحديث المدير بنجاح');
   } catch (error) {
@@ -241,7 +241,7 @@ export const deleteAdmin = async (req: Request, res: Response, next: NextFunctio
       });
     }
 
-    await adminService.updateAdmin(adminId, { status: 'DELETED' }, adminReq.adminId!);
+    await adminService.updateAdmin(adminId, { status: 'DELETED' }, adminReq.adminId);
 
     return successResponse(res, null, 'تم حذف المدير بنجاح');
   } catch (error) {
@@ -343,7 +343,7 @@ export const suspendUser = async (req: Request, res: Response, next: NextFunctio
     const { userId } = req.params;
     const { reason } = req.body;
 
-    const user = await adminService.suspendUser(userId, reason || 'مخالفة شروط الاستخدام', adminReq.adminId!);
+    const user = await adminService.suspendUser(userId, reason || 'مخالفة شروط الاستخدام', adminReq.adminId);
 
     return successResponse(res, { user }, 'تم إيقاف المستخدم بنجاح');
   } catch (error) {
@@ -360,7 +360,7 @@ export const activateUser = async (req: Request, res: Response, next: NextFuncti
     const adminReq = req as AdminRequest;
     const { userId } = req.params;
 
-    const user = await adminService.activateUser(userId, adminReq.adminId!);
+    const user = await adminService.activateUser(userId, adminReq.adminId);
 
     return successResponse(res, { user }, 'تم تفعيل المستخدم بنجاح');
   } catch (error) {
@@ -377,7 +377,7 @@ export const deleteUser = async (req: Request, res: Response, next: NextFunction
     const adminReq = req as AdminRequest;
     const { userId } = req.params;
 
-    const user = await adminService.deleteUser(userId, adminReq.adminId!);
+    const user = await adminService.deleteUser(userId, adminReq.adminId);
 
     return successResponse(res, { user }, 'تم حذف المستخدم بنجاح');
   } catch (error) {
@@ -423,7 +423,7 @@ export const deleteListing = async (req: Request, res: Response, next: NextFunct
     const { itemId } = req.params;
     const { reason } = req.body;
 
-    const item = await adminService.deleteListing(itemId, reason || 'مخالفة شروط الاستخدام', adminReq.adminId!);
+    const item = await adminService.deleteListing(itemId, reason || 'مخالفة شروط الاستخدام', adminReq.adminId);
 
     return successResponse(res, { item }, 'تم حذف الإعلان بنجاح');
   } catch (error) {
@@ -481,7 +481,7 @@ export const updateSetting = async (req: Request, res: Response, next: NextFunct
     const { key } = req.params;
     const { value } = req.body;
 
-    const setting = await adminService.updateSetting(key, value, adminReq.adminId!);
+    const setting = await adminService.updateSetting(key, value, adminReq.adminId);
 
     return successResponse(res, { setting }, 'تم تحديث الإعداد بنجاح');
   } catch (error) {
@@ -524,7 +524,7 @@ export const resolveReport = async (req: Request, res: Response, next: NextFunct
     const { reportId } = req.params;
     const { resolution, status } = req.body;
 
-    const report = await adminService.resolveReport(reportId, resolution, status, adminReq.adminId!);
+    const report = await adminService.resolveReport(reportId, resolution, status, adminReq.adminId);
 
     return successResponse(res, { report }, 'تم معالجة البلاغ بنجاح');
   } catch (error) {
@@ -545,7 +545,7 @@ export const createCategory = async (req: Request, res: Response, next: NextFunc
     const adminReq = req as AdminRequest;
     const categoryData = req.body;
 
-    const category = await adminService.createCategory(categoryData, adminReq.adminId!);
+    const category = await adminService.createCategory(categoryData, adminReq.adminId);
 
     return successResponse(res, { category }, 'تم إنشاء الفئة بنجاح');
   } catch (error) {
@@ -563,7 +563,7 @@ export const updateCategory = async (req: Request, res: Response, next: NextFunc
     const { categoryId } = req.params;
     const updateData = req.body;
 
-    const category = await adminService.updateCategory(categoryId, updateData, adminReq.adminId!);
+    const category = await adminService.updateCategory(categoryId, updateData, adminReq.adminId);
 
     return successResponse(res, { category }, 'تم تحديث الفئة بنجاح');
   } catch (error) {
@@ -580,7 +580,7 @@ export const deleteCategory = async (req: Request, res: Response, next: NextFunc
     const adminReq = req as AdminRequest;
     const { categoryId } = req.params;
 
-    await adminService.deleteCategory(categoryId, adminReq.adminId!);
+    await adminService.deleteCategory(categoryId, adminReq.adminId);
 
     return successResponse(res, null, 'تم حذف الفئة بنجاح');
   } catch (error) {

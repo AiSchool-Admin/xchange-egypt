@@ -107,8 +107,8 @@ export const createBarterProposal = async (
   const valueDifference = requestedValue - offeredValue;
 
   // Determine cash difference and payer
-  let cashDifference = data.cashDifference ?? Math.abs(valueDifference);
-  let cashPayer = data.cashPayer || (valueDifference > 0 ? 'proposer' : 'receiver');
+  const cashDifference = data.cashDifference ?? Math.abs(valueDifference);
+  const cashPayer = data.cashPayer || (valueDifference > 0 ? 'proposer' : 'receiver');
 
   // Calculate commissions (1% from each party based on their property value)
   const proposerCommission = offeredValue * 0.01;

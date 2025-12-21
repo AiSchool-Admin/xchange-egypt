@@ -9,7 +9,7 @@
  * - Badge management
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { VerificationLevel, VerificationStatus } from '@prisma/client';
 
 // ============================================

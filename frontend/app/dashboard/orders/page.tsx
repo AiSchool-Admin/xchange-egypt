@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -61,7 +61,7 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
   REFUNDED: 'bg-gray-100 text-gray-800',
 };
 
-export default function OrdersPage() {
+function OrdersContent() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -381,5 +381,17 @@ export default function OrdersPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-xl text-gray-600">جاري التحميل...</div>
+      </div>
+    }>
+      <OrdersContent />
+    </Suspense>
   );
 }

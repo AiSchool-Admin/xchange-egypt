@@ -376,7 +376,7 @@ export const buildBarterGraph = async (
     description: string;
   }>();
   for (const offer of barterOffers) {
-    const request = (offer as any).itemRequests?.[0];
+    const request = (offer).itemRequests?.[0];
     if (request) {
       userDemands.set(offer.initiatorId, {
         categoryId: request.categoryId || null,
@@ -395,7 +395,7 @@ export const buildBarterGraph = async (
     // Use item's own preferences (from item creation form)
     // Fallback to barter offer preferences if item preferences not set
     const userDemand = userDemands.get(item.sellerId);
-    const itemPreferences = item as any; // Cast to access new fields
+    const itemPreferences = item; // Cast to access new fields
 
     // Determine OFFER category hierarchy (what they're offering) - up to 3 levels
     let offerCategory: string | null = null;
@@ -488,8 +488,8 @@ export const buildBarterGraph = async (
       desiredSubCategory,
       desiredSubSubCategory,
       desiredDescription: itemPreferences.desiredKeywords || userDemand?.description || '',
-      location: (item.seller as any).primaryLatitude && (item.seller as any).primaryLongitude
-        ? { lat: (item.seller as any).primaryLatitude, lng: (item.seller as any).primaryLongitude }
+      location: (item.seller).primaryLatitude && (item.seller).primaryLongitude
+        ? { lat: (item.seller).primaryLatitude, lng: (item.seller).primaryLongitude }
         : null,
     };
 
@@ -600,7 +600,7 @@ export const findBarterCycles = async (
     if (!adjacencyList.has(key)) {
       adjacencyList.set(key, []);
     }
-    adjacencyList.get(key)!.push(edge);
+    adjacencyList.get(key).push(edge);
   }
 
   const cycles: BarterCycle[] = [];

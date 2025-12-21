@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { findMyMatchingItem, BarterMatch, createBarterOffer } from '@/lib/api/barter';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
-export default function BarterCompletePage() {
+function BarterCompleteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
@@ -30,7 +30,7 @@ export default function BarterCompletePage() {
     if (theirItemId) {
       loadMatch(theirItemId);
     } else {
-      setError('معرف العنصر غير موجود / Item ID not found');
+      setError('معرف العنصر غير موجود');
       setLoading(false);
     }
   }, [user, theirItemId]);
@@ -41,18 +41,16 @@ export default function BarterCompletePage() {
       const response = await findMyMatchingItem(itemId);
 
       if (response.data) {
-        // If myItemId is specified in URL, verify it matches
         if (myItemId && response.data.myItem.id !== myItemId) {
-          // Find item matches but not the specific one from URL
-          // This is OK, we'll use what we found
+          // Find item matches but not the specific one from URL - this is OK
         }
         setMatch(response.data);
       } else {
-        setError('لم يتم العثور على عنصر مطابق / No matching item found');
+        setError('لم يتم العثور على عنصر مطابق');
       }
     } catch (err: any) {
       console.error('Error loading match:', err);
-      setError(err.response?.data?.message || 'فشل في تحميل المطابقة / Failed to load match');
+      setError(err.response?.data?.message || 'فشل في تحميل المطابقة');
     } finally {
       setLoading(false);
     }
@@ -71,15 +69,12 @@ export default function BarterCompletePage() {
       message: message || `مقايضة: "${match.myItem.title}" مقابل "${match.theirItem.title}"`,
     };
 
-    console.log('[BarterComplete] Creating offer with:', offerData);
-
     try {
       await createBarterOffer(offerData);
       setSuccess(true);
     } catch (err: any) {
       console.error('[BarterComplete] Error creating barter offer:', err);
-      console.error('[BarterComplete] Error response:', err.response?.data);
-      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'فشل في إنشاء عرض المقايضة / Failed to create barter offer';
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'فشل في إنشاء عرض المقايضة';
       setError(errorMsg);
     } finally {
       setSubmitting(false);
@@ -92,10 +87,10 @@ export default function BarterCompletePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
         <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-          <p className="mt-4 text-gray-600">جاري التحميل... / Loading...</p>
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-teal-600 border-t-transparent"></div>
+          <p className="mt-4 text-gray-600 text-lg">جاري التحميل...</p>
         </div>
       </div>
     );
@@ -103,15 +98,19 @@ export default function BarterCompletePage() {
 
   if (error && !match) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md mx-auto p-6">
-          <div className="text-6xl mb-4">❌</div>
-          <p className="text-red-600 text-lg mb-4">{error}</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
+        <div className="text-center max-w-md mx-auto p-8 bg-white rounded-2xl shadow-lg">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">❌</span>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">حدث خطأ</h2>
+          <p className="text-red-600 mb-6">{error}</p>
           <Link
             href="/barter"
-            className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition"
+            className="inline-flex items-center gap-2 bg-teal-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-teal-700 transition"
           >
-            العودة للمقايضات / Back to Barter
+            <span>←</span>
+            العودة لسوق المقايضة
           </Link>
         </div>
       </div>
@@ -120,30 +119,60 @@ export default function BarterCompletePage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
-          <div className="text-6xl mb-4">🎉</div>
-          <h1 className="text-2xl font-bold text-green-600 mb-2">
-            تم إرسال عرض المقايضة!
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-50" dir="rtl">
+        <div className="text-center max-w-lg mx-auto p-8 bg-white rounded-3xl shadow-2xl">
+          {/* Success Animation */}
+          <div className="relative mb-6">
+            <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mx-auto animate-bounce">
+              <span className="text-5xl">🎉</span>
+            </div>
+            <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full animate-ping"></div>
+            <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-teal-400 rounded-full animate-ping delay-300"></div>
+          </div>
+
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+            تم إرسال عرض المقايضة بنجاح!
           </h1>
-          <p className="text-gray-600 mb-6">
-            Barter offer sent successfully!
+          <p className="text-gray-600 mb-6 text-lg">
+            سيتم إعلام <span className="font-bold text-teal-600">{match?.theirItem.seller?.fullName}</span> بعرضك وسيتمكن من قبوله أو رفضه.
           </p>
-          <p className="text-gray-500 text-sm mb-6">
-            سيتم إعلام {match?.theirItem.seller?.fullName} بعرضك وسيتمكن من قبوله أو رفضه.
-          </p>
-          <div className="flex gap-3">
+
+          {/* What's Next */}
+          <div className="bg-teal-50 rounded-2xl p-6 mb-6 text-right">
+            <h3 className="font-bold text-teal-800 mb-3 flex items-center gap-2">
+              <span>📋</span>
+              الخطوات التالية
+            </h3>
+            <ul className="space-y-2 text-teal-700">
+              <li className="flex items-center gap-2">
+                <span className="w-6 h-6 bg-teal-200 rounded-full flex items-center justify-center text-sm">1</span>
+                انتظر رد الطرف الآخر
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-6 h-6 bg-teal-200 rounded-full flex items-center justify-center text-sm">2</span>
+                تواصل معه عند القبول
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-6 h-6 bg-teal-200 rounded-full flex items-center justify-center text-sm">3</span>
+                أتم عملية التبادل
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex gap-4">
             <Link
               href="/barter/my-offers"
-              className="flex-1 bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition font-semibold"
+              className="flex-1 bg-gradient-to-l from-teal-500 to-emerald-500 text-white px-6 py-4 rounded-xl font-bold hover:from-teal-600 hover:to-emerald-600 transition shadow-lg flex items-center justify-center gap-2"
             >
-              عروضي / My Offers
+              <span>📋</span>
+              عروضي
             </Link>
             <Link
-              href="/"
-              className="flex-1 border border-gray-300 text-gray-700 px-4 py-3 rounded-lg hover:bg-gray-50 transition font-semibold"
+              href="/barter"
+              className="flex-1 border-2 border-gray-200 text-gray-700 px-6 py-4 rounded-xl font-bold hover:bg-gray-50 transition flex items-center justify-center gap-2"
             >
-              الرئيسية / Home
+              <span>🔄</span>
+              تصفح المزيد
             </Link>
           </div>
         </div>
@@ -164,45 +193,61 @@ export default function BarterCompletePage() {
   const isBalanced = Math.abs(valueDiff) <= Math.max(match.myItem.estimatedValue, match.theirItem.estimatedValue) * 0.2;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="bg-gradient-to-l from-teal-600 via-emerald-600 to-green-600 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-72 h-72 bg-yellow-300 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-4xl mx-auto px-4 py-8">
           <Link
-            href={`/items/${theirItemId}`}
-            className="text-purple-200 hover:text-white flex items-center gap-2 mb-4"
+            href={`/barter/items/${theirItemId}`}
+            className="text-teal-200 hover:text-white flex items-center gap-2 mb-4 w-fit transition"
           >
-            ← العودة للعنصر / Back to Item
+            → العودة للمنتج
           </Link>
-          <h1 className="text-3xl font-bold">🔄 إتمام المقايضة / Complete Barter</h1>
-          <p className="text-purple-200 mt-2">
-            تأكيد عرض المقايضة بين العناصر المتطابقة
-          </p>
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-3xl">
+              🔄
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">إتمام المقايضة</h1>
+              <p className="text-teal-200 mt-1">تأكيد عرض المقايضة بين المنتجات المتطابقة</p>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-600">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3">
+            <span className="text-2xl">⚠️</span>
+            <p className="text-red-600 font-medium flex-1">{error}</p>
+            <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">✕</button>
           </div>
         )}
 
         {/* Match Display */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
-          <div className="p-6">
-            <div className="flex items-center justify-center gap-2 mb-6">
-              <span className="text-2xl">🎯</span>
-              <h2 className="text-xl font-bold text-gray-900">تطابق مثالي! / Perfect Match!</h2>
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+          {/* Match Header */}
+          <div className="bg-gradient-to-l from-green-500 to-emerald-500 text-white px-6 py-4">
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-3xl">🎯</span>
+              <h2 className="text-xl font-bold">تطابق مثالي!</h2>
             </div>
+          </div>
 
+          <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
               {/* My Item */}
-              <div className="bg-green-50 p-4 rounded-lg border-2 border-green-200">
-                <p className="text-sm text-green-700 font-semibold mb-3 text-center">
-                  🎁 ما ستقدمه / What You Offer
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-5 rounded-2xl border-2 border-orange-200">
+                <p className="text-sm text-orange-600 font-bold mb-3 text-center flex items-center justify-center gap-2">
+                  <span>🎁</span>
+                  ما ستقدمه
                 </p>
-                <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden mb-3">
+                <div className="aspect-square bg-white rounded-xl overflow-hidden mb-3 shadow-sm">
                   {getItemImage(match.myItem) ? (
                     <img
                       src={getItemImage(match.myItem)}
@@ -210,7 +255,7 @@ export default function BarterCompletePage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl bg-gray-50">
                       📦
                     </div>
                   )}
@@ -218,11 +263,11 @@ export default function BarterCompletePage() {
                 <h3 className="font-bold text-gray-900 text-center mb-1">
                   {match.myItem.title}
                 </h3>
-                <p className="text-green-600 font-semibold text-center">
-                  {match.myItem.estimatedValue.toLocaleString()} ج.م
+                <p className="text-orange-600 font-bold text-center text-lg">
+                  {match.myItem.estimatedValue.toLocaleString('ar-EG')} ج.م
                 </p>
                 {match.myItem.category && (
-                  <p className="text-xs text-gray-500 text-center mt-1">
+                  <p className="text-xs text-gray-500 text-center mt-2 bg-white px-3 py-1 rounded-full">
                     {match.myItem.category.nameAr || match.myItem.category.nameEn}
                   </p>
                 )}
@@ -230,15 +275,18 @@ export default function BarterCompletePage() {
 
               {/* Exchange Arrow */}
               <div className="flex justify-center items-center">
-                <div className="text-5xl">⇄</div>
+                <div className="w-20 h-20 bg-gradient-to-br from-teal-100 to-emerald-100 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-4xl">⇄</span>
+                </div>
               </div>
 
               {/* Their Item */}
-              <div className="bg-blue-50 p-4 rounded-lg border-2 border-blue-200">
-                <p className="text-sm text-blue-700 font-semibold mb-3 text-center">
-                  🎯 ما ستحصل عليه / What You Get
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-5 rounded-2xl border-2 border-green-200">
+                <p className="text-sm text-green-600 font-bold mb-3 text-center flex items-center justify-center gap-2">
+                  <span>✨</span>
+                  ما ستحصل عليه
                 </p>
-                <div className="aspect-square bg-gray-200 rounded-lg overflow-hidden mb-3">
+                <div className="aspect-square bg-white rounded-xl overflow-hidden mb-3 shadow-sm">
                   {getItemImage(match.theirItem) ? (
                     <img
                       src={getItemImage(match.theirItem)}
@@ -246,7 +294,7 @@ export default function BarterCompletePage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl">
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-4xl bg-gray-50">
                       📦
                     </div>
                   )}
@@ -254,60 +302,65 @@ export default function BarterCompletePage() {
                 <h3 className="font-bold text-gray-900 text-center mb-1">
                   {match.theirItem.title}
                 </h3>
-                <p className="text-blue-600 font-semibold text-center">
-                  {match.theirItem.estimatedValue.toLocaleString()} ج.م
+                <p className="text-green-600 font-bold text-center text-lg">
+                  {match.theirItem.estimatedValue.toLocaleString('ar-EG')} ج.م
                 </p>
                 {match.theirItem.category && (
-                  <p className="text-xs text-gray-500 text-center mt-1">
+                  <p className="text-xs text-gray-500 text-center mt-2 bg-white px-3 py-1 rounded-full">
                     {match.theirItem.category.nameAr || match.theirItem.category.nameEn}
                   </p>
                 )}
                 {match.theirItem.seller && (
-                  <p className="text-xs text-gray-500 text-center mt-1">
-                    👤 {match.theirItem.seller.fullName}
+                  <p className="text-xs text-gray-500 text-center mt-2 flex items-center justify-center gap-1">
+                    <span>👤</span>
+                    {match.theirItem.seller.fullName}
                   </p>
                 )}
               </div>
             </div>
 
             {/* Value Comparison */}
-            <div className={`mt-6 p-4 rounded-lg ${
+            <div className={`mt-6 p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 ${
               isBalanced ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'
             }`}>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isBalanced ? 'bg-green-200' : 'bg-yellow-200'}`}>
+                  <span className="text-2xl">{isBalanced ? '✅' : '⚠️'}</span>
+                </div>
                 <div>
-                  <p className="font-semibold text-gray-900">
-                    {isBalanced ? '✅ تبادل متوازن' : '⚠️ فرق في القيمة'}
+                  <p className="font-bold text-gray-900">
+                    {isBalanced ? 'تبادل متوازن' : 'فرق في القيمة'}
                   </p>
                   <p className="text-sm text-gray-600">
                     {isBalanced
                       ? 'الفرق في القيمة ضمن 20%'
                       : valueDiff > 0
-                        ? `أنت تقدم ${valueDiff.toLocaleString()} ج.م أكثر`
-                        : `أنت تطلب ${Math.abs(valueDiff).toLocaleString()} ج.م أكثر`
+                        ? `أنت تقدم ${valueDiff.toLocaleString('ar-EG')} ج.م أكثر`
+                        : `أنت تطلب ${Math.abs(valueDiff).toLocaleString('ar-EG')} ج.م أكثر`
                     }
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600">عرضك: {match.myItem.estimatedValue.toLocaleString()} ج.م</p>
-                  <p className="text-sm text-gray-600">طلبك: {match.theirItem.estimatedValue.toLocaleString()} ج.م</p>
-                </div>
+              </div>
+              <div className="text-center sm:text-left bg-white px-4 py-2 rounded-xl">
+                <p className="text-sm text-gray-600">عرضك: <span className="font-bold text-orange-600">{match.myItem.estimatedValue.toLocaleString('ar-EG')} ج.م</span></p>
+                <p className="text-sm text-gray-600">طلبك: <span className="font-bold text-green-600">{match.theirItem.estimatedValue.toLocaleString('ar-EG')} ج.م</span></p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Message Input */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            رسالة للبائع (اختياري) / Message to Seller (Optional)
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
+          <label className="block font-bold text-gray-700 mb-3 flex items-center gap-2">
+            <span className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">💬</span>
+            رسالة للبائع (اختياري)
           </label>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
-            placeholder="أضف رسالة مع عرض المقايضة... / Add a message with your barter offer..."
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="أضف رسالة مع عرض المقايضة..."
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition"
           />
         </div>
 
@@ -316,34 +369,61 @@ export default function BarterCompletePage() {
           <button
             type="button"
             onClick={() => router.back()}
-            className="flex-1 px-6 py-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition font-semibold text-gray-700"
+            className="flex-1 px-6 py-4 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-bold flex items-center justify-center gap-2"
           >
-            إلغاء / Cancel
+            <span>✕</span>
+            إلغاء
           </button>
           <button
             onClick={handleConfirmBarter}
             disabled={submitting}
-            className="flex-1 bg-purple-600 text-white px-6 py-4 rounded-lg hover:bg-purple-700 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-gradient-to-l from-teal-500 to-emerald-500 text-white px-6 py-4 rounded-xl hover:from-teal-600 hover:to-emerald-600 transition font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2"
           >
             {submitting ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
+              <>
+                <span className="inline-block animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
                 جاري الإرسال...
-              </span>
+              </>
             ) : (
-              '✅ تأكيد عرض المقايضة / Confirm Barter Offer'
+              <>
+                <span>✅</span>
+                تأكيد عرض المقايضة
+              </>
             )}
           </button>
         </div>
 
         {/* Info Note */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>ملاحظة:</strong> سيتم إرسال عرض المقايضة إلى {match.theirItem.seller?.fullName}.
-            سيتمكن من قبول العرض أو رفضه. في حالة القبول، يمكنكم التواصل لإتمام التبادل.
-          </p>
+        <div className="mt-6 p-5 bg-gradient-to-l from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">💡</span>
+            </div>
+            <div>
+              <p className="font-bold text-blue-900 mb-1">ملاحظة مهمة</p>
+              <p className="text-sm text-blue-800">
+                سيتم إرسال عرض المقايضة إلى <span className="font-bold">{match.theirItem.seller?.fullName}</span>.
+                سيتمكن من قبول العرض أو رفضه. في حالة القبول، يمكنكم التواصل لإتمام عملية التبادل بأمان.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BarterCompletePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" dir="rtl">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-teal-600 border-t-transparent"></div>
+          <p className="mt-4 text-gray-600 text-lg">جاري التحميل...</p>
+        </div>
+      </div>
+    }>
+      <BarterCompleteContent />
+    </Suspense>
   );
 }

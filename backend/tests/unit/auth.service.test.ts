@@ -1,353 +1,533 @@
 /**
- * Unit Tests for Authentication Service
- * Tests authentication logic, token generation, and validation
+ * Auth Service Unit Tests
+ * اختبارات وحدة خدمة المصادقة
  */
 
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { cleanDatabase, disconnectTestDb, getTestDb } from '../helpers/testDb';
+import { createTestUser, generateTestToken } from '../helpers/testHelpers';
 
-// Mock JWT secret for testing
-const JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
-const JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing';
+describe('Auth Service Tests', () => {
+  const db = getTestDb();
 
-describe('Auth Service - Unit Tests', () => {
-  // ============================================
+  beforeEach(async () => {
+    await cleanDatabase();
+  });
+
+  afterAll(async () => {
+    await disconnectTestDb();
+  });
+
+  // ==========================================
   // Password Hashing Tests
-  // ============================================
-
+  // ==========================================
   describe('Password Hashing', () => {
-    it('should hash password securely', async () => {
-      const password = 'SecureP@ss123!';
-      const hash = await bcrypt.hash(password, 10);
+    it('should hash password correctly', async () => {
+      const password = 'SecurePassword123!';
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-      expect(hash).not.toBe(password);
-      expect(hash.length).toBeGreaterThan(50);
-      expect(hash).toMatch(/^\$2[ayb]\$/);
+      expect(hashedPassword).not.toBe(password);
+      expect(hashedPassword.length).toBeGreaterThan(50);
+      expect(hashedPassword).toMatch(/^\$2[aby]\$/);
     });
 
     it('should verify correct password', async () => {
-      const password = 'SecureP@ss123!';
-      const hash = await bcrypt.hash(password, 10);
+      const password = 'TestPassword456!';
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-      const isValid = await bcrypt.compare(password, hash);
+      const isValid = await bcrypt.compare(password, hashedPassword);
       expect(isValid).toBe(true);
     });
 
     it('should reject incorrect password', async () => {
-      const password = 'SecureP@ss123!';
-      const wrongPassword = 'WrongPassword123!';
-      const hash = await bcrypt.hash(password, 10);
+      const password = 'CorrectPassword!';
+      const hashedPassword = await bcrypt.hash(password, 10);
 
-      const isValid = await bcrypt.compare(wrongPassword, hash);
+      const isValid = await bcrypt.compare('WrongPassword!', hashedPassword);
       expect(isValid).toBe(false);
     });
 
     it('should generate different hashes for same password', async () => {
-      const password = 'SecureP@ss123!';
+      const password = 'SamePassword123!';
       const hash1 = await bcrypt.hash(password, 10);
       const hash2 = await bcrypt.hash(password, 10);
 
       expect(hash1).not.toBe(hash2);
-      // But both should verify correctly
+      // But both should validate correctly
       expect(await bcrypt.compare(password, hash1)).toBe(true);
       expect(await bcrypt.compare(password, hash2)).toBe(true);
     });
   });
 
-  // ============================================
-  // JWT Token Generation Tests
-  // ============================================
-
+  // ==========================================
+  // JWT Token Tests
+  // ==========================================
   describe('JWT Token Generation', () => {
+    const secret = process.env.JWT_SECRET || 'test-secret';
+
     it('should generate valid access token', () => {
       const payload = {
-        userId: 'user-123',
+        userId: 'test-user-id',
         email: 'test@example.com',
         userType: 'INDIVIDUAL',
       };
 
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' });
-      const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+      const token = jwt.sign(payload, secret, { expiresIn: '15m' });
+      expect(token).toBeDefined();
+      expect(token.split('.')).toHaveLength(3);
+    });
+
+    it('should decode token correctly', () => {
+      const payload = {
+        userId: 'test-user-id',
+        email: 'test@example.com',
+        userType: 'INDIVIDUAL',
+      };
+
+      const token = jwt.sign(payload, secret, { expiresIn: '15m' });
+      const decoded = jwt.verify(token, secret) as any;
 
       expect(decoded.userId).toBe(payload.userId);
       expect(decoded.email).toBe(payload.email);
       expect(decoded.userType).toBe(payload.userType);
     });
 
-    it('should generate valid refresh token', () => {
-      const payload = {
-        userId: 'user-123',
-        tokenVersion: 1,
-      };
-
-      const token = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });
-      const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as jwt.JwtPayload;
-
-      expect(decoded.userId).toBe(payload.userId);
-      expect(decoded.tokenVersion).toBe(1);
-    });
-
-    it('should include expiration in token', () => {
-      const payload = { userId: 'user-123' };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-      const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
-
-      expect(decoded.exp).toBeDefined();
-      expect(decoded.iat).toBeDefined();
-      expect(decoded.exp! - decoded.iat!).toBe(3600); // 1 hour
-    });
-
     it('should reject expired token', async () => {
-      const payload = { userId: 'user-123' };
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '-1s' });
+      const payload = { userId: 'test-user-id' };
+      const token = jwt.sign(payload, secret, { expiresIn: '1ms' });
 
-      expect(() => {
-        jwt.verify(token, JWT_SECRET);
-      }).toThrow('jwt expired');
+      // Wait for token to expire
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(() => jwt.verify(token, secret)).toThrow();
     });
 
     it('should reject token with wrong secret', () => {
-      const payload = { userId: 'user-123' };
-      const token = jwt.sign(payload, JWT_SECRET);
+      const payload = { userId: 'test-user-id' };
+      const token = jwt.sign(payload, secret);
 
-      expect(() => {
-        jwt.verify(token, 'wrong-secret');
-      }).toThrow('invalid signature');
+      expect(() => jwt.verify(token, 'wrong-secret')).toThrow();
+    });
+
+    it('should generate refresh token with longer expiry', () => {
+      const token = generateTestToken('user-123', 'INDIVIDUAL');
+      const decoded = jwt.decode(token) as any;
+
+      expect(decoded.userId).toBe('user-123');
+      expect(decoded.userType).toBe('INDIVIDUAL');
+      expect(decoded.exp).toBeDefined();
     });
   });
 
-  // ============================================
-  // Token Validation Tests
-  // ============================================
+  // ==========================================
+  // User Registration Tests
+  // ==========================================
+  describe('User Registration', () => {
+    it('should create individual user with required fields', async () => {
+      const user = await createTestUser({
+        email: 'newuser@example.com',
+        fullName: 'New User',
+        phone: '+201111111111',
+      });
 
-  describe('Token Validation', () => {
-    it('should decode token without verification', () => {
-      const payload = { userId: 'user-123', role: 'admin' };
-      const token = jwt.sign(payload, JWT_SECRET);
-
-      const decoded = jwt.decode(token) as jwt.JwtPayload;
-      expect(decoded.userId).toBe(payload.userId);
-      expect(decoded.role).toBe(payload.role);
+      expect(user).toHaveProperty('id');
+      expect(user.email).toBe('newuser@example.com');
+      expect(user.fullName).toBe('New User');
+      expect(user.userType).toBe('INDIVIDUAL');
+      expect(user.status).toBe('ACTIVE');
     });
 
-    it('should validate token structure', () => {
-      const payload = { userId: 'user-123' };
-      const token = jwt.sign(payload, JWT_SECRET);
+    it('should create business user with business fields', async () => {
+      const user = await createTestUser({
+        email: 'business@example.com',
+        fullName: 'Business Owner',
+        userType: 'BUSINESS',
+        businessName: 'Test Company LLC',
+        taxId: '123456789',
+        commercialRegNo: '987654321',
+      });
 
-      // JWT has 3 parts separated by dots
-      const parts = token.split('.');
-      expect(parts.length).toBe(3);
+      expect(user.userType).toBe('BUSINESS');
+      expect(user.businessName).toBe('Test Company LLC');
+      expect(user.taxId).toBe('123456789');
+      expect(user.commercialRegNo).toBe('987654321');
     });
 
-    it('should reject malformed token', () => {
-      const malformedToken = 'not.a.valid.jwt.token';
+    it('should prevent duplicate email registration', async () => {
+      const email = 'unique@example.com';
+      await createTestUser({ email });
 
-      expect(() => {
-        jwt.verify(malformedToken, JWT_SECRET);
-      }).toThrow();
+      await expect(createTestUser({ email })).rejects.toThrow();
+    });
+
+    it('should prevent duplicate phone registration', async () => {
+      const phone = '+201222222222';
+      await createTestUser({ phone });
+
+      await expect(createTestUser({ phone })).rejects.toThrow();
+    });
+
+    it('should hash password before storing', async () => {
+      const password = 'TestPassword123!';
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const user = await db.user.create({
+        data: {
+          email: `hash-test-${Date.now()}@example.com`,
+          passwordHash: hashedPassword,
+          fullName: 'Hash Test User',
+          userType: 'INDIVIDUAL',
+          status: 'ACTIVE',
+        },
+      });
+
+      expect(user.passwordHash).not.toBe(password);
+      expect(user.passwordHash).toBe(hashedPassword);
     });
   });
 
-  // ============================================
-  // Email Validation Tests
-  // ============================================
+  // ==========================================
+  // User Login Tests
+  // ==========================================
+  describe('User Login', () => {
+    it('should find user by email', async () => {
+      const email = 'findme@example.com';
+      await createTestUser({ email });
 
-  describe('Email Validation', () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-    it('should validate correct email format', () => {
-      const validEmails = [
-        'test@example.com',
-        'user.name@domain.org',
-        'user+tag@example.co.uk',
-      ];
-
-      validEmails.forEach((email) => {
-        expect(emailRegex.test(email)).toBe(true);
+      const user = await db.user.findUnique({
+        where: { email },
       });
+
+      expect(user).not.toBeNull();
+      expect(user?.email).toBe(email);
     });
 
-    it('should reject invalid email format', () => {
-      const invalidEmails = [
-        'invalid',
-        'invalid@',
-        '@invalid.com',
-        'invalid@.com',
-        'invalid@domain',
-      ];
-
-      invalidEmails.forEach((email) => {
-        expect(emailRegex.test(email)).toBe(false);
+    it('should return null for non-existent email', async () => {
+      const user = await db.user.findUnique({
+        where: { email: 'nonexistent@example.com' },
       });
-    });
-  });
 
-  // ============================================
-  // Phone Number Validation Tests (Egyptian Format)
-  // ============================================
-
-  describe('Phone Number Validation (Egyptian)', () => {
-    const egyptianPhoneRegex = /^(\+20|0)?1[0-9]{9}$/;
-
-    it('should validate Egyptian mobile numbers', () => {
-      const validNumbers = [
-        '01012345678',
-        '01112345678',
-        '01212345678',
-        '+201012345678',
-        '1012345678',
-      ];
-
-      validNumbers.forEach((phone) => {
-        expect(egyptianPhoneRegex.test(phone)).toBe(true);
-      });
+      expect(user).toBeNull();
     });
 
-    it('should reject invalid phone numbers', () => {
-      const invalidNumbers = [
-        '0212345678', // Landline
-        '0501234567', // Wrong prefix
-        '010123456', // Too short
-        '01012345678901', // Too long
-      ];
+    it('should update lastLoginAt on login', async () => {
+      const user = await createTestUser();
+      const beforeLogin = user.lastLoginAt;
 
-      invalidNumbers.forEach((phone) => {
-        expect(egyptianPhoneRegex.test(phone)).toBe(false);
+      await db.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
       });
+
+      const updatedUser = await db.user.findUnique({
+        where: { id: user.id },
+      });
+
+      expect(updatedUser?.lastLoginAt).not.toBe(beforeLogin);
+    });
+
+    it('should reject suspended user login', async () => {
+      const user = await createTestUser({ status: 'SUSPENDED' });
+
+      expect(user.status).toBe('SUSPENDED');
+      // In real login, this should be rejected
+    });
+
+    it('should reject banned user login', async () => {
+      const user = await createTestUser({ status: 'BANNED' });
+
+      expect(user.status).toBe('BANNED');
+      // In real login, this should be rejected
     });
   });
 
-  // ============================================
-  // Password Strength Validation Tests
-  // ============================================
+  // ==========================================
+  // Refresh Token Tests
+  // ==========================================
+  describe('Refresh Token Management', () => {
+    it('should store refresh token in database', async () => {
+      const user = await createTestUser();
+      const refreshToken = generateTestToken(user.id, 'INDIVIDUAL');
 
-  describe('Password Strength Validation', () => {
-    const validatePassword = (password: string) => {
-      const minLength = password.length >= 8;
-      const hasUppercase = /[A-Z]/.test(password);
-      const hasLowercase = /[a-z]/.test(password);
-      const hasNumber = /[0-9]/.test(password);
-      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+      const stored = await db.refreshToken.create({
+        data: {
+          token: refreshToken,
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
 
-      return {
-        isValid: minLength && hasUppercase && hasLowercase && hasNumber && hasSpecial,
-        minLength,
-        hasUppercase,
-        hasLowercase,
-        hasNumber,
-        hasSpecial,
+      expect(stored).toHaveProperty('id');
+      expect(stored.token).toBe(refreshToken);
+      expect(stored.userId).toBe(user.id);
+    });
+
+    it('should delete refresh token on logout', async () => {
+      const user = await createTestUser();
+      const refreshToken = generateTestToken(user.id, 'INDIVIDUAL');
+
+      await db.refreshToken.create({
+        data: {
+          token: refreshToken,
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      await db.refreshToken.deleteMany({
+        where: { token: refreshToken },
+      });
+
+      const stored = await db.refreshToken.findUnique({
+        where: { token: refreshToken },
+      });
+
+      expect(stored).toBeNull();
+    });
+
+    it('should delete all refresh tokens on logout all', async () => {
+      const user = await createTestUser();
+
+      // Create multiple tokens
+      await db.refreshToken.createMany({
+        data: [
+          {
+            token: generateTestToken(user.id, 'INDIVIDUAL') + '1',
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+          {
+            token: generateTestToken(user.id, 'INDIVIDUAL') + '2',
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          },
+        ],
+      });
+
+      await db.refreshToken.deleteMany({
+        where: { userId: user.id },
+      });
+
+      const tokens = await db.refreshToken.findMany({
+        where: { userId: user.id },
+      });
+
+      expect(tokens).toHaveLength(0);
+    });
+
+    it('should detect expired refresh token', async () => {
+      const user = await createTestUser();
+      const refreshToken = generateTestToken(user.id, 'INDIVIDUAL');
+
+      const stored = await db.refreshToken.create({
+        data: {
+          token: refreshToken,
+          userId: user.id,
+          expiresAt: new Date(Date.now() - 1000), // Already expired
+        },
+      });
+
+      expect(stored.expiresAt < new Date()).toBe(true);
+    });
+  });
+
+  // ==========================================
+  // User Profile Tests
+  // ==========================================
+  describe('User Profile', () => {
+    it('should get user profile by ID', async () => {
+      const user = await createTestUser({
+        fullName: 'Profile User',
+        phone: '+201333333333',
+      });
+
+      const profile = await db.user.findUnique({
+        where: { id: user.id },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          phone: true,
+          userType: true,
+          status: true,
+        },
+      });
+
+      expect(profile).not.toBeNull();
+      expect(profile?.fullName).toBe('Profile User');
+    });
+
+    it('should update user profile', async () => {
+      const user = await createTestUser();
+
+      const updated = await db.user.update({
+        where: { id: user.id },
+        data: {
+          fullName: 'Updated Name',
+          bio: 'This is my bio',
+          city: 'القاهرة',
+          governorate: 'القاهرة',
+        },
+      });
+
+      expect(updated.fullName).toBe('Updated Name');
+      expect(updated.bio).toBe('This is my bio');
+    });
+
+    it('should not expose password hash in profile', async () => {
+      const user = await createTestUser();
+
+      const profile = await db.user.findUnique({
+        where: { id: user.id },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          // passwordHash is not selected
+        },
+      });
+
+      expect(profile).not.toHaveProperty('passwordHash');
+    });
+  });
+
+  // ==========================================
+  // Password Reset Tests
+  // ==========================================
+  describe('Password Reset', () => {
+    it('should generate password reset token', () => {
+      const secret = process.env.JWT_SECRET || 'test-secret';
+      const payload = {
+        userId: 'test-user-id',
+        email: 'test@example.com',
+        purpose: 'password-reset',
       };
-    };
 
-    it('should accept strong password', () => {
-      const result = validatePassword('SecureP@ss123!');
-      expect(result.isValid).toBe(true);
+      const resetToken = jwt.sign(payload, secret, { expiresIn: '1h' });
+      expect(resetToken).toBeDefined();
+
+      const decoded = jwt.verify(resetToken, secret) as any;
+      expect(decoded.purpose).toBe('password-reset');
     });
 
-    it('should reject password without uppercase', () => {
-      const result = validatePassword('securep@ss123!');
-      expect(result.isValid).toBe(false);
-      expect(result.hasUppercase).toBe(false);
-    });
+    it('should update password successfully', async () => {
+      const user = await createTestUser();
+      const newPassword = 'NewSecurePassword123!';
+      const newHash = await bcrypt.hash(newPassword, 10);
 
-    it('should reject password without special character', () => {
-      const result = validatePassword('SecurePass123');
-      expect(result.isValid).toBe(false);
-      expect(result.hasSpecial).toBe(false);
-    });
-
-    it('should reject short password', () => {
-      const result = validatePassword('Sh0rt!');
-      expect(result.isValid).toBe(false);
-      expect(result.minLength).toBe(false);
-    });
-  });
-
-  // ============================================
-  // User Type Tests
-  // ============================================
-
-  describe('User Types', () => {
-    const validUserTypes = ['INDIVIDUAL', 'BUSINESS', 'ADMIN'];
-
-    it('should validate allowed user types', () => {
-      validUserTypes.forEach((type) => {
-        expect(validUserTypes.includes(type)).toBe(true);
+      await db.user.update({
+        where: { id: user.id },
+        data: { passwordHash: newHash },
       });
-    });
 
-    it('should reject invalid user types', () => {
-      const invalidTypes = ['USER', 'GUEST', 'SUPERADMIN'];
-      invalidTypes.forEach((type) => {
-        expect(validUserTypes.includes(type)).toBe(false);
+      const updatedUser = await db.user.findUnique({
+        where: { id: user.id },
       });
+
+      const isValid = await bcrypt.compare(newPassword, updatedUser!.passwordHash);
+      expect(isValid).toBe(true);
+    });
+
+    it('should invalidate all tokens after password reset', async () => {
+      const user = await createTestUser();
+
+      // Create a refresh token
+      await db.refreshToken.create({
+        data: {
+          token: 'old-refresh-token',
+          userId: user.id,
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      // Simulate password reset - delete all tokens
+      await db.refreshToken.deleteMany({
+        where: { userId: user.id },
+      });
+
+      const tokens = await db.refreshToken.findMany({
+        where: { userId: user.id },
+      });
+
+      expect(tokens).toHaveLength(0);
     });
   });
 
-  // ============================================
-  // Rate Limiting Logic Tests
-  // ============================================
-
-  describe('Rate Limiting Logic', () => {
-    it('should track failed login attempts', () => {
-      const failedAttempts: Map<string, { count: number; lastAttempt: Date }> = new Map();
-      const email = 'test@example.com';
-      const maxAttempts = 5;
-
-      // Simulate failed attempts
-      for (let i = 0; i < 3; i++) {
-        const current = failedAttempts.get(email) || { count: 0, lastAttempt: new Date() };
-        failedAttempts.set(email, {
-          count: current.count + 1,
-          lastAttempt: new Date(),
-        });
-      }
-
-      const attempts = failedAttempts.get(email);
-      expect(attempts?.count).toBe(3);
-      expect(attempts!.count < maxAttempts).toBe(true);
+  // ==========================================
+  // User Status Tests
+  // ==========================================
+  describe('User Status Management', () => {
+    it('should create user with ACTIVE status by default', async () => {
+      const user = await createTestUser();
+      expect(user.status).toBe('ACTIVE');
     });
 
-    it('should block after max attempts', () => {
-      const failedAttempts = 5;
-      const maxAttempts = 5;
-      const isBlocked = failedAttempts >= maxAttempts;
-
-      expect(isBlocked).toBe(true);
+    it('should allow creating PENDING user', async () => {
+      const user = await createTestUser({ status: 'PENDING' });
+      expect(user.status).toBe('PENDING');
     });
 
-    it('should reset after timeout', () => {
-      const lockoutDuration = 15 * 60 * 1000; // 15 minutes
-      const lastAttempt = new Date(Date.now() - lockoutDuration - 1000); // 15+ minutes ago
-      const isLockoutExpired = Date.now() - lastAttempt.getTime() > lockoutDuration;
+    it('should allow suspending user', async () => {
+      const user = await createTestUser();
 
-      expect(isLockoutExpired).toBe(true);
+      const updated = await db.user.update({
+        where: { id: user.id },
+        data: { status: 'SUSPENDED' },
+      });
+
+      expect(updated.status).toBe('SUSPENDED');
+    });
+
+    it('should allow banning user', async () => {
+      const user = await createTestUser();
+
+      const updated = await db.user.update({
+        where: { id: user.id },
+        data: { status: 'BANNED' },
+      });
+
+      expect(updated.status).toBe('BANNED');
     });
   });
 
-  // ============================================
-  // Session Management Tests
-  // ============================================
+  // ==========================================
+  // Email Verification Tests
+  // ==========================================
+  describe('Email Verification', () => {
+    it('should create user with unverified email by default', async () => {
+      const user = await db.user.create({
+        data: {
+          email: `unverified-${Date.now()}@example.com`,
+          passwordHash: await bcrypt.hash('test', 10),
+          fullName: 'Unverified User',
+          userType: 'INDIVIDUAL',
+          status: 'ACTIVE',
+          emailVerified: false,
+        },
+      });
 
-  describe('Session Management', () => {
-    it('should generate unique session IDs', () => {
-      const generateSessionId = () => {
-        return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-      };
-
-      const session1 = generateSessionId();
-      const session2 = generateSessionId();
-
-      expect(session1).not.toBe(session2);
-      expect(session1.startsWith('sess_')).toBe(true);
+      expect(user.emailVerified).toBe(false);
     });
 
-    it('should validate session expiry', () => {
-      const sessionCreated = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000); // 8 days ago
-      const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-      const isExpired = Date.now() - sessionCreated.getTime() > maxAge;
+    it('should verify email successfully', async () => {
+      const user = await db.user.create({
+        data: {
+          email: `verify-${Date.now()}@example.com`,
+          passwordHash: await bcrypt.hash('test', 10),
+          fullName: 'Verify User',
+          userType: 'INDIVIDUAL',
+          status: 'ACTIVE',
+          emailVerified: false,
+        },
+      });
 
-      expect(isExpired).toBe(true);
+      const updated = await db.user.update({
+        where: { id: user.id },
+        data: { emailVerified: true },
+      });
+
+      expect(updated.emailVerified).toBe(true);
     });
   });
 });

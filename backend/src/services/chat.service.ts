@@ -4,7 +4,7 @@
  * Business logic for real-time messaging and chat conversations
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { createNotification } from './notification.service';
 

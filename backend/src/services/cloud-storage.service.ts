@@ -29,8 +29,8 @@ if (isR2Configured) {
     region: 'auto',
     endpoint: `https://${env.storage.r2.accountId}.r2.cloudflarestorage.com`,
     credentials: {
-      accessKeyId: env.storage.r2.accessKeyId!,
-      secretAccessKey: env.storage.r2.secretAccessKey!,
+      accessKeyId: env.storage.r2.accessKeyId,
+      secretAccessKey: env.storage.r2.secretAccessKey,
     },
   });
   console.log('✅ Cloudflare R2 storage configured');

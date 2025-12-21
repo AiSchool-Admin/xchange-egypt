@@ -9,7 +9,7 @@
  * - Real-time progress tracking
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { GroupBuyStatus } from '@prisma/client';
 
 // ============================================

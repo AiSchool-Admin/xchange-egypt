@@ -8,7 +8,7 @@ import { successResponse } from '../utils/response';
  */
 export const createAuction = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const auction = await auctionService.createAuction(userId, req.body);
 
     return successResponse(res, auction, 'Auction created successfully', 201);
@@ -63,7 +63,7 @@ export const listAuctions = async (req: Request, res: Response, next: NextFuncti
 export const placeBid = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const bid = await auctionService.placeBid(id, userId, req.body);
 
     return successResponse(res, bid, 'Bid placed successfully', 201);
@@ -79,7 +79,7 @@ export const placeBid = async (req: Request, res: Response, next: NextFunction) 
 export const buyNow = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await auctionService.buyNow(id, userId);
 
     return successResponse(res, result, 'Item purchased successfully via buy now');
@@ -115,7 +115,7 @@ export const getAuctionBids = async (req: Request, res: Response, next: NextFunc
 export const cancelAuction = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { reason } = req.body;
     const result = await auctionService.cancelAuction(id, userId, reason);
 
@@ -132,7 +132,7 @@ export const cancelAuction = async (req: Request, res: Response, next: NextFunct
 export const updateAuction = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const auction = await auctionService.updateAuction(id, userId, req.body);
 
     return successResponse(res, auction, 'Auction updated successfully');
@@ -162,7 +162,7 @@ export const endAuction = async (req: Request, res: Response, next: NextFunction
  */
 export const getMyAuctions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { status } = req.query;
     const auctions = await auctionService.getMyAuctions(userId, status as any);
 
@@ -178,7 +178,7 @@ export const getMyAuctions = async (req: Request, res: Response, next: NextFunct
  */
 export const getMyBids = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const bids = await auctionService.getMyBids(userId);
 
     return successResponse(res, bids, 'My bids retrieved successfully');

@@ -44,7 +44,7 @@ export const createBooking = async (
   next: NextFunction
 ) => {
   try {
-    const senderId = req.user!.id;
+    const senderId = req.user.id;
     const {
       orderId,
       transactionId,
@@ -123,7 +123,7 @@ export const getBooking = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const booking = await deliveryService.getBooking(id, userId);
 
@@ -143,7 +143,7 @@ export const getUserBookings = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { type, page, limit } = req.query;
 
     const result = await deliveryService.getUserBookings(
@@ -170,7 +170,7 @@ export const cancelBooking = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const booking = await deliveryService.cancelBooking(id, userId);
 

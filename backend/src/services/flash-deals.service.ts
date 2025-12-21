@@ -9,7 +9,7 @@
  * - Real-time countdown
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { FlashDealStatus } from '@prisma/client';
 
 // ============================================

@@ -165,7 +165,7 @@ ${historyText ? `المحادثة السابقة:\n${historyText}\n` : ''}
       const text = response.text();
 
       // Clean up response
-      let cleanedText = text
+      const cleanedText = text
         .replace(/^(المساعد:|الرد:)\s*/i, '') // Remove prefix
         .trim();
 

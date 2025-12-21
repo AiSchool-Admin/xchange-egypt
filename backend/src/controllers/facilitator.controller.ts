@@ -8,7 +8,7 @@ import { successResponse } from '../utils/response';
  */
 export const applyForFacilitator = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await facilitatorService.applyForFacilitator(userId, req.body);
 
     if (!result.success) {
@@ -87,7 +87,7 @@ export const getFacilitatorProfile = async (req: Request, res: Response, next: N
  */
 export const getMyFacilitatorProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const facilitator = await facilitatorService.getFacilitatorByUserId(userId);
 
     if (!facilitator) {
@@ -107,7 +107,7 @@ export const getMyFacilitatorProfile = async (req: Request, res: Response, next:
 export const updateFacilitatorProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await facilitatorService.updateFacilitatorProfile(id, userId, req.body);
 
@@ -128,7 +128,7 @@ export const updateFacilitatorProfile = async (req: Request, res: Response, next
 export const toggleAvailability = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await facilitatorService.toggleAvailability(id, userId);
 
@@ -149,7 +149,7 @@ export const toggleAvailability = async (req: Request, res: Response, next: Next
 export const assignFacilitator = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await facilitatorService.assignFacilitator(id, {
       ...req.body,
@@ -172,7 +172,7 @@ export const assignFacilitator = async (req: Request, res: Response, next: NextF
  */
 export const getMyAssignments = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { status, limit, offset } = req.query;
 
     const facilitator = await facilitatorService.getFacilitatorByUserId(userId);
@@ -199,7 +199,7 @@ export const getMyAssignments = async (req: Request, res: Response, next: NextFu
 export const startAssignment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { assignmentId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await facilitatorService.startAssignment(assignmentId, userId);
 
@@ -220,7 +220,7 @@ export const startAssignment = async (req: Request, res: Response, next: NextFun
 export const completeAssignment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { assignmentId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { completionNotes } = req.body;
 
     const result = await facilitatorService.completeAssignment(assignmentId, userId, completionNotes);
@@ -242,7 +242,7 @@ export const completeAssignment = async (req: Request, res: Response, next: Next
 export const submitReview = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { assignmentId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await facilitatorService.submitFacilitatorReview(assignmentId, userId, req.body);
 

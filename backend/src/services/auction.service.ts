@@ -359,7 +359,7 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
       // Calculate optimal bid to beat the highest bid
       actualBidAmount = Math.min(
         highestBid.bidAmount + auction.minBidIncrement,
-        data.maxAutoBid!
+        data.maxAutoBid
       );
 
       // If we can't beat the highest bid with our max, bid our max

@@ -4,7 +4,7 @@
  */
 
 import { EscrowStatus, EscrowType, DisputeStatus, DisputeReason, DisputeResolution } from '@prisma/client';
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import * as walletService from './wallet.service';
 import * as reputationService from './reputation.service';
 

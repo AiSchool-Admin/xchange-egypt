@@ -12,7 +12,7 @@ export const createPurchase = async (
   next: NextFunction
 ) => {
   try {
-    const buyerId = req.user!.id;
+    const buyerId = req.user.id;
     const purchaseData = req.body;
 
     const transaction = await transactionService.createPurchase(buyerId, purchaseData);
@@ -33,7 +33,7 @@ export const buyItem = async (
   next: NextFunction
 ) => {
   try {
-    const buyerId = req.user!.id;
+    const buyerId = req.user.id;
     const purchaseData = req.body;
 
     const result = await transactionService.buyItemDirectly(buyerId, purchaseData);
@@ -55,7 +55,7 @@ export const getTransactionById = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const transaction = await transactionService.getTransactionById(id, userId);
 
@@ -76,7 +76,7 @@ export const updateDeliveryStatus = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { deliveryStatus } = req.body;
 
     const transaction = await transactionService.updateDeliveryStatus(
@@ -102,7 +102,7 @@ export const confirmPayment = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const transaction = await transactionService.confirmPayment(id, userId);
 
@@ -123,7 +123,7 @@ export const markAsShipped = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { trackingNumber } = req.body;
 
     const transaction = await transactionService.markAsShipped(id, userId, trackingNumber);
@@ -145,7 +145,7 @@ export const markAsDelivered = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const transaction = await transactionService.markAsDelivered(id, userId);
 
@@ -166,7 +166,7 @@ export const cancelTransaction = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { reason } = req.body;
 
     const transaction = await transactionService.cancelTransaction(id, userId, reason);
@@ -214,7 +214,7 @@ export const getMyTransactions = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { role, status, page, limit } = req.query;
 
     const result = await transactionService.getUserTransactions(

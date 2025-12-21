@@ -155,8 +155,22 @@ export default function GoldItemPage() {
       return;
     }
 
-    // TODO: Implement purchase flow with escrow
-    alert('سيتم تفعيل خاصية الشراء قريباً');
+    try {
+      // Create escrow order for gold purchase
+      const response = await apiClient.post('/escrow/gold/create', {
+        goldItemId: params.id,
+        amount: calculation?.buyerPays || item?.totalPrice,
+        type: 'GOLD_PURCHASE',
+      });
+
+      if (response.data.success) {
+        // Redirect to checkout with escrow order
+        router.push(`/checkout?escrowId=${response.data.data.escrowId}&type=gold`);
+      }
+    } catch (err: any) {
+      console.error('Error creating gold purchase:', err);
+      alert(err.response?.data?.error?.message || 'حدث خطأ، يرجى المحاولة مرة أخرى');
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -362,9 +376,30 @@ export default function GoldItemPage() {
               </button>
               <button
                 className="bg-gray-100 text-gray-700 py-4 px-6 rounded-xl font-medium hover:bg-gray-200 transition-all"
-                onClick={() => {
-                  // TODO: Implement chat with seller
-                  alert('سيتم تفعيل المحادثة مع البائع قريباً');
+                onClick={async () => {
+                  // Check if user is logged in
+                  const token = localStorage.getItem('accessToken');
+                  if (!token) {
+                    router.push('/login?redirect=/gold/' + params.id);
+                    return;
+                  }
+
+                  try {
+                    // Create or get existing chat with seller
+                    const response = await apiClient.post('/chat/conversations', {
+                      participantId: item?.seller.id,
+                      itemId: params.id,
+                      itemType: 'GOLD',
+                      initialMessage: `مرحباً، أنا مهتم بقطعة الذهب: ${item?.titleAr || item?.title}`,
+                    });
+
+                    if (response.data.success) {
+                      router.push(`/messages?conversation=${response.data.data.id}`);
+                    }
+                  } catch (err: any) {
+                    console.error('Error starting chat:', err);
+                    alert(err.response?.data?.error?.message || 'حدث خطأ في بدء المحادثة');
+                  }
                 }}
               >
                 💬 تواصل

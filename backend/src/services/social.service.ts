@@ -9,7 +9,7 @@
  * - User discovery
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types

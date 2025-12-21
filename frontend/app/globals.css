@@ -38,7 +38,6 @@
 }
 
 html {
-  direction: rtl;
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -47,17 +46,33 @@ html {
 body {
   color: rgb(var(--foreground-rgb));
   background-color: rgb(var(--background-rgb));
-  font-family: 'Cairo', sans-serif;
   line-height: 1.6;
 }
 
-/* ============================================
-   RTL Support
-   ============================================ */
-input, textarea {
+/* Font classes for different locales */
+.font-cairo {
+  font-family: 'Cairo', sans-serif;
+}
+
+.font-sans {
+  font-family: 'Inter', sans-serif;
+}
+
+/* RTL text alignment */
+html[dir="rtl"] input,
+html[dir="rtl"] textarea {
   text-align: right;
 }
 
+/* LTR text alignment */
+html[dir="ltr"] input,
+html[dir="ltr"] textarea {
+  text-align: left;
+}
+
+/* ============================================
+   RTL Support - Special input types
+   ============================================ */
 input[type="email"],
 input[type="url"],
 input[type="number"],

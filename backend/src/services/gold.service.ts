@@ -3,7 +3,7 @@
  * خدمة سوق الذهب
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // Commission rates
 const BUYER_COMMISSION_RATE = 0.007; // 0.7%
@@ -258,7 +258,7 @@ export const getGoldItems = async (filters: GoldItemFilters) => {
   const currentPrices = await getLatestPrices();
 
   const enrichedItems = items.map(item => {
-    const marketPrice = currentPrices[item.karat]?.buyPrice || getDefaultPrice(item.karat as any);
+    const marketPrice = currentPrices[item.karat]?.buyPrice || getDefaultPrice(item.karat);
     const newGoldPrice = item.weightGrams * marketPrice * (1 + NEW_GOLD_MARKUP);
     const buyerPays = item.totalAskingPrice * (1 + BUYER_COMMISSION_RATE);
     const savings = newGoldPrice - buyerPays;
@@ -315,8 +315,8 @@ export const getGoldItemById = async (id: string) => {
   });
 
   // Enrich with current prices
-  const currentPrice = await getPriceByKarat(item.karat as any);
-  const marketPrice = currentPrice?.buyPrice || getDefaultPrice(item.karat as any);
+  const currentPrice = await getPriceByKarat(item.karat);
+  const marketPrice = currentPrice?.buyPrice || getDefaultPrice(item.karat);
   const newGoldPrice = item.weightGrams * marketPrice * (1 + NEW_GOLD_MARKUP);
   const buyerPays = item.totalAskingPrice * (1 + BUYER_COMMISSION_RATE);
   const savings = newGoldPrice - buyerPays;
@@ -511,8 +511,8 @@ export const createGoldTransaction = async (
   }
 
   // Get current gold price
-  const currentPrice = await getPriceByKarat(item.karat as any);
-  const goldPrice = currentPrice?.buyPrice || getDefaultPrice(item.karat as any);
+  const currentPrice = await getPriceByKarat(item.karat);
+  const goldPrice = currentPrice?.buyPrice || getDefaultPrice(item.karat);
 
   // Calculate commissions
   const buyerCommission = item.totalAskingPrice * BUYER_COMMISSION_RATE;

@@ -443,7 +443,7 @@ export const findBarterMatches = async (
  * Calculate barter match score between two Supply items
  */
 function calculateBarterMatchScore(itemA: any, itemB: any): MatchScore {
-  let reasons: string[] = [];
+  const reasons: string[] = [];
 
   // 1. Proximity Score (30% weight for barter)
   const { proximityScore, level } = calculateProximityScore(
@@ -513,7 +513,7 @@ interface MatchScore {
  * Calculate match score between a Supply item and a Demand item
  */
 function calculateMatchScore(supply: any, demand: any): MatchScore {
-  let reasons: string[] = [];
+  const reasons: string[] = [];
 
   // 1. Proximity Score (40% weight)
   const { proximityScore, level } = calculateProximityScore(

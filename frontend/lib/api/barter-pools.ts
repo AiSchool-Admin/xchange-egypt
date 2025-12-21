@@ -12,6 +12,7 @@ export interface BarterPool {
   targetDescription: string;
   targetMinValue: number;
   targetMaxValue: number;
+  minParticipants: number;
   maxParticipants: number;
   currentValue: number;
   participantCount: number;
@@ -24,6 +25,11 @@ export interface BarterPool {
   completedAt?: string;
   createdAt: string;
   participants?: BarterPoolParticipant[];
+  creator?: {
+    id: string;
+    fullName: string;
+    avatar?: string;
+  };
 }
 
 export interface BarterPoolParticipant {
@@ -31,13 +37,24 @@ export interface BarterPoolParticipant {
   poolId: string;
   userId: string;
   itemId?: string;
-  cashAmount: number;
-  xcoinAmount: number;
-  totalValue: number;
-  sharePercentage: number;
-  isApproved: boolean;
+  cashAmount?: number;
+  xcoinAmount?: number;
+  totalValue?: number;
+  sharePercentage?: number;
+  isApproved?: boolean;
+  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
   approvedAt?: string;
   createdAt: string;
+  contribution?: {
+    cashAmount?: number;
+    xcoinAmount?: number;
+    itemId?: string;
+  };
+  user?: {
+    id: string;
+    fullName: string;
+    avatar?: string;
+  };
 }
 
 // ============================================
@@ -120,5 +137,14 @@ export const acceptMatch = async (id: string) => {
 
 export const cancelPool = async (id: string) => {
   const response = await apiClient.delete(`/barter-pools/${id}`);
+  return response.data;
+};
+
+// Aliases for naming consistency
+export const getPoolById = getPool;
+export const createBarterPool = createPool;
+
+export const rejectParticipant = async (poolId: string, participantUserId: string) => {
+  const response = await apiClient.post(`/barter-pools/${poolId}/reject/${participantUserId}`);
   return response.data;
 };

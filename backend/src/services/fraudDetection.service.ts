@@ -10,7 +10,7 @@
  * - Counterfeit indicators
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { ItemCondition, ListingType } from '@prisma/client';
 
 // ============================================

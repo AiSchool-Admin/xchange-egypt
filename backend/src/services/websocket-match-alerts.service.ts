@@ -12,7 +12,7 @@
  */
 
 import { Server as SocketIOServer } from 'socket.io';
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types
@@ -535,8 +535,8 @@ export async function sendAuctionAlert(
         priority: 'HIGH',
         title: '😮 You\'ve Been Outbid!',
         titleAr: '😮 تم تجاوز عرضك!',
-        message: `New bid: ${formatPrice(auction.listing.currentBid!)} on "${auction.listing.item.title}"`,
-        messageAr: `عرض جديد: ${formatPrice(auction.listing.currentBid!)} ج.م على "${auction.listing.item.title}"`,
+        message: `New bid: ${formatPrice(auction.listing.currentBid)} on "${auction.listing.item.title}"`,
+        messageAr: `عرض جديد: ${formatPrice(auction.listing.currentBid)} ج.م على "${auction.listing.item.title}"`,
         imageUrl: auction.listing.item.images[0],
         actionUrl: `/auctions/${auctionId}`,
         actionText: 'Bid Higher',

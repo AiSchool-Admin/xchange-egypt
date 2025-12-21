@@ -4,7 +4,7 @@
  */
 
 import { TrustLevel } from '@prisma/client';
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types & Interfaces
@@ -403,7 +403,7 @@ async function recalculateTrustLevel(userId: string) {
       reputation.totalDeals >= threshold.minDeals &&
       reputation.overallScore >= threshold.minScore
     ) {
-      newLevel = level as TrustLevel;
+      newLevel = level;
       break;
     }
   }

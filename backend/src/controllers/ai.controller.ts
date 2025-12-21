@@ -10,7 +10,7 @@ import * as fraudDetection from '../services/fraudDetection.service';
 import * as barterRanking from '../services/barterRanking.service';
 import { buildSmartSearchTerms, calculateRelevanceScore } from '../utils/arabicSearch';
 import { ItemCondition } from '@prisma/client';
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // ============================================
 // AUTO-CATEGORIZATION

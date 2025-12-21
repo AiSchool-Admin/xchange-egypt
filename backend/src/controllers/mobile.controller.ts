@@ -4,9 +4,16 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient, MobileListingStatus, MobileTransactionStatus, MobileBarterProposalStatus } from '@prisma/client';
+import { PrismaClient, MobileListingStatus, MobileTransactionStatus, MobileBarterProposalStatus, MobileBrand } from '@prisma/client';
 
 const prisma = new PrismaClient();
+
+// Interface for barter preferences JSON
+interface BarterPreferences {
+  wanted_brands?: MobileBrand[];
+  min_value_percent?: number;
+  max_value_percent?: number;
+}
 
 // ============================================
 // Price References - الأسعار المرجعية
@@ -886,7 +893,7 @@ export const getMyTransactions = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
     const { role, status } = req.query;
 
-    let where: any = {};
+    const where: any = {};
 
     if (role === 'buyer') {
       where.buyerId = userId;
@@ -1357,7 +1364,7 @@ export const getBarterSuggestions = async (req: Request, res: Response) => {
     const suggestions = [];
 
     for (const listing of myListings) {
-      const preferences = listing.barterPreferences as any;
+      const preferences = listing.barterPreferences as BarterPreferences | null;
 
       const potentialMatches = await prisma.mobileListing.findMany({
         where: {
@@ -1414,7 +1421,7 @@ export const getBarterSuggestionsForListing = async (req: Request, res: Response
       return res.status(400).json({ success: false, error: 'Listing not available for barter' });
     }
 
-    const preferences = listing.barterPreferences as any;
+    const preferences = listing.barterPreferences as BarterPreferences | null;
 
     const matches = await prisma.mobileListing.findMany({
       where: {

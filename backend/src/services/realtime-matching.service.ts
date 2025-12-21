@@ -310,7 +310,7 @@ const notifyParticipants = async (
             ? 'New Barter Match Found!'
             : 'Updated Barter Match',
           message: `Found a ${Math.round(cycle.averageScore * 100)}% match with ${cycle.participants.length} participants. Check it out!`,
-          entityId: triggerItemId as string,
+          entityId: triggerItemId,
           entityType: 'BarterChain',
         },
       });

@@ -10,7 +10,7 @@
  * - Competition analysis
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import { ItemCondition } from '@prisma/client';
 
 // ============================================
@@ -843,7 +843,7 @@ function aggregateByDay(
     if (!byDay.has(dateKey)) {
       byDay.set(dateKey, []);
     }
-    byDay.get(dateKey)!.push(item.estimatedValue);
+    byDay.get(dateKey).push(item.estimatedValue);
   });
 
   return Array.from(byDay.entries())
