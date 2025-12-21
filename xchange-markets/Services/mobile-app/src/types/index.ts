@@ -683,12 +683,26 @@ export type RootStackParamList = {
   Language: undefined;
   About: undefined;
   Help: undefined;
+
+  // Xchange Egypt Marketplace
+  Listings: { categoryId?: string; search?: string } | undefined;
+  ListingDetail: { listingId: string };
+  CreateListing: undefined;
+  EditListing: { listingId: string };
+  Auctions: { status?: string } | undefined;
+  AuctionDetail: { auctionId: string };
+  CreateAuction: undefined;
+  Gold: undefined;
+  GoldDetail: { goldId: string };
+  XchangeWallet: undefined;
+  TransferMoney: undefined;
+  TransactionDetail: { transactionId: string };
 };
 
 export type MainTabParamList = {
   HomeTab: undefined;
-  SearchTab: undefined;
-  BookingsTab: undefined;
+  MarketTab: undefined;
+  AuctionsTab: undefined;
   WalletTab: undefined;
   ProfileTab: undefined;
 };

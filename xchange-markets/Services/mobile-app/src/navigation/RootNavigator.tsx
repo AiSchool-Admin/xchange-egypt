@@ -75,6 +75,12 @@ import DisputeResolutionScreen from '../screens/admin/DisputeResolutionScreen';
 import ChatListScreen from '../screens/chat/ChatListScreen';
 import ChatRoomScreen from '../screens/chat/ChatRoomScreen';
 
+// Xchange Egypt Marketplace Screens
+import ListingsScreen from '../screens/listings/ListingsScreen';
+import AuctionsScreen from '../screens/auctions/AuctionsScreen';
+import GoldScreen from '../screens/gold/GoldScreen';
+import XchangeWalletScreen from '../screens/wallet/XchangeWalletScreen';
+
 // AI Chatbot
 import AIChatbotScreen from '../screens/chat/AIChatbotScreen';
 
@@ -103,11 +109,11 @@ function CustomerTabNavigator() {
             case 'HomeTab':
               iconName = focused ? 'home' : 'home-outline';
               break;
-            case 'SearchTab':
-              iconName = focused ? 'search' : 'search-outline';
+            case 'MarketTab':
+              iconName = focused ? 'storefront' : 'storefront-outline';
               break;
-            case 'BookingsTab':
-              iconName = focused ? 'calendar' : 'calendar-outline';
+            case 'AuctionsTab':
+              iconName = focused ? 'hammer' : 'hammer-outline';
               break;
             case 'WalletTab':
               iconName = focused ? 'wallet' : 'wallet-outline';
@@ -139,27 +145,27 @@ function CustomerTabNavigator() {
       <Tab.Screen
         name="HomeTab"
         component={HomeScreen}
-        options={{ title: t('tabs.home') }}
+        options={{ title: t('tabs.home', 'الرئيسية') }}
       />
       <Tab.Screen
-        name="SearchTab"
-        component={SearchScreen}
-        options={{ title: t('tabs.search') }}
+        name="MarketTab"
+        component={ListingsScreen}
+        options={{ title: t('tabs.market', 'السوق') }}
       />
       <Tab.Screen
-        name="BookingsTab"
-        component={BookingsListScreen}
-        options={{ title: t('tabs.bookings') }}
+        name="AuctionsTab"
+        component={AuctionsScreen}
+        options={{ title: t('tabs.auctions', 'المزادات') }}
       />
       <Tab.Screen
         name="WalletTab"
-        component={WalletScreen}
-        options={{ title: t('tabs.wallet') }}
+        component={XchangeWalletScreen}
+        options={{ title: t('tabs.wallet', 'المحفظة') }}
       />
       <Tab.Screen
         name="ProfileTab"
         component={ProfileScreen}
-        options={{ title: t('tabs.profile') }}
+        options={{ title: t('tabs.profile', 'حسابي') }}
       />
     </Tab.Navigator>
   );
@@ -309,6 +315,12 @@ export function RootNavigator() {
           {/* Wallet */}
           <Stack.Screen name="Wallet" component={WalletScreen} />
           <Stack.Screen name="TransactionHistory" component={TransactionHistoryScreen} />
+          <Stack.Screen name="XchangeWallet" component={XchangeWalletScreen} />
+
+          {/* Xchange Egypt Marketplace */}
+          <Stack.Screen name="Listings" component={ListingsScreen} />
+          <Stack.Screen name="Auctions" component={AuctionsScreen} />
+          <Stack.Screen name="Gold" component={GoldScreen} />
 
           {/* Profile */}
           <Stack.Screen name="Profile" component={ProfileScreen} />
