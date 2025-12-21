@@ -19,6 +19,51 @@ import * as cashFlowService from './cash-flow.service';
 import { calculateLocationScore, formatDistance, getDistanceTier } from '../utils/geo.utils';
 import prisma from '../lib/prisma';
 
+// Type for BarterChain with relations
+interface BarterChainWithRelations {
+  id: string;
+  chainType: string;
+  participantCount: number;
+  matchScore: number;
+  algorithmVersion: string;
+  description: string | null;
+  status: string;
+  expiresAt: Date;
+  commissionAmount: number;
+  commissionRate: number;
+  commissionStatus: string;
+  involvesCash: boolean;
+  totalCashFlow: number;
+  createdAt: Date;
+  updatedAt: Date;
+  participants: Array<{
+    id: string;
+    userId: string;
+    givingItemId: string;
+    receivingItemId: string;
+    position: number;
+    status: string;
+    user: {
+      id: string;
+      fullName: string;
+      avatar: string | null;
+    };
+    givingItem: {
+      id: string;
+      title: string;
+      images: string[];
+      estimatedValue: number;
+    };
+    receivingItem: {
+      id: string;
+      title: string;
+      images: string[];
+      estimatedValue: number;
+    };
+  }>;
+  [key: string]: unknown; // Allow additional Prisma properties
+}
+
 // ============================================
 // Types and Interfaces
 // ============================================
@@ -857,7 +902,7 @@ export const formatAsOpportunity = (
 // Create Barter Chain Proposal
 // ============================================
 
-export const createBarterChainProposal = async (cycle: BarterCycle): Promise<any> => {
+export const createBarterChainProposal = async (cycle: BarterCycle): Promise<BarterChainWithRelations> => {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 

@@ -146,7 +146,7 @@ export const updateMe = async (req: Request, res: Response, next: NextFunction) 
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const user = await authService.updateProfile(req.userId, req.body);
+    const user = await authService.updateProfile(req.userId, req.body as Record<string, unknown>);
 
     return sendSuccess(res, user, 'Profile updated successfully');
   } catch (error) {

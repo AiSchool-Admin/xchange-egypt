@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as orderService from '../services/order.service';
 import { successResponse } from '../utils/response';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, PaymentMethod } from '@prisma/client';
 
 /**
  * Get user's orders
@@ -9,7 +9,7 @@ import { OrderStatus } from '@prisma/client';
  */
 export const getMyOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { page, limit, status } = req.query;
 
     const result = await orderService.getMyOrders(
@@ -31,7 +31,7 @@ export const getMyOrders = async (req: Request, res: Response, next: NextFunctio
  */
 export const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { orderId } = req.params;
 
     const order = await orderService.getOrderById(userId, orderId);
@@ -48,8 +48,13 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
  */
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
-    const { shippingAddressId, shippingAddress, paymentMethod, notes } = req.body;
+    const userId = req.user!.id;
+    const { shippingAddressId, shippingAddress, paymentMethod, notes } = req.body as {
+      shippingAddressId?: string;
+      shippingAddress?: Record<string, unknown>;
+      paymentMethod: PaymentMethod;
+      notes?: string;
+    };
 
     const order = await orderService.createOrder(userId, {
       shippingAddressId,
@@ -70,7 +75,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
  */
 export const cancelOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { orderId } = req.params;
 
     const order = await orderService.cancelOrder(userId, orderId);
@@ -86,7 +91,7 @@ export const cancelOrder = async (req: Request, res: Response, next: NextFunctio
  */
 export const getShippingAddresses = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const addresses = await orderService.getShippingAddresses(userId);
     return successResponse(res, addresses, 'Addresses retrieved successfully');
   } catch (error) {
@@ -100,8 +105,8 @@ export const getShippingAddresses = async (req: Request, res: Response, next: Ne
  */
 export const createShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
-    const addressData = req.body;
+    const userId = req.user!.id;
+    const addressData = req.body as Record<string, unknown>;
 
     const address = await orderService.createShippingAddress(userId, addressData);
     return successResponse(res, address, 'Address created successfully', 201);
@@ -116,9 +121,9 @@ export const createShippingAddress = async (req: Request, res: Response, next: N
  */
 export const updateShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { addressId } = req.params;
-    const addressData = req.body;
+    const addressData = req.body as Record<string, unknown>;
 
     const address = await orderService.updateShippingAddress(userId, addressId, addressData);
     return successResponse(res, address, 'Address updated successfully');
@@ -133,7 +138,7 @@ export const updateShippingAddress = async (req: Request, res: Response, next: N
  */
 export const deleteShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { addressId } = req.params;
 
     await orderService.deleteShippingAddress(userId, addressId);
@@ -162,8 +167,14 @@ export const getGovernorates = async (_req: Request, res: Response, next: NextFu
  */
 export const createAuctionOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
-    const { auctionId, shippingAddressId, shippingAddress, paymentMethod, notes } = req.body;
+    const userId = req.user!.id;
+    const { auctionId, shippingAddressId, shippingAddress, paymentMethod, notes } = req.body as {
+      auctionId: string;
+      shippingAddressId?: string;
+      shippingAddress?: Record<string, unknown>;
+      paymentMethod: PaymentMethod;
+      notes?: string;
+    };
 
     const order = await orderService.createAuctionOrder(userId, {
       auctionId,

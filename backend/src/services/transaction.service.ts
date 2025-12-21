@@ -1,6 +1,7 @@
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 import { createNotification } from './notification.service';
+import { Prisma, Transaction, User, Listing, Item, Category } from '@prisma/client';
 
 // Types
 interface CreatePurchaseData {
@@ -19,13 +20,23 @@ interface PaginatedResult<T> {
   };
 }
 
+type TransactionWithRelations = Transaction & {
+  buyer: Pick<User, 'id' | 'fullName' | 'email' | 'phone' | 'avatar'>;
+  seller: Pick<User, 'id' | 'fullName' | 'email' | 'phone' | 'avatar' | 'businessName'>;
+  listing: Listing & {
+    item: Item & {
+      category: Pick<Category, 'id' | 'nameAr' | 'nameEn'> | null;
+    };
+  };
+};
+
 /**
  * Create a purchase transaction (order)
  */
 export const createPurchase = async (
   buyerId: string,
   purchaseData: CreatePurchaseData
-): Promise<any> => {
+): Promise<TransactionWithRelations> => {
   // Get listing with item and seller information
   const listing = await prisma.listing.findUnique({
     where: { id: purchaseData.listingId },
@@ -140,7 +151,7 @@ export const buyItemDirectly = async (
     phoneNumber: string;
     notes?: string;
   }
-): Promise<any> => {
+): Promise<TransactionWithRelations> => {
   // Get item with seller information
   const item = await prisma.item.findUnique({
     where: { id: purchaseData.itemId },
@@ -277,7 +288,7 @@ export const buyItemDirectly = async (
 export const getTransactionById = async (
   transactionId: string,
   userId: string
-): Promise<any> => {
+): Promise<TransactionWithRelations> => {
   const transaction = await prisma.transaction.findUnique({
     where: { id: transactionId },
     include: {
@@ -337,7 +348,7 @@ export const updateDeliveryStatus = async (
   transactionId: string,
   userId: string,
   deliveryStatus: 'PENDING' | 'SHIPPED' | 'DELIVERED' | 'RETURNED'
-): Promise<any> => {
+): Promise<Transaction> => {
   const transaction = await prisma.transaction.findUnique({
     where: { id: transactionId },
     include: {

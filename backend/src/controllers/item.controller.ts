@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as itemService from '../services/item.service';
 import { successResponse } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
+import { ItemCondition, PromotionTier } from '@prisma/client';
 
 /**
  * Create a new item
@@ -13,7 +14,7 @@ export const createItem = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const imageFiles = req.files as Express.Multer.File[] | undefined;
 
     // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
@@ -71,10 +72,20 @@ export const updateItem = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
-    const updateData: any = {};
+    const updateData: {
+      title?: string;
+      description?: string;
+      categoryId?: string;
+      condition?: ItemCondition;
+      estimatedValue?: number;
+      quantity?: number;
+      location?: string;
+      governorate?: string;
+      images?: string[];
+    } = {};
 
     if (req.body.titleAr || req.body.titleEn) {
       updateData.title = req.body.titleAr || req.body.titleEn;
@@ -111,7 +122,7 @@ export const deleteItem = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     await itemService.deleteItem(id, userId);
 
@@ -160,7 +171,7 @@ export const getMyItems = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { page, limit } = req.query;
 
     const result = await itemService.getUserItems(
@@ -218,12 +229,12 @@ export const getCategoryItems = async (
       categoryId,
       includeSubcategories === 'true',
       {
-        condition: condition as any,
+        condition: condition as ItemCondition | undefined,
         governorate: governorate as string,
         page: page ? parseInt(page as string) : undefined,
         limit: limit ? parseInt(limit as string) : undefined,
-        sortBy: sortBy as any,
-        sortOrder: sortOrder as any,
+        sortBy: sortBy as 'createdAt' | 'updatedAt' | 'titleAr' | 'titleEn' | 'estimatedValue' | undefined,
+        sortOrder: sortOrder as 'asc' | 'desc' | undefined,
       }
     );
 
@@ -244,7 +255,7 @@ export const addItemImages = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const imageFiles = req.files as Express.Multer.File[];
 
     if (!imageFiles || imageFiles.length === 0) {
@@ -270,7 +281,7 @@ export const removeItemImages = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { imagesToRemove } = req.body;
 
     const item = await itemService.removeItemImages(id, userId, imagesToRemove);
@@ -297,7 +308,7 @@ export const getFeaturedItems = async (
       limit: limit ? parseInt(limit as string, 10) : undefined,
       categoryId: categoryId as string | undefined,
       governorate: governorate as string | undefined,
-      minTier: minTier as any,
+      minTier: minTier as PromotionTier | undefined,
     });
 
     return successResponse(res, { items }, 'Featured items retrieved successfully');
@@ -343,7 +354,7 @@ export const promoteItem = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user!.id;
     const { tier, durationDays } = req.body;
 
     if (!tier) {
@@ -372,7 +383,7 @@ export const removePromotion = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user!.id;
 
     const item = await itemService.removePromotion(id, userId);
 

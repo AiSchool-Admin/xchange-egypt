@@ -5,6 +5,12 @@ import {
   InspectionType,
   InspectionStatus,
   Prisma,
+  RentalContract,
+  RentalPayment,
+  Property,
+  User,
+  FieldInspection,
+  RentalDispute,
 } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
@@ -32,6 +38,14 @@ interface DepositDeduction {
   amount: number;
   evidence?: string;
 }
+
+type RentalContractWithRelations = RentalContract & {
+  property: Property;
+  landlord: Pick<User, 'id' | 'fullName' | 'phone' | 'email' | 'avatar'>;
+  tenant: Pick<User, 'id' | 'fullName' | 'phone' | 'email' | 'avatar'>;
+  payments: RentalPayment[];
+  disputes: RentalDispute[];
+};
 
 // ============================================
 // Rental Contract Operations
@@ -193,7 +207,7 @@ async function generatePaymentSchedule(
   startDate: Date,
   endDate: Date,
   monthlyRent: number
-): Promise<any[]> {
+): Promise<RentalPayment[]> {
   const payments: Prisma.RentalPaymentCreateManyInput[] = [];
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -223,7 +237,7 @@ async function generatePaymentSchedule(
 export const getRentalContractById = async (
   contractId: string,
   userId: string
-): Promise<any> => {
+): Promise<RentalContractWithRelations> => {
   const contract = await prisma.rentalContract.findUnique({
     where: { id: contractId },
     include: {
@@ -271,7 +285,7 @@ export const getRentalContractById = async (
 export const activateContract = async (
   contractId: string,
   userId: string
-): Promise<any> => {
+): Promise<RentalContract> => {
   const contract = await prisma.rentalContract.findUnique({
     where: { id: contractId },
   });
@@ -310,7 +324,7 @@ export const terminateContract = async (
   contractId: string,
   userId: string,
   reason?: string
-): Promise<any> => {
+): Promise<RentalContract> => {
   const contract = await prisma.rentalContract.findUnique({
     where: { id: contractId },
   });
@@ -356,7 +370,17 @@ export const terminateContract = async (
 export const protectDeposit = async (
   contractId: string,
   userId: string
-): Promise<any> => {
+): Promise<{
+  contract: RentalContract;
+  depositProtection: {
+    protectionId: string;
+    escrowAccount: string;
+    depositAmount: number;
+    protectionFee: number;
+    totalToDeposit: number;
+  };
+  paymentMethods: Array<{ method: string; details?: Record<string, string>; reference?: string; phone?: string }>;
+}> => {
   const contract = await prisma.rentalContract.findUnique({
     where: { id: contractId },
   });
@@ -409,7 +433,13 @@ export const requestDepositReturn = async (
   contractId: string,
   userId: string,
   checkoutDate: Date
-): Promise<any> => {
+): Promise<{
+  inspectionScheduled: boolean;
+  checkoutInspection: FieldInspection;
+  depositAmount: number;
+  estimatedReleaseDate: Date;
+  process: string[];
+}> => {
   const contract = await prisma.rentalContract.findUnique({
     where: { id: contractId },
     include: {
@@ -474,7 +504,16 @@ export const releaseDeposit = async (
   contractId: string,
   userId: string,
   deductions?: DepositDeduction[]
-): Promise<any> => {
+): Promise<{
+  contract: RentalContract;
+  releaseDetails: {
+    originalDeposit: number;
+    deductions: DepositDeduction[];
+    totalDeductions: number;
+    amountReleased: number;
+    releasedAt: Date | null;
+  };
+}> => {
   const contract = await prisma.rentalContract.findUnique({
     where: { id: contractId },
   });
@@ -538,7 +577,10 @@ export const disputeDeposit = async (
     disputedAmount: number;
     evidence?: string[];
   }
-): Promise<any> => {
+): Promise<{
+  dispute: RentalDispute;
+  message: string;
+}> => {
   const contract = await prisma.rentalContract.findUnique({
     where: { id: contractId },
   });
@@ -594,7 +636,7 @@ export const recordPayment = async (
     paymentReference?: string;
     notes?: string;
   }
-): Promise<any> => {
+): Promise<RentalPayment> => {
   const payment = await prisma.rentalPayment.findUnique({
     where: { id: paymentId },
     include: {
@@ -636,7 +678,7 @@ export const recordPayment = async (
 export const getOverduePayments = async (
   contractId: string,
   userId: string
-): Promise<any[]> => {
+): Promise<RentalPayment[]> => {
   const contract = await prisma.rentalContract.findUnique({
     where: { id: contractId },
   });
@@ -666,7 +708,12 @@ export const getUserRentalContracts = async (
   userId: string,
   role: 'landlord' | 'tenant' | 'all' = 'all',
   status?: RentalContractStatus
-): Promise<any[]> => {
+): Promise<Array<RentalContract & {
+  property: Pick<Property, 'id' | 'title' | 'propertyType' | 'governorate' | 'city' | 'images'>;
+  landlord: Pick<User, 'id' | 'fullName' | 'avatar'>;
+  tenant: Pick<User, 'id' | 'fullName' | 'avatar'>;
+  _count: { payments: number; disputes: number };
+}>> => {
   const where: Prisma.RentalContractWhereInput = {};
 
   if (role === 'landlord') {

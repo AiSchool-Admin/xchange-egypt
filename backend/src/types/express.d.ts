@@ -1,13 +1,46 @@
-import { User } from '@prisma/client';
+import { UserType } from '../middleware/auth';
+import { AdminRole, AdminStatus } from '../middleware/adminAuth';
+
+// User status enum (matching Prisma schema)
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  DELETED = 'DELETED'
+}
 
 // User type returned from auth middleware (subset of full User model)
-export type AuthUser = Pick<User, 'id' | 'email' | 'fullName' | 'userType' | 'status' | 'avatar' | 'rating'>;
+export interface AuthUser {
+  id: string;
+  email: string;
+  fullName: string;
+  userType: UserType;
+  status: UserStatus;
+  avatar: string | null;
+  rating: number;
+}
+
+// Admin type returned from admin auth middleware (subset of full Admin model)
+export interface AuthAdmin {
+  id: string;
+  email: string;
+  fullName: string;
+  role: AdminRole;
+  status: AdminStatus;
+  avatar: string | null;
+  customPermissions: string[];
+  twoFactorEnabled: boolean;
+  lockedUntil: Date | null;
+  permissions: string[];
+}
 
 declare global {
   namespace Express {
     interface Request {
       user?: AuthUser;
       userId?: string;
+      admin?: AuthAdmin;
+      adminId?: string;
     }
   }
 }

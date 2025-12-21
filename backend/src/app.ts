@@ -9,6 +9,7 @@ import { env, isDevelopment } from './config/env';
 import { connectRedis } from './config/redis';
 import prisma from './config/database';
 import { AppError } from './utils/errors';
+import logger from './lib/logger';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -110,7 +111,7 @@ const io = new SocketIOServer(httpServer, {
       if (isAllowed || isVercel || isLocalhost) {
         callback(null, true);
       } else {
-        console.log(`⚠️  Socket.IO CORS blocked origin: ${origin}`);
+        logger.warn(`Socket.IO CORS blocked origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
@@ -158,7 +159,7 @@ app.use(
       if (isAllowed || isVercel || isLocalhost) {
         callback(null, true);
       } else {
-        console.log(`⚠️  CORS blocked origin: ${origin}`);
+        logger.warn(`CORS blocked origin: ${origin}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
@@ -383,7 +384,7 @@ app.use((_req: Request, res: Response) => {
 
 // Global error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('Error:', err);
+  logger.error('Error:', err);
 
   // Handle AppError (custom errors)
   if (err instanceof AppError) {
@@ -426,27 +427,27 @@ const startServer = async () => {
 
     // Test database connection
     await prisma.$connect();
-    console.log('✅ Database connected');
+    logger.info('Database connected');
 
     // Initialize WebSocket for real-time matching
     initializeWebSocket(io);
-    console.log('✅ WebSocket server initialized');
+    logger.info('WebSocket server initialized');
 
     // Attach chat event handlers to WebSocket
     attachChatEventHandlers(io);
-    console.log('✅ Chat WebSocket handlers attached');
+    logger.info('Chat WebSocket handlers attached');
 
     // Start real-time matching service
     startRealtimeMatching();
-    console.log('✅ Real-time matching service started');
+    logger.info('Real-time matching service started');
 
     // Initialize smart matching listeners (legacy - kept for backwards compatibility)
     initSmartMatchingListeners();
-    console.log('✅ Smart matching notification service started');
+    logger.info('Smart matching notification service started');
 
     // Initialize unified matching service (improved orchestrator with geographic priority)
     initUnifiedMatching(io);
-    console.log('✅ Unified matching service started');
+    logger.info('Unified matching service started');
 
     // Start background jobs (kept for fallback and cleanup)
     if (env.server.nodeEnv === 'production') {
@@ -456,27 +457,27 @@ const startServer = async () => {
 
     // Start HTTP server (Express + Socket.IO) - listen on 0.0.0.0 for Railway compatibility
     httpServer.listen(env.server.port, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port ${env.server.port}`);
-      console.log(`🌍 Environment: ${env.server.nodeEnv}`);
-      console.log(`📍 API URL: ${env.server.apiUrl}`);
-      console.log(`🔗 Health check: ${env.server.apiUrl}/health`);
-      console.log(`⚡ WebSocket available on ws://${env.server.port}`);
+      logger.info(`Server running on port ${env.server.port}`);
+      logger.info(`Environment: ${env.server.nodeEnv}`);
+      logger.info(`API URL: ${env.server.apiUrl}`);
+      logger.info(`Health check: ${env.server.apiUrl}/health`);
+      logger.info(`WebSocket available on ws://${env.server.port}`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  logger.error('Uncaught Exception:', error);
   process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
 

@@ -5,7 +5,7 @@
  * API routes for the request-quote marketplace system
  */
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import {
   // Request endpoints
   createRequest,
@@ -33,7 +33,7 @@ import {
 } from '../controllers/marketplace.controller';
 
 // Auth middleware placeholder (use your existing auth middleware)
-const authMiddleware = (req: any, res: any, next: any) => {
+const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // TODO: Replace with actual auth middleware
   req.user = { id: 'user_demo' };
   next();

@@ -17,13 +17,47 @@
 import prisma from '../lib/prisma';
 import { Server as SocketIOServer } from 'socket.io';
 import { createNotification } from './notification.service';
-import { itemEvents, ItemCreatedPayload } from '../events/item.events';
+import { itemEvents, ItemCreatedPayload, ItemUpdatedPayload } from '../events/item.events';
 import { barterEvents, BarterOfferCreatedPayload } from '../events/barter.events';
 import { reverseAuctionEvents, ReverseAuctionCreatedPayload } from '../events/reverse-auction.events';
 
 // ============================================
 // Types
 // ============================================
+
+interface ItemWithRelations {
+  id: string;
+  title: string;
+  description: string | null;
+  sellerId: string;
+  categoryId: string | null;
+  estimatedValue: number;
+  listingType: string;
+  status: string;
+  governorate: string | null;
+  city: string | null;
+  district: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  desiredCategoryId: string | null;
+  desiredItemTitle: string | null;
+  desiredKeywords: string | null;
+  desiredValueMax: number | null;
+  seller?: {
+    id: string;
+    fullName: string;
+  };
+  category?: {
+    id: string;
+    nameAr: string;
+    nameEn: string;
+  } | null;
+  desiredCategory?: {
+    id: string;
+    nameAr: string;
+    nameEn: string;
+  } | null;
+}
 
 export type MatchType =
   | 'PERFECT_BARTER'      // تطابق مقايضة مثالي (A↔B)
@@ -172,7 +206,7 @@ export const initUnifiedMatching = (socketServer?: SocketIOServer): void => {
   });
 
   // Listen for item updates (status change to ACTIVE)
-  itemEvents.onItemUpdated(async (payload: any) => {
+  itemEvents.onItemUpdated(async (payload: ItemUpdatedPayload) => {
     if (payload.status === 'ACTIVE' && payload.previousStatus !== 'ACTIVE') {
       console.log(`[UnifiedMatching] Item activated: ${payload.itemId}`);
       await processNewItem(payload.itemId, payload.userId);
@@ -258,7 +292,7 @@ export const processNewItem = async (itemId: string, sellerId: string): Promise<
 /**
  * Find DEMAND items that match a SUPPLY item
  */
-const findDemandMatches = async (supplyItem: any): Promise<MatchResult[]> => {
+const findDemandMatches = async (supplyItem: ItemWithRelations): Promise<MatchResult[]> => {
   const matches: MatchResult[] = [];
 
   // Search in unified items table (DIRECT_BUY, REVERSE_AUCTION)
@@ -320,9 +354,10 @@ const findDemandMatches = async (supplyItem: any): Promise<MatchResult[]> => {
 
   // Score reverse auctions
   for (const auction of reverseAuctions) {
-    const auctionAsItem = {
+    const auctionAsItem: ItemWithRelations = {
       id: auction.id,
       title: auction.title,
+      description: auction.description || null,
       sellerId: auction.buyerId,
       seller: auction.buyer,
       categoryId: auction.categoryId,
@@ -335,6 +370,10 @@ const findDemandMatches = async (supplyItem: any): Promise<MatchResult[]> => {
       latitude: null,
       longitude: null,
       listingType: 'REVERSE_AUCTION',
+      status: auction.status || 'ACTIVE',
+      desiredCategoryId: auction.categoryId,
+      desiredItemTitle: auction.title,
+      desiredKeywords: null,
     };
 
     const score = calculateMatchScore(supplyItem, auctionAsItem, 'SUPPLY_DEMAND');
@@ -355,10 +394,10 @@ const findDemandMatches = async (supplyItem: any): Promise<MatchResult[]> => {
 /**
  * Find SUPPLY items that match a DEMAND item
  */
-const findSupplyMatches = async (demandItem: any): Promise<MatchResult[]> => {
+const findSupplyMatches = async (demandItem: ItemWithRelations): Promise<MatchResult[]> => {
   const matches: MatchResult[] = [];
 
-  const orConditions: any[] = [];
+  const orConditions: Array<{ categoryId?: string; title?: { contains: string; mode: 'insensitive' } }> = [];
 
   // Match by category
   if (demandItem.categoryId) {
@@ -411,7 +450,7 @@ const findSupplyMatches = async (demandItem: any): Promise<MatchResult[]> => {
 /**
  * Find perfect BARTER matches (A wants B, B wants A)
  */
-const findBarterMatches = async (item: any): Promise<MatchResult[]> => {
+const findBarterMatches = async (item: ItemWithRelations): Promise<MatchResult[]> => {
   const matches: MatchResult[] = [];
 
   if (!item.desiredCategoryId && !item.desiredItemTitle) {
@@ -419,7 +458,7 @@ const findBarterMatches = async (item: any): Promise<MatchResult[]> => {
   }
 
   // Build search conditions for what this item wants
-  const wantConditions: any[] = [];
+  const wantConditions: Array<{ categoryId?: string; title?: { contains: string; mode: 'insensitive' } }> = [];
 
   if (item.desiredCategoryId) {
     wantConditions.push({ categoryId: item.desiredCategoryId });
@@ -480,8 +519,8 @@ const findBarterMatches = async (item: any): Promise<MatchResult[]> => {
  * Calculate comprehensive match score between two items
  */
 const calculateMatchScore = (
-  sourceItem: any,
-  targetItem: any,
+  sourceItem: ItemWithRelations,
+  targetItem: ItemWithRelations,
   matchType: 'SUPPLY_DEMAND' | 'BARTER'
 ): MatchScoreBreakdown => {
   const weights = SCORE_WEIGHTS[matchType];
@@ -638,8 +677,8 @@ const normalizeLocation = (location: string): string => {
  */
 const createMatchResult = (
   type: MatchType,
-  sourceItem: any,
-  matchedItem: any,
+  sourceItem: ItemWithRelations,
+  matchedItem: ItemWithRelations,
   score: MatchScoreBreakdown
 ): MatchResult => {
   return {

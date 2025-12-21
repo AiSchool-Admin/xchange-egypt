@@ -2,12 +2,25 @@ import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { verifyAccessToken } from '../utils/jwt';
 import prisma from '../lib/prisma';
-import { UserType } from '@prisma/client';
 
-// Extended Request type with user
-export interface AuthRequest extends Request {
-  user?: any;
-  userId?: string;
+/**
+ * Type alias for Request with authenticated user
+ * This is now properly typed via global Express.Request augmentation
+ */
+export type AuthRequest = Request;
+
+// User type enum (matching Prisma schema)
+export enum UserType {
+  INDIVIDUAL = 'INDIVIDUAL',
+  BUSINESS = 'BUSINESS'
+}
+
+// User status enum (matching Prisma schema)
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED',
+  DELETED = 'DELETED'
 }
 
 /**
@@ -46,7 +59,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       throw new UnauthorizedError('User not found');
     }
 
-    if (user.status !== 'ACTIVE') {
+    if (user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedError('User account is not active');
     }
 
@@ -140,7 +153,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
       },
     });
 
-    if (user && user.status === 'ACTIVE') {
+    if (user && user.status === UserStatus.ACTIVE) {
       req.user = user;
       req.userId = user.id;
     }

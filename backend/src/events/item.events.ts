@@ -28,10 +28,13 @@ export interface ItemUpdatedPayload {
   itemId: string;
   userId: string;
   categoryId: string;
+  status?: string;
+  previousStatus?: string;
   changes: {
     category?: boolean;
     barterPreferences?: boolean;
     description?: boolean;
+    status?: boolean;
   };
   timestamp: Date;
 }

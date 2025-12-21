@@ -2,12 +2,27 @@ import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { verifyAdminAccessToken } from '../utils/adminJwt';
 import prisma from '../lib/prisma';
-import { AdminRole, AdminStatus } from '@prisma/client';
+import logger from '../lib/logger';
 
-// Extended Request type with admin
-export interface AdminRequest extends Request {
-  admin?: any;
-  adminId?: string;
+/**
+ * Type alias for Request with authenticated admin
+ * This is now properly typed via global Express.Request augmentation
+ */
+export type AdminRequest = Request;
+
+// Admin role enum (matching Prisma schema)
+export enum AdminRole {
+  SUPER_ADMIN = 'SUPER_ADMIN',
+  ADMIN = 'ADMIN',
+  MODERATOR = 'MODERATOR',
+  SUPPORT = 'SUPPORT'
+}
+
+// Admin status enum (matching Prisma schema)
+export enum AdminStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  SUSPENDED = 'SUSPENDED'
 }
 
 // صلاحيات كل دور
@@ -97,11 +112,11 @@ export const authenticateAdmin = async (req: Request, res: Response, next: NextF
     }
 
     // Attach admin with permissions
-    (req as AdminRequest).admin = {
+    req.admin = {
       ...admin,
       permissions: getAdminPermissions(admin.role, admin.customPermissions),
     };
-    (req as AdminRequest).adminId = admin.id;
+    req.adminId = admin.id;
 
     next();
   } catch (error) {
@@ -118,13 +133,11 @@ export const authenticateAdmin = async (req: Request, res: Response, next: NextF
  */
 export const requirePermission = (permission: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const adminReq = req as AdminRequest;
-
-    if (!adminReq.admin) {
+    if (!req.admin) {
       return next(new UnauthorizedError('مطلوب مصادقة المدير'));
     }
 
-    const permissions = adminReq.admin.permissions || [];
+    const permissions = req.admin.permissions || [];
 
     if (!permissions.includes(permission)) {
       return next(new ForbiddenError(`ليس لديك صلاحية: ${permission}`));
@@ -139,13 +152,11 @@ export const requirePermission = (permission: string) => {
  */
 export const requireRole = (...roles: AdminRole[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const adminReq = req as AdminRequest;
-
-    if (!adminReq.admin) {
+    if (!req.admin) {
       return next(new UnauthorizedError('مطلوب مصادقة المدير'));
     }
 
-    if (!roles.includes(adminReq.admin.role)) {
+    if (!roles.includes(req.admin.role)) {
       return next(new ForbiddenError('ليس لديك الدور المطلوب لهذه العملية'));
     }
 
@@ -157,13 +168,11 @@ export const requireRole = (...roles: AdminRole[]) => {
  * Middleware for super admin only
  */
 export const requireSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
-  const adminReq = req as AdminRequest;
-
-  if (!adminReq.admin) {
+  if (!req.admin) {
     return next(new UnauthorizedError('مطلوب مصادقة المدير'));
   }
 
-  if (adminReq.admin.role !== AdminRole.SUPER_ADMIN) {
+  if (req.admin.role !== AdminRole.SUPER_ADMIN) {
     return next(new ForbiddenError('هذه العملية متاحة فقط لمدير النظام الأعلى'));
   }
 
@@ -178,7 +187,7 @@ export const logAdminActivity = async (
   action: string,
   targetType?: string,
   targetId?: string,
-  details?: any,
+  details?: Record<string, unknown>,
   req?: Request
 ) => {
   try {
@@ -194,6 +203,6 @@ export const logAdminActivity = async (
       },
     });
   } catch (error) {
-    console.error('Failed to log admin activity:', error);
+    logger.error('Failed to log admin activity:', error);
   }
 };

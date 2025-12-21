@@ -64,9 +64,12 @@ router.get('/users/:userId/reviews', async (req: Request, res: Response, next: N
  * Submit a new rating
  * POST /api/v1/ratings
  */
-router.post('/', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authenticate, async (req: Request & { user?: { id: string } }, res: Response, next: NextFunction) => {
   try {
-    const reviewerId = (req as any).user.id;
+    const reviewerId = req.user?.id;
+    if (!reviewerId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
     const {
       reviewedId,
       transactionId,
@@ -100,8 +103,8 @@ router.post('/', authenticate, async (req: Request, res: Response, next: NextFun
     });
 
     return successResponse(res, rating, 'تم إرسال التقييم بنجاح', 201);
-  } catch (error: any) {
-    if (error.message?.includes('already reviewed')) {
+  } catch (error) {
+    if (error instanceof Error && error.message?.includes('already reviewed')) {
       return res.status(409).json({
         success: false,
         message: error.message,
@@ -116,10 +119,13 @@ router.post('/', authenticate, async (req: Request, res: Response, next: NextFun
  * Respond to a review
  * POST /api/v1/ratings/:reviewId/respond
  */
-router.post('/:reviewId/respond', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:reviewId/respond', authenticate, async (req: Request & { user?: { id: string } }, res: Response, next: NextFunction) => {
   try {
     const { reviewId } = req.params;
-    const userId = (req as any).user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
     const { response } = req.body;
 
     if (!response) {
@@ -133,15 +139,15 @@ router.post('/:reviewId/respond', authenticate, async (req: Request, res: Respon
     const result = await ratingService.respondToReview(reviewId, userId, response);
 
     return successResponse(res, result, 'تم إرسال الرد بنجاح');
-  } catch (error: any) {
-    if (error.message?.includes('not found')) {
+  } catch (error) {
+    if (error instanceof Error && error.message?.includes('not found')) {
       return res.status(404).json({
         success: false,
         message: 'Review not found',
         messageAr: 'التقييم غير موجود',
       });
     }
-    if (error.message?.includes('Only the reviewed user')) {
+    if (error instanceof Error && error.message?.includes('Only the reviewed user')) {
       return res.status(403).json({
         success: false,
         message: error.message,
@@ -156,10 +162,13 @@ router.post('/:reviewId/respond', authenticate, async (req: Request, res: Respon
  * Report a review as inappropriate
  * POST /api/v1/ratings/:reviewId/report
  */
-router.post('/:reviewId/report', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:reviewId/report', authenticate, async (req: Request & { user?: { id: string } }, res: Response, next: NextFunction) => {
   try {
     const { reviewId } = req.params;
-    const reporterId = (req as any).user.id;
+    const reporterId = req.user?.id;
+    if (!reporterId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
     const { reason } = req.body;
 
     if (!reason) {
@@ -173,8 +182,8 @@ router.post('/:reviewId/report', authenticate, async (req: Request, res: Respons
     const result = await ratingService.reportReview(reviewId, reporterId, reason);
 
     return successResponse(res, result, 'تم إرسال البلاغ بنجاح');
-  } catch (error: any) {
-    if (error.message?.includes('not found')) {
+  } catch (error) {
+    if (error instanceof Error && error.message?.includes('not found')) {
       return res.status(404).json({
         success: false,
         message: 'Review not found',
@@ -189,9 +198,12 @@ router.post('/:reviewId/report', authenticate, async (req: Request, res: Respons
  * Get my rating summary
  * GET /api/v1/ratings/me
  */
-router.get('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/me', authenticate, async (req: Request & { user?: { id: string } }, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
 
     const summary = await ratingService.getUserRatingSummary(userId);
 
@@ -205,9 +217,12 @@ router.get('/me', authenticate, async (req: Request, res: Response, next: NextFu
  * Get reviews I've given
  * GET /api/v1/ratings/me/given
  */
-router.get('/me/given', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/me/given', authenticate, async (req: Request & { user?: { id: string } }, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
     const { page, limit } = req.query;
 
     const result = await ratingService.getReviewsGiven(userId, {
@@ -225,9 +240,12 @@ router.get('/me/given', authenticate, async (req: Request, res: Response, next: 
  * Check if user can review a transaction
  * GET /api/v1/ratings/can-review/:transactionId
  */
-router.get('/can-review/:transactionId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.get('/can-review/:transactionId', authenticate, async (req: Request & { user?: { id: string } }, res: Response, next: NextFunction) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
     const { transactionId } = req.params;
 
     const canReview = await ratingService.canReviewTransaction(userId, transactionId);

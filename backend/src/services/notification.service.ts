@@ -22,7 +22,7 @@ export interface CreateNotificationInput {
   entityId?: string;
   actionUrl?: string;
   actionText?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   expiresAt?: Date;
 }
 
@@ -35,7 +35,7 @@ export interface CreateNotificationInput {
  */
 export const createNotification = async (
   input: CreateNotificationInput
-): Promise<any> => {
+) => {
   const {
     userId,
     type,
@@ -109,7 +109,7 @@ export const getUserNotifications = async (
     page?: number;
     limit?: number;
   } = {}
-): Promise<any> => {
+) => {
   const {
     isRead,
     type,
@@ -169,7 +169,7 @@ export const getUserNotifications = async (
 export const markAsRead = async (
   notificationId: string,
   userId: string
-): Promise<any> => {
+) => {
   const notification = await prisma.notification.findFirst({
     where: {
       id: notificationId,
@@ -285,7 +285,7 @@ export const cleanupExpiredNotifications = async (): Promise<number> => {
 /**
  * Get user's notification preferences
  */
-export const getUserPreferences = async (userId: string): Promise<any> => {
+export const getUserPreferences = async (userId: string) => {
   let preferences = await prisma.notificationPreference.findUnique({
     where: { userId },
   });
