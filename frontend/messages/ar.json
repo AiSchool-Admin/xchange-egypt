@@ -441,5 +441,28 @@
       "8min": "منذ 8 د",
       "10min": "منذ 10 د"
     }
+  },
+  "partners": {
+    "title": "شركاؤنا الموثوقون",
+    "mediaTitle": "كما ظهرنا في",
+    "categories": {
+      "banks": "بنوك",
+      "payment": "دفع",
+      "transport": "نقل",
+      "shipping": "شحن",
+      "verification": "توثيق",
+      "telecom": "اتصالات"
+    },
+    "stats": {
+      "activeUsers": { "value": "125K+", "label": "مستخدم نشط" },
+      "successfulDeals": { "value": "89K+", "label": "صفقة ناجحة" },
+      "tradingVolume": { "value": "2.5B", "label": "ج.م حجم التداول" },
+      "satisfaction": { "value": "98.5%", "label": "نسبة الرضا" }
+    },
+    "media": {
+      "almasry": "XChange يغير مفهوم التجارة الإلكترونية في مصر",
+      "cnn": "منصة مبتكرة تجمع 11 سوق في مكان واحد",
+      "forbes": "من أسرع الشركات الناشئة نمواً في المنطقة"
+    }
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocale } from 'next-intl';
 
 interface AnimatedCounterProps {
   end: number;
@@ -22,6 +23,7 @@ export default function AnimatedCounter({
   const [count, setCount] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const counterRef = useRef<HTMLSpanElement>(null);
+  const locale = useLocale();
 
   // Intersection Observer to start animation when visible
   useEffect(() => {
@@ -78,7 +80,7 @@ export default function AnimatedCounter({
     if (decimals > 0) {
       return num.toFixed(decimals);
     }
-    return num.toLocaleString('ar-EG');
+    return num.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US');
   };
 
   return (

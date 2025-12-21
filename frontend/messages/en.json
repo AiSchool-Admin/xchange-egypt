@@ -441,5 +441,28 @@
       "8min": "8 min ago",
       "10min": "10 min ago"
     }
+  },
+  "partners": {
+    "title": "Our Trusted Partners",
+    "mediaTitle": "As Featured In",
+    "categories": {
+      "banks": "Banks",
+      "payment": "Payment",
+      "transport": "Transport",
+      "shipping": "Shipping",
+      "verification": "Verification",
+      "telecom": "Telecom"
+    },
+    "stats": {
+      "activeUsers": { "value": "125K+", "label": "Active Users" },
+      "successfulDeals": { "value": "89K+", "label": "Successful Deals" },
+      "tradingVolume": { "value": "2.5B", "label": "EGP Trading Volume" },
+      "satisfaction": { "value": "98.5%", "label": "Satisfaction Rate" }
+    },
+    "media": {
+      "almasry": "XChange is transforming e-commerce in Egypt",
+      "cnn": "An innovative platform combining 11 markets in one place",
+      "forbes": "One of the fastest growing startups in the region"
+    }
   }
 }
