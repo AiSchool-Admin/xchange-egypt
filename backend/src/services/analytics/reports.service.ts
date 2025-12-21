@@ -574,11 +574,12 @@ export class ReportsService {
     let totalRevenue = 0;
 
     transactions.forEach((t) => {
-      if (t.item?.category) {
-        const catId = t.item.category.id;
+      const item = t.listing?.item;
+      if (item?.category) {
+        const catId = item.category.id;
         const existing = categoryMap.get(catId) || {
-          name: t.item.category.name,
-          nameAr: t.item.category.nameAr || t.item.category.name,
+          name: item.category.name,
+          nameAr: item.category.nameAr || item.category.name,
           revenue: 0,
           orders: 0,
           products: new Map(),
@@ -589,9 +590,9 @@ export class ReportsService {
         totalRevenue += t.amount || 0;
 
         // Track top product
-        const productKey = t.item.id;
+        const productKey = item.id;
         const productData = existing.products.get(productKey) || {
-          title: t.item.title,
+          title: item.title,
           revenue: 0,
         };
         productData.revenue += t.amount || 0;
@@ -765,11 +766,12 @@ export class ReportsService {
     }>();
 
     transactions.forEach((t) => {
-      if (t.item) {
-        const productId = t.item.id;
+      const item = t.listing?.item;
+      if (item) {
+        const productId = item.id;
         const existing = productMap.get(productId) || {
-          title: t.item.title,
-          category: t.item.category?.name || 'Unknown',
+          title: item.title,
+          category: item.category?.name || 'Unknown',
           unitsSold: 0,
           revenue: 0,
         };
@@ -928,6 +930,11 @@ export class ReportsService {
       },
       include: {
         seller: true,
+        listing: {
+          include: {
+            item: true,
+          },
+        },
       },
     });
 
@@ -942,7 +949,7 @@ export class ReportsService {
       if (t.seller) {
         const sellerId = t.seller.id;
         const existing = sellerMap.get(sellerId) || {
-          name: t.seller.fullName || t.seller.email,
+          name: t.seller.fullName || t.seller.email || '',
           sales: 0,
           revenue: 0,
           items: new Set<string>(),
@@ -950,7 +957,7 @@ export class ReportsService {
 
         existing.sales++;
         existing.revenue += t.amount || 0;
-        if (t.itemId) existing.items.add(t.itemId);
+        if (t.listing?.item?.id) existing.items.add(t.listing.item.id);
 
         sellerMap.set(sellerId, existing);
       }
