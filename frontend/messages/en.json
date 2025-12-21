@@ -464,5 +464,126 @@
       "cnn": "An innovative platform combining 11 markets in one place",
       "forbes": "One of the fastest growing startups in the region"
     }
+  },
+  "browse": {
+    "title": "Market",
+    "myItems": "My Items",
+    "productsAvailable": "products available",
+    "browseProducts": "Browse products",
+    "barter": "Barter",
+    "addListing": "Add Listing",
+    "marketTabs": {
+      "all": "All",
+      "forSale": "For Sale",
+      "auctions": "Auctions",
+      "barter": "Barter",
+      "wanted": "Wanted",
+      "tenders": "Tenders"
+    },
+    "specializedMarkets": "Specialized Markets:",
+    "markets": {
+      "cars": "Cars",
+      "properties": "Properties",
+      "mobiles": "Mobiles",
+      "gold": "Gold",
+      "silver": "Silver",
+      "luxury": "Luxury",
+      "scrap": "Scrap"
+    },
+    "conditions": {
+      "new": "New",
+      "likeNew": "Like New",
+      "good": "Good",
+      "fair": "Fair",
+      "used": "Used"
+    },
+    "listingTypes": {
+      "all": "All",
+      "directSale": "Direct Sale",
+      "auction": "Auction",
+      "barter": "Barter",
+      "wantedToBuy": "Wanted to Buy",
+      "tenders": "Tenders"
+    },
+    "sortOptions": {
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "priceLow": "Price: Low",
+      "priceHigh": "Price: High"
+    },
+    "filters": "Filters",
+    "clearAll": "Clear All",
+    "location": "Location",
+    "category": "Category",
+    "allMainCategories": "All Main Categories",
+    "allSubcategories": "All Subcategories",
+    "allSubSubcategories": "All Sub-subcategories",
+    "loadingCategories": "Loading categories...",
+    "noCategoriesAvailable": "No categories available",
+    "retry": "Retry",
+    "listingType": "Listing Type",
+    "condition": "Condition",
+    "clearSelection": "Clear selection",
+    "price": "Price (EGP)",
+    "activeFilters": "Active Filters:",
+    "showing": "Showing",
+    "of": "of",
+    "products": "products",
+    "noProducts": "No Products",
+    "tryAdjustingFilters": "Try adjusting filters or search for something else",
+    "beFirstToAdd": "Be the first to add a product!",
+    "clearFilters": "Clear Filters",
+    "tryAgain": "Try Again",
+    "previous": "Previous",
+    "next": "Next",
+    "searchPlaceholder": "Search for any product... iPhone, car, apartment..."
+  },
+  "mobilesPage": {
+    "title": "Mobiles Market",
+    "subtitle": "Buy, sell, or trade your mobile safely with IMEI verification and Escrow system",
+    "sellYourMobile": "Sell Your Mobile",
+    "smartBarter": "Smart Barter",
+    "mobilesAvailable": "mobiles available",
+    "imeiVerification": "IMEI Verification",
+    "buyerCommission": "Buyer Commission",
+    "all": "All",
+    "results": "results",
+    "filters": "Filters",
+    "sortOptions": {
+      "newest": "Newest",
+      "priceLowFirst": "Price: Low First",
+      "priceHighFirst": "Price: High First",
+      "mostViewed": "Most Viewed"
+    },
+    "featuredListings": "Featured Listings",
+    "noResults": "No Results",
+    "tryChangingCriteria": "Try changing search criteria",
+    "resetFilters": "Reset Filters",
+    "whyXchangeMobile": "Why Xchange Mobile?",
+    "features": {
+      "imeiVerification": {
+        "title": "IMEI Verification",
+        "description": "We verify every device to ensure it's not blacklisted"
+      },
+      "escrow": {
+        "title": "Escrow System",
+        "description": "Your money is protected until you receive and inspect the device"
+      },
+      "smartBarter": {
+        "title": "Smart Barter",
+        "description": "Smart algorithm finds you the best barter deals"
+      },
+      "batteryCheck": {
+        "title": "Battery Check",
+        "description": "We show the real battery health for every device"
+      }
+    },
+    "conditionGrades": {
+      "excellent": "Excellent",
+      "veryGood": "Very Good",
+      "good": "Good",
+      "fair": "Fair"
+    },
+    "loading": "Loading mobiles market..."
   }
 }
