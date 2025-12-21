@@ -26,15 +26,40 @@ class MockPrismaClient {
   private mockData: Record<string, any[]> = {};
 
   constructor() {
-    // Initialize mock tables
+    // Initialize mock tables - include ALL models used in tests
     this.mockData = {
       user: [],
       item: [],
       category: [],
       auction: [],
+      bid: [],
+      auctionBid: [],
       barter: [],
+      barterRequest: [],
+      barterOffer: [],
       order: [],
       notification: [],
+      review: [],
+      message: [],
+      wallet: [],
+      walletTransaction: [],
+      transaction: [],
+      payment: [],
+      escrow: [],
+      subscription: [],
+      badge: [],
+      userBadge: [],
+      searchAlert: [],
+      priceAlert: [],
+      favoriteItem: [],
+      itemImage: [],
+      refreshToken: [],
+      reverseAuction: [],
+      rentalContract: [],
+      rentalPayment: [],
+      cashFlow: [],
+      match: [],
+      adminActivityLog: [],
     };
   }
 
@@ -252,12 +277,13 @@ class MockPrismaClient {
     };
   }
 
-  // Model accessors
+  // Model accessors - all models used in tests
   get user() { return this.createModelMethods('user'); }
   get item() { return this.createModelMethods('item'); }
   get category() { return this.createModelMethods('category'); }
   get auction() { return this.createModelMethods('auction'); }
   get bid() { return this.createModelMethods('bid'); }
+  get auctionBid() { return this.createModelMethods('auctionBid'); }
   get barter() { return this.createModelMethods('barter'); }
   get barterRequest() { return this.createModelMethods('barterRequest'); }
   get barterOffer() { return this.createModelMethods('barterOffer'); }
@@ -266,6 +292,7 @@ class MockPrismaClient {
   get review() { return this.createModelMethods('review'); }
   get message() { return this.createModelMethods('message'); }
   get wallet() { return this.createModelMethods('wallet'); }
+  get walletTransaction() { return this.createModelMethods('walletTransaction'); }
   get transaction() { return this.createModelMethods('transaction'); }
   get payment() { return this.createModelMethods('payment'); }
   get escrow() { return this.createModelMethods('escrow'); }
@@ -277,6 +304,12 @@ class MockPrismaClient {
   get favoriteItem() { return this.createModelMethods('favoriteItem'); }
   get itemImage() { return this.createModelMethods('itemImage'); }
   get refreshToken() { return this.createModelMethods('refreshToken'); }
+  get reverseAuction() { return this.createModelMethods('reverseAuction'); }
+  get rentalContract() { return this.createModelMethods('rentalContract'); }
+  get rentalPayment() { return this.createModelMethods('rentalPayment'); }
+  get cashFlow() { return this.createModelMethods('cashFlow'); }
+  get match() { return this.createModelMethods('match'); }
+  get adminActivityLog() { return this.createModelMethods('adminActivityLog'); }
 
   // Prisma methods
   async $connect() { return Promise.resolve(); }

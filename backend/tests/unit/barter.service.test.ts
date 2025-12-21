@@ -11,7 +11,18 @@ import {
   createTestBarterItem,
 } from '../helpers/testHelpers';
 
-describe('Barter Service Tests', () => {
+// Check if Prisma is available
+let prismaAvailable = false;
+try {
+  require('@prisma/client');
+  prismaAvailable = true;
+} catch {
+  console.log('⚠️ Prisma not available - skipping Barter Service tests');
+}
+
+const describeIfPrisma = prismaAvailable ? describe : describe.skip;
+
+describeIfPrisma('Barter Service Tests', () => {
   const db = getTestDb();
 
   beforeEach(async () => {

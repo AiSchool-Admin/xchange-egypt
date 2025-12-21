@@ -31,7 +31,8 @@ module.exports = {
   },
 
   // Setup and teardown
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+  setupFiles: ['<rootDir>/tests/setupEnv.ts'],  // Runs BEFORE module imports
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],  // Runs after framework setup
   globalSetup: undefined,
   globalTeardown: undefined,
 
