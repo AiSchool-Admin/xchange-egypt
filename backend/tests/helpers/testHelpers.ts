@@ -263,6 +263,28 @@ export const createTestDemandItem = async (
 };
 
 /**
+ * Create test listing
+ */
+export const createTestListing = async (overrides: any = {}) => {
+  const db = getTestDb();
+
+  const listing = await db.listing.create({
+    data: {
+      itemId: overrides.itemId,
+      userId: overrides.userId,
+      price: overrides.price || 1000,
+      currency: overrides.currency || 'EGP',
+      status: overrides.status || 'ACTIVE',
+      listingType: overrides.listingType || 'DIRECT_SALE',
+      expiresAt: overrides.expiresAt || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      ...overrides,
+    },
+  });
+
+  return listing;
+};
+
+/**
  * Mock Redis client (for tests that don't need real Redis)
  */
 export const mockRedis = {

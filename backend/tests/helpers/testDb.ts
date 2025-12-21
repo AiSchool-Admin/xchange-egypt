@@ -86,6 +86,48 @@ const MODEL_RELATIONS: Record<string, Record<string, { model: string; type: 'one
     offerer: { model: 'user', type: 'one', foreignKey: 'offererId' },
     item: { model: 'item', type: 'one', foreignKey: 'itemId' },
   },
+  order: {
+    user: { model: 'user', type: 'one', foreignKey: 'userId' },
+    items: { model: 'orderItem', type: 'many', foreignKey: 'orderId' },
+    shippingAddress: { model: 'shippingAddress', type: 'one', foreignKey: 'shippingAddressId' },
+  },
+  orderItem: {
+    order: { model: 'order', type: 'one', foreignKey: 'orderId' },
+    listing: { model: 'listing', type: 'one', foreignKey: 'listingId' },
+    seller: { model: 'user', type: 'one', foreignKey: 'sellerId' },
+  },
+  shippingAddress: {
+    user: { model: 'user', type: 'one', foreignKey: 'userId' },
+    orders: { model: 'order', type: 'many', foreignKey: 'shippingAddressId' },
+  },
+  listing: {
+    item: { model: 'item', type: 'one', foreignKey: 'itemId' },
+    user: { model: 'user', type: 'one', foreignKey: 'userId' },
+  },
+  escrow: {
+    buyer: { model: 'user', type: 'one', foreignKey: 'buyerId' },
+    seller: { model: 'user', type: 'one', foreignKey: 'sellerId' },
+    milestones: { model: 'escrowMilestone', type: 'many', foreignKey: 'escrowId' },
+    dispute: { model: 'dispute', type: 'one', foreignKey: 'escrowId' },
+    facilitator: { model: 'facilitator', type: 'one', foreignKey: 'facilitatorId' },
+  },
+  escrowMilestone: {
+    escrow: { model: 'escrow', type: 'one', foreignKey: 'escrowId' },
+  },
+  dispute: {
+    escrow: { model: 'escrow', type: 'one', foreignKey: 'escrowId' },
+    initiator: { model: 'user', type: 'one', foreignKey: 'initiatorId' },
+    respondent: { model: 'user', type: 'one', foreignKey: 'respondentId' },
+    messages: { model: 'disputeMessage', type: 'many', foreignKey: 'disputeId' },
+  },
+  disputeMessage: {
+    dispute: { model: 'dispute', type: 'one', foreignKey: 'disputeId' },
+    sender: { model: 'user', type: 'one', foreignKey: 'senderId' },
+  },
+  facilitator: {
+    user: { model: 'user', type: 'one', foreignKey: 'userId' },
+    escrows: { model: 'escrow', type: 'many', foreignKey: 'facilitatorId' },
+  },
 };
 
 /**
@@ -109,6 +151,7 @@ class MockPrismaClient {
       user: [],
       item: [],
       category: [],
+      listing: [],
       auction: [],
       bid: [],
       auctionBid: [],
@@ -116,6 +159,8 @@ class MockPrismaClient {
       barterRequest: [],
       barterOffer: [],
       order: [],
+      orderItem: [],
+      shippingAddress: [],
       notification: [],
       review: [],
       message: [],
@@ -124,6 +169,11 @@ class MockPrismaClient {
       transaction: [],
       payment: [],
       escrow: [],
+      escrowMilestone: [],
+      dispute: [],
+      disputeMessage: [],
+      facilitator: [],
+      facilitatorAssignment: [],
       subscription: [],
       badge: [],
       userBadge: [],
@@ -138,6 +188,8 @@ class MockPrismaClient {
       cashFlow: [],
       match: [],
       adminActivityLog: [],
+      cart: [],
+      cartItem: [],
     };
   }
 
@@ -712,6 +764,16 @@ class MockPrismaClient {
   get cashFlow() { return this.createModelMethods('cashFlow'); }
   get match() { return this.createModelMethods('match'); }
   get adminActivityLog() { return this.createModelMethods('adminActivityLog'); }
+  get listing() { return this.createModelMethods('listing'); }
+  get shippingAddress() { return this.createModelMethods('shippingAddress'); }
+  get orderItem() { return this.createModelMethods('orderItem'); }
+  get escrowMilestone() { return this.createModelMethods('escrowMilestone'); }
+  get dispute() { return this.createModelMethods('dispute'); }
+  get disputeMessage() { return this.createModelMethods('disputeMessage'); }
+  get facilitator() { return this.createModelMethods('facilitator'); }
+  get facilitatorAssignment() { return this.createModelMethods('facilitatorAssignment'); }
+  get cart() { return this.createModelMethods('cart'); }
+  get cartItem() { return this.createModelMethods('cartItem'); }
 
   // Prisma methods
   async $connect() { return Promise.resolve(); }
