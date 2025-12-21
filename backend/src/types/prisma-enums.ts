@@ -589,21 +589,19 @@ export const ScrapDealerStatus = {
 export type ScrapDealerStatus = typeof ScrapDealerStatus[keyof typeof ScrapDealerStatus];
 
 // ========================================
-// Admin Types
+// Admin Types (match Prisma schema exactly)
 // ========================================
 export const AdminRole = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
   MODERATOR: 'MODERATOR',
   SUPPORT: 'SUPPORT',
-  ANALYST: 'ANALYST',
 } as const;
 export type AdminRole = typeof AdminRole[keyof typeof AdminRole];
 
 export const AdminStatus = {
   ACTIVE: 'ACTIVE',
   SUSPENDED: 'SUSPENDED',
-  INACTIVE: 'INACTIVE',
   DELETED: 'DELETED',
 } as const;
 export type AdminStatus = typeof AdminStatus[keyof typeof AdminStatus];

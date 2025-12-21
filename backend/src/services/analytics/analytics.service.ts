@@ -536,7 +536,7 @@ export class AnalyticsService {
   private async getTotalRevenue(start: Date, end: Date): Promise<number> {
     const result = await prisma.transaction.aggregate({
       where: {
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: start, lte: end },
       },
       _sum: { amount: true },
@@ -585,7 +585,7 @@ export class AnalyticsService {
   private async getSalesByDay(start: Date, end: Date): Promise<DailySales[]> {
     const transactions = await prisma.transaction.findMany({
       where: {
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: start, lte: end },
       },
       select: {
@@ -618,7 +618,7 @@ export class AnalyticsService {
   private async getSalesByCategory(start: Date, end: Date): Promise<CategorySales[]> {
     const transactions = await prisma.transaction.findMany({
       where: {
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: start, lte: end },
       },
       include: {
@@ -666,7 +666,7 @@ export class AnalyticsService {
   private async getSalesByGovernorate(start: Date, end: Date): Promise<GovernorateSales[]> {
     const orders = await prisma.order.findMany({
       where: {
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: start, lte: end },
       },
       include: {
@@ -701,7 +701,7 @@ export class AnalyticsService {
   private async getSalesByPaymentMethod(start: Date, end: Date): Promise<PaymentMethodSales[]> {
     const orders = await prisma.order.findMany({
       where: {
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: start, lte: end },
       },
       select: {
@@ -737,7 +737,7 @@ export class AnalyticsService {
   private async getTopSellingItems(start: Date, end: Date, limit: number): Promise<TopItem[]> {
     const transactions = await prisma.transaction.findMany({
       where: {
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: start, lte: end },
       },
       include: {
@@ -783,7 +783,7 @@ export class AnalyticsService {
   private async getRevenueByType(start: Date, end: Date): Promise<RevenueByType[]> {
     const transactions = await prisma.transaction.findMany({
       where: {
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: start, lte: end },
       },
       select: {
@@ -937,7 +937,7 @@ export class AnalyticsService {
   private async getTopSellers(start: Date, end: Date, limit: number): Promise<TopSeller[]> {
     const transactions = await prisma.transaction.findMany({
       where: {
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: start, lte: end },
       },
       include: {
@@ -979,7 +979,7 @@ export class AnalyticsService {
   private async getTopBuyers(start: Date, end: Date, limit: number): Promise<TopBuyer[]> {
     const transactions = await prisma.transaction.findMany({
       where: {
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
         createdAt: { gte: start, lte: end },
       },
       include: {

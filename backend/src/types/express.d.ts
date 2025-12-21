@@ -1,19 +1,11 @@
-import { UserType } from '../middleware/auth';
+import { UserType, UserStatus } from '../middleware/auth';
 import { AdminRole, AdminStatus } from '../middleware/adminAuth';
-
-// User status enum (matching Prisma schema)
-export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  SUSPENDED = 'SUSPENDED',
-  DELETED = 'DELETED'
-}
 
 // User type returned from auth middleware (subset of full User model)
 export interface AuthUser {
   id: string;
-  email: string;
-  fullName: string;
+  email: string | null;
+  fullName: string | null;
   userType: UserType;
   status: UserStatus;
   avatar: string | null;

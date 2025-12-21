@@ -9,19 +9,20 @@ import prisma from '../lib/prisma';
  */
 export type AuthRequest = Request;
 
-// User type enum (matching Prisma schema)
-export enum UserType {
-  INDIVIDUAL = 'INDIVIDUAL',
-  BUSINESS = 'BUSINESS'
-}
+// User type values (matching Prisma schema)
+export const UserType = {
+  INDIVIDUAL: 'INDIVIDUAL',
+  BUSINESS: 'BUSINESS',
+} as const;
+export type UserType = typeof UserType[keyof typeof UserType];
 
-// User status enum (matching Prisma schema)
-export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  SUSPENDED = 'SUSPENDED',
-  DELETED = 'DELETED'
-}
+// User status values (matching Prisma schema)
+export const UserStatus = {
+  ACTIVE: 'ACTIVE',
+  SUSPENDED: 'SUSPENDED',
+  DELETED: 'DELETED',
+} as const;
+export type UserStatus = typeof UserStatus[keyof typeof UserStatus];
 
 /**
  * Middleware to authenticate user using JWT

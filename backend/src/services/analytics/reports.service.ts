@@ -435,7 +435,7 @@ export class ReportsService {
       prisma.transaction.aggregate({
         where: {
           createdAt: { gte: startDate, lte: endDate },
-          status: 'COMPLETED',
+          paymentStatus: 'COMPLETED',
         },
         _sum: { amount: true, platformFee: true },
         _count: true,
@@ -443,7 +443,7 @@ export class ReportsService {
       prisma.transaction.findMany({
         where: {
           createdAt: { gte: startDate, lte: endDate },
-          status: 'REFUNDED',
+          paymentStatus: 'REFUNDED',
         },
       }),
       prisma.user.count({
@@ -548,12 +548,16 @@ export class ReportsService {
     const transactions = await prisma.transaction.findMany({
       where: {
         createdAt: { gte: startDate, lte: endDate },
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
       },
       include: {
-        item: {
+        listing: {
           include: {
-            category: true,
+            item: {
+              include: {
+                category: true,
+              },
+            },
           },
         },
       },
@@ -738,12 +742,16 @@ export class ReportsService {
     const transactions = await prisma.transaction.findMany({
       where: {
         createdAt: { gte: startDate, lte: endDate },
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
       },
       include: {
-        item: {
+        listing: {
           include: {
-            category: true,
+            item: {
+              include: {
+                category: true,
+              },
+            },
           },
         },
       },
@@ -875,7 +883,7 @@ export class ReportsService {
     // Get average revenue per type
     const revenues = await prisma.transaction.groupBy({
       by: ['sellerId'],
-      where: { status: 'COMPLETED' },
+      where: { paymentStatus: 'COMPLETED' },
       _sum: { amount: true },
     });
 
@@ -916,7 +924,7 @@ export class ReportsService {
     const transactions = await prisma.transaction.findMany({
       where: {
         createdAt: { gte: startDate, lte: endDate },
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
       },
       include: {
         seller: true,
@@ -970,7 +978,7 @@ export class ReportsService {
     const transactions = await prisma.transaction.findMany({
       where: {
         createdAt: { gte: startDate, lte: endDate },
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
       },
       include: {
         buyer: true,
@@ -1044,14 +1052,14 @@ export class ReportsService {
       prisma.transaction.aggregate({
         where: {
           createdAt: { gte: startDate, lte: endDate },
-          status: 'COMPLETED',
+          paymentStatus: 'COMPLETED',
         },
         _sum: { amount: true, platformFee: true, sellerReceives: true },
       }),
       prisma.transaction.aggregate({
         where: {
           createdAt: { gte: startDate, lte: endDate },
-          status: 'REFUNDED',
+          paymentStatus: 'REFUNDED',
         },
         _sum: { amount: true },
       }),
@@ -1079,10 +1087,10 @@ export class ReportsService {
     endDate: Date
   ): Promise<RevenueSource[]> {
     const transactions = await prisma.transaction.groupBy({
-      by: ['type'],
+      by: ['transactionType'],
       where: {
         createdAt: { gte: startDate, lte: endDate },
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
       },
       _sum: { amount: true },
       _count: true,
@@ -1098,8 +1106,8 @@ export class ReportsService {
     };
 
     return transactions.map((t) => ({
-      source: t.type || 'UNKNOWN',
-      sourceAr: sourceAr[t.type || ''] || t.type || 'غير معروف',
+      source: t.transactionType || 'UNKNOWN',
+      sourceAr: sourceAr[t.transactionType || ''] || t.transactionType || 'غير معروف',
       revenue: t._sum.amount || 0,
       percentage: totalRevenue > 0 ? ((t._sum.amount || 0) / totalRevenue) * 100 : 0,
       transactionCount: t._count,
@@ -1111,10 +1119,10 @@ export class ReportsService {
     endDate: Date
   ): Promise<CommissionBreakdown[]> {
     const transactions = await prisma.transaction.groupBy({
-      by: ['type'],
+      by: ['transactionType'],
       where: {
         createdAt: { gte: startDate, lte: endDate },
-        status: 'COMPLETED',
+        paymentStatus: 'COMPLETED',
       },
       _sum: { platformFee: true, amount: true },
       _count: true,
@@ -1128,8 +1136,8 @@ export class ReportsService {
     };
 
     return transactions.map((t) => ({
-      type: t.type || 'UNKNOWN',
-      typeAr: typeAr[t.type || ''] || t.type || 'غير معروف',
+      type: t.transactionType || 'UNKNOWN',
+      typeAr: typeAr[t.transactionType || ''] || t.transactionType || 'غير معروف',
       amount: t._sum.platformFee || 0,
       transactionCount: t._count,
       averageRate:

@@ -10,20 +10,22 @@ import logger from '../lib/logger';
  */
 export type AdminRequest = Request;
 
-// Admin role enum (matching Prisma schema)
-export enum AdminRole {
-  SUPER_ADMIN = 'SUPER_ADMIN',
-  ADMIN = 'ADMIN',
-  MODERATOR = 'MODERATOR',
-  SUPPORT = 'SUPPORT'
-}
+// Admin role values (matching Prisma schema)
+export const AdminRole = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  ADMIN: 'ADMIN',
+  MODERATOR: 'MODERATOR',
+  SUPPORT: 'SUPPORT',
+} as const;
+export type AdminRole = typeof AdminRole[keyof typeof AdminRole];
 
-// Admin status enum (matching Prisma schema)
-export enum AdminStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  SUSPENDED = 'SUSPENDED'
-}
+// Admin status values (matching Prisma schema)
+export const AdminStatus = {
+  ACTIVE: 'ACTIVE',
+  SUSPENDED: 'SUSPENDED',
+  DELETED: 'DELETED',
+} as const;
+export type AdminStatus = typeof AdminStatus[keyof typeof AdminStatus];
 
 // صلاحيات كل دور
 const ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
