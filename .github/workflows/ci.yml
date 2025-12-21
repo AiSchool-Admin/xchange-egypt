@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, develop]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_VERSION: '20.x'
   DATABASE_URL: postgresql://test:test@localhost:5432/xchange_test
@@ -13,6 +17,10 @@ env:
   JWT_SECRET: test-jwt-secret-key-for-ci-testing-only
   JWT_REFRESH_SECRET: test-jwt-refresh-secret-for-ci-testing
   PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING: 1
+  FAWRY_MERCHANT_CODE: test-merchant
+  FAWRY_SECRET_KEY: test-secret
+  PAYMOB_API_KEY: test-paymob-key
+  INSTAPAY_API_KEY: test-instapay-key
 
 jobs:
   # ═══════════════════════════════════════════════════════════════
@@ -304,6 +312,14 @@ jobs:
           npx prisma db push --skip-generate --accept-data-loss || echo "⚠️ Database setup issues - continuing anyway"
         env:
           DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Check Database Health
+        run: |
+          cd backend
+          npm run db:check || echo "⚠️ Database health check skipped"
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        continue-on-error: true
 
       - name: Run Integration Tests
         run: |

@@ -31,7 +31,10 @@
     "seed:transport": "tsx prisma/seed-transport-marketplace.ts",
     "seed:matching": "tsx prisma/seed-matching-tests.ts",
     "db:push": "prisma db push",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "db:check": "tsx scripts/check-database.ts",
+    "db:health": "tsx scripts/check-database.ts",
+    "prisma:deploy": "prisma migrate deploy"
   },
   "keywords": [
     "xchange",
