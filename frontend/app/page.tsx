@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { getItems, Item } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
@@ -39,218 +40,208 @@ const PLATFORM_MARKETS = [
     name: 'السوق العام',
     nameEn: 'General Market',
     description: 'كل ما تحتاجه في مكان واحد',
+    descriptionEn: 'Everything you need in one place',
     icon: '🛒',
     href: '/items',
     gradient: 'from-emerald-500 to-teal-600',
     stats: { listings: 15000, daily: 250 },
     features: ['بيع مباشر', 'مقايضة', 'مزادات'],
+    featuresEn: ['Direct Sale', 'Barter', 'Auctions'],
   },
   {
     id: 'vehicles',
     name: 'سوق السيارات',
     nameEn: 'Vehicles',
     description: 'سيارات مع فحص 150 نقطة وضمان',
+    descriptionEn: 'Cars with 150-point inspection & warranty',
     icon: '🚗',
     href: '/cars',
     gradient: 'from-blue-500 to-indigo-600',
     stats: { listings: 8500, daily: 120 },
     features: ['فحص شامل', 'تقسيط', 'ضمان'],
+    featuresEn: ['Full Inspection', 'Installments', 'Warranty'],
   },
   {
     id: 'real-estate',
     name: 'سوق العقارات',
     nameEn: 'Real Estate',
     description: 'شقق وفيلات مع تحقق حكومي',
+    descriptionEn: 'Apartments & villas with govt verification',
     icon: '🏠',
     href: '/properties',
     gradient: 'from-emerald-500 to-green-600',
     stats: { listings: 5200, daily: 85 },
     features: ['جولات 360°', 'تمويل', 'تسجيل'],
+    featuresEn: ['360° Tours', 'Financing', 'Registration'],
   },
   {
     id: 'mobiles',
     name: 'سوق الموبايلات',
     nameEn: 'Mobiles',
     description: 'موبايلات مع فحص IMEI معتمد',
+    descriptionEn: 'Phones with certified IMEI verification',
     icon: '📱',
     href: '/mobiles',
     gradient: 'from-violet-500 to-purple-600',
     stats: { listings: 12000, daily: 300 },
     features: ['فحص IMEI', 'ضمان', 'تقسيط'],
+    featuresEn: ['IMEI Check', 'Warranty', 'Installments'],
   },
   {
     id: 'auctions',
     name: 'المزادات',
     nameEn: 'Auctions',
     description: 'مزادات حية على أفضل المنتجات',
+    descriptionEn: 'Live auctions on the best products',
     icon: '🔨',
     href: '/auctions',
     gradient: 'from-amber-500 to-orange-600',
     stats: { listings: 450, daily: 25 },
     features: ['مزادات حية', 'مزادات مغلقة', 'ضمان'],
+    featuresEn: ['Live Auctions', 'Sealed Bids', 'Warranty'],
   },
   {
     id: 'tenders',
     name: 'المناقصات',
     nameEn: 'Tenders',
     description: 'طلبات شراء ومناقصات عكسية',
+    descriptionEn: 'Purchase requests & reverse auctions',
     icon: '📋',
     href: '/reverse-auctions',
     gradient: 'from-sky-500 to-blue-600',
     stats: { listings: 320, daily: 15 },
     features: ['مناقصات حكومية', 'B2B', 'عقود'],
+    featuresEn: ['Govt Tenders', 'B2B', 'Contracts'],
   },
   {
     id: 'barter',
     name: 'المقايضات',
     nameEn: 'Barter',
     description: 'بادل منتجاتك بدون نقود',
+    descriptionEn: 'Trade your products without cash',
     icon: '🔄',
     href: '/barter',
     gradient: 'from-orange-500 to-red-500',
     stats: { listings: 3200, daily: 80 },
     features: ['مقايضة ذكية', 'سلاسل متعددة', 'AI'],
+    featuresEn: ['Smart Barter', 'Multi-chains', 'AI'],
   },
   {
     id: 'gold',
     name: 'سوق الذهب',
     nameEn: 'Gold',
     description: 'ذهب مع فحص XRF وتوثيق دمغة',
+    descriptionEn: 'Gold with XRF testing & hallmark cert',
     icon: '💰',
     href: '/gold',
     gradient: 'from-yellow-500 to-amber-600',
     stats: { listings: 890, daily: 35 },
     features: ['فحص XRF', 'دمغة موثقة', 'أسعار حية'],
+    featuresEn: ['XRF Testing', 'Certified', 'Live Prices'],
   },
   {
     id: 'silver',
     name: 'سوق الفضة',
     nameEn: 'Silver',
     description: 'فضة بأسعار مميزة وتوفير 30%',
+    descriptionEn: 'Silver at great prices, save up to 30%',
     icon: '🥈',
     href: '/silver',
     gradient: 'from-slate-400 to-slate-600',
     stats: { listings: 420, daily: 18 },
     features: ['أسعار حية', 'توفير', 'برنامج ادخار'],
+    featuresEn: ['Live Prices', 'Savings', 'Savings Plan'],
   },
   {
     id: 'luxury',
     name: 'سوق الفاخر',
     nameEn: 'Luxury',
     description: 'ساعات وحقائب أصلية موثقة',
+    descriptionEn: 'Authenticated watches & bags',
     icon: '👑',
     href: '/luxury',
     gradient: 'from-purple-500 to-pink-600',
     stats: { listings: 650, daily: 12 },
     features: ['Entrupy', 'خبراء', 'ضمان أصالة'],
+    featuresEn: ['Entrupy', 'Experts', 'Authenticity'],
   },
   {
     id: 'scrap',
     name: 'سوق التوالف',
     nameEn: 'Scrap',
     description: 'خردة ومواد قابلة للتدوير',
+    descriptionEn: 'Scrap & recyclable materials',
     icon: '♻️',
     href: '/scrap',
     gradient: 'from-green-500 to-emerald-600',
     stats: { listings: 1800, daily: 45 },
     features: ['أسعار حية', 'استلام منزلي', 'ESG'],
+    featuresEn: ['Live Prices', 'Home Pickup', 'ESG'],
   },
   {
     id: 'services',
     name: 'سوق الخدمات',
     nameEn: 'Services',
     description: 'خدمات احترافية مع ضمان Xchange Protect',
+    descriptionEn: 'Professional services with Xchange Protect',
     icon: '🔧',
     href: '/services',
     gradient: 'from-indigo-500 to-blue-600',
     stats: { listings: 2500, daily: 65 },
     features: ['Xchange Protect', 'مقدمين معتمدين', 'دفع آمن'],
+    featuresEn: ['Xchange Protect', 'Verified', 'Secure Pay'],
   },
   {
     id: 'transport',
     name: 'النقل الذكي',
     nameEn: 'Transport',
     description: 'قارن أسعار Uber, Careem, Bolt وأكثر',
+    descriptionEn: 'Compare Uber, Careem, Bolt & more',
     icon: '🚕',
     href: '/rides',
     gradient: 'from-purple-500 to-indigo-600',
     stats: { listings: 50000, daily: 5000 },
     features: ['6 تطبيقات', 'وفر 40%', 'حجز فوري'],
+    featuresEn: ['6 Apps', 'Save 40%', 'Instant Book'],
   },
 ];
 
 // ============================================
-// Trust Features
+// Trust Features (structure only - use translation keys)
 // ============================================
-const TRUST_FEATURES = [
-  {
-    icon: '🔒',
-    title: 'نظام الضمان (Escrow)',
-    description: 'أموالك محمية حتى استلام المنتج',
-    stat: '100% حماية',
-  },
-  {
-    icon: '✅',
-    title: 'تحقق متعدد المستويات',
-    description: 'فحص الهوية والسجل التجاري',
-    stat: '+50,000 موثق',
-  },
-  {
-    icon: '🤖',
-    title: 'ذكاء اصطناعي',
-    description: 'تسعير ومطابقة ذكية',
-    stat: '95% دقة',
-  },
-  {
-    icon: '⚡',
-    title: 'معاملات سريعة',
-    description: 'متوسط إتمام الصفقة خلال ساعات',
-    stat: '2 ساعة',
-  },
+const TRUST_FEATURES_CONFIG = [
+  { id: 'escrow', icon: '🔒' },
+  { id: 'verification', icon: '✅' },
+  { id: 'ai', icon: '🤖' },
+  { id: 'fast', icon: '⚡' },
 ];
 
 // ============================================
-// Hero Slides
+// Hero Slides (structure only - text comes from translations)
 // ============================================
-const HERO_SLIDES = [
+const HERO_SLIDES_CONFIG = [
   {
     id: 'main',
-    title: 'السوق الأذكى في مصر',
-    subtitle: 'اشتري • بيع • بادل',
-    description: 'منصة XChange تجمع 11 سوق متخصص في مكان واحد. بيع مباشر، مزادات، مقايضة، وأكثر - كل شيء بضمان كامل.',
     gradient: 'from-emerald-600 via-teal-500 to-cyan-500',
-    cta: 'ابدأ التسوق',
     href: '/items',
     image: '🛒',
   },
   {
     id: 'barter',
-    title: 'المقايضة الذكية',
-    subtitle: 'بادل بدون نقود',
-    description: 'أول نظام مقايضة بالذكاء الاصطناعي في الشرق الأوسط. سلاسل مقايضة متعددة الأطراف (A→B→C→A).',
     gradient: 'from-orange-500 via-red-500 to-pink-500',
-    cta: 'ابدأ المقايضة',
     href: '/barter',
     image: '🔄',
-    badge: 'جديد',
+    hasBadge: true,
   },
   {
     id: 'auctions',
-    title: 'المزادات الحية',
-    subtitle: 'زايد واربح',
-    description: 'مزادات حقيقية على سيارات، عقارات، إلكترونيات، وأكثر. نظام مضاد للتلاعب مع حماية كاملة.',
     gradient: 'from-purple-600 via-violet-500 to-indigo-500',
-    cta: 'شاهد المزادات',
     href: '/auctions',
     image: '🔨',
   },
   {
     id: 'gold',
-    title: 'سوق الذهب',
-    subtitle: 'وفر حتى 38%',
-    description: 'اشتري وبيع الذهب بأسعار أفضل من محلات الذهب التقليدية. فحص XRF ودمغة موثقة.',
     gradient: 'from-yellow-500 via-amber-500 to-orange-500',
-    cta: 'تصفح الذهب',
     href: '/gold',
     image: '💰',
   },
@@ -263,27 +254,36 @@ const TESTIMONIALS = [
   {
     id: 1,
     name: 'أحمد محمود',
+    nameEn: 'Ahmed Mahmoud',
     role: 'تاجر سيارات',
+    roleEn: 'Car Dealer',
     avatar: '👨‍💼',
     content: 'بعت أكثر من 50 سيارة على XChange خلال 6 أشهر. نظام الضمان والفحص الشامل زاد ثقة المشترين بشكل كبير.',
+    contentEn: 'Sold over 50 cars on XChange in 6 months. The escrow system and comprehensive inspection greatly increased buyer trust.',
     rating: 5,
     transactions: 52,
   },
   {
     id: 2,
     name: 'سارة أحمد',
+    nameEn: 'Sara Ahmed',
     role: 'صاحبة متجر إلكتروني',
+    roleEn: 'E-commerce Owner',
     avatar: '👩‍💻',
     content: 'المقايضة الذكية ساعدتني أستبدل مخزون راكد بمنتجات جديدة بدون ما أخسر فلوس. فكرة عبقرية!',
+    contentEn: 'Smart barter helped me exchange stagnant inventory for new products without losing money. Genius idea!',
     rating: 5,
     transactions: 28,
   },
   {
     id: 3,
     name: 'محمد علي',
+    nameEn: 'Mohamed Ali',
     role: 'مستثمر ذهب',
+    roleEn: 'Gold Investor',
     avatar: '👨‍💼',
     content: 'سوق الذهب على XChange وفرلي أكثر من 25% مقارنة بالمحلات. الفحص والتوثيق بيدي ثقة كاملة.',
+    contentEn: 'Gold market on XChange saved me over 25% compared to shops. Testing and certification give me complete confidence.',
     rating: 5,
     transactions: 15,
   },
@@ -295,6 +295,8 @@ const TESTIMONIALS = [
 export default function HomePage() {
   const router = useRouter();
   const { user } = useAuth();
+  const t = useTranslations();
+  const locale = useLocale();
 
   // State
   const [categories, setCategories] = useState<Category[]>([]);
@@ -313,7 +315,7 @@ export default function HomePage() {
   // Auto-rotate hero slides
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES_CONFIG.length);
     }, 6000);
     return () => clearInterval(interval);
   }, []);
@@ -374,13 +376,13 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50">
       {/* ============================================
           Hero Section - World Class Design
           ============================================ */}
       <section className="relative overflow-hidden">
         {/* Animated Background */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${HERO_SLIDES[currentSlide].gradient} transition-all duration-1000`}>
+        <div className={`absolute inset-0 bg-gradient-to-br ${HERO_SLIDES_CONFIG[currentSlide].gradient} transition-all duration-1000`}>
           <div className="absolute inset-0 opacity-20">
             <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" />
             <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-white rounded-full blur-3xl animate-pulse delay-1000" />
@@ -395,7 +397,7 @@ export default function HomePage() {
           <div className="text-center mb-12">
             {/* Slide Content */}
             <div className="relative min-h-[220px] md:min-h-[240px]">
-              {HERO_SLIDES.map((slide, index) => (
+              {HERO_SLIDES_CONFIG.map((slide, index) => (
                 <div
                   key={slide.id}
                   className={`absolute inset-0 transition-all duration-700 ${
@@ -404,23 +406,23 @@ export default function HomePage() {
                       : 'opacity-0 translate-y-8 pointer-events-none'
                   }`}
                 >
-                  {slide.badge && (
+                  {slide.hasBadge && (
                     <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-bold mb-4 animate-bounce">
-                      ✨ {slide.badge}
+                      ✨ {t(`home.slides.${slide.id}.badge`)}
                     </span>
                   )}
                   <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-4 leading-tight">
                     <span className="text-6xl md:text-7xl block mb-2">{slide.image}</span>
-                    {slide.title}
+                    {t(`home.slides.${slide.id}.title`)}
                   </h1>
-                  <p className="text-xl md:text-2xl text-white/90 font-bold mb-2">{slide.subtitle}</p>
-                  <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto mb-6">{slide.description}</p>
+                  <p className="text-xl md:text-2xl text-white/90 font-bold mb-2">{t(`home.slides.${slide.id}.subtitle`)}</p>
+                  <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto mb-6">{t(`home.slides.${slide.id}.description`)}</p>
                   <Link
                     href={slide.href}
                     className="inline-flex items-center gap-2 px-8 py-4 bg-white text-gray-900 rounded-2xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
                   >
-                    {slide.cta}
-                    <svg className="w-5 h-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {t(`home.slides.${slide.id}.cta`)}
+                    <svg className={`w-5 h-5 ${locale === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                     </svg>
                   </Link>
@@ -430,7 +432,7 @@ export default function HomePage() {
 
             {/* Slide Indicators */}
             <div className="flex justify-center gap-2 mt-8">
-              {HERO_SLIDES.map((_, index) => (
+              {HERO_SLIDES_CONFIG.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentSlide(index)}
@@ -449,7 +451,7 @@ export default function HomePage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن أي شيء... سيارات، موبايلات، عقارات، ذهب..."
+                placeholder={t('home.hero.searchPlaceholder')}
                 className="w-full px-6 py-5 pr-14 bg-white/95 backdrop-blur-sm rounded-2xl text-lg text-gray-800 placeholder-gray-400 shadow-2xl focus:ring-4 focus:ring-white/30 outline-none"
               />
               <button
@@ -463,7 +465,7 @@ export default function HomePage() {
             </div>
             {/* Quick Search Tags */}
             <div className="flex flex-wrap justify-center gap-2 mt-4">
-              {['آيفون 15', 'سيارة هيونداي', 'شقة للإيجار', 'ذهب عيار 21', 'لابتوب'].map((tag) => (
+              {(t.raw('home.hero.quickTags') as string[]).map((tag) => (
                 <button
                   key={tag}
                   type="button"
@@ -488,25 +490,25 @@ export default function HomePage() {
               <div className="text-2xl md:text-3xl font-black text-emerald-600 group-hover:scale-110 transition-transform">
                 <AnimatedCounter end={liveStats.activeListings} suffix="+" />
               </div>
-              <div className="text-sm text-gray-500">إعلان نشط</div>
+              <div className="text-sm text-gray-500">{t('home.stats.activeListings')}</div>
             </div>
             <div className="text-center group">
               <div className="text-2xl md:text-3xl font-black text-blue-600 group-hover:scale-110 transition-transform">
                 <AnimatedCounter end={liveStats.totalUsers} suffix="+" />
               </div>
-              <div className="text-sm text-gray-500">مستخدم</div>
+              <div className="text-sm text-gray-500">{t('home.stats.users')}</div>
             </div>
             <div className="text-center group">
               <div className="text-2xl md:text-3xl font-black text-purple-600 group-hover:scale-110 transition-transform">
                 <AnimatedCounter end={liveStats.totalTransactions} suffix="+" />
               </div>
-              <div className="text-sm text-gray-500">صفقة ناجحة</div>
+              <div className="text-sm text-gray-500">{t('home.stats.successfulDeals')}</div>
             </div>
             <div className="text-center group">
               <div className="text-2xl md:text-3xl font-black text-amber-600 group-hover:scale-110 transition-transform">
                 <AnimatedCounter end={98} suffix="%" decimals={1} />
               </div>
-              <div className="text-sm text-gray-500">نسبة النجاح</div>
+              <div className="text-sm text-gray-500">{t('home.stats.successRate')}</div>
             </div>
           </div>
         </div>
@@ -520,10 +522,10 @@ export default function HomePage() {
           <ScrollReveal>
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">
-                🏪 13 سوق متخصص في مكان واحد
+                {t('home.markets.title')}
               </h2>
               <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                كل سوق مصمم بعناية لتجربة شراء وبيع مثالية مع ميزات فريدة وحماية كاملة
+                {t('home.markets.subtitle')}
               </p>
             </div>
           </ScrollReveal>
@@ -545,27 +547,27 @@ export default function HomePage() {
 
                   {/* Title */}
                   <h3 className="text-lg font-bold text-gray-900 group-hover:text-white mb-1 transition-colors">
-                    {market.name}
+                    {locale === 'ar' ? market.name : market.nameEn}
                   </h3>
 
                   {/* Description */}
                   <p className="text-sm text-gray-500 group-hover:text-white/80 mb-3 transition-colors line-clamp-2">
-                    {market.description}
+                    {locale === 'ar' ? market.description : market.descriptionEn}
                   </p>
 
                   {/* Stats */}
                   <div className="flex items-center gap-2 text-xs">
                     <span className="px-2 py-1 bg-gray-100 group-hover:bg-white/20 rounded-full text-gray-600 group-hover:text-white transition-colors">
-                      {formatNumber(market.stats.listings)} إعلان
+                      {formatNumber(market.stats.listings)} {t('home.markets.listing')}
                     </span>
                     <span className="text-gray-400 group-hover:text-white/60 transition-colors">
-                      +{market.stats.daily} يومياً
+                      +{market.stats.daily} {t('home.markets.daily')}
                     </span>
                   </div>
 
                   {/* Features Tags */}
                   <div className="flex flex-wrap gap-1 mt-3">
-                    {market.features.slice(0, 2).map((feature) => (
+                    {(locale === 'ar' ? market.features : market.featuresEn).slice(0, 2).map((feature) => (
                       <span
                         key={feature}
                         className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-600 group-hover:bg-white/20 group-hover:text-white rounded-full transition-colors"
@@ -577,8 +579,8 @@ export default function HomePage() {
                 </div>
 
                 {/* Arrow */}
-                <div className="absolute bottom-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg className="w-6 h-6 text-white rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`absolute bottom-4 ${locale === 'ar' ? 'left-4' : 'right-4'} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                  <svg className={`w-6 h-6 text-white ${locale === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </div>
@@ -602,23 +604,23 @@ export default function HomePage() {
           <ScrollReveal>
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-black mb-4">
-                🛡️ لماذا XChange؟
+                {t('home.trust.title')}
               </h2>
               <p className="text-lg text-white/80 max-w-2xl mx-auto">
-                نحن نضع أمانك وثقتك في المقام الأول مع نظام حماية متكامل
+                {t('home.trust.subtitle')}
               </p>
             </div>
           </ScrollReveal>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {TRUST_FEATURES.map((feature, index) => (
+            {TRUST_FEATURES_CONFIG.map((feature, index) => (
               <ScrollReveal key={index} delay={index * 100} animation="fadeUp">
                 <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white/20 transition-colors h-full">
                   <div className="text-5xl mb-4">{feature.icon}</div>
-                  <h3 className="text-xl font-bold mb-2">{feature.title}</h3>
-                  <p className="text-white/70 text-sm mb-4">{feature.description}</p>
+                  <h3 className="text-xl font-bold mb-2">{t(`home.trust.${feature.id}.title`)}</h3>
+                  <p className="text-white/70 text-sm mb-4">{t(`home.trust.${feature.id}.description`)}</p>
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-sm font-bold">
-                    {feature.stat}
+                    {t(`home.trust.${feature.id}.stat`)}
                   </div>
                 </div>
               </ScrollReveal>
@@ -634,15 +636,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black text-gray-900">⭐ منتجات مميزة</h2>
-              <p className="text-gray-500">أفضل المنتجات المختارة لك</p>
+              <h2 className="text-2xl md:text-3xl font-black text-gray-900">{t('home.featured.title')}</h2>
+              <p className="text-gray-500">{t('home.featured.subtitle')}</p>
             </div>
             <Link
               href="/items?featured=true"
               className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-bold"
             >
-              عرض الكل
-              <svg className="w-5 h-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {t('home.featured.viewAll')}
+              <svg className={`w-5 h-5 ${locale === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
             </Link>
@@ -662,7 +664,7 @@ export default function HomePage() {
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
-                  category={item.category?.nameAr}
+                  category={locale === 'ar' ? item.category?.nameAr : item.category?.nameEn}
                   seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
                   createdAt={item.createdAt}
                   isFeatured
@@ -670,7 +672,7 @@ export default function HomePage() {
               ))
             ) : (
               <div className="col-span-full text-center py-12 text-gray-500">
-                لا توجد منتجات مميزة حالياً
+                {t('home.featured.noItems')}
               </div>
             )}
           </div>
@@ -684,15 +686,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-2xl md:text-3xl font-black text-gray-900">🆕 أحدث الإعلانات</h2>
-              <p className="text-gray-500">تصفح آخر المنتجات المضافة</p>
+              <h2 className="text-2xl md:text-3xl font-black text-gray-900">{t('home.latest.title')}</h2>
+              <p className="text-gray-500">{t('home.latest.subtitle')}</p>
             </div>
             <Link
               href="/items"
               className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-bold"
             >
-              عرض الكل
-              <svg className="w-5 h-5 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {t('home.latest.viewAll')}
+              <svg className={`w-5 h-5 ${locale === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
             </Link>
@@ -712,14 +714,14 @@ export default function HomePage() {
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
-                  category={item.category?.nameAr}
+                  category={locale === 'ar' ? item.category?.nameAr : item.category?.nameEn}
                   createdAt={item.createdAt}
                   variant="compact"
                 />
               ))
             ) : (
               <div className="col-span-full text-center py-12 text-gray-500">
-                لا توجد منتجات حالياً
+                {t('home.latest.noItems')}
               </div>
             )}
           </div>
@@ -734,16 +736,16 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <span className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 rounded-full text-sm font-bold mb-4">
-                🔄 ميزة حصرية
+                {t('home.barter.badge')}
               </span>
               <h2 className="text-3xl md:text-4xl font-black mb-4">
-                المقايضة الذكية
+                {t('home.barter.title')}
               </h2>
               <p className="text-lg text-white/90 mb-6">
-                بادل منتجاتك القديمة بمنتجات جديدة بدون نقود! نظام الذكاء الاصطناعي يجد لك أفضل الصفقات ويدعم سلاسل المقايضة المتعددة الأطراف.
+                {t('home.barter.description')}
               </p>
               <ul className="space-y-3 mb-8">
-                {['مطابقة ذكية بالـ AI', 'سلاسل متعددة الأطراف (A→B→C→A)', 'دمج النقد + المقايضة', 'حماية بنظام الضمان'].map((feature) => (
+                {(t.raw('home.barter.features') as string[]).map((feature) => (
                   <li key={feature} className="flex items-center gap-3">
                     <span className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center text-sm">✓</span>
                     {feature}
@@ -755,13 +757,13 @@ export default function HomePage() {
                   href="/barter"
                   className="px-8 py-4 bg-white text-orange-600 rounded-xl font-bold hover:bg-white/90 transition-colors"
                 >
-                  ابدأ المقايضة
+                  {t('home.barter.startBarter')}
                 </Link>
                 <Link
                   href="/barter/guide"
                   className="px-8 py-4 bg-white/20 text-white rounded-xl font-bold hover:bg-white/30 transition-colors"
                 >
-                  كيف تعمل؟
+                  {t('home.barter.howItWorks')}
                 </Link>
               </div>
             </div>
@@ -777,13 +779,13 @@ export default function HomePage() {
                       )}
                     </div>
                     <h4 className="font-bold text-sm truncate">{item.title}</h4>
-                    <p className="text-xs text-white/70">متاح للمقايضة</p>
+                    <p className="text-xs text-white/70">{t('home.barter.availableForBarter')}</p>
                   </div>
                 ))
               ) : (
                 <div className="col-span-2 text-center py-8 text-white/70">
                   <div className="text-6xl mb-4">🔄</div>
-                  <p>ابدأ أول مقايضة لك الآن</p>
+                  <p>{t('home.barter.startFirst')}</p>
                 </div>
               )}
             </div>
@@ -798,9 +800,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-black text-gray-900 mb-4">
-              💬 ماذا يقول عملاؤنا
+              {t('home.testimonials.title')}
             </h2>
-            <p className="text-lg text-gray-600">قصص نجاح حقيقية من مستخدمي XChange</p>
+            <p className="text-lg text-gray-600">{t('home.testimonials.subtitle')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -812,18 +814,18 @@ export default function HomePage() {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="text-4xl">{testimonial.avatar}</div>
                   <div>
-                    <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
-                    <p className="text-sm text-gray-500">{testimonial.role}</p>
+                    <h4 className="font-bold text-gray-900">{locale === 'ar' ? testimonial.name : testimonial.nameEn}</h4>
+                    <p className="text-sm text-gray-500">{locale === 'ar' ? testimonial.role : testimonial.roleEn}</p>
                   </div>
                 </div>
-                <p className="text-gray-600 mb-4 leading-relaxed">"{testimonial.content}"</p>
+                <p className="text-gray-600 mb-4 leading-relaxed">"{locale === 'ar' ? testimonial.content : testimonial.contentEn}"</p>
                 <div className="flex items-center justify-between">
                   <div className="flex gap-1">
                     {Array.from({ length: testimonial.rating }).map((_, i) => (
                       <span key={i} className="text-amber-400">⭐</span>
                     ))}
                   </div>
-                  <span className="text-sm text-gray-500">{testimonial.transactions} صفقة</span>
+                  <span className="text-sm text-gray-500">{testimonial.transactions} {t('home.testimonials.deals')}</span>
                 </div>
               </div>
             ))}
@@ -847,10 +849,10 @@ export default function HomePage() {
       <section className="py-20 bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-black mb-4">
-            🚀 ابدأ البيع والشراء الآن
+            {t('home.cta.title')}
           </h2>
           <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-            انضم لأكثر من {formatNumber(liveStats.totalUsers)} مستخدم يتداولون يومياً على XChange. التسجيل مجاني وسريع.
+            {t('home.cta.subtitle', { count: formatNumber(liveStats.totalUsers) })}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             {user ? (
@@ -859,13 +861,13 @@ export default function HomePage() {
                   href="/inventory/add"
                   className="px-8 py-4 bg-white text-emerald-600 rounded-xl font-bold text-lg hover:bg-white/90 transition-colors shadow-lg"
                 >
-                  ➕ أضف إعلانك الأول
+                  {t('home.cta.addFirstListing')}
                 </Link>
                 <Link
                   href="/items"
                   className="px-8 py-4 bg-white/20 text-white rounded-xl font-bold text-lg hover:bg-white/30 transition-colors"
                 >
-                  تصفح المنتجات
+                  {t('home.cta.browseProducts')}
                 </Link>
               </>
             ) : (
@@ -874,13 +876,13 @@ export default function HomePage() {
                   href="/register"
                   className="px-8 py-4 bg-white text-emerald-600 rounded-xl font-bold text-lg hover:bg-white/90 transition-colors shadow-lg"
                 >
-                  إنشاء حساب مجاني
+                  {t('home.cta.createFreeAccount')}
                 </Link>
                 <Link
                   href="/login"
                   className="px-8 py-4 bg-white/20 text-white rounded-xl font-bold text-lg hover:bg-white/30 transition-colors"
                 >
-                  تسجيل الدخول
+                  {t('home.cta.login')}
                 </Link>
               </>
             )}
@@ -895,8 +897,8 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div>
-              <h3 className="text-2xl font-bold mb-2">📱 قريباً - تطبيق XChange</h3>
-              <p className="text-gray-400">تابع جميع صفقاتك من موبايلك</p>
+              <h3 className="text-2xl font-bold mb-2">{t('home.app.title')}</h3>
+              <p className="text-gray-400">{t('home.app.subtitle')}</p>
             </div>
             <div className="flex gap-4">
               <button className="px-6 py-3 bg-white/10 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2">

@@ -122,20 +122,110 @@
   },
   "home": {
     "hero": {
-      "title": "Egypt's #1 Exchange & Barter Platform",
-      "subtitle": "Buy, sell, or trade anything easily and safely",
-      "searchPlaceholder": "Search for a product...",
-      "voiceSearch": "Voice Search"
+      "searchPlaceholder": "Search for anything... cars, mobiles, real estate, gold...",
+      "quickTags": ["iPhone 15", "Hyundai Car", "Apartment for Rent", "21K Gold", "Laptop"]
     },
-    "categories": {
-      "title": "Categories"
+    "slides": {
+      "main": {
+        "title": "Egypt's Smartest Market",
+        "subtitle": "Buy • Sell • Trade",
+        "description": "XChange platform combines 11 specialized markets in one place. Direct sales, auctions, barter, and more - all with full protection.",
+        "cta": "Start Shopping"
+      },
+      "barter": {
+        "title": "Smart Barter",
+        "subtitle": "Trade Without Cash",
+        "description": "The first AI-powered barter system in the Middle East. Multi-party barter chains (A→B→C→A).",
+        "cta": "Start Trading",
+        "badge": "New"
+      },
+      "auctions": {
+        "title": "Live Auctions",
+        "subtitle": "Bid & Win",
+        "description": "Real auctions on cars, real estate, electronics, and more. Anti-manipulation system with full protection.",
+        "cta": "View Auctions"
+      },
+      "gold": {
+        "title": "Gold Market",
+        "subtitle": "Save up to 38%",
+        "description": "Buy and sell gold at better prices than traditional gold shops. XRF inspection and certified hallmark.",
+        "cta": "Browse Gold"
+      }
     },
-    "featured": {
-      "title": "Featured Products",
-      "viewAll": "View All"
+    "stats": {
+      "activeListings": "Active Listings",
+      "users": "Users",
+      "successfulDeals": "Successful Deals",
+      "successRate": "Success Rate"
     },
     "markets": {
-      "title": "Our Markets"
+      "title": "🏪 13 Specialized Markets in One Place",
+      "subtitle": "Each market is carefully designed for the perfect buying and selling experience with unique features and full protection",
+      "listing": "listing",
+      "daily": "daily"
+    },
+    "trust": {
+      "title": "🛡️ Why XChange?",
+      "subtitle": "We put your security and trust first with a comprehensive protection system",
+      "escrow": {
+        "title": "Escrow System",
+        "description": "Your money is protected until you receive the product",
+        "stat": "100% Protection"
+      },
+      "verification": {
+        "title": "Multi-level Verification",
+        "description": "ID and business registration verification",
+        "stat": "+50,000 Verified"
+      },
+      "ai": {
+        "title": "Artificial Intelligence",
+        "description": "Smart pricing and matching",
+        "stat": "95% Accuracy"
+      },
+      "fast": {
+        "title": "Fast Transactions",
+        "description": "Average deal completion in hours",
+        "stat": "2 Hours"
+      }
+    },
+    "featured": {
+      "title": "⭐ Featured Products",
+      "subtitle": "Best products selected for you",
+      "viewAll": "View All",
+      "noItems": "No featured products currently"
+    },
+    "latest": {
+      "title": "🆕 Latest Listings",
+      "subtitle": "Browse the latest added products",
+      "viewAll": "View All",
+      "noItems": "No products currently"
+    },
+    "barter": {
+      "badge": "🔄 Exclusive Feature",
+      "title": "Smart Barter",
+      "description": "Trade your old products for new ones without cash! The AI system finds the best deals for you and supports multi-party barter chains.",
+      "features": ["Smart AI Matching", "Multi-party Chains (A→B→C→A)", "Cash + Barter Combo", "Escrow Protection"],
+      "startBarter": "Start Barter",
+      "howItWorks": "How it Works?",
+      "availableForBarter": "Available for Barter",
+      "startFirst": "Start your first barter now"
+    },
+    "testimonials": {
+      "title": "💬 What Our Customers Say",
+      "subtitle": "Real success stories from XChange users",
+      "deals": "deals"
+    },
+    "cta": {
+      "title": "🚀 Start Buying and Selling Now",
+      "subtitle": "Join over {count} users trading daily on XChange. Registration is free and quick.",
+      "addFirstListing": "Add Your First Listing",
+      "browseProducts": "Browse Products",
+      "createFreeAccount": "Create Free Account",
+      "login": "Login"
+    },
+    "app": {
+      "title": "📱 Coming Soon - XChange App",
+      "subtitle": "Track all your deals from your phone"
     }
   },
   "items": {
