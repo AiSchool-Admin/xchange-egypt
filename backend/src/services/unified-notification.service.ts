@@ -102,7 +102,7 @@ async function createInAppNotification(
       message,
       metadata: { titleAr, messageAr, ...data },
       isRead: false,
-    },
+    } as any,
   });
 }
 

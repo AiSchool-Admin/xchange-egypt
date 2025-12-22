@@ -1132,7 +1132,7 @@ export const deductStockForOrder = async (
         entityType: 'ITEM',
         entityId: itemId,
         priority: 'URGENT',
-      },
+      } as any,
     });
   }
 
@@ -1147,7 +1147,7 @@ export const deductStockForOrder = async (
         entityType: 'ITEM',
         entityId: itemId,
         priority: 'HIGH',
-      },
+      } as any,
     });
   }
 

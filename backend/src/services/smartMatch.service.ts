@@ -184,7 +184,7 @@ export const runProactiveMatching = async (): Promise<number> => {
             message: `"${match.title}" matches your barter request (${match.matchScore}% match)`,
             entityId: match.id,
             entityType: 'Item',
-          },
+          } as any,
         });
         notificationCount++;
       }

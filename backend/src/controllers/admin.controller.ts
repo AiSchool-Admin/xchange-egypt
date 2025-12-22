@@ -790,7 +790,7 @@ export const runRetroactiveMatching = async (
                   message: `Your item matches with ${cycle.participants.length} other items (${(cycle.averageScore * 100).toFixed(0)}% match)`,
                   entityId: item.id,
                   entityType: 'Item',
-                },
+                } as any,
               });
 
               notificationsSent++;

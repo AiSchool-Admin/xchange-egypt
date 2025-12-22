@@ -747,7 +747,7 @@ export const notifyProximityMatch = async (
         score: match.score,
         proximityLevel: match.proximityLevel,
       },
-    },
+    } as any,
   });
 
   // Send WebSocket notification

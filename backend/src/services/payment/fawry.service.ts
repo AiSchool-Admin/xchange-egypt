@@ -276,7 +276,7 @@ const handleCallback = async (payload: {
         message: `Payment for order ${order.orderNumber} has been received via Fawry`,
         entityId: order.id,
         entityType: 'Order',
-      },
+      } as any,
     });
 
     return { success: true, message: 'Payment confirmed', merchantRefNum: order.id };
@@ -289,7 +289,7 @@ const handleCallback = async (payload: {
         message: `Fawry payment reference for order ${order.orderNumber} has expired`,
         entityId: order.id,
         entityType: 'Order',
-      },
+      } as any,
     });
 
     return { success: false, message: 'Payment expired' };

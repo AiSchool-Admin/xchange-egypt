@@ -252,7 +252,7 @@ export const handleCallback = async (payload: {
         message: `Payment for order ${order.orderNumber} has been received`,
         entityId: order.id,
         entityType: 'Order',
-      },
+      } as any,
     });
 
     return { success: true, message: 'Payment confirmed', orderId: order.id };
@@ -266,7 +266,7 @@ export const handleCallback = async (payload: {
         message: `Payment for order ${order.orderNumber} has failed`,
         entityId: order.id,
         entityType: 'Order',
-      },
+      } as any,
     });
 
     return { success: false, message: 'Payment failed' };
