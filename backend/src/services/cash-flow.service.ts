@@ -167,7 +167,7 @@ export const updateCashFlow = async (input: UpdateCashFlowInput, userId: string)
 
   const updated = await prisma.cashFlow.update({
     where: { id: cashFlowId },
-    data: updateData,
+    data: updateData as any,
   });
 
   return updated;
@@ -433,10 +433,10 @@ export const getCashFlows = async (query: CashFlowQuery) => {
   }
 
   const skip = (page - 1) * limit;
-  const total = await prisma.cashFlow.count({ where });
+  const total = await prisma.cashFlow.count({ where: where as any });
 
   const cashFlows = await prisma.cashFlow.findMany({
-    where,
+    where: where as any,
     skip,
     take: limit,
     orderBy: { createdAt: 'desc' },

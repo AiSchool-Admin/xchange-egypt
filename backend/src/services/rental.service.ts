@@ -733,7 +733,7 @@ export const getUserRentalContracts = async (
   }
 
   return prisma.rentalContract.findMany({
-    where,
+    where: where as any,
     include: {
       property: {
         select: {

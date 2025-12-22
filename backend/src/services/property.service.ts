@@ -694,7 +694,7 @@ export const getUserProperties = async (
   if (status) where.status = status;
 
   return prisma.property.findMany({
-    where,
+    where: where as any,
     orderBy: { createdAt: 'desc' },
     include: {
       _count: {

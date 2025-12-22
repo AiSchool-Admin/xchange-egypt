@@ -553,7 +553,7 @@ export const getInspectorInspections = async (
   }
 
   return prisma.fieldInspection.findMany({
-    where,
+    where: where as any,
     include: {
       property: {
         select: {
@@ -594,7 +594,7 @@ export const getUserInspections = async (
   }
 
   return prisma.fieldInspection.findMany({
-    where,
+    where: where as any,
     include: {
       property: {
         select: {

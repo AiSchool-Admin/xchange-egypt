@@ -849,10 +849,10 @@ export const getMyBids = async (
     where.status = status as string;
   }
 
-  const total = await prisma.reverseAuctionBid.count({ where });
+  const total = await prisma.reverseAuctionBid.count({ where: where as any });
 
   const bids = await prisma.reverseAuctionBid.findMany({
-    where,
+    where: where as any,
     skip,
     take: limit,
     orderBy: { createdAt: 'desc' },

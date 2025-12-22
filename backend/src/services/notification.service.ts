@@ -142,9 +142,9 @@ export const getUserNotifications = async (
   ];
 
   const [total, notifications] = await Promise.all([
-    prisma.notification.count({ where }),
+    prisma.notification.count({ where: where as any }),
     prisma.notification.findMany({
-      where,
+      where: where as any,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' }, // Sort by newest first

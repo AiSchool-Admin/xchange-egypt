@@ -463,7 +463,7 @@ export const getUserBarterProposals = async (
   }
 
   return prisma.propertyBarterProposal.findMany({
-    where,
+    where: where as any,
     include: {
       proposer: {
         select: {

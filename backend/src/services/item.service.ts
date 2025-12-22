@@ -792,11 +792,11 @@ export const searchItems = async (
   const skip = (page - 1) * limit;
 
   // Get total count
-  const total = await prisma.item.count({ where });
+  const total = await prisma.item.count({ where: where as any });
 
   // Get items
   const items = await prisma.item.findMany({
-    where,
+    where: where as any,
     skip,
     take: limit,
     orderBy: { [sortBy]: sortOrder },
@@ -822,7 +822,7 @@ export const searchItems = async (
   const totalPages = Math.ceil(total / limit);
 
   return {
-    items,
+    items: items as unknown as ItemWithSeller[],
     pagination: {
       page,
       limit,
@@ -954,11 +954,11 @@ export const getCategoryItems = async (
   const skip = (page - 1) * limit;
 
   // Get total count
-  const total = await prisma.item.count({ where });
+  const total = await prisma.item.count({ where: where as any });
 
   // Get items
   const items = await prisma.item.findMany({
-    where,
+    where: where as any,
     skip,
     take: limit,
     orderBy: { [sortBy]: sortOrder },
@@ -984,7 +984,7 @@ export const getCategoryItems = async (
   const totalPages = Math.ceil(total / limit);
 
   return {
-    items,
+    items: items as unknown as ItemWithSeller[],
     pagination: {
       page,
       limit,
@@ -1223,7 +1223,7 @@ export const getFeaturedItems = async (params: {
   }
 
   const items = await prisma.item.findMany({
-    where,
+    where: where as any,
     take: limit,
     orderBy: [
       // Order by tier first (higher tiers first)
@@ -1346,7 +1346,7 @@ export const getLuxuryItems = async (params: {
   }
 
   const items = await prisma.item.findMany({
-    where,
+    where: where as any,
     take: limit,
     orderBy,
     include: {
