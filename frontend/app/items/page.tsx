@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 import { getItems, Item } from '@/lib/api/items';
 import { getCategoryTree, Category } from '@/lib/api/categories';
 
@@ -12,43 +13,73 @@ interface CategoryWithChildren extends Category {
 }
 import LocationSelector, { LocationSelection } from '@/components/LocationSelector';
 import { getLocationLabel, getGovernorateNameAr, getCityNameAr, getDistrictNameAr } from '@/lib/data/egyptLocations';
-import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
+import ItemCard, { ItemCardSkeleton, ItemCardProps } from '@/components/ui/ItemCard';
 import { useAuth } from '@/lib/contexts/AuthContext';
+
+// New enhanced components
+import SmartSearch from '@/components/items/SmartSearch';
+import QuickViewModal from '@/components/items/QuickViewModal';
+import PriceRangeSlider from '@/components/items/PriceRangeSlider';
+import RecentlyViewed, { addToRecentlyViewed } from '@/components/items/RecentlyViewed';
+
+// ============================================
+// Cross-Market Navigation
+// ============================================
+const MARKET_TABS_CONFIG = [
+  { id: 'all', nameKey: 'all', icon: '🛒', href: '/items', active: true },
+  { id: 'sale', nameKey: 'forSale', icon: '🏷️', listingType: 'DIRECT_SALE' },
+  { id: 'auction', nameKey: 'auctions', icon: '🔨', href: '/auctions' },
+  { id: 'barter', nameKey: 'barter', icon: '🔄', listingType: 'BARTER' },
+  { id: 'wanted', nameKey: 'wanted', icon: '🔍', listingType: 'DIRECT_BUY' },
+  { id: 'tenders', nameKey: 'tenders', icon: '📋', href: '/reverse-auctions' },
+];
+
+const SPECIALIZED_MARKETS_CONFIG = [
+  { id: 'cars', nameKey: 'cars', icon: '🚗', href: '/cars', color: 'bg-blue-500' },
+  { id: 'properties', nameKey: 'properties', icon: '🏠', href: '/properties', color: 'bg-emerald-500' },
+  { id: 'mobiles', nameKey: 'mobiles', icon: '📱', href: '/mobiles', color: 'bg-violet-500' },
+  { id: 'gold', nameKey: 'gold', icon: '💰', href: '/gold', color: 'bg-yellow-500' },
+  { id: 'silver', nameKey: 'silver', icon: '🥈', href: '/silver', color: 'bg-slate-400' },
+  { id: 'luxury', nameKey: 'luxury', icon: '👑', href: '/luxury', color: 'bg-purple-500' },
+  { id: 'scrap', nameKey: 'scrap', icon: '♻️', href: '/scrap', color: 'bg-green-500' },
+];
 
 // ============================================
 // Constants
 // ============================================
-const CONDITIONS = [
-  { value: 'NEW', label: 'جديد', icon: '✨' },
-  { value: 'LIKE_NEW', label: 'شبه جديد', icon: '🌟' },
-  { value: 'GOOD', label: 'جيد', icon: '👍' },
-  { value: 'FAIR', label: 'مقبول', icon: '👌' },
-  { value: 'POOR', label: 'مستعمل', icon: '📦' },
+const CONDITIONS_CONFIG = [
+  { value: 'NEW', labelKey: 'new', icon: '✨' },
+  { value: 'LIKE_NEW', labelKey: 'likeNew', icon: '🌟' },
+  { value: 'GOOD', labelKey: 'good', icon: '👍' },
+  { value: 'FAIR', labelKey: 'fair', icon: '👌' },
+  { value: 'POOR', labelKey: 'used', icon: '📦' },
 ];
 
-const LISTING_TYPES = [
-  { value: '', label: 'الكل', icon: '🛒' },
-  { value: 'DIRECT_SALE', label: 'بيع مباشر', icon: '🏷️' },
-  { value: 'AUCTION', label: 'مزاد', icon: '🔨' },
-  { value: 'BARTER', label: 'مقايضة', icon: '🔄' },
-  { value: 'DIRECT_BUY', label: 'مطلوب للشراء', icon: '🔍' },
-  { value: 'REVERSE_AUCTION', label: 'مناقصات', icon: '📢' },
+const LISTING_TYPES_CONFIG = [
+  { value: '', labelKey: 'all', icon: '🛒' },
+  { value: 'DIRECT_SALE', labelKey: 'directSale', icon: '🏷️' },
+  { value: 'AUCTION', labelKey: 'auction', icon: '🔨' },
+  { value: 'BARTER', labelKey: 'barter', icon: '🔄' },
+  { value: 'DIRECT_BUY', labelKey: 'wantedToBuy', icon: '🔍' },
+  { value: 'REVERSE_AUCTION', labelKey: 'tenders', icon: '📢' },
 ];
 
-const SORT_OPTIONS = [
-  { value: 'createdAt:desc', label: 'الأحدث' },
-  { value: 'createdAt:asc', label: 'الأقدم' },
-  { value: 'estimatedValue:asc', label: 'السعر: الأقل' },
-  { value: 'estimatedValue:desc', label: 'السعر: الأعلى' },
+const SORT_OPTIONS_CONFIG = [
+  { value: 'createdAt:desc', labelKey: 'newest' },
+  { value: 'createdAt:asc', labelKey: 'oldest' },
+  { value: 'estimatedValue:asc', labelKey: 'priceLow' },
+  { value: 'estimatedValue:desc', labelKey: 'priceHigh' },
 ];
 
 // ============================================
 // Main Component
 // ============================================
-export default function ItemsPage() {
+function ItemsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user: currentUser } = useAuth();
+  const t = useTranslations('browse');
+  const locale = useLocale();
 
   // URL params
   const categorySlug = searchParams.get('category');
@@ -94,6 +125,22 @@ export default function ItemsPage() {
   // View
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Quick View Modal
+  const [quickViewItem, setQuickViewItem] = useState<{
+    id: string;
+    title: string;
+    description?: string;
+    price: number;
+    images: string[];
+    condition?: string;
+    governorate?: string;
+    city?: string;
+    category?: string;
+    seller?: { id: string; name: string; avatar?: string; rating?: number };
+    listingType?: string;
+    createdAt?: string;
+  } | null>(null);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -288,6 +335,49 @@ export default function ItemsPage() {
     setPage(1);
   };
 
+  // Handle quick view
+  const handleQuickView = (item: ItemCardProps) => {
+    const images: string[] = [];
+    if (item.images) {
+      item.images.forEach(img => {
+        if (typeof img === 'string') {
+          images.push(img);
+        } else if (img && typeof img === 'object' && 'url' in img) {
+          images.push(img.url);
+        }
+      });
+    }
+
+    setQuickViewItem({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      price: item.price,
+      images,
+      condition: item.condition,
+      governorate: item.governorate,
+      city: item.city,
+      category: item.category,
+      seller: item.seller,
+      listingType: item.listingType,
+      createdAt: item.createdAt,
+    });
+
+    // Also add to recently viewed
+    addToRecentlyViewed({
+      id: item.id,
+      title: item.title,
+      price: item.price,
+      image: images[0],
+    });
+  };
+
+  // Handle price range change
+  const handlePriceRangeChange = (min: number, max: number) => {
+    setMinPrice(min > 0 ? min.toString() : '');
+    setMaxPrice(max < 1000000 ? max.toString() : '');
+  };
+
   // Handle main category change - reset subcategories
   const handleMainCategoryChange = (categoryId: string) => {
     setSelectedMainCategory(categoryId);
@@ -311,80 +401,157 @@ export default function ItemsPage() {
 
   const getCategoryName = () => {
     if (isMyItems) {
-      return '📦 منتجاتي';
+      return t('myItems');
     }
     // Get the most specific selected category name
     if (selectedSubSubCategory) {
       const subSubCats = getSubSubCategories();
       const cat = subSubCats.find(c => c.id === selectedSubSubCategory);
-      return cat?.nameAr || 'السوق';
+      return (locale === 'ar' ? cat?.nameAr : cat?.nameEn) || t('title');
     }
     if (selectedSubCategory) {
       const subCats = getSubCategories();
       const cat = subCats.find(c => c.id === selectedSubCategory);
-      return cat?.nameAr || 'السوق';
+      return (locale === 'ar' ? cat?.nameAr : cat?.nameEn) || t('title');
     }
     if (selectedMainCategory) {
       const cat = categories.find(c => c.id === selectedMainCategory);
-      return cat?.nameAr || 'السوق';
+      return (locale === 'ar' ? cat?.nameAr : cat?.nameEn) || t('title');
     }
-    return 'السوق';
+    return t('title');
   };
 
   const locationLabel = getLocationLabel(location.governorateId, location.cityId, location.districtId);
 
   const hasActiveFilters = selectedMainCategory || selectedCondition || selectedListingType || debouncedSearch || debouncedMinPrice || debouncedMaxPrice || location.governorateId;
 
+  // Get active market tab
+  const getActiveTab = () => {
+    if (!selectedListingType) return 'all';
+    const tab = MARKET_TABS_CONFIG.find(t => t.listingType === selectedListingType);
+    return tab?.id || 'all';
+  };
+
+  const handleTabClick = (tab: typeof MARKET_TABS_CONFIG[0]) => {
+    if (tab.href) {
+      router.push(tab.href);
+    } else if (tab.listingType) {
+      setSelectedListingType(tab.listingType);
+      setPage(1);
+    } else {
+      setSelectedListingType('');
+      setPage(1);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       {/* ============================================
-          Header
+          Hero Header with Search
           ============================================ */}
-      <div className="bg-gradient-to-l from-primary-600 to-teal-600 text-white">
+      <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          {/* Title & Actions */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold">{getCategoryName()}</h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-primary-100">
-                  {totalItems > 0 ? `${totalItems.toLocaleString('ar-EG')} منتج متاح` : 'تصفح المنتجات'}
+              <h1 className="text-3xl md:text-4xl font-black">{getCategoryName()}</h1>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="text-white/80">
+                  {totalItems > 0 ? `${totalItems.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')} ${t('productsAvailable')}` : t('browseProducts')}
                 </span>
                 {location.governorateId && (
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm">
+                  <span className="bg-white/20 px-3 py-1 rounded-full text-sm backdrop-blur-sm">
                     📍 {locationLabel}
                   </span>
                 )}
               </div>
             </div>
-            <Link
-              href="/inventory/add"
-              className="bg-white text-primary-600 px-6 py-3 rounded-xl hover:bg-primary-50 transition font-bold flex items-center gap-2 shadow-lg"
-            >
-              <span>➕</span>
-              أضف إعلان جديد
-            </Link>
+            <div className="flex gap-3">
+              <Link
+                href="/barter"
+                className="bg-white/20 backdrop-blur-sm text-white px-5 py-3 rounded-xl hover:bg-white/30 transition font-bold flex items-center gap-2"
+              >
+                <span>🔄</span>
+                {t('barter')}
+              </Link>
+              <Link
+                href="/inventory/add"
+                className="bg-white text-emerald-600 px-6 py-3 rounded-xl hover:bg-emerald-50 transition font-bold flex items-center gap-2 shadow-lg"
+              >
+                <span>➕</span>
+                {t('addListing')}
+              </Link>
+            </div>
+          </div>
+
+          {/* Market Type Tabs */}
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {MARKET_TABS_CONFIG.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabClick(tab)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${
+                  getActiveTab() === tab.id
+                    ? 'bg-white text-emerald-600 shadow-lg'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                {t(`marketTabs.${tab.nameKey}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ============================================
+          Specialized Markets Quick Links
+          ============================================ */}
+      <div className="bg-white border-b border-gray-100 py-3">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+            <span className="text-sm text-gray-500 whitespace-nowrap">{t('specializedMarkets')}</span>
+            {SPECIALIZED_MARKETS_CONFIG.map((market) => (
+              <Link
+                key={market.id}
+                href={market.href}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-medium text-gray-700 transition whitespace-nowrap"
+              >
+                <span>{market.icon}</span>
+                {t(`markets.${market.nameKey}`)}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Recently Viewed Section */}
+        <RecentlyViewed maxItems={6} />
+
         {/* ============================================
             Top Bar - Search & Sort
             ============================================ */}
         <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1 relative">
-              <input
-                type="text"
+            {/* Smart Search with Autocomplete */}
+            <div className="flex-1">
+              <SmartSearch
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث عن المنتجات..."
-                className="w-full pl-12 pr-4 py-3 bg-white rounded-xl border-2 border-gray-200 focus:border-primary-500 transition-all outline-none placeholder-gray-500 text-gray-900"
+                onChange={setSearch}
+                onSearch={(value) => {
+                  setSearch(value);
+                  setDebouncedSearch(value);
+                  setPage(1);
+                }}
+                placeholder={t('searchPlaceholder')}
+                categories={categories.map(c => ({
+                  id: c.id,
+                  nameAr: c.nameAr,
+                  slug: c.slug,
+                  itemCount: 0, // Could be populated from API
+                }))}
               />
-              <svg className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
             </div>
 
             {/* Filter Toggle - Mobile */}
@@ -395,7 +562,7 @@ export default function ItemsPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
-              الفلاتر
+              {t('filters')}
               {hasActiveFilters && (
                 <span className="w-2 h-2 bg-primary-500 rounded-full" />
               )}
@@ -407,8 +574,8 @@ export default function ItemsPage() {
               onChange={(e) => setSortBy(e.target.value)}
               className="px-4 py-3 bg-white rounded-xl border-2 border-gray-200 focus:border-primary-500 outline-none font-medium min-w-[150px] text-gray-900 cursor-pointer"
             >
-              {SORT_OPTIONS.map(option => (
-                <option key={option.value} value={option.value}>{option.label}</option>
+              {SORT_OPTIONS_CONFIG.map(option => (
+                <option key={option.value} value={option.value}>{t(`sortOptions.${option.labelKey}`)}</option>
               ))}
             </select>
 
@@ -441,20 +608,20 @@ export default function ItemsPage() {
           <div className={`lg:col-span-1 ${showFilters ? 'block' : 'hidden lg:block'}`}>
             <div className="bg-white rounded-2xl shadow-sm p-6 sticky top-20 space-y-6">
               <div className="flex justify-between items-center">
-                <h2 className="text-lg font-bold text-gray-900">🔍 الفلاتر</h2>
+                <h2 className="text-lg font-bold text-gray-900">{t('filters')}</h2>
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
                     className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
-                    مسح الكل
+                    {t('clearAll')}
                   </button>
                 )}
               </div>
 
               {/* Location */}
               <div className="pb-6 border-b border-gray-100">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">📍 الموقع</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">{t('location')}</label>
                 <LocationSelector
                   value={location}
                   onChange={handleLocationChange}
@@ -463,13 +630,13 @@ export default function ItemsPage() {
 
               {/* Category - Hierarchical */}
               <div className="pb-6 border-b border-gray-100 space-y-3">
-                <label className="block text-sm font-semibold text-gray-700">📂 الفئة</label>
+                <label className="block text-sm font-semibold text-gray-700">{t('category')}</label>
 
                 {/* Category Loading State */}
                 {categoriesLoading ? (
                   <div className="flex items-center gap-2 text-gray-500 py-3">
                     <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-sm">جاري تحميل الفئات...</span>
+                    <span className="text-sm">{t('loadingCategories')}</span>
                   </div>
                 ) : categoriesError ? (
                   <div className="text-red-500 text-sm py-2">
@@ -478,12 +645,12 @@ export default function ItemsPage() {
                       onClick={loadCategories}
                       className="text-primary-600 hover:text-primary-700 mt-1 underline"
                     >
-                      إعادة المحاولة
+                      {t('retry')}
                     </button>
                   </div>
                 ) : categories.length === 0 ? (
                   <div className="text-gray-500 text-sm py-2">
-                    <p>لا توجد فئات متاحة حالياً</p>
+                    <p>{t('noCategoriesAvailable')}</p>
                   </div>
                 ) : (
                   <>
@@ -493,9 +660,9 @@ export default function ItemsPage() {
                       onChange={(e) => handleMainCategoryChange(e.target.value)}
                       className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
                     >
-                      <option value="">جميع الفئات الرئيسية</option>
+                      <option value="">{t('allMainCategories')}</option>
                       {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                        <option key={cat.id} value={cat.id}>{locale === 'ar' ? cat.nameAr : cat.nameEn}</option>
                       ))}
                     </select>
 
@@ -506,9 +673,9 @@ export default function ItemsPage() {
                         onChange={(e) => handleSubCategoryChange(e.target.value)}
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
                       >
-                        <option value="">جميع الفئات الفرعية</option>
+                        <option value="">{t('allSubcategories')}</option>
                         {getSubCategories().map((cat) => (
-                          <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                          <option key={cat.id} value={cat.id}>{locale === 'ar' ? cat.nameAr : cat.nameEn}</option>
                         ))}
                       </select>
                     )}
@@ -520,9 +687,9 @@ export default function ItemsPage() {
                         onChange={(e) => handleSubSubCategoryChange(e.target.value)}
                         className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
                       >
-                        <option value="">جميع الفئات الفرعية-فرعية</option>
+                        <option value="">{t('allSubSubcategories')}</option>
                         {getSubSubCategories().map((cat) => (
-                          <option key={cat.id} value={cat.id}>{cat.nameAr}</option>
+                          <option key={cat.id} value={cat.id}>{locale === 'ar' ? cat.nameAr : cat.nameEn}</option>
                         ))}
                       </select>
                     )}
@@ -532,9 +699,9 @@ export default function ItemsPage() {
 
               {/* Listing Type */}
               <div className="pb-6 border-b border-gray-100">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">🏷️ نوع الإعلان</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">{t('listingType')}</label>
                 <div className="flex flex-wrap gap-2">
-                  {LISTING_TYPES.map(type => (
+                  {LISTING_TYPES_CONFIG.map(type => (
                     <button
                       key={type.value}
                       onClick={() => { setSelectedListingType(type.value); setPage(1); }}
@@ -544,7 +711,7 @@ export default function ItemsPage() {
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      {type.icon} {type.label}
+                      {type.icon} {t(`listingTypes.${type.labelKey}`)}
                     </button>
                   ))}
                 </div>
@@ -552,9 +719,9 @@ export default function ItemsPage() {
 
               {/* Condition */}
               <div className="pb-6 border-b border-gray-100">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">📊 الحالة</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">{t('condition')}</label>
                 <div className="space-y-2">
-                  {CONDITIONS.map(cond => (
+                  {CONDITIONS_CONFIG.map(cond => (
                     <label key={cond.value} className="flex items-center gap-3 cursor-pointer group">
                       <input
                         type="radio"
@@ -565,7 +732,7 @@ export default function ItemsPage() {
                         className="w-4 h-4 text-primary-500 focus:ring-primary-500"
                       />
                       <span className="text-gray-700 group-hover:text-primary-600 transition-colors">
-                        {cond.icon} {cond.label}
+                        {cond.icon} {t(`conditions.${cond.labelKey}`)}
                       </span>
                     </label>
                   ))}
@@ -574,39 +741,29 @@ export default function ItemsPage() {
                       onClick={() => { setSelectedCondition(''); setPage(1); }}
                       className="text-sm text-primary-600 hover:text-primary-700"
                     >
-                      مسح الاختيار
+                      {t('clearSelection')}
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Price Range */}
+              {/* Price Range Slider */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">💰 السعر (ج.م)</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="number"
-                    value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
-                    placeholder="من"
-                    min="0"
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                  />
-                  <input
-                    type="number"
-                    value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
-                    placeholder="إلى"
-                    min="0"
-                    className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                  />
-                </div>
+                <label className="block text-sm font-semibold text-gray-700 mb-3">{t('price')}</label>
+                <PriceRangeSlider
+                  min={0}
+                  max={1000000}
+                  minValue={minPrice ? parseInt(minPrice) : 0}
+                  maxValue={maxPrice ? parseInt(maxPrice) : 1000000}
+                  onChange={handlePriceRangeChange}
+                  step={100}
+                />
               </div>
 
               {/* Active Filters Summary */}
               {hasActiveFilters && (
                 <div className="pt-4 border-t border-gray-100">
-                  <p className="text-sm font-medium text-gray-700 mb-3">الفلاتر النشطة:</p>
+                  <p className="text-sm font-medium text-gray-700 mb-3">{t('activeFilters')}</p>
                   <div className="flex flex-wrap gap-2">
                     {location.governorateId && (
                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
@@ -622,13 +779,13 @@ export default function ItemsPage() {
                     )}
                     {selectedCondition && (
                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm">
-                        {CONDITIONS.find(c => c.value === selectedCondition)?.label}
+                        {t(`conditions.${CONDITIONS_CONFIG.find(c => c.value === selectedCondition)?.labelKey}`)}
                         <button onClick={() => setSelectedCondition('')} className="hover:text-primary-900">×</button>
                       </span>
                     )}
                     {selectedListingType && (
                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
-                        {LISTING_TYPES.find(t => t.value === selectedListingType)?.label}
+                        {t(`listingTypes.${LISTING_TYPES_CONFIG.find(t => t.value === selectedListingType)?.labelKey}`)}
                         <button onClick={() => setSelectedListingType('')} className="hover:text-amber-900">×</button>
                       </span>
                     )}
@@ -662,24 +819,24 @@ export default function ItemsPage() {
                   onClick={loadItems}
                   className="px-6 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors"
                 >
-                  حاول مرة أخرى
+                  {t('tryAgain')}
                 </button>
               </div>
             ) : items.length === 0 ? (
               <div className="text-center py-16 bg-white rounded-2xl">
                 <div className="text-6xl mb-4">📭</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">لا توجد منتجات</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{t('noProducts')}</h3>
                 <p className="text-gray-500 mb-6">
                   {hasActiveFilters
-                    ? 'جرب تعديل الفلاتر أو البحث عن شيء آخر'
-                    : 'كن أول من يضيف منتج!'}
+                    ? t('tryAdjustingFilters')
+                    : t('beFirstToAdd')}
                 </p>
                 {hasActiveFilters && (
                   <button
                     onClick={clearFilters}
                     className="px-6 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors"
                   >
-                    مسح الفلاتر
+                    {t('clearFilters')}
                   </button>
                 )}
               </div>
@@ -688,7 +845,7 @@ export default function ItemsPage() {
                 {/* Results count */}
                 <div className="mb-4 flex justify-between items-center text-sm text-gray-600">
                   <span>
-                    عرض {items.length} من {totalItems.toLocaleString('ar-EG')} منتج
+                    {t('showing')} {items.length} {t('of')} {totalItems.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US')} {t('products')}
                   </span>
                 </div>
 
@@ -699,15 +856,19 @@ export default function ItemsPage() {
                       key={item.id}
                       id={item.id}
                       title={item.title}
+                      description={item.description}
                       price={item.estimatedValue || 0}
                       images={item.images?.map(img => img.url) || []}
                       condition={item.condition}
                       governorate={item.governorate}
+                      city={item.city}
                       listingType={item.listingType as any}
                       category={item.category?.nameAr}
                       seller={item.seller ? { id: item.seller.id, name: item.seller.fullName || '' } : undefined}
                       createdAt={item.createdAt}
                       variant={viewMode === 'list' ? 'horizontal' : 'default'}
+                      showQuickView={true}
+                      onQuickView={handleQuickView}
                     />
                   ))}
                 </div>
@@ -720,7 +881,7 @@ export default function ItemsPage() {
                       disabled={page === 1}
                       className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
                     >
-                      السابق
+                      {t('previous')}
                     </button>
                     <div className="flex items-center gap-1">
                       {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -754,7 +915,7 @@ export default function ItemsPage() {
                       disabled={page === totalPages}
                       className="px-5 py-2.5 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition"
                     >
-                      التالي
+                      {t('next')}
                     </button>
                   </div>
                 )}
@@ -763,6 +924,28 @@ export default function ItemsPage() {
           </div>
         </div>
       </div>
+
+      {/* Quick View Modal */}
+      <QuickViewModal
+        isOpen={!!quickViewItem}
+        onClose={() => setQuickViewItem(null)}
+        item={quickViewItem}
+      />
     </div>
+  );
+}
+
+export default function ItemsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center" dir="rtl">
+        <div className="text-center">
+          <div className="inline-block w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-600">جاري تحميل المنتجات...</p>
+        </div>
+      </div>
+    }>
+      <ItemsContent />
+    </Suspense>
   );
 }

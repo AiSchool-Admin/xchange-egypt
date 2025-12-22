@@ -67,3 +67,8 @@ export const sendNoContent = (res: Response): Response => {
  * Alias for sendSuccess (for backward compatibility)
  */
 export const successResponse = sendSuccess;
+
+/**
+ * Alias for sendError (for backward compatibility)
+ */
+export const errorResponse = sendError;

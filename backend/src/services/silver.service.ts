@@ -3,7 +3,7 @@
  * خدمة سوق الفضة
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // Commission rates - Higher than gold due to lower transaction values
 const BUYER_COMMISSION_RATE = 0.02; // 2%
@@ -262,7 +262,7 @@ export const getSilverItems = async (filters: SilverItemFilters) => {
   const currentPrices = await getLatestPrices();
 
   const enrichedItems = items.map(item => {
-    const marketPrice = currentPrices[item.purity]?.buyPrice || getDefaultPrice(item.purity as any);
+    const marketPrice = currentPrices[item.purity]?.buyPrice || getDefaultPrice(item.purity);
     const newSilverPrice = item.weightGrams * marketPrice * (1 + NEW_SILVER_MARKUP);
     const buyerPays = item.askingPrice * (1 + BUYER_COMMISSION_RATE);
     const savings = newSilverPrice - buyerPays;
@@ -319,8 +319,8 @@ export const getSilverItemById = async (id: string) => {
   });
 
   // Enrich with current prices
-  const currentPrice = await getPriceByPurity(item.purity as any);
-  const marketPrice = currentPrice?.buyPrice || getDefaultPrice(item.purity as any);
+  const currentPrice = await getPriceByPurity(item.purity);
+  const marketPrice = currentPrice?.buyPrice || getDefaultPrice(item.purity);
   const newSilverPrice = item.weightGrams * marketPrice * (1 + NEW_SILVER_MARKUP);
   const buyerPays = item.askingPrice * (1 + BUYER_COMMISSION_RATE);
   const savings = newSilverPrice - buyerPays;
@@ -510,8 +510,8 @@ export const createSilverTransaction = async (
   }
 
   // Get current silver price
-  const currentPrice = await getPriceByPurity(item.purity as any);
-  const silverPrice = currentPrice?.buyPrice || getDefaultPrice(item.purity as any);
+  const currentPrice = await getPriceByPurity(item.purity);
+  const silverPrice = currentPrice?.buyPrice || getDefaultPrice(item.purity);
 
   // Calculate commissions
   const buyerCommission = item.askingPrice * BUYER_COMMISSION_RATE;

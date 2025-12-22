@@ -12,7 +12,7 @@ export const createSaleListing = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const listingData = req.body;
 
     const listing = await listingService.createSaleListing(userId, listingData);
@@ -54,7 +54,7 @@ export const updateListing = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const updateData = req.body;
 
     const listing = await listingService.updateListing(id, userId, updateData);
@@ -76,7 +76,7 @@ export const deleteListing = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     await listingService.deleteListing(id, userId);
 
@@ -101,7 +101,7 @@ export const activateListing = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const listing = await listingService.activateListing(id, userId);
 
@@ -122,7 +122,7 @@ export const cancelListing = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const listing = await listingService.cancelListing(id, userId);
 
@@ -143,7 +143,7 @@ export const markListingAsCompleted = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const listing = await listingService.markListingAsCompleted(id, userId);
 

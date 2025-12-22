@@ -1,10 +1,51 @@
-import { ItemCondition, PromotionTier } from '@prisma/client';
+import { ItemCondition, PromotionTier } from '../types/prisma-enums';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { processItemImage } from '../utils/image';
 import { itemEvents } from '../events/item.events';
 import path from 'path';
 import fs from 'fs/promises';
 import prisma from '../lib/prisma';
+
+// Type for Item with basic seller relation
+interface ItemWithSeller {
+  id: string;
+  title: string;
+  description: string | null;
+  categoryId: string;
+  sellerId: string;
+  condition: ItemCondition;
+  estimatedValue: number;
+  images: string[];
+  status: string;
+  location: string | null;
+  governorate: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  seller: {
+    id: string;
+    fullName: string;
+    avatar: string | null;
+    businessName?: string | null;
+  };
+  category: {
+    id: string;
+    nameAr: string;
+    nameEn: string;
+    slug: string;
+    parent?: {
+      id: string;
+      nameAr: string;
+      nameEn: string;
+      slug: string;
+    } | null;
+  };
+  desiredCategory?: {
+    id: string;
+    nameAr: string;
+    nameEn: string;
+  } | null;
+  [key: string]: unknown; // Allow additional properties from Prisma
+}
 
 // Mapping of English governorate names to Arabic
 const GOVERNORATE_EN_TO_AR: Record<string, string> = {
@@ -156,7 +197,7 @@ export const createItem = async (
   userId: string,
   itemData: CreateItemData,
   imageFiles?: Express.Multer.File[]
-): Promise<any> => {
+): Promise<ItemWithSeller> => {
   // Verify category exists and is active
   const category = await prisma.category.findUnique({
     where: { id: itemData.categoryId },
@@ -171,7 +212,7 @@ export const createItem = async (
   }
 
   // Process images if provided
-  let processedImages: string[] = [];
+  const processedImages: string[] = [];
   if (imageFiles && imageFiles.length > 0) {
     for (const file of imageFiles) {
       try {
@@ -255,13 +296,13 @@ export const createItem = async (
     timestamp: new Date(),
   });
 
-  return item;
+  return item as unknown as ItemWithSeller;
 };
 
 /**
  * Get item by ID
  */
-export const getItemById = async (itemId: string): Promise<any> => {
+export const getItemById = async (itemId: string): Promise<ItemWithSeller> => {
   const item = await prisma.item.findUnique({
     where: { id: itemId },
     include: {
@@ -304,7 +345,7 @@ export const getItemById = async (itemId: string): Promise<any> => {
     throw new NotFoundError('Item not found');
   }
 
-  return item;
+  return item as unknown as ItemWithSeller;
 };
 
 /**
@@ -314,7 +355,7 @@ export const updateItem = async (
   itemId: string,
   userId: string,
   updateData: UpdateItemData
-): Promise<any> => {
+): Promise<ItemWithSeller> => {
   // Check if item exists and user owns it
   const existingItem = await prisma.item.findUnique({
     where: { id: itemId },
@@ -379,7 +420,7 @@ export const updateItem = async (
     timestamp: new Date(),
   });
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };
 
 /**
@@ -438,7 +479,7 @@ export const deleteItem = async (
  */
 export const searchItems = async (
   params: SearchItemsParams
-): Promise<PaginatedResult<any>> => {
+): Promise<PaginatedResult<ItemWithSeller>> => {
   const {
     search,
     categoryId,
@@ -461,8 +502,8 @@ export const searchItems = async (
   } = params;
 
   // Build where clause
-  const where: any = {};
-  const andConditions: any[] = [];
+  const where: Record<string, unknown> = {};
+  const andConditions: Record<string, unknown>[] = [];
 
   if (search) {
     andConditions.push({
@@ -551,13 +592,14 @@ export const searchItems = async (
 
   // Price range filtering (using estimatedValue field)
   if (minPrice !== undefined || maxPrice !== undefined) {
-    where.estimatedValue = {};
+    const priceFilter: { gte?: number; lte?: number } = {};
     if (minPrice !== undefined) {
-      where.estimatedValue.gte = minPrice;
+      priceFilter.gte = minPrice;
     }
     if (maxPrice !== undefined) {
-      where.estimatedValue.lte = maxPrice;
+      priceFilter.lte = maxPrice;
     }
+    where.estimatedValue = priceFilter;
   }
 
   // Status filtering
@@ -617,46 +659,50 @@ export const searchItems = async (
 
   // Area range
   if (params.minArea !== undefined || params.maxArea !== undefined) {
-    where.areaInSqm = {};
+    const areaFilter: { gte?: number; lte?: number } = {};
     if (params.minArea !== undefined) {
-      where.areaInSqm.gte = params.minArea;
+      areaFilter.gte = params.minArea;
     }
     if (params.maxArea !== undefined) {
-      where.areaInSqm.lte = params.maxArea;
+      areaFilter.lte = params.maxArea;
     }
+    where.areaInSqm = areaFilter;
   }
 
   // Bedrooms range
   if (params.minBedrooms !== undefined || params.maxBedrooms !== undefined) {
-    where.bedrooms = {};
+    const bedroomsFilter: { gte?: number; lte?: number } = {};
     if (params.minBedrooms !== undefined) {
-      where.bedrooms.gte = params.minBedrooms;
+      bedroomsFilter.gte = params.minBedrooms;
     }
     if (params.maxBedrooms !== undefined) {
-      where.bedrooms.lte = params.maxBedrooms;
+      bedroomsFilter.lte = params.maxBedrooms;
     }
+    where.bedrooms = bedroomsFilter;
   }
 
   // Bathrooms range
   if (params.minBathrooms !== undefined || params.maxBathrooms !== undefined) {
-    where.bathrooms = {};
+    const bathroomsFilter: { gte?: number; lte?: number } = {};
     if (params.minBathrooms !== undefined) {
-      where.bathrooms.gte = params.minBathrooms;
+      bathroomsFilter.gte = params.minBathrooms;
     }
     if (params.maxBathrooms !== undefined) {
-      where.bathrooms.lte = params.maxBathrooms;
+      bathroomsFilter.lte = params.maxBathrooms;
     }
+    where.bathrooms = bathroomsFilter;
   }
 
   // Floor range
   if (params.minFloor !== undefined || params.maxFloor !== undefined) {
-    where.floorNumber = {};
+    const floorFilter: { gte?: number; lte?: number } = {};
     if (params.minFloor !== undefined) {
-      where.floorNumber.gte = params.minFloor;
+      floorFilter.gte = params.minFloor;
     }
     if (params.maxFloor !== undefined) {
-      where.floorNumber.lte = params.maxFloor;
+      floorFilter.lte = params.maxFloor;
     }
+    where.floorNumber = floorFilter;
   }
 
   // Property amenities
@@ -689,24 +735,26 @@ export const searchItems = async (
 
   // Year range
   if (params.minYear !== undefined || params.maxYear !== undefined) {
-    where.vehicleYear = {};
+    const yearFilter: { gte?: number; lte?: number } = {};
     if (params.minYear !== undefined) {
-      where.vehicleYear.gte = params.minYear;
+      yearFilter.gte = params.minYear;
     }
     if (params.maxYear !== undefined) {
-      where.vehicleYear.lte = params.maxYear;
+      yearFilter.lte = params.maxYear;
     }
+    where.vehicleYear = yearFilter;
   }
 
   // Kilometers range
   if (params.minKilometers !== undefined || params.maxKilometers !== undefined) {
-    where.vehicleKilometers = {};
+    const kilometersFilter: { gte?: number; lte?: number } = {};
     if (params.minKilometers !== undefined) {
-      where.vehicleKilometers.gte = params.minKilometers;
+      kilometersFilter.gte = params.minKilometers;
     }
     if (params.maxKilometers !== undefined) {
-      where.vehicleKilometers.lte = params.maxKilometers;
+      kilometersFilter.lte = params.maxKilometers;
     }
+    where.vehicleKilometers = kilometersFilter;
   }
 
   if (params.fuelType) {
@@ -744,11 +792,11 @@ export const searchItems = async (
   const skip = (page - 1) * limit;
 
   // Get total count
-  const total = await prisma.item.count({ where });
+  const total = await prisma.item.count({ where: where as any });
 
   // Get items
   const items = await prisma.item.findMany({
-    where,
+    where: where as any,
     skip,
     take: limit,
     orderBy: { [sortBy]: sortOrder },
@@ -774,7 +822,7 @@ export const searchItems = async (
   const totalPages = Math.ceil(total / limit);
 
   return {
-    items,
+    items: items as unknown as ItemWithSeller[],
     pagination: {
       page,
       limit,
@@ -792,7 +840,7 @@ export const getUserItems = async (
   userId: string,
   page: number = 1,
   limit: number = 20
-): Promise<PaginatedResult<any>> => {
+): Promise<PaginatedResult<ItemWithSeller>> => {
   const skip = (page - 1) * limit;
 
   const total = await prisma.item.count({
@@ -805,6 +853,13 @@ export const getUserItems = async (
     take: limit,
     orderBy: { createdAt: 'desc' },
     include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+        },
+      },
       category: {
         select: {
           id: true,
@@ -819,7 +874,7 @@ export const getUserItems = async (
   const totalPages = Math.ceil(total / limit);
 
   return {
-    items,
+    items: items as unknown as ItemWithSeller[],
     pagination: {
       page,
       limit,
@@ -844,7 +899,7 @@ export const getCategoryItems = async (
     sortBy?: 'createdAt' | 'updatedAt' | 'title';
     sortOrder?: 'asc' | 'desc';
   } = {}
-): Promise<PaginatedResult<any>> => {
+): Promise<PaginatedResult<ItemWithSeller>> => {
   const {
     condition,
     governorate,
@@ -871,18 +926,18 @@ export const getCategoryItems = async (
   }
 
   // Build category filter
-  let categoryFilter: any = { categoryId };
+  let categoryFilter: Record<string, unknown> = { categoryId };
 
   if (includeSubcategories && category.children && category.children.length > 0) {
     const categoryIds = [
       categoryId,
-      ...category.children.map((child) => child.id),
+      ...category.children.map((child: { id: string }) => child.id),
     ];
     categoryFilter = { categoryId: { in: categoryIds } };
   }
 
   // Build where clause
-  const where: any = {
+  const where: Record<string, unknown> = {
     ...categoryFilter,
   };
 
@@ -906,11 +961,11 @@ export const getCategoryItems = async (
   const skip = (page - 1) * limit;
 
   // Get total count
-  const total = await prisma.item.count({ where });
+  const total = await prisma.item.count({ where: where as any });
 
   // Get items
   const items = await prisma.item.findMany({
-    where,
+    where: where as any,
     skip,
     take: limit,
     orderBy: { [sortBy]: sortOrder },
@@ -936,7 +991,7 @@ export const getCategoryItems = async (
   const totalPages = Math.ceil(total / limit);
 
   return {
-    items,
+    items: items as unknown as ItemWithSeller[],
     pagination: {
       page,
       limit,
@@ -954,7 +1009,7 @@ export const addItemImages = async (
   itemId: string,
   userId: string,
   imageFiles: Express.Multer.File[]
-): Promise<any> => {
+): Promise<ItemWithSeller> => {
   // Check if item exists and user owns it
   const item = await prisma.item.findUnique({
     where: { id: itemId },
@@ -1017,7 +1072,7 @@ export const addItemImages = async (
     },
   });
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };
 
 /**
@@ -1027,7 +1082,7 @@ export const removeItemImages = async (
   itemId: string,
   userId: string,
   imagesToRemove: string[]
-): Promise<any> => {
+): Promise<ItemWithSeller> => {
   // Check if item exists and user owns it
   const item = await prisma.item.findUnique({
     where: { id: itemId },
@@ -1083,7 +1138,7 @@ export const removeItemImages = async (
   // Clean up the removed images from filesystem
   await cleanupImages(imagesToRemove);
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };
 
 /**
@@ -1114,10 +1169,10 @@ export const getFeaturedItems = async (params: {
   categoryId?: string; // Can be a slug (e.g., 'luxury-watches') or UUID
   governorate?: string;
   minTier?: PromotionTier;
-}): Promise<any[]> => {
+}): Promise<ItemWithSeller[]> => {
   const { limit = 10, categoryId, governorate, minTier } = params;
 
-  const where: any = {
+  const where: Record<string, unknown> = {
     isFeatured: true,
     status: 'ACTIVE',
     OR: [
@@ -1175,7 +1230,7 @@ export const getFeaturedItems = async (params: {
   }
 
   const items = await prisma.item.findMany({
-    where,
+    where: where as any,
     take: limit,
     orderBy: [
       // Order by tier first (higher tiers first)
@@ -1205,7 +1260,7 @@ export const getFeaturedItems = async (params: {
     },
   });
 
-  return items;
+  return items as unknown as ItemWithSeller[];
 };
 
 /**
@@ -1218,7 +1273,7 @@ export const getLuxuryItems = async (params: {
   categoryId?: string; // Can be a slug (e.g., 'luxury-watches') or UUID
   governorate?: string;
   sortBy?: 'price_high' | 'price_low' | 'recent';
-}): Promise<any[]> => {
+}): Promise<ItemWithSeller[]> => {
   const {
     limit = 20,
     minPrice = 50000, // Default luxury threshold
@@ -1227,7 +1282,7 @@ export const getLuxuryItems = async (params: {
     sortBy = 'price_high'
   } = params;
 
-  const where: any = {
+  const where: Record<string, unknown> = {
     status: 'ACTIVE',
     estimatedValue: { gte: minPrice },
   };
@@ -1284,7 +1339,7 @@ export const getLuxuryItems = async (params: {
   }
 
   // Determine sort order
-  let orderBy: any;
+  let orderBy: Record<string, 'asc' | 'desc'>;
   switch (sortBy) {
     case 'price_low':
       orderBy = { estimatedValue: 'asc' };
@@ -1298,7 +1353,7 @@ export const getLuxuryItems = async (params: {
   }
 
   const items = await prisma.item.findMany({
-    where,
+    where: where as any,
     take: limit,
     orderBy,
     include: {
@@ -1321,7 +1376,7 @@ export const getLuxuryItems = async (params: {
     },
   });
 
-  return items;
+  return items as unknown as ItemWithSeller[];
 };
 
 /**
@@ -1334,7 +1389,7 @@ export const promoteItem = async (
     tier: PromotionTier;
     durationDays?: number;
   }
-): Promise<any> => {
+): Promise<ItemWithSeller> => {
   // Check if item exists and user owns it
   const item = await prisma.item.findUnique({
     where: { id: itemId },
@@ -1389,7 +1444,7 @@ export const promoteItem = async (
     },
   });
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };
 
 /**
@@ -1398,7 +1453,7 @@ export const promoteItem = async (
 export const removePromotion = async (
   itemId: string,
   userId: string
-): Promise<any> => {
+): Promise<ItemWithSeller> => {
   // Check if item exists and user owns it
   const item = await prisma.item.findUnique({
     where: { id: itemId },
@@ -1440,5 +1495,5 @@ export const removePromotion = async (
     },
   });
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };

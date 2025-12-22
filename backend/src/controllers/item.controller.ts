@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import * as itemService from '../services/item.service';
 import { successResponse } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
+import { ItemCondition, PromotionTier } from '../types';
 
 /**
  * Create a new item
@@ -74,7 +75,17 @@ export const updateItem = async (
     const userId = req.user!.id;
 
     // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
-    const updateData: any = {};
+    const updateData: {
+      title?: string;
+      description?: string;
+      categoryId?: string;
+      condition?: ItemCondition;
+      estimatedValue?: number;
+      quantity?: number;
+      location?: string;
+      governorate?: string;
+      images?: string[];
+    } = {};
 
     if (req.body.titleAr || req.body.titleEn) {
       updateData.title = req.body.titleAr || req.body.titleEn;
@@ -214,16 +225,24 @@ export const getCategoryItems = async (
     const { includeSubcategories, condition, governorate, page, limit, sortBy, sortOrder } =
       req.query;
 
+    // Map sortBy values to valid fields
+    let mappedSortBy: 'createdAt' | 'updatedAt' | 'title' | undefined;
+    if (sortBy === 'titleAr' || sortBy === 'titleEn' || sortBy === 'estimatedValue') {
+      mappedSortBy = 'title'; // Default to 'title' for unsupported fields
+    } else {
+      mappedSortBy = sortBy as 'createdAt' | 'updatedAt' | 'title' | undefined;
+    }
+
     const result = await itemService.getCategoryItems(
       categoryId,
       includeSubcategories === 'true',
       {
-        condition: condition as any,
+        condition: condition as ItemCondition | undefined,
         governorate: governorate as string,
         page: page ? parseInt(page as string) : undefined,
         limit: limit ? parseInt(limit as string) : undefined,
-        sortBy: sortBy as any,
-        sortOrder: sortOrder as any,
+        sortBy: mappedSortBy,
+        sortOrder: sortOrder as 'asc' | 'desc' | undefined,
       }
     );
 
@@ -297,7 +316,7 @@ export const getFeaturedItems = async (
       limit: limit ? parseInt(limit as string, 10) : undefined,
       categoryId: categoryId as string | undefined,
       governorate: governorate as string | undefined,
-      minTier: minTier as any,
+      minTier: minTier as PromotionTier | undefined,
     });
 
     return successResponse(res, { items }, 'Featured items retrieved successfully');

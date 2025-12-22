@@ -4,7 +4,6 @@
  * Handles in-app notifications
  */
 
-import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 import { NotFoundError } from '../utils/errors';
 
@@ -22,7 +21,7 @@ export interface CreateNotificationInput {
   entityId?: string;
   actionUrl?: string;
   actionText?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   expiresAt?: Date;
 }
 
@@ -35,7 +34,7 @@ export interface CreateNotificationInput {
  */
 export const createNotification = async (
   input: CreateNotificationInput
-): Promise<any> => {
+) => {
   const {
     userId,
     type,
@@ -61,9 +60,9 @@ export const createNotification = async (
       entityId,
       actionUrl,
       actionText,
-      metadata: metadata as Prisma.JsonValue,
+      metadata: metadata ?? undefined,
       expiresAt,
-    },
+    } as any,
   });
 
   return notification;
@@ -78,20 +77,20 @@ export const createBulkNotifications = async (
 ): Promise<number> => {
   const notifications = userIds.map((userId) => ({
     userId,
-    type: input.type as any,
+    type: input.type,
     title: input.title,
     message: input.message,
-    priority: (input.priority || 'MEDIUM') as any,
+    priority: input.priority || 'MEDIUM',
     entityType: input.entityType,
     entityId: input.entityId,
     actionUrl: input.actionUrl,
     actionText: input.actionText,
-    metadata: input.metadata as Prisma.JsonValue,
+    metadata: input.metadata ?? undefined,
     expiresAt: input.expiresAt,
   }));
 
   const result = await prisma.notification.createMany({
-    data: notifications,
+    data: notifications as any,
   });
 
   return result.count;
@@ -109,7 +108,7 @@ export const getUserNotifications = async (
     page?: number;
     limit?: number;
   } = {}
-): Promise<any> => {
+) => {
   const {
     isRead,
     type,
@@ -120,7 +119,7 @@ export const getUserNotifications = async (
 
   const skip = (page - 1) * limit;
 
-  const where: Prisma.NotificationWhereInput = {
+  const where: Record<string, unknown> = {
     userId,
   };
 
@@ -143,9 +142,9 @@ export const getUserNotifications = async (
   ];
 
   const [total, notifications] = await Promise.all([
-    prisma.notification.count({ where }),
+    prisma.notification.count({ where: where as any }),
     prisma.notification.findMany({
-      where,
+      where: where as any,
       skip,
       take: limit,
       orderBy: { createdAt: 'desc' }, // Sort by newest first
@@ -169,7 +168,7 @@ export const getUserNotifications = async (
 export const markAsRead = async (
   notificationId: string,
   userId: string
-): Promise<any> => {
+) => {
   const notification = await prisma.notification.findFirst({
     where: {
       id: notificationId,
@@ -285,7 +284,7 @@ export const cleanupExpiredNotifications = async (): Promise<number> => {
 /**
  * Get user's notification preferences
  */
-export const getUserPreferences = async (userId: string): Promise<any> => {
+export const getUserPreferences = async (userId: string) => {
   let preferences = await prisma.notificationPreference.findUnique({
     where: { userId },
   });
@@ -329,7 +328,7 @@ export const updatePreferences = async (
     where: { userId },
     data: {
       ...updates,
-      preferences: updates.preferences as Prisma.JsonValue,
+      preferences: updates.preferences as unknown,
     },
   });
 
@@ -371,7 +370,7 @@ export const shouldNotifyUser = async (
   }
 
   // Check type-specific preferences
-  const typePreferences = preferences.preferences as any;
+  const typePreferences = preferences.preferences;
   if (typePreferences[notificationType]) {
     const channelKey = channel.toLowerCase();
     if (typePreferences[notificationType][channelKey] === false) {

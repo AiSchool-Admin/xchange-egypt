@@ -1,6 +1,6 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { env } from '../config/env';
-import { AdminRole } from '@prisma/client';
+import { AdminRole } from '../types/prisma-enums';
 
 interface AdminTokenPayload {
   adminId: string;

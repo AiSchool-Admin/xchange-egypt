@@ -1,11 +1,11 @@
+import { Prisma } from '@prisma/client';
 import {
   InspectionType,
   InspectionStatus,
   InspectionRecommendation,
   PropertyStatus,
   PropertyVerificationLevel,
-  Prisma,
-} from '@prisma/client';
+} from '../types';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 
@@ -544,7 +544,7 @@ export const getInspectorInspections = async (
     throw new NotFoundError('Inspector profile not found');
   }
 
-  const where: Prisma.FieldInspectionWhereInput = {
+  const where: Record<string, unknown> = {
     inspectorId: inspector.id,
   };
 
@@ -553,7 +553,7 @@ export const getInspectorInspections = async (
   }
 
   return prisma.fieldInspection.findMany({
-    where,
+    where: where as any,
     include: {
       property: {
         select: {
@@ -585,7 +585,7 @@ export const getUserInspections = async (
   userId: string,
   status?: InspectionStatus
 ): Promise<any[]> => {
-  const where: Prisma.FieldInspectionWhereInput = {
+  const where: Record<string, unknown> = {
     requestedById: userId,
   };
 
@@ -594,7 +594,7 @@ export const getUserInspections = async (
   }
 
   return prisma.fieldInspection.findMany({
-    where,
+    where: where as any,
     include: {
       property: {
         select: {

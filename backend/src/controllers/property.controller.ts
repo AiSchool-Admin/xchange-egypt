@@ -18,7 +18,7 @@ export const createProperty = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const property = await propertyService.createProperty(userId, req.body);
     return successResponse(res, property, 'Property created successfully', 201);
   } catch (error) {
@@ -54,7 +54,7 @@ export const updateProperty = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const property = await propertyService.updateProperty(id, userId, req.body);
     return successResponse(res, property, 'Property updated successfully');
   } catch (error) {
@@ -72,7 +72,7 @@ export const deleteProperty = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     await propertyService.deleteProperty(id, userId);
     return successResponse(res, null, 'Property deleted successfully');
   } catch (error) {
@@ -105,7 +105,7 @@ export const getUserProperties = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { status } = req.query;
     const properties = await propertyService.getUserProperties(userId, status as any);
     return successResponse(res, properties, 'User properties retrieved successfully');
@@ -128,7 +128,7 @@ export const submitForVerification = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const property = await propertyService.submitForVerification(id, userId);
     return successResponse(res, property, 'Property submitted for verification');
   } catch (error) {
@@ -146,7 +146,7 @@ export const activateProperty = async (
 ) => {
   try {
     const { id } = req.params;
-    const adminId = req.user!.id;
+    const adminId = req.user.id;
     const { verificationNotes } = req.body;
     const property = await propertyService.activateProperty(id, adminId, verificationNotes);
     return successResponse(res, property, 'Property activated successfully');
@@ -183,7 +183,7 @@ export const markAsSold = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const property = await propertyService.markPropertyAsSold(id, userId);
     return successResponse(res, property, 'Property marked as sold');
   } catch (error) {
@@ -201,7 +201,7 @@ export const markAsRented = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const property = await propertyService.markPropertyAsRented(id, userId);
     return successResponse(res, property, 'Property marked as rented');
   } catch (error) {
@@ -223,7 +223,7 @@ export const addToFavorites = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const favorite = await propertyService.addToFavorites(id, userId);
     return successResponse(res, favorite, 'Property added to favorites', 201);
   } catch (error) {
@@ -241,7 +241,7 @@ export const removeFromFavorites = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     await propertyService.removeFromFavorites(id, userId);
     return successResponse(res, null, 'Property removed from favorites');
   } catch (error) {
@@ -258,7 +258,7 @@ export const getFavorites = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const favorites = await propertyService.getUserFavorites(userId);
     return successResponse(res, favorites, 'Favorites retrieved successfully');
   } catch (error) {
@@ -299,7 +299,7 @@ export const createBarterProposal = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await propertyBarterService.createBarterProposal(userId, req.body);
     return successResponse(res, result, 'Barter proposal created successfully', 201);
   } catch (error) {
@@ -317,7 +317,7 @@ export const getBarterProposal = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const proposal = await propertyBarterService.getBarterProposalById(id, userId);
     return successResponse(res, proposal, 'Barter proposal retrieved successfully');
   } catch (error) {
@@ -335,7 +335,7 @@ export const respondToBarterProposal = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await propertyBarterService.respondToProposal(id, userId, req.body);
     return successResponse(res, result, 'Response recorded successfully');
   } catch (error) {
@@ -353,7 +353,7 @@ export const cancelBarterProposal = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const proposal = await propertyBarterService.cancelProposal(id, userId);
     return successResponse(res, proposal, 'Barter proposal cancelled');
   } catch (error) {
@@ -370,7 +370,7 @@ export const getUserBarterProposals = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { type, status } = req.query;
     const proposals = await propertyBarterService.getUserBarterProposals(
       userId,
@@ -393,7 +393,7 @@ export const getBarterSuggestions = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const suggestions = await propertyService.getBarterSuggestions(id, userId);
     return successResponse(res, suggestions, 'Barter suggestions retrieved successfully');
   } catch (error) {
@@ -414,7 +414,7 @@ export const createRentalContract = async (
   next: NextFunction
 ) => {
   try {
-    const landlordId = req.user!.id;
+    const landlordId = req.user.id;
     const result = await rentalService.createRentalContract(landlordId, req.body);
     return successResponse(res, result, 'Rental contract created successfully', 201);
   } catch (error) {
@@ -432,7 +432,7 @@ export const getRentalContract = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const contract = await rentalService.getRentalContractById(id, userId);
     return successResponse(res, contract, 'Rental contract retrieved successfully');
   } catch (error) {
@@ -450,7 +450,7 @@ export const activateRentalContract = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const contract = await rentalService.activateContract(id, userId);
     return successResponse(res, contract, 'Rental contract activated');
   } catch (error) {
@@ -468,7 +468,7 @@ export const terminateRentalContract = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { reason } = req.body;
     const contract = await rentalService.terminateContract(id, userId, reason);
     return successResponse(res, contract, 'Rental contract terminated');
@@ -487,7 +487,7 @@ export const protectDeposit = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await rentalService.protectDeposit(id, userId);
     return successResponse(res, result, 'Deposit protection enabled');
   } catch (error) {
@@ -505,7 +505,7 @@ export const requestDepositReturn = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { checkoutDate } = req.body;
     const result = await rentalService.requestDepositReturn(id, userId, new Date(checkoutDate));
     return successResponse(res, result, 'Deposit return requested');
@@ -524,7 +524,7 @@ export const releaseDeposit = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { deductions } = req.body;
     const result = await rentalService.releaseDeposit(id, userId, deductions);
     return successResponse(res, result, 'Deposit released successfully');
@@ -543,7 +543,7 @@ export const disputeDeposit = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await rentalService.disputeDeposit(id, userId, req.body);
     return successResponse(res, result, 'Dispute opened successfully', 201);
   } catch (error) {
@@ -561,7 +561,7 @@ export const recordRentalPayment = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const payment = await rentalService.recordPayment(id, userId, req.body);
     return successResponse(res, payment, 'Payment recorded successfully');
   } catch (error) {
@@ -578,7 +578,7 @@ export const getUserRentalContracts = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { role, status } = req.query;
     const contracts = await rentalService.getUserRentalContracts(
       userId,
@@ -604,7 +604,7 @@ export const requestInspection = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await inspectionService.requestInspection(userId, req.body);
     return successResponse(res, result, 'Inspection requested successfully', 201);
   } catch (error) {
@@ -622,7 +622,7 @@ export const getInspection = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const inspection = await inspectionService.getInspectionById(id, userId);
     return successResponse(res, inspection, 'Inspection retrieved successfully');
   } catch (error) {
@@ -640,7 +640,7 @@ export const payForInspection = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { paymentMethod, paymentReference } = req.body;
     const result = await inspectionService.payForInspection(id, userId, paymentMethod, paymentReference);
     return successResponse(res, result, 'Payment successful');
@@ -658,7 +658,7 @@ export const getUserInspections = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { status } = req.query;
     const inspections = await inspectionService.getUserInspections(userId, status as any);
     return successResponse(res, inspections, 'Inspections retrieved successfully');
@@ -677,7 +677,7 @@ export const scheduleInspection = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { scheduledAt } = req.body;
     const inspection = await inspectionService.scheduleInspection(id, userId, new Date(scheduledAt));
     return successResponse(res, inspection, 'Inspection scheduled successfully');
@@ -696,7 +696,7 @@ export const startInspection = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { gpsCoordinates } = req.body;
     const inspection = await inspectionService.startInspection(id, userId, gpsCoordinates);
     return successResponse(res, inspection, 'Inspection started');
@@ -715,7 +715,7 @@ export const completeInspection = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const inspection = await inspectionService.completeInspection(id, userId, req.body);
     return successResponse(res, inspection, 'Inspection completed successfully');
   } catch (error) {
@@ -732,7 +732,7 @@ export const registerAsInspector = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const inspector = await inspectionService.registerAsInspector(userId, req.body);
     return successResponse(res, inspector, 'Registered as inspector', 201);
   } catch (error) {
@@ -749,7 +749,7 @@ export const getInspectorInspections = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { status } = req.query;
     const inspections = await inspectionService.getInspectorInspections(userId, status as any);
     return successResponse(res, inspections, 'Inspector inspections retrieved successfully');

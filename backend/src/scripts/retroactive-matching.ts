@@ -100,7 +100,7 @@ async function runRetroactiveMatching() {
                         matchScore: cycle.averageScore,
                         participantCount: cycle.participants.length,
                       },
-                    },
+                    } as any,
                   });
 
                   // Send WebSocket notification if user is connected

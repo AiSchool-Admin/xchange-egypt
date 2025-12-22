@@ -2,11 +2,38 @@
  * Email Service
  *
  * Handles email sending using Nodemailer
- * NOTE: Requires 'nodemailer' package - install with: pnpm add nodemailer @types/nodemailer
  */
 
-import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
+import nodemailer from 'nodemailer';
+
+// Email transporter (initialized lazily)
+let transporter: nodemailer.Transporter | null = null;
+
+/**
+ * Get or create email transporter
+ */
+const getTransporter = (): nodemailer.Transporter | null => {
+  if (transporter) return transporter;
+
+  // Check if SMTP credentials are configured
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    console.warn('SMTP credentials not configured, emails will be logged to console');
+    return null;
+  }
+
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+  });
+
+  return transporter;
+};
 
 // ============================================
 // Types
@@ -57,7 +84,7 @@ export const queueEmail = async (options: EmailOptions): Promise<any> => {
       htmlBody: html,
       textBody: text,
       templateName,
-      templateData: templateData as Prisma.JsonValue,
+      templateData: templateData as any,
       priority,
       scheduledFor,
       userId,
@@ -73,55 +100,45 @@ export const queueEmail = async (options: EmailOptions): Promise<any> => {
 
 /**
  * Send email immediately (bypasses queue)
- * In development: logs to console
- * In production: uses nodemailer
+ * Uses nodemailer if configured, otherwise logs to console
  */
 export const sendEmailNow = async (options: EmailOptions): Promise<boolean> => {
   const { to, subject, html, text } = options;
 
-  // Development fallback - log to console
-  if (process.env.NODE_ENV !== 'production') {
+  const emailTransporter = getTransporter();
+
+  // If no transporter or in development without SMTP, log to console
+  if (!emailTransporter || process.env.NODE_ENV !== 'production') {
     console.log('=====================================');
-    console.log('📧 EMAIL (Development Mode)');
+    console.log('📧 EMAIL ' + (process.env.NODE_ENV !== 'production' ? '(Development Mode)' : '(SMTP Not Configured)'));
     console.log('=====================================');
     console.log('To:', to);
     console.log('Subject:', subject);
     console.log('-------------------------------------');
-    console.log('HTML:');
-    console.log(html);
-    if (text) {
-      console.log('-------------------------------------');
-      console.log('Text:');
-      console.log(text);
-    }
+    console.log('HTML Preview:', html.substring(0, 500) + (html.length > 500 ? '...' : ''));
     console.log('=====================================\n');
-    return true;
+
+    // In development, return true to simulate success
+    if (process.env.NODE_ENV !== 'production') {
+      return true;
+    }
+
+    // In production without SMTP config, log warning but don't fail
+    console.warn('⚠️ SMTP not configured - email not sent to:', to);
+    return false;
   }
 
-  // Production email sending
+  // Production email sending with nodemailer
   try {
-    // TODO: Implement nodemailer when ready
-    // const nodemailer = require('nodemailer');
-    //
-    // const transporter = nodemailer.createTransporter({
-    //   host: process.env.SMTP_HOST,
-    //   port: process.env.SMTP_PORT,
-    //   secure: process.env.SMTP_SECURE === 'true',
-    //   auth: {
-    //     user: process.env.SMTP_USER,
-    //     pass: process.env.SMTP_PASSWORD,
-    //   },
-    // });
-    //
-    // await transporter.sendMail({
-    //   from: process.env.SMTP_FROM,
-    //   to,
-    //   subject,
-    //   html,
-    //   text,
-    // });
+    const info = await emailTransporter.sendMail({
+      from: process.env.SMTP_FROM || `"Xchange Egypt" <noreply@xchange.eg>`,
+      to,
+      subject,
+      html,
+      text: text || undefined,
+    });
 
-    console.log(`✅ Email queued for: ${to}`);
+    console.log(`✅ Email sent successfully to ${to}, messageId: ${info.messageId}`);
     return true;
   } catch (error) {
     console.error('❌ Email sending failed:', error);

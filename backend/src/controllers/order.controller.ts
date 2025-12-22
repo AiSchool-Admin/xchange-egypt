@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as orderService from '../services/order.service';
 import { successResponse } from '../utils/response';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, PaymentMethod } from '../types';
 
 /**
  * Get user's orders
@@ -49,7 +49,23 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const { shippingAddressId, shippingAddress, paymentMethod, notes } = req.body;
+    const { shippingAddressId, shippingAddress, paymentMethod, notes } = req.body as {
+      shippingAddressId?: string;
+      shippingAddress?: {
+        fullName: string;
+        phone: string;
+        street: string;
+        buildingName?: string;
+        buildingNumber?: string;
+        floor?: string;
+        apartmentNumber?: string;
+        landmark?: string;
+        city: string;
+        governorate: string;
+      };
+      paymentMethod: PaymentMethod;
+      notes?: string;
+    };
 
     const order = await orderService.createOrder(userId, {
       shippingAddressId,
@@ -101,7 +117,15 @@ export const getShippingAddresses = async (req: Request, res: Response, next: Ne
 export const createShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const addressData = req.body;
+    const addressData = req.body as {
+      fullName: string;
+      phone: string;
+      address: string;
+      city: string;
+      governorate: string;
+      postalCode?: string;
+      isDefault?: boolean;
+    };
 
     const address = await orderService.createShippingAddress(userId, addressData);
     return successResponse(res, address, 'Address created successfully', 201);
@@ -118,7 +142,7 @@ export const updateShippingAddress = async (req: Request, res: Response, next: N
   try {
     const userId = req.user!.id;
     const { addressId } = req.params;
-    const addressData = req.body;
+    const addressData = req.body as Record<string, unknown>;
 
     const address = await orderService.updateShippingAddress(userId, addressId, addressData);
     return successResponse(res, address, 'Address updated successfully');
@@ -163,7 +187,24 @@ export const getGovernorates = async (_req: Request, res: Response, next: NextFu
 export const createAuctionOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const { auctionId, shippingAddressId, shippingAddress, paymentMethod, notes } = req.body;
+    const { auctionId, shippingAddressId, shippingAddress, paymentMethod, notes } = req.body as {
+      auctionId: string;
+      shippingAddressId?: string;
+      shippingAddress?: {
+        fullName: string;
+        phone: string;
+        street: string;
+        buildingName?: string;
+        buildingNumber?: string;
+        floor?: string;
+        apartmentNumber?: string;
+        landmark?: string;
+        city: string;
+        governorate: string;
+      };
+      paymentMethod: PaymentMethod;
+      notes?: string;
+    };
 
     const order = await orderService.createAuctionOrder(userId, {
       auctionId,

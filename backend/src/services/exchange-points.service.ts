@@ -54,18 +54,18 @@ export class ExchangePointsService {
     if (filters?.latitude && filters?.longitude && filters?.radius) {
       points = points.filter(point => {
         const distance = this.calculateDistance(
-          filters.latitude!,
-          filters.longitude!,
+          filters.latitude,
+          filters.longitude,
           point.latitude,
           point.longitude
         );
-        return distance <= filters.radius!;
+        return distance <= filters.radius;
       });
 
       // Sort by distance
       points.sort((a, b) => {
-        const distA = this.calculateDistance(filters.latitude!, filters.longitude!, a.latitude, a.longitude);
-        const distB = this.calculateDistance(filters.latitude!, filters.longitude!, b.latitude, b.longitude);
+        const distA = this.calculateDistance(filters.latitude, filters.longitude, a.latitude, a.longitude);
+        const distB = this.calculateDistance(filters.latitude, filters.longitude, b.latitude, b.longitude);
         return distA - distB;
       });
     }
@@ -417,7 +417,7 @@ export class ExchangePointsService {
     const bookedTimes = new Set(bookedSlots.map(b => b.scheduledTime));
 
     // Generate all possible slots
-    const workingHours = point.workingHours as any;
+    const workingHours = point.workingHours;
     const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     const dayHours = workingHours[dayOfWeek];
 

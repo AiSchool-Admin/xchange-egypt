@@ -51,7 +51,7 @@ export const getMyBadges = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const badges = await badgeService.getUserBadges(userId);
 
@@ -71,7 +71,7 @@ export const checkMyBadges = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const awardedBadges = await badgeService.checkAndAwardAutomaticBadges(userId);
 
@@ -119,7 +119,7 @@ export const submitVerificationRequest = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { badgeType, documents } = req.body;
 
     if (!badgeType) {
@@ -148,7 +148,7 @@ export const awardBadge = async (
   next: NextFunction
 ) => {
   try {
-    const adminId = req.user!.id;
+    const adminId = req.user.id;
     const { userId, badgeType, notes } = req.body;
 
     if (!userId || !badgeType) {

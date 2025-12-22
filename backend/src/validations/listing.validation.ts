@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ListingType, ListingStatus } from '@prisma/client';
+import { ListingType, ListingStatus } from '../types/prisma-enums';
 
 // Listing Type validation
 const listingTypeEnum = z.nativeEnum(ListingType, {

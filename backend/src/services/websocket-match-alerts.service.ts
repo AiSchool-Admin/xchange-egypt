@@ -11,8 +11,8 @@
  * - Follower activities
  */
 
-import { Server as SocketIOServer } from 'socket.io';
-import prisma from '../config/database';
+import { Server as SocketIOServer, Socket } from 'socket.io';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types
@@ -45,7 +45,7 @@ interface MatchAlert {
   actionUrl: string;
   actionText: string;
   actionTextAr: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   expiresAt?: Date;
   createdAt: Date;
 }
@@ -126,9 +126,10 @@ export function initializeMatchAlerts(socketIo: SocketIOServer): void {
         joinAlertRooms(socket, subscription);
 
         if (callback) callback({ success: true, subscription });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[MatchAlerts] Error subscribing:', error);
-        if (callback) callback({ success: false, error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        if (callback) callback({ success: false, error: errorMessage });
       }
     });
 
@@ -155,9 +156,10 @@ export function initializeMatchAlerts(socketIo: SocketIOServer): void {
         joinAlertRooms(socket, updated);
 
         if (callback) callback({ success: true, subscription: updated });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[MatchAlerts] Error updating preferences:', error);
-        if (callback) callback({ success: false, error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        if (callback) callback({ success: false, error: errorMessage });
       }
     });
 
@@ -176,9 +178,10 @@ export function initializeMatchAlerts(socketIo: SocketIOServer): void {
         }
 
         if (callback) callback({ success: true });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('[MatchAlerts] Error unsubscribing:', error);
-        if (callback) callback({ success: false, error: error.message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        if (callback) callback({ success: false, error: errorMessage });
       }
     });
 
@@ -215,7 +218,7 @@ export function initializeMatchAlerts(socketIo: SocketIOServer): void {
 // Room Management
 // ============================================
 
-function joinAlertRooms(socket: any, subscription: MatchAlertSubscription): void {
+function joinAlertRooms(socket: Socket, subscription: MatchAlertSubscription): void {
   const rooms = new Set<string>();
 
   // Join alert type rooms
@@ -246,7 +249,7 @@ function joinAlertRooms(socket: any, subscription: MatchAlertSubscription): void
   userAlertRooms.set(subscription.userId, rooms);
 }
 
-function leaveAlertRooms(socket: any, userId: string): void {
+function leaveAlertRooms(socket: Socket, userId: string): void {
   const rooms = userAlertRooms.get(userId);
   if (rooms) {
     for (const room of rooms) {
@@ -535,8 +538,8 @@ export async function sendAuctionAlert(
         priority: 'HIGH',
         title: '😮 You\'ve Been Outbid!',
         titleAr: '😮 تم تجاوز عرضك!',
-        message: `New bid: ${formatPrice(auction.listing.currentBid!)} on "${auction.listing.item.title}"`,
-        messageAr: `عرض جديد: ${formatPrice(auction.listing.currentBid!)} ج.م على "${auction.listing.item.title}"`,
+        message: `New bid: ${formatPrice(auction.listing.currentBid)} on "${auction.listing.item.title}"`,
+        messageAr: `عرض جديد: ${formatPrice(auction.listing.currentBid)} ج.م على "${auction.listing.item.title}"`,
         imageUrl: auction.listing.item.images[0],
         actionUrl: `/auctions/${auctionId}`,
         actionText: 'Bid Higher',

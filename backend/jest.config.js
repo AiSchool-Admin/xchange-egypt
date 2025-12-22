@@ -7,23 +7,51 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
+
+  // Coverage configuration
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/types/**',
     '!src/app.ts', // Main app file, tested via integration tests
+    '!src/**/index.ts', // Re-export files
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'text-summary', 'lcov', 'html', 'json'],
+
+  // Coverage thresholds - temporarily disabled for gradual improvement
+  // coverageThreshold: {
+  //   global: { branches: 60, functions: 60, lines: 60, statements: 60 },
+  // },
+
+  // Module configuration
   moduleFileExtensions: ['ts', 'js', 'json'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
+
+  // Setup and teardown
+  setupFiles: ['<rootDir>/tests/setupEnv.ts'],  // Runs BEFORE module imports
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],  // Runs after framework setup
+  globalSetup: undefined,
+  globalTeardown: undefined,
+
+  // Test configuration
   testTimeout: 10000,
   verbose: true,
   forceExit: true,
   clearMocks: true,
   resetMocks: true,
   restoreMocks: true,
+
+  // Test isolation
+  maxWorkers: '50%',
+  detectOpenHandles: true,
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+  ],
+
+  // Reporters
+  reporters: ['default'],
 };

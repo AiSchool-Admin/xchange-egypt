@@ -1,0 +1,373 @@
+// ============================================
+// Xchange Transport - Complete Database Schema
+// ============================================
+
+// Add to main prisma/schema.prisma
+
+// ============================================
+// Transport Provider Enum
+// ============================================
+enum TransportProvider {
+  UBER
+  CAREEM
+  BOLT
+  INDRIVE
+  DIDI
+  SWVL
+  HALAN
+}
+
+enum RideStatus {
+  SEARCHING
+  OFFERS_RECEIVED
+  BOOKED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum VehicleType {
+  ECONOMY
+  COMFORT
+  PREMIUM
+  XL
+  BUS
+  BIKE
+}
+
+enum AddressType {
+  HOME
+  WORK
+  FAVORITE
+  RECENT
+}
+
+// ============================================
+// Ride Request Model
+// ============================================
+model RideRequest {
+  id                String           @id @default(uuid())
+  userId            String?          @map("user_id")
+
+  // Pickup Location
+  pickupLat         Float            @map("pickup_lat")
+  pickupLng         Float            @map("pickup_lng")
+  pickupAddress     String           @map("pickup_address")
+  pickupPlaceId     String?          @map("pickup_place_id")
+
+  // Dropoff Location
+  dropoffLat        Float            @map("dropoff_lat")
+  dropoffLng        Float            @map("dropoff_lng")
+  dropoffAddress    String           @map("dropoff_address")
+  dropoffPlaceId    String?          @map("dropoff_place_id")
+
+  // Route Info
+  distanceKm        Float            @map("distance_km")
+  durationMin       Int              @map("duration_min")
+  polyline          String?          // Encoded route polyline
+
+  // Status
+  status            RideStatus       @default(SEARCHING)
+  selectedOfferId   String?          @map("selected_offer_id")
+
+  // Timestamps
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  bookedAt          DateTime?        @map("booked_at")
+  completedAt       DateTime?        @map("completed_at")
+
+  // Relations
+  user              User?            @relation("UserRideRequests", fields: [userId], references: [id])
+  offers            RideOffer[]      @relation("RideRequestOffers")
+
+  @@map("ride_requests")
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// Ride Offer Model
+// ============================================
+model RideOffer {
+  id                String           @id @default(uuid())
+  rideRequestId     String           @map("ride_request_id")
+
+  // Provider Info
+  provider          TransportProvider
+  vehicleType       VehicleType      @map("vehicle_type")
+  vehicleTypeName   String           @map("vehicle_type_name") // e.g., "UberX", "Careem Go"
+  vehicleTypeNameAr String           @map("vehicle_type_name_ar")
+
+  // Pricing
+  price             Float
+  originalPrice     Float?           @map("original_price") // Before discount
+  discount          Float?           // Percentage
+  currency          String           @default("EGP")
+
+  // Price Breakdown
+  baseFare          Float            @map("base_fare")
+  distanceFare      Float            @map("distance_fare")
+  timeFare          Float            @map("time_fare")
+  bookingFee        Float            @map("booking_fee")
+  surgeMultiplier   Float            @default(1.0) @map("surge_multiplier")
+
+  // ETA & Confidence
+  etaMinutes        Int              @map("eta_minutes")
+  confidenceScore   Float            @map("confidence_score") // 0-100
+
+  // Deep Link
+  deepLink          String           @map("deep_link")
+  webFallbackUrl    String?          @map("web_fallback_url")
+
+  // Status
+  isSelected        Boolean          @default(false) @map("is_selected")
+  isRecommended     Boolean          @default(false) @map("is_recommended")
+
+  // Timestamps
+  createdAt         DateTime         @default(now()) @map("created_at")
+  expiresAt         DateTime         @map("expires_at")
+
+  // Relations
+  rideRequest       RideRequest      @relation("RideRequestOffers", fields: [rideRequestId], references: [id], onDelete: Cascade)
+
+  @@map("ride_offers")
+  @@index([rideRequestId])
+  @@index([provider])
+  @@index([price])
+}
+
+// ============================================
+// Pricing Formula Model
+// ============================================
+model PricingFormula {
+  id                String           @id @default(uuid())
+
+  // Provider & Vehicle
+  provider          TransportProvider
+  vehicleType       VehicleType      @map("vehicle_type")
+
+  // Formula Components
+  baseFare          Float            @map("base_fare")
+  perKmRate         Float            @map("per_km_rate")
+  perMinRate        Float            @map("per_min_rate")
+  bookingFee        Float            @map("booking_fee")
+  minimumFare       Float            @map("minimum_fare")
+
+  // Accuracy & Source
+  accuracyScore     Float            @map("accuracy_score") // R² score 0-1
+  source            String           @default("manual") // "discovered" or "manual"
+  sampleSize        Int?             @map("sample_size") // Number of data points used
+
+  // Validity
+  isActive          Boolean          @default(true) @map("is_active")
+  validFrom         DateTime         @default(now()) @map("valid_from")
+  validUntil        DateTime?        @map("valid_until")
+
+  // Timestamps
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  @@map("pricing_formulas")
+  @@unique([provider, vehicleType])
+  @@index([provider])
+  @@index([isActive])
+}
+
+// ============================================
+// Surge Data Model
+// ============================================
+model SurgeData {
+  id                String           @id @default(uuid())
+
+  // Provider & Location
+  provider          TransportProvider
+  governorate       String
+  city              String?
+
+  // Surge Info
+  multiplier        Float
+  demandLevel       String           @map("demand_level") // LOW, MEDIUM, HIGH, VERY_HIGH
+
+  // Time Pattern
+  dayOfWeek         Int              @map("day_of_week") // 0-6
+  hourOfDay         Int              @map("hour_of_day") // 0-23
+
+  // Timestamps
+  recordedAt        DateTime         @default(now()) @map("recorded_at")
+  expiresAt         DateTime         @map("expires_at")
+
+  @@map("surge_data")
+  @@index([provider, governorate])
+  @@index([dayOfWeek, hourOfDay])
+}
+
+// ============================================
+// Saved Address Model
+// ============================================
+model SavedAddress {
+  id                String           @id @default(uuid())
+  userId            String           @map("user_id")
+
+  // Address Info
+  name              String           // e.g., "Home", "Work", "Gym"
+  type              AddressType      @default(FAVORITE)
+
+  // Location
+  lat               Float
+  lng               Float
+  address           String
+  placeId           String?          @map("place_id")
+
+  // Additional Details
+  buildingName      String?          @map("building_name")
+  floor             String?
+  apartment         String?
+  landmark          String?
+  instructions      String?          // Delivery instructions
+
+  // Usage Stats
+  useCount          Int              @default(0) @map("use_count")
+  lastUsedAt        DateTime?        @map("last_used_at")
+
+  // Timestamps
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  user              User             @relation("UserSavedAddresses", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_addresses")
+  @@index([userId])
+  @@index([type])
+}
+
+// ============================================
+// Price Alert Model
+// ============================================
+model PriceAlert {
+  id                String           @id @default(uuid())
+  userId            String           @map("user_id")
+
+  // Route
+  pickupLat         Float            @map("pickup_lat")
+  pickupLng         Float            @map("pickup_lng")
+  pickupAddress     String           @map("pickup_address")
+  dropoffLat        Float            @map("dropoff_lat")
+  dropoffLng        Float            @map("dropoff_lng")
+  dropoffAddress    String           @map("dropoff_address")
+
+  // Alert Settings
+  targetPrice       Float            @map("target_price")
+  provider          TransportProvider?
+  vehicleType       VehicleType?     @map("vehicle_type")
+
+  // Status
+  isActive          Boolean          @default(true) @map("is_active")
+  isTriggered       Boolean          @default(false) @map("is_triggered")
+  triggeredAt       DateTime?        @map("triggered_at")
+  triggeredPrice    Float?           @map("triggered_price")
+
+  // Notification Preferences
+  notifyPush        Boolean          @default(true) @map("notify_push")
+  notifyEmail       Boolean          @default(false) @map("notify_email")
+  notifySms         Boolean          @default(false) @map("notify_sms")
+
+  // Timestamps
+  createdAt         DateTime         @default(now()) @map("created_at")
+  expiresAt         DateTime         @map("expires_at")
+
+  // Relations
+  user              User             @relation("UserPriceAlerts", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("price_alerts")
+  @@index([userId])
+  @@index([isActive])
+}
+
+// ============================================
+// Completed Ride Model (History)
+// ============================================
+model CompletedRide {
+  id                String           @id @default(uuid())
+  userId            String           @map("user_id")
+  rideRequestId     String?          @map("ride_request_id")
+
+  // Provider & Vehicle
+  provider          TransportProvider
+  vehicleType       VehicleType      @map("vehicle_type")
+  vehicleTypeName   String           @map("vehicle_type_name")
+
+  // Route
+  pickupAddress     String           @map("pickup_address")
+  dropoffAddress    String           @map("dropoff_address")
+  distanceKm        Float            @map("distance_km")
+  durationMin       Int              @map("duration_min")
+
+  // Pricing
+  price             Float
+  originalPrice     Float?           @map("original_price")
+  discount          Float?
+  paymentMethod     String           @map("payment_method")
+
+  // Rating
+  rating            Int?             // 1-5
+  review            String?
+
+  // Driver Info (if available)
+  driverName        String?          @map("driver_name")
+  driverRating      Float?           @map("driver_rating")
+  vehiclePlate      String?          @map("vehicle_plate")
+  vehicleModel      String?          @map("vehicle_model")
+
+  // Timestamps
+  startedAt         DateTime         @map("started_at")
+  completedAt       DateTime         @map("completed_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  user              User             @relation("UserCompletedRides", fields: [userId], references: [id])
+
+  @@map("completed_rides")
+  @@index([userId])
+  @@index([provider])
+  @@index([completedAt])
+}
+
+// ============================================
+// Transport API Log Model
+// ============================================
+model TransportApiLog {
+  id                String           @id @default(uuid())
+
+  // Request Info
+  provider          TransportProvider
+  endpoint          String
+  method            String
+  requestBody       Json?            @map("request_body")
+
+  // Response Info
+  statusCode        Int              @map("status_code")
+  responseBody      Json?            @map("response_body")
+  responseTimeMs    Int              @map("response_time_ms")
+
+  // Error Info
+  isError           Boolean          @default(false) @map("is_error")
+  errorMessage      String?          @map("error_message")
+
+  // Timestamps
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  @@map("transport_api_logs")
+  @@index([provider])
+  @@index([createdAt])
+}
+
+// ============================================
+// Add to User Model Relations
+// ============================================
+// In User model, add these relations:
+// rideRequests        RideRequest[]      @relation("UserRideRequests")
+// savedAddresses      SavedAddress[]     @relation("UserSavedAddresses")
+// priceAlerts         PriceAlert[]       @relation("UserPriceAlerts")
+// completedRides      CompletedRide[]    @relation("UserCompletedRides")

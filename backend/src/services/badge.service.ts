@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma';
 import { NotFoundError, BadRequestError } from '../utils/errors';
-import { BadgeType } from '@prisma/client';
+import { BadgeType } from '../types';
 
 // ============================================
 // User Badge Service
@@ -295,7 +295,7 @@ export const submitVerificationRequest = async (
         documents,
         requestedAt: new Date().toISOString(),
       },
-    },
+    } as any,
   });
 
   return {

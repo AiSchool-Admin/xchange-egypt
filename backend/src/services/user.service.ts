@@ -1,5 +1,5 @@
-import prisma from '../config/database';
-import { UserType, UserStatus } from '@prisma/client';
+import prisma from '../lib/prisma';
+import { UserType, UserStatus } from '../types/prisma-enums';
 import { hashPassword, comparePassword } from '../utils/password';
 import {
   NotFoundError,

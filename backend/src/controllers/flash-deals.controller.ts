@@ -49,7 +49,7 @@ export const getDeal = async (req: Request, res: Response, next: NextFunction) =
 export const claimDeal = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const claim = await flashDealsService.claimDeal(id, userId);
     return successResponse(res, claim, 'Deal claimed successfully! Complete payment within 15 minutes.', 201);
   } catch (error) {
@@ -64,7 +64,7 @@ export const claimDeal = async (req: Request, res: Response, next: NextFunction)
 export const completeClaim = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { claimId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await flashDealsService.completeClaim(claimId, userId);
     return successResponse(res, result, 'Claim completed successfully');
   } catch (error) {
@@ -79,7 +79,7 @@ export const completeClaim = async (req: Request, res: Response, next: NextFunct
 export const cancelClaim = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { claimId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await flashDealsService.cancelClaim(claimId, userId);
     return successResponse(res, result, 'Claim cancelled successfully');
   } catch (error) {
@@ -93,7 +93,7 @@ export const cancelClaim = async (req: Request, res: Response, next: NextFunctio
  */
 export const getMyClaims = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const claims = await flashDealsService.getUserClaims(userId);
     return successResponse(res, { claims }, 'Claims retrieved successfully');
   } catch (error) {
@@ -107,7 +107,7 @@ export const getMyClaims = async (req: Request, res: Response, next: NextFunctio
  */
 export const createDeal = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const deal = await flashDealsService.createFlashDeal({
       ...req.body,
       sellerId: userId,
@@ -125,7 +125,7 @@ export const createDeal = async (req: Request, res: Response, next: NextFunction
 export const cancelDeal = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await flashDealsService.cancelDeal(id, userId);
     return successResponse(res, result, 'Flash deal cancelled successfully');
   } catch (error) {
@@ -139,7 +139,7 @@ export const cancelDeal = async (req: Request, res: Response, next: NextFunction
  */
 export const getMyDeals = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const deals = await flashDealsService.getSellerDeals(userId);
     return successResponse(res, { deals }, 'Seller deals retrieved successfully');
   } catch (error) {
