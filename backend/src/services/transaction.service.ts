@@ -141,7 +141,11 @@ export const createPurchase = async (
     actionText: 'عرض الطلب',
   });
 
-  return transaction;
+  return {
+    transaction,
+    item: listing.item,
+    message: 'Purchase created successfully! The seller has been notified.',
+  };
 };
 
 /**

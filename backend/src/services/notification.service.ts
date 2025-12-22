@@ -60,9 +60,9 @@ export const createNotification = async (
       entityId,
       actionUrl,
       actionText,
-      metadata: metadata as unknown,
+      metadata: metadata ?? undefined,
       expiresAt,
-    },
+    } as any,
   });
 
   return notification;
