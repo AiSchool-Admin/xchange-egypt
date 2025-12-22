@@ -77,20 +77,20 @@ export const createBulkNotifications = async (
 ): Promise<number> => {
   const notifications = userIds.map((userId) => ({
     userId,
-    type: input.type as any,
+    type: input.type,
     title: input.title,
     message: input.message,
-    priority: (input.priority || 'MEDIUM') as any,
+    priority: input.priority || 'MEDIUM',
     entityType: input.entityType,
     entityId: input.entityId,
     actionUrl: input.actionUrl,
     actionText: input.actionText,
-    metadata: input.metadata as unknown,
+    metadata: input.metadata ?? undefined,
     expiresAt: input.expiresAt,
   }));
 
   const result = await prisma.notification.createMany({
-    data: notifications,
+    data: notifications as any,
   });
 
   return result.count;

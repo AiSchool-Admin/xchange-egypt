@@ -1253,7 +1253,7 @@ export const getFeaturedItems = async (params: {
     },
   });
 
-  return items;
+  return items as unknown as ItemWithSeller[];
 };
 
 /**
@@ -1369,7 +1369,7 @@ export const getLuxuryItems = async (params: {
     },
   });
 
-  return items;
+  return items as unknown as ItemWithSeller[];
 };
 
 /**

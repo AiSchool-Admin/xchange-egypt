@@ -419,7 +419,7 @@ export const updateProperty = async (
       ...data,
       pricePerSqm,
       updatedAt: new Date(),
-    },
+    } as any,
     include: {
       owner: {
         select: {
