@@ -863,7 +863,7 @@ export const adjustStock = async (
         entityType: 'ITEM',
         entityId: input.itemId,
         priority: 'HIGH',
-      },
+      } as any,
     });
   }
 
@@ -878,7 +878,7 @@ export const adjustStock = async (
         entityType: 'ITEM',
         entityId: input.itemId,
         priority: 'URGENT',
-      },
+      } as any,
     });
   }
 

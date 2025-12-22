@@ -295,7 +295,7 @@ export const submitVerificationRequest = async (
         documents,
         requestedAt: new Date().toISOString(),
       },
-    },
+    } as any,
   });
 
   return {

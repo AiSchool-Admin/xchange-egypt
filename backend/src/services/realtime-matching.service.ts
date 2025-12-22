@@ -312,7 +312,7 @@ const notifyParticipants = async (
           message: `Found a ${Math.round(cycle.averageScore * 100)}% match with ${cycle.participants.length} participants. Check it out!`,
           entityId: triggerItemId,
           entityType: 'BarterChain',
-        },
+        } as any,
       });
 
       // Send WebSocket notification
