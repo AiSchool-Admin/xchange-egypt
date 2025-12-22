@@ -296,7 +296,7 @@ export const createItem = async (
     timestamp: new Date(),
   });
 
-  return item;
+  return item as unknown as ItemWithSeller;
 };
 
 /**
@@ -345,7 +345,7 @@ export const getItemById = async (itemId: string): Promise<ItemWithSeller> => {
     throw new NotFoundError('Item not found');
   }
 
-  return item;
+  return item as unknown as ItemWithSeller;
 };
 
 /**
@@ -420,7 +420,7 @@ export const updateItem = async (
     timestamp: new Date(),
   });
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };
 
 /**
@@ -853,6 +853,13 @@ export const getUserItems = async (
     take: limit,
     orderBy: { createdAt: 'desc' },
     include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+        },
+      },
       category: {
         select: {
           id: true,
@@ -867,7 +874,7 @@ export const getUserItems = async (
   const totalPages = Math.ceil(total / limit);
 
   return {
-    items,
+    items: items as unknown as ItemWithSeller[],
     pagination: {
       page,
       limit,
@@ -1065,7 +1072,7 @@ export const addItemImages = async (
     },
   });
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };
 
 /**
@@ -1131,7 +1138,7 @@ export const removeItemImages = async (
   // Clean up the removed images from filesystem
   await cleanupImages(imagesToRemove);
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };
 
 /**
@@ -1437,7 +1444,7 @@ export const promoteItem = async (
     },
   });
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };
 
 /**
@@ -1488,5 +1495,5 @@ export const removePromotion = async (
     },
   });
 
-  return updatedItem;
+  return updatedItem as unknown as ItemWithSeller;
 };
