@@ -2,13 +2,27 @@ import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { verifyAccessToken } from '../utils/jwt';
 import prisma from '../lib/prisma';
-import { UserType } from '@prisma/client';
 
-// Extended Request type with user
-export interface AuthRequest extends Request {
-  user?: any;
-  userId?: string;
-}
+/**
+ * Type alias for Request with authenticated user
+ * This is now properly typed via global Express.Request augmentation
+ */
+export type AuthRequest = Request;
+
+// User type values (matching Prisma schema)
+export const UserType = {
+  INDIVIDUAL: 'INDIVIDUAL',
+  BUSINESS: 'BUSINESS',
+} as const;
+export type UserType = typeof UserType[keyof typeof UserType];
+
+// User status values (matching Prisma schema)
+export const UserStatus = {
+  ACTIVE: 'ACTIVE',
+  SUSPENDED: 'SUSPENDED',
+  DELETED: 'DELETED',
+} as const;
+export type UserStatus = typeof UserStatus[keyof typeof UserStatus];
 
 /**
  * Middleware to authenticate user using JWT
@@ -46,7 +60,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
       throw new UnauthorizedError('User not found');
     }
 
-    if (user.status !== 'ACTIVE') {
+    if (user.status !== UserStatus.ACTIVE) {
       throw new UnauthorizedError('User account is not active');
     }
 
@@ -112,6 +126,11 @@ export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
 };
 
 /**
+ * Alias for isAdmin (for backward compatibility)
+ */
+export const requireAdmin = isAdmin;
+
+/**
  * Optional authentication - doesn't fail if no token provided
  * But validates token if present
  */
@@ -140,7 +159,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
       },
     });
 
-    if (user && user.status === 'ACTIVE') {
+    if (user && user.status === UserStatus.ACTIVE) {
       req.user = user;
       req.userId = user.id;
     }

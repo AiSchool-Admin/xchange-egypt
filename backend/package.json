@@ -13,9 +13,9 @@
     "test:integration": "jest tests/integration",
     "test:smoke": "jest tests/smoke",
     "test:coverage": "jest --coverage --coverageThreshold='{\"global\":{\"branches\":70,\"functions\":70,\"lines\":70,\"statements\":70}}'",
-    "lint": "eslint src --ext .ts --max-warnings 0",
-    "lint:fix": "eslint src --ext .ts --fix",
-    "lint:ci": "eslint src --ext .ts --format stylish",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts --max-warnings 0",
+    "lint:fix": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts --fix",
+    "lint:ci": "ESLINT_USE_FLAT_CONFIG=false eslint src --ext .ts --format stylish",
     "format": "prettier --write \"src/**/*.ts\"",
     "type-check": "tsc --noEmit",
     "prisma:generate": "prisma generate",
@@ -31,7 +31,10 @@
     "seed:transport": "tsx prisma/seed-transport-marketplace.ts",
     "seed:matching": "tsx prisma/seed-matching-tests.ts",
     "db:push": "prisma db push",
-    "db:reset": "prisma migrate reset"
+    "db:reset": "prisma migrate reset",
+    "db:check": "tsx scripts/check-database.ts",
+    "db:health": "tsx scripts/check-database.ts",
+    "prisma:deploy": "prisma migrate deploy"
   },
   "keywords": [
     "xchange",
@@ -65,6 +68,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
@@ -78,6 +82,7 @@
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "eslint": "^8.56.0",
+    "globals": "^16.5.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
     "pg": "^8.16.3",

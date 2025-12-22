@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma';
-import { ItemCondition } from '@prisma/client';
+import { ItemCondition } from '../types';
 
 // ============================================
 // AI Listing Generator Service

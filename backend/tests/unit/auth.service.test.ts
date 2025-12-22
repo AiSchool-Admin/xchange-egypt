@@ -8,7 +8,18 @@ import jwt from 'jsonwebtoken';
 import { cleanDatabase, disconnectTestDb, getTestDb } from '../helpers/testDb';
 import { createTestUser, generateTestToken } from '../helpers/testHelpers';
 
-describe('Auth Service Tests', () => {
+// Check if Prisma is available
+let prismaAvailable = false;
+try {
+  require('@prisma/client');
+  prismaAvailable = true;
+} catch {
+  console.log('⚠️ Prisma not available - skipping Auth Service tests');
+}
+
+const describeIfPrisma = prismaAvailable ? describe : describe.skip;
+
+describeIfPrisma('Auth Service Tests', () => {
   const db = getTestDb();
 
   beforeEach(async () => {

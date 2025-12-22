@@ -10,7 +10,7 @@
  */
 
 import prisma from '../lib/prisma';
-import { SubscriptionTier, SubscriptionStatus } from '@prisma/client';
+import { SubscriptionTier, SubscriptionStatus } from '../types/prisma-enums';
 import { creditWallet } from './wallet.service';
 
 // ============================================

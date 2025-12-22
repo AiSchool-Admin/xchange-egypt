@@ -111,7 +111,7 @@ export const uploadBidImages = upload.array('images', 10);
 /**
  * Handle multer errors
  */
-export const handleMulterError = (error: any) => {
+export const handleMulterError = (error: unknown) => {
   if (error instanceof multer.MulterError) {
     switch (error.code) {
       case 'LIMIT_FILE_SIZE':

@@ -392,7 +392,7 @@ export class SearchAlertsService {
           metadata: {
             alertId: alert.id,
           },
-        },
+        } as any,
       });
 
       // TODO: Send push notification if notifyPush is true

@@ -17,13 +17,47 @@
 import prisma from '../lib/prisma';
 import { Server as SocketIOServer } from 'socket.io';
 import { createNotification } from './notification.service';
-import { itemEvents, ItemCreatedPayload } from '../events/item.events';
+import { itemEvents, ItemCreatedPayload, ItemUpdatedPayload } from '../events/item.events';
 import { barterEvents, BarterOfferCreatedPayload } from '../events/barter.events';
 import { reverseAuctionEvents, ReverseAuctionCreatedPayload } from '../events/reverse-auction.events';
 
 // ============================================
 // Types
 // ============================================
+
+interface ItemWithRelations {
+  id: string;
+  title: string;
+  description: string | null;
+  sellerId: string;
+  categoryId: string | null;
+  estimatedValue: number;
+  listingType: string;
+  status: string;
+  governorate: string | null;
+  city: string | null;
+  district: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  desiredCategoryId: string | null;
+  desiredItemTitle: string | null;
+  desiredKeywords: string | null;
+  desiredValueMax: number | null;
+  seller?: {
+    id: string;
+    fullName: string;
+  };
+  category?: {
+    id: string;
+    nameAr: string;
+    nameEn: string;
+  } | null;
+  desiredCategory?: {
+    id: string;
+    nameAr: string;
+    nameEn: string;
+  } | null;
+}
 
 export type MatchType =
   | 'PERFECT_BARTER'      // تطابق مقايضة مثالي (A↔B)
@@ -140,16 +174,29 @@ let io: SocketIOServer | null = null;
 // Key: `${userId}:${matchedItemId}:${matchType}`
 const notificationCache = new Map<string, number>();
 
-// Clean old entries every 10 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, timestamp] of notificationCache.entries()) {
-    if (now - timestamp > NOTIFICATION_COOLDOWN_MS) {
-      notificationCache.delete(key);
-    }
+// Clean old entries every 10 minutes (only in non-test environment)
+let cacheCleanupInterval: ReturnType<typeof setInterval> | null = null;
+
+const startCacheCleanup = () => {
+  if (cacheCleanupInterval || process.env.NODE_ENV === 'test') return;
+
+  cacheCleanupInterval = setInterval(() => {
+    const now = Date.now();
+    Array.from(notificationCache.entries()).forEach(([key, timestamp]) => {
+      if (now - timestamp > NOTIFICATION_COOLDOWN_MS) {
+        notificationCache.delete(key);
+      }
+    });
+    console.log(`[UnifiedMatching] Cache cleaned, ${notificationCache.size} entries remaining`);
+  }, 10 * 60 * 1000);
+};
+
+export const stopCacheCleanup = () => {
+  if (cacheCleanupInterval) {
+    clearInterval(cacheCleanupInterval);
+    cacheCleanupInterval = null;
   }
-  console.log(`[UnifiedMatching] Cache cleaned, ${notificationCache.size} entries remaining`);
-}, 10 * 60 * 1000);
+};
 
 // ============================================
 // Initialization
@@ -163,6 +210,9 @@ export const initUnifiedMatching = (socketServer?: SocketIOServer): void => {
     io = socketServer;
   }
 
+  // Start cache cleanup interval
+  startCacheCleanup();
+
   console.log('[UnifiedMatching] Initializing unified matching service...');
 
   // Listen for new items
@@ -172,7 +222,7 @@ export const initUnifiedMatching = (socketServer?: SocketIOServer): void => {
   });
 
   // Listen for item updates (status change to ACTIVE)
-  itemEvents.onItemUpdated(async (payload: any) => {
+  itemEvents.onItemUpdated(async (payload: ItemUpdatedPayload) => {
     if (payload.status === 'ACTIVE' && payload.previousStatus !== 'ACTIVE') {
       console.log(`[UnifiedMatching] Item activated: ${payload.itemId}`);
       await processNewItem(payload.itemId, payload.userId);
@@ -258,7 +308,7 @@ export const processNewItem = async (itemId: string, sellerId: string): Promise<
 /**
  * Find DEMAND items that match a SUPPLY item
  */
-const findDemandMatches = async (supplyItem: any): Promise<MatchResult[]> => {
+const findDemandMatches = async (supplyItem: ItemWithRelations): Promise<MatchResult[]> => {
   const matches: MatchResult[] = [];
 
   // Search in unified items table (DIRECT_BUY, REVERSE_AUCTION)
@@ -320,9 +370,10 @@ const findDemandMatches = async (supplyItem: any): Promise<MatchResult[]> => {
 
   // Score reverse auctions
   for (const auction of reverseAuctions) {
-    const auctionAsItem = {
+    const auctionAsItem: ItemWithRelations = {
       id: auction.id,
       title: auction.title,
+      description: auction.description || null,
       sellerId: auction.buyerId,
       seller: auction.buyer,
       categoryId: auction.categoryId,
@@ -335,6 +386,10 @@ const findDemandMatches = async (supplyItem: any): Promise<MatchResult[]> => {
       latitude: null,
       longitude: null,
       listingType: 'REVERSE_AUCTION',
+      status: auction.status || 'ACTIVE',
+      desiredCategoryId: auction.categoryId,
+      desiredItemTitle: auction.title,
+      desiredKeywords: null,
     };
 
     const score = calculateMatchScore(supplyItem, auctionAsItem, 'SUPPLY_DEMAND');
@@ -355,10 +410,10 @@ const findDemandMatches = async (supplyItem: any): Promise<MatchResult[]> => {
 /**
  * Find SUPPLY items that match a DEMAND item
  */
-const findSupplyMatches = async (demandItem: any): Promise<MatchResult[]> => {
+const findSupplyMatches = async (demandItem: ItemWithRelations): Promise<MatchResult[]> => {
   const matches: MatchResult[] = [];
 
-  const orConditions: any[] = [];
+  const orConditions: Array<{ categoryId?: string; title?: { contains: string; mode: 'insensitive' } }> = [];
 
   // Match by category
   if (demandItem.categoryId) {
@@ -411,7 +466,7 @@ const findSupplyMatches = async (demandItem: any): Promise<MatchResult[]> => {
 /**
  * Find perfect BARTER matches (A wants B, B wants A)
  */
-const findBarterMatches = async (item: any): Promise<MatchResult[]> => {
+const findBarterMatches = async (item: ItemWithRelations): Promise<MatchResult[]> => {
   const matches: MatchResult[] = [];
 
   if (!item.desiredCategoryId && !item.desiredItemTitle) {
@@ -419,7 +474,7 @@ const findBarterMatches = async (item: any): Promise<MatchResult[]> => {
   }
 
   // Build search conditions for what this item wants
-  const wantConditions: any[] = [];
+  const wantConditions: Array<{ categoryId?: string; title?: { contains: string; mode: 'insensitive' } }> = [];
 
   if (item.desiredCategoryId) {
     wantConditions.push({ categoryId: item.desiredCategoryId });
@@ -480,8 +535,8 @@ const findBarterMatches = async (item: any): Promise<MatchResult[]> => {
  * Calculate comprehensive match score between two items
  */
 const calculateMatchScore = (
-  sourceItem: any,
-  targetItem: any,
+  sourceItem: ItemWithRelations,
+  targetItem: ItemWithRelations,
   matchType: 'SUPPLY_DEMAND' | 'BARTER'
 ): MatchScoreBreakdown => {
   const weights = SCORE_WEIGHTS[matchType];
@@ -545,22 +600,49 @@ const calculateMatchScore = (
   }
 
   // 4. Keyword Score (تطابق الكلمات)
+  // Check both directions: source keywords against target, and target keywords against source
   let keywordScore = 0;
   const sourceText = `${sourceItem.title || ''} ${sourceItem.description || ''}`.toLowerCase();
   const targetText = `${targetItem.title || ''} ${targetItem.description || ''}`.toLowerCase();
-  const desiredKeywords = (sourceItem.desiredKeywords || sourceItem.desiredItemTitle || '').toLowerCase();
 
-  if (desiredKeywords) {
-    const keywords = desiredKeywords.split(/[\s,،]+/).filter((k: string) => k.length > 2);
+  // Source's desired keywords against target's content
+  const sourceDesiredKeywords = (sourceItem.desiredKeywords || sourceItem.desiredItemTitle || '').toLowerCase();
+  // Target's desired keywords against source's content
+  const targetDesiredKeywords = (targetItem.desiredKeywords || targetItem.desiredItemTitle || '').toLowerCase();
+
+  let bestMatchScore = 0;
+  let matchedKeywordsList: string[] = [];
+
+  // Check source's keywords against target
+  if (sourceDesiredKeywords) {
+    const keywords = sourceDesiredKeywords.split(/[\s,،]+/).filter((k: string) => k.length > 2);
     const matchedKeywords = keywords.filter((kw: string) => targetText.includes(kw));
-
     if (keywords.length > 0) {
-      keywordScore = matchedKeywords.length / keywords.length;
-      if (matchedKeywords.length > 0) {
-        reasonsAr.push(`تطابق: ${matchedKeywords.slice(0, 3).join('، ')}`);
-        reasons.push(`Matched: ${matchedKeywords.slice(0, 3).join(', ')}`);
+      const score = matchedKeywords.length / keywords.length;
+      if (score > bestMatchScore) {
+        bestMatchScore = score;
+        matchedKeywordsList = matchedKeywords;
       }
     }
+  }
+
+  // Check target's keywords against source (reverse matching for buyer-to-seller)
+  if (targetDesiredKeywords) {
+    const keywords = targetDesiredKeywords.split(/[\s,،]+/).filter((k: string) => k.length > 2);
+    const matchedKeywords = keywords.filter((kw: string) => sourceText.includes(kw));
+    if (keywords.length > 0) {
+      const score = matchedKeywords.length / keywords.length;
+      if (score > bestMatchScore) {
+        bestMatchScore = score;
+        matchedKeywordsList = matchedKeywords;
+      }
+    }
+  }
+
+  keywordScore = bestMatchScore;
+  if (matchedKeywordsList.length > 0) {
+    reasonsAr.push(`تطابق: ${matchedKeywordsList.slice(0, 3).join('، ')}`);
+    reasons.push(`Matched: ${matchedKeywordsList.slice(0, 3).join(', ')}`);
   }
 
   // 5. Check for mutual barter match
@@ -638,8 +720,8 @@ const normalizeLocation = (location: string): string => {
  */
 const createMatchResult = (
   type: MatchType,
-  sourceItem: any,
-  matchedItem: any,
+  sourceItem: ItemWithRelations,
+  matchedItem: ItemWithRelations,
   score: MatchScoreBreakdown
 ): MatchResult => {
   return {

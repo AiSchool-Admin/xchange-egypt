@@ -204,11 +204,12 @@ export const getReverseAuctions = async (
   const skip = (page - 1) * limit;
 
   // Build where clause
-  const where: Prisma.ReverseAuctionWhereInput = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = {};
 
   // Only filter by status if provided, otherwise show all for user's own auctions
   if (status) {
-    where.status = status as any;
+    where.status = status as string;
   } else if (!buyerId) {
     // Default to ACTIVE only when not filtering by buyerId
     where.status = 'ACTIVE';
@@ -840,18 +841,18 @@ export const getMyBids = async (
   const { status, page = 1, limit = 20 } = filters;
   const skip = (page - 1) * limit;
 
-  const where: Prisma.ReverseAuctionBidWhereInput = {
+  const where: Record<string, unknown> = {
     sellerId,
   };
 
   if (status) {
-    where.status = status as any;
+    where.status = status as string;
   }
 
-  const total = await prisma.reverseAuctionBid.count({ where });
+  const total = await prisma.reverseAuctionBid.count({ where: where as any });
 
   const bids = await prisma.reverseAuctionBid.findMany({
-    where,
+    where: where as any,
     skip,
     take: limit,
     orderBy: { createdAt: 'desc' },

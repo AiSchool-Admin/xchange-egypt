@@ -3,7 +3,7 @@
  * خدمة السمعة متعددة الأبعاد
  */
 
-import { TrustLevel } from '@prisma/client';
+import { TrustLevel } from '../types/prisma-enums';
 import prisma from '../lib/prisma';
 
 // ============================================
@@ -484,7 +484,7 @@ async function updateBadges(userId: string) {
   }
 
   // Update badges if changed
-  const currentBadges = new Set(reputation.badges);
+  const currentBadges = new Set(reputation.badges as string[]);
   const newBadges = new Set(earnedBadges);
 
   if (

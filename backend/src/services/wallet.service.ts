@@ -3,7 +3,7 @@
  * خدمة محفظة XCoin - نظام العملة الداخلية للمنصة
  */
 
-import { WalletTransactionType, WalletTransactionStatus } from '@prisma/client';
+import { WalletTransactionType, WalletTransactionStatus } from '../types/prisma-enums';
 import prisma from '../lib/prisma';
 
 // ============================================
@@ -22,7 +22,20 @@ interface WalletInfo {
 
 interface TransactionResult {
   success: boolean;
-  transaction?: any;
+  transaction?: {
+    id: string;
+    walletId: string;
+    type: WalletTransactionType;
+    amount: number;
+    balanceBefore: number;
+    balanceAfter: number;
+    status: WalletTransactionStatus;
+    description: string | null;
+    relatedEntityType: string | null;
+    relatedEntityId: string | null;
+    relatedUserId: string | null;
+    createdAt: Date;
+  };
   newBalance?: number;
   error?: string;
 }
@@ -244,9 +257,10 @@ export async function debitWallet(
     });
 
     return { success: true, ...result };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Debit wallet error:', error);
-    return { success: false, error: error.message || 'Failed to debit wallet' };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to debit wallet';
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -344,9 +358,10 @@ export async function transferXCoin(params: TransferParams): Promise<Transaction
     });
 
     return { success: true, ...result };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Transfer error:', error);
-    return { success: false, error: error.message || 'Failed to transfer' };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to transfer';
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -405,9 +420,10 @@ export async function freezeBalance(
     });
 
     return { success: true, ...result };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Freeze balance error:', error);
-    return { success: false, error: error.message || 'Failed to freeze balance' };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to freeze balance';
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -489,9 +505,10 @@ export async function releaseFrozenBalance(
     });
 
     return { success: true, ...result };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Release frozen balance error:', error);
-    return { success: false, error: error.message || 'Failed to release frozen balance' };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to release frozen balance';
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -538,9 +555,10 @@ export async function refundFrozenBalance(
     });
 
     return { success: true, ...result };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Refund frozen balance error:', error);
-    return { success: false, error: error.message || 'Failed to refund frozen balance' };
+    const errorMessage = error instanceof Error ? error.message : 'Failed to refund frozen balance';
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -789,7 +807,11 @@ export async function getTransactionHistory(
     return { transactions: [], total: 0 };
   }
 
-  const where: any = { walletId: wallet.id };
+  const where: {
+    walletId: string;
+    type?: WalletTransactionType;
+    createdAt?: { gte?: Date; lte?: Date };
+  } = { walletId: wallet.id };
 
   if (type) {
     where.type = type;

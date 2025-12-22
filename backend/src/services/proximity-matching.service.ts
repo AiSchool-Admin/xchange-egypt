@@ -7,7 +7,7 @@
  * Hierarchy: District → City → Governorate → National
  */
 
-import { MarketType } from '@prisma/client';
+import { MarketType } from '../types/prisma-enums';
 import { Server as SocketIOServer } from 'socket.io';
 import prisma from '../lib/prisma';
 
@@ -747,7 +747,7 @@ export const notifyProximityMatch = async (
         score: match.score,
         proximityLevel: match.proximityLevel,
       },
-    },
+    } as any,
   });
 
   // Send WebSocket notification

@@ -10,7 +10,7 @@
  */
 
 import prisma from '../lib/prisma';
-import { WarrantyType, WarrantyStatus, WarrantyClaimStatus } from '@prisma/client';
+import { WarrantyType, WarrantyStatus, WarrantyClaimStatus } from '../types/prisma-enums';
 
 // ============================================
 // Types

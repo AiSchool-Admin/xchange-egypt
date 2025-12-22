@@ -11,7 +11,18 @@ import {
   generateTestToken,
 } from '../helpers/testHelpers';
 
-describe('API Endpoints Tests', () => {
+// Check if Prisma is available
+let prismaAvailable = false;
+try {
+  require('@prisma/client');
+  prismaAvailable = true;
+} catch {
+  console.log('⚠️ Prisma not available - skipping API Endpoints tests');
+}
+
+const describeIfPrisma = prismaAvailable ? describe : describe.skip;
+
+describeIfPrisma('API Endpoints Tests', () => {
   const db = getTestDb();
 
   beforeEach(async () => {

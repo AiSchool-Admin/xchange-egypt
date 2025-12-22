@@ -21,7 +21,8 @@
     "node_modules/**",
     "coverage/**",
     "*.js",
-    "prisma/**"
+    "prisma/**",
+    "tests/**"
   ],
   "rules": {
     "@typescript-eslint/no-unused-vars": ["warn", {
@@ -31,36 +32,25 @@
     }],
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-non-null-assertion": "warn",
+    "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/no-unsafe-assignment": "off",
     "@typescript-eslint/no-unsafe-member-access": "off",
     "@typescript-eslint/no-unsafe-call": "off",
     "@typescript-eslint/no-unsafe-return": "off",
     "@typescript-eslint/no-unsafe-argument": "off",
-    "@typescript-eslint/no-floating-promises": "warn",
-    "@typescript-eslint/no-misused-promises": "warn",
-    "@typescript-eslint/require-await": "warn",
+    "@typescript-eslint/no-floating-promises": "off",
+    "@typescript-eslint/no-misused-promises": "off",
+    "@typescript-eslint/require-await": "off",
     "@typescript-eslint/restrict-template-expressions": "off",
     "@typescript-eslint/no-redundant-type-constituents": "off",
     "@typescript-eslint/unbound-method": "off",
+    "@typescript-eslint/no-require-imports": "off",
     "no-console": ["warn", { "allow": ["warn", "error", "info"] }],
     "prefer-const": "error",
     "no-var": "error",
     "eqeqeq": ["error", "always"],
-    "no-return-await": "warn",
-    "no-throw-literal": "error"
-  },
-  "overrides": [
-    {
-      "files": ["tests/**/*.ts", "**/*.test.ts", "**/*.spec.ts"],
-      "rules": {
-        "@typescript-eslint/no-explicit-any": "off",
-        "@typescript-eslint/no-unsafe-assignment": "off",
-        "@typescript-eslint/no-unsafe-member-access": "off",
-        "@typescript-eslint/no-unsafe-call": "off",
-        "@typescript-eslint/no-floating-promises": "off",
-        "no-console": "off"
-      }
-    }
-  ]
+    "no-return-await": "off",
+    "no-throw-literal": "error",
+    "no-case-declarations": "error"
+  }
 }

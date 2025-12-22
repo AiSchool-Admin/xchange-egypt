@@ -167,7 +167,7 @@ export const deleteAccount = async (req: Request, res: Response, next: NextFunct
       throw new BadRequestError('User ID not found');
     }
 
-    const { password } = req.body;
+    const { password } = req.body as { password: string };
 
     if (!password) {
       throw new BadRequestError('Password is required');

@@ -1,5 +1,4 @@
-import { Router } from 'express';
-import { Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import {
   pricingSimulator,
@@ -17,7 +16,7 @@ const router = Router();
 // ============================================
 // Admin check middleware
 // ============================================
-const requireAdmin = (req: Request, res: Response, next: any) => {
+const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   const adminEmails = ['admin@xchange.com', 'admin@xchange-egypt.com'];
   if (!req.user || !adminEmails.includes(req.user.email)) {
     return res.status(403).json({
@@ -257,10 +256,17 @@ router.post('/training-data', authenticate, async (req: Request, res: Response) 
  * @desc    Get surge pattern analysis
  * @access  Admin
  */
+interface HourData {
+  hour: number;
+  label: string;
+  providers: Record<string, { multiplier: number; reason: string }>;
+  avgMultiplier?: number;
+}
+
 router.get('/surge/analysis', authenticate, requireAdmin, async (req: Request, res: Response) => {
   try {
     const now = new Date();
-    const analysis: any[] = [];
+    const analysis: HourData[] = [];
 
     // Analyze surge for each hour
     for (let hour = 0; hour < 24; hour++) {
@@ -274,7 +280,7 @@ router.get('/surge/analysis', authenticate, requireAdmin, async (req: Request, r
         hasEvent: false,
       };
 
-      const hourData: any = {
+      const hourData: HourData = {
         hour,
         label: getHourLabel(hour),
         providers: {},
@@ -298,7 +304,7 @@ router.get('/surge/analysis', authenticate, requireAdmin, async (req: Request, r
       }
 
       // Calculate average
-      const values = Object.values(hourData.providers).map((p: any) => p.multiplier);
+      const values = Object.values(hourData.providers).map(p => p.multiplier);
       hourData.avgMultiplier = values.length > 0
         ? Math.round((values.reduce((a: number, b: number) => a + b, 0) / values.length) * 100) / 100
         : 1.0;
@@ -347,6 +353,23 @@ router.get('/surge/analysis', authenticate, requireAdmin, async (req: Request, r
  * @desc    Get price comparison across all providers for a route
  * @access  Admin
  */
+interface ProviderProduct {
+  product: string;
+  productAr: string;
+  price: number;
+  priceRange: { min: number; max: number };
+  surge: number;
+  confidence: number;
+}
+
+interface ProviderComparison {
+  provider: string;
+  providerAr: string;
+  products: ProviderProduct[];
+  cheapest: number;
+  avgPrice: number;
+}
+
 router.get('/comparison', authenticate, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { pickupLat, pickupLng, dropoffLat, dropoffLng } = req.query;
@@ -364,14 +387,14 @@ router.get('/comparison', authenticate, requireAdmin, async (req: Request, res: 
     );
 
     // Group by provider
-    const byProvider: Record<string, any> = {};
+    const byProvider: Record<string, ProviderComparison> = {};
     for (const estimate of estimates) {
       if (!byProvider[estimate.provider]) {
         byProvider[estimate.provider] = {
           provider: estimate.provider,
           providerAr: estimate.providerAr,
           products: [],
-          cheapest: null,
+          cheapest: 0,
           avgPrice: 0,
         };
       }
@@ -388,13 +411,13 @@ router.get('/comparison', authenticate, requireAdmin, async (req: Request, res: 
     // Calculate stats for each provider
     for (const key of Object.keys(byProvider)) {
       const provider = byProvider[key];
-      const prices = provider.products.map((p: any) => p.price);
+      const prices = provider.products.map(p => p.price);
       provider.cheapest = Math.min(...prices);
       provider.avgPrice = Math.round(prices.reduce((a: number, b: number) => a + b, 0) / prices.length);
     }
 
     // Sort providers by cheapest price
-    const sorted = Object.values(byProvider).sort((a: any, b: any) => a.cheapest - b.cheapest);
+    const sorted = Object.values(byProvider).sort((a, b) => a.cheapest - b.cheapest);
 
     return res.json({
       success: true,

@@ -4,7 +4,8 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient, MobileListingStatus, MobileTransactionStatus, MobileBarterProposalStatus, MobileBrand } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { MobileListingStatus, MobileTransactionStatus, MobileBarterProposalStatus, MobileBrand } from '../types';
 
 const prisma = new PrismaClient();
 

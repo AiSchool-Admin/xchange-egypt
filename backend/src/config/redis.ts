@@ -1,5 +1,6 @@
 import { createClient } from 'redis';
 import { env } from './env';
+import logger from '../lib/logger';
 
 // Only create Redis client if URL is provided and valid
 let redis: ReturnType<typeof createClient> | null = null;
@@ -10,31 +11,31 @@ if (env.redis.url && env.redis.url.startsWith('redis://')) {
   });
 
   redis.on('error', (err) => {
-    console.error('Redis Client Error:', err);
+    logger.error('Redis Client Error:', err);
   });
 
   redis.on('connect', () => {
-    console.log('✅ Redis connected');
+    logger.info('Redis connected');
   });
 } else {
-  console.warn('⚠️ Redis URL not configured or invalid, Redis features will be disabled');
+  logger.warn('Redis URL not configured or invalid, Redis features will be disabled');
 }
 
 // Connect to Redis
 export const connectRedis = async () => {
   try {
     if (!redis) {
-      console.warn('⚠️ Redis client not initialized, skipping connection');
+      logger.warn('Redis client not initialized, skipping connection');
       return;
     }
     if (!env.redis.url || !env.redis.url.startsWith('redis://')) {
-      console.warn('⚠️ Redis URL not configured or invalid, skipping Redis connection');
+      logger.warn('Redis URL not configured or invalid, skipping Redis connection');
       return;
     }
     await redis.connect();
   } catch (error) {
-    console.error('⚠️ Failed to connect to Redis:', error);
-    console.warn('⚠️ Continuing without Redis - some features may be limited');
+    logger.error('Failed to connect to Redis:', error);
+    logger.warn('Continuing without Redis - some features may be limited');
     // Don't exit - allow server to start without Redis
   }
 };
@@ -46,7 +47,7 @@ process.on('beforeExit', async () => {
       await redis.quit();
     }
   } catch (error) {
-    console.error('Error closing Redis connection:', error);
+    logger.error('Error closing Redis connection:', error);
   }
 });
 

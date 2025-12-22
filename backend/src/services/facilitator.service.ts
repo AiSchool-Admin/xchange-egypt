@@ -3,7 +3,7 @@
  * خدمة شبكة الوسطاء المعتمدين
  */
 
-import { FacilitatorLevel, FacilitatorStatus } from '@prisma/client';
+import { FacilitatorLevel, FacilitatorStatus } from '../types';
 import prisma from '../lib/prisma';
 
 // ============================================

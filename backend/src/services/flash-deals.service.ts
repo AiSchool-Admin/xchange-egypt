@@ -10,7 +10,7 @@
  */
 
 import prisma from '../lib/prisma';
-import { FlashDealStatus } from '@prisma/client';
+import { FlashDealStatus } from '../types/prisma-enums';
 
 // ============================================
 // Types

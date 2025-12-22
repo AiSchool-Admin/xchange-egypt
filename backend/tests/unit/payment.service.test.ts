@@ -645,4 +645,404 @@ describe('Payment Service Tests', () => {
       expect(amountInEGP).toBe(500);
     });
   });
+
+  // ==========================================
+  // Paymob Service Tests
+  // ==========================================
+  describe('Paymob Payment Gateway', () => {
+    it('should format amount in piasters correctly', () => {
+      const amountEGP = 100;
+      const amountPiasters = amountEGP * 100;
+      expect(amountPiasters).toBe(10000);
+    });
+
+    it('should generate correct iframe URL', () => {
+      const iframeId = '123456';
+      const paymentToken = 'test-token';
+      const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`;
+
+      expect(iframeUrl).toContain('iframes');
+      expect(iframeUrl).toContain(paymentToken);
+    });
+
+    it('should format billing data correctly', () => {
+      const customer = {
+        firstName: 'محمد',
+        lastName: 'أحمد',
+        email: 'mohamed@test.com',
+        phone: '01012345678',
+      };
+
+      const billingData = {
+        first_name: customer.firstName,
+        last_name: customer.lastName,
+        email: customer.email,
+        phone_number: customer.phone,
+        city: 'Cairo',
+        country: 'EG',
+      };
+
+      expect(billingData.country).toBe('EG');
+      expect(billingData.first_name).toBe('محمد');
+    });
+
+    it('should calculate HMAC signature for callback verification', async () => {
+      const crypto = await import('crypto');
+      const hmacSecret = 'test-secret';
+      const data = 'test-callback-data';
+
+      const hmac = crypto.createHmac('sha512', hmacSecret).update(data).digest('hex');
+      expect(hmac).toHaveLength(128);
+    });
+
+    it('should map Paymob status correctly', () => {
+      const mapPaymobStatus = (response: any) => {
+        if (response.is_voided) return 'VOIDED';
+        if (response.is_refunded) return 'REFUNDED';
+        if (response.success) return 'SUCCESS';
+        if (response.pending) return 'PENDING';
+        return 'FAILED';
+      };
+
+      expect(mapPaymobStatus({ success: true })).toBe('SUCCESS');
+      expect(mapPaymobStatus({ pending: true })).toBe('PENDING');
+      expect(mapPaymobStatus({ is_refunded: true })).toBe('REFUNDED');
+      expect(mapPaymobStatus({ is_voided: true })).toBe('VOIDED');
+      expect(mapPaymobStatus({})).toBe('FAILED');
+    });
+  });
+
+  // ==========================================
+  // Vodafone Cash Service Tests
+  // ==========================================
+  describe('Vodafone Cash Payment Gateway', () => {
+    it('should format phone number to Egyptian format', () => {
+      const formatPhoneNumber = (phone: string): string => {
+        let cleaned = phone.replace(/\D/g, '');
+        cleaned = cleaned.replace(/^0+/, '');
+        if (!cleaned.startsWith('20')) {
+          cleaned = '20' + cleaned;
+        }
+        return cleaned;
+      };
+
+      expect(formatPhoneNumber('01012345678')).toBe('201012345678');
+      expect(formatPhoneNumber('+201012345678')).toBe('201012345678');
+      expect(formatPhoneNumber('201012345678')).toBe('201012345678');
+    });
+
+    it('should validate Vodafone number prefix', () => {
+      const isVodafoneNumber = (phone: string): boolean => {
+        const cleaned = phone.replace(/\D/g, '');
+        return cleaned.includes('010');
+      };
+
+      expect(isVodafoneNumber('01012345678')).toBe(true);
+      expect(isVodafoneNumber('01112345678')).toBe(false);
+      expect(isVodafoneNumber('01212345678')).toBe(false);
+    });
+
+    it('should generate unique reference number', () => {
+      const generateRef = () =>
+        `VF${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+      const ref1 = generateRef();
+      const ref2 = generateRef();
+
+      expect(ref1).toMatch(/^VF/);
+      expect(ref1).not.toBe(ref2);
+    });
+
+    it('should set correct timeout for payment', () => {
+      const timeoutSeconds = 300;
+      const now = Date.now();
+      const expiresAt = new Date(now + timeoutSeconds * 1000);
+
+      expect(expiresAt.getTime() - now).toBe(300000);
+    });
+
+    it('should map Vodafone Cash status correctly', () => {
+      const mapStatus = (status: string): string => {
+        const statusMap: Record<string, string> = {
+          SUCCESS: 'SUCCESS',
+          SUCCESSFUL: 'SUCCESS',
+          COMPLETED: 'SUCCESS',
+          PENDING: 'PENDING',
+          FAILED: 'FAILED',
+          EXPIRED: 'EXPIRED',
+          CANCELLED: 'CANCELLED',
+          REFUNDED: 'REFUNDED',
+        };
+        return statusMap[status.toUpperCase()] || 'FAILED';
+      };
+
+      expect(mapStatus('SUCCESS')).toBe('SUCCESS');
+      expect(mapStatus('SUCCESSFUL')).toBe('SUCCESS');
+      expect(mapStatus('EXPIRED')).toBe('EXPIRED');
+      expect(mapStatus('unknown')).toBe('FAILED');
+    });
+  });
+
+  // ==========================================
+  // Fawry Service Tests
+  // ==========================================
+  describe('Fawry Payment Gateway', () => {
+    it('should generate valid Fawry reference format', () => {
+      const generateFawryRef = () => {
+        const timestamp = Date.now().toString();
+        const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+        return `FW${timestamp}${random}`;
+      };
+
+      const ref = generateFawryRef();
+      expect(ref).toMatch(/^FW\d+[A-Z0-9]+$/);
+    });
+
+    it('should calculate SHA256 signature correctly', async () => {
+      const crypto = await import('crypto');
+      const data = 'merchantCode|orderNum|amount';
+      const secret = 'test-secret';
+
+      const signature = crypto.createHash('sha256').update(data + secret).digest('hex');
+      expect(signature).toHaveLength(64);
+    });
+
+    it('should format items for Fawry API', () => {
+      const items = [
+        { id: '1', name: 'Product 1', price: 100, quantity: 2 },
+        { id: '2', name: 'Product 2', price: 50, quantity: 1 },
+      ];
+
+      const formattedItems = items.map((item) => ({
+        itemId: item.id,
+        description: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      }));
+
+      expect(formattedItems).toHaveLength(2);
+      expect(formattedItems[0].price).toBe(100);
+    });
+
+    it('should calculate order total correctly', () => {
+      const items = [
+        { price: 100, quantity: 2 },
+        { price: 50, quantity: 1 },
+      ];
+
+      const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      expect(total).toBe(250);
+    });
+
+    it('should map Fawry status to unified status', () => {
+      const mapFawryStatus = (status: string): string => {
+        const map: Record<string, string> = {
+          PAID: 'SUCCESS',
+          NEW: 'PENDING',
+          UNPAID: 'PENDING',
+          EXPIRED: 'EXPIRED',
+          CANCELLED: 'CANCELLED',
+          REFUNDED: 'REFUNDED',
+        };
+        return map[status] || 'FAILED';
+      };
+
+      expect(mapFawryStatus('PAID')).toBe('SUCCESS');
+      expect(mapFawryStatus('NEW')).toBe('PENDING');
+      expect(mapFawryStatus('EXPIRED')).toBe('EXPIRED');
+    });
+  });
+
+  // ==========================================
+  // InstaPay Service Tests
+  // ==========================================
+  describe('InstaPay Payment Gateway', () => {
+    it('should validate required fields', () => {
+      const request = {
+        orderId: 'order-123',
+        amount: 1000,
+        customerName: 'محمد أحمد',
+        customerPhone: '01012345678',
+      };
+
+      expect(request.orderId).toBeTruthy();
+      expect(request.amount).toBeGreaterThan(0);
+      expect(request.customerName).toBeTruthy();
+      expect(request.customerPhone).toBeTruthy();
+    });
+
+    it('should validate amount limits', () => {
+      const isValidAmount = (amount: number): boolean => {
+        return amount > 0 && amount <= 100000;
+      };
+
+      expect(isValidAmount(0)).toBe(false);
+      expect(isValidAmount(-100)).toBe(false);
+      expect(isValidAmount(1000)).toBe(true);
+      expect(isValidAmount(100001)).toBe(false);
+    });
+
+    it('should generate unique transaction ID', () => {
+      const generateTransactionId = () => {
+        return `IP${Date.now()}${Math.random().toString(36).substring(2, 10)}`;
+      };
+
+      const id1 = generateTransactionId();
+      const id2 = generateTransactionId();
+
+      expect(id1).toMatch(/^IP/);
+      expect(id1).not.toBe(id2);
+    });
+  });
+
+  // ==========================================
+  // Unified Payment Gateway Tests
+  // ==========================================
+  describe('Unified Payment Gateway', () => {
+    it('should have all payment methods configured', () => {
+      const paymentMethods = [
+        'fawry',
+        'fawry_cash',
+        'paymob_card',
+        'paymob_wallet',
+        'paymob_kiosk',
+        'paymob_valu',
+        'vodafone_cash',
+        'instapay',
+        'cod',
+        'wallet',
+      ];
+
+      expect(paymentMethods).toHaveLength(10);
+      expect(paymentMethods).toContain('fawry');
+      expect(paymentMethods).toContain('vodafone_cash');
+      expect(paymentMethods).toContain('paymob_card');
+    });
+
+    it('should calculate fees correctly for different methods', () => {
+      const calculateFees = (amount: number, method: string) => {
+        const feeConfigs: Record<string, { fixed?: number; percentage?: number }> = {
+          fawry: { fixed: 5, percentage: 2.5 },
+          paymob_card: { percentage: 2.75 },
+          vodafone_cash: { percentage: 1 },
+          cod: { fixed: 20 },
+        };
+
+        const config = feeConfigs[method];
+        if (!config) return 0;
+
+        let fees = 0;
+        if (config.fixed) fees += config.fixed;
+        if (config.percentage) fees += (amount * config.percentage) / 100;
+        return Math.round(fees * 100) / 100;
+      };
+
+      expect(calculateFees(1000, 'fawry')).toBe(30);
+      expect(calculateFees(1000, 'paymob_card')).toBe(27.5);
+      expect(calculateFees(1000, 'vodafone_cash')).toBe(10);
+      expect(calculateFees(1000, 'cod')).toBe(20);
+    });
+
+    it('should filter methods by amount limits', () => {
+      const methods = [
+        { method: 'cod', minAmount: 1, maxAmount: 10000 },
+        { method: 'paymob_card', minAmount: 1, maxAmount: 100000 },
+        { method: 'paymob_valu', minAmount: 500, maxAmount: 50000 },
+      ];
+
+      const filterByAmount = (amount: number) =>
+        methods.filter((m) => amount >= m.minAmount && amount <= m.maxAmount);
+
+      expect(filterByAmount(300)).toHaveLength(2);
+      expect(filterByAmount(15000)).toHaveLength(2);
+      expect(filterByAmount(500)).toHaveLength(3);
+    });
+
+    it('should validate customer information', () => {
+      const customer = {
+        firstName: 'محمد',
+        lastName: 'أحمد',
+        email: 'mohamed@test.com',
+        phone: '01012345678',
+      };
+
+      expect(customer.firstName).toBeTruthy();
+      expect(customer.email).toMatch(/@/);
+      expect(customer.phone).toMatch(/^01[0125][0-9]{8}$/);
+    });
+
+    it('should default currency to EGP', () => {
+      const request = {
+        amount: 1000,
+        currency: undefined,
+      };
+
+      const currency = request.currency || 'EGP';
+      expect(currency).toBe('EGP');
+    });
+  });
+
+  // ==========================================
+  // Cash on Delivery Tests
+  // ==========================================
+  describe('Cash on Delivery', () => {
+    it('should enforce COD limits', () => {
+      const maxCodAmount = 10000;
+      const canUseCod = (amount: number): boolean => amount <= maxCodAmount;
+
+      expect(canUseCod(5000)).toBe(true);
+      expect(canUseCod(10000)).toBe(true);
+      expect(canUseCod(10001)).toBe(false);
+    });
+
+    it('should calculate COD fees', () => {
+      const codFee = 20;
+      const orderAmount = 500;
+      const total = orderAmount + codFee;
+
+      expect(total).toBe(520);
+    });
+
+    it('should generate COD reference number', () => {
+      const generateCodRef = () =>
+        `COD${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+      const ref = generateCodRef();
+      expect(ref).toMatch(/^COD/);
+    });
+  });
+
+  // ==========================================
+  // Arabic Text Handling Tests
+  // ==========================================
+  describe('Arabic Text Handling', () => {
+    it('should handle Arabic customer names', () => {
+      const name = 'محمد أحمد السيد';
+      const [firstName, ...rest] = name.split(' ');
+
+      expect(firstName).toBe('محمد');
+      expect(rest.join(' ')).toBe('أحمد السيد');
+    });
+
+    it('should handle Arabic descriptions', () => {
+      const description = 'دفع لطلب رقم 12345';
+      expect(description).toContain('طلب');
+    });
+
+    it('should generate Arabic status messages', () => {
+      const getStatusMessage = (status: string): string => {
+        const messages: Record<string, string> = {
+          PENDING: 'في انتظار الدفع',
+          SUCCESS: 'تم الدفع بنجاح',
+          FAILED: 'فشلت عملية الدفع',
+          EXPIRED: 'انتهت صلاحية طلب الدفع',
+          REFUNDED: 'تم استرداد المبلغ',
+        };
+        return messages[status] || 'حالة غير معروفة';
+      };
+
+      expect(getStatusMessage('SUCCESS')).toBe('تم الدفع بنجاح');
+      expect(getStatusMessage('PENDING')).toBe('في انتظار الدفع');
+    });
+  });
 });

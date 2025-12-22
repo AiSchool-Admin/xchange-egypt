@@ -1,4 +1,4 @@
-import { AuctionStatus, BidStatus, ListingType, ListingStatus, ItemStatus } from '@prisma/client';
+import { AuctionStatus, BidStatus, ListingType, ListingStatus, ItemStatus } from '../types';
 import { CreateAuctionInput, UpdateAuctionInput, PlaceBidInput, ListAuctionsQuery } from '../validations/auction.validation';
 import { AppError } from '../middleware/errorHandler';
 import { createNotification } from './notification.service';

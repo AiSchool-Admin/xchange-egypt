@@ -29,12 +29,12 @@ router.get('/stats', async (req: Request, res: Response) => {
       success: true,
       data: stats,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[MatchingRoutes] Error getting stats:', error);
     res.status(500).json({
       success: false,
       message: 'حدث خطأ أثناء جلب الإحصائيات',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -83,12 +83,12 @@ router.get('/items/:itemId', authenticate, async (req: Request, res: Response) =
         })),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[MatchingRoutes] Error getting item matches:', error);
     res.status(500).json({
       success: false,
       message: 'حدث خطأ أثناء جلب المطابقات',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -97,9 +97,12 @@ router.get('/items/:itemId', authenticate, async (req: Request, res: Response) =
  * GET /api/v1/matching/my-matches
  * Get matches for all user's items
  */
-router.get('/my-matches', authenticate, async (req: Request, res: Response) => {
+router.get('/my-matches', authenticate, async (req: Request & { user?: { id: string } }, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
     const minScore = parseFloat(req.query.minScore as string) || 0.4;
     const limit = parseInt(req.query.limit as string) || 30;
 
@@ -147,12 +150,12 @@ router.get('/my-matches', authenticate, async (req: Request, res: Response) => {
         })),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[MatchingRoutes] Error getting user matches:', error);
     res.status(500).json({
       success: false,
       message: 'حدث خطأ أثناء جلب مطابقاتك',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -161,10 +164,13 @@ router.get('/my-matches', authenticate, async (req: Request, res: Response) => {
  * POST /api/v1/matching/trigger/:itemId
  * Manually trigger matching for an item (for testing)
  */
-router.post('/trigger/:itemId', authenticate, async (req: Request, res: Response) => {
+router.post('/trigger/:itemId', authenticate, async (req: Request & { user?: { id: string } }, res: Response) => {
   try {
     const { itemId } = req.params;
-    const userId = (req as any).user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'User not authenticated' });
+    }
 
     console.log(`[MatchingRoutes] Manual trigger for item ${itemId} by user ${userId}`);
 
@@ -187,12 +193,12 @@ router.post('/trigger/:itemId', authenticate, async (req: Request, res: Response
         })),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[MatchingRoutes] Error triggering match:', error);
     res.status(500).json({
       success: false,
       message: 'حدث خطأ أثناء تشغيل المطابقة',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -223,6 +229,13 @@ router.get('/proximity-test', async (req: Request, res: Response) => {
       score = 40;
     }
 
+    const levelTranslations: Record<string, string> = {
+      DISTRICT: 'نفس الحي',
+      CITY: 'نفس المدينة',
+      GOVERNORATE: 'نفس المحافظة',
+      NATIONAL: 'مصر',
+    };
+
     res.json({
       success: true,
       data: {
@@ -230,19 +243,14 @@ router.get('/proximity-test', async (req: Request, res: Response) => {
         location2: { governorate: gov2, city: city2, district: district2 },
         proximityLevel: level,
         proximityScore: score,
-        proximityLevelAr: {
-          DISTRICT: 'نفس الحي',
-          CITY: 'نفس المدينة',
-          GOVERNORATE: 'نفس المحافظة',
-          NATIONAL: 'مصر',
-        }[level],
+        proximityLevelAr: levelTranslations[level],
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     res.status(500).json({
       success: false,
       message: 'حدث خطأ',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });

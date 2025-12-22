@@ -46,8 +46,8 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
       maxPrice: maxPrice ? parseFloat(maxPrice as string) : undefined,
       condition: condition as string,
       keywords: keywords as string,
-      type: type as any,
-      excludeUserId: (req as any).user?.id, // Exclude current user's demands
+      type: type as 'BARTER_REQUEST' | 'REVERSE_AUCTION' | undefined,
+      excludeUserId: (req as Request & { user?: { id: string } }).user?.id, // Exclude current user's demands
       page: parseInt(page as string, 10),
       limit: Math.min(parseInt(limit as string, 10), 100),
     };

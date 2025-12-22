@@ -3,7 +3,7 @@
  * خدمة الضمان الذكي وحل النزاعات
  */
 
-import { EscrowStatus, EscrowType, DisputeStatus, DisputeReason, DisputeResolution } from '@prisma/client';
+import { EscrowStatus, EscrowType, DisputeStatus, DisputeReason, DisputeResolution } from '../types';
 import prisma from '../lib/prisma';
 import * as walletService from './wallet.service';
 import * as reputationService from './reputation.service';

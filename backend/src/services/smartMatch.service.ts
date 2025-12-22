@@ -1,5 +1,5 @@
 import { prisma } from '../lib/prisma';
-import { ItemCondition } from '@prisma/client';
+import { ItemCondition } from '../types/prisma-enums';
 
 interface ItemRequestData {
   id: string;
@@ -184,7 +184,7 @@ export const runProactiveMatching = async (): Promise<number> => {
             message: `"${match.title}" matches your barter request (${match.matchScore}% match)`,
             entityId: match.id,
             entityType: 'Item',
-          },
+          } as any,
         });
         notificationCount++;
       }

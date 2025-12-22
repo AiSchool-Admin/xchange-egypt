@@ -10,7 +10,7 @@
  */
 
 import prisma from '../lib/prisma';
-import { VerificationLevel, VerificationStatus } from '@prisma/client';
+import { VerificationLevel, VerificationStatus } from '../types/prisma-enums';
 
 // ============================================
 // Types
@@ -81,8 +81,8 @@ const LEVEL_CONFIG: Record<VerificationLevel, {
     validityMonths: null,
   },
   VERIFIED: {
-    name: 'ID Verified',
-    nameAr: 'موثق الهوية',
+    name: 'Verified',
+    nameAr: 'موثق',
     requirements: ['National ID or Passport', 'Selfie verification'],
     benefits: ['Verified badge', 'Higher trust', 'Priority support'],
     validityMonths: 24,

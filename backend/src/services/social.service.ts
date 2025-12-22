@@ -426,7 +426,7 @@ export async function createActivity(params: CreateActivityParams) {
       imageUrl: params.imageUrl,
       metadata: params.metadata,
       isPublic: params.isPublic ?? true,
-    },
+    } as any,
   });
 }
 
