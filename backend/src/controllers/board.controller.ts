@@ -1,6 +1,8 @@
 /**
  * Board Controller
  * وحدة التحكم في مجلس إدارة AI
+ *
+ * ⚠️ جميع المسارات متاحة للمؤسس فقط
  */
 
 import { Request, Response } from 'express';
@@ -55,19 +57,19 @@ export const initializeBoardMembers = async (req: Request, res: Response) => {
 };
 
 /**
- * Start a new conversation
+ * Start a new conversation - بدء محادثة جديدة
  */
 export const startConversation = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const founderId = req.founder!.id;
     const { topic, topicAr, type, features } = req.body;
 
     if (!topic) {
-      throw new AppError(400, 'Topic is required');
+      throw new AppError(400, 'الموضوع مطلوب');
     }
 
     const conversation = await boardEngineService.startConversation({
-      userId,
+      founderId,
       topic,
       topicAr,
       type: type as BoardConversationType,
@@ -88,21 +90,21 @@ export const startConversation = async (req: Request, res: Response) => {
 };
 
 /**
- * Send message to board
+ * Send message to board - إرسال رسالة للمجلس
  */
 export const sendMessage = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const founderId = req.founder!.id;
     const { conversationId } = req.params;
     const { content, targetMemberIds, ceoMode, features } = req.body;
 
     if (!content) {
-      throw new AppError(400, 'Message content is required');
+      throw new AppError(400, 'محتوى الرسالة مطلوب');
     }
 
     const result = await boardEngineService.sendMessage({
       conversationId,
-      userId,
+      founderId,
       content,
       targetMemberIds,
       ceoMode: ceoMode as CEOMode,
@@ -149,20 +151,20 @@ export const getConversation = async (req: Request, res: Response) => {
 };
 
 /**
- * Get user's conversations
+ * Get founder's conversations - محادثات المؤسس
  */
-export const getUserConversations = async (req: Request, res: Response) => {
+export const getFounderConversations = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const founderId = req.founder!.id;
 
-    const conversations = await boardEngineService.getUserConversations(userId);
+    const conversations = await boardEngineService.getFounderConversations(founderId);
 
     res.json({
       success: true,
       data: conversations,
     });
   } catch (error: any) {
-    logger.error('[BoardController] getUserConversations error:', error);
+    logger.error('[BoardController] getFounderConversations error:', error);
     res.status(500).json({
       success: false,
       error: error.message,
@@ -218,21 +220,21 @@ export const getServiceStatus = async (req: Request, res: Response) => {
 };
 
 /**
- * Quick question to a specific member
+ * Quick question to a specific member - سؤال سريع لعضو محدد
  */
 export const askMember = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const founderId = req.founder!.id;
     const { memberId } = req.params;
     const { question, ceoMode } = req.body;
 
     if (!question) {
-      throw new AppError(400, 'Question is required');
+      throw new AppError(400, 'السؤال مطلوب');
     }
 
     // Start a quick conversation
     const conversation = await boardEngineService.startConversation({
-      userId,
+      founderId,
       topic: question.substring(0, 100),
       type: 'QUESTION' as BoardConversationType,
     });
@@ -240,7 +242,7 @@ export const askMember = async (req: Request, res: Response) => {
     // Send message targeting specific member
     const result = await boardEngineService.sendMessage({
       conversationId: conversation.id,
-      userId,
+      founderId,
       content: question,
       targetMemberIds: [memberId],
       ceoMode: ceoMode as CEOMode,
@@ -296,16 +298,16 @@ export const getPendingTasks = async (req: Request, res: Response) => {
 };
 
 /**
- * Approve or reject a task
+ * Approve or reject a task - الموافقة أو رفض مهمة
  */
 export const reviewTask = async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).userId;
+    const founderId = req.founder!.id;
     const { taskId } = req.params;
     const { decision, reason } = req.body;
 
     if (!decision || !['APPROVED', 'REJECTED'].includes(decision)) {
-      throw new AppError(400, 'Valid decision (APPROVED or REJECTED) is required');
+      throw new AppError(400, 'قرار صالح (APPROVED أو REJECTED) مطلوب');
     }
 
     const task = await prisma.boardTask.update({
@@ -313,7 +315,7 @@ export const reviewTask = async (req: Request, res: Response) => {
       data: {
         status: decision === 'APPROVED' ? 'APPROVED' : 'REJECTED',
         approvalStatus: decision,
-        approvedById: userId,
+        approvedById: founderId,
         approvedAt: new Date(),
         rejectionReason: decision === 'REJECTED' ? reason : null,
       },

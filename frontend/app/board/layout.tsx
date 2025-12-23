@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/contexts/AuthContext';
+import { isFounderAuthenticated, getFounderData, logoutFounder, FounderData } from '@/lib/api/founder';
 import { getBoardMembers, getServiceStatus, BoardMember, ServiceStatus } from '@/lib/api/board';
 
 interface BoardLayoutProps {
@@ -11,19 +11,25 @@ interface BoardLayoutProps {
 }
 
 export default function BoardLayout({ children }: BoardLayoutProps) {
-  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [founder, setFounder] = useState<FounderData | null>(null);
   const [members, setMembers] = useState<BoardMember[]>([]);
   const [status, setStatus] = useState<ServiceStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
+  // Check founder authentication
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login?redirect=/board');
+    if (!isFounderAuthenticated()) {
+      router.push('/founder/login');
+      return;
     }
-  }, [user, authLoading, router]);
+    setFounder(getFounderData());
+    setAuthChecked(true);
+  }, [router]);
 
+  // Fetch board data
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -35,17 +41,26 @@ export default function BoardLayout({ children }: BoardLayoutProps) {
         setStatus(statusData);
       } catch (error) {
         console.error('Error fetching board data:', error);
+        // If auth error, redirect to login
+        if (error instanceof Error && error.message.includes('غير مسجل')) {
+          router.push('/founder/login');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (user) {
+    if (authChecked && founder) {
       fetchData();
     }
-  }, [user]);
+  }, [authChecked, founder, router]);
 
-  if (authLoading || loading) {
+  const handleLogout = async () => {
+    await logoutFounder();
+    router.push('/founder/login');
+  };
+
+  if (!authChecked || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
         <div className="text-center">
@@ -64,7 +79,7 @@ export default function BoardLayout({ children }: BoardLayoutProps) {
     );
   }
 
-  if (!user) {
+  if (!founder) {
     return null;
   }
 
@@ -88,19 +103,39 @@ export default function BoardLayout({ children }: BoardLayoutProps) {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" dir="rtl">
       {/* Sidebar */}
       <aside className="fixed top-0 right-0 h-full w-72 bg-gray-800/50 backdrop-blur-xl border-l border-gray-700/50 flex flex-col z-40">
-        {/* Header */}
+        {/* Header - Founder Info */}
         <div className="p-6 border-b border-gray-700/50">
-          <Link href="/board" className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/25">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
+          <Link href="/board" className="flex items-center gap-4 mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+              <span className="text-2xl">🏛️</span>
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">مجلس الإدارة</h1>
               <p className="text-sm text-gray-400">AI Board of Directors</p>
             </div>
           </Link>
+
+          {/* Founder Badge */}
+          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-3 border border-purple-500/30">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                {founder.fullName.charAt(0)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium truncate">{founder.fullName}</p>
+                <p className="text-purple-300 text-xs truncate">{founder.title}</p>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                title="تسجيل الخروج"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Navigation */}

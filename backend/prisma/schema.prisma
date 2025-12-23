@@ -173,12 +173,8 @@ model User {
   serviceRequests           ServiceRequest[]          @relation("ServiceRequests")
   marketplaceNotifications  MarketplaceNotification[] @relation("MarketplaceNotifications")
 
-  // مجلس إدارة AI - AI Board of Directors Relations
+  // مجلس إدارة AI - للمستخدمين المعينين كأعضاء بشريين في المجلس
   boardMembership           BoardMember[]             @relation("BoardMemberUser")
-  boardConversations        BoardConversation[]       @relation("BoardConversationInitiator")
-  boardMessages             BoardMessage[]            @relation("BoardMessageUser")
-  boardTasksApproved        BoardTask[]               @relation("BoardTaskApprover")
-  boardDecisions            BoardDecision[]           @relation("BoardDecisionDecider")
 
   @@map("users")
   @@index([email])
@@ -4858,6 +4854,61 @@ model AdminActivityLog {
   @@index([createdAt])
 }
 
+// ============================================
+// Founder System - نظام المؤسس/رئيس مجلس الإدارة
+// ============================================
+
+model Founder {
+  id                String        @id @default(uuid())
+  email             String        @unique
+  passwordHash      String        @map("password_hash")
+  fullName          String        @map("full_name")
+  phone             String?
+  avatar            String?
+  title             String        @default("المؤسس ورئيس مجلس الإدارة")
+  companyName       String        @map("company_name") @default("XChange Egypt")
+
+  // معلومات الأمان
+  lastLoginAt       DateTime?     @map("last_login_at")
+  lastLoginIp       String?       @map("last_login_ip")
+  failedLoginAttempts Int         @default(0) @map("failed_login_attempts")
+  lockedUntil       DateTime?     @map("locked_until")
+
+  // المصادقة الثنائية
+  twoFactorEnabled  Boolean       @default(false) @map("two_factor_enabled")
+  twoFactorSecret   String?       @map("two_factor_secret")
+
+  // Timestamps
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  // Relations - مجلس الإدارة AI
+  boardConversations BoardConversation[]
+  boardMessages      BoardMessage[]
+  boardTasksApproved BoardTask[]
+  boardDecisions     BoardDecision[]
+  refreshTokens      FounderRefreshToken[]
+
+  @@map("founders")
+  @@index([email])
+}
+
+model FounderRefreshToken {
+  id          String    @id @default(uuid())
+  token       String    @unique
+  founderId   String    @map("founder_id")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+
+  founder     Founder   @relation(fields: [founderId], references: [id], onDelete: Cascade)
+
+  @@map("founder_refresh_tokens")
+  @@index([founderId])
+  @@index([expiresAt])
+}
+
 // إعدادات المنصة - Platform Settings
 model PlatformSetting {
   id          String    @id @default(uuid())
@@ -8230,9 +8281,9 @@ model BoardConversation {
   topicAr         String?                   @map("topic_ar")
   status          BoardConversationStatus   @default(ACTIVE)
 
-  // Participants
-  initiatedById   String                    @map("initiated_by_id")
-  initiatedBy     User                      @relation("BoardConversationInitiator", fields: [initiatedById], references: [id])
+  // Participants - المؤسس فقط
+  founderId       String                    @map("founder_id")
+  founder         Founder                   @relation(fields: [founderId], references: [id])
 
   // Content
   messages        BoardMessage[]
@@ -8252,7 +8303,7 @@ model BoardConversation {
   updatedAt       DateTime                  @updatedAt @map("updated_at")
 
   @@map("board_conversations")
-  @@index([initiatedById])
+  @@index([founderId])
   @@index([type])
   @@index([status])
   @@index([createdAt])
@@ -8267,8 +8318,8 @@ model BoardMessage {
   // Sender (member or founder)
   memberId        String?               @map("member_id")
   member          BoardMember?          @relation(fields: [memberId], references: [id])
-  userId          String?               @map("user_id")
-  user            User?                 @relation("BoardMessageUser", fields: [userId], references: [id])
+  founderId       String?               @map("founder_id")
+  founder         Founder?              @relation(fields: [founderId], references: [id])
 
   role            BoardMessageRole      @default(USER)
   content         String                @db.Text
@@ -8287,7 +8338,7 @@ model BoardMessage {
   @@map("board_messages")
   @@index([conversationId])
   @@index([memberId])
-  @@index([userId])
+  @@index([founderId])
   @@index([createdAt])
 }
 
@@ -8312,11 +8363,11 @@ model BoardTask {
   createdById     String                @map("created_by_id")
   createdBy       BoardMember           @relation("BoardTaskCreatedBy", fields: [createdById], references: [id])
 
-  // Approval
+  // Approval - المؤسس يوافق على المهام
   requiresApproval Boolean              @default(true) @map("requires_approval")
   approvalStatus  BoardApprovalStatus?  @map("approval_status")
   approvedById    String?               @map("approved_by_id")
-  approvedBy      User?                 @relation("BoardTaskApprover", fields: [approvedById], references: [id])
+  approvedBy      Founder?              @relation(fields: [approvedById], references: [id])
   approvedAt      DateTime?             @map("approved_at")
   rejectionReason String?               @map("rejection_reason")
 
@@ -8351,11 +8402,11 @@ model BoardDecision {
   votes           BoardVote[]
   outcome         BoardDecisionOutcome?
 
-  // Founder final decision
+  // Founder final decision - قرار المؤسس النهائي
   founderDecision BoardDecisionOutcome? @map("founder_decision")
   founderNotes    String?               @map("founder_notes")
   decidedById     String?               @map("decided_by_id")
-  decidedBy       User?                 @relation("BoardDecisionDecider", fields: [decidedById], references: [id])
+  decidedBy       Founder?              @relation(fields: [decidedById], references: [id])
   decidedAt       DateTime?             @map("decided_at")
 
   createdAt       DateTime              @default(now()) @map("created_at")

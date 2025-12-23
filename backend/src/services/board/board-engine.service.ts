@@ -21,7 +21,7 @@ import {
 
 // Types for board engine
 export interface StartConversationParams {
-  userId: string;
+  founderId: string;
   topic: string;
   topicAr?: string;
   type?: BoardConversationType;
@@ -30,7 +30,7 @@ export interface StartConversationParams {
 
 export interface SendMessageParams {
   conversationId: string;
-  userId: string;
+  founderId: string;
   content: string;
   targetMemberIds?: string[];
   ceoMode?: CEOMode;
@@ -98,7 +98,7 @@ class BoardEngineService {
   }
 
   /**
-   * Start a new board conversation
+   * Start a new board conversation - بدء محادثة جديدة
    */
   async startConversation(params: StartConversationParams) {
     const conversation = await prisma.boardConversation.create({
@@ -107,12 +107,12 @@ class BoardEngineService {
         topicAr: params.topicAr,
         type: params.type || BoardConversationType.QUESTION,
         status: BoardConversationStatus.ACTIVE,
-        initiatedById: params.userId,
+        founderId: params.founderId,
         featuresUsed: params.features || [],
       },
       include: {
-        initiatedBy: {
-          select: { id: true, fullName: true, email: true },
+        founder: {
+          select: { id: true, fullName: true, email: true, title: true },
         },
       },
     });
@@ -123,17 +123,17 @@ class BoardEngineService {
   }
 
   /**
-   * Send message to board and get responses
+   * Send message to board and get responses - إرسال رسالة والحصول على ردود
    */
   async sendMessage(params: SendMessageParams): Promise<{
     userMessage: any;
     responses: BoardMemberResponse[];
   }> {
-    // 1. Save user message
+    // 1. Save founder message
     const userMessage = await prisma.boardMessage.create({
       data: {
         conversationId: params.conversationId,
-        userId: params.userId,
+        founderId: params.founderId,
         role: BoardMessageRole.USER,
         content: params.content,
       },
@@ -509,7 +509,7 @@ ${params.userMessage}
   }
 
   /**
-   * Get conversation history
+   * Get conversation history - سجل المحادثة
    */
   async getConversation(conversationId: string) {
     return prisma.boardConversation.findUnique({
@@ -521,24 +521,24 @@ ${params.userMessage}
             member: {
               select: { id: true, name: true, nameAr: true, role: true },
             },
-            user: {
-              select: { id: true, fullName: true },
+            founder: {
+              select: { id: true, fullName: true, title: true },
             },
           },
         },
-        initiatedBy: {
-          select: { id: true, fullName: true, email: true },
+        founder: {
+          select: { id: true, fullName: true, email: true, title: true },
         },
       },
     });
   }
 
   /**
-   * Get user's conversations
+   * Get founder's conversations - محادثات المؤسس
    */
-  async getUserConversations(userId: string) {
+  async getFounderConversations(founderId: string) {
     return prisma.boardConversation.findMany({
-      where: { initiatedById: userId },
+      where: { founderId },
       orderBy: { createdAt: 'desc' },
       include: {
         messages: {

@@ -1,9 +1,11 @@
 /**
  * AI Board of Directors API Client
  * واجهة برمجة التطبيقات لمجلس إدارة AI
+ *
+ * ⚠️ جميع الطلبات تتطلب مصادقة المؤسس
  */
 
-import apiClient from './client';
+import { founderFetch } from './founder';
 
 // ============================================
 // Types
@@ -66,10 +68,11 @@ export interface BoardConversation {
   summary?: string;
   summaryAr?: string;
   messages?: BoardMessage[];
-  initiatedBy?: {
+  founder?: {
     id: string;
     fullName: string;
     email: string;
+    title: string;
   };
   _count?: {
     messages: number;
@@ -110,23 +113,23 @@ export interface ServiceStatus {
 }
 
 // ============================================
-// API Functions
+// API Functions - تستخدم مصادقة المؤسس
 // ============================================
 
 /**
  * Get all board members
  */
 export const getBoardMembers = async (): Promise<BoardMember[]> => {
-  const response = await apiClient.get('/board/members');
-  return response.data.data;
+  const response = await founderFetch('/board/members');
+  return response.data;
 };
 
 /**
  * Get service status
  */
 export const getServiceStatus = async (): Promise<ServiceStatus> => {
-  const response = await apiClient.get('/board/status');
-  return response.data.data;
+  const response = await founderFetch('/board/status');
+  return response.data;
 };
 
 /**
@@ -138,24 +141,27 @@ export const startConversation = async (data: {
   type?: ConversationType;
   features?: string[];
 }): Promise<BoardConversation> => {
-  const response = await apiClient.post('/board/conversations', data);
-  return response.data.data;
+  const response = await founderFetch('/board/conversations', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response.data;
 };
 
 /**
- * Get user's conversations
+ * Get founder's conversations
  */
 export const getConversations = async (): Promise<BoardConversation[]> => {
-  const response = await apiClient.get('/board/conversations');
-  return response.data.data;
+  const response = await founderFetch('/board/conversations');
+  return response.data;
 };
 
 /**
  * Get a specific conversation with messages
  */
 export const getConversation = async (conversationId: string): Promise<BoardConversation> => {
-  const response = await apiClient.get(`/board/conversations/${conversationId}`);
-  return response.data.data;
+  const response = await founderFetch(`/board/conversations/${conversationId}`);
+  return response.data;
 };
 
 /**
@@ -170,19 +176,24 @@ export const sendMessage = async (
     features?: string[];
   }
 ): Promise<SendMessageResult> => {
-  const response = await apiClient.post(
+  const response = await founderFetch(
     `/board/conversations/${conversationId}/messages`,
-    data
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
   );
-  return response.data.data;
+  return response.data;
 };
 
 /**
  * End conversation and get summary
  */
 export const endConversation = async (conversationId: string): Promise<BoardConversation> => {
-  const response = await apiClient.post(`/board/conversations/${conversationId}/end`);
-  return response.data.data;
+  const response = await founderFetch(`/board/conversations/${conversationId}/end`, {
+    method: 'POST',
+  });
+  return response.data;
 };
 
 /**
@@ -195,16 +206,21 @@ export const askMember = async (
     ceoMode?: CEOMode;
   }
 ): Promise<{ conversationId: string; response: BoardMemberResponse }> => {
-  const response = await apiClient.post(`/board/members/${memberId}/ask`, data);
-  return response.data.data;
+  const response = await founderFetch(`/board/members/${memberId}/ask`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response.data;
 };
 
 /**
- * Initialize board members (admin only)
+ * Initialize board members (admin only - uses different auth)
+ * This is called by platform admins, not the founder
  */
 export const initializeBoardMembers = async (): Promise<BoardMember[]> => {
-  const response = await apiClient.post('/board/admin/initialize');
-  return response.data.data;
+  // This endpoint uses admin auth, not founder auth
+  // It should be called from the admin dashboard
+  throw new Error('يجب تهيئة أعضاء المجلس من لوحة تحكم المدير');
 };
 
 // ============================================
