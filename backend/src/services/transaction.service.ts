@@ -1,6 +1,10 @@
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 import { createNotification } from './notification.service';
+import { Prisma } from '@prisma/client';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Transaction = any;
 
 // Types
 interface CreatePurchaseData {
@@ -19,13 +23,25 @@ interface PaginatedResult<T> {
   };
 }
 
+// Use any for complex relations - types are inferred at runtime
+type TransactionWithRelations = {
+  id: string;
+  buyer: { id: string; fullName: string | null; email: string | null; phone: string; avatar: string | null };
+  seller: { id: string; fullName: string | null; email: string | null; phone: string; avatar: string | null; businessName: string | null };
+  listing: {
+    item: {
+      category: { id: string; nameAr: string; nameEn: string } | null;
+    } & Record<string, unknown>;
+  } & Record<string, unknown>;
+} & Record<string, unknown>;
+
 /**
  * Create a purchase transaction (order)
  */
 export const createPurchase = async (
   buyerId: string,
   purchaseData: CreatePurchaseData
-): Promise<any> => {
+): Promise<{ transaction: any; item: any; message: string }> => {
   // Get listing with item and seller information
   const listing = await prisma.listing.findUnique({
     where: { id: purchaseData.listingId },
@@ -125,7 +141,11 @@ export const createPurchase = async (
     actionText: 'عرض الطلب',
   });
 
-  return transaction;
+  return {
+    transaction,
+    item: listing.item,
+    message: 'Purchase created successfully! The seller has been notified.',
+  };
 };
 
 /**
@@ -140,7 +160,7 @@ export const buyItemDirectly = async (
     phoneNumber: string;
     notes?: string;
   }
-): Promise<any> => {
+): Promise<{ transaction: any; item: any; message: string }> => {
   // Get item with seller information
   const item = await prisma.item.findUnique({
     where: { id: purchaseData.itemId },
@@ -277,7 +297,7 @@ export const buyItemDirectly = async (
 export const getTransactionById = async (
   transactionId: string,
   userId: string
-): Promise<any> => {
+): Promise<TransactionWithRelations> => {
   const transaction = await prisma.transaction.findUnique({
     where: { id: transactionId },
     include: {
@@ -337,7 +357,7 @@ export const updateDeliveryStatus = async (
   transactionId: string,
   userId: string,
   deliveryStatus: 'PENDING' | 'SHIPPED' | 'DELIVERED' | 'RETURNED'
-): Promise<any> => {
+): Promise<Transaction> => {
   const transaction = await prisma.transaction.findUnique({
     where: { id: transactionId },
     include: {

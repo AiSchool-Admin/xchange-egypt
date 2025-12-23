@@ -196,7 +196,7 @@ export const getItemById = async (req: Request, res: Response, next: NextFunctio
  */
 export const createItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const item = await silverService.createSilverItem(userId, req.body);
     return successResponse(res, item, 'تم إنشاء الإعلان بنجاح', 201);
   } catch (error) {
@@ -211,7 +211,7 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 export const updateItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const item = await silverService.updateSilverItem(id, userId, req.body);
     return successResponse(res, item, 'تم تحديث الإعلان بنجاح');
   } catch (error) {
@@ -226,7 +226,7 @@ export const updateItem = async (req: Request, res: Response, next: NextFunction
 export const deleteItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     await silverService.deleteSilverItem(id, userId);
     return successResponse(res, null, 'تم حذف الإعلان بنجاح');
   } catch (error) {
@@ -240,7 +240,7 @@ export const deleteItem = async (req: Request, res: Response, next: NextFunction
  */
 export const getMyItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await silverService.getSilverItems({ sellerId: userId, status: undefined });
     return successResponse(res, result, 'قطع الفضة الخاصة بي');
   } catch (error) {
@@ -303,7 +303,7 @@ export const getPartnerById = async (req: Request, res: Response, next: NextFunc
  */
 export const createTransaction = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const buyerId = req.user!.id;
+    const buyerId = req.user.id;
     const transaction = await silverService.createSilverTransaction(buyerId, req.body);
     return successResponse(res, transaction, 'تم إنشاء الطلب بنجاح', 201);
   } catch (error: any) {
@@ -330,7 +330,7 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
 export const updateTransactionStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { status, notes } = req.body;
 
     const transaction = await silverService.updateTransactionStatus(id, userId, status, notes);
@@ -358,7 +358,7 @@ export const updateTransactionStatus = async (req: Request, res: Response, next:
  */
 export const getMyTransactions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const type = req.query.type as 'purchases' | 'sales' | 'all';
 
     const transactions = await silverService.getUserSilverTransactions(userId, type);

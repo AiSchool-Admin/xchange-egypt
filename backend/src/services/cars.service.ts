@@ -3,7 +3,7 @@
  * خدمة سوق السيارات
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // Commission rates - أعلى من الذهب بسبب قيمة الصفقات
 const BUYER_COMMISSION_RATE = 0.015; // 1.5%

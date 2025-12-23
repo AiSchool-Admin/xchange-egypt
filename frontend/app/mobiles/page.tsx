@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 import {
   Search, Filter, Grid, List, Smartphone, Shield,
   RefreshCw, MapPin, Heart, ChevronDown, Sparkles,
@@ -59,8 +60,10 @@ interface MobileListing {
   };
 }
 
-export default function MobilesPage() {
+function MobilesContent() {
   const searchParams = useSearchParams();
+  const t = useTranslations('mobilesPage');
+  const locale = useLocale();
   const [listings, setListings] = useState<MobileListing[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -124,32 +127,32 @@ export default function MobilesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 text-white">
         <div className="container mx-auto px-4 py-12">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="text-center md:text-right">
+            <div className={`text-center ${locale === 'ar' ? 'md:text-right' : 'md:text-left'}`}>
               <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                سوق الموبايلات
+                {t('title')}
               </h1>
               <p className="text-xl text-white/90 mb-6">
-                اشتري، بيع، أو قايض موبايلك بأمان مع التحقق من IMEI و نظام Escrow
+                {t('subtitle')}
               </p>
-              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+              <div className={`flex flex-wrap gap-4 justify-center ${locale === 'ar' ? 'md:justify-start' : 'md:justify-start'}`}>
                 <Link
                   href="/mobiles/sell"
                   className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-colors flex items-center gap-2"
                 >
                   <Smartphone className="w-5 h-5" />
-                  بيع موبايلك
+                  {t('sellYourMobile')}
                 </Link>
                 <Link
                   href="/mobiles/barter"
                   className="bg-white/20 backdrop-blur text-white px-6 py-3 rounded-xl font-bold hover:bg-white/30 transition-colors flex items-center gap-2"
                 >
                   <RefreshCw className="w-5 h-5" />
-                  مقايضة ذكية
+                  {t('smartBarter')}
                 </Link>
               </div>
             </div>
@@ -158,18 +161,18 @@ export default function MobilesPage() {
             <div className="grid grid-cols-3 gap-6 text-center">
               <div className="bg-white/10 backdrop-blur rounded-xl p-4">
                 <div className="text-3xl font-bold">{totalCount || '500+'}</div>
-                <div className="text-sm text-white/80">موبايل متاح</div>
+                <div className="text-sm text-white/80">{t('mobilesAvailable')}</div>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-4">
                 <div className="text-3xl font-bold flex items-center justify-center gap-1">
                   <Shield className="w-6 h-6" />
                   100%
                 </div>
-                <div className="text-sm text-white/80">تحقق IMEI</div>
+                <div className="text-sm text-white/80">{t('imeiVerification')}</div>
               </div>
               <div className="bg-white/10 backdrop-blur rounded-xl p-4">
                 <div className="text-3xl font-bold">0%</div>
-                <div className="text-sm text-white/80">عمولة للمشتري</div>
+                <div className="text-sm text-white/80">{t('buyerCommission')}</div>
               </div>
             </div>
           </div>
@@ -188,7 +191,7 @@ export default function MobilesPage() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              الكل
+              {t('all')}
             </button>
             {BRANDS.map(brand => (
               <button
@@ -229,10 +232,10 @@ export default function MobilesPage() {
                   className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm"
                 >
                   <Filter className="w-5 h-5" />
-                  الفلاتر
+                  {t('filters')}
                 </button>
                 <span className="text-gray-600">
-                  {totalCount} نتيجة
+                  {totalCount} {t('results')}
                 </span>
               </div>
 
@@ -243,10 +246,10 @@ export default function MobilesPage() {
                   onChange={(e) => handleFilterChange('sort', e.target.value)}
                   className="bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm"
                 >
-                  <option value="newest">الأحدث</option>
-                  <option value="price_asc">السعر: الأقل أولاً</option>
-                  <option value="price_desc">السعر: الأعلى أولاً</option>
-                  <option value="popular">الأكثر مشاهدة</option>
+                  <option value="newest">{t('sortOptions.newest')}</option>
+                  <option value="price_asc">{t('sortOptions.priceLowFirst')}</option>
+                  <option value="price_desc">{t('sortOptions.priceHighFirst')}</option>
+                  <option value="popular">{t('sortOptions.mostViewed')}</option>
                 </select>
 
                 {/* View Mode */}
@@ -282,7 +285,7 @@ export default function MobilesPage() {
               <div className="mb-8">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-amber-500" />
-                  <h2 className="text-xl font-bold">إعلانات مميزة</h2>
+                  <h2 className="text-xl font-bold">{t('featuredListings')}</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {listings.filter(l => l.featured).slice(0, 3).map(listing => (
@@ -303,10 +306,10 @@ export default function MobilesPage() {
               <div className="text-center py-16 bg-white rounded-xl">
                 <Smartphone className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
-                  لا توجد نتائج
+                  {t('noResults')}
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  جرب تغيير معايير البحث
+                  {t('tryChangingCriteria')}
                 </p>
                 <button
                   onClick={() => setFilters({
@@ -316,7 +319,7 @@ export default function MobilesPage() {
                   })}
                   className="text-indigo-600 font-medium hover:underline"
                 >
-                  إعادة تعيين الفلاتر
+                  {t('resetFilters')}
                 </button>
               </div>
             ) : (
@@ -362,15 +365,15 @@ export default function MobilesPage() {
       {/* Trust Features */}
       <div className="bg-white py-12">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold text-center mb-8">لماذا Xchange Mobile؟</h2>
+          <h2 className="text-2xl font-bold text-center mb-8">{t('whyXchangeMobile')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center p-6 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Shield className="w-8 h-8 text-green-600" />
               </div>
-              <h3 className="font-bold mb-2">التحقق من IMEI</h3>
+              <h3 className="font-bold mb-2">{t('features.imeiVerification.title')}</h3>
               <p className="text-gray-600 text-sm">
-                نتحقق من كل جهاز للتأكد من عدم وجوده في القائمة السوداء
+                {t('features.imeiVerification.description')}
               </p>
             </div>
 
@@ -378,9 +381,9 @@ export default function MobilesPage() {
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-8 h-8 text-blue-600" />
               </div>
-              <h3 className="font-bold mb-2">نظام Escrow</h3>
+              <h3 className="font-bold mb-2">{t('features.escrow.title')}</h3>
               <p className="text-gray-600 text-sm">
-                أموالك محمية حتى تستلم وتفحص الجهاز
+                {t('features.escrow.description')}
               </p>
             </div>
 
@@ -388,9 +391,9 @@ export default function MobilesPage() {
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <RefreshCw className="w-8 h-8 text-purple-600" />
               </div>
-              <h3 className="font-bold mb-2">المقايضة الذكية</h3>
+              <h3 className="font-bold mb-2">{t('features.smartBarter.title')}</h3>
               <p className="text-gray-600 text-sm">
-                خوارزمية ذكية تجد لك أفضل صفقات المقايضة
+                {t('features.smartBarter.description')}
               </p>
             </div>
 
@@ -398,14 +401,29 @@ export default function MobilesPage() {
               <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Battery className="w-8 h-8 text-amber-600" />
               </div>
-              <h3 className="font-bold mb-2">فحص البطارية</h3>
+              <h3 className="font-bold mb-2">{t('features.batteryCheck.title')}</h3>
               <p className="text-gray-600 text-sm">
-                نعرض نسبة صحة البطارية الحقيقية لكل جهاز
+                {t('features.batteryCheck.description')}
               </p>
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MobilesPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center" dir="rtl">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">جاري تحميل سوق الموبايلات...</p>
+        </div>
+      </div>
+    }>
+      <MobilesContent />
+    </Suspense>
   );
 }

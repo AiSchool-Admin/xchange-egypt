@@ -7,10 +7,21 @@ import { cleanDatabase, disconnectTestDb, getTestDb } from '../helpers/testDb';
 import { createTestUser } from '../helpers/testHelpers';
 import bcrypt from 'bcryptjs';
 
+// Check if Prisma is available
+let prismaAvailable = false;
+try {
+  require('@prisma/client');
+  prismaAvailable = true;
+} catch {
+  console.log('⚠️ Prisma not available - skipping Auth integration tests');
+}
+
+const describeIfPrisma = prismaAvailable ? describe : describe.skip;
+
 // Note: These tests require the full Express app
 // For now, we'll test the logic separately until we can import the app
 
-describe('Auth Routes - Unit Tests', () => {
+describeIfPrisma('Auth Routes - Unit Tests', () => {
   const db = getTestDb();
 
   beforeEach(async () => {

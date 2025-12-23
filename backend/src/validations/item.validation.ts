@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ItemCondition } from '@prisma/client';
+import { ItemCondition } from '../types/prisma-enums';
 
 // Egyptian Governorates (English and Arabic names)
 export const EGYPTIAN_GOVERNORATES = [

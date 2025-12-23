@@ -1,4 +1,4 @@
-import { ListingType, ListingStatus } from '@prisma/client';
+import { ListingType, ListingStatus } from '../types/prisma-enums';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 

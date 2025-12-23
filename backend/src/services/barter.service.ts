@@ -1,4 +1,4 @@
-import { BarterOfferStatus, ItemCondition } from '@prisma/client';
+import { BarterOfferStatus, ItemCondition } from '../types';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { createNotification } from './notification.service';
 import prisma from '../lib/prisma';

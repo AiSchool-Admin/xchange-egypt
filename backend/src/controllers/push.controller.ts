@@ -8,7 +8,7 @@ import { successResponse } from '../utils/response';
  */
 export const subscribe = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { endpoint, p256dh, auth } = req.body;
 
     const subscription = await pushService.subscribe(userId, {
@@ -29,7 +29,7 @@ export const subscribe = async (req: Request, res: Response, next: NextFunction)
  */
 export const unsubscribe = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { endpoint } = req.body;
 
     await pushService.unsubscribe(userId, endpoint);
@@ -46,7 +46,7 @@ export const unsubscribe = async (req: Request, res: Response, next: NextFunctio
  */
 export const getSubscriptions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const subscriptions = await pushService.getUserSubscriptions(userId);
 
@@ -62,7 +62,7 @@ export const getSubscriptions = async (req: Request, res: Response, next: NextFu
  */
 export const getStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const enabled = await pushService.hasPushEnabled(userId);
 

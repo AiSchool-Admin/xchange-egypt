@@ -14,7 +14,7 @@ export const createBarterOffer = async (
   next: NextFunction
 ) => {
   try {
-    const initiatorId = req.user!.id;
+    const initiatorId = req.user.id;
     const offerData = req.body;
 
     // Use new bundle service
@@ -37,7 +37,7 @@ export const getBarterOfferById = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const offer = await barterService.getBarterOfferById(offerId, userId);
 
@@ -58,7 +58,7 @@ export const acceptBarterOffer = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const offer = await barterService.acceptBarterOffer(offerId, userId);
 
@@ -79,7 +79,7 @@ export const rejectBarterOffer = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { reason } = req.body;
 
     const offer = await barterService.rejectBarterOffer(offerId, userId, reason);
@@ -101,7 +101,7 @@ export const createCounterOffer = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const counterOfferData = req.body;
 
     const offer = await barterService.createCounterOffer(offerId, userId, counterOfferData);
@@ -123,7 +123,7 @@ export const cancelBarterOffer = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const offer = await barterService.cancelBarterOffer(offerId, userId);
 
@@ -143,7 +143,7 @@ export const getMyBarterOffers = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { type, status, page, limit } = req.query;
 
     const result = await barterService.getMyBarterOffers(
@@ -195,7 +195,7 @@ export const findBarterMatches = async (
 ) => {
   try {
     const { itemId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { categoryId } = req.query;
 
     const matches = await barterService.findBarterMatches(
@@ -221,7 +221,7 @@ export const completeBarterExchange = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { confirmationNotes } = req.body;
 
     const offer = await barterService.completeBarterExchange(
@@ -250,7 +250,7 @@ export const getMatchingOffers = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { page, limit } = req.query;
 
     const matches = await bundleService.findMatchingOffersForUser(
@@ -276,7 +276,7 @@ export const getBestMatch = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const bestMatch = await bundleService.getBestMatchingPreferenceSet(offerId, userId);
 
@@ -305,7 +305,7 @@ export const getSmartMatches = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const matches = await smartMatchService.getSmartMatches(offerId, userId);
 
@@ -327,7 +327,7 @@ export const findMyMatchingItem = async (
 ) => {
   try {
     const { itemId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const match = await barterService.findMyMatchingItemForBarter(itemId, userId);
 

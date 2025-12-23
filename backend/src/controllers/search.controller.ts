@@ -111,7 +111,7 @@ export const getSearchHistory = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const limit = Number(req.query.limit) || 20;
 
     const history = await searchService.getUserSearchHistory(userId, limit);
@@ -132,7 +132,7 @@ export const clearSearchHistory = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     await searchService.clearSearchHistory(userId);
 
     return successResponse(res, null, 'Search history cleared successfully');
@@ -197,7 +197,7 @@ export const saveSearch = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const savedSearch = await searchService.saveSearch(userId, req.body);
 
     return successResponse(res, savedSearch, 'Search saved successfully', 201);
@@ -216,7 +216,7 @@ export const getSavedSearches = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const searches = await searchService.getSavedSearches(userId);
 
     return successResponse(res, searches, 'Saved searches retrieved successfully');
@@ -235,7 +235,7 @@ export const getSavedSearchById = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const savedSearch = await searchService.getSavedSearchById(
       req.params.id,
       userId
@@ -257,7 +257,7 @@ export const updateSavedSearch = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const updated = await searchService.updateSavedSearch(
       req.params.id,
       userId,
@@ -280,7 +280,7 @@ export const deleteSavedSearch = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     await searchService.deleteSavedSearch(req.params.id, userId);
 
     return successResponse(res, null, 'Saved search deleted successfully');
@@ -299,7 +299,7 @@ export const executeSavedSearch = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const result = await searchService.executeSavedSearch(req.params.id, userId);
 
     return successResponse(res, result, 'Saved search executed successfully');

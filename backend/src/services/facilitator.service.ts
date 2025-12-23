@@ -3,8 +3,8 @@
  * خدمة شبكة الوسطاء المعتمدين
  */
 
-import { FacilitatorLevel, FacilitatorStatus } from '@prisma/client';
-import prisma from '../config/database';
+import { FacilitatorLevel, FacilitatorStatus } from '../types';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Configuration
@@ -623,7 +623,7 @@ async function checkLevelUpgrade(facilitatorId: string) {
       facilitator.successfulDeals >= config.minDeals &&
       facilitator.avgRating >= config.minRating
     ) {
-      newLevel = level as FacilitatorLevel;
+      newLevel = level;
       break;
     }
   }

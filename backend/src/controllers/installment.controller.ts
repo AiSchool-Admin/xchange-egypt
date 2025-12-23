@@ -90,7 +90,7 @@ export const createInstallmentRequest = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const {
       itemId,
       provider,
@@ -136,7 +136,7 @@ export const getUserInstallmentRequests = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { page, limit } = req.query;
 
     const result = await installmentService.getUserInstallmentRequests(

@@ -9,8 +9,8 @@
  * - Market trends
  */
 
-import prisma from '../config/database';
-import { ItemCondition } from '@prisma/client';
+import prisma from '../lib/prisma';
+import { ItemCondition } from '../types/prisma-enums';
 
 // ============================================
 // Price Estimation Logic

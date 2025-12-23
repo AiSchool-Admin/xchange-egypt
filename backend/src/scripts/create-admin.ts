@@ -3,7 +3,8 @@
  * Run with: npx ts-node src/scripts/create-admin.ts
  */
 
-import { PrismaClient, AdminRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { AdminRole } from '../types';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();

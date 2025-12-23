@@ -9,7 +9,7 @@
  * - User discovery
  */
 
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types
@@ -426,7 +426,7 @@ export async function createActivity(params: CreateActivityParams) {
       imageUrl: params.imageUrl,
       metadata: params.metadata,
       isPublic: params.isPublic ?? true,
-    },
+    } as any,
   });
 }
 

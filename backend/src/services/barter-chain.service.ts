@@ -5,11 +5,12 @@
  * Handles proposal, acceptance, rejection, and execution
  */
 
-import { BarterChainStatus, ParticipantStatus, LockType } from '@prisma/client';
+import { BarterChainStatus, ParticipantStatus, LockType, ItemStatus } from '../types';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import * as matchingService from './barter-matching.service';
 import * as lockService from './inventory-lock.service';
 import * as cashFlowService from './cash-flow.service';
+import { createNotification } from './notification.service';
 import prisma from '../lib/prisma';
 
 // ============================================
@@ -133,7 +134,22 @@ export const createSmartProposal = async (
   // Create proposal
   const proposal = await matchingService.createBarterChainProposal(bestMatch);
 
-  // TODO: Send notifications to all participants
+  // Send notifications to all participants
+  const participantsToNotify = bestMatch.participants.filter(p => p.userId !== userId);
+  for (const participant of participantsToNotify) {
+    try {
+      await createNotification({
+        userId: participant.userId,
+        type: 'BARTER_MATCH',
+        title: '🔄 اقتراح مقايضة ذكية!',
+        message: `تم اكتشاف فرصة مقايضة تناسبك - نسبة التطابق ${Math.round((bestMatch as any).score * 100 || 90)}%`,
+        entityType: 'BARTER_CHAIN',
+        entityId: proposal.id,
+      });
+    } catch (error) {
+      console.error(`Failed to notify participant ${participant.userId}:`, error);
+    }
+  }
 
   return proposal;
 };
@@ -417,8 +433,81 @@ export const executeBarterChain = async (chainId: string, userId: string): Promi
       },
     });
 
-    // TODO: Update item ownership/status
-    // TODO: Create transaction records
+    // Update item ownership and create transaction records
+    const chainWithParticipants = await prisma.barterChain.findUnique({
+      where: { id: chainId },
+      include: {
+        participants: {
+          include: {
+            givingItem: true,
+            receivingItem: true,
+          },
+        },
+      },
+    });
+
+    if (chainWithParticipants) {
+      for (const participant of chainWithParticipants.participants) {
+        try {
+          // Update item status to EXCHANGED
+          if (participant.givingItemId) {
+            await prisma.item.update({
+              where: { id: participant.givingItemId },
+              data: { status: ItemStatus.SOLD },
+            });
+          }
+
+          // Find listing for the item to create transaction record
+          const itemId = participant.receivingItemId || participant.givingItemId;
+          if (itemId) {
+            const listing = await prisma.listing.findFirst({
+              where: { itemId },
+            });
+
+            if (listing) {
+              // Create transaction record for each exchange
+              const transaction = await prisma.transaction.create({
+                data: {
+                  listingId: listing.id,
+                  buyerId: participant.userId,
+                  sellerId: participant.receivingItem?.sellerId || participant.userId,
+                  transactionType: 'BARTER',
+                  amount: participant.givingItem?.estimatedValue || 0,
+                  paymentMethod: 'BARTER_EXCHANGE',
+                  paymentStatus: 'COMPLETED',
+                  completedAt: new Date(),
+                },
+              });
+
+              // Send completion notification
+              await createNotification({
+                userId: participant.userId,
+                type: 'BARTER_COMPLETED',
+                title: '🎉 اكتملت المقايضة بنجاح!',
+                message: 'تمت عملية المقايضة بنجاح. شكراً لاستخدام منصة Xchange!',
+                entityType: 'TRANSACTION',
+                entityId: transaction.id,
+              });
+            } else {
+              // No listing found, just send notification without transaction
+              await createNotification({
+                userId: participant.userId,
+                type: 'BARTER_COMPLETED',
+                title: '🎉 اكتملت المقايضة بنجاح!',
+                message: 'تمت عملية المقايضة بنجاح. شكراً لاستخدام منصة Xchange!',
+                entityType: 'BARTER_CHAIN',
+                entityId: chainId,
+              });
+            }
+          }
+        } catch (error) {
+          console.error(`Failed to process participant ${participant.userId}:`, error);
+        }
+      }
+
+      // Release all locks
+      await lockService.releaseChainLocks(chainId, userId, 'Chain completed successfully');
+    }
   }
 
   return getBarterChainById(chainId, userId);

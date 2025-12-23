@@ -1,0 +1,589 @@
+{
+  "common": {
+    "appName": "Xchange",
+    "search": "Search",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "profile": "Profile",
+    "settings": "Settings",
+    "home": "Home",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "view": "View",
+    "more": "More",
+    "less": "Less",
+    "all": "All",
+    "filter": "Filter",
+    "sort": "Sort",
+    "price": "Price",
+    "location": "Location",
+    "date": "Date",
+    "egp": "EGP",
+    "allEgypt": "All Egypt",
+    "moreGovernorates": "More Governorates",
+    "selectLocation": "Select Location"
+  },
+  "nav": {
+    "home": "Home",
+    "browse": "Browse",
+    "sell": "Sell",
+    "barter": "Barter",
+    "auctions": "Auctions",
+    "services": "Services",
+    "transport": "Transport",
+    "myAccount": "My Account",
+    "myItems": "My Items",
+    "myOrders": "My Orders",
+    "messages": "Messages",
+    "notifications": "Notifications",
+    "favorites": "Favorites",
+    "cart": "Cart",
+    "dashboard": "Dashboard",
+    "addListing": "Add Listing",
+    "searchPlaceholder": "Search for products, cars, mobiles...",
+    "searchInXchange": "Search in Xchange...",
+    "searchSuggestions": "Search Suggestions",
+    "recentSearches": "Recent Searches",
+    "clearAll": "Clear All",
+    "trending": "Trending",
+    "markets": "Markets",
+    "generalMarket": "General Market",
+    "carsMarket": "Cars Market",
+    "propertiesMarket": "Properties Market",
+    "mobilesMarket": "Mobiles Market",
+    "auctionsMarket": "Auctions",
+    "tendersMarket": "Tenders",
+    "luxuryMarket": "Luxury Market",
+    "scrapMarket": "Scrap Market",
+    "goldMarket": "Gold Market",
+    "silverMarket": "Silver Market",
+    "barterMarket": "Barter",
+    "escrow": "Escrow System",
+    "installments": "Installments",
+    "delivery": "Delivery",
+    "badges": "Badges",
+    "compare": "Compare",
+    "inventory": "My Inventory",
+    "myBarters": "My Barters",
+    "alerts": "Alerts",
+    "sellWithAI": "Sell with AI",
+    "aiAssistant": "AI Assistant",
+    "browseAll": "Browse All"
+  },
+  "categories": {
+    "electronics": "Electronics",
+    "vehicles": "Vehicles",
+    "furniture": "Furniture",
+    "mensFashion": "Men's Fashion",
+    "womensFashion": "Women's Fashion",
+    "kidsFashion": "Kids Fashion",
+    "beautyPerfume": "Beauty & Perfume",
+    "homeAppliances": "Home Appliances",
+    "sports": "Sports",
+    "realEstate": "Real Estate",
+    "artCollectibles": "Art & Collectibles",
+    "smartphones": "Smartphones",
+    "computers": "Computers",
+    "tvs": "TVs",
+    "cameras": "Cameras",
+    "carsForSale": "Cars for Sale",
+    "spareParts": "Spare Parts",
+    "motorcycles": "Motorcycles",
+    "carAccessories": "Car Accessories",
+    "bedroom": "Bedroom",
+    "livingRoom": "Living Room",
+    "diningRoom": "Dining Room",
+    "office": "Office",
+    "clothing": "Clothing",
+    "sportswear": "Sportswear",
+    "shoes": "Shoes",
+    "bags": "Bags",
+    "accessories": "Accessories",
+    "makeup": "Makeup",
+    "skincare": "Skincare",
+    "perfumes": "Perfumes",
+    "haircare": "Haircare",
+    "largeAppliances": "Large Appliances",
+    "kitchenAppliances": "Kitchen Appliances",
+    "smallAppliances": "Small Appliances",
+    "sportsEquipment": "Sports Equipment",
+    "residential": "Residential",
+    "commercial": "Commercial",
+    "antiques": "Antiques",
+    "collectibles": "Collectibles",
+    "showMore": "+ More",
+    "showProducts": "Show Products"
+  },
+  "home": {
+    "hero": {
+      "searchPlaceholder": "Search for anything... cars, mobiles, real estate, gold...",
+      "quickTags": ["iPhone 15", "Hyundai Car", "Apartment for Rent", "21K Gold", "Laptop"]
+    },
+    "slides": {
+      "main": {
+        "title": "Egypt's Smartest Market",
+        "subtitle": "Buy • Sell • Trade",
+        "description": "XChange platform combines 11 specialized markets in one place. Direct sales, auctions, barter, and more - all with full protection.",
+        "cta": "Start Shopping"
+      },
+      "barter": {
+        "title": "Smart Barter",
+        "subtitle": "Trade Without Cash",
+        "description": "The first AI-powered barter system in the Middle East. Multi-party barter chains (A→B→C→A).",
+        "cta": "Start Trading",
+        "badge": "New"
+      },
+      "auctions": {
+        "title": "Live Auctions",
+        "subtitle": "Bid & Win",
+        "description": "Real auctions on cars, real estate, electronics, and more. Anti-manipulation system with full protection.",
+        "cta": "View Auctions"
+      },
+      "gold": {
+        "title": "Gold Market",
+        "subtitle": "Save up to 38%",
+        "description": "Buy and sell gold at better prices than traditional gold shops. XRF inspection and certified hallmark.",
+        "cta": "Browse Gold"
+      }
+    },
+    "stats": {
+      "activeListings": "Active Listings",
+      "users": "Users",
+      "successfulDeals": "Successful Deals",
+      "successRate": "Success Rate"
+    },
+    "markets": {
+      "title": "🏪 13 Specialized Markets in One Place",
+      "subtitle": "Each market is carefully designed for the perfect buying and selling experience with unique features and full protection",
+      "listing": "listing",
+      "daily": "daily"
+    },
+    "trust": {
+      "title": "🛡️ Why XChange?",
+      "subtitle": "We put your security and trust first with a comprehensive protection system",
+      "escrow": {
+        "title": "Escrow System",
+        "description": "Your money is protected until you receive the product",
+        "stat": "100% Protection"
+      },
+      "verification": {
+        "title": "Multi-level Verification",
+        "description": "ID and business registration verification",
+        "stat": "+50,000 Verified"
+      },
+      "ai": {
+        "title": "Artificial Intelligence",
+        "description": "Smart pricing and matching",
+        "stat": "95% Accuracy"
+      },
+      "fast": {
+        "title": "Fast Transactions",
+        "description": "Average deal completion in hours",
+        "stat": "2 Hours"
+      }
+    },
+    "featured": {
+      "title": "⭐ Featured Products",
+      "subtitle": "Best products selected for you",
+      "viewAll": "View All",
+      "noItems": "No featured products currently"
+    },
+    "latest": {
+      "title": "🆕 Latest Listings",
+      "subtitle": "Browse the latest added products",
+      "viewAll": "View All",
+      "noItems": "No products currently"
+    },
+    "barter": {
+      "badge": "🔄 Exclusive Feature",
+      "title": "Smart Barter",
+      "description": "Trade your old products for new ones without cash! The AI system finds the best deals for you and supports multi-party barter chains.",
+      "features": ["Smart AI Matching", "Multi-party Chains (A→B→C→A)", "Cash + Barter Combo", "Escrow Protection"],
+      "startBarter": "Start Barter",
+      "howItWorks": "How it Works?",
+      "availableForBarter": "Available for Barter",
+      "startFirst": "Start your first barter now"
+    },
+    "testimonials": {
+      "title": "💬 What Our Customers Say",
+      "subtitle": "Real success stories from XChange users",
+      "deals": "deals"
+    },
+    "cta": {
+      "title": "🚀 Start Buying and Selling Now",
+      "subtitle": "Join over {count} users trading daily on XChange. Registration is free and quick.",
+      "addFirstListing": "Add Your First Listing",
+      "browseProducts": "Browse Products",
+      "createFreeAccount": "Create Free Account",
+      "login": "Login"
+    },
+    "app": {
+      "title": "📱 Coming Soon - XChange App",
+      "subtitle": "Track all your deals from your phone"
+    }
+  },
+  "items": {
+    "condition": {
+      "new": "New",
+      "likeNew": "Like New",
+      "good": "Good",
+      "fair": "Fair",
+      "forParts": "For Parts"
+    },
+    "status": {
+      "available": "Available",
+      "sold": "Sold",
+      "reserved": "Reserved",
+      "pending": "Pending"
+    },
+    "details": {
+      "description": "Description",
+      "specifications": "Specifications",
+      "sellerInfo": "Seller Information",
+      "location": "Location",
+      "postedOn": "Posted On",
+      "views": "Views",
+      "contactSeller": "Contact Seller",
+      "makeOffer": "Make Offer",
+      "buyNow": "Buy Now",
+      "addToCart": "Add to Cart",
+      "addToFavorites": "Add to Favorites"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Login",
+      "email": "Email",
+      "password": "Password",
+      "rememberMe": "Remember Me",
+      "forgotPassword": "Forgot Password?",
+      "noAccount": "Don't have an account?",
+      "loginButton": "Login"
+    },
+    "register": {
+      "title": "Create New Account",
+      "fullName": "Full Name",
+      "email": "Email",
+      "phone": "Phone Number",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "agreeTerms": "I agree to the Terms and Conditions",
+      "haveAccount": "Already have an account?",
+      "registerButton": "Register"
+    }
+  },
+  "seller": {
+    "dashboard": {
+      "title": "Seller Dashboard",
+      "totalSales": "Total Sales",
+      "activeListings": "Active Listings",
+      "pendingOrders": "Pending Orders",
+      "rating": "Rating",
+      "revenue": "Revenue",
+      "forecast": "Forecast",
+      "recommendations": "Recommendations"
+    }
+  },
+  "pwa": {
+    "install": {
+      "title": "Install Xchange App",
+      "subtitle": "Add the app to your home screen for quick access",
+      "offlineFeature": "Works Offline",
+      "notificationsFeature": "Push Notifications",
+      "installButton": "Install Now",
+      "laterButton": "Later"
+    },
+    "ios": {
+      "title": "Add Xchange to Home Screen",
+      "step1": "Tap",
+      "step1Icon": "at the bottom",
+      "step2": "Select \"Add to Home Screen\""
+    }
+  },
+  "download": {
+    "title": "Download the App",
+    "subtitle": "Egypt's #1 Exchange & Barter Platform",
+    "installed": "App Installed!",
+    "installedSubtitle": "You can open it from your home screen",
+    "iosTitle": "Install on iPhone",
+    "androidTitle": "Install on Android",
+    "desktopTitle": "Open on your phone",
+    "scanQR": "Scan the QR Code with your phone camera",
+    "copyLink": "Copy",
+    "linkCopied": "Link copied!",
+    "features": {
+      "title": "App Features",
+      "offline": "Works Offline",
+      "notifications": "Push Notifications",
+      "fast": "Fast & Light",
+      "noStore": "No App Store Needed"
+    }
+  },
+  "footer": {
+    "about": "About Us",
+    "contact": "Contact Us",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy",
+    "help": "Help",
+    "faq": "FAQ",
+    "copyright": "© 2024 Xchange Egypt. All rights reserved"
+  },
+  "mobileNav": {
+    "home": "Home",
+    "browse": "Browse",
+    "messages": "Messages",
+    "account": "Account"
+  },
+  "toast": {
+    "matchFound": "Match Found!",
+    "matchScore": "Match Score"
+  },
+  "howItWorks": {
+    "title": "⚡ How Does XChange Work?",
+    "subtitle": "Get started in minutes! Simple and secure process from start to finish",
+    "tabs": {
+      "buy": "How to Buy",
+      "sell": "How to Sell",
+      "barter": "How to Trade"
+    },
+    "buy": {
+      "step1": { "title": "Search for what you want", "description": "Use smart search and advanced filters to find the perfect product" },
+      "step2": { "title": "Contact the seller", "description": "Message the seller directly or request to inspect the product before buying" },
+      "step3": { "title": "Pay safely", "description": "Your money is protected by the escrow system until you receive and verify the product" },
+      "step4": { "title": "Receive your product", "description": "Receive the product, verify it matches the description, then confirm receipt" }
+    },
+    "sell": {
+      "step1": { "title": "Photo your product", "description": "Take clear photos and write an accurate description of your product" },
+      "step2": { "title": "Set the price", "description": "Use the smart price suggestion or set your own price" },
+      "step3": { "title": "Publish your listing", "description": "Choose the right category and publish your listing for thousands of buyers to see" },
+      "step4": { "title": "Get paid", "description": "After the buyer confirms receipt, your money is transferred directly" }
+    },
+    "barter": {
+      "step1": { "title": "Add your product for barter", "description": "Specify the product you want to exchange and what you're looking for" },
+      "step2": { "title": "AI searches for you", "description": "Our system finds the best matching offers from thousands of users" },
+      "step3": { "title": "Accept the offer", "description": "Review offers and choose the best one. You can add a cash difference" },
+      "step4": { "title": "Complete the trade", "description": "Exchange products with escrow system protection" }
+    },
+    "cta": {
+      "buy": "Start Shopping Now",
+      "sell": "Add Your First Listing",
+      "barter": "Start Trading"
+    }
+  },
+  "faq": {
+    "title": "❓ Frequently Asked Questions",
+    "subtitle": "Everything you need to know about XChange",
+    "questions": {
+      "free": {
+        "question": "Is XChange free?",
+        "answer": "Yes! Registration and posting listings is completely free. We only charge a small commission when a deal is successfully completed (1-3% depending on category)."
+      },
+      "escrow": {
+        "question": "How does the Escrow system work?",
+        "answer": "When the buyer pays, the money is held in a secure account. It's only transferred to the seller after the buyer confirms receipt and that the product matches the description. This protects both parties."
+      },
+      "authentic": {
+        "question": "How do I ensure the product is authentic?",
+        "answer": "We provide specialized inspections per category: IMEI check for mobiles, XRF testing for gold, 150-point inspection for cars, and Entrupy verification for luxury brands."
+      },
+      "smartBarter": {
+        "question": "What is Smart Barter?",
+        "answer": "An AI system that finds perfect barter deals for you. It supports direct barter (A↔B) and multi-party chains (A→B→C→A) with the option to add cash difference."
+      },
+      "sellTime": {
+        "question": "How long does it take to sell a product?",
+        "answer": "It depends on the product, but average selling time is 2-5 days. You can speed this up using paid promotion or competitive pricing."
+      },
+      "installments": {
+        "question": "Can I buy on installments?",
+        "answer": "Yes! We offer installment options in partnership with approved banks and financing companies. Available for cars, real estate, and mobiles."
+      },
+      "fraud": {
+        "question": "How do I protect myself from fraud?",
+        "answer": "Always use the escrow system for payment, verify seller authentication, request to inspect the product, and never pay outside the platform. Our team is available 24/7 for any inquiries."
+      },
+      "mobileApp": {
+        "question": "Is there a mobile app?",
+        "answer": "We're working on launching iOS and Android apps soon. Currently the website is fully responsive and works smoothly on mobile."
+      }
+    },
+    "contact": {
+      "text": "Didn't find an answer to your question?",
+      "button": "Contact Us"
+    }
+  },
+  "liveActivity": {
+    "types": {
+      "sale": "Sold",
+      "barter": "Traded",
+      "auction": "New Bid",
+      "signup": "Joined Platform"
+    },
+    "joinedPlatform": "Joined the platform",
+    "currency": {
+      "million": "M EGP",
+      "thousand": "K EGP",
+      "egp": "EGP"
+    },
+    "timeAgo": {
+      "now": "Now",
+      "1min": "1 min ago",
+      "2min": "2 min ago",
+      "3min": "3 min ago",
+      "5min": "5 min ago",
+      "7min": "7 min ago",
+      "8min": "8 min ago",
+      "10min": "10 min ago"
+    }
+  },
+  "partners": {
+    "title": "Our Trusted Partners",
+    "mediaTitle": "As Featured In",
+    "categories": {
+      "banks": "Banks",
+      "payment": "Payment",
+      "transport": "Transport",
+      "shipping": "Shipping",
+      "verification": "Verification",
+      "telecom": "Telecom"
+    },
+    "stats": {
+      "activeUsers": { "value": "125K+", "label": "Active Users" },
+      "successfulDeals": { "value": "89K+", "label": "Successful Deals" },
+      "tradingVolume": { "value": "2.5B", "label": "EGP Trading Volume" },
+      "satisfaction": { "value": "98.5%", "label": "Satisfaction Rate" }
+    },
+    "media": {
+      "almasry": "XChange is transforming e-commerce in Egypt",
+      "cnn": "An innovative platform combining 11 markets in one place",
+      "forbes": "One of the fastest growing startups in the region"
+    }
+  },
+  "browse": {
+    "title": "Market",
+    "myItems": "My Items",
+    "productsAvailable": "products available",
+    "browseProducts": "Browse products",
+    "barter": "Barter",
+    "addListing": "Add Listing",
+    "marketTabs": {
+      "all": "All",
+      "forSale": "For Sale",
+      "auctions": "Auctions",
+      "barter": "Barter",
+      "wanted": "Wanted",
+      "tenders": "Tenders"
+    },
+    "specializedMarkets": "Specialized Markets:",
+    "markets": {
+      "cars": "Cars",
+      "properties": "Properties",
+      "mobiles": "Mobiles",
+      "gold": "Gold",
+      "silver": "Silver",
+      "luxury": "Luxury",
+      "scrap": "Scrap"
+    },
+    "conditions": {
+      "new": "New",
+      "likeNew": "Like New",
+      "good": "Good",
+      "fair": "Fair",
+      "used": "Used"
+    },
+    "listingTypes": {
+      "all": "All",
+      "directSale": "Direct Sale",
+      "auction": "Auction",
+      "barter": "Barter",
+      "wantedToBuy": "Wanted to Buy",
+      "tenders": "Tenders"
+    },
+    "sortOptions": {
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "priceLow": "Price: Low",
+      "priceHigh": "Price: High"
+    },
+    "filters": "Filters",
+    "clearAll": "Clear All",
+    "location": "Location",
+    "category": "Category",
+    "allMainCategories": "All Main Categories",
+    "allSubcategories": "All Subcategories",
+    "allSubSubcategories": "All Sub-subcategories",
+    "loadingCategories": "Loading categories...",
+    "noCategoriesAvailable": "No categories available",
+    "retry": "Retry",
+    "listingType": "Listing Type",
+    "condition": "Condition",
+    "clearSelection": "Clear selection",
+    "price": "Price (EGP)",
+    "activeFilters": "Active Filters:",
+    "showing": "Showing",
+    "of": "of",
+    "products": "products",
+    "noProducts": "No Products",
+    "tryAdjustingFilters": "Try adjusting filters or search for something else",
+    "beFirstToAdd": "Be the first to add a product!",
+    "clearFilters": "Clear Filters",
+    "tryAgain": "Try Again",
+    "previous": "Previous",
+    "next": "Next",
+    "searchPlaceholder": "Search for any product... iPhone, car, apartment..."
+  },
+  "mobilesPage": {
+    "title": "Mobiles Market",
+    "subtitle": "Buy, sell, or trade your mobile safely with IMEI verification and Escrow system",
+    "sellYourMobile": "Sell Your Mobile",
+    "smartBarter": "Smart Barter",
+    "mobilesAvailable": "mobiles available",
+    "imeiVerification": "IMEI Verification",
+    "buyerCommission": "Buyer Commission",
+    "all": "All",
+    "results": "results",
+    "filters": "Filters",
+    "sortOptions": {
+      "newest": "Newest",
+      "priceLowFirst": "Price: Low First",
+      "priceHighFirst": "Price: High First",
+      "mostViewed": "Most Viewed"
+    },
+    "featuredListings": "Featured Listings",
+    "noResults": "No Results",
+    "tryChangingCriteria": "Try changing search criteria",
+    "resetFilters": "Reset Filters",
+    "whyXchangeMobile": "Why Xchange Mobile?",
+    "features": {
+      "imeiVerification": {
+        "title": "IMEI Verification",
+        "description": "We verify every device to ensure it's not blacklisted"
+      },
+      "escrow": {
+        "title": "Escrow System",
+        "description": "Your money is protected until you receive and inspect the device"
+      },
+      "smartBarter": {
+        "title": "Smart Barter",
+        "description": "Smart algorithm finds you the best barter deals"
+      },
+      "batteryCheck": {
+        "title": "Battery Check",
+        "description": "We show the real battery health for every device"
+      }
+    },
+    "conditionGrades": {
+      "excellent": "Excellent",
+      "veryGood": "Very Good",
+      "good": "Good",
+      "fair": "Fair"
+    },
+    "loading": "Loading mobiles market..."
+  }
+}

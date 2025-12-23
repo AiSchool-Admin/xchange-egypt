@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as auctionController from '../controllers/auction.controller';
-import { authenticate } from '../middleware/auth';
+import { authenticate, isAdmin } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import {
   createAuctionSchema,
@@ -158,12 +158,12 @@ router.post(
 /**
  * @route   POST /api/v1/auctions/:id/end
  * @desc    End auction manually (Admin or scheduled job)
- * @access  Private (Admin only - add admin middleware here)
+ * @access  Private (Admin only)
  */
 router.post(
   '/:id/end',
   authenticate,
-  // TODO: Add admin middleware
+  isAdmin,
   validate(endAuctionSchema),
   auctionController.endAuction
 );

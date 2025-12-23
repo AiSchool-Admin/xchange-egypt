@@ -272,12 +272,12 @@ router.post('/seed-categories', async (req, res) => {
       message: `Successfully seeded ${totalCount} categories`,
       data: { count: totalCount },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Seed error:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to seed categories',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -299,7 +299,7 @@ router.post('/reseed-categories', async (req, res) => {
     try {
       await prisma.reverseAuction.updateMany({
         where: { categoryId: { not: null } },
-        data: { categoryId: null as any },
+        data: { categoryId: null as unknown as string },
       });
     } catch {
       // Table might not exist or have different schema
@@ -326,12 +326,12 @@ router.post('/reseed-categories', async (req, res) => {
         note: 'يجب إعادة تعيين الفئات للمنتجات الموجودة',
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Reseed error:', error);
     return res.status(500).json({
       success: false,
       message: 'فشل في إعادة بذور الفئات',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -403,12 +403,12 @@ router.post('/fix-item-categories', async (req, res) => {
         stillWithoutCategory: itemsWithoutCategory.length - updated,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Fix categories error:', error);
     return res.status(500).json({
       success: false,
       message: 'فشل في إصلاح فئات المنتجات',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -544,14 +544,15 @@ router.post('/seed-flash-deals', async (req, res) => {
         seller: { id: seller.id, email: seller.email }
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Seed flash deals error:', error);
+    const err = error as { message?: string; code?: string; meta?: unknown; stack?: string };
     return res.status(500).json({
       success: false,
       message: 'Failed to seed flash deals',
-      error: error.message,
-      details: error.code || error.meta || 'No additional details',
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+      error: err.message || 'Unknown error',
+      details: err.code || err.meta || 'No additional details',
+      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
     });
   }
 });
@@ -621,12 +622,12 @@ router.delete('/cleanup-demo', async (req, res) => {
       success: true,
       message: '✅ تم حذف جميع بيانات العرض التوضيحي',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Cleanup error:', error);
     return res.status(500).json({
       success: false,
       message: 'فشل في حذف البيانات',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -746,12 +747,12 @@ router.get('/check-products', async (req, res) => {
         },
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Check products error:', error);
     return res.status(500).json({
       success: false,
       message: 'فشل في جلب المنتجات',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -783,11 +784,12 @@ router.post('/seed-properties', async (req, res) => {
       try {
         await prisma.$executeRawUnsafe(statement + ';');
         successCount++;
-      } catch (err: any) {
+      } catch (err) {
         // Skip duplicate key errors
-        if (!err.message?.includes('duplicate key') && !err.message?.includes('already exists')) {
+        const error = err as { message?: string };
+        if (!error.message?.includes('duplicate key') && !error.message?.includes('already exists')) {
           errorCount++;
-          errors.push(err.message?.substring(0, 100) || 'Unknown error');
+          errors.push(error.message?.substring(0, 100) || 'Unknown error');
         }
       }
     }
@@ -815,12 +817,12 @@ router.post('/seed-properties', async (req, res) => {
       },
       errorDetails: errors.length > 0 ? errors.slice(0, 5) : undefined,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Seed properties error:', error);
     return res.status(500).json({
       success: false,
       message: 'فشل في تغذية سوق العقارات',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -926,12 +928,12 @@ router.get('/check-properties', async (_req, res) => {
         escrowStatus: t.escrowStatus,
       })),
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Check properties error:', error);
     return res.status(500).json({
       success: false,
       message: 'فشل في جلب بيانات العقارات',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });

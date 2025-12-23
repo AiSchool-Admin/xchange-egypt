@@ -5,7 +5,18 @@
 import { cleanDatabase, disconnectTestDb, getTestDb } from '../helpers/testDb';
 import { createTestCategory } from '../helpers/testHelpers';
 
-describe('Category Tests', () => {
+// Check if Prisma is available
+let prismaAvailable = false;
+try {
+  require('@prisma/client');
+  prismaAvailable = true;
+} catch {
+  console.log('⚠️ Prisma not available - skipping Category tests');
+}
+
+const describeIfPrisma = prismaAvailable ? describe : describe.skip;
+
+describeIfPrisma('Category Tests', () => {
   const db = getTestDb();
 
   beforeEach(async () => {

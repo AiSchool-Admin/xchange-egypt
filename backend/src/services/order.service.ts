@@ -1,4 +1,4 @@
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus } from '../types/prisma-enums';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { clearCart, getCart } from './cart.service';
 import { createNotification } from './notification.service';
@@ -254,7 +254,7 @@ export const createOrder = async (
         subtotal,
         shippingCost,
         total,
-        shippingAddressId: shippingAddressId!,
+        shippingAddressId: shippingAddressId,
         paymentMethod: data.paymentMethod,
         notes: data.notes,
         items: {
@@ -315,13 +315,13 @@ export const createOrder = async (
     });
 
     // Send notifications to all sellers
-    const sellerIds = [...new Set(order.items.map(item => item.sellerId))];
+    const sellerIds = [...new Set(order.items.map(item => item.sellerId as string))];
     for (const sellerId of sellerIds) {
       const sellerItems = order.items.filter(item => item.sellerId === sellerId);
       const itemTitles = sellerItems.map(item => item.listing.item.title).join('، ');
 
       await createNotification({
-        userId: sellerId,
+        userId: sellerId as string,
         type: 'ITEM_SOLD',
         title: 'تم بيع سلعتك! 🎉',
         message: `تم بيع: ${itemTitles}`,
@@ -565,6 +565,86 @@ export const getOrderByNumber = async (orderNumber: string) => {
 };
 
 /**
+ * Update order payment status
+ */
+export const updateOrderPaymentStatus = async (
+  orderId: string,
+  paymentData:
+    | 'PENDING'
+    | 'PAID'
+    | 'FAILED'
+    | 'REFUNDED'
+    | {
+        paymentMethod?: string;
+        paymentTransactionId?: string;
+        paymentStatus?: string;
+        paidAt?: Date;
+        collectedAmount?: number;
+        collectorId?: string;
+      },
+  userId?: string
+) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+  });
+
+  if (!order) {
+    throw new NotFoundError('Order not found');
+  }
+
+  // If user is provided, check ownership
+  if (userId && order.userId !== userId) {
+    throw new ForbiddenError('You do not have permission to update this order');
+  }
+
+  const updateData: any = {};
+
+  // Handle both string and object formats
+  let paymentStatus: string;
+  if (typeof paymentData === 'string') {
+    paymentStatus = paymentData;
+  } else {
+    paymentStatus = paymentData.paymentStatus || 'PENDING';
+    if (paymentData.paymentMethod) updateData.paymentMethod = paymentData.paymentMethod;
+    if (paymentData.paymentTransactionId) updateData.paymentId = paymentData.paymentTransactionId;
+    if (paymentData.paidAt) updateData.paidAt = paymentData.paidAt;
+    if (paymentData.collectedAmount !== undefined) updateData.total = paymentData.collectedAmount;
+    if (paymentData.collectorId) updateData.notes = `Collected by: ${paymentData.collectorId}`;
+  }
+
+  // Set timestamps based on payment status
+  if (paymentStatus === 'PAID') {
+    updateData.status = OrderStatus.PAID;
+    if (!updateData.paidAt) {
+      updateData.paidAt = new Date();
+    }
+  } else if (paymentStatus === 'FAILED') {
+    updateData.status = OrderStatus.CANCELLED;
+  } else if (paymentStatus === 'REFUNDED') {
+    updateData.status = OrderStatus.REFUNDED;
+  }
+
+  const updatedOrder = await prisma.order.update({
+    where: { id: orderId },
+    data: updateData,
+    include: {
+      items: {
+        include: {
+          listing: {
+            include: {
+              item: true,
+            },
+          },
+        },
+      },
+      shippingAddress: true,
+    },
+  });
+
+  return updatedOrder;
+};
+
+/**
  * Get Egyptian governorates
  */
 export const getGovernorates = () => {
@@ -705,7 +785,7 @@ export const createAuctionOrder = async (
         subtotal,
         shippingCost,
         total,
-        shippingAddressId: shippingAddressId!,
+        shippingAddressId: shippingAddressId,
         paymentMethod: data.paymentMethod,
         notes: data.notes || `طلب من مزاد رقم ${auction.id}`,
         items: {

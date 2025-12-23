@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BarterOfferStatus, BarterChainStatus } from '@prisma/client';
+import { BarterOfferStatus, BarterChainStatus } from '../types/prisma-enums';
 
 // Barter Offer Status validation
 const barterOfferStatusEnum = z.nativeEnum(BarterOfferStatus, {

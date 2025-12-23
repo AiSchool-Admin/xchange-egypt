@@ -10,7 +10,8 @@
  * Provides full audit trail for all cash transactions
  */
 
-import { CashFlowStatus, CashFlowType } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import { CashFlowStatus, CashFlowType } from '../types';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 
@@ -152,7 +153,7 @@ export const updateCashFlow = async (input: UpdateCashFlowInput, userId: string)
     validateStatusTransition(cashFlow.paymentStatus, paymentStatus);
   }
 
-  const updateData: any = {};
+  const updateData: Record<string, unknown> = {};
   if (paymentStatus) updateData.paymentStatus = paymentStatus;
   if (paymentReference) updateData.paymentReference = paymentReference;
   if (notes) updateData.notes = notes;
@@ -166,7 +167,7 @@ export const updateCashFlow = async (input: UpdateCashFlowInput, userId: string)
 
   const updated = await prisma.cashFlow.update({
     where: { id: cashFlowId },
-    data: updateData,
+    data: updateData as any,
   });
 
   return updated;
@@ -413,7 +414,7 @@ export const createCommissionFlow = async (
 export const getCashFlows = async (query: CashFlowQuery) => {
   const { chainId, userId, status, flowType, page = 1, limit = 20 } = query;
 
-  const where: any = {};
+  const where: Record<string, unknown> = {};
 
   if (chainId) {
     where.chainId = chainId;
@@ -432,10 +433,10 @@ export const getCashFlows = async (query: CashFlowQuery) => {
   }
 
   const skip = (page - 1) * limit;
-  const total = await prisma.cashFlow.count({ where });
+  const total = await prisma.cashFlow.count({ where: where as any });
 
   const cashFlows = await prisma.cashFlow.findMany({
-    where,
+    where: where as any,
     skip,
     take: limit,
     orderBy: { createdAt: 'desc' },

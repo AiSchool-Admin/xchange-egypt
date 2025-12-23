@@ -9,8 +9,8 @@
  * - Real-time countdown
  */
 
-import prisma from '../config/database';
-import { FlashDealStatus } from '@prisma/client';
+import prisma from '../lib/prisma';
+import { FlashDealStatus } from '../types/prisma-enums';
 
 // ============================================
 // Types

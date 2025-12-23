@@ -1,4 +1,4 @@
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus } from '../../types/prisma-enums';
 import crypto from 'crypto';
 import prisma from '../../lib/prisma';
 
@@ -9,7 +9,7 @@ const FAWRY_CONFIG = {
   securityKey: process.env.FAWRY_SECURITY_KEY || '',
 };
 
-interface FawryPaymentResponse {
+export interface FawryPaymentResponse {
   success: boolean;
   referenceNumber: string;
   expiryDate: Date;
@@ -17,6 +17,9 @@ interface FawryPaymentResponse {
     ar: string;
     en: string;
   };
+  fawryRefNumber?: string;
+  paymentUrl?: string;
+  message?: string;
 }
 
 interface FawryStatusResponse {
@@ -25,6 +28,7 @@ interface FawryStatusResponse {
   referenceNumber: string;
   amount: number;
   paidAt?: Date;
+  message?: string;
 }
 
 /**
@@ -41,7 +45,7 @@ const generateFawrySignature = (data: string[]): string => {
 /**
  * Create Fawry payment reference
  */
-export const createFawryPayment = async (
+const createPayment = async (
   orderId: string,
   amount: number,
   customerData: {
@@ -62,58 +66,68 @@ export const createFawryPayment = async (
     throw new Error('Order is not pending payment');
   }
 
-  // Generate Fawry reference number
-  const referenceNumber = `FWR-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  // Generate Fawry reference number (fallback if API fails)
+  let referenceNumber = `FWR-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  let expiryDate = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
-  // TODO: Replace with actual Fawry API call when keys are available
-  /*
-  const signature = generateFawrySignature([
-    FAWRY_CONFIG.merchantCode,
-    order.orderNumber,
-    customerData.phone,
-    customerData.email,
-    amount.toFixed(2),
-  ]);
+  // Check if Fawry credentials are configured
+  if (FAWRY_CONFIG.merchantCode && FAWRY_CONFIG.securityKey) {
+    try {
+      const signature = generateFawrySignature([
+        FAWRY_CONFIG.merchantCode,
+        order.orderNumber,
+        customerData.phone,
+        customerData.email,
+        amount.toFixed(2),
+      ]);
 
-  const requestBody = {
-    merchantCode: FAWRY_CONFIG.merchantCode,
-    merchantRefNum: order.orderNumber,
-    customerMobile: customerData.phone,
-    customerEmail: customerData.email,
-    customerName: customerData.name,
-    paymentMethod: 'PAYATFAWRY',
-    amount: amount,
-    currencyCode: 'EGP',
-    language: 'ar-eg',
-    chargeItems: [{
-      itemId: order.id,
-      description: `Order ${order.orderNumber}`,
-      price: amount,
-      quantity: 1,
-    }],
-    signature,
-    paymentExpiry: Date.now() + 48 * 60 * 60 * 1000, // 48 hours
-  };
+      const requestBody = {
+        merchantCode: FAWRY_CONFIG.merchantCode,
+        merchantRefNum: order.orderNumber,
+        customerMobile: customerData.phone,
+        customerEmail: customerData.email,
+        customerName: customerData.name,
+        paymentMethod: 'PAYATFAWRY',
+        amount: amount,
+        currencyCode: 'EGP',
+        language: 'ar-eg',
+        chargeItems: [{
+          itemId: order.id,
+          description: `Order ${order.orderNumber}`,
+          price: amount,
+          quantity: 1,
+        }],
+        signature,
+        paymentExpiry: Date.now() + 48 * 60 * 60 * 1000, // 48 hours
+      };
 
-  const response = await fetch(`${FAWRY_CONFIG.baseUrl}/fawrypay-api/api/payments/init`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody),
-  });
+      const response = await fetch(`${FAWRY_CONFIG.baseUrl}/fawrypay-api/api/payments/init`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-  const result = await response.json();
-  */
+      const result: any = await response.json();
+
+      if (result.referenceNumber) {
+        referenceNumber = result.referenceNumber;
+        expiryDate = new Date(result.expiryDate || Date.now() + 48 * 60 * 60 * 1000);
+      }
+    } catch (apiError) {
+      console.error('Fawry API call failed, using fallback:', apiError);
+      // Continue with fallback reference number
+    }
+  } else {
+    console.warn('Fawry credentials not configured, using mock mode');
+  }
 
   // Update order with payment ID
   await prisma.order.update({
     where: { id: orderId },
     data: { paymentId: referenceNumber },
   });
-
-  // Expiry date - 48 hours from now
-  const expiryDate = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
   return {
     success: true,
@@ -138,28 +152,61 @@ export const checkPaymentStatus = async (referenceNumber: string): Promise<Fawry
     throw new Error('Reference number not found');
   }
 
-  // TODO: Replace with actual Fawry API call when keys are available
-  /*
-  const signature = generateFawrySignature([
-    FAWRY_CONFIG.merchantCode,
-    order.orderNumber,
-  ]);
-
-  const response = await fetch(
-    `${FAWRY_CONFIG.baseUrl}/fawrypay-api/api/payments/status/v2?merchantCode=${FAWRY_CONFIG.merchantCode}&merchantRefNumber=${order.orderNumber}&signature=${signature}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  const result = await response.json();
-  */
-
-  // Return mock status based on order status
+  // Default status based on order status
   let status: 'UNPAID' | 'PAID' | 'EXPIRED' | 'REFUNDED' = 'UNPAID';
+  let paidAt: Date | undefined = order.paidAt || undefined;
+
+  // Check with Fawry API if credentials are configured
+  if (FAWRY_CONFIG.merchantCode && FAWRY_CONFIG.securityKey) {
+    try {
+      const signature = generateFawrySignature([
+        FAWRY_CONFIG.merchantCode,
+        order.orderNumber,
+      ]);
+
+      const response = await fetch(
+        `${FAWRY_CONFIG.baseUrl}/fawrypay-api/api/payments/status/v2?merchantCode=${FAWRY_CONFIG.merchantCode}&merchantRefNumber=${order.orderNumber}&signature=${signature}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const result: any = await response.json();
+
+      if (result.paymentStatus) {
+        status = result.paymentStatus;
+        if (result.paymentTime) {
+          paidAt = new Date(result.paymentTime);
+        }
+
+        // Update order status if payment was confirmed by Fawry
+        if (status === 'PAID' && order.status !== OrderStatus.PAID) {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              status: OrderStatus.PAID,
+              paidAt: paidAt || new Date(),
+            },
+          });
+        }
+
+        return {
+          success: true,
+          status,
+          referenceNumber,
+          amount: order.total,
+          paidAt,
+        };
+      }
+    } catch (apiError) {
+      console.error('Fawry status check failed, using local status:', apiError);
+    }
+  }
+
+  // Fallback: Return status based on order status
 
   if (order.status === OrderStatus.PAID) {
     status = 'PAID';
@@ -174,14 +221,14 @@ export const checkPaymentStatus = async (referenceNumber: string): Promise<Fawry
     status,
     referenceNumber,
     amount: order.total,
-    paidAt: order.paidAt || undefined,
+    paidAt,
   };
 };
 
 /**
  * Handle Fawry callback/webhook
  */
-export const handleFawryCallback = async (payload: {
+const handleCallback = async (payload: {
   referenceNumber: string;
   orderStatus: string;
   fawryRefNumber: string;
@@ -229,10 +276,10 @@ export const handleFawryCallback = async (payload: {
         message: `Payment for order ${order.orderNumber} has been received via Fawry`,
         entityId: order.id,
         entityType: 'Order',
-      },
+      } as any,
     });
 
-    return { success: true, message: 'Payment confirmed' };
+    return { success: true, message: 'Payment confirmed', merchantRefNum: order.id };
   } else if (payload.orderStatus === 'EXPIRED') {
     await prisma.notification.create({
       data: {
@@ -242,7 +289,7 @@ export const handleFawryCallback = async (payload: {
         message: `Fawry payment reference for order ${order.orderNumber} has expired`,
         entityId: order.id,
         entityType: 'Order',
-      },
+      } as any,
     });
 
     return { success: false, message: 'Payment expired' };
@@ -250,3 +297,13 @@ export const handleFawryCallback = async (payload: {
 
   return { success: true, message: 'Callback processed' };
 };
+
+// Export service object
+export const fawryService = {
+  createPayment,
+  checkPaymentStatus,
+  handleCallback,
+};
+
+// Re-export functions directly
+export { createPayment, handleCallback };

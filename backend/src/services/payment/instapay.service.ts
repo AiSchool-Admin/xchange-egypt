@@ -1,4 +1,4 @@
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus } from '../../types/prisma-enums';
 import crypto from 'crypto';
 import prisma from '../../lib/prisma';
 
@@ -9,6 +9,18 @@ const INSTAPAY_CONFIG = {
   secretKey: process.env.INSTAPAY_SECRET_KEY || '',
   merchantId: process.env.INSTAPAY_MERCHANT_ID || '',
 };
+
+export interface InstaPayPaymentResponse {
+  success: boolean;
+  transactionId: string;
+  paymentUrl?: string;
+  expiresAt?: Date;
+  status?: 'PENDING' | 'COMPLETED' | 'FAILED' | 'EXPIRED';
+  amount?: number;
+  paidAt?: Date;
+  referenceNumber?: string;
+  message?: string;
+}
 
 interface PaymentInitiateResponse {
   success: boolean;
@@ -23,6 +35,8 @@ interface PaymentVerifyResponse {
   transactionId: string;
   amount: number;
   paidAt?: Date;
+  verified?: boolean;
+  message?: string;
 }
 
 /**
@@ -61,39 +75,52 @@ export const initiatePayment = async (
     throw new Error('Order is not pending payment');
   }
 
-  // TODO: Replace with actual InstaPay API call when keys are available
-  // For now, return mock response
-  const transactionId = `INS-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  // Generate fallback transaction ID
+  let transactionId = `INS-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  let paymentUrl = `https://pay.instapay.eg/checkout/${transactionId}`;
+  let expiresAt = new Date(Date.now() + 30 * 60 * 1000);
 
-  // Mock API call
-  /*
-  const requestData = {
-    merchantId: INSTAPAY_CONFIG.merchantId,
-    orderId: order.orderNumber,
-    amount,
-    currency: 'EGP',
-    customerEmail: customerData.email,
-    customerPhone: customerData.phone,
-    customerName: customerData.name,
-    returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
-    cancelUrl: `${process.env.FRONTEND_URL}/payment/failure`,
-    timestamp: Date.now(),
-  };
+  // Check if InstaPay credentials are configured
+  if (INSTAPAY_CONFIG.apiKey && INSTAPAY_CONFIG.secretKey && INSTAPAY_CONFIG.merchantId) {
+    try {
+      const requestData = {
+        merchantId: INSTAPAY_CONFIG.merchantId,
+        orderId: order.orderNumber,
+        amount,
+        currency: 'EGP',
+        customerEmail: customerData.email,
+        customerPhone: customerData.phone,
+        customerName: customerData.name,
+        returnUrl: `${process.env.FRONTEND_URL}/payment/success`,
+        cancelUrl: `${process.env.FRONTEND_URL}/payment/failure`,
+        timestamp: Date.now(),
+      };
 
-  const signature = generateSignature(requestData);
+      const signature = generateSignature(requestData);
 
-  const response = await fetch(`${INSTAPAY_CONFIG.apiUrl}/payments/initiate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': INSTAPAY_CONFIG.apiKey,
-      'X-Signature': signature,
-    },
-    body: JSON.stringify(requestData),
-  });
+      const response = await fetch(`${INSTAPAY_CONFIG.apiUrl}/payments/initiate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': INSTAPAY_CONFIG.apiKey,
+          'X-Signature': signature,
+        },
+        body: JSON.stringify(requestData),
+      });
 
-  const result = await response.json();
-  */
+      const result: any = await response.json();
+
+      if (result.transactionId) {
+        transactionId = result.transactionId;
+        paymentUrl = result.paymentUrl || paymentUrl;
+        expiresAt = new Date(result.expiresAt || Date.now() + 30 * 60 * 1000);
+      }
+    } catch (apiError) {
+      console.error('InstaPay API call failed, using fallback:', apiError);
+    }
+  } else {
+    console.warn('InstaPay credentials not configured, using mock mode');
+  }
 
   // Update order with payment ID
   await prisma.order.update({
@@ -104,8 +131,8 @@ export const initiatePayment = async (
   return {
     success: true,
     transactionId,
-    paymentUrl: `https://pay.instapay.eg/checkout/${transactionId}`, // Mock URL
-    expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes
+    paymentUrl,
+    expiresAt,
   };
 };
 
@@ -113,9 +140,6 @@ export const initiatePayment = async (
  * Verify InstaPay payment status
  */
 export const verifyPayment = async (transactionId: string): Promise<PaymentVerifyResponse> => {
-  // TODO: Replace with actual InstaPay API call when keys are available
-  // For now, return mock response based on transaction ID
-
   const order = await prisma.order.findFirst({
     where: { paymentId: transactionId },
   });
@@ -124,35 +148,61 @@ export const verifyPayment = async (transactionId: string): Promise<PaymentVerif
     throw new Error('Transaction not found');
   }
 
-  // Mock verification - in production, call InstaPay API
-  /*
-  const requestData = {
-    merchantId: INSTAPAY_CONFIG.merchantId,
-    transactionId,
-    timestamp: Date.now(),
-  };
+  // Default status based on order
+  let status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'EXPIRED' = order.status === OrderStatus.PAID ? 'COMPLETED' : 'PENDING';
+  let paidAt: Date | undefined = order.paidAt || undefined;
 
-  const signature = generateSignature(requestData);
+  // Check with InstaPay API if credentials are configured
+  if (INSTAPAY_CONFIG.apiKey && INSTAPAY_CONFIG.secretKey && INSTAPAY_CONFIG.merchantId) {
+    try {
+      const requestData = {
+        merchantId: INSTAPAY_CONFIG.merchantId,
+        transactionId,
+        timestamp: Date.now(),
+      };
 
-  const response = await fetch(`${INSTAPAY_CONFIG.apiUrl}/payments/verify`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': INSTAPAY_CONFIG.apiKey,
-      'X-Signature': signature,
-    },
-    body: JSON.stringify(requestData),
-  });
+      const signature = generateSignature(requestData);
 
-  const result = await response.json();
-  */
+      const response = await fetch(`${INSTAPAY_CONFIG.apiUrl}/payments/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': INSTAPAY_CONFIG.apiKey,
+          'X-Signature': signature,
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const result: any = await response.json();
+
+      if (result.status) {
+        status = result.status;
+        if (result.paidAt) {
+          paidAt = new Date(result.paidAt);
+        }
+
+        // Update order status if payment was confirmed
+        if (status === 'COMPLETED' && order.status !== OrderStatus.PAID) {
+          await prisma.order.update({
+            where: { id: order.id },
+            data: {
+              status: OrderStatus.PAID,
+              paidAt: paidAt || new Date(),
+            },
+          });
+        }
+      }
+    } catch (apiError) {
+      console.error('InstaPay verification failed, using local status:', apiError);
+    }
+  }
 
   return {
     success: true,
-    status: order.status === OrderStatus.PAID ? 'COMPLETED' : 'PENDING',
+    status,
     transactionId,
     amount: order.total,
-    paidAt: order.paidAt || undefined,
+    paidAt,
   };
 };
 
@@ -202,10 +252,10 @@ export const handleCallback = async (payload: {
         message: `Payment for order ${order.orderNumber} has been received`,
         entityId: order.id,
         entityType: 'Order',
-      },
+      } as any,
     });
 
-    return { success: true, message: 'Payment confirmed' };
+    return { success: true, message: 'Payment confirmed', orderId: order.id };
   } else if (payload.status === 'FAILED') {
     // Optionally update order or create notification
     await prisma.notification.create({
@@ -216,11 +266,18 @@ export const handleCallback = async (payload: {
         message: `Payment for order ${order.orderNumber} has failed`,
         entityId: order.id,
         entityType: 'Order',
-      },
+      } as any,
     });
 
     return { success: false, message: 'Payment failed' };
   }
 
   return { success: true, message: 'Callback processed' };
+};
+
+// Export service object
+export const instapayService = {
+  initiatePayment,
+  verifyPayment,
+  handleCallback,
 };

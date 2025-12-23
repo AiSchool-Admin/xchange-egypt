@@ -168,6 +168,11 @@ model User {
   mobileFavorites           MobileFavorite[]          @relation("MobileFavorites")
   mobilePriceAlerts         MobilePriceAlert[]        @relation("MobilePriceAlerts")
 
+  // سوق النقل - Transport Marketplace Relations
+  serviceProviders          ServiceProvider[]         @relation("ServiceProviders")
+  serviceRequests           ServiceRequest[]          @relation("ServiceRequests")
+  marketplaceNotifications  MarketplaceNotification[] @relation("MarketplaceNotifications")
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -7754,5 +7759,309 @@ model MobilePriceReference {
   @@map("mobile_price_references")
   @@unique([brand, model, storageGb])
   @@index([brand, model])
+}
+
+// ============================================
+// TRANSPORT MARKETPLACE - سوق النقل
+// ============================================
+
+// نوع مزود الخدمة
+enum ServiceProviderType {
+  INDIVIDUAL        // فرد
+  SMALL_BUSINESS    // نشاط صغير
+  COMPANY           // شركة
+}
+
+// نوع الخدمة
+enum TransportServiceType {
+  SHIPPING          // شحن
+  INTERCITY_RIDE    // رحلة بين المدن
+}
+
+// حالة طلب الخدمة
+enum ServiceRequestStatus {
+  OPEN              // مفتوح
+  QUOTED            // تم تقديم عروض
+  ACCEPTED          // تم القبول
+  IN_PROGRESS       // جاري التنفيذ
+  COMPLETED         // مكتمل
+  CANCELLED         // ملغي
+}
+
+// حالة عرض السعر
+enum ServiceQuoteStatus {
+  PENDING           // في الانتظار
+  ACCEPTED          // مقبول
+  REJECTED          // مرفوض
+  EXPIRED           // منتهي الصلاحية
+}
+
+// نوع المركبة
+enum VehicleType {
+  MOTORCYCLE        // موتوسيكل
+  SEDAN             // سيدان
+  SUV               // SUV
+  MINIVAN           // ميني فان
+  VAN               // فان
+  PICKUP            // بيك أب
+  TRUCK_SMALL       // شاحنة صغيرة
+  TRUCK_MEDIUM      // شاحنة متوسطة
+  TRUCK_LARGE       // شاحنة كبيرة
+  BUS_SMALL         // باص صغير
+  BUS_LARGE         // باص كبير
+}
+
+// مرونة الموعد
+enum ScheduleFlexibility {
+  EXACT             // موعد محدد
+  FLEXIBLE_HOURS    // مرن خلال ساعات
+  FLEXIBLE_DAYS     // مرن خلال أيام
+}
+
+// طريقة الدفع
+enum TransportPaymentMethod {
+  CASH              // كاش
+  CARD              // بطاقة
+  WALLET            // محفظة
+  COD               // الدفع عند الاستلام
+}
+
+// ============================================
+// Service Provider - مزود الخدمة
+// ============================================
+
+model ServiceProvider {
+  id                    String                  @id @default(uuid())
+  userId                String                  @map("user_id")
+
+  // المعلومات الأساسية
+  type                  ServiceProviderType
+  name                  String
+  nameAr                String?                 @map("name_ar")
+  phone                 String
+  email                 String?
+
+  // معلومات الشركة (للشركات فقط)
+  companyName           String?                 @map("company_name")
+  commercialRegister    String?                 @map("commercial_register")
+  taxNumber             String?                 @map("tax_number")
+
+  // مناطق التغطية
+  coverageAreas         String[]                @map("coverage_areas")
+
+  // أنواع الخدمات
+  serviceTypes          TransportServiceType[]  @map("service_types")
+
+  // التقييم
+  rating                Float                   @default(0)
+  totalRatings          Int                     @default(0) @map("total_ratings")
+  completedOrders       Int                     @default(0) @map("completed_orders")
+
+  // الحالة
+  isVerified            Boolean                 @default(false) @map("is_verified")
+  isActive              Boolean                 @default(true) @map("is_active")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+
+  // العلاقات
+  user                  User                    @relation("ServiceProviders", fields: [userId], references: [id], onDelete: Cascade)
+  vehicles              ProviderVehicle[]
+  quotes                ServiceQuote[]
+
+  @@map("service_providers")
+  @@index([userId])
+  @@index([type])
+  @@index([isActive])
+  @@index([rating])
+}
+
+// ============================================
+// Provider Vehicle - مركبة المزود
+// ============================================
+
+model ProviderVehicle {
+  id                    String                  @id @default(uuid())
+  providerId            String                  @map("provider_id")
+
+  // معلومات المركبة
+  type                  VehicleType
+  make                  String                  // الشركة المصنعة
+  model                 String                  // الموديل
+  year                  Int                     // سنة الصنع
+  plateNumber           String                  @map("plate_number")
+  color                 String?
+
+  // الحالة
+  isActive              Boolean                 @default(true) @map("is_active")
+
+  // الصور
+  photos                String[]                @default([])
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+
+  // العلاقات
+  provider              ServiceProvider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("provider_vehicles")
+  @@index([providerId])
+  @@index([type])
+}
+
+// ============================================
+// Service Request - طلب الخدمة
+// ============================================
+
+model ServiceRequest {
+  id                    String                  @id @default(uuid())
+  userId                String                  @map("user_id")
+
+  // نوع الخدمة
+  serviceType           TransportServiceType    @map("service_type")
+
+  // الحالة
+  status                ServiceRequestStatus    @default(OPEN)
+
+  // موقع الاستلام
+  pickupAddress         String                  @map("pickup_address")
+  pickupCity            String                  @map("pickup_city")
+  pickupGov             String                  @map("pickup_gov")
+  pickupLat             Float?                  @map("pickup_lat")
+  pickupLng             Float?                  @map("pickup_lng")
+
+  // موقع التسليم
+  dropoffAddress        String                  @map("dropoff_address")
+  dropoffCity           String                  @map("dropoff_city")
+  dropoffGov            String                  @map("dropoff_gov")
+  dropoffLat            Float?                  @map("dropoff_lat")
+  dropoffLng            Float?                  @map("dropoff_lng")
+
+  // تفاصيل الشحن (للشحن فقط)
+  shippingDetails       Json?                   @map("shipping_details")
+
+  // تفاصيل الرحلة (للرحلات فقط)
+  rideDetails           Json?                   @map("ride_details")
+
+  // الموعد
+  scheduledDate         DateTime?               @map("scheduled_date")
+  scheduledTime         String?                 @map("scheduled_time")
+  flexibility           ScheduleFlexibility     @default(FLEXIBLE_HOURS)
+
+  // الدفع
+  paymentMethod         TransportPaymentMethod  @default(CASH) @map("payment_method")
+  codAmount             Float?                  @map("cod_amount")
+
+  // معلومات العميل
+  customerName          String                  @map("customer_name")
+  customerPhone         String                  @map("customer_phone")
+
+  // الميزانية
+  budgetMin             Float?                  @map("budget_min")
+  budgetMax             Float?                  @map("budget_max")
+
+  // العروض
+  quotesCount           Int                     @default(0) @map("quotes_count")
+
+  // الصلاحية
+  expiresAt             DateTime?               @map("expires_at")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+
+  // العلاقات
+  user                  User                    @relation("ServiceRequests", fields: [userId], references: [id], onDelete: Cascade)
+  quotes                ServiceQuote[]
+
+  @@map("service_requests")
+  @@index([userId])
+  @@index([serviceType])
+  @@index([status])
+  @@index([pickupGov])
+  @@index([dropoffGov])
+  @@index([createdAt])
+}
+
+// ============================================
+// Service Quote - عرض السعر
+// ============================================
+
+model ServiceQuote {
+  id                    String                  @id @default(uuid())
+  requestId             String                  @map("request_id")
+  providerId            String                  @map("provider_id")
+
+  // الحالة
+  status                ServiceQuoteStatus      @default(PENDING)
+
+  // السعر
+  price                 Float
+  currency              String                  @default("EGP")
+  priceBreakdown        Json?                   @map("price_breakdown")
+
+  // نوع المركبة المقترحة
+  vehicleType           String?                 @map("vehicle_type")
+
+  // الوقت المتوقع
+  estimatedDuration     Int?                    @map("estimated_duration")  // بالدقائق
+  estimatedArrival      DateTime?               @map("estimated_arrival")
+
+  // ملاحظات
+  notes                 String?
+
+  // الصلاحية
+  validUntil            DateTime?               @map("valid_until")
+
+  // التقييم (بعد الاكتمال)
+  rating                Float?
+  review                String?
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+
+  // العلاقات
+  request               ServiceRequest          @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  provider              ServiceProvider         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("service_quotes")
+  @@index([requestId])
+  @@index([providerId])
+  @@index([status])
+}
+
+// ============================================
+// Marketplace Notification - إشعار السوق
+// ============================================
+
+model MarketplaceNotification {
+  id                    String                  @id @default(uuid())
+  userId                String                  @map("user_id")
+
+  // النوع
+  type                  String                  // NEW_QUOTE, QUOTE_ACCEPTED, NEW_REQUEST, ORDER_UPDATE, etc.
+
+  // المحتوى
+  title                 String
+  titleAr               String?                 @map("title_ar")
+  message               String
+  messageAr             String?                 @map("message_ar")
+
+  // الحالة
+  isRead                Boolean                 @default(false) @map("is_read")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+
+  // العلاقات
+  user                  User                    @relation("MarketplaceNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("marketplace_notifications")
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
 }
 

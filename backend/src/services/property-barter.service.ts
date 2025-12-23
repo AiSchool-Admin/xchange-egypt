@@ -2,8 +2,8 @@ import {
   PropertyBarterStatus,
   PropertyEscrowStatus,
   PropertyStatus,
-  Prisma,
-} from '@prisma/client';
+} from '../types/prisma-enums';
+import { Prisma } from '@prisma/client';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import prisma from '../lib/prisma';
 
@@ -107,8 +107,8 @@ export const createBarterProposal = async (
   const valueDifference = requestedValue - offeredValue;
 
   // Determine cash difference and payer
-  let cashDifference = data.cashDifference ?? Math.abs(valueDifference);
-  let cashPayer = data.cashPayer || (valueDifference > 0 ? 'proposer' : 'receiver');
+  const cashDifference = data.cashDifference ?? Math.abs(valueDifference);
+  const cashPayer = data.cashPayer || (valueDifference > 0 ? 'proposer' : 'receiver');
 
   // Calculate commissions (1% from each party based on their property value)
   const proposerCommission = offeredValue * 0.01;
@@ -294,7 +294,7 @@ export const respondToProposal = async (
   const now = new Date();
 
   switch (data.action) {
-    case 'accept':
+    case 'accept': {
       // Update proposal status
       const acceptedProposal = await prisma.propertyBarterProposal.update({
         where: { id: proposalId },
@@ -335,8 +335,9 @@ export const respondToProposal = async (
           'بعد التحقق، سيتم نقل الملكية',
         ],
       };
+    }
 
-    case 'reject':
+    case 'reject': {
       const rejectedProposal = await prisma.propertyBarterProposal.update({
         where: { id: proposalId },
         data: {
@@ -349,8 +350,9 @@ export const respondToProposal = async (
       // TODO: Send notification to proposer
 
       return { proposal: rejectedProposal };
+    }
 
-    case 'counter':
+    case 'counter': {
       if (!data.counterOffer) {
         throw new BadRequestError('Counter offer details are required');
       }
@@ -398,6 +400,7 @@ export const respondToProposal = async (
         originalProposal: { id: proposalId, status: PropertyBarterStatus.COUNTER_OFFERED },
         counterProposal,
       };
+    }
 
     default:
       throw new BadRequestError('Invalid action');
@@ -445,7 +448,7 @@ export const getUserBarterProposals = async (
   type: 'sent' | 'received' | 'all' = 'all',
   status?: PropertyBarterStatus
 ): Promise<any[]> => {
-  const where: Prisma.PropertyBarterProposalWhereInput = {};
+  const where: Record<string, unknown> = {};
 
   if (type === 'sent') {
     where.proposerId = userId;
@@ -460,7 +463,7 @@ export const getUserBarterProposals = async (
   }
 
   return prisma.propertyBarterProposal.findMany({
-    where,
+    where: where as any,
     include: {
       proposer: {
         select: {

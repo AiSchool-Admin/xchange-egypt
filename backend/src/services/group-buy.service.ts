@@ -9,8 +9,8 @@
  * - Real-time progress tracking
  */
 
-import prisma from '../config/database';
-import { GroupBuyStatus } from '@prisma/client';
+import prisma from '../lib/prisma';
+import { GroupBuyStatus } from '../types/prisma-enums';
 
 // ============================================
 // Types

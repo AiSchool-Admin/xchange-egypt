@@ -266,7 +266,7 @@ export default function LuxuryMarketplacePage() {
             <h3 className="text-2xl font-bold text-white mb-3">لا توجد منتجات فاخرة حالياً</h3>
             <p className="text-gray-400 mb-8">كن أول من يعرض منتجاته الفاخرة على المنصة</p>
             <Link
-              href="/inventory/add"
+              href="/luxury/sell"
               className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-gray-900 rounded-xl font-bold hover:from-amber-400 hover:to-yellow-400 transition"
             >
               <span>أضف منتجك الفاخر</span>
@@ -283,7 +283,7 @@ export default function LuxuryMarketplacePage() {
               return (
                 <Link
                   key={item.id}
-                  href={`/items/${item.id}`}
+                  href={`/luxury/${item.id}`}
                   className="group bg-gray-800/50 rounded-2xl overflow-hidden border border-gray-700/50 hover:border-amber-500/50 transition-all duration-300"
                 >
                   {/* Image */}
@@ -399,7 +399,7 @@ export default function LuxuryMarketplacePage() {
           <p className="text-gray-400 mb-8">انضم إلى سوق السلع الفاخرة واستهدف العملاء المميزين</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/inventory/add"
+              href="/luxury/sell"
               className="px-8 py-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-gray-900 rounded-xl font-bold hover:from-amber-400 hover:to-yellow-400 transition"
             >
               أضف منتجك الآن

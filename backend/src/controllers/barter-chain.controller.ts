@@ -18,7 +18,7 @@ export const discoverOpportunities = async (
 ) => {
   try {
     const { itemId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const opportunities = await barterChainService.discoverBarterOpportunities(userId, itemId);
 
@@ -42,7 +42,7 @@ export const createSmartProposal = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const proposalData = req.body;
 
     const proposal = await barterChainService.createSmartProposal(userId, proposalData);
@@ -69,7 +69,7 @@ export const getBarterChain = async (
 ) => {
   try {
     const { chainId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const chain = await barterChainService.getBarterChainById(chainId, userId);
 
@@ -90,7 +90,7 @@ export const respondToProposal = async (
 ) => {
   try {
     const { chainId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const response = req.body;
 
     const chain = await barterChainService.respondToChainProposal(
@@ -120,7 +120,7 @@ export const cancelBarterChain = async (
 ) => {
   try {
     const { chainId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const chain = await barterChainService.cancelBarterChain(chainId, userId);
 
@@ -141,7 +141,7 @@ export const executeBarterChain = async (
 ) => {
   try {
     const { chainId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const chain = await barterChainService.executeBarterChain(chainId, userId);
 
@@ -161,7 +161,7 @@ export const getMyBarterChains = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { status, page, limit } = req.query;
 
     const chains = await barterChainService.getMyBarterChains(
@@ -187,7 +187,7 @@ export const getPendingProposals = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const proposals = await barterChainService.getPendingProposals(userId);
 
@@ -207,7 +207,7 @@ export const getBarterChainStats = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const stats = await barterChainService.getBarterChainStats(userId);
 

@@ -23,7 +23,7 @@ export const getNotifications = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const {
       isRead,
       type,
@@ -56,7 +56,7 @@ export const getUnreadCount = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const count = await notificationService.getUnreadCount(userId);
 
     return successResponse(res, { count }, 'Unread count retrieved successfully');
@@ -76,7 +76,7 @@ export const markAsRead = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const notification = await notificationService.markAsRead(id, userId);
 
@@ -96,7 +96,7 @@ export const markAllAsRead = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const count = await notificationService.markAllAsRead(userId);
 
     return successResponse(
@@ -120,7 +120,7 @@ export const deleteNotification = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     await notificationService.deleteNotification(id, userId);
 
@@ -140,7 +140,7 @@ export const deleteAllRead = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const count = await notificationService.deleteAllRead(userId);
 
     return successResponse(
@@ -167,7 +167,7 @@ export const getPreferences = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const preferences = await notificationService.getUserPreferences(userId);
 
     return successResponse(res, preferences, 'Preferences retrieved successfully');
@@ -186,7 +186,7 @@ export const updatePreferences = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const updates = req.body;
 
     const preferences = await notificationService.updatePreferences(userId, updates);

@@ -1,4 +1,4 @@
-import prisma from '../config/database';
+import prisma from '../lib/prisma';
 import {
   ScrapType,
   ScrapCondition,
@@ -7,7 +7,7 @@ import {
   ScrapDealerType,
   ScrapDealerStatus,
   ItemStatus,
-} from '@prisma/client';
+} from '../types/prisma-enums';
 
 // ============================================
 // سوق التوالف - Scrap Marketplace Service

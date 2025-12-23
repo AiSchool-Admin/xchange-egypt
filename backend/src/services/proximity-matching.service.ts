@@ -7,7 +7,7 @@
  * Hierarchy: District → City → Governorate → National
  */
 
-import { MarketType } from '@prisma/client';
+import { MarketType } from '../types/prisma-enums';
 import { Server as SocketIOServer } from 'socket.io';
 import prisma from '../lib/prisma';
 
@@ -443,7 +443,7 @@ export const findBarterMatches = async (
  * Calculate barter match score between two Supply items
  */
 function calculateBarterMatchScore(itemA: any, itemB: any): MatchScore {
-  let reasons: string[] = [];
+  const reasons: string[] = [];
 
   // 1. Proximity Score (30% weight for barter)
   const { proximityScore, level } = calculateProximityScore(
@@ -513,7 +513,7 @@ interface MatchScore {
  * Calculate match score between a Supply item and a Demand item
  */
 function calculateMatchScore(supply: any, demand: any): MatchScore {
-  let reasons: string[] = [];
+  const reasons: string[] = [];
 
   // 1. Proximity Score (40% weight)
   const { proximityScore, level } = calculateProximityScore(
@@ -747,7 +747,7 @@ export const notifyProximityMatch = async (
         score: match.score,
         proximityLevel: match.proximityLevel,
       },
-    },
+    } as any,
   });
 
   // Send WebSocket notification

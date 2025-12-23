@@ -9,8 +9,8 @@
  * - Claim management
  */
 
-import prisma from '../config/database';
-import { WarrantyType, WarrantyStatus, WarrantyClaimStatus } from '@prisma/client';
+import prisma from '../lib/prisma';
+import { WarrantyType, WarrantyStatus, WarrantyClaimStatus } from '../types/prisma-enums';
 
 // ============================================
 // Types

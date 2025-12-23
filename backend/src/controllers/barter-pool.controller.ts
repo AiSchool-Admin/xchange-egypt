@@ -49,7 +49,7 @@ export const getPool = async (req: Request, res: Response, next: NextFunction) =
  */
 export const createPool = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const pool = await barterPoolService.createPool({
       ...req.body,
       creatorId: userId,
@@ -68,7 +68,7 @@ export const createPool = async (req: Request, res: Response, next: NextFunction
 export const joinPool = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { itemId, cashAmount, xcoinAmount } = req.body;
 
     const result = await barterPoolService.joinPool({
@@ -96,7 +96,7 @@ export const joinPool = async (req: Request, res: Response, next: NextFunction) 
 export const leavePool = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await barterPoolService.leavePool(id, userId);
 
@@ -117,7 +117,7 @@ export const leavePool = async (req: Request, res: Response, next: NextFunction)
 export const approveParticipant = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id, participantUserId } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await barterPoolService.approveParticipant(id, participantUserId, userId);
 
@@ -138,7 +138,7 @@ export const approveParticipant = async (req: Request, res: Response, next: Next
 export const startMatching = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await barterPoolService.startMatching(id, userId);
 
@@ -159,7 +159,7 @@ export const startMatching = async (req: Request, res: Response, next: NextFunct
 export const acceptMatch = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await barterPoolService.acceptMatch(id, userId);
 
@@ -180,7 +180,7 @@ export const acceptMatch = async (req: Request, res: Response, next: NextFunctio
 export const cancelPool = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     const result = await barterPoolService.cancelPool(id, userId);
 
@@ -200,7 +200,7 @@ export const cancelPool = async (req: Request, res: Response, next: NextFunction
  */
 export const getMyPools = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { role, status, limit, offset } = req.query;
 
     const result = await barterPoolService.getUserPools(userId, {

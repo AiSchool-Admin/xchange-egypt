@@ -13,7 +13,7 @@ export const createComparison = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { itemIds, title, categorySlug, isPublic } = req.body;
 
     if (!itemIds || !Array.isArray(itemIds)) {
@@ -85,7 +85,7 @@ export const getUserComparisons = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { page, limit } = req.query;
 
     const result = await comparisonService.getUserComparisons(
@@ -111,7 +111,7 @@ export const updateComparison = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
     const { title, itemIds, isPublic } = req.body;
 
     const comparison = await comparisonService.updateComparison(id, userId, {
@@ -137,7 +137,7 @@ export const deleteComparison = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = req.user.id;
 
     await comparisonService.deleteComparison(id, userId);
 

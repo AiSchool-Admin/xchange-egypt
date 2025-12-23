@@ -3,8 +3,8 @@
  * خدمة صناديق المقايضة الجماعية
  */
 
-import { BarterPoolStatus } from '@prisma/client';
-import prisma from '../config/database';
+import { BarterPoolStatus } from '../types';
+import prisma from '../lib/prisma';
 
 // ============================================
 // Types & Interfaces
@@ -578,7 +578,7 @@ export async function getUserPools(
 ) {
   const { role = 'ALL', status, limit = 20, offset = 0 } = options;
 
-  let where: any = {};
+  const where: any = {};
 
   if (role === 'CREATOR') {
     where.creatorId = userId;

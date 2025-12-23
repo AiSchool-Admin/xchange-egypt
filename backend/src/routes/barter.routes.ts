@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import * as barterController from '../controllers/barter.controller';
 import * as barterChainController from '../controllers/barter-chain.controller';
 import * as realtimeMatchingService from '../services/realtime-matching.service';
@@ -317,10 +317,13 @@ router.get(
 router.post(
   '/realtime/trigger/:itemId',
   authenticate,
-  async (req, res, next) => {
+  async (req: Request & { user?: { userId: string } }, res: Response, next: NextFunction) => {
     try {
       const { itemId } = req.params;
-      const userId = (req as any).user.userId;
+      const userId = req.user?.userId;
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
 
       const result = await realtimeMatchingService.triggerMatchingForItem(userId, itemId);
 

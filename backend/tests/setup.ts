@@ -3,17 +3,11 @@
  * Runs before all tests
  */
 
-import { PrismaClient } from '@prisma/client';
+// Mock Prisma client globally
+jest.mock('../src/lib/prisma');
 
 // Increase timeout for all tests (database operations can be slow)
 jest.setTimeout(10000);
-
-// Mock environment variables for testing
-process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL = process.env.TEST_DATABASE_URL || 'postgresql://test:test@localhost:5432/xchange_test';
-process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
-process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing';
-process.env.REDIS_URL = 'redis://localhost:6379';
 
 // Global test utilities
 global.console = {
