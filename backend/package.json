@@ -30,6 +30,8 @@
     "seed:marketplace": "tsx prisma/seed-marketplace-data.ts",
     "seed:transport": "tsx prisma/seed-transport-marketplace.ts",
     "seed:matching": "tsx prisma/seed-matching-tests.ts",
+    "seed:board": "tsx prisma/seed-board.ts",
+    "seed:founder": "tsx src/scripts/create-founder.ts",
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset",
     "db:check": "tsx scripts/check-database.ts",
@@ -46,6 +48,7 @@
   "author": "Xchange Team",
   "license": "PROPRIETARY",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@aws-sdk/client-s3": "^3.478.0",
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.19.0",

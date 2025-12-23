@@ -62,6 +62,8 @@ import tenderAdvancedRoutes from './routes/tender-advanced.routes';
 import transportRoutes from './routes/transport.routes';
 import adminPricingRoutes from './routes/admin-pricing.routes';
 import aiAdvancedRoutes from './routes/ai-advanced.routes';
+import boardRoutes from './routes/board.routes';
+import founderRoutes from './routes/founder.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -373,6 +375,12 @@ app.use('/api/v1/admin/pricing', adminPricingRoutes);
 
 // Advanced AI Features - الذكاء الاصطناعي المتقدم
 app.use('/api/v1/ai-advanced', aiAdvancedRoutes);
+
+// AI Board of Directors - مجلس إدارة AI
+app.use('/api/v1/board', boardRoutes);
+
+// Founder Portal - بوابة المؤسس
+app.use('/api/v1/founder', founderRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
