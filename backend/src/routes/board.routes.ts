@@ -78,4 +78,50 @@ router.post('/tasks/:taskId/review', authenticateFounder, boardController.review
 // Initialize board members (first-time setup by platform admin)
 router.post('/admin/initialize', authenticateAdmin, requireSuperAdmin, boardController.initializeBoardMembers);
 
+// ============================================
+// Governance Routes - الحوكمة
+// ============================================
+
+// --- Meetings - الاجتماعات ---
+router.get('/meetings', authenticateFounder, boardController.getMeetings);
+router.get('/meetings/upcoming', authenticateFounder, boardController.getUpcomingMeetings);
+router.post('/meetings', authenticateFounder, boardController.scheduleMeeting);
+router.get('/meetings/:meetingId', authenticateFounder, boardController.getMeeting);
+router.post('/meetings/:meetingId/start', authenticateFounder, boardController.startMeeting);
+router.post('/meetings/:meetingId/end', authenticateFounder, boardController.endMeeting);
+
+// --- KPIs - مؤشرات الأداء ---
+router.get('/kpis', authenticateFounder, boardController.getKPIs);
+router.get('/kpis/dashboard', authenticateFounder, boardController.getKPIDashboard);
+router.get('/kpis/:code', authenticateFounder, boardController.getKPI);
+router.get('/kpis/:code/history', authenticateFounder, boardController.getKPIHistory);
+router.put('/kpis/:code', authenticateFounder, boardController.updateKPI);
+router.post('/kpis/initialize', authenticateFounder, boardController.initializeKPIs);
+
+// --- Alerts - التنبيهات ---
+router.get('/alerts', authenticateFounder, boardController.getAlerts);
+router.get('/alerts/dashboard', authenticateFounder, boardController.getAlertDashboard);
+router.post('/alerts', authenticateFounder, boardController.createAlert);
+router.post('/alerts/:alertId/acknowledge', authenticateFounder, boardController.acknowledgeAlert);
+router.post('/alerts/:alertId/resolve', authenticateFounder, boardController.resolveAlert);
+router.post('/alerts/check-kpis', authenticateFounder, boardController.checkKPIsAndAlert);
+
+// --- SPADE Decisions - قرارات SPADE ---
+router.get('/decisions', authenticateFounder, boardController.getDecisions);
+router.get('/decisions/dashboard', authenticateFounder, boardController.getDecisionDashboard);
+router.post('/decisions', authenticateFounder, boardController.initiateSPADE);
+router.get('/decisions/:decisionId', authenticateFounder, boardController.getDecision);
+router.post('/decisions/:decisionId/context', authenticateFounder, boardController.setDecisionContext);
+router.post('/decisions/:decisionId/consultants', authenticateFounder, boardController.addConsultants);
+router.post('/decisions/:decisionId/alternatives', authenticateFounder, boardController.addAlternative);
+router.post('/decisions/:decisionId/decide', authenticateFounder, boardController.makeDecision);
+router.post('/decisions/:decisionId/complete', authenticateFounder, boardController.completeDecision);
+
+// --- Action Items - بنود العمل ---
+router.get('/action-items', authenticateFounder, boardController.getActionItems);
+router.get('/action-items/overdue', authenticateFounder, boardController.getOverdueActionItems);
+router.post('/action-items', authenticateFounder, boardController.createActionItem);
+router.put('/action-items/:itemId/status', authenticateFounder, boardController.updateActionItemStatus);
+router.put('/action-items/:itemId/progress', authenticateFounder, boardController.updateActionItemProgress);
+
 export default router;

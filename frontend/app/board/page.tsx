@@ -6,30 +6,59 @@ import {
   getBoardMembers,
   getConversations,
   getServiceStatus,
+  getKPIDashboard,
+  getAlertDashboard,
+  getUpcomingMeetings,
+  getDecisionDashboard,
   BoardMember,
   BoardConversation,
   ServiceStatus,
+  KPIDashboard,
+  AlertDashboard,
+  BoardMeeting,
+  DecisionDashboard,
   getRoleDisplayName,
-  getRoleColor,
+  getAlertSeverityColor,
+  getMeetingTypeDisplay,
 } from '@/lib/api/board';
 
 export default function BoardDashboard() {
   const [members, setMembers] = useState<BoardMember[]>([]);
   const [conversations, setConversations] = useState<BoardConversation[]>([]);
   const [status, setStatus] = useState<ServiceStatus | null>(null);
+  const [kpiDashboard, setKpiDashboard] = useState<KPIDashboard | null>(null);
+  const [alertDashboard, setAlertDashboard] = useState<AlertDashboard | null>(null);
+  const [upcomingMeetings, setUpcomingMeetings] = useState<BoardMeeting[]>([]);
+  const [decisionDashboard, setDecisionDashboard] = useState<DecisionDashboard | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [membersData, conversationsData, statusData] = await Promise.all([
+        const [
+          membersData,
+          conversationsData,
+          statusData,
+          kpiData,
+          alertData,
+          meetingsData,
+          decisionData,
+        ] = await Promise.all([
           getBoardMembers(),
           getConversations(),
           getServiceStatus(),
+          getKPIDashboard().catch(() => null),
+          getAlertDashboard().catch(() => null),
+          getUpcomingMeetings().catch(() => []),
+          getDecisionDashboard().catch(() => null),
         ]);
         setMembers(membersData);
         setConversations(conversationsData);
         setStatus(statusData);
+        setKpiDashboard(kpiData);
+        setAlertDashboard(alertData);
+        setUpcomingMeetings(meetingsData);
+        setDecisionDashboard(decisionData);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -72,10 +101,10 @@ export default function BoardDashboard() {
       color: 'from-yellow-500 to-orange-500',
     },
     {
-      title: 'مراجعة خطة',
-      description: 'راجع خطة أو استراتيجية مع المجلس',
-      href: '/board/chat?type=REVIEW',
-      icon: '📋',
+      title: 'قرار SPADE',
+      description: 'ابدأ عملية قرار منظمة',
+      href: '/board/decisions/new',
+      icon: '⚡',
       color: 'from-green-500 to-emerald-500',
     },
   ];
@@ -111,6 +140,103 @@ export default function BoardDashboard() {
         </div>
       )}
 
+      {/* Governance Overview - نظرة عامة على الحوكمة */}
+      <div className="mb-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* KPIs Summary */}
+        <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700/50">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-400">مؤشرات الأداء</h3>
+            <span className="text-2xl">📊</span>
+          </div>
+          {kpiDashboard ? (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="text-3xl font-bold text-white">{kpiDashboard.summary.healthScore}%</div>
+                <div className="flex gap-1">
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-green-500/20 text-green-400">
+                    {kpiDashboard.summary.green}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-500/20 text-yellow-400">
+                    {kpiDashboard.summary.yellow}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-red-500/20 text-red-400">
+                    {kpiDashboard.summary.red}
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">صحة النظام العامة</p>
+            </>
+          ) : (
+            <p className="text-gray-500 text-sm">لم يتم تهيئة المؤشرات بعد</p>
+          )}
+        </div>
+
+        {/* Alerts Summary */}
+        <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700/50">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-400">التنبيهات النشطة</h3>
+            <span className="text-2xl">🚨</span>
+          </div>
+          {alertDashboard ? (
+            <>
+              <div className="flex items-center gap-3">
+                <div className={`text-3xl font-bold ${alertDashboard.summary.total > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                  {alertDashboard.summary.total}
+                </div>
+                {alertDashboard.summary.emergency > 0 && (
+                  <span className="px-2 py-0.5 rounded-full text-xs bg-red-600/20 text-red-400 animate-pulse">
+                    {alertDashboard.summary.emergency} طوارئ
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {alertDashboard.summary.critical} حرج • {alertDashboard.summary.warning} تحذير
+              </p>
+            </>
+          ) : (
+            <div className="text-3xl font-bold text-green-400">0</div>
+          )}
+        </div>
+
+        {/* Meetings Summary */}
+        <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700/50">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-400">الاجتماعات القادمة</h3>
+            <span className="text-2xl">📅</span>
+          </div>
+          <div className="text-3xl font-bold text-white">{upcomingMeetings.length}</div>
+          {upcomingMeetings.length > 0 && (
+            <p className="text-xs text-gray-500 mt-2">
+              القادم: {upcomingMeetings[0].titleAr || upcomingMeetings[0].title}
+            </p>
+          )}
+        </div>
+
+        {/* Decisions Summary */}
+        <div className="p-4 bg-gray-800/50 rounded-2xl border border-gray-700/50">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-400">القرارات</h3>
+            <span className="text-2xl">⚡</span>
+          </div>
+          {decisionDashboard ? (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="text-3xl font-bold text-white">{decisionDashboard.summary.inProgress}</div>
+                <span className="text-sm text-gray-400">قيد العمل</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {decisionDashboard.actionItems.overdue > 0 && (
+                  <span className="text-red-400">{decisionDashboard.actionItems.overdue} متأخرة • </span>
+                )}
+                {decisionDashboard.actionItems.pending} بنود معلقة
+              </p>
+            </>
+          ) : (
+            <div className="text-3xl font-bold text-white">0</div>
+          )}
+        </div>
+      </div>
+
       {/* Quick Actions */}
       <div className="mb-10">
         <h2 className="text-xl font-semibold text-white mb-4">إجراءات سريعة</h2>
@@ -130,6 +256,112 @@ export default function BoardDashboard() {
         </div>
       </div>
 
+      {/* Two Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+        {/* Critical KPIs */}
+        {kpiDashboard && kpiDashboard.criticalKPIs && kpiDashboard.criticalKPIs.length > 0 && (
+          <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <span className="text-red-400">⚠️</span> مؤشرات تحتاج اهتمام
+              </h2>
+              <Link href="/board/kpis" className="text-primary-400 hover:text-primary-300 text-sm">
+                عرض الكل ←
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {kpiDashboard.criticalKPIs.slice(0, 3).map((kpi: any) => (
+                <div key={kpi.code} className="flex items-center justify-between p-3 bg-red-500/10 rounded-xl border border-red-500/20">
+                  <div>
+                    <p className="font-medium text-white">{kpi.nameAr}</p>
+                    <p className="text-sm text-gray-400">{kpi.code}</p>
+                  </div>
+                  <div className="text-left">
+                    <p className="font-bold text-red-400">{kpi.currentValue} {kpi.unit}</p>
+                    <p className="text-xs text-gray-500">الهدف: {kpi.targetValue}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Active Alerts */}
+        {alertDashboard && alertDashboard.recentAlerts && alertDashboard.recentAlerts.length > 0 && (
+          <div className="bg-gray-800/50 rounded-2xl border border-gray-700/50 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                <span>🚨</span> تنبيهات نشطة
+              </h2>
+              <Link href="/board/alerts" className="text-primary-400 hover:text-primary-300 text-sm">
+                عرض الكل ←
+              </Link>
+            </div>
+            <div className="space-y-3">
+              {alertDashboard.recentAlerts.slice(0, 3).map((alert) => (
+                <div key={alert.id} className="flex items-center gap-3 p-3 bg-gray-700/30 rounded-xl">
+                  <div className={`w-2 h-2 rounded-full ${getAlertSeverityColor(alert.severity)}`}></div>
+                  <div className="flex-1">
+                    <p className="font-medium text-white">{alert.titleAr}</p>
+                    <p className="text-xs text-gray-400">
+                      {new Date(alert.createdAt).toLocaleDateString('ar-EG')}
+                    </p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    alert.severity === 'EMERGENCY' ? 'bg-red-600/20 text-red-400' :
+                    alert.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400' :
+                    'bg-yellow-500/20 text-yellow-400'
+                  }`}>
+                    {alert.severity === 'EMERGENCY' ? 'طوارئ' :
+                     alert.severity === 'CRITICAL' ? 'حرج' : 'تحذير'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Upcoming Meetings */}
+      {upcomingMeetings.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+              <span>📅</span> الاجتماعات القادمة
+            </h2>
+            <Link href="/board/meetings" className="text-primary-400 hover:text-primary-300 text-sm">
+              عرض الكل ←
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {upcomingMeetings.slice(0, 3).map((meeting) => (
+              <div key={meeting.id} className="p-4 bg-gray-800/50 rounded-xl border border-gray-700/50">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`px-2 py-0.5 rounded-full text-xs ${
+                    meeting.type === 'EMERGENCY' ? 'bg-red-500/20 text-red-400' :
+                    meeting.type === 'STANDUP' ? 'bg-blue-500/20 text-blue-400' :
+                    'bg-purple-500/20 text-purple-400'
+                  }`}>
+                    {getMeetingTypeDisplay(meeting.type)}
+                  </span>
+                  <span className="text-xs text-gray-500">{meeting.meetingNumber}</span>
+                </div>
+                <h4 className="font-medium text-white">{meeting.titleAr || meeting.title}</h4>
+                <p className="text-sm text-gray-400 mt-1">
+                  {new Date(meeting.scheduledAt).toLocaleDateString('ar-EG', {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Board Members */}
       <div className="mb-10">
         <div className="flex items-center justify-between mb-4">
@@ -146,9 +378,13 @@ export default function BoardDashboard() {
               className="group relative p-4 bg-gray-800/50 rounded-2xl border border-gray-700/50 hover:border-gray-600 transition-all duration-300 text-center"
             >
               <div className={`w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br ${roleColors[member.role]} p-0.5`}>
-                <div className="w-full h-full rounded-[14px] bg-gray-800 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-white">{member.nameAr.charAt(0)}</span>
-                </div>
+                {member.avatar ? (
+                  <img src={member.avatar} alt={member.nameAr} className="w-full h-full rounded-[14px] object-cover" />
+                ) : (
+                  <div className="w-full h-full rounded-[14px] bg-gray-800 flex items-center justify-center">
+                    <span className="text-2xl font-bold text-white">{member.nameAr.charAt(0)}</span>
+                  </div>
+                )}
               </div>
               <h3 className="font-semibold text-white">{member.nameAr}</h3>
               <p className="text-sm text-gray-400">{getRoleDisplayName(member.role)}</p>

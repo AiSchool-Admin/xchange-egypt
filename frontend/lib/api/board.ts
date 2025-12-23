@@ -400,3 +400,265 @@ export const getConversationTypeDisplayName = (type: ConversationType): string =
   };
   return names[type] || type;
 };
+
+// ============================================
+// GOVERNANCE Types - أنواع الحوكمة
+// ============================================
+
+export type KPIStatus = 'GREEN' | 'YELLOW' | 'RED';
+export type KPICategory = 'FINANCIAL' | 'OPERATIONAL' | 'CUSTOMER' | 'TECHNICAL' | 'GROWTH' | 'LEGAL';
+export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL' | 'EMERGENCY';
+export type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED' | 'DISMISSED';
+export type MeetingType = 'STANDUP' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'EMERGENCY';
+export type MeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type SPADEStatus = 'INITIATED' | 'SETTING_PHASE' | 'PEOPLE_PHASE' | 'ALTERNATIVES_PHASE' | 'DECIDE_PHASE' | 'EXPLAIN_PHASE' | 'COMPLETED' | 'CANCELLED';
+
+export interface KPIMetric {
+  code: string;
+  name: string;
+  nameAr: string;
+  currentValue: number;
+  previousValue: number | null;
+  targetValue: number;
+  warningThreshold: number;
+  criticalThreshold: number;
+  status: KPIStatus;
+  trend: 'up' | 'down' | 'stable';
+  trendPercentage: number;
+  category: KPICategory;
+  unit?: string;
+}
+
+export interface KPIDashboard {
+  summary: {
+    green: number;
+    yellow: number;
+    red: number;
+    total: number;
+    healthScore: number;
+  };
+  criticalKPIs: KPIMetric[];
+}
+
+export interface BoardAlert {
+  id: string;
+  alertNumber: string;
+  title: string;
+  titleAr: string;
+  description: string;
+  descriptionAr: string;
+  severity: AlertSeverity;
+  status: AlertStatus;
+  kpi?: KPIMetric;
+  assignedTo?: BoardMember;
+  createdAt: string;
+}
+
+export interface AlertDashboard {
+  summary: {
+    emergency: number;
+    critical: number;
+    warning: number;
+    info: number;
+    total: number;
+  };
+  recentAlerts: BoardAlert[];
+}
+
+export interface BoardMeeting {
+  id: string;
+  meetingNumber: string;
+  type: MeetingType;
+  status: MeetingStatus;
+  title: string;
+  titleAr: string;
+  scheduledAt: string;
+  duration?: number;
+  attendees?: Array<{ member: BoardMember; attended: boolean }>;
+}
+
+export interface SPADEDecision {
+  id: string;
+  decisionNumber: string;
+  title: string;
+  titleAr: string;
+  status: SPADEStatus;
+  currentPhase: string;
+  deadline?: string;
+  decisionMaker?: BoardMember;
+  alternatives?: Array<{ id: string; title: string; titleAr: string; votes: number }>;
+}
+
+export interface DecisionDashboard {
+  summary: {
+    byPhase: Record<string, number>;
+    completed: number;
+    inProgress: number;
+  };
+  actionItems: {
+    pending: number;
+    overdue: number;
+  };
+  recentDecisions: SPADEDecision[];
+}
+
+export interface ActionItem {
+  id: string;
+  itemNumber: string;
+  title: string;
+  titleAr: string;
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'OVERDUE' | 'CANCELLED';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  dueDate: string;
+  progress: number;
+  assignee?: BoardMember;
+}
+
+// ============================================
+// GOVERNANCE API Functions
+// ============================================
+
+// --- KPIs ---
+
+export const getKPIs = async (): Promise<KPIMetric[]> => {
+  const response = await founderFetch('/board/kpis');
+  return response.data;
+};
+
+export const getKPIDashboard = async (): Promise<KPIDashboard> => {
+  const response = await founderFetch('/board/kpis/dashboard');
+  return response.data;
+};
+
+export const initializeKPIs = async (): Promise<{ created: number; message: string }> => {
+  const response = await founderFetch('/board/kpis/initialize', { method: 'POST' });
+  return response.data;
+};
+
+// --- Alerts ---
+
+export const getAlerts = async (): Promise<BoardAlert[]> => {
+  const response = await founderFetch('/board/alerts');
+  return response.data;
+};
+
+export const getAlertDashboard = async (): Promise<AlertDashboard> => {
+  const response = await founderFetch('/board/alerts/dashboard');
+  return response.data;
+};
+
+export const acknowledgeAlert = async (alertId: string): Promise<BoardAlert> => {
+  const response = await founderFetch(`/board/alerts/${alertId}/acknowledge`, { method: 'POST' });
+  return response.data;
+};
+
+export const resolveAlert = async (alertId: string, resolution: string): Promise<BoardAlert> => {
+  const response = await founderFetch(`/board/alerts/${alertId}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ resolution }),
+  });
+  return response.data;
+};
+
+export const checkKPIsAndAlert = async (): Promise<{ checked: number; alertsCreated: number }> => {
+  const response = await founderFetch('/board/alerts/check-kpis', { method: 'POST' });
+  return response.data;
+};
+
+// --- Meetings ---
+
+export const getMeetings = async (): Promise<BoardMeeting[]> => {
+  const response = await founderFetch('/board/meetings');
+  return response.data;
+};
+
+export const getUpcomingMeetings = async (): Promise<BoardMeeting[]> => {
+  const response = await founderFetch('/board/meetings/upcoming');
+  return response.data;
+};
+
+export const scheduleMeeting = async (data: {
+  type: MeetingType;
+  title: string;
+  titleAr: string;
+  scheduledAt: string;
+  attendeeIds: string[];
+}): Promise<BoardMeeting> => {
+  const response = await founderFetch('/board/meetings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+};
+
+// --- SPADE Decisions ---
+
+export const getDecisions = async (): Promise<SPADEDecision[]> => {
+  const response = await founderFetch('/board/decisions');
+  return response.data;
+};
+
+export const getDecisionDashboard = async (): Promise<DecisionDashboard> => {
+  const response = await founderFetch('/board/decisions/dashboard');
+  return response.data;
+};
+
+export const initiateSPADE = async (data: {
+  title: string;
+  titleAr: string;
+  description: string;
+  descriptionAr: string;
+  deadline?: string;
+}): Promise<SPADEDecision> => {
+  const response = await founderFetch('/board/decisions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response.data;
+};
+
+// --- Action Items ---
+
+export const getActionItems = async (): Promise<ActionItem[]> => {
+  const response = await founderFetch('/board/action-items');
+  return response.data;
+};
+
+export const getOverdueActionItems = async (): Promise<ActionItem[]> => {
+  const response = await founderFetch('/board/action-items/overdue');
+  return response.data;
+};
+
+// ============================================
+// Governance Helper Functions
+// ============================================
+
+export const getKPIStatusColor = (status: KPIStatus): string => {
+  const colors: Record<KPIStatus, string> = {
+    GREEN: 'bg-green-500',
+    YELLOW: 'bg-yellow-500',
+    RED: 'bg-red-500',
+  };
+  return colors[status] || 'bg-gray-500';
+};
+
+export const getAlertSeverityColor = (severity: AlertSeverity): string => {
+  const colors: Record<AlertSeverity, string> = {
+    INFO: 'bg-blue-500',
+    WARNING: 'bg-yellow-500',
+    CRITICAL: 'bg-red-500',
+    EMERGENCY: 'bg-red-600',
+  };
+  return colors[severity] || 'bg-gray-500';
+};
+
+export const getMeetingTypeDisplay = (type: MeetingType): string => {
+  const names: Record<MeetingType, string> = {
+    STANDUP: 'اجتماع يومي',
+    WEEKLY: 'اجتماع أسبوعي',
+    MONTHLY: 'اجتماع شهري',
+    QUARTERLY: 'اجتماع ربع سنوي',
+    EMERGENCY: 'اجتماع طوارئ',
+  };
+  return names[type] || type;
+};
