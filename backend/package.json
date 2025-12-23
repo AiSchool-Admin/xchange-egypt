@@ -30,6 +30,7 @@
     "seed:marketplace": "tsx prisma/seed-marketplace-data.ts",
     "seed:transport": "tsx prisma/seed-transport-marketplace.ts",
     "seed:matching": "tsx prisma/seed-matching-tests.ts",
+    "seed:board": "tsx prisma/seed-board.ts",
     "db:push": "prisma db push",
     "db:reset": "prisma migrate reset",
     "db:check": "tsx scripts/check-database.ts",
