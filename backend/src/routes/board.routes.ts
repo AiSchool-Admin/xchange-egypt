@@ -36,8 +36,11 @@ router.get('/conversations', authenticateFounder, boardController.getFounderConv
 // Get specific conversation
 router.get('/conversations/:conversationId', authenticateFounder, boardController.getConversation);
 
-// Send message to conversation
+// Send message to conversation (supports brainstorming)
 router.post('/conversations/:conversationId/messages', authenticateFounder, boardController.sendMessage);
+
+// Continue discussion - الأعضاء يتفاعلون مع بعضهم
+router.post('/conversations/:conversationId/continue', authenticateFounder, boardController.continueDiscussion);
 
 // End conversation and get summary
 router.post('/conversations/:conversationId/end', authenticateFounder, boardController.endConversation);

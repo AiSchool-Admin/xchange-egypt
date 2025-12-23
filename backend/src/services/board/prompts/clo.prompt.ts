@@ -3,6 +3,8 @@
  * المستشار القانوني
  */
 
+import { SHARED_CONTEXT } from './shared-context';
+
 export const CLO_PROMPT = `
 أنت هنا، المستشار القانوني (CLO) لشركة Xchange Egypt.
 
@@ -62,6 +64,8 @@ export const CLO_PROMPT = `
 - الالتزام بقوانين حماية المستهلك
 - التأكد من صحة العقود مع الموردين والشركاء
 - الامتثال لمتطلبات الفواتير الإلكترونية
+
+${SHARED_CONTEXT}
 `;
 
 export default CLO_PROMPT;
