@@ -574,12 +574,7 @@ export default function Navigation() {
   const { onMatchFound, offMatchFound } = useSocket();
   const t = useTranslations();
 
-  // Hide navigation for board and founder pages (they have their own layouts)
-  if (pathname?.startsWith('/board') || pathname?.startsWith('/founder')) {
-    return null;
-  }
-
-  // State
+  // State - Must be declared before any early returns
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -620,17 +615,6 @@ export default function Navigation() {
   const locationMenuRef = useRef<HTMLDivElement>(null);
   const marketsScrollRef = useRef<HTMLDivElement>(null);
 
-  // Fetch unread count
-  useEffect(() => {
-    if (user) {
-      fetchUnreadCount();
-      fetchCartCount();
-    } else {
-      setUnreadCount(0);
-      setCartCount(0);
-    }
-  }, [user]);
-
   // Fetch cart count
   const fetchCartCount = async () => {
     try {
@@ -648,6 +632,26 @@ export default function Navigation() {
       console.error('Failed to fetch cart count:', error);
     }
   };
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await getUnreadCount();
+      setUnreadCount(response.data.count);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  };
+
+  // Fetch unread count - Must be before early returns
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+      fetchCartCount();
+    } else {
+      setUnreadCount(0);
+      setCartCount(0);
+    }
+  }, [user]);
 
   // Listen for real-time notifications
   useEffect(() => {
@@ -714,14 +718,10 @@ export default function Navigation() {
     }
   }, [searchQuery]);
 
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await getUnreadCount();
-      setUnreadCount(response.data.count);
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-    }
-  };
+  // Hide navigation for board and founder pages (they have their own layouts)
+  if (pathname?.startsWith('/board') || pathname?.startsWith('/founder')) {
+    return null;
+  }
 
   // Hide navigation on auth pages
   const hideNavRoutes = ['/login', '/register'];
