@@ -165,6 +165,96 @@ export const continueDiscussion = async (req: Request, res: Response) => {
 };
 
 /**
+ * Conduct structured sequential discussion - نقاش منظم متتابع
+ * كل عضو يرد بناءً على أهمية تخصصه للموضوع
+ */
+export const conductStructuredDiscussion = async (req: Request, res: Response) => {
+  try {
+    const founderId = req.founder!.id;
+    const { conversationId } = req.params;
+    const { content, maxResponders } = req.body;
+
+    if (!content) {
+      throw new AppError(400, 'محتوى الرسالة مطلوب');
+    }
+
+    const result = await boardEngineService.conductStructuredDiscussion({
+      conversationId,
+      founderId,
+      content,
+      maxResponders,
+    });
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] conductStructuredDiscussion error:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Generate CEO summary with alternatives - ملخص الرئيس التنفيذي مع البدائل
+ */
+export const generateCEOSummary = async (req: Request, res: Response) => {
+  try {
+    const { conversationId } = req.params;
+
+    const summary = await boardEngineService.generateCEOSummary(conversationId);
+
+    res.json({
+      success: true,
+      data: summary,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] generateCEOSummary error:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Record founder decision - تسجيل قرار المؤسس
+ */
+export const recordFounderDecision = async (req: Request, res: Response) => {
+  try {
+    const founderId = req.founder!.id;
+    const { conversationId } = req.params;
+    const { decision, selectedAlternative, notes } = req.body;
+
+    if (!decision) {
+      throw new AppError(400, 'القرار مطلوب');
+    }
+
+    const result = await boardEngineService.recordFounderDecision({
+      conversationId,
+      founderId,
+      decision,
+      selectedAlternative,
+      notes,
+    });
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] recordFounderDecision error:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+/**
  * Get conversation details
  */
 export const getConversation = async (req: Request, res: Response) => {

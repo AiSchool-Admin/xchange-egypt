@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
 export default function FloatingAssistant() {
   const { user } = useAuth();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -23,7 +25,8 @@ export default function FloatingAssistant() {
     }
   }, [user]);
 
-  if (!user) return null;
+  // Hide on board and founder pages
+  if (!user || pathname?.startsWith('/board') || pathname?.startsWith('/founder')) return null;
 
   return (
     <div className="fixed bottom-6 left-6 z-50" dir="rtl">

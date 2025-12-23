@@ -574,6 +574,11 @@ export default function Navigation() {
   const { onMatchFound, offMatchFound } = useSocket();
   const t = useTranslations();
 
+  // Hide navigation for board and founder pages (they have their own layouts)
+  if (pathname?.startsWith('/board') || pathname?.startsWith('/founder')) {
+    return null;
+  }
+
   // State
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
