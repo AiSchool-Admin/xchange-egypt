@@ -61,7 +61,183 @@ export interface BrainstormResult {
   totalResponses: number;
 }
 
+// نتيجة النقاش المنهجي
+export interface StructuredDiscussionResult {
+  userMessage: any;
+  discussion: {
+    sequence: number;
+    response: BoardMemberResponse;
+    respondingTo?: string; // من يرد على من
+    type: 'initial' | 'response' | 'question' | 'summary';
+  }[];
+  ceoSummary?: {
+    alternatives: string[];
+    recommendation: string;
+    risks: string[];
+  };
+  status: 'in_progress' | 'awaiting_decision' | 'decided';
+}
+
+// تحديد من يجب أن يرد بناءً على المحتوى
+interface NextResponder {
+  memberId: string;
+  memberRole: BoardRole;
+  reason: string;
+  respondingTo?: string;
+}
+
 class BoardEngineService {
+  // ترتيب الأدوار حسب أولوية الموضوع
+  private roleRelevanceOrder: Record<string, BoardRole[]> = {
+    'technical': [BoardRole.CTO, BoardRole.CEO, BoardRole.COO, BoardRole.CFO, BoardRole.CLO, BoardRole.CMO],
+    'financial': [BoardRole.CFO, BoardRole.CEO, BoardRole.COO, BoardRole.CLO, BoardRole.CTO, BoardRole.CMO],
+    'marketing': [BoardRole.CMO, BoardRole.CEO, BoardRole.CFO, BoardRole.COO, BoardRole.CTO, BoardRole.CLO],
+    'operations': [BoardRole.COO, BoardRole.CEO, BoardRole.CTO, BoardRole.CFO, BoardRole.CMO, BoardRole.CLO],
+    'legal': [BoardRole.CLO, BoardRole.CEO, BoardRole.CFO, BoardRole.COO, BoardRole.CTO, BoardRole.CMO],
+    'strategic': [BoardRole.CEO, BoardRole.CFO, BoardRole.CTO, BoardRole.CMO, BoardRole.COO, BoardRole.CLO],
+    'general': [BoardRole.CEO, BoardRole.CTO, BoardRole.CFO, BoardRole.CMO, BoardRole.COO, BoardRole.CLO],
+  };
+
+  // الكلمات المفتاحية لكل موضوع
+  private topicKeywords: Record<string, string[]> = {
+    'technical': ['تقني', 'كود', 'تطوير', 'برمج', 'api', 'bug', 'feature', 'تطبيق', 'موقع', 'سيرفر', 'قاعدة بيانات', 'أمان', 'سرعة', 'أداء', 'تحديث', 'ميزة جديدة'],
+    'financial': ['مالي', 'ميزانية', 'تكلفة', 'إيراد', 'استثمار', 'roi', 'cac', 'ltv', 'تمويل', 'أرباح', 'خسائر', 'نقد', 'cash', 'runway', 'مصروفات', 'دخل'],
+    'marketing': ['تسويق', 'إعلان', 'عملاء', 'حملة', 'brand', 'growth', 'اكتساب', 'احتفاظ', 'وعي', 'سوشيال', 'ميديا', 'فيسبوك', 'انستجرام', 'تيكتوك', 'جمهور'],
+    'operations': ['عمليات', 'توصيل', 'شحن', 'لوجستي', 'خدمة عملاء', 'دعم', 'شكاوى', 'جودة', 'عمليات يومية', 'فريق', 'توظيف', 'إدارة'],
+    'legal': ['قانون', 'ترخيص', 'تنظيم', 'عقد', 'امتثال', 'خصوصية', 'شروط', 'سياسة', 'حماية', 'بيانات', 'gdpr', 'ضريبة', 'تصريح'],
+    'strategic': ['استراتيج', 'قرار', 'رؤية', 'مستقبل', 'خطة', 'توسع', 'نمو', 'منافس', 'سوق', 'فرص', 'تحديات', 'أهداف', 'مهمة'],
+  };
+
+  /**
+   * تصنيف موضوع الرسالة
+   */
+  private classifyMessageTopic(content: string): string {
+    const contentLower = content.toLowerCase();
+    let maxScore = 0;
+    let topTopic = 'general';
+
+    for (const [topic, keywords] of Object.entries(this.topicKeywords)) {
+      let score = 0;
+      for (const keyword of keywords) {
+        if (contentLower.includes(keyword.toLowerCase())) {
+          score++;
+        }
+      }
+      if (score > maxScore) {
+        maxScore = score;
+        topTopic = topic;
+      }
+    }
+
+    return topTopic;
+  }
+
+  /**
+   * تحديد من يجب أن يرد بناءً على السياق الحالي
+   */
+  private async determineNextResponder(params: {
+    content: string;
+    previousResponses: BoardMemberResponse[];
+    allMembers: any[];
+    topic: string;
+  }): Promise<NextResponder | null> {
+    const { content, previousResponses, allMembers, topic } = params;
+    const respondedRoles = new Set(previousResponses.map(r => r.memberRole));
+
+    // الحصول على ترتيب الأدوار حسب الموضوع
+    const relevanceOrder = this.roleRelevanceOrder[topic] || this.roleRelevanceOrder['general'];
+
+    // البحث عن أول عضو لم يرد بعد حسب الترتيب
+    for (const role of relevanceOrder) {
+      if (!respondedRoles.has(role)) {
+        const member = allMembers.find(m => m.role === role);
+        if (member) {
+          // تحديد على من يرد هذا العضو
+          let respondingTo: string | undefined;
+          if (previousResponses.length > 0) {
+            // يرد على آخر رد ذي صلة بتخصصه
+            const lastResponse = previousResponses[previousResponses.length - 1];
+            respondingTo = lastResponse.memberNameAr;
+          }
+
+          return {
+            memberId: member.id,
+            memberRole: role,
+            reason: this.getResponderReason(role, topic),
+            respondingTo,
+          };
+        }
+      }
+    }
+
+    return null; // كل الأعضاء ردوا
+  }
+
+  /**
+   * سبب اختيار هذا العضو للرد
+   */
+  private getResponderReason(role: BoardRole, topic: string): string {
+    const reasons: Record<string, Record<BoardRole, string>> = {
+      'technical': {
+        [BoardRole.CTO]: 'الخبير التقني الأساسي',
+        [BoardRole.CEO]: 'القرار الاستراتيجي',
+        [BoardRole.CFO]: 'تقييم التكلفة التقنية',
+        [BoardRole.CMO]: 'تأثير على تجربة المستخدم',
+        [BoardRole.COO]: 'التنفيذ والعمليات',
+        [BoardRole.CLO]: 'الامتثال والخصوصية',
+      },
+      'financial': {
+        [BoardRole.CFO]: 'الخبير المالي الأساسي',
+        [BoardRole.CEO]: 'القرار الاستراتيجي',
+        [BoardRole.CTO]: 'التكلفة التقنية',
+        [BoardRole.CMO]: 'ميزانية التسويق',
+        [BoardRole.COO]: 'تكاليف العمليات',
+        [BoardRole.CLO]: 'المخاطر القانونية المالية',
+      },
+      'marketing': {
+        [BoardRole.CMO]: 'خبير التسويق الأساسي',
+        [BoardRole.CEO]: 'الاستراتيجية الشاملة',
+        [BoardRole.CFO]: 'ميزانية التسويق',
+        [BoardRole.CTO]: 'الأدوات التقنية للتسويق',
+        [BoardRole.COO]: 'تنفيذ الحملات',
+        [BoardRole.CLO]: 'الامتثال الإعلاني',
+      },
+      'operations': {
+        [BoardRole.COO]: 'خبير العمليات الأساسي',
+        [BoardRole.CEO]: 'القرار الاستراتيجي',
+        [BoardRole.CTO]: 'الأتمتة والتقنية',
+        [BoardRole.CFO]: 'تكاليف العمليات',
+        [BoardRole.CMO]: 'تجربة العملاء',
+        [BoardRole.CLO]: 'الامتثال التشغيلي',
+      },
+      'legal': {
+        [BoardRole.CLO]: 'المستشار القانوني الأساسي',
+        [BoardRole.CEO]: 'القرار النهائي',
+        [BoardRole.CFO]: 'التأثير المالي القانوني',
+        [BoardRole.CTO]: 'الامتثال التقني',
+        [BoardRole.CMO]: 'الامتثال التسويقي',
+        [BoardRole.COO]: 'تنفيذ الامتثال',
+      },
+      'strategic': {
+        [BoardRole.CEO]: 'قائد الاستراتيجية',
+        [BoardRole.CFO]: 'التخطيط المالي',
+        [BoardRole.CTO]: 'الرؤية التقنية',
+        [BoardRole.CMO]: 'استراتيجية السوق',
+        [BoardRole.COO]: 'القدرة التنفيذية',
+        [BoardRole.CLO]: 'المخاطر القانونية',
+      },
+      'general': {
+        [BoardRole.CEO]: 'القيادة والتوجيه',
+        [BoardRole.CTO]: 'المنظور التقني',
+        [BoardRole.CFO]: 'المنظور المالي',
+        [BoardRole.CMO]: 'منظور السوق',
+        [BoardRole.COO]: 'منظور العمليات',
+        [BoardRole.CLO]: 'المنظور القانوني',
+      },
+    };
+
+    return reasons[topic]?.[role] || reasons['general'][role] || 'خبرة متخصصة';
+  }
   /**
    * Initialize board members if they don't exist
    */
@@ -760,6 +936,337 @@ ${params.userMessage}
     }
     // All other C-Suite use Sonnet
     return 'SONNET';
+  }
+
+  /**
+   * إجراء نقاش منظم متتابع - Sequential Structured Discussion
+   * كل عضو يرد بناءً على أهمية تخصصه للموضوع
+   */
+  async conductStructuredDiscussion(params: {
+    conversationId: string;
+    founderId: string;
+    content: string;
+    maxResponders?: number; // الحد الأقصى للمستجيبين (افتراضي: الكل)
+  }): Promise<StructuredDiscussionResult> {
+    const { conversationId, founderId, content, maxResponders = 6 } = params;
+
+    // 1. حفظ رسالة المؤسس
+    const userMessage = await prisma.boardMessage.create({
+      data: {
+        conversationId,
+        founderId,
+        role: BoardMessageRole.USER,
+        content,
+      },
+    });
+
+    // 2. تصنيف الموضوع
+    const topic = this.classifyMessageTopic(content);
+    logger.info(`[BoardEngine] Topic classified as: ${topic}`);
+
+    // 3. الحصول على جميع الأعضاء
+    const allMembers = await prisma.boardMember.findMany({
+      where: { status: BoardMemberStatus.ACTIVE },
+    });
+
+    // 4. بناء السياق
+    const context = await this.buildContext(conversationId);
+
+    // 5. الحصول على المحادثة للسياق
+    const conversation = await prisma.boardConversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          take: 20,
+        },
+      },
+    });
+
+    // 6. إجراء النقاش المتتابع
+    const discussion: StructuredDiscussionResult['discussion'] = [];
+    const responses: BoardMemberResponse[] = [];
+    let sequence = 1;
+
+    while (sequence <= maxResponders) {
+      // تحديد من يجب أن يرد
+      const nextResponder = await this.determineNextResponder({
+        content,
+        previousResponses: responses,
+        allMembers,
+        topic,
+      });
+
+      if (!nextResponder) {
+        break; // كل الأعضاء ردوا
+      }
+
+      const member = allMembers.find(m => m.id === nextResponder.memberId);
+      if (!member) break;
+
+      try {
+        // الحصول على رد العضو
+        const response = await this.getMemberResponse({
+          member,
+          conversation,
+          userMessage: this.buildSequentialPrompt({
+            originalMessage: content,
+            previousResponses: responses,
+            respondingTo: nextResponder.respondingTo,
+            sequence,
+            topic,
+          }),
+          context,
+          features: ['structured-discussion'],
+          previousResponses: responses,
+        });
+
+        // حفظ الرد في قاعدة البيانات
+        await prisma.boardMessage.create({
+          data: {
+            conversationId,
+            memberId: member.id,
+            role: BoardMessageRole.ASSISTANT,
+            content: response.content,
+            model: response.model,
+            tokensUsed: response.tokensUsed,
+            toolsUsed: response.toolsUsed,
+          },
+        });
+
+        responses.push(response);
+
+        // تحديد نوع الرد
+        let responseType: 'initial' | 'response' | 'question' | 'summary' = 'response';
+        if (sequence === 1) responseType = 'initial';
+        if (response.content.includes('؟') || response.content.includes('?')) responseType = 'question';
+
+        discussion.push({
+          sequence,
+          response,
+          respondingTo: nextResponder.respondingTo,
+          type: responseType,
+        });
+
+        sequence++;
+      } catch (error: any) {
+        logger.error(`[BoardEngine] Error in structured discussion from ${member.nameAr}:`, error.message);
+        break;
+      }
+    }
+
+    return {
+      userMessage,
+      discussion,
+      status: 'in_progress',
+    };
+  }
+
+  /**
+   * بناء رسالة السياق للنقاش المتتابع
+   */
+  private buildSequentialPrompt(params: {
+    originalMessage: string;
+    previousResponses: BoardMemberResponse[];
+    respondingTo?: string;
+    sequence: number;
+    topic: string;
+  }): string {
+    const { originalMessage, previousResponses, respondingTo, sequence, topic } = params;
+
+    let prompt = `## رسالة المؤسس الأصلية:\n${originalMessage}\n\n`;
+
+    if (previousResponses.length > 0) {
+      prompt += `## ما قاله زملاؤك حتى الآن:\n`;
+      for (const resp of previousResponses) {
+        prompt += `### ${resp.memberNameAr} (${resp.memberRole}):\n${resp.content}\n\n`;
+      }
+    }
+
+    prompt += `---\n`;
+    prompt += `**أنت المستجيب رقم ${sequence}.**\n`;
+
+    if (respondingTo) {
+      prompt += `**أنت ترد على ما قاله ${respondingTo}.**\n`;
+    }
+
+    prompt += `\n**التعليمات:**\n`;
+    prompt += `- أضف قيمة جديدة من منظور تخصصك\n`;
+    prompt += `- إذا وافقت أو اختلفت مع زميل، اذكره بالاسم\n`;
+    prompt += `- اقترح بدائل أو حلول محددة\n`;
+    prompt += `- كن مختصراً ومباشراً (3-4 فقرات كحد أقصى)\n`;
+
+    return prompt;
+  }
+
+  /**
+   * توليد ملخص الرئيس التنفيذي مع البدائل
+   */
+  async generateCEOSummary(conversationId: string): Promise<{
+    alternatives: string[];
+    recommendation: string;
+    risks: string[];
+    nextSteps: string[];
+  }> {
+    // الحصول على المحادثة كاملة
+    const conversation = await prisma.boardConversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          include: {
+            member: true,
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new Error('Conversation not found');
+    }
+
+    // بناء ملخص المحادثة
+    const messagesText = conversation.messages
+      .map(m => {
+        if (m.role === 'USER') {
+          return `**المؤسس:** ${m.content}`;
+        } else if (m.member) {
+          return `**${m.member.nameAr} (${m.member.role}):** ${m.content}`;
+        }
+        return m.content;
+      })
+      .join('\n\n');
+
+    // الحصول على CEO
+    const ceo = await prisma.boardMember.findFirst({
+      where: { role: BoardRole.CEO, status: BoardMemberStatus.ACTIVE },
+    });
+
+    if (!ceo) {
+      throw new Error('CEO not found');
+    }
+
+    // توليد الملخص باستخدام Claude
+    const summaryPrompt = `
+أنت كريم، الرئيس التنفيذي لـ Xchange Egypt.
+
+راجع النقاش التالي بين أعضاء مجلس الإدارة والمؤسس، ثم قدم ملخصاً منظماً:
+
+${messagesText}
+
+---
+
+**قدم الملخص بالتنسيق التالي (JSON):**
+
+{
+  "alternatives": [
+    "البديل الأول: وصف مختصر",
+    "البديل الثاني: وصف مختصر",
+    "البديل الثالث: وصف مختصر (إن وجد)"
+  ],
+  "recommendation": "توصيتي كرئيس تنفيذي هي...",
+  "risks": [
+    "المخاطرة الأولى",
+    "المخاطرة الثانية"
+  ],
+  "nextSteps": [
+    "الخطوة الأولى المقترحة",
+    "الخطوة الثانية المقترحة"
+  ]
+}
+
+**مهم:**
+- حدد البدائل المطروحة في النقاش بوضوح
+- قدم توصيتك الشخصية كقائد
+- اذكر المخاطر الرئيسية
+- اقترح خطوات عملية للتنفيذ
+- رد بـ JSON فقط بدون أي نص إضافي
+`;
+
+    const response = await claudeService.generateText({
+      model: 'OPUS',
+      system: ceo.systemPrompt,
+      prompt: summaryPrompt,
+    });
+
+    // محاولة تحليل JSON
+    try {
+      // إزالة أي نص قبل وبعد JSON
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const summary = JSON.parse(jsonMatch[0]);
+
+        // حفظ الملخص كرسالة
+        await prisma.boardMessage.create({
+          data: {
+            conversationId,
+            memberId: ceo.id,
+            role: BoardMessageRole.ASSISTANT,
+            content: `## ملخص الرئيس التنفيذي\n\n**البدائل المطروحة:**\n${summary.alternatives.map((a: string, i: number) => `${i + 1}. ${a}`).join('\n')}\n\n**توصيتي:**\n${summary.recommendation}\n\n**المخاطر:**\n${summary.risks.map((r: string) => `- ${r}`).join('\n')}\n\n**الخطوات التالية:**\n${summary.nextSteps.map((s: string) => `- ${s}`).join('\n')}`,
+            model: 'OPUS',
+            ceoMode: 'STRATEGIST' as CEOMode,
+          },
+        });
+
+        // تحديث حالة المحادثة
+        await prisma.boardConversation.update({
+          where: { id: conversationId },
+          data: {
+            status: BoardConversationStatus.ACTIVE, // في انتظار قرار المؤسس
+          },
+        });
+
+        return summary;
+      }
+    } catch (parseError) {
+      logger.error('[BoardEngine] Error parsing CEO summary JSON:', parseError);
+    }
+
+    // إذا فشل التحليل، نعيد قيم افتراضية
+    return {
+      alternatives: ['لم يتم تحديد بدائل واضحة'],
+      recommendation: response,
+      risks: ['يرجى مراجعة النقاش لتحديد المخاطر'],
+      nextSteps: ['يرجى تحديد الخطوات التالية بناءً على قرارك'],
+    };
+  }
+
+  /**
+   * تسجيل قرار المؤسس
+   */
+  async recordFounderDecision(params: {
+    conversationId: string;
+    founderId: string;
+    decision: string;
+    selectedAlternative?: string;
+    notes?: string;
+  }): Promise<any> {
+    const { conversationId, founderId, decision, selectedAlternative, notes } = params;
+
+    // حفظ القرار كرسالة
+    const decisionMessage = await prisma.boardMessage.create({
+      data: {
+        conversationId,
+        founderId,
+        role: BoardMessageRole.USER,
+        content: `## قرار المؤسس\n\n**القرار:** ${decision}\n${selectedAlternative ? `\n**البديل المختار:** ${selectedAlternative}` : ''}\n${notes ? `\n**ملاحظات:** ${notes}` : ''}`,
+      },
+    });
+
+    // تحديث المحادثة
+    const updatedConversation = await prisma.boardConversation.update({
+      where: { id: conversationId },
+      data: {
+        status: BoardConversationStatus.COMPLETED,
+        summary: `قرار المؤسس: ${decision}`,
+        endedAt: new Date(),
+      },
+    });
+
+    return {
+      decision: decisionMessage,
+      conversation: updatedConversation,
+    };
   }
 
   /**

@@ -42,6 +42,15 @@ router.post('/conversations/:conversationId/messages', authenticateFounder, boar
 // Continue discussion - الأعضاء يتفاعلون مع بعضهم
 router.post('/conversations/:conversationId/continue', authenticateFounder, boardController.continueDiscussion);
 
+// Structured sequential discussion - نقاش متتابع منظم
+router.post('/conversations/:conversationId/structured', authenticateFounder, boardController.conductStructuredDiscussion);
+
+// Get CEO summary with alternatives - ملخص الرئيس التنفيذي مع البدائل
+router.post('/conversations/:conversationId/ceo-summary', authenticateFounder, boardController.generateCEOSummary);
+
+// Record founder decision - تسجيل قرار المؤسس
+router.post('/conversations/:conversationId/decision', authenticateFounder, boardController.recordFounderDecision);
+
 // End conversation and get summary
 router.post('/conversations/:conversationId/end', authenticateFounder, boardController.endConversation);
 

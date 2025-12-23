@@ -109,6 +109,34 @@ export interface SendMessageResult {
   brainstormRounds?: BrainstormRound[]; // جولات العصف الذهني الإضافية
 }
 
+// نتيجة النقاش المنظم المتتابع
+export interface StructuredDiscussionItem {
+  sequence: number;
+  response: BoardMemberResponse;
+  respondingTo?: string;
+  type: 'initial' | 'response' | 'question' | 'summary';
+}
+
+export interface StructuredDiscussionResult {
+  userMessage: BoardMessage;
+  discussion: StructuredDiscussionItem[];
+  status: 'in_progress' | 'awaiting_decision' | 'decided';
+}
+
+// ملخص الرئيس التنفيذي
+export interface CEOSummary {
+  alternatives: string[];
+  recommendation: string;
+  risks: string[];
+  nextSteps: string[];
+}
+
+// قرار المؤسس
+export interface FounderDecisionResult {
+  decision: BoardMessage;
+  conversation: BoardConversation;
+}
+
 export interface ServiceStatus {
   claude: {
     isConfigured: boolean;
@@ -214,6 +242,63 @@ export const continueDiscussion = async (
     {
       method: 'POST',
       body: JSON.stringify(data || {}),
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Conduct structured sequential discussion - نقاش منظم متتابع
+ * الأعضاء يردون بالتتابع حسب أهمية تخصصهم للموضوع
+ */
+export const conductStructuredDiscussion = async (
+  conversationId: string,
+  data: {
+    content: string;
+    maxResponders?: number;
+  }
+): Promise<StructuredDiscussionResult> => {
+  const response = await founderFetch(
+    `/board/conversations/${conversationId}/structured`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Generate CEO summary with alternatives - ملخص الرئيس التنفيذي مع البدائل
+ */
+export const generateCEOSummary = async (
+  conversationId: string
+): Promise<CEOSummary> => {
+  const response = await founderFetch(
+    `/board/conversations/${conversationId}/ceo-summary`,
+    {
+      method: 'POST',
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Record founder decision - تسجيل قرار المؤسس
+ */
+export const recordFounderDecision = async (
+  conversationId: string,
+  data: {
+    decision: string;
+    selectedAlternative?: string;
+    notes?: string;
+  }
+): Promise<FounderDecisionResult> => {
+  const response = await founderFetch(
+    `/board/conversations/${conversationId}/decision`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
     }
   );
   return response.data;
