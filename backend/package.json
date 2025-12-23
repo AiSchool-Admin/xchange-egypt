@@ -46,6 +46,7 @@
   "author": "Xchange Team",
   "license": "PROPRIETARY",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@aws-sdk/client-s3": "^3.478.0",
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.19.0",

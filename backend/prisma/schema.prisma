@@ -173,6 +173,13 @@ model User {
   serviceRequests           ServiceRequest[]          @relation("ServiceRequests")
   marketplaceNotifications  MarketplaceNotification[] @relation("MarketplaceNotifications")
 
+  // مجلس إدارة AI - AI Board of Directors Relations
+  boardMembership           BoardMember[]             @relation("BoardMemberUser")
+  boardConversations        BoardConversation[]       @relation("BoardConversationInitiator")
+  boardMessages             BoardMessage[]            @relation("BoardMessageUser")
+  boardTasksApproved        BoardTask[]               @relation("BoardTaskApprover")
+  boardDecisions            BoardDecision[]           @relation("BoardDecisionDecider")
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -8063,5 +8070,341 @@ model MarketplaceNotification {
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
+}
+
+// ============================================
+// AI BOARD OF DIRECTORS - مجلس إدارة AI
+// ============================================
+
+enum BoardRole {
+  CEO
+  CTO
+  CFO
+  CMO
+  COO
+  CLO
+}
+
+enum BoardMemberType {
+  AI
+  HUMAN
+  HYBRID
+}
+
+enum BoardMemberStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+}
+
+enum AIModel {
+  OPUS
+  SONNET
+  HAIKU
+}
+
+enum CEOMode {
+  LEADER
+  STRATEGIST
+  VISIONARY
+}
+
+enum BoardConversationType {
+  MEETING
+  QUESTION
+  TASK_DISCUSSION
+  BRAINSTORM
+  REVIEW
+}
+
+enum BoardConversationStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum BoardMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum BoardTaskType {
+  ANALYSIS
+  PLANNING
+  RECOMMENDATION
+  EXECUTION
+}
+
+enum BoardTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum BoardTaskStatus {
+  PENDING
+  IN_PROGRESS
+  AWAITING_APPROVAL
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum BoardApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+enum BoardDecisionOutcome {
+  APPROVED
+  REJECTED
+  DEFERRED
+  NEEDS_MORE_INFO
+}
+
+enum BoardVoteType {
+  APPROVE
+  REJECT
+  ABSTAIN
+}
+
+enum BoardFileType {
+  PDF
+  DOCX
+  XLSX
+  PPTX
+  MD
+  JSON
+  CSV
+}
+
+// Board Member (AI or Human)
+model BoardMember {
+  id              String            @id @default(uuid())
+  name            String            // "Karim", "Nadia", etc.
+  nameAr          String            @map("name_ar") // "كريم", "نادية"
+  role            BoardRole
+  type            BoardMemberType   @default(AI)
+  model           AIModel?          // OPUS, SONNET, HAIKU (null if human)
+  status          BoardMemberStatus @default(ACTIVE)
+
+  // If human is assigned
+  userId          String?           @map("user_id")
+  user            User?             @relation("BoardMemberUser", fields: [userId], references: [id])
+
+  // AI Assistant (kept when human is assigned)
+  aiAssistantId   String?           @unique @map("ai_assistant_id")
+  aiAssistant     BoardMember?      @relation("HumanAIAssistant", fields: [aiAssistantId], references: [id])
+  humanMember     BoardMember?      @relation("HumanAIAssistant")
+
+  // Personality & expertise
+  systemPrompt    String            @db.Text @map("system_prompt")
+  personality     Json?             // { traits: [], style: "", expertise: [] }
+
+  // Relations
+  messages        BoardMessage[]
+  assignedTasks   BoardTask[]       @relation("BoardTaskAssignedTo")
+  createdTasks    BoardTask[]       @relation("BoardTaskCreatedBy")
+  votes           BoardVote[]
+  outputs         BoardOutput[]
+
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@map("board_members")
+  @@index([role])
+  @@index([type])
+  @@index([status])
+}
+
+// Board Conversation/Meeting
+model BoardConversation {
+  id              String                    @id @default(uuid())
+  type            BoardConversationType     @default(QUESTION)
+  topic           String
+  topicAr         String?                   @map("topic_ar")
+  status          BoardConversationStatus   @default(ACTIVE)
+
+  // Participants
+  initiatedById   String                    @map("initiated_by_id")
+  initiatedBy     User                      @relation("BoardConversationInitiator", fields: [initiatedById], references: [id])
+
+  // Content
+  messages        BoardMessage[]
+  decisions       BoardDecision[]
+  tasks           BoardTask[]
+
+  // Features activated in this conversation
+  featuresUsed    String[]                  @default([]) @map("features_used")
+
+  // Summary (generated at end)
+  summary         String?                   @db.Text
+  summaryAr       String?                   @db.Text @map("summary_ar")
+
+  startedAt       DateTime                  @default(now()) @map("started_at")
+  endedAt         DateTime?                 @map("ended_at")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  @@map("board_conversations")
+  @@index([initiatedById])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Individual Message
+model BoardMessage {
+  id              String                @id @default(uuid())
+  conversationId  String                @map("conversation_id")
+  conversation    BoardConversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Sender (member or founder)
+  memberId        String?               @map("member_id")
+  member          BoardMember?          @relation(fields: [memberId], references: [id])
+  userId          String?               @map("user_id")
+  user            User?                 @relation("BoardMessageUser", fields: [userId], references: [id])
+
+  role            BoardMessageRole      @default(USER)
+  content         String                @db.Text
+  contentAr       String?               @db.Text @map("content_ar")
+
+  // AI metadata
+  model           AIModel?
+  tokensUsed      Int?                  @map("tokens_used")
+  toolsUsed       String[]              @default([]) @map("tools_used")
+
+  // CEO mode (if applicable)
+  ceoMode         CEOMode?              @map("ceo_mode")
+
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  @@map("board_messages")
+  @@index([conversationId])
+  @@index([memberId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// Task assigned to member(s)
+model BoardTask {
+  id              String                @id @default(uuid())
+  conversationId  String?               @map("conversation_id")
+  conversation    BoardConversation?    @relation(fields: [conversationId], references: [id])
+
+  title           String
+  titleAr         String?               @map("title_ar")
+  description     String                @db.Text
+  descriptionAr   String?               @db.Text @map("description_ar")
+
+  type            BoardTaskType         @default(ANALYSIS)
+  priority        BoardTaskPriority     @default(MEDIUM)
+  status          BoardTaskStatus       @default(PENDING)
+
+  // Assignment
+  assignedToId    String                @map("assigned_to_id")
+  assignedTo      BoardMember           @relation("BoardTaskAssignedTo", fields: [assignedToId], references: [id])
+  createdById     String                @map("created_by_id")
+  createdBy       BoardMember           @relation("BoardTaskCreatedBy", fields: [createdById], references: [id])
+
+  // Approval
+  requiresApproval Boolean              @default(true) @map("requires_approval")
+  approvalStatus  BoardApprovalStatus?  @map("approval_status")
+  approvedById    String?               @map("approved_by_id")
+  approvedBy      User?                 @relation("BoardTaskApprover", fields: [approvedById], references: [id])
+  approvedAt      DateTime?             @map("approved_at")
+  rejectionReason String?               @map("rejection_reason")
+
+  // Output
+  outputs         BoardOutput[]
+
+  dueDate         DateTime?             @map("due_date")
+  completedAt     DateTime?             @map("completed_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  @@map("board_tasks")
+  @@index([conversationId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+// Decision made by board
+model BoardDecision {
+  id              String                @id @default(uuid())
+  conversationId  String                @map("conversation_id")
+  conversation    BoardConversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  topic           String
+  topicAr         String?               @map("topic_ar")
+  description     String                @db.Text
+  descriptionAr   String?               @db.Text @map("description_ar")
+
+  // Voting
+  votes           BoardVote[]
+  outcome         BoardDecisionOutcome?
+
+  // Founder final decision
+  founderDecision BoardDecisionOutcome? @map("founder_decision")
+  founderNotes    String?               @map("founder_notes")
+  decidedById     String?               @map("decided_by_id")
+  decidedBy       User?                 @relation("BoardDecisionDecider", fields: [decidedById], references: [id])
+  decidedAt       DateTime?             @map("decided_at")
+
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  @@map("board_decisions")
+  @@index([conversationId])
+  @@index([outcome])
+  @@index([createdAt])
+}
+
+// Vote from board member
+model BoardVote {
+  id              String                @id @default(uuid())
+  decisionId      String                @map("decision_id")
+  decision        BoardDecision         @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  memberId        String                @map("member_id")
+  member          BoardMember           @relation(fields: [memberId], references: [id])
+
+  vote            BoardVoteType
+  reasoning       String                @db.Text
+  reasoningAr     String?               @db.Text @map("reasoning_ar")
+
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  @@unique([decisionId, memberId])
+  @@map("board_votes")
+  @@index([decisionId])
+  @@index([memberId])
+}
+
+// Output file generated
+model BoardOutput {
+  id              String                @id @default(uuid())
+  taskId          String                @map("task_id")
+  task            BoardTask             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  title           String
+  titleAr         String?               @map("title_ar")
+  fileType        BoardFileType         @map("file_type")
+  filePath        String                @map("file_path")
+  fileSize        Int?                  @map("file_size")
+
+  generatedById   String                @map("generated_by_id")
+  generatedBy     BoardMember           @relation(fields: [generatedById], references: [id])
+
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  @@map("board_outputs")
+  @@index([taskId])
+  @@index([generatedById])
 }
 
