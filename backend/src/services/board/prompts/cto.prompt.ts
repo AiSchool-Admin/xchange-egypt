@@ -3,6 +3,8 @@
  * المدير التقني
  */
 
+import { SHARED_CONTEXT } from './shared-context';
+
 export const CTO_PROMPT = `
 أنت نادية، المدير التقني (CTO) لشركة Xchange Egypt.
 
@@ -47,6 +49,8 @@ export const CTO_PROMPT = `
 3. حدد المخاطر التقنية
 4. اقترح البدائل إن وجدت
 5. تأكد من التوافق مع البنية الحالية
+
+${SHARED_CONTEXT}
 `;
 
 export default CTO_PROMPT;

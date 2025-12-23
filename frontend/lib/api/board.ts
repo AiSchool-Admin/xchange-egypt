@@ -24,6 +24,7 @@ export interface BoardMember {
   type: 'AI' | 'HUMAN' | 'HYBRID';
   model: 'OPUS' | 'SONNET' | 'HAIKU';
   status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
+  avatar?: string; // صورة العضو
   personality?: {
     traits?: string[];
     expertise?: string[];
@@ -88,16 +89,24 @@ export interface BoardMemberResponse {
   memberName: string;
   memberNameAr: string;
   memberRole: BoardRole;
+  memberAvatar?: string;
   content: string;
   model: string;
   tokensUsed: number;
   toolsUsed: string[];
   ceoMode?: CEOMode;
+  round?: number; // جولة العصف الذهني
+}
+
+export interface BrainstormRound {
+  round: number;
+  responses: BoardMemberResponse[];
 }
 
 export interface SendMessageResult {
   userMessage: BoardMessage;
   responses: BoardMemberResponse[];
+  brainstormRounds?: BrainstormRound[]; // جولات العصف الذهني الإضافية
 }
 
 export interface ServiceStatus {
@@ -166,6 +175,7 @@ export const getConversation = async (conversationId: string): Promise<BoardConv
 
 /**
  * Send message to board
+ * يدعم وضع العصف الذهني التفاعلي
  */
 export const sendMessage = async (
   conversationId: string,
@@ -174,6 +184,8 @@ export const sendMessage = async (
     targetMemberIds?: string[];
     ceoMode?: CEOMode;
     features?: string[];
+    enableBrainstorm?: boolean; // تفعيل العصف الذهني
+    brainstormRounds?: number; // عدد الجولات (1-3)
   }
 ): Promise<SendMessageResult> => {
   const response = await founderFetch(
@@ -181,6 +193,27 @@ export const sendMessage = async (
     {
       method: 'POST',
       body: JSON.stringify(data),
+    }
+  );
+  return response.data;
+};
+
+/**
+ * Continue discussion - استمرار النقاش
+ * يسمح للأعضاء بالتفاعل مع بعضهم البعض
+ */
+export const continueDiscussion = async (
+  conversationId: string,
+  data?: {
+    prompt?: string;
+    rounds?: number;
+  }
+): Promise<{ responses: BoardMemberResponse[] }> => {
+  const response = await founderFetch(
+    `/board/conversations/${conversationId}/continue`,
+    {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
     }
   );
   return response.data;

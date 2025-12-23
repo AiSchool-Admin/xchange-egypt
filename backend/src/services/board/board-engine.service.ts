@@ -35,6 +35,8 @@ export interface SendMessageParams {
   targetMemberIds?: string[];
   ceoMode?: CEOMode;
   features?: string[];
+  enableBrainstorm?: boolean; // تفعيل وضع العصف الذهني
+  brainstormRounds?: number; // عدد جولات النقاش (1-3)
 }
 
 export interface BoardMemberResponse {
@@ -47,6 +49,16 @@ export interface BoardMemberResponse {
   tokensUsed: number;
   toolsUsed: string[];
   ceoMode?: CEOMode;
+  round?: number; // جولة النقاش
+}
+
+export interface BrainstormResult {
+  userMessage: any;
+  rounds: {
+    round: number;
+    responses: BoardMemberResponse[];
+  }[];
+  totalResponses: number;
 }
 
 class BoardEngineService {
@@ -124,10 +136,12 @@ class BoardEngineService {
 
   /**
    * Send message to board and get responses - إرسال رسالة والحصول على ردود
+   * يدعم وضع العصف الذهني (brainstorming) حيث الأعضاء يتفاعلون مع بعضهم
    */
   async sendMessage(params: SendMessageParams): Promise<{
     userMessage: any;
     responses: BoardMemberResponse[];
+    brainstormRounds?: BrainstormResult['rounds'];
   }> {
     // 1. Save founder message
     const userMessage = await prisma.boardMessage.create({
@@ -155,11 +169,14 @@ class BoardEngineService {
     }
 
     // 3. Update features if provided
-    if (params.features?.length) {
-      const updatedFeatures = [...new Set([...conversation.featuresUsed, ...params.features])];
+    const allFeatures = [...conversation.featuresUsed, ...(params.features || [])];
+    if (params.enableBrainstorm && !allFeatures.includes('brainstorm')) {
+      allFeatures.push('brainstorm');
+    }
+    if (allFeatures.length > conversation.featuresUsed.length) {
       await prisma.boardConversation.update({
         where: { id: params.conversationId },
-        data: { featuresUsed: updatedFeatures },
+        data: { featuresUsed: [...new Set(allFeatures)] },
       });
     }
 
@@ -169,7 +186,7 @@ class BoardEngineService {
     // 5. Build context from Xchange data
     const context = await this.buildContext(params.conversationId);
 
-    // 6. Get responses from each member
+    // 6. Get first round responses from each member
     const responses: BoardMemberResponse[] = [];
 
     for (const member of members) {
@@ -180,7 +197,9 @@ class BoardEngineService {
           userMessage: params.content,
           context,
           ceoMode: member.role === BoardRole.CEO ? params.ceoMode : undefined,
-          features: [...conversation.featuresUsed, ...(params.features || [])],
+          features: allFeatures,
+          previousResponses: [], // First round, no previous responses
+          round: 1,
         });
 
         // Save response to database
@@ -197,17 +216,212 @@ class BoardEngineService {
           },
         });
 
-        responses.push(response);
+        responses.push({ ...response, round: 1 });
       } catch (error: any) {
         logger.error(`[BoardEngine] Error getting response from ${member.nameAr}:`, error.message);
       }
     }
 
-    return { userMessage, responses };
+    // 7. If brainstorming enabled, continue with additional rounds
+    let brainstormRounds: BrainstormResult['rounds'] | undefined;
+
+    if (params.enableBrainstorm && responses.length > 1) {
+      const numRounds = Math.min(params.brainstormRounds || 2, 3); // Max 3 rounds
+      brainstormRounds = [{ round: 1, responses }];
+
+      let previousResponses = responses;
+
+      for (let round = 2; round <= numRounds; round++) {
+        const roundResponses = await this.getBrainstormRound({
+          conversationId: params.conversationId,
+          members,
+          previousResponses,
+          context,
+          ceoMode: params.ceoMode,
+          features: allFeatures,
+          round,
+        });
+
+        if (roundResponses.length > 0) {
+          brainstormRounds.push({ round, responses: roundResponses });
+          previousResponses = roundResponses;
+        }
+      }
+    }
+
+    return { userMessage, responses, brainstormRounds };
+  }
+
+  /**
+   * Get a round of brainstorming responses - جولة عصف ذهني
+   * الأعضاء يعلقون على آراء بعضهم البعض
+   */
+  private async getBrainstormRound(params: {
+    conversationId: string;
+    members: any[];
+    previousResponses: BoardMemberResponse[];
+    context: any;
+    ceoMode?: CEOMode;
+    features: string[];
+    round: number;
+  }): Promise<BoardMemberResponse[]> {
+    const responses: BoardMemberResponse[] = [];
+
+    // Shuffle members to vary who speaks first
+    const shuffledMembers = [...params.members].sort(() => Math.random() - 0.5);
+
+    // Get conversation for history
+    const conversation = await prisma.boardConversation.findUnique({
+      where: { id: params.conversationId },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+          take: 30,
+        },
+      },
+    });
+
+    for (const member of shuffledMembers) {
+      try {
+        const response = await this.getMemberResponse({
+          member,
+          conversation,
+          userMessage: `[جولة العصف الذهني ${params.round}] استمر في النقاش وعلّق على آراء زملائك.`,
+          context: params.context,
+          ceoMode: member.role === BoardRole.CEO ? params.ceoMode : undefined,
+          features: params.features,
+          previousResponses: params.previousResponses,
+          round: params.round,
+        });
+
+        // Save response to database
+        await prisma.boardMessage.create({
+          data: {
+            conversationId: params.conversationId,
+            memberId: member.id,
+            role: BoardMessageRole.ASSISTANT,
+            content: response.content,
+            model: response.model,
+            tokensUsed: response.tokensUsed,
+            toolsUsed: response.toolsUsed,
+            ceoMode: response.ceoMode,
+          },
+        });
+
+        responses.push({ ...response, round: params.round });
+
+        // Add this response to previous responses for next member
+        params.previousResponses = [...params.previousResponses, response];
+      } catch (error: any) {
+        logger.error(`[BoardEngine] Error in brainstorm round ${params.round} from ${member.nameAr}:`, error.message);
+      }
+    }
+
+    return responses;
+  }
+
+  /**
+   * Continue discussion - استمرار النقاش
+   * يسمح بجولات إضافية من التفاعل بين الأعضاء
+   */
+  async continueDiscussion(params: {
+    conversationId: string;
+    founderId: string;
+    prompt?: string; // توجيه اختياري للنقاش
+    rounds?: number;
+  }): Promise<{
+    responses: BoardMemberResponse[];
+  }> {
+    // Get recent messages
+    const conversation = await prisma.boardConversation.findUnique({
+      where: { id: params.conversationId },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: {
+            member: true,
+          },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new Error('Conversation not found');
+    }
+
+    // Get all active members
+    const members = await prisma.boardMember.findMany({
+      where: { status: BoardMemberStatus.ACTIVE },
+    });
+
+    // Build previous responses from recent messages
+    const previousResponses: BoardMemberResponse[] = conversation.messages
+      .filter(m => m.role === BoardMessageRole.ASSISTANT && m.member)
+      .map(m => ({
+        memberId: m.memberId!,
+        memberName: m.member!.name,
+        memberNameAr: m.member!.nameAr,
+        memberRole: m.member!.role as BoardRole,
+        content: m.content,
+        model: m.model as AIModel,
+        tokensUsed: m.tokensUsed || 0,
+        toolsUsed: m.toolsUsed || [],
+      }));
+
+    const context = await this.buildContext(params.conversationId);
+
+    // Save founder's continuation prompt if provided
+    if (params.prompt) {
+      await prisma.boardMessage.create({
+        data: {
+          conversationId: params.conversationId,
+          founderId: params.founderId,
+          role: BoardMessageRole.USER,
+          content: params.prompt,
+        },
+      });
+    }
+
+    // Get continuation responses
+    const responses: BoardMemberResponse[] = [];
+
+    for (const member of members) {
+      try {
+        const response = await this.getMemberResponse({
+          member,
+          conversation,
+          userMessage: params.prompt || 'استمروا في النقاش وتفاعلوا مع آراء بعضكم.',
+          context,
+          features: [...conversation.featuresUsed, 'brainstorm'],
+          previousResponses,
+          round: 0, // Continuation round
+        });
+
+        await prisma.boardMessage.create({
+          data: {
+            conversationId: params.conversationId,
+            memberId: member.id,
+            role: BoardMessageRole.ASSISTANT,
+            content: response.content,
+            model: response.model,
+            tokensUsed: response.tokensUsed,
+            toolsUsed: response.toolsUsed,
+          },
+        });
+
+        responses.push(response);
+      } catch (error: any) {
+        logger.error(`[BoardEngine] Error in continuation from ${member.nameAr}:`, error.message);
+      }
+    }
+
+    return { responses };
   }
 
   /**
    * Get response from a specific member
+   * يدعم العصف الذهني عبر تمرير ردود الزملاء السابقة
    */
   private async getMemberResponse(params: {
     member: any;
@@ -216,6 +430,8 @@ class BoardEngineService {
     context: any;
     ceoMode?: CEOMode;
     features: string[];
+    previousResponses?: BoardMemberResponse[];
+    round?: number;
   }): Promise<BoardMemberResponse> {
     // Get system prompt
     let systemPrompt = params.member.systemPrompt;
@@ -229,16 +445,74 @@ class BoardEngineService {
     systemPrompt = this.addFeatureInstructions(systemPrompt, params.features);
 
     // Build conversation history
-    const history = params.conversation.messages
-      .filter((m: any) => m.role !== BoardMessageRole.SYSTEM)
-      .slice(-10)
-      .map((m: any) => ({
-        role: m.role === BoardMessageRole.USER ? 'user' : 'assistant',
-        content: m.content,
-      }));
+    const history = params.conversation?.messages
+      ? params.conversation.messages
+          .filter((m: any) => m.role !== BoardMessageRole.SYSTEM)
+          .slice(-10)
+          .map((m: any) => ({
+            role: m.role === BoardMessageRole.USER ? 'user' : 'assistant',
+            content: m.content,
+          }))
+      : [];
 
-    // Add current message with context
-    const currentMessage = `## السياق الحالي لـ Xchange
+    // Build colleagues' responses section for brainstorming
+    let colleaguesSection = '';
+    if (params.previousResponses && params.previousResponses.length > 0) {
+      const otherResponses = params.previousResponses.filter(
+        r => r.memberId !== params.member.id
+      );
+      if (otherResponses.length > 0) {
+        colleaguesSection = `
+## 💬 ما قاله زملاؤك في الجولة السابقة:
+${otherResponses.map(r => `
+### ${r.memberNameAr} (${r.memberRole}):
+${r.content}
+`).join('\n')}
+---
+**الآن دورك!** علّق على آراء زملائك، وافق، اعترض، أو ابنِ على أفكارهم.
+`;
+      }
+    }
+
+    // Determine if this is a brainstorm round
+    const isBrainstorm = params.features.includes('brainstorm') || (params.round && params.round > 1);
+
+    // Build current message with context
+    let currentMessage = '';
+
+    if (isBrainstorm && params.round && params.round > 1) {
+      // Brainstorm continuation round
+      currentMessage = `## السياق الحالي لـ Xchange
+${JSON.stringify(params.context, null, 2)}
+
+${colleaguesSection}
+
+## توجيه الجولة ${params.round}
+${params.userMessage}
+
+---
+**تعليمات الجولة ${params.round}:**
+- علّق على ما قاله زملاؤك بالاسم
+- أضف أفكار جديدة أو ابنِ على أفكارهم
+- اختلف إذا لزم الأمر مع شرح السبب
+- كن مختصراً (2-3 فقرات كحد أقصى)`;
+    } else if (colleaguesSection) {
+      // First round with previous responses (continuation)
+      currentMessage = `## السياق الحالي لـ Xchange
+${JSON.stringify(params.context, null, 2)}
+
+${colleaguesSection}
+
+## رسالة المؤسس
+${params.userMessage}
+
+---
+رد كـ ${params.member.nameAr} (${params.member.role}) بناءً على خبرتك ومسؤولياتك.
+علّق على ما قاله زملاؤك واذكرهم بأسمائهم.
+كن مختصراً ومركزاً (لا تزيد عن 3-4 فقرات).`;
+    } else {
+      // First round, no previous responses
+      currentMessage = `## السياق الحالي لـ Xchange
 ${JSON.stringify(params.context, null, 2)}
 
 ## رسالة المؤسس
@@ -247,6 +521,7 @@ ${params.userMessage}
 ---
 رد كـ ${params.member.nameAr} (${params.member.role}) بناءً على خبرتك ومسؤولياتك.
 كن مختصراً ومركزاً (لا تزيد عن 3-4 فقرات).`;
+    }
 
     // Get model based on member role
     const model = this.getModelForRole(params.member.role);
@@ -414,6 +689,26 @@ ${params.userMessage}
 تخيل أن هذا القرار/المشروع فشل فشلاً ذريعاً.
 ما الأسباب المحتملة للفشل؟
 كيف يمكن منع كل سيناريو فشل؟`;
+    }
+
+    if (features.includes('brainstorm')) {
+      enhancedPrompt += `
+
+## وضع خاص: العصف الذهني (Brainstorming)
+هذه جلسة عصف ذهني تفاعلية مع زملائك:
+- شارك بأفكارك بحرية حتى لو بدت غير تقليدية
+- علّق على آراء زملائك بالاسم (كريم، نادية، ليلى، يوسف، عمر، هنا)
+- ابنِ على أفكار الآخرين وطوّرها
+- اختلف باحترام واشرح أسباب اختلافك
+- اطرح أسئلة على زملائك للاستفادة من خبراتهم
+- لا تكرر ما قيل - أضف قيمة جديدة
+- كن مختصراً ومباشراً
+
+أمثلة للتفاعل:
+- "أتفق مع نادية في النقطة التقنية، وأضيف..."
+- "ليلى، هل الميزانية تسمح بما اقترحه يوسف؟"
+- "أختلف مع عمر هنا، لأن..."
+- "فكرة كريم ممتازة، يمكن تطويرها بـ..."`;
     }
 
     return enhancedPrompt;

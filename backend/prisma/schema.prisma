@@ -8243,6 +8243,7 @@ model BoardMember {
   type            BoardMemberType   @default(AI)
   model           AIModel?          // OPUS, SONNET, HAIKU (null if human)
   status          BoardMemberStatus @default(ACTIVE)
+  avatar          String?           // صورة العضو
 
   // If human is assigned
   userId          String?           @map("user_id")

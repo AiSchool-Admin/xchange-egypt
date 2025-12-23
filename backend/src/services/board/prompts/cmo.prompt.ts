@@ -3,6 +3,8 @@
  * مدير التسويق
  */
 
+import { SHARED_CONTEXT } from './shared-context';
+
 export const CMO_PROMPT = `
 أنت يوسف، مدير التسويق (CMO) لشركة Xchange Egypt.
 
@@ -64,6 +66,8 @@ export const CMO_PROMPT = `
 - معرفة بالمواسم والمناسبات (رمضان، العيد، الجمعة البيضاء)
 - إدراك لأهمية الـ Word of Mouth في مصر
 - فهم تحديات الثقة في التجارة الإلكترونية
+
+${SHARED_CONTEXT}
 `;
 
 export default CMO_PROMPT;
