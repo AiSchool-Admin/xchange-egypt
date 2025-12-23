@@ -12,42 +12,42 @@ ALTER TABLE "board_members"
 ADD COLUMN IF NOT EXISTS "avatar" TEXT;
 
 -- 2. Update avatars for all board members
--- Using professional AI-generated avatars from UI Avatars API with consistent style
+-- Using professional business avatars from UI Faces API with proper gender representation
 
--- CEO - كريم (Male, Blue theme)
+-- CEO - كريم (Male, Executive Blue)
 UPDATE "board_members"
-SET "avatar" = 'https://api.dicebear.com/7.x/personas/svg?seed=Karim&backgroundColor=1e40af&clothingColor=1e40af'
+SET "avatar" = 'https://api.dicebear.com/7.x/notionists-neutral/svg?seed=Karim&backgroundColor=1e40af&glassesProbability=30'
 WHERE "role" = 'CEO';
 
--- CTO - نادية (Female, Purple theme)
+-- CTO - نادية (Female, Tech Purple)
 UPDATE "board_members"
-SET "avatar" = 'https://api.dicebear.com/7.x/personas/svg?seed=Nadia&backgroundColor=7c3aed&clothingColor=7c3aed'
+SET "avatar" = 'https://api.dicebear.com/7.x/notionists-neutral/svg?seed=Nadia&backgroundColor=7c3aed&glassesProbability=50&lips=variant01,variant02'
 WHERE "role" = 'CTO';
 
--- CFO - ليلى (Female, Green theme)
+-- CFO - ليلى (Female, Finance Green)
 UPDATE "board_members"
-SET "avatar" = 'https://api.dicebear.com/7.x/personas/svg?seed=Laila&backgroundColor=059669&clothingColor=059669'
+SET "avatar" = 'https://api.dicebear.com/7.x/notionists-neutral/svg?seed=Laila&backgroundColor=059669&glassesProbability=40&lips=variant01,variant03'
 WHERE "role" = 'CFO';
 
--- CMO - يوسف (Male, Orange theme)
+-- CMO - يوسف (Male, Marketing Orange)
 UPDATE "board_members"
-SET "avatar" = 'https://api.dicebear.com/7.x/personas/svg?seed=Youssef&backgroundColor=ea580c&clothingColor=ea580c'
+SET "avatar" = 'https://api.dicebear.com/7.x/notionists-neutral/svg?seed=Youssef&backgroundColor=ea580c&glassesProbability=20'
 WHERE "role" = 'CMO';
 
--- COO - عمر (Male, Teal theme)
+-- COO - عمر (Male, Operations Teal)
 UPDATE "board_members"
-SET "avatar" = 'https://api.dicebear.com/7.x/personas/svg?seed=Omar&backgroundColor=0d9488&clothingColor=0d9488'
+SET "avatar" = 'https://api.dicebear.com/7.x/notionists-neutral/svg?seed=Omar&backgroundColor=0d9488&glassesProbability=30'
 WHERE "role" = 'COO';
 
--- CLO - هنا (Female, Pink theme)
+-- CLO - هنا (Female, Legal Rose)
 UPDATE "board_members"
-SET "avatar" = 'https://api.dicebear.com/7.x/personas/svg?seed=Hana&backgroundColor=db2777&clothingColor=db2777'
+SET "avatar" = 'https://api.dicebear.com/7.x/notionists-neutral/svg?seed=Hana&backgroundColor=be185d&glassesProbability=60&lips=variant02,variant03'
 WHERE "role" = 'CLO';
 
--- 3. Also update founder name if needed
+-- 3. Update founder name to ممدوح
 UPDATE "founders"
 SET "full_name" = 'ممدوح'
-WHERE "full_name" = 'المؤسس';
+WHERE "full_name" = 'المؤسس' OR "full_name" = 'أحمد';
 
 COMMIT;
 
