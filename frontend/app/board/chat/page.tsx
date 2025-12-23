@@ -6,6 +6,7 @@ import {
   getBoardMembers,
   startConversation,
   sendMessage,
+  continueDiscussion,
   BoardMember,
   BoardMessage,
   BoardMemberResponse,
@@ -23,10 +24,12 @@ interface Message {
     name: string;
     nameAr: string;
     role: string;
+    avatar?: string;
   };
   ceoMode?: CEOMode;
   tokensUsed?: number;
   timestamp: Date;
+  round?: number; // جولة العصف الذهني
 }
 
 export default function BoardChat() {
@@ -39,6 +42,8 @@ export default function BoardChat() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [ceoMode, setCeoMode] = useState<CEOMode>('LEADER');
   const [features, setFeatures] = useState<string[]>([]);
+  const [enableBrainstorm, setEnableBrainstorm] = useState(false);
+  const [brainstormRounds, setBrainstormRounds] = useState(2);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const typeParam = searchParams.get('type') as ConversationType | null;
@@ -102,24 +107,59 @@ export default function BoardChat() {
         targetMemberIds: selectedMembers.length > 0 ? selectedMembers : undefined,
         ceoMode: selectedMembers.some(id => members.find(m => m.id === id)?.role === 'CEO') ? ceoMode : undefined,
         features,
+        enableBrainstorm,
+        brainstormRounds: enableBrainstorm ? brainstormRounds : undefined,
       });
 
-      // Add AI responses
-      const aiMessages: Message[] = result.responses.map((response: BoardMemberResponse) => ({
-        id: `${Date.now()}-${response.memberId}`,
-        type: 'assistant' as const,
-        content: response.content,
-        member: {
-          name: response.memberName,
-          nameAr: response.memberNameAr,
-          role: response.memberRole,
-        },
-        ceoMode: response.ceoMode,
-        tokensUsed: response.tokensUsed,
-        timestamp: new Date(),
-      }));
+      // Find member by ID to get avatar
+      const getMemberById = (memberId: string) => members.find(m => m.id === memberId);
+
+      // Add first round responses
+      const aiMessages: Message[] = result.responses.map((response: BoardMemberResponse) => {
+        const member = getMemberById(response.memberId);
+        return {
+          id: `${Date.now()}-${response.memberId}`,
+          type: 'assistant' as const,
+          content: response.content,
+          member: {
+            name: response.memberName,
+            nameAr: response.memberNameAr,
+            role: response.memberRole,
+            avatar: member?.avatar,
+          },
+          ceoMode: response.ceoMode,
+          tokensUsed: response.tokensUsed,
+          timestamp: new Date(),
+          round: 1,
+        };
+      });
 
       setMessages((prev) => [...prev, ...aiMessages]);
+
+      // Add brainstorm round responses if any
+      if (result.brainstormRounds && result.brainstormRounds.length > 1) {
+        for (const round of result.brainstormRounds.slice(1)) {
+          const roundMessages: Message[] = round.responses.map((response: BoardMemberResponse) => {
+            const member = getMemberById(response.memberId);
+            return {
+              id: `${Date.now()}-${response.memberId}-r${round.round}`,
+              type: 'assistant' as const,
+              content: response.content,
+              member: {
+                name: response.memberName,
+                nameAr: response.memberNameAr,
+                role: response.memberRole,
+                avatar: member?.avatar,
+              },
+              ceoMode: response.ceoMode,
+              tokensUsed: response.tokensUsed,
+              timestamp: new Date(),
+              round: round.round,
+            };
+          });
+          setMessages((prev) => [...prev, ...roundMessages]);
+        }
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       // Add error message
@@ -167,6 +207,44 @@ export default function BoardChat() {
     { id: 'pre-mortem', name: 'تحليل ما قبل الفشل', icon: '⚠️' },
     { id: 'board-challenges-founder', name: 'تحدي المؤسس', icon: '🎯' },
   ];
+
+  // Continue discussion handler
+  const handleContinueDiscussion = async () => {
+    if (!conversationId || loading) return;
+
+    setLoading(true);
+    try {
+      const result = await continueDiscussion(conversationId, {
+        prompt: 'استمروا في النقاش وتفاعلوا مع آراء بعضكم.',
+      });
+
+      const getMemberById = (memberId: string) => members.find(m => m.id === memberId);
+
+      const newMessages: Message[] = result.responses.map((response: BoardMemberResponse) => {
+        const member = getMemberById(response.memberId);
+        return {
+          id: `${Date.now()}-${response.memberId}-cont`,
+          type: 'assistant' as const,
+          content: response.content,
+          member: {
+            name: response.memberName,
+            nameAr: response.memberNameAr,
+            role: response.memberRole,
+            avatar: member?.avatar,
+          },
+          ceoMode: response.ceoMode,
+          tokensUsed: response.tokensUsed,
+          timestamp: new Date(),
+        };
+      });
+
+      setMessages((prev) => [...prev, ...newMessages]);
+    } catch (error) {
+      console.error('Error continuing discussion:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex h-screen">
@@ -229,23 +307,36 @@ export default function BoardChat() {
               >
                 {message.member && (
                   <div className="flex items-center gap-2 mb-2">
-                    <div
-                      className={`w-8 h-8 rounded-lg bg-gradient-to-br ${
-                        roleColors[message.member.role] || 'from-gray-500 to-gray-600'
-                      } flex items-center justify-center`}
-                    >
-                      <span className="text-sm font-bold text-white">
-                        {message.member.nameAr.charAt(0)}
-                      </span>
-                    </div>
+                    {message.member.avatar ? (
+                      <img
+                        src={message.member.avatar}
+                        alt={message.member.nameAr}
+                        className="w-10 h-10 rounded-xl object-cover"
+                      />
+                    ) : (
+                      <div
+                        className={`w-10 h-10 rounded-xl bg-gradient-to-br ${
+                          roleColors[message.member.role] || 'from-gray-500 to-gray-600'
+                        } flex items-center justify-center`}
+                      >
+                        <span className="text-sm font-bold text-white">
+                          {message.member.nameAr.charAt(0)}
+                        </span>
+                      </div>
+                    )}
                     <div>
                       <span className="font-semibold text-white">{message.member.nameAr}</span>
                       <span className="text-xs text-gray-400 mr-2">
                         {getRoleDisplayName(message.member.role as any)}
                       </span>
                       {message.ceoMode && (
-                        <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full">
+                        <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full mr-1">
                           {getCEOModeDisplayName(message.ceoMode)}
+                        </span>
+                      )}
+                      {message.round && message.round > 1 && (
+                        <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
+                          جولة {message.round}
                         </span>
                       )}
                     </div>
@@ -331,13 +422,21 @@ export default function BoardChat() {
                     : 'bg-gray-800/50 border border-gray-700/50 hover:border-gray-600'
                 }`}
               >
-                <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${
-                    roleColors[member.role]
-                  } flex items-center justify-center`}
-                >
-                  <span className="text-sm font-bold text-white">{member.nameAr.charAt(0)}</span>
-                </div>
+                {member.avatar ? (
+                  <img
+                    src={member.avatar}
+                    alt={member.nameAr}
+                    className="w-10 h-10 rounded-xl object-cover"
+                  />
+                ) : (
+                  <div
+                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${
+                      roleColors[member.role]
+                    } flex items-center justify-center`}
+                  >
+                    <span className="text-sm font-bold text-white">{member.nameAr.charAt(0)}</span>
+                  </div>
+                )}
                 <div className="flex-1 text-right">
                   <div className="font-medium text-white">{member.nameAr}</div>
                   <div className="text-xs text-gray-400">{getRoleDisplayName(member.role)}</div>
@@ -376,6 +475,67 @@ export default function BoardChat() {
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Brainstorm Mode */}
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-gray-400 mb-3">🧠 العصف الذهني</h3>
+          <button
+            onClick={() => setEnableBrainstorm(!enableBrainstorm)}
+            className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
+              enableBrainstorm
+                ? 'bg-blue-500/20 border border-blue-500/50'
+                : 'bg-gray-800/50 border border-gray-700/50 hover:border-gray-600'
+            }`}
+          >
+            <span className="text-2xl">💡</span>
+            <div className="flex-1 text-right">
+              <span className="text-white">تفعيل العصف الذهني</span>
+              <p className="text-xs text-gray-400">الأعضاء يتناقشون مع بعضهم</p>
+            </div>
+            {enableBrainstorm && (
+              <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            )}
+          </button>
+          {enableBrainstorm && (
+            <div className="mt-3 p-3 bg-gray-800/30 rounded-xl">
+              <label className="text-xs text-gray-400 block mb-2">عدد جولات النقاش:</label>
+              <div className="flex gap-2">
+                {[1, 2, 3].map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setBrainstormRounds(num)}
+                    className={`flex-1 py-2 rounded-lg text-sm transition-colors ${
+                      brainstormRounds === num
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Continue Discussion Button */}
+        {conversationId && messages.length > 0 && (
+          <div className="mb-6">
+            <button
+              onClick={handleContinueDiscussion}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 p-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 rounded-xl text-green-400 transition-all disabled:opacity-50"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span>استمرار النقاش</span>
+            </button>
+            <p className="text-xs text-gray-500 text-center mt-1">الأعضاء سيتفاعلون مع بعضهم</p>
           </div>
         )}
 

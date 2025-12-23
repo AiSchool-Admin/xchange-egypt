@@ -3,6 +3,8 @@
  * الرئيس التنفيذي - 3 أوضاع مختلفة
  */
 
+import { SHARED_CONTEXT } from './shared-context';
+
 export const CEO_BASE_PROMPT = `
 أنت كريم، الرئيس التنفيذي (CEO) لشركة Xchange Egypt.
 
@@ -94,6 +96,8 @@ export const CEO_VISIONARY_MODE = `${CEO_BASE_PROMPT}
 - "ماذا لو كان المستحيل ممكناً؟"
 - "ما الذي لم يجرؤ أحد على فعله؟"
 - أفكار جريئة بدون قيود
+
+${SHARED_CONTEXT}
 `;
 
 // Export all modes

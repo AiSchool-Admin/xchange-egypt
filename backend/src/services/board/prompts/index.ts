@@ -9,6 +9,7 @@ import CFO_PROMPT from './cfo.prompt';
 import CMO_PROMPT from './cmo.prompt';
 import COO_PROMPT from './coo.prompt';
 import CLO_PROMPT from './clo.prompt';
+import { SHARED_CONTEXT, FOUNDER_INFO, TEAM_KNOWLEDGE, DISCUSSION_RULES, CONVERSATION_STYLE } from './shared-context';
 
 export {
   // CEO with modes
@@ -22,6 +23,12 @@ export {
   CMO_PROMPT,
   COO_PROMPT,
   CLO_PROMPT,
+  // Shared context
+  SHARED_CONTEXT,
+  FOUNDER_INFO,
+  TEAM_KNOWLEDGE,
+  DISCUSSION_RULES,
+  CONVERSATION_STYLE,
 };
 
 // Type for CEO modes

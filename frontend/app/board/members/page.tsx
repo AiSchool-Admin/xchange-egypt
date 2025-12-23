@@ -81,9 +81,17 @@ export default function MembersPage() {
             <div className={`p-6 bg-gradient-to-br ${roleColors[member.role]} relative`}>
               <div className="absolute inset-0 bg-black/20"></div>
               <div className="relative flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <span className="text-3xl font-bold text-white">{member.nameAr.charAt(0)}</span>
-                </div>
+                {member.avatar ? (
+                  <img
+                    src={member.avatar}
+                    alt={member.nameAr}
+                    className="w-16 h-16 rounded-2xl object-cover border-2 border-white/30"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                    <span className="text-3xl font-bold text-white">{member.nameAr.charAt(0)}</span>
+                  </div>
+                )}
                 <div>
                   <h3 className="text-xl font-bold text-white">{member.nameAr}</h3>
                   <p className="text-white/80">{getRoleDisplayName(member.role)}</p>

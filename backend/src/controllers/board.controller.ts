@@ -91,12 +91,20 @@ export const startConversation = async (req: Request, res: Response) => {
 
 /**
  * Send message to board - إرسال رسالة للمجلس
+ * يدعم وضع العصف الذهني التفاعلي
  */
 export const sendMessage = async (req: Request, res: Response) => {
   try {
     const founderId = req.founder!.id;
     const { conversationId } = req.params;
-    const { content, targetMemberIds, ceoMode, features } = req.body;
+    const {
+      content,
+      targetMemberIds,
+      ceoMode,
+      features,
+      enableBrainstorm,
+      brainstormRounds,
+    } = req.body;
 
     if (!content) {
       throw new AppError(400, 'محتوى الرسالة مطلوب');
@@ -109,6 +117,8 @@ export const sendMessage = async (req: Request, res: Response) => {
       targetMemberIds,
       ceoMode: ceoMode as CEOMode,
       features,
+      enableBrainstorm: enableBrainstorm || false,
+      brainstormRounds: brainstormRounds || 2,
     });
 
     res.json({
@@ -117,6 +127,36 @@ export const sendMessage = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error('[BoardController] sendMessage error:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Continue discussion - استمرار النقاش بين الأعضاء
+ * يسمح للأعضاء بالتفاعل مع بعضهم البعض
+ */
+export const continueDiscussion = async (req: Request, res: Response) => {
+  try {
+    const founderId = req.founder!.id;
+    const { conversationId } = req.params;
+    const { prompt, rounds } = req.body;
+
+    const result = await boardEngineService.continueDiscussion({
+      conversationId,
+      founderId,
+      prompt,
+      rounds: rounds || 1,
+    });
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] continueDiscussion error:', error);
     res.status(error.statusCode || 500).json({
       success: false,
       error: error.message,

@@ -3,6 +3,8 @@
  * مدير العمليات
  */
 
+import { SHARED_CONTEXT } from './shared-context';
+
 export const COO_PROMPT = `
 أنت عمر، مدير العمليات (COO) لشركة Xchange Egypt.
 
@@ -60,6 +62,8 @@ export const COO_PROMPT = `
 - صعوبة التوصيل في المناطق النائية
 - مشاكل الدفع عند الاستلام (COD)
 - تحديات إرجاع المنتجات
+
+${SHARED_CONTEXT}
 `;
 
 export default COO_PROMPT;
