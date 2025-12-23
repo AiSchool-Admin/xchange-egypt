@@ -10,6 +10,22 @@ const FOUNDER_TOKEN_KEY = 'founder_access_token';
 const FOUNDER_REFRESH_TOKEN_KEY = 'founder_refresh_token';
 const FOUNDER_DATA_KEY = 'founder_data';
 
+// Helper to safely access localStorage (SSR-safe)
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem(key);
+  },
+  setItem: (key: string, value: string): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(key, value);
+  },
+  removeItem: (key: string): void => {
+    if (typeof window === 'undefined') return;
+    localStorage.removeItem(key);
+  },
+};
+
 export interface FounderData {
   id: string;
   email: string;
@@ -47,9 +63,9 @@ export async function loginFounder(email: string, password: string): Promise<Log
 
   // Store tokens and founder data
   if (data.success && data.data) {
-    localStorage.setItem(FOUNDER_TOKEN_KEY, data.data.accessToken);
-    localStorage.setItem(FOUNDER_REFRESH_TOKEN_KEY, data.data.refreshToken);
-    localStorage.setItem(FOUNDER_DATA_KEY, JSON.stringify(data.data.founder));
+    safeLocalStorage.setItem(FOUNDER_TOKEN_KEY, data.data.accessToken);
+    safeLocalStorage.setItem(FOUNDER_REFRESH_TOKEN_KEY, data.data.refreshToken);
+    safeLocalStorage.setItem(FOUNDER_DATA_KEY, JSON.stringify(data.data.founder));
   }
 
   return data;
@@ -59,7 +75,7 @@ export async function loginFounder(email: string, password: string): Promise<Log
  * Logout founder
  */
 export async function logoutFounder(): Promise<void> {
-  const refreshToken = localStorage.getItem(FOUNDER_REFRESH_TOKEN_KEY);
+  const refreshToken = safeLocalStorage.getItem(FOUNDER_REFRESH_TOKEN_KEY);
 
   try {
     await fetch(`${API_BASE}/founder/logout`, {
@@ -72,16 +88,16 @@ export async function logoutFounder(): Promise<void> {
   }
 
   // Clear stored data
-  localStorage.removeItem(FOUNDER_TOKEN_KEY);
-  localStorage.removeItem(FOUNDER_REFRESH_TOKEN_KEY);
-  localStorage.removeItem(FOUNDER_DATA_KEY);
+  safeLocalStorage.removeItem(FOUNDER_TOKEN_KEY);
+  safeLocalStorage.removeItem(FOUNDER_REFRESH_TOKEN_KEY);
+  safeLocalStorage.removeItem(FOUNDER_DATA_KEY);
 }
 
 /**
  * Refresh founder token
  */
 export async function refreshFounderToken(): Promise<boolean> {
-  const refreshToken = localStorage.getItem(FOUNDER_REFRESH_TOKEN_KEY);
+  const refreshToken = safeLocalStorage.getItem(FOUNDER_REFRESH_TOKEN_KEY);
 
   if (!refreshToken) return false;
 
@@ -95,8 +111,8 @@ export async function refreshFounderToken(): Promise<boolean> {
     const data = await res.json();
 
     if (res.ok && data.success) {
-      localStorage.setItem(FOUNDER_TOKEN_KEY, data.data.accessToken);
-      localStorage.setItem(FOUNDER_REFRESH_TOKEN_KEY, data.data.refreshToken);
+      safeLocalStorage.setItem(FOUNDER_TOKEN_KEY, data.data.accessToken);
+      safeLocalStorage.setItem(FOUNDER_REFRESH_TOKEN_KEY, data.data.refreshToken);
       return true;
     }
   } catch (e) {
@@ -104,9 +120,9 @@ export async function refreshFounderToken(): Promise<boolean> {
   }
 
   // Clear invalid tokens
-  localStorage.removeItem(FOUNDER_TOKEN_KEY);
-  localStorage.removeItem(FOUNDER_REFRESH_TOKEN_KEY);
-  localStorage.removeItem(FOUNDER_DATA_KEY);
+  safeLocalStorage.removeItem(FOUNDER_TOKEN_KEY);
+  safeLocalStorage.removeItem(FOUNDER_REFRESH_TOKEN_KEY);
+  safeLocalStorage.removeItem(FOUNDER_DATA_KEY);
 
   return false;
 }
@@ -115,21 +131,27 @@ export async function refreshFounderToken(): Promise<boolean> {
  * Get stored founder data
  */
 export function getFounderData(): FounderData | null {
-  const data = localStorage.getItem(FOUNDER_DATA_KEY);
-  return data ? JSON.parse(data) : null;
+  const data = safeLocalStorage.getItem(FOUNDER_DATA_KEY);
+  if (!data) return null;
+  try {
+    return JSON.parse(data);
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Get founder access token
  */
 export function getFounderToken(): string | null {
-  return localStorage.getItem(FOUNDER_TOKEN_KEY);
+  return safeLocalStorage.getItem(FOUNDER_TOKEN_KEY);
 }
 
 /**
  * Check if founder is authenticated
  */
 export function isFounderAuthenticated(): boolean {
+  if (typeof window === 'undefined') return false;
   return !!getFounderToken();
 }
 
@@ -222,7 +244,9 @@ export async function founderFetch(
         return founderFetch(endpoint, options);
       }
       // Redirect to login
-      window.location.href = '/founder/login';
+      if (typeof window !== 'undefined') {
+        window.location.href = '/founder/login';
+      }
     }
     throw new Error(data.message || data.error || 'حدث خطأ');
   }
