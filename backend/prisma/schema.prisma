@@ -8265,6 +8265,19 @@ model BoardMember {
   votes           BoardVote[]
   outputs         BoardOutput[]
 
+  // Governance Relations - علاقات الحوكمة
+  meetingAttendances    BoardMeetingAttendee[]
+  actionItemsAssigned   ActionItem[]            @relation("ActionItemAssignee")
+  actionItemsCreated    ActionItem[]            @relation("ActionItemAssigner")
+  kpisOwned             KPIMetric[]
+  alertsAssigned        BoardAlert[]            @relation("AlertAssignee")
+  alertsAcknowledged    BoardAlert[]            @relation("AlertAcknowledger")
+  alertsResolved        BoardAlert[]            @relation("AlertResolver")
+  spadeDecisionsMade    BoardDecisionSPADE[]    @relation("SPADEDecisionMaker")
+  spadeDecisionsInitiated BoardDecisionSPADE[]  @relation("SPADEInitiator")
+  spadeConsultations    BoardMemberOnSPADE[]    @relation("SPADEMemberConsultant")
+  alternativesProposed  SPADEAlternative[]      @relation("AlternativeProposer")
+
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
 
@@ -8297,6 +8310,9 @@ model BoardConversation {
   // Summary (generated at end)
   summary         String?                   @db.Text
   summaryAr       String?                   @db.Text @map("summary_ar")
+
+  // Linked Meeting - اجتماع مرتبط
+  linkedMeeting   BoardMeeting?             @relation("MeetingConversation")
 
   startedAt       DateTime                  @default(now()) @map("started_at")
   endedAt         DateTime?                 @map("ended_at")
@@ -8458,5 +8474,431 @@ model BoardOutput {
   @@map("board_outputs")
   @@index([taskId])
   @@index([generatedById])
+}
+
+// ============================================
+// BOARD GOVERNANCE SYSTEM - اجتماعات، KPIs، تنبيهات، SPADE
+// ============================================
+
+// Meeting Type - أنواع الاجتماعات
+enum BoardMeetingType {
+  STANDUP       // يومي - 15 دقيقة
+  WEEKLY        // أسبوعي - ساعة
+  MONTHLY       // شهري - نصف يوم
+  QUARTERLY     // ربع سنوي - يوم كامل
+  EMERGENCY     // طوارئ - فوري
+}
+
+// Meeting Status
+enum BoardMeetingStatus {
+  SCHEDULED     // مجدول
+  IN_PROGRESS   // جاري
+  COMPLETED     // مكتمل
+  CANCELLED     // ملغي
+}
+
+// Board Meeting - الاجتماعات
+model BoardMeeting {
+  id              String                  @id @default(uuid())
+  meetingNumber   String                  @unique @map("meeting_number")  // STD-2025-001
+  type            BoardMeetingType
+  status          BoardMeetingStatus      @default(SCHEDULED)
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String?                 @db.Text
+  descriptionAr   String?                 @db.Text @map("description_ar")
+
+  // Agenda - جدول الأعمال
+  agenda          Json?                   // قائمة بنود الأجندة
+  agendaTemplateId String?                @map("agenda_template_id")
+
+  // Time - Africa/Cairo timezone
+  scheduledAt     DateTime                @map("scheduled_at")
+  startedAt       DateTime?               @map("started_at")
+  endedAt         DateTime?               @map("ended_at")
+  duration        Int?                    // بالدقائق
+
+  // Participants - المشاركون
+  attendees       BoardMeetingAttendee[]
+
+  // Trigger - سبب الاجتماع (للطوارئ)
+  triggerAlertId  String?                 @unique @map("trigger_alert_id")
+  triggerAlert    BoardAlert?             @relation("MeetingTrigger", fields: [triggerAlertId], references: [id])
+
+  // Outcome - النتائج
+  summary         String?                 @db.Text
+  summaryAr       String?                 @db.Text @map("summary_ar")
+  actionItems     ActionItem[]
+  decisions       BoardDecisionSPADE[]    @relation("MeetingDecisions")
+
+  // Linked conversation
+  conversationId  String?                 @unique @map("conversation_id")
+  conversation    BoardConversation?      @relation("MeetingConversation", fields: [conversationId], references: [id])
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("board_meetings")
+  @@index([type])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+// Meeting Attendee - حضور الاجتماع
+model BoardMeetingAttendee {
+  id              String                  @id @default(uuid())
+  meetingId       String                  @map("meeting_id")
+  meeting         BoardMeeting            @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  memberId        String                  @map("member_id")
+  member          BoardMember             @relation(fields: [memberId], references: [id])
+
+  attended        Boolean                 @default(false)
+  joinedAt        DateTime?               @map("joined_at")
+  leftAt          DateTime?               @map("left_at")
+  notes           String?                 @db.Text
+
+  @@unique([meetingId, memberId])
+  @@map("board_meeting_attendees")
+  @@index([meetingId])
+  @@index([memberId])
+}
+
+// Action Item Status
+enum ActionItemStatus {
+  PENDING         // في الانتظار
+  IN_PROGRESS     // جاري التنفيذ
+  COMPLETED       // مكتمل
+  OVERDUE         // متأخر
+  CANCELLED       // ملغي
+}
+
+// Action Item Priority
+enum ActionItemPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Action Item - بنود العمل من الاجتماعات
+model ActionItem {
+  id              String                  @id @default(uuid())
+  itemNumber      String                  @unique @map("item_number")  // ACT-2025-001
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String?                 @db.Text
+  descriptionAr   String?                 @db.Text @map("description_ar")
+
+  status          ActionItemStatus        @default(PENDING)
+  priority        ActionItemPriority      @default(MEDIUM)
+
+  // Assignment - التكليف
+  assigneeId      String                  @map("assignee_id")
+  assignee        BoardMember             @relation("ActionItemAssignee", fields: [assigneeId], references: [id])
+  assignedById    String                  @map("assigned_by_id")
+  assignedBy      BoardMember             @relation("ActionItemAssigner", fields: [assignedById], references: [id])
+
+  // Source - المصدر
+  meetingId       String?                 @map("meeting_id")
+  meeting         BoardMeeting?           @relation(fields: [meetingId], references: [id])
+  decisionId      String?                 @map("decision_id")
+  decision        BoardDecisionSPADE?     @relation(fields: [decisionId], references: [id])
+
+  // Dates
+  dueDate         DateTime                @map("due_date")
+  completedAt     DateTime?               @map("completed_at")
+
+  // Progress
+  progress        Int                     @default(0)  // 0-100
+  notes           String?                 @db.Text
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("action_items")
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId])
+  @@index([dueDate])
+}
+
+// KPI Status - حالة المؤشر
+enum KPIStatus {
+  GREEN           // ممتاز - ضمن الهدف
+  YELLOW          // تحذير - قريب من الحد
+  RED             // خطر - تجاوز الحد
+}
+
+// KPI Category - فئة المؤشر
+enum KPICategory {
+  FINANCIAL       // مالي
+  OPERATIONAL     // تشغيلي
+  CUSTOMER        // عملاء
+  TECHNICAL       // تقني
+  GROWTH          // نمو
+  LEGAL           // قانوني
+}
+
+// KPI Metric - مؤشرات الأداء
+model KPIMetric {
+  id              String                  @id @default(uuid())
+  code            String                  @unique                 // GMV, CAC, NPS, etc.
+
+  name            String
+  nameAr          String                  @map("name_ar")
+  description     String?                 @db.Text
+  descriptionAr   String?                 @db.Text @map("description_ar")
+
+  category        KPICategory
+  unit            String?                                         // %, EGP, عدد, etc.
+
+  // Current Value - القيمة الحالية
+  currentValue    Float                   @map("current_value")
+  previousValue   Float?                  @map("previous_value")  // القيمة السابقة للمقارنة
+
+  // Thresholds - العتبات
+  targetValue     Float                   @map("target_value")    // الهدف
+  warningThreshold Float                  @map("warning_threshold")  // عتبة التحذير (YELLOW)
+  criticalThreshold Float                 @map("critical_threshold") // عتبة الخطر (RED)
+  thresholdDirection String               @default("above") @map("threshold_direction") // above = أعلى أفضل, below = أقل أفضل
+
+  // Status
+  status          KPIStatus               @default(GREEN)
+  trend           String?                 // up, down, stable
+  trendPercentage Float?                  @map("trend_percentage")
+
+  // Owner - المسؤول
+  ownerId         String                  @map("owner_id")
+  owner           BoardMember             @relation(fields: [ownerId], references: [id])
+
+  // History
+  history         KPIHistory[]
+  alerts          BoardAlert[]            @relation("KPIAlerts")
+
+  // Refresh
+  lastUpdatedAt   DateTime                @map("last_updated_at")
+  refreshInterval Int                     @default(86400) @map("refresh_interval") // بالثواني - افتراضي يوم
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("kpi_metrics")
+  @@index([category])
+  @@index([status])
+  @@index([ownerId])
+}
+
+// KPI History - سجل المؤشرات
+model KPIHistory {
+  id              String                  @id @default(uuid())
+  kpiId           String                  @map("kpi_id")
+  kpi             KPIMetric               @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+
+  value           Float
+  status          KPIStatus
+  recordedAt      DateTime                @default(now()) @map("recorded_at")
+
+  @@map("kpi_history")
+  @@index([kpiId])
+  @@index([recordedAt])
+}
+
+// Alert Severity - خطورة التنبيه
+enum AlertSeverity {
+  INFO            // معلومات
+  WARNING         // تحذير
+  CRITICAL        // حرج
+  EMERGENCY       // طوارئ
+}
+
+// Alert Status
+enum AlertStatus {
+  ACTIVE          // نشط
+  ACKNOWLEDGED    // تم الاستلام
+  RESOLVED        // تم الحل
+  DISMISSED       // تم التجاهل
+}
+
+// Board Alert - التنبيهات
+model BoardAlert {
+  id              String                  @id @default(uuid())
+  alertNumber     String                  @unique @map("alert_number")  // ALT-2025-001
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String                  @db.Text
+  descriptionAr   String                  @db.Text @map("description_ar")
+
+  severity        AlertSeverity
+  status          AlertStatus             @default(ACTIVE)
+
+  // Source - مصدر التنبيه
+  sourceType      String                  @map("source_type")     // KPI, SYSTEM, MANUAL
+  sourceId        String?                 @map("source_id")
+
+  // Linked KPI
+  kpiId           String?                 @map("kpi_id")
+  kpi             KPIMetric?              @relation("KPIAlerts", fields: [kpiId], references: [id])
+
+  // Triggered Meeting - اجتماع طوارئ
+  triggeredMeeting BoardMeeting?          @relation("MeetingTrigger")
+
+  // Assignment
+  assignedToId    String?                 @map("assigned_to_id")
+  assignedTo      BoardMember?            @relation("AlertAssignee", fields: [assignedToId], references: [id])
+
+  // Response
+  acknowledgedById String?                @map("acknowledged_by_id")
+  acknowledgedBy  BoardMember?            @relation("AlertAcknowledger", fields: [acknowledgedById], references: [id])
+  acknowledgedAt  DateTime?               @map("acknowledged_at")
+
+  resolvedById    String?                 @map("resolved_by_id")
+  resolvedBy      BoardMember?            @relation("AlertResolver", fields: [resolvedById], references: [id])
+  resolvedAt      DateTime?               @map("resolved_at")
+  resolution      String?                 @db.Text
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("board_alerts")
+  @@index([severity])
+  @@index([status])
+  @@index([kpiId])
+  @@index([createdAt])
+}
+
+// SPADE Role - أدوار إطار SPADE
+enum SPADERole {
+  SETTING         // S - تحديد السياق
+  PEOPLE          // P - تحديد المشاركين
+  ALTERNATIVES    // A - توليد البدائل
+  DECIDE          // D - اتخاذ القرار
+  EXPLAIN         // E - شرح القرار
+}
+
+// SPADE Status
+enum SPADEStatus {
+  INITIATED       // بدأ
+  SETTING_PHASE   // مرحلة تحديد السياق
+  PEOPLE_PHASE    // مرحلة تحديد المشاركين
+  ALTERNATIVES_PHASE // مرحلة البدائل
+  DECIDE_PHASE    // مرحلة القرار
+  EXPLAIN_PHASE   // مرحلة الشرح
+  COMPLETED       // مكتمل
+  CANCELLED       // ملغي
+}
+
+// Board Decision SPADE - قرارات بإطار SPADE
+model BoardDecisionSPADE {
+  id              String                  @id @default(uuid())
+  decisionNumber  String                  @unique @map("decision_number")  // DEC-2025-001
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String                  @db.Text
+  descriptionAr   String                  @db.Text @map("description_ar")
+
+  status          SPADEStatus             @default(INITIATED)
+  currentPhase    SPADERole               @default(SETTING) @map("current_phase")
+
+  // S - Setting (السياق)
+  context         String?                 @db.Text
+  contextAr       String?                 @db.Text @map("context_ar")
+  constraints     Json?                   // القيود
+  deadline        DateTime?               // موعد القرار
+
+  // P - People (المشاركين)
+  decisionMakerId String                  @map("decision_maker_id")  // صاحب القرار النهائي
+  decisionMaker   BoardMember             @relation("SPADEDecisionMaker", fields: [decisionMakerId], references: [id])
+  consultants     BoardMemberOnSPADE[]    @relation("SPADEConsultants")
+
+  // A - Alternatives (البدائل)
+  alternatives    SPADEAlternative[]
+
+  // D - Decide (القرار)
+  selectedAlternativeId String?           @map("selected_alternative_id")
+  selectedAlternative   SPADEAlternative? @relation("SelectedAlternative", fields: [selectedAlternativeId], references: [id])
+  decidedAt       DateTime?               @map("decided_at")
+
+  // E - Explain (الشرح)
+  explanation     String?                 @db.Text
+  explanationAr   String?                 @db.Text @map("explanation_ar")
+  communicationPlan String?               @db.Text @map("communication_plan")
+
+  // Action Items - بنود العمل
+  actionItems     ActionItem[]
+
+  // Meeting
+  meetingId       String?                 @map("meeting_id")
+  meeting         BoardMeeting?           @relation("MeetingDecisions", fields: [meetingId], references: [id])
+
+  // Metadata
+  initiatedById   String                  @map("initiated_by_id")
+  initiatedBy     BoardMember             @relation("SPADEInitiator", fields: [initiatedById], references: [id])
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("board_decisions_spade")
+  @@index([status])
+  @@index([currentPhase])
+  @@index([decisionMakerId])
+}
+
+// SPADE Consultant - مستشار في قرار SPADE
+model BoardMemberOnSPADE {
+  id              String                  @id @default(uuid())
+  decisionId      String                  @map("decision_id")
+  decision        BoardDecisionSPADE      @relation("SPADEConsultants", fields: [decisionId], references: [id], onDelete: Cascade)
+  memberId        String                  @map("member_id")
+  member          BoardMember             @relation("SPADEMemberConsultant", fields: [memberId], references: [id])
+
+  role            String?                 // Approver, Contributor, Informed
+  opinion         String?                 @db.Text
+  opinionAr       String?                 @db.Text @map("opinion_ar")
+  votedFor        String?                 @map("voted_for")       // ID of alternative they support
+
+  @@unique([decisionId, memberId])
+  @@map("board_member_on_spade")
+  @@index([decisionId])
+  @@index([memberId])
+}
+
+// SPADE Alternative - بديل في إطار SPADE
+model SPADEAlternative {
+  id              String                  @id @default(uuid())
+  decisionId      String                  @map("decision_id")
+  decision        BoardDecisionSPADE      @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String                  @db.Text
+  descriptionAr   String                  @db.Text @map("description_ar")
+
+  // Analysis
+  pros            Json?                   // المميزات
+  cons            Json?                   // العيوب
+  risks           Json?                   // المخاطر
+  cost            Float?                  // التكلفة التقديرية
+  timeEstimate    String?                 @map("time_estimate")   // الوقت المتوقع
+
+  // Scoring
+  score           Float?                  // النتيجة الإجمالية
+  votes           Int                     @default(0)
+
+  // Proposed by
+  proposedById    String                  @map("proposed_by_id")
+  proposedBy      BoardMember             @relation("AlternativeProposer", fields: [proposedById], references: [id])
+
+  // Selected
+  selectedIn      BoardDecisionSPADE[]    @relation("SelectedAlternative")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+
+  @@map("spade_alternatives")
+  @@index([decisionId])
+  @@index([proposedById])
 }
 
