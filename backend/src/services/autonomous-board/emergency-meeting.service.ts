@@ -496,8 +496,42 @@ export const endEmergencyMeeting = async (sessionId: string): Promise<EmergencyM
         },
       });
 
-      // Generate MOM
-      const mom = await generateMOM(meeting.id);
+      // Generate MOM with session data - map to expected interface
+      const discussionEntries = session.discussionLog.map((d) => ({
+        speaker: d.speakerName,
+        role: d.speaker,
+        content: d.message,
+        timestamp: d.timestamp,
+        phase: d.type,
+      }));
+
+      const decisionEntries = session.decisions.map((d) => ({
+        id: d.id,
+        title: d.title,
+        titleAr: d.titleAr,
+        type: d.executionPriority === 'IMMEDIATE' ? 'TYPE_1_STRATEGIC' as const : 'TYPE_2_OPERATIONAL' as const,
+        rationale: d.decision,
+        owner: d.proposedBy,
+        deadline: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+      }));
+
+      const actionEntries = session.actionItems.map((a) => ({
+        task: a.action,
+        taskAr: a.actionAr,
+        owner: a.assignedTo,
+        deadline: a.deadline,
+        priority: a.priority,
+      }));
+
+      const mom = await generateMOM(
+        meeting.id,
+        'EMERGENCY',
+        discussionEntries,
+        decisionEntries,
+        actionEntries,
+        [], // No innovation ideas in emergency meetings
+        [] // KPI highlights from intelligence
+      );
       session.momId = mom.id;
     }
   } catch (error) {

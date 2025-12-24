@@ -21,7 +21,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const anthropic = new Anthropic();
 
-type MeetingType = 'MORNING' | 'AFTERNOON';
+type MeetingType = 'MORNING' | 'AFTERNOON' | 'EMERGENCY';
 
 interface Decision {
   id: string;

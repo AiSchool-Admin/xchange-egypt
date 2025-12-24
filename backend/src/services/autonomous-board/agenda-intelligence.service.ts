@@ -509,7 +509,9 @@ export const generateMeetingAgenda = async (
   // Collect agenda items from all sources
   const systemItems = await getSystemAgendaItems();
   const intelligenceItems = await getIntelligenceAgendaItems();
-  const innovationItems = await getInnovationAgendaItems(meetingType);
+  const innovationItems = meetingType !== 'EMERGENCY'
+    ? await getInnovationAgendaItems(meetingType as 'MORNING' | 'AFTERNOON')
+    : [];
   const phaseItems = await getPhaseSpecificItems();
 
   // Combine all items

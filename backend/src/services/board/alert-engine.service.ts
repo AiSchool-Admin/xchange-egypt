@@ -8,7 +8,13 @@
  * - توجيه التنبيهات للمسؤولين
  */
 
-import { PrismaClient, AlertSeverity, AlertStatus, KPIStatus, BoardRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+// Local type definitions until Prisma client is regenerated
+type AlertSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'WARNING' | 'EMERGENCY';
+type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED' | 'DISMISSED';
+type KPIStatus = 'GREEN' | 'YELLOW' | 'RED' | 'GRAY';
+type BoardRole = 'CEO' | 'CTO' | 'CFO' | 'CMO' | 'COO' | 'CLO';
 import { meetingSchedulerService } from './meeting-scheduler.service';
 
 const prisma = new PrismaClient();

@@ -15,7 +15,12 @@
  * - تسجيل القرار النهائي
  */
 
-import { PrismaClient, SPADEStatus, SPADERole, BoardRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+// Local type definitions until Prisma client is regenerated
+type SPADEStatus = 'SETTING' | 'PEOPLE' | 'ALTERNATIVES' | 'DECIDE' | 'EXPLAIN' | 'DECIDED' | 'IMPLEMENTED';
+type SPADERole = 'APPROVER' | 'RESPONSIBLE' | 'CONSULTED' | 'INFORMED';
+type BoardRole = 'CEO' | 'CTO' | 'CFO' | 'CMO' | 'COO' | 'CLO';
 
 const prisma = new PrismaClient();
 
