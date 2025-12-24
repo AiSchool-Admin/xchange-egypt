@@ -51,3 +51,45 @@ export {
   getAvailableActions as getNadiaAvailableActions,
   NadiaActionStatus,
 } from './nadia-cto.service';
+
+// Youssef CMO - Marketing
+export {
+  generateDailyContentPackage,
+  generateCompetitorAnalysis,
+  generateWeeklyMarketingReport,
+  generateAdCopy,
+  getSeasonalCampaignSuggestions,
+  getDailyActivitySummary as getYoussefDailyActivity,
+  getAvailableActions as getYoussefAvailableActions,
+} from './youssef-cmo.service';
+
+// Omar COO - Operations
+export {
+  generateResponseTemplates,
+  generateSOP,
+  generateDailyOperationsReport,
+  analyzeShippingPerformance,
+  getDailyActivitySummary as getOmarDailyActivity,
+  getAvailableActions as getOmarAvailableActions,
+} from './omar-coo.service';
+
+// Laila CFO - Finance
+export {
+  generateDailyFinancialReport,
+  calculateRunway,
+  calculateUnitEconomics,
+  generateMonthlyAnalysis,
+  getDailyActivitySummary as getLailaDailyActivity,
+  getAvailableActions as getLailaAvailableActions,
+} from './laila-cfo.service';
+
+// Hana CLO - Legal
+export {
+  generateContractTemplate,
+  reviewAgreement,
+  generateComplianceReport,
+  generateRegulatoryWatch,
+  checkLicenseRenewals,
+  getDailyActivitySummary as getHanaDailyActivity,
+  getAvailableActions as getHanaAvailableActions,
+} from './hana-clo.service';
