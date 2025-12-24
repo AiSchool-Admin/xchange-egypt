@@ -9282,3 +9282,21 @@ model AutonomousMeetingSession {
   @@index([status])
 }
 
+
+// ============================================
+// System Settings - إعدادات النظام
+// ============================================
+model SystemSettings {
+  id              String                  @id @default(uuid())
+  key             String                  @unique
+  value           String
+  description     String?
+  descriptionAr   String?                 @map("description_ar")
+  category        String?                 @default("general")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+  @@index([category])
+}

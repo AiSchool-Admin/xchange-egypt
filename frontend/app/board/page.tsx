@@ -10,6 +10,7 @@ import {
   getAlertDashboard,
   getUpcomingMeetings,
   getDecisionDashboard,
+  getCompanyPhase,
   BoardMember,
   BoardConversation,
   ServiceStatus,
@@ -17,9 +18,12 @@ import {
   AlertDashboard,
   BoardMeeting,
   DecisionDashboard,
+  CompanyPhaseResponse,
   getRoleDisplayName,
   getAlertSeverityColor,
   getMeetingTypeDisplay,
+  getPhaseDisplayName,
+  getPhaseColor,
 } from '@/lib/api/board';
 
 export default function BoardDashboard() {
@@ -30,6 +34,7 @@ export default function BoardDashboard() {
   const [alertDashboard, setAlertDashboard] = useState<AlertDashboard | null>(null);
   const [upcomingMeetings, setUpcomingMeetings] = useState<BoardMeeting[]>([]);
   const [decisionDashboard, setDecisionDashboard] = useState<DecisionDashboard | null>(null);
+  const [companyPhase, setCompanyPhase] = useState<CompanyPhaseResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,6 +48,7 @@ export default function BoardDashboard() {
           alertData,
           meetingsData,
           decisionData,
+          phaseData,
         ] = await Promise.all([
           getBoardMembers(),
           getConversations(),
@@ -51,6 +57,7 @@ export default function BoardDashboard() {
           getAlertDashboard().catch(() => null),
           getUpcomingMeetings().catch(() => []),
           getDecisionDashboard().catch(() => null),
+          getCompanyPhase().catch(() => null),
         ]);
         setMembers(membersData);
         setConversations(conversationsData);
@@ -59,6 +66,7 @@ export default function BoardDashboard() {
         setAlertDashboard(alertData);
         setUpcomingMeetings(meetingsData);
         setDecisionDashboard(decisionData);
+        setCompanyPhase(phaseData);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -119,10 +127,41 @@ export default function BoardDashboard() {
 
   return (
     <div className="p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">مرحباً بك في مجلس الإدارة</h1>
-        <p className="text-gray-400">فريقك التنفيذي من الذكاء الاصطناعي جاهز لمساعدتك</p>
+      {/* Header with Company Phase */}
+      <div className="mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white mb-2">مرحباً بك في مجلس الإدارة</h1>
+          <p className="text-gray-400">فريقك التنفيذي من الذكاء الاصطناعي جاهز لمساعدتك</p>
+        </div>
+
+        {/* Company Phase Badge */}
+        {companyPhase && (
+          <Link
+            href="/board/settings"
+            className="group flex items-center gap-3 p-4 bg-gray-800/50 rounded-2xl border border-gray-700/50 hover:border-gray-600 transition-all"
+          >
+            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getPhaseColor(companyPhase.currentPhase)} flex items-center justify-center`}>
+              <span className="text-2xl">
+                {companyPhase.currentPhase === 'MVP' ? '🚀' :
+                 companyPhase.currentPhase === 'PRODUCT_MARKET_FIT' ? '🎯' :
+                 companyPhase.currentPhase === 'GROWTH' ? '📈' :
+                 companyPhase.currentPhase === 'SCALE' ? '🏢' : '👑'}
+              </span>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">مرحلة الشركة</p>
+              <p className="font-semibold text-white">{getPhaseDisplayName(companyPhase.currentPhase)}</p>
+              {companyPhase.config?.primaryGoalAr && (
+                <p className="text-xs text-gray-500 mt-0.5 max-w-[200px] truncate">
+                  {companyPhase.config.primaryGoalAr}
+                </p>
+              )}
+            </div>
+            <svg className="w-5 h-5 text-gray-500 group-hover:text-gray-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        )}
       </div>
 
       {/* Status Bar */}

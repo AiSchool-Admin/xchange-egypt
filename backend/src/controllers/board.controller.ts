@@ -1377,3 +1377,87 @@ export const getAutonomousDashboard = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// ============================================
+// Company Phase - مرحلة الشركة
+// ============================================
+
+import {
+  CompanyPhase,
+  COMPANY_PHASES_CONFIG,
+  getPhaseConfig,
+} from '../config/board/company-phases.config';
+
+/**
+ * Get current company phase
+ */
+export const getCompanyPhase = async (req: Request, res: Response) => {
+  try {
+    // Try to get from database first
+    const settings = await prisma.systemSettings.findFirst({
+      where: { key: 'company_phase' },
+    });
+
+    const currentPhase = (settings?.value as CompanyPhase) || CompanyPhase.MVP;
+    const phaseConfig = getPhaseConfig(currentPhase);
+
+    res.json({
+      success: true,
+      data: {
+        currentPhase,
+        config: phaseConfig,
+        allPhases: COMPANY_PHASES_CONFIG.map((p) => ({
+          phase: p.phase,
+          name: p.name,
+          nameAr: p.nameAr,
+          description: p.description,
+          descriptionAr: p.descriptionAr,
+        })),
+      },
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] getCompanyPhase error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * Update company phase (founder only)
+ */
+export const updateCompanyPhase = async (req: Request, res: Response) => {
+  try {
+    const { phase } = req.body;
+
+    // Validate phase
+    const validPhases = Object.values(CompanyPhase);
+    if (!validPhases.includes(phase)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid phase. Valid phases: ${validPhases.join(', ')}`,
+      });
+    }
+
+    // Upsert system setting
+    await prisma.systemSettings.upsert({
+      where: { key: 'company_phase' },
+      update: { value: phase, updatedAt: new Date() },
+      create: { key: 'company_phase', value: phase },
+    });
+
+    const phaseConfig = getPhaseConfig(phase);
+
+    logger.info(`[BoardController] Company phase updated to: ${phase}`);
+
+    res.json({
+      success: true,
+      data: {
+        currentPhase: phase,
+        config: phaseConfig,
+      },
+      message: `تم تحديث مرحلة الشركة إلى: ${phaseConfig?.nameAr || phase}`,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] updateCompanyPhase error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

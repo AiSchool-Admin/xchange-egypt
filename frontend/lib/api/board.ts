@@ -662,3 +662,70 @@ export const getMeetingTypeDisplay = (type: MeetingType): string => {
   };
   return names[type] || type;
 };
+
+// ============================================
+// Company Phase - مرحلة الشركة
+// ============================================
+
+export type CompanyPhase = 'MVP' | 'PRODUCT_MARKET_FIT' | 'GROWTH' | 'SCALE' | 'MATURITY';
+
+export interface PhaseConfig {
+  phase: CompanyPhase;
+  name: string;
+  nameAr: string;
+  description: string;
+  descriptionAr: string;
+  duration?: string;
+  primaryGoal?: string;
+  primaryGoalAr?: string;
+  riskTolerance?: 'HIGH' | 'MEDIUM' | 'LOW';
+  innovationMode?: 'EXPERIMENTAL' | 'BALANCED' | 'CONSERVATIVE';
+  founderInvolvement?: 'MINIMAL' | 'MODERATE' | 'HIGH';
+}
+
+export interface CompanyPhaseResponse {
+  currentPhase: CompanyPhase;
+  config: PhaseConfig;
+  allPhases: Array<{
+    phase: CompanyPhase;
+    name: string;
+    nameAr: string;
+    description: string;
+    descriptionAr: string;
+  }>;
+}
+
+export const getCompanyPhase = async (): Promise<CompanyPhaseResponse> => {
+  const response = await founderFetch('/board/phase');
+  return response.data;
+};
+
+export const updateCompanyPhase = async (phase: CompanyPhase): Promise<{ currentPhase: CompanyPhase; config: PhaseConfig }> => {
+  const response = await founderFetch('/board/phase', {
+    method: 'PUT',
+    body: JSON.stringify({ phase }),
+  });
+  return response.data;
+};
+
+export const getPhaseDisplayName = (phase: CompanyPhase): string => {
+  const names: Record<CompanyPhase, string> = {
+    MVP: 'تطوير MVP',
+    PRODUCT_MARKET_FIT: 'توافق السوق',
+    GROWTH: 'النمو',
+    SCALE: 'التوسع',
+    MATURITY: 'النضج',
+  };
+  return names[phase] || phase;
+};
+
+export const getPhaseColor = (phase: CompanyPhase): string => {
+  const colors: Record<CompanyPhase, string> = {
+    MVP: 'from-blue-500 to-cyan-500',
+    PRODUCT_MARKET_FIT: 'from-purple-500 to-pink-500',
+    GROWTH: 'from-green-500 to-emerald-500',
+    SCALE: 'from-orange-500 to-yellow-500',
+    MATURITY: 'from-gray-500 to-gray-600',
+  };
+  return colors[phase] || 'from-gray-500 to-gray-600';
+};

@@ -158,4 +158,10 @@ router.put('/autonomous/competitors/:competitorId', authenticateFounder, boardCo
 router.get('/autonomous/closing-reports', authenticateFounder, boardController.getDailyClosingReports);
 router.get('/autonomous/closing-reports/:reportId', authenticateFounder, boardController.getDailyClosingReport);
 
+// ============================================
+// Company Phase Routes - مسارات مرحلة الشركة
+// ============================================
+router.get('/phase', authenticateFounder, boardController.getCompanyPhase);
+router.put('/phase', authenticateFounder, boardController.updateCompanyPhase);
+
 export default router;
