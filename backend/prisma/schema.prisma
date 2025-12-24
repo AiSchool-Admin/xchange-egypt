@@ -8278,6 +8278,10 @@ model BoardMember {
   spadeConsultations    BoardMemberOnSPADE[]    @relation("SPADEMemberConsultant")
   alternativesProposed  SPADEAlternative[]      @relation("AlternativeProposer")
 
+  // Autonomous Board Relations - علاقات المجلس الذاتي
+  ideasProposed         InnovationIdea[]        @relation("IdeaProposer")
+  ideasOwned            InnovationIdea[]        @relation("IdeaOwner")
+
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
 
@@ -8535,6 +8539,11 @@ model BoardMeeting {
   // Linked conversation
   conversationId  String?                 @unique @map("conversation_id")
   conversation    BoardConversation?      @relation("MeetingConversation", fields: [conversationId], references: [id])
+
+  // Autonomous Board Relations
+  intelligence    MorningIntelligence?    @relation("IntelligenceMeeting")
+  meetingMinutes  MeetingMinutes?         @relation("MeetingMOM")
+  autonomousSession AutonomousMeetingSession? @relation("AutonomousSession")
 
   createdAt       DateTime                @default(now()) @map("created_at")
   updatedAt       DateTime                @updatedAt @map("updated_at")
@@ -8900,5 +8909,376 @@ model SPADEAlternative {
   @@map("spade_alternatives")
   @@index([decisionId])
   @@index([proposedById])
+}
+
+// ============================================
+// 🤖 AUTONOMOUS AI BOARD SYSTEM - نظام المجلس الذاتي
+// ============================================
+
+// Enums for Autonomous Board
+enum MOMApprovalStatus {
+  PENDING
+  APPROVED
+  PARTIALLY_APPROVED
+  REJECTED
+  DISCUSSION_REQUESTED
+}
+
+enum IntelligenceSignalType {
+  OPPORTUNITY
+  THREAT
+  ANOMALY
+  TREND
+  URGENT
+}
+
+enum IdeaStatus {
+  PROPOSED
+  UNDER_REVIEW
+  APPROVED
+  IN_PROGRESS
+  IMPLEMENTED
+  REJECTED
+  DEFERRED
+}
+
+enum ThreatLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ScanType {
+  MARKET
+  REGULATORY
+  TECHNOLOGY
+  ECONOMIC
+  CONSUMER
+  COMPETITIVE
+}
+
+enum DecisionType {
+  TYPE_1_STRATEGIC   // Requires founder approval
+  TYPE_2_OPERATIONAL // Auto-executes after 4 hours
+}
+
+// ============================================
+// Morning Intelligence - الاستخبارات الصباحية
+// ============================================
+model MorningIntelligence {
+  id              String                  @id @default(uuid())
+  reportNumber    String                  @unique @map("report_number") // INT-2025-001
+  date            DateTime                @default(now())
+
+  // KPI Snapshot - لقطة المؤشرات
+  kpiSnapshot     Json                    @map("kpi_snapshot")     // { code: value, status, change% }
+
+  // Anomalies - الانحرافات
+  anomalies       Json?                   // [{ kpi, deviation%, severity, explanation }]
+
+  // Signals - الإشارات
+  opportunities   Json?                   // [{ title, description, priority, source }]
+  threats         Json?                   // [{ title, description, severity, source }]
+  internalIssues  Json?                   @map("internal_issues") // [{ title, description, department }]
+
+  // Generated Agenda - جدول الأعمال المقترح
+  suggestedAgenda Json?                   @map("suggested_agenda") // [{ topic, priority, estimatedTime }]
+
+  // AI Analysis - تحليل الذكاء الاصطناعي
+  executiveSummary    String?             @db.Text @map("executive_summary")
+  executiveSummaryAr  String?             @db.Text @map("executive_summary_ar")
+  keyInsights         Json?               @map("key_insights")
+  recommendedActions  Json?               @map("recommended_actions")
+
+  // Status
+  processedAt     DateTime?               @map("processed_at")
+  ceoReviewedAt   DateTime?               @map("ceo_reviewed_at")
+
+  // Link to meeting
+  meetingId       String?                 @unique @map("meeting_id")
+  meeting         BoardMeeting?           @relation("IntelligenceMeeting", fields: [meetingId], references: [id])
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("morning_intelligence")
+  @@index([date])
+}
+
+// ============================================
+// Environment Scan - المسح البيئي الخارجي
+// ============================================
+model EnvironmentScan {
+  id              String                  @id @default(uuid())
+  scanNumber      String                  @unique @map("scan_number") // SCAN-2025-W05-SUN
+  weekNumber      Int                     @map("week_number")
+  dayOfWeek       String                  @map("day_of_week")      // SUN or WED
+  date            DateTime                @default(now())
+
+  // Market Intelligence - ذكاء السوق
+  marketTrends    Json?                   @map("market_trends")    // [{ trend, impact, source }]
+  competitorMoves Json?                   @map("competitor_moves") // [{ competitor, move, threat_level }]
+
+  // Regulatory Monitoring - المراقبة التنظيمية
+  regulatoryChanges Json?                 @map("regulatory_changes") // [{ change, impact, deadline }]
+
+  // Technology Trends - اتجاهات التكنولوجيا
+  techTrends      Json?                   @map("tech_trends")      // [{ trend, relevance, adoption_timeline }]
+
+  // Economic Indicators - المؤشرات الاقتصادية
+  economicIndicators Json?                @map("economic_indicators") // { exchangeRate, inflation, marketSentiment }
+
+  // Consumer Behavior - سلوك المستهلك
+  consumerInsights Json?                  @map("consumer_insights") // [{ insight, source, actionable }]
+
+  // SWOT Update - تحديث SWOT
+  swotAnalysis    Json?                   @map("swot_analysis")    // { strengths, weaknesses, opportunities, threats }
+
+  // Strategic Recommendations
+  strategicRecommendations Json?          @map("strategic_recommendations")
+  urgentActions   Json?                   @map("urgent_actions")
+
+  // Scan Metadata
+  sourcesUsed     Json?                   @map("sources_used")     // [{ source, reliability }]
+  confidenceLevel Float?                  @map("confidence_level") // 0-100%
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("environment_scans")
+  @@index([date])
+  @@index([weekNumber])
+}
+
+// ============================================
+// Meeting Minutes (MOM) - محاضر الاجتماعات
+// ============================================
+model MeetingMinutes {
+  id              String                  @id @default(uuid())
+  momNumber       String                  @unique @map("mom_number") // MOM-2025-001-AM
+  meetingType     String                  @map("meeting_type")     // MORNING or AFTERNOON
+  date            DateTime                @default(now())
+
+  // Link to BoardMeeting
+  meetingId       String                  @unique @map("meeting_id")
+  meeting         BoardMeeting            @relation("MeetingMOM", fields: [meetingId], references: [id])
+
+  // Situation Summary - ملخص الوضع
+  situationSummary    String?             @db.Text @map("situation_summary")
+  situationSummaryAr  String?             @db.Text @map("situation_summary_ar")
+  kpiHighlights       Json?               @map("kpi_highlights")   // [{ code, status, flag }]
+
+  // Signals Discussed - الإشارات المناقشة
+  signalsDiscussed    Json?               @map("signals_discussed") // [{ type, title, discussion, resolution }]
+
+  // Discussion Log - سجل النقاش
+  discussionLog       Json?               @map("discussion_log")   // [{ speaker, role, content, timestamp }]
+
+  // Decisions Made - القرارات المتخذة
+  decisions           Json?               // [{ id, type, title, rationale, owner, deadline, votes }]
+
+  // Action Items - بنود العمل
+  actionItemsSummary  Json?               @map("action_items_summary") // [{ id, task, owner, deadline, priority }]
+
+  // Innovation Section - قسم الابتكار
+  innovationScore     Int?                @map("innovation_score") @default(0) // 1-10
+  ideasGenerated      Int?                @map("ideas_generated") @default(0)
+
+  // Approval Workflow - سير الموافقة
+  approvalStatus      MOMApprovalStatus   @default(PENDING) @map("approval_status")
+  approvalDeadline    DateTime?           @map("approval_deadline") // 4-hour SLA for Type 2
+  approvedAt          DateTime?           @map("approved_at")
+  approvedById        String?             @map("approved_by_id")
+  approvalNotes       String?             @db.Text @map("approval_notes")
+
+  // Auto-execution for Type 2 decisions
+  autoExecutedAt      DateTime?           @map("auto_executed_at")
+
+  // Notifications sent
+  remindersSent       Int                 @default(0) @map("reminders_sent")
+  lastReminderAt      DateTime?           @map("last_reminder_at")
+
+  // Related Ideas
+  ideas               InnovationIdea[]    @relation("MOMIdeas")
+
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  @@map("meeting_minutes")
+  @@index([date])
+  @@index([approvalStatus])
+}
+
+// ============================================
+// Innovation Ideas - أفكار الابتكار
+// ============================================
+model InnovationIdea {
+  id              String                  @id @default(uuid())
+  ideaNumber      String                  @unique @map("idea_number") // IDEA-2025-034
+
+  // Idea Details
+  title           String
+  titleAr         String?                 @map("title_ar")
+  description     String                  @db.Text
+  descriptionAr   String?                 @db.Text @map("description_ar")
+
+  // Source - from which meeting/technique
+  sourceType      String                  @map("source_type")      // 10X_THINKING, CROSS_POLLINATION, CUSTOMER_OBSESSION, etc.
+  momId           String?                 @map("mom_id")
+  mom             MeetingMinutes?         @relation("MOMIdeas", fields: [momId], references: [id])
+
+  // Proposer
+  proposedById    String                  @map("proposed_by_id")
+  proposedBy      BoardMember             @relation("IdeaProposer", fields: [proposedById], references: [id])
+
+  // Scoring
+  feasibilityScore    Int?                @map("feasibility_score")  // 1-10
+  innovationScore     Int?                @map("innovation_score")   // 1-10
+  impactScore         Int?                @map("impact_score")       // 1-10
+  overallScore        Float?              @map("overall_score")
+
+  // Status
+  status          IdeaStatus              @default(PROPOSED)
+
+  // Implementation
+  ownerId         String?                 @map("owner_id")
+  owner           BoardMember?            @relation("IdeaOwner", fields: [ownerId], references: [id])
+  implementationPlan  String?             @db.Text @map("implementation_plan")
+  implementedAt   DateTime?               @map("implemented_at")
+
+  // Results (if implemented)
+  results         String?                 @db.Text
+  impactMeasured  Json?                   @map("impact_measured")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("innovation_ideas")
+  @@index([status])
+  @@index([proposedById])
+}
+
+// ============================================
+// Competitor Watch - مراقبة المنافسين
+// ============================================
+model CompetitorWatch {
+  id              String                  @id @default(uuid())
+
+  // Competitor Info
+  competitorName  String                  @map("competitor_name")  // OLX, Noon, Amazon, Jumia, Dubizzle
+  competitorType  String                  @map("competitor_type")  // DIRECT, INDIRECT, EMERGING
+
+  // Intelligence
+  lastActivity    String?                 @db.Text @map("last_activity")
+  activityDate    DateTime?               @map("activity_date")
+
+  // Threat Assessment
+  threatLevel     ThreatLevel             @default(MEDIUM) @map("threat_level")
+  marketShare     Float?                  @map("market_share")     // Estimated %
+
+  // Comparative Analysis
+  strengths       Json?                   // What they do better
+  weaknesses      Json?                   // What we do better
+  pricing         Json?                   // Pricing comparison
+  features        Json?                   // Feature comparison
+
+  // Strategic Response
+  recommendedResponse String?             @db.Text @map("recommended_response")
+  urgency         String?                 // LOW, MEDIUM, HIGH, IMMEDIATE
+
+  // Tracking
+  lastScannedAt   DateTime?               @map("last_scanned_at")
+  dataSource      String?                 @map("data_source")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("competitor_watch")
+  @@index([competitorName])
+  @@index([threatLevel])
+}
+
+// ============================================
+// Daily Closing Report - تقرير الإغلاق اليومي
+// ============================================
+model DailyClosingReport {
+  id              String                  @id @default(uuid())
+  reportNumber    String                  @unique @map("report_number") // CLO-2025-001
+  date            DateTime                @default(now())
+
+  // Summary
+  executiveSummary    String?             @db.Text @map("executive_summary")
+  executiveSummaryAr  String?             @db.Text @map("executive_summary_ar")
+
+  // KPIs End of Day
+  kpiEndOfDay     Json?                   @map("kpi_end_of_day")
+  kpiChanges      Json?                   @map("kpi_changes")      // Changes from morning
+
+  // Meetings Summary
+  meetingsHeld    Int                     @default(0) @map("meetings_held")
+  decisionsCount  Int                     @default(0) @map("decisions_count")
+  actionItemsCreated Int                  @default(0) @map("action_items_created")
+  ideasGenerated  Int                     @default(0) @map("ideas_generated")
+
+  // Approval Status
+  pendingApprovals    Int                 @default(0) @map("pending_approvals")
+  approvedToday       Int                 @default(0) @map("approved_today")
+  autoExecuted        Int                 @default(0) @map("auto_executed")
+
+  // Tomorrow Preview
+  tomorrowAgenda  Json?                   @map("tomorrow_agenda")
+  tomorrowAlerts  Json?                   @map("tomorrow_alerts")
+
+  // Founder Interaction
+  founderInteractionMinutes Int?          @map("founder_interaction_minutes")
+  founderDecisions    Int?                @map("founder_decisions")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("daily_closing_reports")
+  @@index([date])
+}
+
+// ============================================
+// Autonomous Meeting Session - جلسة الاجتماع الذاتي
+// ============================================
+model AutonomousMeetingSession {
+  id              String                  @id @default(uuid())
+  sessionNumber   String                  @unique @map("session_number") // SES-2025-001-AM
+
+  // Meeting Details
+  meetingId       String                  @unique @map("meeting_id")
+  meeting         BoardMeeting            @relation("AutonomousSession", fields: [meetingId], references: [id])
+
+  // Participants (AI Board Members)
+  participants    Json                    // [{ memberId, role, joinedAt, leftAt }]
+
+  // Discussion Phases
+  currentPhase    String?                 @map("current_phase")    // OPENING, SITUATION, SIGNALS, DECISIONS, INNOVATION, CLOSING
+  phaseHistory    Json?                   @map("phase_history")    // [{ phase, startedAt, endedAt, summary }]
+
+  // AI Interactions
+  messageCount    Int                     @default(0) @map("message_count")
+  totalTokensUsed Int                     @default(0) @map("total_tokens_used")
+
+  // Innovation Techniques Used
+  techniquesUsed  Json?                   @map("techniques_used")  // [{ technique, result }]
+
+  // Role Rotation
+  currentRoles    Json?                   @map("current_roles")    // { dreamer, devilsAdvocate, realist, oracle }
+
+  // Status
+  status          String                  @default("IN_PROGRESS")
+  startedAt       DateTime                @default(now()) @map("started_at")
+  endedAt         DateTime?               @map("ended_at")
+  duration        Int?                    // in minutes
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("autonomous_meeting_sessions")
+  @@index([status])
 }
 
