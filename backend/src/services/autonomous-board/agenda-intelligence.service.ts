@@ -146,8 +146,8 @@ const getSystemAgendaItems = async (): Promise<AgendaItem[]> => {
   const startOfDay = new Date(today.setHours(0, 0, 0, 0));
 
   // 1. Get critical KPI alerts
-  const criticalKPIs = await prisma.boardKPI.findMany({
-    where: { isActive: true, status: 'RED' },
+  const criticalKPIs = await prisma.kPIMetric.findMany({
+    where: { status: 'RED' },
   });
 
   for (const kpi of criticalKPIs) {
@@ -198,8 +198,8 @@ const getSystemAgendaItems = async (): Promise<AgendaItem[]> => {
   }
 
   // 3. Get pending SPADE decisions
-  const pendingDecisions = await prisma.sPADEDecision.findMany({
-    where: { status: { in: ['SETTING', 'PEOPLE', 'ALTERNATIVES'] } },
+  const pendingDecisions = await prisma.boardDecisionSPADE.findMany({
+    where: { status: { in: ['INITIATED', 'SETTING_PHASE', 'PEOPLE_PHASE', 'ALTERNATIVES_PHASE'] } },
     orderBy: { createdAt: 'asc' },
     take: 3,
   });
@@ -225,7 +225,7 @@ const getSystemAgendaItems = async (): Promise<AgendaItem[]> => {
   }
 
   // 4. Get overdue action items
-  const overdueItems = await prisma.boardActionItem.findMany({
+  const overdueItems = await prisma.actionItem.findMany({
     where: {
       dueDate: { lt: new Date() },
       status: { not: 'COMPLETED' },
@@ -273,8 +273,8 @@ const getIntelligenceAgendaItems = async (): Promise<AgendaItem[]> => {
 
   if (!intelligence) return items;
 
-  // Parse agenda suggestions from intelligence
-  const agendaSuggestions = intelligence.agendaSuggestions as { items?: Array<{ title: string; priority: string; type: string }> } | null;
+  // Parse agenda suggestions from intelligence (stored in recommendations field)
+  const agendaSuggestions = (intelligence as any).recommendations as { items?: Array<{ title: string; priority: string; type: string }> } | null;
   if (agendaSuggestions?.items) {
     for (const suggestion of agendaSuggestions.items) {
       items.push({

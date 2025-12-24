@@ -77,9 +77,7 @@ const getKPIChanges = async (): Promise<KPIChange[]> => {
   });
 
   // Get current KPI values
-  const currentKPIs = await prisma.boardKPI.findMany({
-    where: { isActive: true },
-  });
+  const currentKPIs = await prisma.kPIMetric.findMany({});
 
   const changes: KPIChange[] = [];
 
@@ -129,28 +127,28 @@ const getDaySummary = async (): Promise<DaySummary> => {
   // Count meetings held today
   const meetingsHeld = await prisma.boardMeeting.count({
     where: {
-      actualStartTime: dateFilter,
+      startedAt: dateFilter,
       status: { in: ['IN_PROGRESS', 'COMPLETED'] },
     },
   });
 
   // Count decisions made today
-  const decisionsCount = await prisma.sPADEDecision.count({
+  const decisionsCount = await prisma.boardDecisionSPADE.count({
     where: {
       updatedAt: dateFilter,
-      status: 'DECIDED',
+      status: 'COMPLETED',
     },
   });
 
   // Count action items created today
-  const actionItemsCreated = await prisma.boardActionItem.count({
+  const actionItemsCreated = await prisma.actionItem.count({
     where: {
       createdAt: dateFilter,
     },
   });
 
   // Count action items completed today
-  const actionItemsCompleted = await prisma.boardActionItem.count({
+  const actionItemsCompleted = await prisma.actionItem.count({
     where: {
       completedAt: dateFilter,
     },
@@ -212,30 +210,30 @@ const generateTomorrowAgenda = async (): Promise<{ item: string; priority: strin
   // Add scheduled meetings
   const scheduledMeetings = await prisma.boardMeeting.findMany({
     where: {
-      scheduledTime: {
+      scheduledAt: {
         gte: tomorrow,
         lte: tomorrowEnd,
       },
       status: 'SCHEDULED',
     },
-    orderBy: { scheduledTime: 'asc' },
+    orderBy: { scheduledAt: 'asc' },
   });
 
   for (const meeting of scheduledMeetings) {
-    const time = meeting.scheduledTime.toLocaleTimeString('en-US', {
+    const time = meeting.scheduledAt.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
     });
     agenda.push({
-      item: `${meeting.meetingType} Meeting: ${meeting.title}`,
-      priority: meeting.meetingType === 'EMERGENCY' ? 'HIGH' : 'NORMAL',
+      item: `${meeting.type} Meeting: ${meeting.title}`,
+      priority: meeting.type === 'EMERGENCY' ? 'HIGH' : 'NORMAL',
       time,
     });
   }
 
   // Add overdue action items
-  const overdueItems = await prisma.boardActionItem.count({
+  const overdueItems = await prisma.actionItem.count({
     where: {
       dueDate: { lt: new Date() },
       status: { not: 'COMPLETED' },
@@ -250,9 +248,9 @@ const generateTomorrowAgenda = async (): Promise<{ item: string; priority: strin
   }
 
   // Add pending decisions requiring review
-  const pendingDecisions = await prisma.sPADEDecision.count({
+  const pendingDecisions = await prisma.boardDecisionSPADE.count({
     where: {
-      status: { in: ['SETTING', 'ALTERNATIVES', 'PEOPLE'] },
+      status: { in: ['INITIATED', 'SETTING_PHASE', 'ALTERNATIVES_PHASE', 'PEOPLE_PHASE'] },
     },
   });
 
@@ -292,9 +290,8 @@ const generateTomorrowAlerts = async (): Promise<{ alert: string; severity: stri
   const alerts: { alert: string; severity: string }[] = [];
 
   // Check for KPIs in critical state
-  const criticalKPIs = await prisma.boardKPI.findMany({
+  const criticalKPIs = await prisma.kPIMetric.findMany({
     where: {
-      isActive: true,
       status: 'RED',
     },
   });
@@ -408,10 +405,10 @@ const calculateFounderInteraction = async (): Promise<{ minutes: number; decisio
   const estimatedMinutes = totalMessages * 2;
 
   // Count founder decisions today
-  const founderDecisions = await prisma.sPADEDecision.count({
+  const founderDecisions = await prisma.boardDecisionSPADE.count({
     where: {
       decidedAt: { gte: startOfDay },
-      status: 'DECIDED',
+      status: 'COMPLETED',
     },
   });
 
@@ -449,9 +446,7 @@ export const generateDailyClosingReport = async () => {
   const founderInteraction = await calculateFounderInteraction();
 
   // 8. Get current KPI values
-  const currentKPIs = await prisma.boardKPI.findMany({
-    where: { isActive: true },
-  });
+  const currentKPIs = await prisma.kPIMetric.findMany({});
 
   const kpiEndOfDay = currentKPIs.reduce(
     (acc, kpi) => {

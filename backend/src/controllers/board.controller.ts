@@ -1080,7 +1080,7 @@ export const getMeetingMinutes = async (req: Request, res: Response) => {
       orderBy: { date: 'desc' },
       take: limit,
       include: {
-        meeting: { select: { title: true, meetingType: true } },
+        meeting: { select: { title: true, type: true } },
       },
     });
 
@@ -1099,7 +1099,6 @@ export const getMeetingMinutesById = async (req: Request, res: Response) => {
       where: { id: momId },
       include: {
         meeting: true,
-        approvedBy: { select: { name: true, role: true } },
       },
     });
 
@@ -1145,7 +1144,7 @@ export const getPendingMOMs = async (req: Request, res: Response) => {
       where: { approvalStatus: 'PENDING' },
       orderBy: { date: 'desc' },
       include: {
-        meeting: { select: { title: true, meetingType: true } },
+        meeting: { select: { title: true, type: true } },
       },
     });
 
@@ -1328,7 +1327,7 @@ export const getAutonomousDashboard = async (req: Request, res: Response) => {
     // Get today's meetings
     const todayMeetings = await prisma.boardMeeting.count({
       where: {
-        scheduledTime: { gte: startOfDay },
+        scheduledAt: { gte: startOfDay },
         status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
       },
     });

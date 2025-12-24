@@ -136,11 +136,12 @@ export const requestEmergencyMeeting = async (
   // Create database record
   await prisma.boardMeeting.create({
     data: {
+      meetingNumber: `EMR-${Date.now()}`,
       title: `[EMERGENCY] ${request.topic}`,
       titleAr: `[طوارئ] ${request.topicAr}`,
-      meetingType: 'EMERGENCY',
+      type: 'EMERGENCY',
       status: 'SCHEDULED',
-      scheduledTime: new Date(),
+      scheduledAt: new Date(),
       duration: request.expectedDuration || 30,
       agenda: {
         type: request.type,
@@ -451,8 +452,9 @@ export const createEmergencyAction = async (
   });
 
   // Create in database
-  await prisma.boardActionItem.create({
+  await prisma.actionItem.create({
     data: {
+      itemNumber: `EACT-${Date.now()}`,
       title: action.action,
       titleAr: action.actionAr,
       status: 'PENDING',
@@ -490,9 +492,9 @@ export const endEmergencyMeeting = async (sessionId: string): Promise<EmergencyM
         where: { id: meeting.id },
         data: {
           status: 'COMPLETED',
-          actualStartTime: session.startedAt,
-          actualEndTime: session.endedAt,
-          notes: JSON.stringify(session.discussionLog),
+          startedAt: session.startedAt,
+          endedAt: session.endedAt,
+          summary: JSON.stringify(session.discussionLog),
         },
       });
 

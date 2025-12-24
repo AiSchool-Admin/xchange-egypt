@@ -157,8 +157,9 @@ export const createTaskFromDecision = async (
   }
 
   // Save to database
-  await prisma.boardActionItem.create({
+  await prisma.actionItem.create({
     data: {
+      itemNumber: task.id,
       title: task.title,
       titleAr: task.titleAr,
       description: task.description,
