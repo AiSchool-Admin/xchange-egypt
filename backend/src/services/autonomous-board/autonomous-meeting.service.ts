@@ -431,7 +431,11 @@ export const runAutonomousMeeting = async (type: MeetingType) => {
 
   // Opening
   phaseHistory.push({ phase: 'OPENING', startedAt: new Date() });
-  const openingEntries = await runOpeningPhase(meeting.id, intelligence);
+  const openingEntries = await runOpeningPhase(meeting.id, intelligence ? {
+    executiveSummary: intelligence.executiveSummary,
+    kpiSnapshot: intelligence.kpiSnapshot as object,
+    anomalies: intelligence.anomalies as object,
+  } : null);
   discussionLog.push(...openingEntries);
   phaseHistory[phaseHistory.length - 1].endedAt = new Date();
 

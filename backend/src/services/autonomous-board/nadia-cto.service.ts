@@ -156,18 +156,25 @@ export const createTaskFromDecision = async (
     await generateImplementationPlan(task.id);
   }
 
-  // Save to database
-  await prisma.actionItem.create({
-    data: {
-      itemNumber: task.id,
-      title: task.title,
-      titleAr: task.titleAr,
-      description: task.description,
-      status: 'PENDING',
-      priority: actionConfig.riskLevel === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
-      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-    },
-  });
+  // Save to database - get CTO as assignee and CEO as assigner
+  const cto = await prisma.boardMember.findFirst({ where: { role: 'CTO', status: 'ACTIVE' } });
+  const ceo = await prisma.boardMember.findFirst({ where: { role: 'CEO', status: 'ACTIVE' } });
+
+  if (cto && ceo) {
+    await prisma.actionItem.create({
+      data: {
+        itemNumber: task.id,
+        title: task.title,
+        titleAr: task.titleAr,
+        description: task.description,
+        status: 'PENDING',
+        priority: actionConfig.riskLevel === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
+        dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        assigneeId: cto.id,
+        assignedById: ceo.id,
+      },
+    });
+  }
 
   return task;
 };

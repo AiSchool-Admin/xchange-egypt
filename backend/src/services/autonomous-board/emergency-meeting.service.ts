@@ -451,17 +451,24 @@ export const createEmergencyAction = async (
     type: 'ACTION',
   });
 
-  // Create in database
-  await prisma.actionItem.create({
-    data: {
-      itemNumber: `EACT-${Date.now()}`,
-      title: action.action,
-      titleAr: action.actionAr,
-      status: 'PENDING',
-      priority: action.priority,
-      dueDate: action.deadline,
-    },
-  });
+  // Create in database - get CEO as default assignee/assigner
+  const ceo = await prisma.boardMember.findFirst({ where: { role: 'CEO', status: 'ACTIVE' } });
+  const assignee = await prisma.boardMember.findFirst({ where: { role: action.assignedTo, status: 'ACTIVE' } });
+
+  if (ceo && assignee) {
+    await prisma.actionItem.create({
+      data: {
+        itemNumber: `EACT-${Date.now()}`,
+        title: action.action,
+        titleAr: action.actionAr,
+        status: 'PENDING',
+        priority: action.priority,
+        dueDate: action.deadline,
+        assigneeId: assignee.id,
+        assignedById: ceo.id,
+      },
+    });
+  }
 
   logger.info(`[EmergencyMeeting] Action created: ${action.action}`);
   return emergencyAction;

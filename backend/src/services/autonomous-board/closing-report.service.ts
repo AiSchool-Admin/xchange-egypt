@@ -90,8 +90,8 @@ const getKPIChanges = async (): Promise<KPIChange[]> => {
 
     let status: 'IMPROVED' | 'DECLINED' | 'STABLE' = 'STABLE';
     if (Math.abs(changePercent) > 1) {
-      // Determine if change is positive based on KPI direction
-      const isPositiveChange = kpi.direction === 'HIGHER_IS_BETTER' ? change > 0 : change < 0;
+      // Determine if change is positive based on KPI threshold direction
+      const isPositiveChange = kpi.thresholdDirection === 'above' ? change > 0 : change < 0;
       status = isPositiveChange ? 'IMPROVED' : 'DECLINED';
     }
 
