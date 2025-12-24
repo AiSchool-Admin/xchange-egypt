@@ -1,17 +1,46 @@
--- CreateEnum: Governance Enums
-CREATE TYPE "BoardMeetingType" AS ENUM ('STANDUP', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'EMERGENCY');
-CREATE TYPE "BoardMeetingStatus" AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
-CREATE TYPE "ActionItemStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE', 'CANCELLED');
-CREATE TYPE "ActionItemPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
-CREATE TYPE "KPIStatus" AS ENUM ('GREEN', 'YELLOW', 'RED');
-CREATE TYPE "KPICategory" AS ENUM ('FINANCIAL', 'OPERATIONAL', 'CUSTOMER', 'TECHNICAL', 'GROWTH', 'LEGAL');
-CREATE TYPE "AlertSeverity" AS ENUM ('INFO', 'WARNING', 'CRITICAL', 'EMERGENCY');
-CREATE TYPE "AlertStatus" AS ENUM ('ACTIVE', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED');
-CREATE TYPE "SPADERole" AS ENUM ('SETTING', 'PEOPLE', 'ALTERNATIVES', 'DECIDE', 'EXPLAIN');
-CREATE TYPE "SPADEStatus" AS ENUM ('INITIATED', 'SETTING_PHASE', 'PEOPLE_PHASE', 'ALTERNATIVES_PHASE', 'DECIDE_PHASE', 'EXPLAIN_PHASE', 'COMPLETED', 'CANCELLED');
+-- CreateEnum: Governance Enums (with IF NOT EXISTS logic)
+DO $$ BEGIN
+  CREATE TYPE "BoardMeetingType" AS ENUM ('STANDUP', 'WEEKLY', 'MONTHLY', 'QUARTERLY', 'EMERGENCY');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "BoardMeetingStatus" AS ENUM ('SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "ActionItemStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE', 'CANCELLED');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "ActionItemPriority" AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "KPIStatus" AS ENUM ('GREEN', 'YELLOW', 'RED');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "KPICategory" AS ENUM ('FINANCIAL', 'OPERATIONAL', 'CUSTOMER', 'TECHNICAL', 'GROWTH', 'LEGAL');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "AlertSeverity" AS ENUM ('INFO', 'WARNING', 'CRITICAL', 'EMERGENCY');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "AlertStatus" AS ENUM ('ACTIVE', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "SPADERole" AS ENUM ('SETTING', 'PEOPLE', 'ALTERNATIVES', 'DECIDE', 'EXPLAIN');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "SPADEStatus" AS ENUM ('INITIATED', 'SETTING_PHASE', 'PEOPLE_PHASE', 'ALTERNATIVES_PHASE', 'DECIDE_PHASE', 'EXPLAIN_PHASE', 'COMPLETED', 'CANCELLED');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- CreateTable: BoardMeeting
-CREATE TABLE "board_meetings" (
+CREATE TABLE IF NOT EXISTS "board_meetings" (
     "id" TEXT NOT NULL,
     "meeting_number" TEXT NOT NULL,
     "type" "BoardMeetingType" NOT NULL,
@@ -37,7 +66,7 @@ CREATE TABLE "board_meetings" (
 );
 
 -- CreateTable: BoardMeetingAttendee
-CREATE TABLE "board_meeting_attendees" (
+CREATE TABLE IF NOT EXISTS "board_meeting_attendees" (
     "id" TEXT NOT NULL,
     "meeting_id" TEXT NOT NULL,
     "member_id" TEXT NOT NULL,
@@ -50,7 +79,7 @@ CREATE TABLE "board_meeting_attendees" (
 );
 
 -- CreateTable: ActionItem
-CREATE TABLE "action_items" (
+CREATE TABLE IF NOT EXISTS "action_items" (
     "id" TEXT NOT NULL,
     "item_number" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -74,7 +103,7 @@ CREATE TABLE "action_items" (
 );
 
 -- CreateTable: KPIMetric
-CREATE TABLE "kpi_metrics" (
+CREATE TABLE IF NOT EXISTS "kpi_metrics" (
     "id" TEXT NOT NULL,
     "code" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -102,7 +131,7 @@ CREATE TABLE "kpi_metrics" (
 );
 
 -- CreateTable: KPIHistory
-CREATE TABLE "kpi_history" (
+CREATE TABLE IF NOT EXISTS "kpi_history" (
     "id" TEXT NOT NULL,
     "kpi_id" TEXT NOT NULL,
     "value" DOUBLE PRECISION NOT NULL,
@@ -113,7 +142,7 @@ CREATE TABLE "kpi_history" (
 );
 
 -- CreateTable: BoardAlert
-CREATE TABLE "board_alerts" (
+CREATE TABLE IF NOT EXISTS "board_alerts" (
     "id" TEXT NOT NULL,
     "alert_number" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -138,7 +167,7 @@ CREATE TABLE "board_alerts" (
 );
 
 -- CreateTable: BoardDecisionSPADE
-CREATE TABLE "board_decisions_spade" (
+CREATE TABLE IF NOT EXISTS "board_decisions_spade" (
     "id" TEXT NOT NULL,
     "decision_number" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -166,7 +195,7 @@ CREATE TABLE "board_decisions_spade" (
 );
 
 -- CreateTable: BoardMemberOnSPADE
-CREATE TABLE "board_member_on_spade" (
+CREATE TABLE IF NOT EXISTS "board_member_on_spade" (
     "id" TEXT NOT NULL,
     "decision_id" TEXT NOT NULL,
     "member_id" TEXT NOT NULL,
@@ -179,7 +208,7 @@ CREATE TABLE "board_member_on_spade" (
 );
 
 -- CreateTable: SPADEAlternative
-CREATE TABLE "spade_alternatives" (
+CREATE TABLE IF NOT EXISTS "spade_alternatives" (
     "id" TEXT NOT NULL,
     "decision_id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -199,78 +228,135 @@ CREATE TABLE "spade_alternatives" (
     CONSTRAINT "spade_alternatives_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "board_meetings_meeting_number_key" ON "board_meetings"("meeting_number");
-CREATE UNIQUE INDEX "board_meetings_trigger_alert_id_key" ON "board_meetings"("trigger_alert_id");
-CREATE UNIQUE INDEX "board_meetings_conversation_id_key" ON "board_meetings"("conversation_id");
-CREATE INDEX "board_meetings_type_idx" ON "board_meetings"("type");
-CREATE INDEX "board_meetings_status_idx" ON "board_meetings"("status");
-CREATE INDEX "board_meetings_scheduled_at_idx" ON "board_meetings"("scheduled_at");
+-- CreateIndex (IF NOT EXISTS)
+CREATE UNIQUE INDEX IF NOT EXISTS "board_meetings_meeting_number_key" ON "board_meetings"("meeting_number");
+CREATE UNIQUE INDEX IF NOT EXISTS "board_meetings_trigger_alert_id_key" ON "board_meetings"("trigger_alert_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "board_meetings_conversation_id_key" ON "board_meetings"("conversation_id");
+CREATE INDEX IF NOT EXISTS "board_meetings_type_idx" ON "board_meetings"("type");
+CREATE INDEX IF NOT EXISTS "board_meetings_status_idx" ON "board_meetings"("status");
+CREATE INDEX IF NOT EXISTS "board_meetings_scheduled_at_idx" ON "board_meetings"("scheduled_at");
 
-CREATE UNIQUE INDEX "board_meeting_attendees_meeting_id_member_id_key" ON "board_meeting_attendees"("meeting_id", "member_id");
-CREATE INDEX "board_meeting_attendees_meeting_id_idx" ON "board_meeting_attendees"("meeting_id");
-CREATE INDEX "board_meeting_attendees_member_id_idx" ON "board_meeting_attendees"("member_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "board_meeting_attendees_meeting_id_member_id_key" ON "board_meeting_attendees"("meeting_id", "member_id");
+CREATE INDEX IF NOT EXISTS "board_meeting_attendees_meeting_id_idx" ON "board_meeting_attendees"("meeting_id");
+CREATE INDEX IF NOT EXISTS "board_meeting_attendees_member_id_idx" ON "board_meeting_attendees"("member_id");
 
-CREATE UNIQUE INDEX "action_items_item_number_key" ON "action_items"("item_number");
-CREATE INDEX "action_items_status_idx" ON "action_items"("status");
-CREATE INDEX "action_items_priority_idx" ON "action_items"("priority");
-CREATE INDEX "action_items_assignee_id_idx" ON "action_items"("assignee_id");
-CREATE INDEX "action_items_due_date_idx" ON "action_items"("due_date");
+CREATE UNIQUE INDEX IF NOT EXISTS "action_items_item_number_key" ON "action_items"("item_number");
+CREATE INDEX IF NOT EXISTS "action_items_status_idx" ON "action_items"("status");
+CREATE INDEX IF NOT EXISTS "action_items_priority_idx" ON "action_items"("priority");
+CREATE INDEX IF NOT EXISTS "action_items_assignee_id_idx" ON "action_items"("assignee_id");
+CREATE INDEX IF NOT EXISTS "action_items_due_date_idx" ON "action_items"("due_date");
 
-CREATE UNIQUE INDEX "kpi_metrics_code_key" ON "kpi_metrics"("code");
-CREATE INDEX "kpi_metrics_category_idx" ON "kpi_metrics"("category");
-CREATE INDEX "kpi_metrics_status_idx" ON "kpi_metrics"("status");
-CREATE INDEX "kpi_metrics_owner_id_idx" ON "kpi_metrics"("owner_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "kpi_metrics_code_key" ON "kpi_metrics"("code");
+CREATE INDEX IF NOT EXISTS "kpi_metrics_category_idx" ON "kpi_metrics"("category");
+CREATE INDEX IF NOT EXISTS "kpi_metrics_status_idx" ON "kpi_metrics"("status");
+CREATE INDEX IF NOT EXISTS "kpi_metrics_owner_id_idx" ON "kpi_metrics"("owner_id");
 
-CREATE INDEX "kpi_history_kpi_id_idx" ON "kpi_history"("kpi_id");
-CREATE INDEX "kpi_history_recorded_at_idx" ON "kpi_history"("recorded_at");
+CREATE INDEX IF NOT EXISTS "kpi_history_kpi_id_idx" ON "kpi_history"("kpi_id");
+CREATE INDEX IF NOT EXISTS "kpi_history_recorded_at_idx" ON "kpi_history"("recorded_at");
 
-CREATE UNIQUE INDEX "board_alerts_alert_number_key" ON "board_alerts"("alert_number");
-CREATE INDEX "board_alerts_severity_idx" ON "board_alerts"("severity");
-CREATE INDEX "board_alerts_status_idx" ON "board_alerts"("status");
-CREATE INDEX "board_alerts_kpi_id_idx" ON "board_alerts"("kpi_id");
-CREATE INDEX "board_alerts_created_at_idx" ON "board_alerts"("created_at");
+CREATE UNIQUE INDEX IF NOT EXISTS "board_alerts_alert_number_key" ON "board_alerts"("alert_number");
+CREATE INDEX IF NOT EXISTS "board_alerts_severity_idx" ON "board_alerts"("severity");
+CREATE INDEX IF NOT EXISTS "board_alerts_status_idx" ON "board_alerts"("status");
+CREATE INDEX IF NOT EXISTS "board_alerts_kpi_id_idx" ON "board_alerts"("kpi_id");
+CREATE INDEX IF NOT EXISTS "board_alerts_created_at_idx" ON "board_alerts"("created_at");
 
-CREATE UNIQUE INDEX "board_decisions_spade_decision_number_key" ON "board_decisions_spade"("decision_number");
-CREATE INDEX "board_decisions_spade_status_idx" ON "board_decisions_spade"("status");
-CREATE INDEX "board_decisions_spade_current_phase_idx" ON "board_decisions_spade"("current_phase");
-CREATE INDEX "board_decisions_spade_decision_maker_id_idx" ON "board_decisions_spade"("decision_maker_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "board_decisions_spade_decision_number_key" ON "board_decisions_spade"("decision_number");
+CREATE INDEX IF NOT EXISTS "board_decisions_spade_status_idx" ON "board_decisions_spade"("status");
+CREATE INDEX IF NOT EXISTS "board_decisions_spade_current_phase_idx" ON "board_decisions_spade"("current_phase");
+CREATE INDEX IF NOT EXISTS "board_decisions_spade_decision_maker_id_idx" ON "board_decisions_spade"("decision_maker_id");
 
-CREATE UNIQUE INDEX "board_member_on_spade_decision_id_member_id_key" ON "board_member_on_spade"("decision_id", "member_id");
-CREATE INDEX "board_member_on_spade_decision_id_idx" ON "board_member_on_spade"("decision_id");
-CREATE INDEX "board_member_on_spade_member_id_idx" ON "board_member_on_spade"("member_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "board_member_on_spade_decision_id_member_id_key" ON "board_member_on_spade"("decision_id", "member_id");
+CREATE INDEX IF NOT EXISTS "board_member_on_spade_decision_id_idx" ON "board_member_on_spade"("decision_id");
+CREATE INDEX IF NOT EXISTS "board_member_on_spade_member_id_idx" ON "board_member_on_spade"("member_id");
 
-CREATE INDEX "spade_alternatives_decision_id_idx" ON "spade_alternatives"("decision_id");
-CREATE INDEX "spade_alternatives_proposed_by_id_idx" ON "spade_alternatives"("proposed_by_id");
+CREATE INDEX IF NOT EXISTS "spade_alternatives_decision_id_idx" ON "spade_alternatives"("decision_id");
+CREATE INDEX IF NOT EXISTS "spade_alternatives_proposed_by_id_idx" ON "spade_alternatives"("proposed_by_id");
 
--- AddForeignKey
-ALTER TABLE "board_meetings" ADD CONSTRAINT "board_meetings_trigger_alert_id_fkey" FOREIGN KEY ("trigger_alert_id") REFERENCES "board_alerts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "board_meetings" ADD CONSTRAINT "board_meetings_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "board_conversations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey (with duplicate handling)
+DO $$ BEGIN
+  ALTER TABLE "board_meetings" ADD CONSTRAINT "board_meetings_trigger_alert_id_fkey" FOREIGN KEY ("trigger_alert_id") REFERENCES "board_alerts"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "board_meeting_attendees" ADD CONSTRAINT "board_meeting_attendees_meeting_id_fkey" FOREIGN KEY ("meeting_id") REFERENCES "board_meetings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "board_meeting_attendees" ADD CONSTRAINT "board_meeting_attendees_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "board_meetings" ADD CONSTRAINT "board_meetings_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "board_conversations"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "action_items" ADD CONSTRAINT "action_items_assignee_id_fkey" FOREIGN KEY ("assignee_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "action_items" ADD CONSTRAINT "action_items_assigned_by_id_fkey" FOREIGN KEY ("assigned_by_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "action_items" ADD CONSTRAINT "action_items_meeting_id_fkey" FOREIGN KEY ("meeting_id") REFERENCES "board_meetings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "action_items" ADD CONSTRAINT "action_items_decision_id_fkey" FOREIGN KEY ("decision_id") REFERENCES "board_decisions_spade"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "board_meeting_attendees" ADD CONSTRAINT "board_meeting_attendees_meeting_id_fkey" FOREIGN KEY ("meeting_id") REFERENCES "board_meetings"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "kpi_metrics" ADD CONSTRAINT "kpi_metrics_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "board_meeting_attendees" ADD CONSTRAINT "board_meeting_attendees_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "kpi_history" ADD CONSTRAINT "kpi_history_kpi_id_fkey" FOREIGN KEY ("kpi_id") REFERENCES "kpi_metrics"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "action_items" ADD CONSTRAINT "action_items_assignee_id_fkey" FOREIGN KEY ("assignee_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "board_alerts" ADD CONSTRAINT "board_alerts_kpi_id_fkey" FOREIGN KEY ("kpi_id") REFERENCES "kpi_metrics"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "board_alerts" ADD CONSTRAINT "board_alerts_assigned_to_id_fkey" FOREIGN KEY ("assigned_to_id") REFERENCES "board_members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "board_alerts" ADD CONSTRAINT "board_alerts_acknowledged_by_id_fkey" FOREIGN KEY ("acknowledged_by_id") REFERENCES "board_members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "board_alerts" ADD CONSTRAINT "board_alerts_resolved_by_id_fkey" FOREIGN KEY ("resolved_by_id") REFERENCES "board_members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "action_items" ADD CONSTRAINT "action_items_assigned_by_id_fkey" FOREIGN KEY ("assigned_by_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "board_decisions_spade" ADD CONSTRAINT "board_decisions_spade_decision_maker_id_fkey" FOREIGN KEY ("decision_maker_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "board_decisions_spade" ADD CONSTRAINT "board_decisions_spade_selected_alternative_id_fkey" FOREIGN KEY ("selected_alternative_id") REFERENCES "spade_alternatives"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "board_decisions_spade" ADD CONSTRAINT "board_decisions_spade_meeting_id_fkey" FOREIGN KEY ("meeting_id") REFERENCES "board_meetings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "board_decisions_spade" ADD CONSTRAINT "board_decisions_spade_initiated_by_id_fkey" FOREIGN KEY ("initiated_by_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "action_items" ADD CONSTRAINT "action_items_meeting_id_fkey" FOREIGN KEY ("meeting_id") REFERENCES "board_meetings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "board_member_on_spade" ADD CONSTRAINT "board_member_on_spade_decision_id_fkey" FOREIGN KEY ("decision_id") REFERENCES "board_decisions_spade"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "board_member_on_spade" ADD CONSTRAINT "board_member_on_spade_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "action_items" ADD CONSTRAINT "action_items_decision_id_fkey" FOREIGN KEY ("decision_id") REFERENCES "board_decisions_spade"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-ALTER TABLE "spade_alternatives" ADD CONSTRAINT "spade_alternatives_decision_id_fkey" FOREIGN KEY ("decision_id") REFERENCES "board_decisions_spade"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "spade_alternatives" ADD CONSTRAINT "spade_alternatives_proposed_by_id_fkey" FOREIGN KEY ("proposed_by_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "kpi_metrics" ADD CONSTRAINT "kpi_metrics_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "kpi_history" ADD CONSTRAINT "kpi_history_kpi_id_fkey" FOREIGN KEY ("kpi_id") REFERENCES "kpi_metrics"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_alerts" ADD CONSTRAINT "board_alerts_kpi_id_fkey" FOREIGN KEY ("kpi_id") REFERENCES "kpi_metrics"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_alerts" ADD CONSTRAINT "board_alerts_assigned_to_id_fkey" FOREIGN KEY ("assigned_to_id") REFERENCES "board_members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_alerts" ADD CONSTRAINT "board_alerts_acknowledged_by_id_fkey" FOREIGN KEY ("acknowledged_by_id") REFERENCES "board_members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_alerts" ADD CONSTRAINT "board_alerts_resolved_by_id_fkey" FOREIGN KEY ("resolved_by_id") REFERENCES "board_members"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_decisions_spade" ADD CONSTRAINT "board_decisions_spade_decision_maker_id_fkey" FOREIGN KEY ("decision_maker_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_decisions_spade" ADD CONSTRAINT "board_decisions_spade_selected_alternative_id_fkey" FOREIGN KEY ("selected_alternative_id") REFERENCES "spade_alternatives"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_decisions_spade" ADD CONSTRAINT "board_decisions_spade_meeting_id_fkey" FOREIGN KEY ("meeting_id") REFERENCES "board_meetings"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_decisions_spade" ADD CONSTRAINT "board_decisions_spade_initiated_by_id_fkey" FOREIGN KEY ("initiated_by_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_member_on_spade" ADD CONSTRAINT "board_member_on_spade_decision_id_fkey" FOREIGN KEY ("decision_id") REFERENCES "board_decisions_spade"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "board_member_on_spade" ADD CONSTRAINT "board_member_on_spade_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "spade_alternatives" ADD CONSTRAINT "spade_alternatives_decision_id_fkey" FOREIGN KEY ("decision_id") REFERENCES "board_decisions_spade"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "spade_alternatives" ADD CONSTRAINT "spade_alternatives_proposed_by_id_fkey" FOREIGN KEY ("proposed_by_id") REFERENCES "board_members"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
