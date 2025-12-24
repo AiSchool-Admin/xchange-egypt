@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS "morning_intelligence" (
     "recommended_actions" JSONB,
     "processed_at" TIMESTAMP(3),
     "ceo_reviewed_at" TIMESTAMP(3),
-    "meeting_id" TEXT,
+    "meeting_id" UUID,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS "meeting_minutes" (
     "mom_number" TEXT NOT NULL,
     "meeting_type" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "meeting_id" TEXT NOT NULL,
+    "meeting_id" UUID NOT NULL,
     "situation_summary" TEXT,
     "situation_summary_ar" TEXT,
     "kpi_highlights" JSONB,
@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS "daily_closing_reports" (
 CREATE TABLE IF NOT EXISTS "autonomous_meeting_sessions" (
     "id" TEXT NOT NULL,
     "session_number" TEXT NOT NULL,
-    "meeting_id" TEXT NOT NULL,
+    "meeting_id" UUID NOT NULL,
     "participants" JSONB NOT NULL,
     "current_phase" TEXT,
     "phase_history" JSONB,
