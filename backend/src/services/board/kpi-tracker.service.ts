@@ -8,7 +8,11 @@
  * - حساب الاتجاهات
  */
 
-import { PrismaClient, KPIStatus, KPICategory } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+// Local type definitions matching Prisma schema exactly
+type KPIStatus = 'GREEN' | 'YELLOW' | 'RED';
+type KPICategory = 'FINANCIAL' | 'OPERATIONAL' | 'CUSTOMER' | 'TECHNICAL' | 'GROWTH' | 'LEGAL';
 
 const prisma = new PrismaClient();
 

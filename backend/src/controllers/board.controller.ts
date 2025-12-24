@@ -979,3 +979,401 @@ export const updateActionItemProgress = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+// ============================================
+// Autonomous Board Routes - المجلس الذاتي
+// ============================================
+
+// --- Morning Intelligence - الاستخبارات الصباحية ---
+
+export const getMorningIntelligence = async (req: Request, res: Response) => {
+  try {
+    const { date } = req.query;
+    const targetDate = date ? new Date(date as string) : new Date();
+
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const report = await prisma.morningIntelligence.findFirst({
+      where: {
+        date: { gte: startOfDay, lte: endOfDay },
+      },
+      orderBy: { date: 'desc' },
+    });
+
+    res.json({ success: true, data: report });
+  } catch (error: any) {
+    logger.error('[BoardController] getMorningIntelligence error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const getMorningIntelligenceHistory = async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 7;
+
+    const reports = await prisma.morningIntelligence.findMany({
+      orderBy: { date: 'desc' },
+      take: limit,
+    });
+
+    res.json({ success: true, data: reports });
+  } catch (error: any) {
+    logger.error('[BoardController] getMorningIntelligenceHistory error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// --- Environment Scans - المسح البيئي ---
+
+export const getEnvironmentScans = async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const scans = await prisma.environmentScan.findMany({
+      orderBy: { date: 'desc' },
+      take: limit,
+    });
+
+    res.json({ success: true, data: scans });
+  } catch (error: any) {
+    logger.error('[BoardController] getEnvironmentScans error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const getEnvironmentScan = async (req: Request, res: Response) => {
+  try {
+    const { scanId } = req.params;
+
+    const scan = await prisma.environmentScan.findUnique({
+      where: { id: scanId },
+    });
+
+    if (!scan) {
+      throw new AppError(404, 'Scan not found');
+    }
+
+    res.json({ success: true, data: scan });
+  } catch (error: any) {
+    logger.error('[BoardController] getEnvironmentScan error:', error);
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+// --- Meeting Minutes (MOM) - محاضر الاجتماعات ---
+
+export const getMeetingMinutes = async (req: Request, res: Response) => {
+  try {
+    const { status, limit: limitParam } = req.query;
+    const limit = parseInt(limitParam as string) || 20;
+
+    const where: Record<string, unknown> = {};
+    if (status) {
+      where.approvalStatus = status;
+    }
+
+    const minutes = await prisma.meetingMinutes.findMany({
+      where,
+      orderBy: { date: 'desc' },
+      take: limit,
+      include: {
+        meeting: { select: { title: true, type: true } },
+      },
+    });
+
+    res.json({ success: true, data: minutes });
+  } catch (error: any) {
+    logger.error('[BoardController] getMeetingMinutes error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const getMeetingMinutesById = async (req: Request, res: Response) => {
+  try {
+    const { momId } = req.params;
+
+    const mom = await prisma.meetingMinutes.findUnique({
+      where: { id: momId },
+      include: {
+        meeting: true,
+      },
+    });
+
+    if (!mom) {
+      throw new AppError(404, 'Meeting minutes not found');
+    }
+
+    res.json({ success: true, data: mom });
+  } catch (error: any) {
+    logger.error('[BoardController] getMeetingMinutesById error:', error);
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+export const approveMeetingMinutes = async (req: Request, res: Response) => {
+  try {
+    const { momId } = req.params;
+    const { status, notes } = req.body;
+
+    // Get CEO for approval
+    const ceo = await prisma.boardMember.findFirst({ where: { role: 'CEO' } });
+
+    const mom = await prisma.meetingMinutes.update({
+      where: { id: momId },
+      data: {
+        approvalStatus: status,
+        approvedById: ceo?.id,
+        approvedAt: new Date(),
+        approvalNotes: notes,
+      },
+    });
+
+    res.json({ success: true, data: mom });
+  } catch (error: any) {
+    logger.error('[BoardController] approveMeetingMinutes error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const getPendingMOMs = async (req: Request, res: Response) => {
+  try {
+    const moms = await prisma.meetingMinutes.findMany({
+      where: { approvalStatus: 'PENDING' },
+      orderBy: { date: 'desc' },
+      include: {
+        meeting: { select: { title: true, type: true } },
+      },
+    });
+
+    res.json({ success: true, data: moms });
+  } catch (error: any) {
+    logger.error('[BoardController] getPendingMOMs error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// --- Innovation Ideas - أفكار الابتكار ---
+
+export const getInnovationIdeas = async (req: Request, res: Response) => {
+  try {
+    const { status, limit: limitParam } = req.query;
+    const limit = parseInt(limitParam as string) || 20;
+
+    const where: Record<string, unknown> = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const ideas = await prisma.innovationIdea.findMany({
+      where,
+      orderBy: [{ overallScore: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+      include: {
+        proposedBy: { select: { name: true, role: true } },
+        owner: { select: { name: true, role: true } },
+      },
+    });
+
+    res.json({ success: true, data: ideas });
+  } catch (error: any) {
+    logger.error('[BoardController] getInnovationIdeas error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const getInnovationIdea = async (req: Request, res: Response) => {
+  try {
+    const { ideaId } = req.params;
+
+    const idea = await prisma.innovationIdea.findUnique({
+      where: { id: ideaId },
+      include: {
+        proposedBy: true,
+        owner: true,
+        mom: { select: { momNumber: true, date: true } },
+      },
+    });
+
+    if (!idea) {
+      throw new AppError(404, 'Idea not found');
+    }
+
+    res.json({ success: true, data: idea });
+  } catch (error: any) {
+    logger.error('[BoardController] getInnovationIdea error:', error);
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateIdeaStatus = async (req: Request, res: Response) => {
+  try {
+    const { ideaId } = req.params;
+    const { status, ownerId, implementationPlan } = req.body;
+
+    const idea = await prisma.innovationIdea.update({
+      where: { id: ideaId },
+      data: {
+        status,
+        ownerId,
+        implementationPlan,
+        implementedAt: status === 'IMPLEMENTED' ? new Date() : undefined,
+      },
+    });
+
+    res.json({ success: true, data: idea });
+  } catch (error: any) {
+    logger.error('[BoardController] updateIdeaStatus error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// --- Competitor Watch - مراقبة المنافسين ---
+
+export const getCompetitors = async (req: Request, res: Response) => {
+  try {
+    const competitors = await prisma.competitorWatch.findMany({
+      orderBy: [{ threatLevel: 'desc' }, { competitorName: 'asc' }],
+    });
+
+    res.json({ success: true, data: competitors });
+  } catch (error: any) {
+    logger.error('[BoardController] getCompetitors error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const updateCompetitor = async (req: Request, res: Response) => {
+  try {
+    const { competitorId } = req.params;
+    const { lastActivity, threatLevel, recommendedResponse, urgency } = req.body;
+
+    const competitor = await prisma.competitorWatch.update({
+      where: { id: competitorId },
+      data: {
+        lastActivity,
+        activityDate: new Date(),
+        threatLevel,
+        recommendedResponse,
+        urgency,
+      },
+    });
+
+    res.json({ success: true, data: competitor });
+  } catch (error: any) {
+    logger.error('[BoardController] updateCompetitor error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// --- Daily Closing Reports - تقارير الإغلاق اليومي ---
+
+export const getDailyClosingReports = async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 7;
+
+    const reports = await prisma.dailyClosingReport.findMany({
+      orderBy: { date: 'desc' },
+      take: limit,
+    });
+
+    res.json({ success: true, data: reports });
+  } catch (error: any) {
+    logger.error('[BoardController] getDailyClosingReports error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const getDailyClosingReport = async (req: Request, res: Response) => {
+  try {
+    const { reportId } = req.params;
+
+    const report = await prisma.dailyClosingReport.findUnique({
+      where: { id: reportId },
+    });
+
+    if (!report) {
+      throw new AppError(404, 'Report not found');
+    }
+
+    res.json({ success: true, data: report });
+  } catch (error: any) {
+    logger.error('[BoardController] getDailyClosingReport error:', error);
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
+// --- Autonomous Dashboard - لوحة المجلس الذاتي ---
+
+export const getAutonomousDashboard = async (req: Request, res: Response) => {
+  try {
+    const today = new Date();
+    const startOfDay = new Date(today);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    // Get today's morning intelligence
+    const morningIntel = await prisma.morningIntelligence.findFirst({
+      where: { date: { gte: startOfDay } },
+      orderBy: { date: 'desc' },
+    });
+
+    // Get pending MOMs
+    const pendingMOMs = await prisma.meetingMinutes.count({
+      where: { approvalStatus: 'PENDING' },
+    });
+
+    // Get today's meetings
+    const todayMeetings = await prisma.boardMeeting.count({
+      where: {
+        scheduledAt: { gte: startOfDay },
+        status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
+      },
+    });
+
+    // Get active alerts
+    const activeAlerts = await prisma.boardAlert.count({
+      where: { resolvedAt: null },
+    });
+
+    // Get latest environment scan
+    const latestScan = await prisma.environmentScan.findFirst({
+      orderBy: { date: 'desc' },
+    });
+
+    // Get innovation ideas count
+    const activeIdeas = await prisma.innovationIdea.count({
+      where: { status: { in: ['PROPOSED', 'UNDER_REVIEW', 'IN_PROGRESS'] } },
+    });
+
+    // Get high-threat competitors
+    const highThreatCompetitors = await prisma.competitorWatch.count({
+      where: { threatLevel: { in: ['HIGH', 'CRITICAL'] } },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        morningIntelligence: morningIntel,
+        stats: {
+          pendingMOMs,
+          todayMeetings,
+          activeAlerts,
+          activeIdeas,
+          highThreatCompetitors,
+        },
+        latestEnvironmentScan: latestScan
+          ? {
+              scanNumber: latestScan.scanNumber,
+              date: latestScan.date,
+              confidenceLevel: latestScan.confidenceLevel,
+            }
+          : null,
+      },
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] getAutonomousDashboard error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

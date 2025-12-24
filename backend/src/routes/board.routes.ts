@@ -124,4 +124,38 @@ router.post('/action-items', authenticateFounder, boardController.createActionIt
 router.put('/action-items/:itemId/status', authenticateFounder, boardController.updateActionItemStatus);
 router.put('/action-items/:itemId/progress', authenticateFounder, boardController.updateActionItemProgress);
 
+// ============================================
+// Autonomous Board Routes - المجلس الذاتي
+// ============================================
+
+// --- Autonomous Dashboard - لوحة المجلس الذاتي ---
+router.get('/autonomous/dashboard', authenticateFounder, boardController.getAutonomousDashboard);
+
+// --- Morning Intelligence - الاستخبارات الصباحية ---
+router.get('/autonomous/intelligence', authenticateFounder, boardController.getMorningIntelligence);
+router.get('/autonomous/intelligence/history', authenticateFounder, boardController.getMorningIntelligenceHistory);
+
+// --- Environment Scans - المسح البيئي ---
+router.get('/autonomous/scans', authenticateFounder, boardController.getEnvironmentScans);
+router.get('/autonomous/scans/:scanId', authenticateFounder, boardController.getEnvironmentScan);
+
+// --- Meeting Minutes (MOM) - محاضر الاجتماعات ---
+router.get('/autonomous/moms', authenticateFounder, boardController.getMeetingMinutes);
+router.get('/autonomous/moms/pending', authenticateFounder, boardController.getPendingMOMs);
+router.get('/autonomous/moms/:momId', authenticateFounder, boardController.getMeetingMinutesById);
+router.post('/autonomous/moms/:momId/approve', authenticateFounder, boardController.approveMeetingMinutes);
+
+// --- Innovation Ideas - أفكار الابتكار ---
+router.get('/autonomous/ideas', authenticateFounder, boardController.getInnovationIdeas);
+router.get('/autonomous/ideas/:ideaId', authenticateFounder, boardController.getInnovationIdea);
+router.put('/autonomous/ideas/:ideaId/status', authenticateFounder, boardController.updateIdeaStatus);
+
+// --- Competitor Watch - مراقبة المنافسين ---
+router.get('/autonomous/competitors', authenticateFounder, boardController.getCompetitors);
+router.put('/autonomous/competitors/:competitorId', authenticateFounder, boardController.updateCompetitor);
+
+// --- Daily Closing Reports - تقارير الإغلاق اليومي ---
+router.get('/autonomous/closing-reports', authenticateFounder, boardController.getDailyClosingReports);
+router.get('/autonomous/closing-reports/:reportId', authenticateFounder, boardController.getDailyClosingReport);
+
 export default router;

@@ -8,7 +8,12 @@
  * - إدارة قوالب الأجندات
  */
 
-import { PrismaClient, BoardMeetingType, BoardMeetingStatus, AlertSeverity } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+
+// Local type definitions matching Prisma schema exactly
+type BoardMeetingType = 'STANDUP' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'EMERGENCY';
+type BoardMeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'POSTPONED';
+type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL' | 'EMERGENCY';
 
 const prisma = new PrismaClient();
 

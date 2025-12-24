@@ -5,11 +5,11 @@
 -- Get CEO member ID for KPI ownership
 DO $$
 DECLARE
-  ceo_id TEXT;
-  cfo_id TEXT;
-  coo_id TEXT;
-  cto_id TEXT;
-  cmo_id TEXT;
+  ceo_id UUID;
+  cfo_id UUID;
+  coo_id UUID;
+  cto_id UUID;
+  cmo_id UUID;
 BEGIN
   -- Get member IDs
   SELECT id INTO ceo_id FROM board_members WHERE role = 'CEO' LIMIT 1;
