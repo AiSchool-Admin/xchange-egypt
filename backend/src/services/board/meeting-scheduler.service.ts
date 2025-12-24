@@ -10,10 +10,10 @@
 
 import { PrismaClient } from '@prisma/client';
 
-// Local type definitions until Prisma client is regenerated
-type BoardMeetingType = 'STANDUP' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'EMERGENCY' | 'AD_HOC' | 'STRATEGIC';
+// Local type definitions matching Prisma schema exactly
+type BoardMeetingType = 'STANDUP' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'EMERGENCY';
 type BoardMeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'POSTPONED';
-type AlertSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL' | 'EMERGENCY';
 
 const prisma = new PrismaClient();
 
@@ -24,8 +24,6 @@ const MEETING_PREFIXES: Record<BoardMeetingType, string> = {
   MONTHLY: 'MTH',
   QUARTERLY: 'QTR',
   EMERGENCY: 'EMR',
-  AD_HOC: 'ADH',
-  STRATEGIC: 'STR',
 };
 
 // Meeting durations in minutes - مدة الاجتماعات بالدقائق
@@ -35,8 +33,6 @@ const MEETING_DURATIONS: Record<BoardMeetingType, number> = {
   MONTHLY: 240,  // 4 hours
   QUARTERLY: 480, // 8 hours (full day)
   EMERGENCY: 60,
-  AD_HOC: 30,
-  STRATEGIC: 120,
 };
 
 // Agenda templates - قوالب الأجندات
@@ -111,28 +107,6 @@ export const AGENDA_TEMPLATES: Record<BoardMeetingType, AgendaTemplate> = {
       { order: 3, titleAr: 'البدائل والخيارات', duration: 15, type: 'ALTERNATIVES' },
       { order: 4, titleAr: 'اتخاذ القرار', duration: 15, type: 'DECISION' },
       { order: 5, titleAr: 'خطة التنفيذ الفوري', duration: 10, type: 'ACTION_ITEMS' },
-    ],
-  },
-  AD_HOC: {
-    id: 'adhoc-template',
-    nameAr: 'أجندة اجتماع مخصص',
-    duration: 30,
-    items: [
-      { order: 1, titleAr: 'الموضوع الرئيسي', duration: 15, type: 'DISCUSSION' },
-      { order: 2, titleAr: 'النقاش والقرارات', duration: 10, type: 'DECISION' },
-      { order: 3, titleAr: 'بنود العمل', duration: 5, type: 'ACTION_ITEMS' },
-    ],
-  },
-  STRATEGIC: {
-    id: 'strategic-template',
-    nameAr: 'أجندة الاجتماع الاستراتيجي',
-    duration: 120,
-    items: [
-      { order: 1, titleAr: 'مراجعة الرؤية والأهداف', duration: 20, type: 'REVIEW' },
-      { order: 2, titleAr: 'تحليل السوق والفرص', duration: 25, type: 'ANALYSIS' },
-      { order: 3, titleAr: 'مناقشة استراتيجية', duration: 30, type: 'STRATEGY' },
-      { order: 4, titleAr: 'القرارات الاستراتيجية', duration: 25, type: 'DECISION' },
-      { order: 5, titleAr: 'خطة التنفيذ', duration: 20, type: 'PLANNING' },
     ],
   },
 };

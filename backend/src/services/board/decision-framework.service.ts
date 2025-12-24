@@ -17,9 +17,9 @@
 
 import { PrismaClient } from '@prisma/client';
 
-// Local type definitions until Prisma client is regenerated
-type SPADEStatus = 'SETTING' | 'PEOPLE' | 'ALTERNATIVES' | 'DECIDE' | 'EXPLAIN' | 'DECIDED' | 'IMPLEMENTED';
-type SPADERole = 'APPROVER' | 'RESPONSIBLE' | 'CONSULTED' | 'INFORMED';
+// Local type definitions matching Prisma schema exactly
+type SPADEStatus = 'INITIATED' | 'SETTING_PHASE' | 'PEOPLE_PHASE' | 'ALTERNATIVES_PHASE' | 'DECIDE_PHASE' | 'EXPLAIN_PHASE' | 'COMPLETED' | 'CANCELLED';
+type SPADERole = 'SETTING' | 'PEOPLE' | 'ALTERNATIVES' | 'DECIDE' | 'EXPLAIN';
 type BoardRole = 'CEO' | 'CTO' | 'CFO' | 'CMO' | 'COO' | 'CLO';
 
 const prisma = new PrismaClient();

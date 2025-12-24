@@ -10,8 +10,8 @@
 
 import { PrismaClient } from '@prisma/client';
 
-// Local type definitions until Prisma client is regenerated
-type KPIStatus = 'GREEN' | 'YELLOW' | 'RED' | 'GRAY';
+// Local type definitions matching Prisma schema exactly
+type KPIStatus = 'GREEN' | 'YELLOW' | 'RED';
 type KPICategory = 'FINANCIAL' | 'OPERATIONAL' | 'CUSTOMER' | 'TECHNICAL' | 'GROWTH' | 'LEGAL';
 
 const prisma = new PrismaClient();

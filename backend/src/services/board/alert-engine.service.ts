@@ -10,10 +10,10 @@
 
 import { PrismaClient } from '@prisma/client';
 
-// Local type definitions until Prisma client is regenerated
-type AlertSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'WARNING' | 'EMERGENCY';
+// Local type definitions matching Prisma schema exactly
+type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL' | 'EMERGENCY';
 type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED' | 'DISMISSED';
-type KPIStatus = 'GREEN' | 'YELLOW' | 'RED' | 'GRAY';
+type KPIStatus = 'GREEN' | 'YELLOW' | 'RED';
 type BoardRole = 'CEO' | 'CTO' | 'CFO' | 'CMO' | 'COO' | 'CLO';
 import { meetingSchedulerService } from './meeting-scheduler.service';
 
