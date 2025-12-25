@@ -80,20 +80,71 @@ interface AutonomousDashboard {
 export default function AutonomousDashboardPage() {
   const [dashboard, setDashboard] = useState<AutonomousDashboard | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionResult, setActionResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const fetchDashboard = async () => {
+    try {
+      const response = await founderFetch('/board/autonomous/dashboard');
+      setDashboard(response.data);
+    } catch (error) {
+      console.error('Error fetching autonomous dashboard:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await founderFetch('/board/autonomous/dashboard');
-        setDashboard(response.data);
-      } catch (error) {
-        console.error('Error fetching autonomous dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
+      await fetchDashboard();
+      setLoading(false);
     };
     fetchData();
   }, []);
+
+  // Initialize KPIs
+  const handleInitializeKPIs = async () => {
+    setActionLoading('initialize');
+    setActionResult(null);
+    try {
+      const response = await founderFetch('/board/kpis/initialize', { method: 'POST' });
+      setActionResult({ type: 'success', message: `تم تهيئة ${response.data?.created || 0} مؤشر أداء` });
+      await fetchDashboard();
+    } catch (error: any) {
+      setActionResult({ type: 'error', message: error.message || 'فشل تهيئة المؤشرات' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Calculate KPIs
+  const handleCalculateKPIs = async () => {
+    setActionLoading('calculate');
+    setActionResult(null);
+    try {
+      const response = await founderFetch('/board/kpis/calculate', { method: 'POST' });
+      setActionResult({ type: 'success', message: `تم تحديث ${response.data?.updated || 0} مؤشر أداء من البيانات الفعلية` });
+      await fetchDashboard();
+    } catch (error: any) {
+      setActionResult({ type: 'error', message: error.message || 'فشل حساب المؤشرات' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Generate Reports
+  const handleGenerateReports = async () => {
+    setActionLoading('reports');
+    setActionResult(null);
+    try {
+      const response = await founderFetch('/board/reports/generate', { method: 'POST' });
+      const generated = response.data?.results?.generated?.length || 0;
+      setActionResult({ type: 'success', message: `تم توليد ${generated} تقارير يومية` });
+      await fetchDashboard();
+    } catch (error: any) {
+      setActionResult({ type: 'error', message: error.message || 'فشل توليد التقارير' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -107,17 +158,79 @@ export default function AutonomousDashboardPage() {
     <div className="p-8">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-4 mb-4">
-          <Link href="/board" className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors">
-            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-white">لوحة المجلس الذاتي</h1>
-            <p className="text-gray-400">مراقبة العمليات الذاتية والاستخبارات</p>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <Link href="/board" className="p-2 rounded-lg bg-gray-800/50 hover:bg-gray-700/50 transition-colors">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-white">لوحة المجلس الذاتي</h1>
+              <p className="text-gray-400">مراقبة العمليات الذاتية والاستخبارات</p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleInitializeKPIs}
+              disabled={actionLoading !== null}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              {actionLoading === 'initialize' ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <span>⚙️</span>
+              )}
+              تهيئة المؤشرات
+            </button>
+            <button
+              onClick={handleCalculateKPIs}
+              disabled={actionLoading !== null}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              {actionLoading === 'calculate' ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <span>📊</span>
+              )}
+              حساب المؤشرات
+            </button>
+            <button
+              onClick={handleGenerateReports}
+              disabled={actionLoading !== null}
+              className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              {actionLoading === 'reports' ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <span>📝</span>
+              )}
+              توليد التقارير
+            </button>
           </div>
         </div>
+
+        {/* Action Result Message */}
+        {actionResult && (
+          <div className={`p-3 rounded-lg mb-4 ${
+            actionResult.type === 'success'
+              ? 'bg-green-500/20 border border-green-500/50 text-green-400'
+              : 'bg-red-500/20 border border-red-500/50 text-red-400'
+          }`}>
+            <div className="flex items-center gap-2">
+              <span>{actionResult.type === 'success' ? '✅' : '❌'}</span>
+              <span>{actionResult.message}</span>
+              <button
+                onClick={() => setActionResult(null)}
+                className="mr-auto text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Stats Grid */}
