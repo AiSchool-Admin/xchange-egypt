@@ -100,6 +100,8 @@ router.get('/kpis/:code', authenticateFounder, boardController.getKPI);
 router.get('/kpis/:code/history', authenticateFounder, boardController.getKPIHistory);
 router.put('/kpis/:code', authenticateFounder, boardController.updateKPI);
 router.post('/kpis/initialize', authenticateFounder, boardController.initializeKPIs);
+router.post('/kpis/calculate', authenticateFounder, boardController.calculateAllKPIs);
+router.post('/reports/generate', authenticateFounder, boardController.generateDailyReports);
 
 // --- Alerts - التنبيهات ---
 router.get('/alerts', authenticateFounder, boardController.getAlerts);

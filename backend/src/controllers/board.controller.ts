@@ -701,6 +701,121 @@ export const initializeKPIs = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Calculate and update all KPIs from platform data
+ * حساب وتحديث جميع مؤشرات الأداء من بيانات المنصة
+ */
+export const calculateAllKPIs = async (req: Request, res: Response) => {
+  try {
+    logger.info('[BoardController] Calculating all KPIs...');
+
+    // Import the KPI calculator
+    const { calculateAndUpdateAllKPIs, getAllKPIExplanations } = await import(
+      '../services/board/kpi-calculator.service'
+    );
+
+    const result = await calculateAndUpdateAllKPIs();
+
+    // Get updated KPIs
+    const kpis = await kpiTrackerService.getAllKPIs();
+
+    res.json({
+      success: true,
+      message: `تم تحديث ${result.updated} مؤشر أداء`,
+      data: {
+        updated: result.updated,
+        errors: result.errors,
+        kpis,
+        explanations: getAllKPIExplanations(),
+      },
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] calculateAllKPIs error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * Generate all daily reports manually
+ * توليد جميع التقارير اليومية يدوياً
+ */
+export const generateDailyReports = async (req: Request, res: Response) => {
+  try {
+    logger.info('[BoardController] Generating all daily reports...');
+
+    const results: any = { generated: [], errors: [] };
+
+    // Import services
+    const { generateDailyContentPackage } = await import(
+      '../services/autonomous-board/youssef-cmo.service'
+    );
+    const { generateDailyFinancialReport } = await import(
+      '../services/autonomous-board/laila-cfo.service'
+    );
+    const { generateDailyOperationsReport } = await import(
+      '../services/autonomous-board/omar-coo.service'
+    );
+
+    // Generate Content Package (Youssef CMO)
+    try {
+      const content = await generateDailyContentPackage();
+      results.generated.push({
+        type: 'CONTENT_PACKAGE',
+        member: 'Youssef (CMO)',
+        id: content.id,
+      });
+    } catch (err: any) {
+      results.errors.push({ type: 'CONTENT_PACKAGE', error: err.message });
+    }
+
+    // Generate Financial Report (Laila CFO)
+    try {
+      const financial = await generateDailyFinancialReport();
+      results.generated.push({
+        type: 'FINANCIAL_REPORT',
+        member: 'Laila (CFO)',
+        id: financial.id,
+      });
+    } catch (err: any) {
+      results.errors.push({ type: 'FINANCIAL_REPORT', error: err.message });
+    }
+
+    // Generate Operations Report (Omar COO)
+    try {
+      const operations = await generateDailyOperationsReport();
+      results.generated.push({
+        type: 'OPERATIONS_REPORT',
+        member: 'Omar (COO)',
+        id: operations.id,
+      });
+    } catch (err: any) {
+      results.errors.push({ type: 'OPERATIONS_REPORT', error: err.message });
+    }
+
+    // Fetch today's reports from database
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayReports = await prisma.boardMemberDailyReport.findMany({
+      where: { date: { gte: today } },
+      include: { member: { select: { name: true, nameAr: true, role: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({
+      success: true,
+      message: `تم توليد ${results.generated.length} تقارير`,
+      data: {
+        results,
+        reports: todayReports,
+      },
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] generateDailyReports error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // --- Alerts - التنبيهات ---
 
 export const getAlerts = async (req: Request, res: Response) => {
