@@ -15,6 +15,13 @@ export {
 export { runEnvironmentScan } from './environment-scanner.service';
 export { generateDailyClosingReport, formatClosingReportAsMarkdown } from './closing-report.service';
 
+// Daily Scheduling
+export {
+  scheduleDailyMeetings,
+  scheduleWeeklyMeeting,
+  getTodaysMeetings,
+} from './daily-scheduler.service';
+
 // Intelligence & Agenda
 export { generateMeetingAgenda, applyFounderOverrides } from './agenda-intelligence.service';
 

@@ -42,6 +42,9 @@ import {
   generateDailyClosingReport,
   sendApprovalReminders,
   autoExecuteType2Decisions,
+  // Daily Scheduling
+  scheduleDailyMeetings,
+  scheduleWeeklyMeeting,
   // Youssef CMO
   generateDailyContentPackage,
   generateCompetitorAnalysis,
@@ -72,9 +75,32 @@ export const runMorningIntelligence = async () => {
     logger.info('[AutonomousBoard] 🌅 Starting Morning Intelligence generation...');
     const report = await generateMorningIntelligence();
     logger.info('[AutonomousBoard] ✅ Morning Intelligence report generated');
+
+    // Schedule daily meetings after intelligence is ready
+    logger.info('[AutonomousBoard] 📅 Scheduling daily meetings...');
+    const meetings = await scheduleDailyMeetings();
+    logger.info(`[AutonomousBoard] ✅ Scheduled ${meetings.length} meetings for today`);
+
     return report;
   } catch (error) {
     logger.error('[AutonomousBoard] ❌ Morning Intelligence error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Schedule Daily Meetings
+ * جدولة الاجتماعات اليومية
+ * Can be called manually or as part of morning intelligence
+ */
+export const runScheduleDailyMeetings = async () => {
+  try {
+    logger.info('[AutonomousBoard] 📅 Scheduling daily meetings...');
+    const meetings = await scheduleDailyMeetings();
+    logger.info(`[AutonomousBoard] ✅ Scheduled ${meetings.length} meetings`);
+    return meetings;
+  } catch (error) {
+    logger.error('[AutonomousBoard] ❌ Daily scheduling error:', error);
     throw error;
   }
 };

@@ -85,7 +85,9 @@ router.post('/admin/initialize', authenticateAdmin, requireSuperAdmin, boardCont
 // --- Meetings - الاجتماعات ---
 router.get('/meetings', authenticateFounder, boardController.getMeetings);
 router.get('/meetings/upcoming', authenticateFounder, boardController.getUpcomingMeetings);
+router.get('/meetings/today', authenticateFounder, boardController.getTodayBoardMeetings);
 router.post('/meetings', authenticateFounder, boardController.scheduleMeeting);
+router.post('/meetings/schedule-today', authenticateFounder, boardController.scheduleTodaysMeetings);
 router.get('/meetings/:meetingId', authenticateFounder, boardController.getMeeting);
 router.put('/meetings/:meetingId/agenda', authenticateFounder, boardController.updateMeetingAgenda);
 router.post('/meetings/:meetingId/start', authenticateFounder, boardController.startMeeting);

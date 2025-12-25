@@ -33,21 +33,44 @@ interface BoardMeeting {
 export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<BoardMeeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [scheduling, setScheduling] = useState(false);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
 
+  const fetchMeetings = async () => {
+    try {
+      const response = await founderFetch('/board/meetings');
+      setMeetings(response.data || []);
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchMeetings = async () => {
-      try {
-        const response = await founderFetch('/board/meetings');
-        setMeetings(response.data || []);
-      } catch (error) {
-        console.error('Error fetching meetings:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchMeetings();
   }, []);
+
+  const handleScheduleTodaysMeetings = async () => {
+    setScheduling(true);
+    try {
+      const response = await founderFetch('/board/meetings/schedule-today', {
+        method: 'POST',
+      });
+      if (response.data && response.data.length > 0) {
+        // Refresh meetings list
+        await fetchMeetings();
+        alert(`تم جدولة ${response.data.length} اجتماعات لليوم`);
+      } else {
+        alert('اجتماعات اليوم موجودة بالفعل');
+      }
+    } catch (error) {
+      console.error('Error scheduling meetings:', error);
+      alert('حدث خطأ أثناء جدولة الاجتماعات');
+    } finally {
+      setScheduling(false);
+    }
+  };
 
   // Get today's meetings
   const today = new Date();
@@ -148,18 +171,42 @@ export default function MeetingsPage() {
 
       {/* Today's Meetings Section */}
       <div className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-2xl">📆</span>
-          <h2 className="text-xl font-bold text-white">اجتماعات اليوم</h2>
-          <span className="text-sm text-gray-400">
-            {new Date().toLocaleDateString('ar-EG', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">📆</span>
+            <h2 className="text-xl font-bold text-white">اجتماعات اليوم</h2>
+            <span className="text-sm text-gray-400">
+              {new Date().toLocaleDateString('ar-EG', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+          {todaysMeetings.length === 0 && (
+            <button
+              onClick={handleScheduleTodaysMeetings}
+              disabled={scheduling}
+              className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {scheduling ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  جاري الجدولة...
+                </>
+              ) : (
+                <>
+                  <span>➕</span>
+                  جدولة اجتماعات اليوم
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {todaysMeetings.length === 0 ? (
           <div className="p-6 bg-gray-800/30 rounded-xl border border-gray-700/50 text-center">
             <span className="text-3xl mb-2 block">😴</span>
-            <p className="text-gray-400">لا توجد اجتماعات مجدولة لليوم</p>
+            <p className="text-gray-400 mb-4">لا توجد اجتماعات مجدولة لليوم</p>
+            <p className="text-sm text-gray-500">
+              اضغط على "جدولة اجتماعات اليوم" لإنشاء الاجتماع الصباحي (10 ص) والمسائي (2 م)
+            </p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

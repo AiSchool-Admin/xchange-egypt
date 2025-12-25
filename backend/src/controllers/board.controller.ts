@@ -1428,6 +1428,50 @@ export const getAutonomousDashboard = async (req: Request, res: Response) => {
 };
 
 // ============================================
+// Daily Meeting Scheduling - جدولة الاجتماعات اليومية
+// ============================================
+
+import { scheduleDailyMeetings, getTodaysMeetings } from '../services/autonomous-board';
+
+/**
+ * Schedule today's daily meetings
+ * جدولة اجتماعات اليوم
+ */
+export const scheduleTodaysMeetings = async (req: Request, res: Response) => {
+  try {
+    logger.info('[BoardController] Manually scheduling today\'s meetings...');
+    const meetings = await scheduleDailyMeetings();
+
+    res.json({
+      success: true,
+      message: `تم جدولة ${meetings.length} اجتماعات لليوم`,
+      data: meetings,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] scheduleTodaysMeetings error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * Get today's meetings
+ * الحصول على اجتماعات اليوم
+ */
+export const getTodayBoardMeetings = async (req: Request, res: Response) => {
+  try {
+    const meetings = await getTodaysMeetings();
+
+    res.json({
+      success: true,
+      data: meetings,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] getTodayBoardMeetings error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// ============================================
 // Company Phase - مرحلة الشركة
 // ============================================
 
