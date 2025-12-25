@@ -1250,6 +1250,34 @@ export const runAutonomousMeetingManually = async (req: Request, res: Response) 
   }
 };
 
+/**
+ * Generate Meeting Agenda
+ * توليد أجندة الاجتماع
+ */
+export const generateMeetingAgendaEndpoint = async (req: Request, res: Response) => {
+  try {
+    const { type = 'MORNING', maxDuration = 45 } = req.body;
+
+    logger.info(`[BoardController] Generating ${type} meeting agenda...`);
+
+    // Import agenda intelligence service
+    const { generateMeetingAgenda } = await import(
+      '../services/autonomous-board/agenda-intelligence.service'
+    );
+
+    const agenda = await generateMeetingAgenda(type, maxDuration);
+
+    res.json({
+      success: true,
+      message: `تم توليد أجندة الاجتماع ${type === 'MORNING' ? 'الصباحي' : 'المسائي'}`,
+      data: agenda,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] generateMeetingAgendaEndpoint error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // --- Environment Scans - المسح البيئي ---
 
 export const getEnvironmentScans = async (req: Request, res: Response) => {

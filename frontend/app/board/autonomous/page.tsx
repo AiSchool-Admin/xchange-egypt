@@ -185,6 +185,148 @@ const ReportModal = ({
   );
 };
 
+// Agenda Modal Component
+const AgendaModal = ({
+  isOpen,
+  onClose,
+  agenda,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  agenda: any;
+}) => {
+  if (!isOpen || !agenda) return null;
+
+  const priorityColors: Record<string, string> = {
+    CRITICAL: 'bg-red-500/20 text-red-400 border-red-500/50',
+    HIGH: 'bg-orange-500/20 text-orange-400 border-orange-500/50',
+    MEDIUM: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
+    LOW: 'bg-green-500/20 text-green-400 border-green-500/50',
+  };
+
+  const typeIcons: Record<string, string> = {
+    STRATEGIC: '🎯',
+    OPERATIONAL: '⚙️',
+    INNOVATION: '💡',
+    CRISIS: '🚨',
+    REVIEW: '📊',
+    DECISION: '⚖️',
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto bg-gray-900 rounded-2xl border border-cyan-500/50 shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 p-4 bg-gray-900 border-b border-cyan-500/30 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <span>📋</span>
+              أجندة الاجتماع {agenda.meetingType === 'MORNING' ? 'الصباحي' : 'المسائي'}
+            </h2>
+            <p className="text-sm text-gray-400">
+              {new Date(agenda.date).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+            <span className="text-2xl text-gray-400">×</span>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Executive Summary */}
+          <div className="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
+            <h3 className="text-sm font-medium text-cyan-400 mb-2">الملخص التنفيذي</h3>
+            <p className="text-white leading-relaxed">{agenda.executiveSummaryAr || agenda.executiveSummary}</p>
+            <div className="mt-3 flex items-center gap-4 text-sm text-gray-400">
+              <span>⏱️ المدة الكلية: {agenda.totalDuration} دقيقة</span>
+              <span>📌 عدد البنود: {agenda.items?.length || 0}</span>
+            </div>
+          </div>
+
+          {/* Phase Context */}
+          {agenda.phaseContext && (
+            <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <span className="text-sm text-purple-400">🏢 سياق المرحلة: {agenda.phaseContext}</span>
+            </div>
+          )}
+
+          {/* Agenda Items */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <span>📝</span> بنود الأجندة
+            </h3>
+
+            {agenda.items?.map((item: any, index: number) => (
+              <div
+                key={item.id}
+                className={`p-4 rounded-xl border ${priorityColors[item.priority]} bg-opacity-10`}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{typeIcons[item.type] || '📋'}</span>
+                    <span className="text-white font-semibold">{index + 1}. {item.titleAr || item.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 rounded text-xs ${priorityColors[item.priority]}`}>
+                      {item.priority === 'CRITICAL' ? 'حرج' : item.priority === 'HIGH' ? 'عالي' : item.priority === 'MEDIUM' ? 'متوسط' : 'منخفض'}
+                    </span>
+                    <span className="text-xs text-gray-400">⏱️ {item.timeAllocation} د</span>
+                  </div>
+                </div>
+
+                <p className="text-sm text-gray-300 mb-3">{item.description}</p>
+
+                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <span>👤</span> المسؤول: <span className="text-white">{item.leadMember}</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span>👥</span> المشاركون: <span className="text-white">{item.participants?.join(', ')}</span>
+                  </span>
+                  {item.requiredDecision && (
+                    <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded">⚖️ يتطلب قرار</span>
+                  )}
+                </div>
+
+                {item.relatedKPIs?.length > 0 && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-xs text-gray-500">📊 KPIs ذات صلة:</span>
+                    {item.relatedKPIs.map((kpi: string) => (
+                      <span key={kpi} className="px-2 py-0.5 bg-gray-700 text-gray-300 rounded text-xs">{kpi}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Summary Stats */}
+          <div className="grid grid-cols-4 gap-3 pt-4 border-t border-gray-700">
+            <div className="text-center p-3 bg-red-500/10 rounded-lg">
+              <p className="text-2xl font-bold text-red-400">{agenda.items?.filter((i: any) => i.priority === 'CRITICAL').length || 0}</p>
+              <p className="text-xs text-gray-400">بنود حرجة</p>
+            </div>
+            <div className="text-center p-3 bg-orange-500/10 rounded-lg">
+              <p className="text-2xl font-bold text-orange-400">{agenda.items?.filter((i: any) => i.priority === 'HIGH').length || 0}</p>
+              <p className="text-xs text-gray-400">أولوية عالية</p>
+            </div>
+            <div className="text-center p-3 bg-yellow-500/10 rounded-lg">
+              <p className="text-2xl font-bold text-yellow-400">{agenda.items?.filter((i: any) => i.requiredDecision).length || 0}</p>
+              <p className="text-xs text-gray-400">قرارات مطلوبة</p>
+            </div>
+            <div className="text-center p-3 bg-cyan-500/10 rounded-lg">
+              <p className="text-2xl font-bold text-cyan-400">{agenda.totalDuration}</p>
+              <p className="text-xs text-gray-400">دقيقة</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface KPISnapshot {
   code: string;
   name: string;
@@ -365,6 +507,28 @@ export default function AutonomousDashboardPage() {
     }
   };
 
+  // Generate Meeting Agenda
+  const [showAgenda, setShowAgenda] = useState(false);
+  const [agenda, setAgenda] = useState<any>(null);
+
+  const handleGenerateAgenda = async () => {
+    setActionLoading('agenda');
+    setActionResult(null);
+    try {
+      const response = await founderFetch('/board/autonomous/agenda/generate', {
+        method: 'POST',
+        body: JSON.stringify({ type: 'MORNING', maxDuration: 45 }),
+      });
+      setAgenda(response.data);
+      setShowAgenda(true);
+      setActionResult({ type: 'success', message: 'تم توليد أجندة الاجتماع الصباحي' });
+    } catch (error: any) {
+      setActionResult({ type: 'error', message: error.message || 'فشل توليد الأجندة' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
@@ -439,6 +603,18 @@ export default function AutonomousDashboardPage() {
                 <span>📝</span>
               )}
               التقارير
+            </button>
+            <button
+              onClick={handleGenerateAgenda}
+              disabled={actionLoading !== null}
+              className="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              {actionLoading === 'agenda' ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <span>📋</span>
+              )}
+              الأجندة
             </button>
             <button
               onClick={() => handleRunMeeting('MORNING')}
@@ -856,6 +1032,13 @@ export default function AutonomousDashboardPage() {
         onClose={() => setSelectedReport(null)}
         report={selectedReport?.report}
         type={selectedReport?.type || 'content'}
+      />
+
+      {/* Agenda Modal */}
+      <AgendaModal
+        isOpen={showAgenda}
+        onClose={() => setShowAgenda(false)}
+        agenda={agenda}
       />
 
       {/* Quick Links */}

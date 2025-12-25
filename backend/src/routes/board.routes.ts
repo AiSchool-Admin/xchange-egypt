@@ -167,6 +167,9 @@ router.get('/autonomous/closing-reports/:reportId', authenticateFounder, boardCo
 // --- Run Autonomous Meeting Manually - تشغيل اجتماع ذاتي يدوياً ---
 router.post('/autonomous/meetings/run', authenticateFounder, boardController.runAutonomousMeetingManually);
 
+// --- Generate Meeting Agenda - توليد أجندة الاجتماع ---
+router.post('/autonomous/agenda/generate', authenticateFounder, boardController.generateMeetingAgendaEndpoint);
+
 // ============================================
 // Company Phase Routes - مسارات مرحلة الشركة
 // ============================================
