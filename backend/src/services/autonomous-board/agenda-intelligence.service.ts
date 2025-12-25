@@ -378,7 +378,7 @@ const getXChangePlatformItems = async (meetingType: 'MORNING' | 'AFTERNOON'): Pr
       });
 
       const pendingListings = await prisma.listing.count({
-        where: { status: 'PENDING' },
+        where: { status: 'ACTIVE' },
       });
 
       items.push({
@@ -427,15 +427,15 @@ const getXChangePlatformItems = async (meetingType: 'MORNING' | 'AFTERNOON'): Pr
       });
 
       // 4. Financial Snapshot (morning only)
-      const yesterdayRevenue = await prisma.payment.aggregate({
+      const yesterdayTransactions = await prisma.transaction.aggregate({
         where: {
           createdAt: { gte: yesterday, lt: today },
           status: 'COMPLETED',
         },
-        _sum: { amount: true },
+        _sum: { finalPrice: true },
       });
 
-      const revenue = yesterdayRevenue._sum.amount || 0;
+      const revenue = yesterdayTransactions._sum.finalPrice || 0;
       items.push({
         id: generateAgendaItemId(),
         title: `Financial Snapshot: ${revenue.toLocaleString('ar-EG')} EGP yesterday`,
@@ -458,7 +458,7 @@ const getXChangePlatformItems = async (meetingType: 'MORNING' | 'AFTERNOON'): Pr
     // Afternoon meeting focuses on operations
     if (meetingType === 'AFTERNOON') {
       // 1. Customer Support Status
-      const openChats = await prisma.chatRoom.count({
+      const openChats = await prisma.conversation.count({
         where: {
           updatedAt: { gte: yesterday },
         },
@@ -483,7 +483,7 @@ const getXChangePlatformItems = async (meetingType: 'MORNING' | 'AFTERNOON'): Pr
       });
 
       // 2. Barter Activity
-      const activeBarters = await prisma.barter.count({
+      const activeBarters = await prisma.barterOffer.count({
         where: { status: 'PENDING' },
       });
 
