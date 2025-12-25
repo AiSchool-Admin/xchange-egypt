@@ -430,12 +430,12 @@ const getXChangePlatformItems = async (meetingType: 'MORNING' | 'AFTERNOON'): Pr
       const yesterdayTransactions = await prisma.transaction.aggregate({
         where: {
           createdAt: { gte: yesterday, lt: today },
-          status: 'COMPLETED',
+          paymentStatus: 'COMPLETED',
         },
-        _sum: { finalPrice: true },
+        _sum: { amount: true },
       });
 
-      const revenue = yesterdayTransactions._sum.finalPrice || 0;
+      const revenue = yesterdayTransactions._sum.amount || 0;
       items.push({
         id: generateAgendaItemId(),
         title: `Financial Snapshot: ${revenue.toLocaleString('ar-EG')} EGP yesterday`,
