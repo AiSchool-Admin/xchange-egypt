@@ -84,14 +84,14 @@ export default function BoardLayout({ children }: BoardLayoutProps) {
   }
 
   const navigation = [
-    { name: 'لوحة التحكم', href: '/board', icon: 'dashboard' },
-    { name: 'محادثة جديدة', href: '/board/chat', icon: 'chat' },
-    { name: 'المحادثات السابقة', href: '/board/conversations', icon: 'history' },
-    { name: 'أعضاء المجلس', href: '/board/members', icon: 'members' },
+    { name: 'لوحة التحكم', href: '/board', icon: '📊' },
+    { name: 'محادثة جديدة', href: '/board/chat', icon: '💬' },
+    { name: 'المحادثات السابقة', href: '/board/conversations', icon: '🕒' },
+    { name: 'أعضاء المجلس', href: '/board/members', icon: '👥' },
   ];
 
   const governanceNavigation = [
-    { name: 'مؤشرات الأداء', href: '/board/kpis', icon: '📊' },
+    { name: 'مؤشرات الأداء', href: '/board/kpis', icon: '📈' },
     { name: 'التنبيهات', href: '/board/alerts', icon: '🚨' },
     { name: 'الاجتماعات', href: '/board/meetings', icon: '📅' },
     { name: 'القرارات', href: '/board/decisions', icon: '⚡' },
@@ -115,165 +115,151 @@ export default function BoardLayout({ children }: BoardLayoutProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" dir="rtl">
       {/* Sidebar */}
-      <aside className="fixed top-0 right-0 h-full w-72 bg-gray-800/50 backdrop-blur-xl border-l border-gray-700/50 flex flex-col z-40">
-        {/* Header - Founder Info */}
-        <div className="p-6 border-b border-gray-700/50">
-          <Link href="/board" className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
-              <span className="text-2xl">🏛️</span>
+      <aside className="fixed top-0 right-0 h-full w-64 bg-gray-800/50 backdrop-blur-xl border-l border-gray-700/50 flex flex-col z-40">
+        {/* Header - Compact */}
+        <div className="p-4 border-b border-gray-700/50">
+          <Link href="/board" className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25">
+              <span className="text-xl">🏛️</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">مجلس الإدارة</h1>
-              <p className="text-sm text-gray-400">AI Board of Directors</p>
+              <h1 className="text-lg font-bold text-white">مجلس الإدارة</h1>
+              <p className="text-xs text-gray-400">AI Board</p>
             </div>
           </Link>
 
-          {/* Founder Badge */}
-          <div className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-xl p-3 border border-purple-500/30">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
-                {founder.fullName.charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{founder.fullName}</p>
-                <p className="text-purple-300 text-xs truncate">{founder.title}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                title="تسجيل الخروج"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-              </button>
+          {/* Founder Badge - Compact */}
+          <div className="flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-lg p-2 border border-purple-500/30">
+            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+              {founder.fullName.charAt(0)}
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-medium truncate">{founder.fullName}</p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition"
+              title="تسجيل الخروج"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        {/* Navigation - Scrollable */}
+        <nav className="flex-1 p-3 overflow-y-auto">
           {/* Main Navigation */}
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
-                  isActive
-                    ? 'bg-primary-500/20 text-primary-400 shadow-lg shadow-primary-500/10'
-                    : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
-                }`}
-              >
-                {item.icon === 'dashboard' && (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                  </svg>
-                )}
-                {item.icon === 'chat' && (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                )}
-                {item.icon === 'history' && (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                )}
-                {item.icon === 'members' && (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                )}
-                <span className="font-medium">{item.name}</span>
-              </Link>
-            );
-          })}
-
-          {/* Governance Section */}
-          <div className="pt-4 mt-4 border-t border-gray-700/50">
-            <p className="px-4 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">الحوكمة</p>
-            {governanceNavigation.map((item) => {
+          <div className="space-y-1">
+            {navigation.map((item) => {
               const isActive = pathname === item.href;
               return (
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
                     isActive
                       ? 'bg-primary-500/20 text-primary-400'
                       : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
                   }`}
                 >
-                  <span className="text-lg">{item.icon}</span>
-                  <span className="font-medium">{item.name}</span>
+                  <span className="text-base">{item.icon}</span>
+                  <span className="text-sm font-medium">{item.name}</span>
                 </Link>
               );
             })}
+          </div>
+
+          {/* Governance Section */}
+          <div className="mt-4 pt-4 border-t border-gray-700/50">
+            <p className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">الحوكمة</p>
+            <div className="space-y-1">
+              {governanceNavigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary-500/20 text-primary-400'
+                        : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-base">{item.icon}</span>
+                    <span className="text-sm font-medium">{item.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
           {/* Autonomous Section */}
-          <div className="pt-4 mt-4 border-t border-gray-700/50">
-            <p className="px-4 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">المجلس الذاتي</p>
-            {autonomousNavigation.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 ${
-                    isActive
-                      ? 'bg-primary-500/20 text-primary-400'
-                      : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
-                  }`}
-                >
-                  <span className="text-lg">{item.icon}</span>
-                  <span className="font-medium">{item.name}</span>
-                </Link>
-              );
-            })}
+          <div className="mt-4 pt-4 border-t border-gray-700/50">
+            <p className="px-3 text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">المجلس الذاتي</p>
+            <div className="space-y-1">
+              {autonomousNavigation.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary-500/20 text-primary-400'
+                        : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-base">{item.icon}</span>
+                    <span className="text-sm font-medium">{item.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         </nav>
 
-        {/* Board Members Quick View */}
-        <div className="p-4 border-t border-gray-700/50">
-          <h3 className="text-sm font-medium text-gray-400 mb-3">أعضاء المجلس</h3>
-          <div className="grid grid-cols-3 gap-2">
+        {/* Board Members - Compact Row */}
+        <div className="p-3 border-t border-gray-700/50">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500">أعضاء المجلس</span>
+            <Link href="/board/members" className="text-xs text-primary-400 hover:text-primary-300">
+              عرض الكل
+            </Link>
+          </div>
+          <div className="flex gap-1">
             {members.slice(0, 6).map((member) => (
               <Link
                 key={member.id}
-                href={`/board/members/${member.id}`}
+                href={`/board/chat?member=${member.id}`}
                 className="group relative"
                 title={`${member.nameAr} - ${member.role}`}
               >
-                <div className={`w-full aspect-square rounded-xl bg-gradient-to-br ${roleColors[member.role]} p-0.5 transition-transform group-hover:scale-105`}>
-                  <div className="w-full h-full rounded-[10px] bg-gray-800 flex items-center justify-center">
-                    <span className="text-lg font-bold text-white">{member.nameAr.charAt(0)}</span>
+                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${roleColors[member.role]} p-0.5 transition-transform group-hover:scale-110`}>
+                  <div className="w-full h-full rounded-md bg-gray-800 flex items-center justify-center">
+                    <span className="text-xs font-bold text-white">{member.nameAr.charAt(0)}</span>
                   </div>
                 </div>
-                <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${member.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-500'} border-2 border-gray-800`}></div>
+                <div className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full ${member.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-500'} border border-gray-800`}></div>
               </Link>
             ))}
           </div>
         </div>
 
-        {/* Service Status */}
+        {/* Service Status - Minimal */}
         {status && (
-          <div className="p-4 border-t border-gray-700/50">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${status.claude.isAvailable ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-              <span className="text-sm text-gray-400">
-                {status.claude.isAvailable ? 'Claude متاح' : 'Claude غير متاح'}
-              </span>
-            </div>
+          <div className="px-3 py-2 border-t border-gray-700/50 flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${status.claude.isAvailable ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+            <span className="text-xs text-gray-400">
+              {status.claude.isAvailable ? 'Claude متاح' : 'Claude غير متاح'}
+            </span>
           </div>
         )}
       </aside>
 
       {/* Main Content */}
-      <main className="mr-72 min-h-screen">
+      <main className="mr-64 min-h-screen">
         {children}
       </main>
     </div>
