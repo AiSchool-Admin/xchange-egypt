@@ -8281,6 +8281,7 @@ model BoardMember {
   // Autonomous Board Relations - علاقات المجلس الذاتي
   ideasProposed         InnovationIdea[]        @relation("IdeaProposer")
   ideasOwned            InnovationIdea[]        @relation("IdeaOwner")
+  dailyReports          BoardMemberDailyReport[]
 
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
@@ -9280,6 +9281,62 @@ model AutonomousMeetingSession {
 
   @@map("autonomous_meeting_sessions")
   @@index([status])
+}
+
+// ============================================
+// Board Member Daily Report - تقرير عضو المجلس اليومي
+// ============================================
+
+enum BoardMemberReportType {
+  CONTENT_PACKAGE     // حزمة المحتوى - يوسف
+  FINANCIAL_REPORT    // التقرير المالي - ليلى
+  OPERATIONS_REPORT   // تقرير العمليات - عمر
+  LEGAL_REPORT        // تقرير قانوني - هنا
+  TECHNICAL_REPORT    // تقرير تقني - نادية
+  STRATEGIC_REPORT    // تقرير استراتيجي - كريم
+}
+
+model BoardMemberDailyReport {
+  id              String                  @id @default(uuid())
+  reportNumber    String                  @unique @map("report_number") // CMO-2025-001
+
+  // Report Type and Author
+  type            BoardMemberReportType
+  memberId        String                  @map("member_id")
+  member          BoardMember             @relation(fields: [memberId], references: [id])
+  memberRole      String                  @map("member_role") // CEO, CTO, CFO, CMO, COO, CLO
+
+  // Timing
+  date            DateTime                @default(now())
+  scheduledTime   String?                 @map("scheduled_time") // "07:00", "07:30", "17:00"
+
+  // Content
+  title           String
+  titleAr         String?                 @map("title_ar")
+  summary         String?                 @db.Text
+  summaryAr       String?                 @map("summary_ar") @db.Text
+  content         Json                    // Full report content as JSON
+
+  // Metrics
+  keyMetrics      Json?                   @map("key_metrics") // { metric: value, ... }
+  alerts          Json?                   // [{ type, message, severity }]
+  insights        Json?                   // [{ insight, importance }]
+  recommendations Json?                   // [{ recommendation, priority }]
+
+  // Status
+  status          String                  @default("GENERATED") // GENERATING, GENERATED, REVIEWED, FAILED
+  generatedAt     DateTime?               @map("generated_at")
+  reviewedAt      DateTime?               @map("reviewed_at")
+  reviewedBy      String?                 @map("reviewed_by")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("board_member_daily_reports")
+  @@index([date])
+  @@index([memberId])
+  @@index([type])
+  @@index([memberRole])
 }
 
 

@@ -32,8 +32,37 @@ interface MorningIntelligence {
   };
 }
 
+interface BoardMemberReport {
+  reportNumber: string;
+  title: string;
+  titleAr: string;
+  summary: string | null;
+  summaryAr: string | null;
+  scheduledTime: string | null;
+  memberName: string;
+  generatedAt: string | null;
+  content?: any;
+  keyMetrics?: any;
+  alerts?: any;
+  insights?: any;
+}
+
+interface ClosingReport {
+  reportNumber: string;
+  executiveSummary: string | null;
+  executiveSummaryAr: string | null;
+  meetingsHeld: number;
+  decisionsCount: number;
+  actionItemsCreated: number;
+  date: string;
+}
+
 interface AutonomousDashboard {
   morningIntelligence: MorningIntelligence | null;
+  contentPackage: BoardMemberReport | null;
+  financialReport: BoardMemberReport | null;
+  operationsReport: BoardMemberReport | null;
+  closingReport: ClosingReport | null;
   stats: {
     pendingMOMs: number;
     todayMeetings: number;
@@ -296,6 +325,151 @@ export default function AutonomousDashboardPage() {
             <p className="text-sm text-gray-500 mt-2">يتم توليد التقرير تلقائياً في الساعة 6:00 صباحاً</p>
           </div>
         )}
+      </div>
+
+      {/* Board Member Reports Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {/* Content Package - حزمة المحتوى (07:00 AM - Youssef CMO) */}
+        <div className="p-6 bg-gradient-to-br from-pink-900/30 to-red-900/30 rounded-2xl border border-pink-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <span className="text-xl">📣</span> حزمة المحتوى
+            </h2>
+            <span className="text-xs text-gray-400">07:00 صباحاً</span>
+          </div>
+          {dashboard?.contentPackage ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-pink-400">{dashboard.contentPackage.reportNumber}</span>
+                <span className="text-xs text-gray-500">{dashboard.contentPackage.memberName}</span>
+              </div>
+              <p className="text-sm text-gray-300 leading-relaxed">
+                {dashboard.contentPackage.summaryAr || dashboard.contentPackage.summary || 'تم إنشاء حزمة المحتوى اليومية'}
+              </p>
+              {dashboard.contentPackage.generatedAt && (
+                <p className="text-xs text-gray-500">
+                  تم التوليد: {new Date(dashboard.contentPackage.generatedAt).toLocaleTimeString('ar-EG')}
+                </p>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <span className="text-2xl mb-2 block">⏳</span>
+              <p className="text-sm text-gray-400">لم يتم توليد حزمة المحتوى بعد</p>
+            </div>
+          )}
+        </div>
+
+        {/* Financial Report - التقرير المالي (07:30 AM - Laila CFO) */}
+        <div className="p-6 bg-gradient-to-br from-green-900/30 to-emerald-900/30 rounded-2xl border border-green-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <span className="text-xl">💰</span> التقرير المالي
+            </h2>
+            <span className="text-xs text-gray-400">07:30 صباحاً</span>
+          </div>
+          {dashboard?.financialReport ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-green-400">{dashboard.financialReport.reportNumber}</span>
+                <span className="text-xs text-gray-500">{dashboard.financialReport.memberName}</span>
+              </div>
+              <p className="text-sm text-gray-300 leading-relaxed">
+                {dashboard.financialReport.summaryAr || dashboard.financialReport.summary || 'تقرير الحالة المالية اليومية'}
+              </p>
+              {dashboard.financialReport.keyMetrics && (
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {Object.entries(dashboard.financialReport.keyMetrics as Record<string, any>).slice(0, 4).map(([key, value]) => (
+                    <div key={key} className="p-2 bg-gray-900/50 rounded text-center">
+                      <p className="text-xs text-gray-400">{key}</p>
+                      <p className="text-sm font-bold text-green-400">{String(value)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <span className="text-2xl mb-2 block">⏳</span>
+              <p className="text-sm text-gray-400">لم يتم توليد التقرير المالي بعد</p>
+            </div>
+          )}
+        </div>
+
+        {/* Operations Report - تقرير العمليات (05:00 PM - Omar COO) */}
+        <div className="p-6 bg-gradient-to-br from-orange-900/30 to-amber-900/30 rounded-2xl border border-orange-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <span className="text-xl">⚙️</span> تقرير العمليات
+            </h2>
+            <span className="text-xs text-gray-400">05:00 مساءً</span>
+          </div>
+          {dashboard?.operationsReport ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-orange-400">{dashboard.operationsReport.reportNumber}</span>
+                <span className="text-xs text-gray-500">{dashboard.operationsReport.memberName}</span>
+              </div>
+              <p className="text-sm text-gray-300 leading-relaxed">
+                {dashboard.operationsReport.summaryAr || dashboard.operationsReport.summary || 'ملخص العمليات اليومية'}
+              </p>
+              {dashboard.operationsReport.insights && Array.isArray(dashboard.operationsReport.insights) && (
+                <ul className="space-y-1 mt-2">
+                  {(dashboard.operationsReport.insights as Array<{insight: string}>).slice(0, 3).map((item, i) => (
+                    <li key={i} className="text-xs text-gray-400 flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-orange-400"></span>
+                      {item.insight}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <span className="text-2xl mb-2 block">⏳</span>
+              <p className="text-sm text-gray-400">لم يتم توليد تقرير العمليات بعد</p>
+            </div>
+          )}
+        </div>
+
+        {/* Closing Report - تقرير الإغلاق (06:00 PM) */}
+        <div className="p-6 bg-gradient-to-br from-indigo-900/30 to-violet-900/30 rounded-2xl border border-indigo-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <span className="text-xl">📊</span> تقرير الإغلاق
+            </h2>
+            <span className="text-xs text-gray-400">06:00 مساءً</span>
+          </div>
+          {dashboard?.closingReport ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-indigo-400">{dashboard.closingReport.reportNumber}</span>
+              </div>
+              <p className="text-sm text-gray-300 leading-relaxed">
+                {dashboard.closingReport.executiveSummaryAr || dashboard.closingReport.executiveSummary || 'ملخص نهاية اليوم'}
+              </p>
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                <div className="p-2 bg-gray-900/50 rounded text-center">
+                  <p className="text-xs text-gray-400">اجتماعات</p>
+                  <p className="text-lg font-bold text-indigo-400">{dashboard.closingReport.meetingsHeld}</p>
+                </div>
+                <div className="p-2 bg-gray-900/50 rounded text-center">
+                  <p className="text-xs text-gray-400">قرارات</p>
+                  <p className="text-lg font-bold text-indigo-400">{dashboard.closingReport.decisionsCount}</p>
+                </div>
+                <div className="p-2 bg-gray-900/50 rounded text-center">
+                  <p className="text-xs text-gray-400">بنود عمل</p>
+                  <p className="text-lg font-bold text-indigo-400">{dashboard.closingReport.actionItemsCreated}</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <span className="text-2xl mb-2 block">⏳</span>
+              <p className="text-sm text-gray-400">لم يتم توليد تقرير الإغلاق بعد</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Quick Links */}

@@ -1401,10 +1401,72 @@ export const getAutonomousDashboard = async (req: Request, res: Response) => {
       where: { threatLevel: { in: ['HIGH', 'CRITICAL'] } },
     });
 
+    // Get today's board member reports
+    const todayReports = await prisma.boardMemberDailyReport.findMany({
+      where: { date: { gte: startOfDay } },
+      include: { member: { select: { name: true, nameAr: true, role: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // Get today's closing report
+    const closingReport = await prisma.dailyClosingReport.findFirst({
+      where: { date: { gte: startOfDay } },
+      orderBy: { date: 'desc' },
+    });
+
+    // Organize reports by type
+    const contentPackage = todayReports.find(r => r.type === 'CONTENT_PACKAGE');
+    const financialReport = todayReports.find(r => r.type === 'FINANCIAL_REPORT');
+    const operationsReport = todayReports.find(r => r.type === 'OPERATIONS_REPORT');
+
     res.json({
       success: true,
       data: {
         morningIntelligence: morningIntel,
+        contentPackage: contentPackage ? {
+          reportNumber: contentPackage.reportNumber,
+          title: contentPackage.title,
+          titleAr: contentPackage.titleAr,
+          summary: contentPackage.summary,
+          summaryAr: contentPackage.summaryAr,
+          scheduledTime: contentPackage.scheduledTime,
+          memberName: contentPackage.member.nameAr || contentPackage.member.name,
+          content: contentPackage.content,
+          generatedAt: contentPackage.generatedAt,
+        } : null,
+        financialReport: financialReport ? {
+          reportNumber: financialReport.reportNumber,
+          title: financialReport.title,
+          titleAr: financialReport.titleAr,
+          summary: financialReport.summary,
+          summaryAr: financialReport.summaryAr,
+          scheduledTime: financialReport.scheduledTime,
+          memberName: financialReport.member.nameAr || financialReport.member.name,
+          keyMetrics: financialReport.keyMetrics,
+          alerts: financialReport.alerts,
+          generatedAt: financialReport.generatedAt,
+        } : null,
+        operationsReport: operationsReport ? {
+          reportNumber: operationsReport.reportNumber,
+          title: operationsReport.title,
+          titleAr: operationsReport.titleAr,
+          summary: operationsReport.summary,
+          summaryAr: operationsReport.summaryAr,
+          scheduledTime: operationsReport.scheduledTime,
+          memberName: operationsReport.member.nameAr || operationsReport.member.name,
+          keyMetrics: operationsReport.keyMetrics,
+          insights: operationsReport.insights,
+          generatedAt: operationsReport.generatedAt,
+        } : null,
+        closingReport: closingReport ? {
+          reportNumber: closingReport.reportNumber,
+          executiveSummary: closingReport.executiveSummary,
+          executiveSummaryAr: closingReport.executiveSummaryAr,
+          meetingsHeld: closingReport.meetingsHeld,
+          decisionsCount: closingReport.decisionsCount,
+          actionItemsCreated: closingReport.actionItemsCreated,
+          date: closingReport.date,
+        } : null,
         stats: {
           pendingMOMs,
           todayMeetings,
