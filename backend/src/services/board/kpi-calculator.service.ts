@@ -325,20 +325,20 @@ async function calculateDisputeRate(): Promise<number> {
  * المروجين: تقييم 4-5، المحايدين: 3، المنتقدين: 1-2
  */
 async function calculateNPS(): Promise<number> {
-  const ratings = await prisma.rating.findMany({
+  const reviews = await prisma.review.findMany({
     where: {
       createdAt: { gte: getLast30Days() },
     },
-    select: { rating: true },
+    select: { overallRating: true },
   });
 
-  if (ratings.length === 0) return 50; // Default neutral
+  if (reviews.length === 0) return 50; // Default neutral
 
-  const promoters = ratings.filter((r) => r.rating >= 4).length;
-  const detractors = ratings.filter((r) => r.rating <= 2).length;
+  const promoters = reviews.filter((r) => r.overallRating >= 4).length;
+  const detractors = reviews.filter((r) => r.overallRating <= 2).length;
 
-  const promoterPercent = (promoters / ratings.length) * 100;
-  const detractorPercent = (detractors / ratings.length) * 100;
+  const promoterPercent = (promoters / reviews.length) * 100;
+  const detractorPercent = (detractors / reviews.length) * 100;
 
   // NPS ranges from -100 to 100, we normalize to 0-100
   const nps = promoterPercent - detractorPercent;
@@ -731,10 +731,10 @@ export function getKPIExplanation(code: string): {
     NPS: {
       name: 'Net Promoter Score',
       nameAr: 'صافي نقاط الترويج',
-      formula: '(% Promoters [rating 4-5]) - (% Detractors [rating 1-2])',
+      formula: '(% Promoters [overallRating 4-5]) - (% Detractors [overallRating 1-2])',
       formulaAr: '(نسبة المروجين [تقييم 4-5]) - (نسبة المنتقدين [تقييم 1-2])',
-      dataSource: 'Rating table (last 30 days)',
-      dataSourceAr: 'جدول التقييمات (آخر 30 يوم)',
+      dataSource: 'Review table (last 30 days)',
+      dataSourceAr: 'جدول المراجعات (آخر 30 يوم)',
     },
     RETENTION: {
       name: 'Customer Retention Rate',
