@@ -4,8 +4,36 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { founderFetch } from '@/lib/api/founder';
 
+interface KPISnapshot {
+  code: string;
+  name: string;
+  currentValue: number;
+  targetValue: number;
+  status: 'GREEN' | 'YELLOW' | 'RED';
+  changePercent: number;
+  flag: string;
+}
+
+interface MorningIntelligence {
+  reportNumber: string;
+  date: string;
+  executiveSummary: string;
+  executiveSummaryAr: string;
+  kpiSnapshot: KPISnapshot[];
+  anomalies: Array<{ kpi: string; severity: string; explanation: string }>;
+  opportunities: Array<{ title: string; priority: string }>;
+  threats: Array<{ title: string; priority: string }>;
+  keyInsights: {
+    totalKPIs: number;
+    greenCount: number;
+    yellowCount: number;
+    redCount: number;
+    anomalyCount: number;
+  };
+}
+
 interface AutonomousDashboard {
-  morningIntelligence: any;
+  morningIntelligence: MorningIntelligence | null;
   stats: {
     pendingMOMs: number;
     todayMeetings: number;
@@ -146,18 +174,129 @@ export default function AutonomousDashboardPage() {
       )}
 
       {/* Morning Intelligence */}
-      {dashboard?.morningIntelligence && (
-        <div className="mb-8 p-6 bg-gray-800/50 rounded-2xl border border-gray-700/50">
-          <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <span>🌅</span> الاستخبارات الصباحية
+      <div className="mb-8 p-6 bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-2xl border border-blue-700/50">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <span className="text-2xl">🌅</span> الاستخبارات الصباحية
           </h2>
-          <div className="prose prose-invert max-w-none">
-            <p className="text-gray-300 whitespace-pre-wrap">
-              {dashboard.morningIntelligence.summary || dashboard.morningIntelligence.executiveSummaryAr || 'لا توجد استخبارات صباحية لهذا اليوم'}
-            </p>
-          </div>
+          {dashboard?.morningIntelligence && (
+            <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm">
+              {dashboard.morningIntelligence.reportNumber}
+            </span>
+          )}
         </div>
-      )}
+
+        {dashboard?.morningIntelligence ? (
+          <div className="space-y-6">
+            {/* Executive Summary */}
+            <div className="p-4 bg-gray-900/50 rounded-xl">
+              <h3 className="text-sm font-medium text-gray-400 mb-2">الملخص التنفيذي</h3>
+              <p className="text-white leading-relaxed">
+                {dashboard.morningIntelligence.executiveSummaryAr || dashboard.morningIntelligence.executiveSummary}
+              </p>
+            </div>
+
+            {/* KPI Overview */}
+            {dashboard.morningIntelligence.keyInsights && (
+              <div className="grid grid-cols-4 gap-3">
+                <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg text-center">
+                  <span className="text-2xl">🟢</span>
+                  <p className="text-2xl font-bold text-green-400">{dashboard.morningIntelligence.keyInsights.greenCount}</p>
+                  <p className="text-xs text-gray-400">مؤشرات سليمة</p>
+                </div>
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg text-center">
+                  <span className="text-2xl">🟡</span>
+                  <p className="text-2xl font-bold text-yellow-400">{dashboard.morningIntelligence.keyInsights.yellowCount}</p>
+                  <p className="text-xs text-gray-400">تحتاج انتباه</p>
+                </div>
+                <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-center">
+                  <span className="text-2xl">🔴</span>
+                  <p className="text-2xl font-bold text-red-400">{dashboard.morningIntelligence.keyInsights.redCount}</p>
+                  <p className="text-xs text-gray-400">حرجة</p>
+                </div>
+                <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg text-center">
+                  <span className="text-2xl">⚠️</span>
+                  <p className="text-2xl font-bold text-purple-400">{dashboard.morningIntelligence.keyInsights.anomalyCount}</p>
+                  <p className="text-xs text-gray-400">شذوذات</p>
+                </div>
+              </div>
+            )}
+
+            {/* Anomalies */}
+            {dashboard.morningIntelligence.anomalies && dashboard.morningIntelligence.anomalies.length > 0 && (
+              <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-xl">
+                <h3 className="text-sm font-medium text-red-400 mb-3 flex items-center gap-2">
+                  <span>⚠️</span> شذوذات مكتشفة
+                </h3>
+                <ul className="space-y-2">
+                  {dashboard.morningIntelligence.anomalies.map((anomaly, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <span className={anomaly.severity === 'RED' ? 'text-red-400' : 'text-yellow-400'}>
+                        {anomaly.severity === 'RED' ? '🔴' : '🟡'}
+                      </span>
+                      <span className="text-gray-300">{anomaly.explanation}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Opportunities & Threats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {dashboard.morningIntelligence.opportunities && dashboard.morningIntelligence.opportunities.length > 0 && (
+                <div className="p-4 bg-green-900/20 border border-green-500/30 rounded-xl">
+                  <h3 className="text-sm font-medium text-green-400 mb-3 flex items-center gap-2">
+                    <span>💡</span> الفرص
+                  </h3>
+                  <ul className="space-y-2">
+                    {dashboard.morningIntelligence.opportunities.map((opp, i) => (
+                      <li key={i} className="text-sm text-gray-300 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                        {opp.title}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {dashboard.morningIntelligence.threats && dashboard.morningIntelligence.threats.length > 0 && (
+                <div className="p-4 bg-orange-900/20 border border-orange-500/30 rounded-xl">
+                  <h3 className="text-sm font-medium text-orange-400 mb-3 flex items-center gap-2">
+                    <span>⚡</span> التهديدات
+                  </h3>
+                  <ul className="space-y-2">
+                    {dashboard.morningIntelligence.threats.map((threat, i) => (
+                      <li key={i} className="text-sm text-gray-300 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-400"></span>
+                        {threat.title}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Link to full report */}
+            <div className="flex justify-end">
+              <Link
+                href="/board/intelligence"
+                className="text-sm text-primary-400 hover:text-primary-300 flex items-center gap-1"
+              >
+                عرض التقرير الكامل
+                <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <span className="text-4xl mb-4 block">😴</span>
+            <p className="text-gray-400">لم يتم توليد الاستخبارات الصباحية لهذا اليوم بعد</p>
+            <p className="text-sm text-gray-500 mt-2">يتم توليد التقرير تلقائياً في الساعة 6:00 صباحاً</p>
+          </div>
+        )}
+      </div>
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

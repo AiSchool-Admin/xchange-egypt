@@ -20,6 +20,7 @@ export {
   scheduleDailyMeetings,
   scheduleWeeklyMeeting,
   getTodaysMeetings,
+  initializeDailyMeetingsOnStartup,
 } from './daily-scheduler.service';
 
 // Intelligence & Agenda

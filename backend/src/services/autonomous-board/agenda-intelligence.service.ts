@@ -325,6 +325,264 @@ const getIntelligenceAgendaItems = async (): Promise<AgendaItem[]> => {
 };
 
 /**
+ * Get XChange platform-specific agenda items
+ * Pulls real data from the platform for relevant discussions
+ */
+const getXChangePlatformItems = async (meetingType: 'MORNING' | 'AFTERNOON'): Promise<AgendaItem[]> => {
+  const items: AgendaItem[] = [];
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const lastWeek = new Date(today);
+  lastWeek.setDate(lastWeek.getDate() - 7);
+
+  try {
+    // Get platform statistics for morning meeting
+    if (meetingType === 'MORNING') {
+      // 1. Yesterday's Orders Summary
+      const yesterdayOrders = await prisma.order.count({
+        where: {
+          createdAt: { gte: yesterday, lt: today },
+        },
+      });
+
+      const pendingOrders = await prisma.order.count({
+        where: { status: 'PENDING' },
+      });
+
+      if (yesterdayOrders > 0 || pendingOrders > 0) {
+        items.push({
+          id: generateAgendaItemId(),
+          title: `Orders Review: ${yesterdayOrders} yesterday, ${pendingOrders} pending`,
+          titleAr: `مراجعة الطلبات: ${yesterdayOrders} أمس، ${pendingOrders} معلقة`,
+          description: `Review yesterday's ${yesterdayOrders} orders and ${pendingOrders} pending orders requiring action`,
+          type: 'OPERATIONAL',
+          priority: pendingOrders > 10 ? 'HIGH' : 'MEDIUM',
+          timeAllocation: 8,
+          leadMember: BoardRole.COO,
+          participants: [BoardRole.CEO, BoardRole.COO, BoardRole.CFO],
+          context: 'Daily order processing and fulfillment status',
+          requiredDecision: pendingOrders > 20,
+          relatedKPIs: ['ORD_FULFILLMENT', 'ORD_VOLUME'],
+          relatedAlerts: [],
+          source: 'SYSTEM',
+          founderOverride: false,
+        });
+      }
+
+      // 2. New Listings Activity
+      const newListings = await prisma.listing.count({
+        where: {
+          createdAt: { gte: yesterday },
+        },
+      });
+
+      const pendingListings = await prisma.listing.count({
+        where: { status: 'PENDING' },
+      });
+
+      items.push({
+        id: generateAgendaItemId(),
+        title: `Marketplace Activity: ${newListings} new listings`,
+        titleAr: `نشاط السوق: ${newListings} إعلانات جديدة`,
+        description: `${newListings} new listings added, ${pendingListings} awaiting approval`,
+        type: 'OPERATIONAL',
+        priority: 'MEDIUM',
+        timeAllocation: 5,
+        leadMember: BoardRole.CMO,
+        participants: [BoardRole.CEO, BoardRole.CMO, BoardRole.COO],
+        context: 'Marketplace growth and listing quality',
+        requiredDecision: false,
+        relatedKPIs: ['MKT_LISTINGS', 'MKT_GROWTH'],
+        relatedAlerts: [],
+        source: 'SYSTEM',
+        founderOverride: false,
+      });
+
+      // 3. User Growth
+      const newUsers = await prisma.user.count({
+        where: {
+          createdAt: { gte: lastWeek },
+        },
+      });
+
+      const totalUsers = await prisma.user.count();
+
+      items.push({
+        id: generateAgendaItemId(),
+        title: `User Growth: ${newUsers} new users this week`,
+        titleAr: `نمو المستخدمين: ${newUsers} مستخدم جديد هذا الأسبوع`,
+        description: `Total users: ${totalUsers}, Weekly growth: ${newUsers}`,
+        type: 'STRATEGIC',
+        priority: 'MEDIUM',
+        timeAllocation: 5,
+        leadMember: BoardRole.CMO,
+        participants: [BoardRole.CEO, BoardRole.CMO],
+        context: 'User acquisition and retention metrics',
+        requiredDecision: false,
+        relatedKPIs: ['USR_GROWTH', 'USR_RETENTION'],
+        relatedAlerts: [],
+        source: 'SYSTEM',
+        founderOverride: false,
+      });
+
+      // 4. Financial Snapshot (morning only)
+      const yesterdayRevenue = await prisma.payment.aggregate({
+        where: {
+          createdAt: { gte: yesterday, lt: today },
+          status: 'COMPLETED',
+        },
+        _sum: { amount: true },
+      });
+
+      const revenue = yesterdayRevenue._sum.amount || 0;
+      items.push({
+        id: generateAgendaItemId(),
+        title: `Financial Snapshot: ${revenue.toLocaleString('ar-EG')} EGP yesterday`,
+        titleAr: `لمحة مالية: ${revenue.toLocaleString('ar-EG')} جنيه أمس`,
+        description: `Yesterday's revenue and financial health overview`,
+        type: 'REVIEW',
+        priority: 'HIGH',
+        timeAllocation: 8,
+        leadMember: BoardRole.CFO,
+        participants: [BoardRole.CEO, BoardRole.CFO],
+        context: 'Daily financial performance',
+        requiredDecision: false,
+        relatedKPIs: ['FIN_REVENUE', 'FIN_GMV'],
+        relatedAlerts: [],
+        source: 'SYSTEM',
+        founderOverride: false,
+      });
+    }
+
+    // Afternoon meeting focuses on operations
+    if (meetingType === 'AFTERNOON') {
+      // 1. Customer Support Status
+      const openChats = await prisma.chatRoom.count({
+        where: {
+          updatedAt: { gte: yesterday },
+        },
+      });
+
+      items.push({
+        id: generateAgendaItemId(),
+        title: `Customer Engagement: ${openChats} active conversations`,
+        titleAr: `تفاعل العملاء: ${openChats} محادثة نشطة`,
+        description: `Monitor customer interactions and response quality`,
+        type: 'OPERATIONAL',
+        priority: 'MEDIUM',
+        timeAllocation: 5,
+        leadMember: BoardRole.COO,
+        participants: [BoardRole.COO, BoardRole.CMO],
+        context: 'Customer service performance',
+        requiredDecision: false,
+        relatedKPIs: ['CS_RESPONSE', 'CS_SATISFACTION'],
+        relatedAlerts: [],
+        source: 'SYSTEM',
+        founderOverride: false,
+      });
+
+      // 2. Barter Activity
+      const activeBarters = await prisma.barter.count({
+        where: { status: 'PENDING' },
+      });
+
+      if (activeBarters > 0) {
+        items.push({
+          id: generateAgendaItemId(),
+          title: `Barter Exchange: ${activeBarters} active trades`,
+          titleAr: `تبادل المقايضة: ${activeBarters} صفقة نشطة`,
+          description: `Review barter marketplace activity and matching success`,
+          type: 'OPERATIONAL',
+          priority: 'MEDIUM',
+          timeAllocation: 5,
+          leadMember: BoardRole.COO,
+          participants: [BoardRole.COO, BoardRole.CTO],
+          context: 'Barter feature performance',
+          requiredDecision: false,
+          relatedKPIs: ['BRT_VOLUME', 'BRT_SUCCESS'],
+          relatedAlerts: [],
+          source: 'SYSTEM',
+          founderOverride: false,
+        });
+      }
+
+      // 3. Technical Health
+      items.push({
+        id: generateAgendaItemId(),
+        title: 'Technical Systems Health Check',
+        titleAr: 'فحص صحة الأنظمة التقنية',
+        description: 'Review API performance, error rates, and system stability',
+        type: 'OPERATIONAL',
+        priority: 'MEDIUM',
+        timeAllocation: 5,
+        leadMember: BoardRole.CTO,
+        participants: [BoardRole.CTO, BoardRole.COO],
+        context: 'Platform reliability and performance',
+        requiredDecision: false,
+        relatedKPIs: ['TECH_UPTIME', 'TECH_ERRORS'],
+        relatedAlerts: [],
+        source: 'SYSTEM',
+        founderOverride: false,
+      });
+
+      // 4. Action Items Progress
+      const todayActionItems = await prisma.actionItem.count({
+        where: {
+          dueDate: {
+            gte: today,
+            lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
+          },
+          status: { not: 'COMPLETED' },
+        },
+      });
+
+      if (todayActionItems > 0) {
+        items.push({
+          id: generateAgendaItemId(),
+          title: `Today's Action Items: ${todayActionItems} due today`,
+          titleAr: `بنود العمل اليوم: ${todayActionItems} مستحقة اليوم`,
+          description: `Review and ensure completion of today's action items`,
+          type: 'OPERATIONAL',
+          priority: 'HIGH',
+          timeAllocation: 8,
+          leadMember: BoardRole.COO,
+          participants: Object.values(BoardRole),
+          context: 'Daily task completion tracking',
+          requiredDecision: false,
+          relatedKPIs: [],
+          relatedAlerts: [],
+          source: 'SYSTEM',
+          founderOverride: false,
+        });
+      }
+    }
+  } catch (error) {
+    logger.error('[AgendaIntelligence] Error getting platform items:', error);
+    // Return default items if database queries fail
+    items.push({
+      id: generateAgendaItemId(),
+      title: meetingType === 'MORNING' ? 'Daily Business Review' : 'Operational Status Update',
+      titleAr: meetingType === 'MORNING' ? 'مراجعة الأعمال اليومية' : 'تحديث الحالة التشغيلية',
+      description: 'Review overall business performance and key metrics',
+      type: 'REVIEW',
+      priority: 'MEDIUM',
+      timeAllocation: 10,
+      leadMember: BoardRole.CEO,
+      participants: Object.values(BoardRole),
+      context: 'Standard daily review',
+      requiredDecision: false,
+      relatedKPIs: [],
+      relatedAlerts: [],
+      source: 'SYSTEM',
+      founderOverride: false,
+    });
+  }
+
+  return items;
+};
+
+/**
  * Get innovation agenda items
  */
 const getInnovationAgendaItems = async (meetingType: 'MORNING' | 'AFTERNOON'): Promise<AgendaItem[]> => {
@@ -509,13 +767,16 @@ export const generateMeetingAgenda = async (
   // Collect agenda items from all sources
   const systemItems = await getSystemAgendaItems();
   const intelligenceItems = await getIntelligenceAgendaItems();
+  const platformItems = meetingType !== 'EMERGENCY'
+    ? await getXChangePlatformItems(meetingType as 'MORNING' | 'AFTERNOON')
+    : [];
   const innovationItems = meetingType !== 'EMERGENCY'
     ? await getInnovationAgendaItems(meetingType as 'MORNING' | 'AFTERNOON')
     : [];
   const phaseItems = await getPhaseSpecificItems();
 
-  // Combine all items
-  let allItems = [...systemItems, ...intelligenceItems, ...innovationItems, ...phaseItems];
+  // Combine all items - platform items are prioritized for relevance
+  let allItems = [...systemItems, ...platformItems, ...intelligenceItems, ...innovationItems, ...phaseItems];
 
   // Add founder overrides with highest priority
   if (founderOverrides && founderOverrides.length > 0) {

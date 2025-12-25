@@ -68,6 +68,8 @@ import founderRoutes from './routes/founder.routes';
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
 import { startLockCleanupJob } from './jobs/lockCleanup.job';
+import { startAutonomousBoardJobs, runMorningIntelligence } from './jobs/autonomousBoard.job';
+import { initializeDailyMeetingsOnStartup } from './services/autonomous-board';
 
 // Import real-time matching
 import { initializeWebSocket, startRealtimeMatching } from './services/realtime-matching.service';
@@ -462,6 +464,15 @@ const startServer = async () => {
       startBarterMatcherJob(); // Runs every 15 minutes as fallback
       startLockCleanupJob();   // Runs every 5 minutes for cleanup
     }
+
+    // Start Autonomous AI Board scheduled jobs
+    startAutonomousBoardJobs();
+    logger.info('Autonomous AI Board jobs scheduled');
+
+    // Initialize daily meetings at startup (ensures meetings exist even if cron hasn't run)
+    initializeDailyMeetingsOnStartup()
+      .then(() => logger.info('Daily meetings initialized at startup'))
+      .catch(err => logger.error('Failed to initialize daily meetings:', err));
 
     // Start HTTP server (Express + Socket.IO) - listen on 0.0.0.0 for Railway compatibility
     httpServer.listen(env.server.port, '0.0.0.0', () => {
