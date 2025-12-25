@@ -117,6 +117,23 @@ const generateTaskId = (): string => {
 };
 
 /**
+ * Get next report number for a given type
+ */
+const getNextReportNumber = async (type: string): Promise<number> => {
+  const year = new Date().getFullYear();
+  const count = await prisma.boardMemberDailyReport.count({
+    where: {
+      type: type as any,
+      createdAt: {
+        gte: new Date(year, 0, 1),
+        lt: new Date(year + 1, 0, 1),
+      },
+    },
+  });
+  return count + 1;
+};
+
+/**
  * Generate daily financial report
  * يتم تشغيلها يومياً الساعة 7:30 صباحاً
  */
@@ -125,14 +142,48 @@ export const generateDailyFinancialReport = async (): Promise<FinancialReport> =
 
   const laila = getBoardMemberByRole(BoardRole.CFO);
 
-  // Simulated financial data - in production, fetch from database/accounting system
+  // Get real KPI data from database
+  const kpis = await prisma.kPIMetric.findMany({
+    where: {
+      code: {
+        in: ['GMV', 'REVENUE', 'CAC', 'LTV', 'MAU'],
+      },
+    },
+  });
+
+  const getKPIValue = (code: string): number => {
+    const kpi = kpis.find((k) => k.code === code);
+    return kpi?.currentValue || 0;
+  };
+
+  // Calculate real metrics from platform data
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  const [transactionCount, avgOrderValue] = await Promise.all([
+    prisma.transaction.count({
+      where: {
+        paymentStatus: 'COMPLETED',
+        createdAt: { gte: monthStart },
+      },
+    }),
+    prisma.transaction.aggregate({
+      _avg: { amount: true },
+      where: {
+        paymentStatus: 'COMPLETED',
+        amount: { not: null },
+      },
+    }),
+  ]);
+
   const revenue: RevenueMetrics = {
-    gmv: 250000,
-    revenue: 12500, // 5% take rate
+    gmv: getKPIValue('GMV'),
+    revenue: getKPIValue('REVENUE'),
     takeRate: 5,
-    transactionCount: 85,
-    averageOrderValue: 2941,
-    revenueGrowth: 8.5,
+    transactionCount,
+    averageOrderValue: avgOrderValue._avg.amount || 0,
+    revenueGrowth: 8.5, // Will be calculated from historical data
   };
 
   const costs: CostMetrics = {
@@ -217,7 +268,7 @@ Return as JSON:
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { insights: [], insightsAr: [] };
 
-    return {
+    const financialReport: FinancialReport = {
       id: generateTaskId(),
       date: new Date(),
       period: 'Daily',
@@ -229,6 +280,45 @@ Return as JSON:
       insightsAr: parsed.insightsAr || [],
       alerts,
     };
+
+    // Save to BoardMemberDailyReport
+    const lailaMember = await prisma.boardMember.findFirst({
+      where: { role: 'CFO' },
+    });
+
+    if (lailaMember) {
+      const reportNumber = `FR-${new Date().getFullYear()}-${String(await getNextReportNumber('FINANCIAL_REPORT')).padStart(3, '0')}`;
+
+      await prisma.boardMemberDailyReport.create({
+        data: {
+          reportNumber,
+          type: 'FINANCIAL_REPORT',
+          memberId: lailaMember.id,
+          memberRole: 'CFO',
+          date: new Date(),
+          scheduledTime: '07:30',
+          title: 'Daily Financial Report',
+          titleAr: 'التقرير المالي اليومي',
+          summary: `GMV: ${revenue.gmv.toLocaleString()} EGP, Revenue: ${revenue.revenue.toLocaleString()} EGP, ${transactionCount} transactions`,
+          summaryAr: `إجمالي قيمة البضائع: ${revenue.gmv.toLocaleString()} جنيه، الإيرادات: ${revenue.revenue.toLocaleString()} جنيه، ${transactionCount} معاملة`,
+          content: financialReport as object,
+          keyMetrics: {
+            gmv: revenue.gmv,
+            revenue: revenue.revenue,
+            transactionCount,
+            netMargin: profitability.netMargin,
+            runwayMonths: cashFlow.runwayMonths,
+          },
+          alerts: alerts as object,
+          status: 'GENERATED',
+          generatedAt: new Date(),
+        },
+      });
+
+      logger.info(`[LailaCFO] Financial report saved to database: ${reportNumber}`);
+    }
+
+    return financialReport;
   } catch (error) {
     logger.error('[LailaCFO] Report generation error:', error);
     throw error;

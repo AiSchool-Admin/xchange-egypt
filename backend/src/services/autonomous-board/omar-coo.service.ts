@@ -111,6 +111,23 @@ const generateTaskId = (): string => {
 };
 
 /**
+ * Get next report number for a given type
+ */
+const getNextReportNumber = async (type: string): Promise<number> => {
+  const year = new Date().getFullYear();
+  const count = await prisma.boardMemberDailyReport.count({
+    where: {
+      type: type as any,
+      createdAt: {
+        gte: new Date(year, 0, 1),
+        lt: new Date(year + 1, 0, 1),
+      },
+    },
+  });
+  return count + 1;
+};
+
+/**
  * Generate response templates for customer service
  * يتم تشغيلها كل يوم إثنين الساعة 8:00 صباحاً
  */
@@ -269,26 +286,71 @@ export const generateDailyOperationsReport = async (): Promise<OperationsReport>
 
   const omar = getBoardMemberByRole(BoardRole.COO);
 
-  // Simulated metrics - in production, fetch from database
+  // Get real KPI data from database
+  const dbKPIs = await prisma.kPIMetric.findMany({
+    where: {
+      code: {
+        in: ['ORDER_FULFILLMENT', 'DELIVERY_TIME', 'DISPUTE_RATE', 'SUPPORT_RESPONSE'],
+      },
+    },
+  });
+
+  const getKPIValue = (code: string): number => {
+    const kpi = dbKPIs.find((k) => k.code === code);
+    return kpi?.currentValue || 0;
+  };
+
+  // Calculate real metrics from platform data
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [
+    totalTransactions,
+    completedTransactions,
+    pendingTransactions,
+    failedTransactions,
+    totalConversations,
+    conversationsWithResponse,
+  ] = await Promise.all([
+    prisma.transaction.count({
+      where: { createdAt: { gte: todayStart } },
+    }),
+    prisma.transaction.count({
+      where: { createdAt: { gte: todayStart }, paymentStatus: 'COMPLETED' },
+    }),
+    prisma.transaction.count({
+      where: { createdAt: { gte: todayStart }, paymentStatus: 'PENDING' },
+    }),
+    prisma.transaction.count({
+      where: { createdAt: { gte: todayStart }, paymentStatus: 'FAILED' },
+    }),
+    prisma.conversation.count({
+      where: { createdAt: { gte: todayStart } },
+    }),
+    prisma.conversation.count({
+      where: { createdAt: { gte: todayStart }, lastMessageAt: { not: null } },
+    }),
+  ]);
+
   const orderMetrics: OrderMetrics = {
-    totalOrders: 150,
-    completedOrders: 120,
-    pendingOrders: 25,
-    cancelledOrders: 5,
-    fulfillmentRate: 80,
-    averageDeliveryTime: 2.5,
+    totalOrders: totalTransactions,
+    completedOrders: completedTransactions,
+    pendingOrders: pendingTransactions,
+    cancelledOrders: failedTransactions,
+    fulfillmentRate: getKPIValue('ORDER_FULFILLMENT'),
+    averageDeliveryTime: getKPIValue('DELIVERY_TIME'),
   };
 
   const csMetrics: CustomerServiceMetrics = {
-    totalTickets: 45,
-    resolvedTickets: 38,
-    pendingTickets: 7,
-    averageResponseTime: 15,
-    averageResolutionTime: 120,
-    satisfactionScore: 4.2,
+    totalTickets: totalConversations,
+    resolvedTickets: conversationsWithResponse,
+    pendingTickets: totalConversations - conversationsWithResponse,
+    averageResponseTime: getKPIValue('SUPPORT_RESPONSE'),
+    averageResolutionTime: getKPIValue('SUPPORT_RESPONSE') * 4, // Estimated
+    satisfactionScore: 4.2, // Would come from ratings
   };
 
-  const kpis: OperationsKPI[] = [
+  const operationsKPIs: OperationsKPI[] = [
     {
       name: 'Order Fulfillment Rate',
       nameAr: 'معدل تنفيذ الطلبات',
@@ -329,7 +391,7 @@ export const generateDailyOperationsReport = async (): Promise<OperationsReport>
 
 Order Metrics: ${JSON.stringify(orderMetrics)}
 Customer Service: ${JSON.stringify(csMetrics)}
-KPIs: ${JSON.stringify(kpis)}
+KPIs: ${JSON.stringify(operationsKPIs)}
 
 Return as JSON:
 {
@@ -356,17 +418,59 @@ Return as JSON:
 
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
-      return {
+
+      const operationsReport: OperationsReport = {
         id: generateTaskId(),
         date: new Date(),
         period: 'Daily',
-        kpis,
+        kpis: operationsKPIs,
         orderMetrics,
         customerServiceMetrics: csMetrics,
         bottlenecks: parsed.bottlenecks || [],
         recommendations: parsed.recommendations || [],
         recommendationsAr: parsed.recommendationsAr || [],
       };
+
+      // Save to BoardMemberDailyReport
+      const omarMember = await prisma.boardMember.findFirst({
+        where: { role: 'COO' },
+      });
+
+      if (omarMember) {
+        const reportNumber = `OR-${new Date().getFullYear()}-${String(await getNextReportNumber('OPERATIONS_REPORT')).padStart(3, '0')}`;
+
+        await prisma.boardMemberDailyReport.create({
+          data: {
+            reportNumber,
+            type: 'OPERATIONS_REPORT',
+            memberId: omarMember.id,
+            memberRole: 'COO',
+            date: new Date(),
+            scheduledTime: '17:00',
+            title: 'Daily Operations Report',
+            titleAr: 'تقرير العمليات اليومي',
+            summary: `Orders: ${orderMetrics.totalOrders} (${orderMetrics.fulfillmentRate.toFixed(1)}% fulfillment), CS: ${csMetrics.resolvedTickets}/${csMetrics.totalTickets} tickets resolved`,
+            summaryAr: `الطلبات: ${orderMetrics.totalOrders} (${orderMetrics.fulfillmentRate.toFixed(1)}% تنفيذ)، خدمة العملاء: ${csMetrics.resolvedTickets}/${csMetrics.totalTickets} تذكرة محلولة`,
+            content: operationsReport as object,
+            keyMetrics: {
+              totalOrders: orderMetrics.totalOrders,
+              completedOrders: orderMetrics.completedOrders,
+              fulfillmentRate: orderMetrics.fulfillmentRate,
+              avgDeliveryTime: orderMetrics.averageDeliveryTime,
+              totalTickets: csMetrics.totalTickets,
+              resolvedTickets: csMetrics.resolvedTickets,
+            },
+            insights: parsed.bottlenecks as object,
+            recommendations: parsed.recommendations as object,
+            status: 'GENERATED',
+            generatedAt: new Date(),
+          },
+        });
+
+        logger.info(`[OmarCOO] Operations report saved to database: ${reportNumber}`);
+      }
+
+      return operationsReport;
     }
 
     throw new Error('Failed to parse report');

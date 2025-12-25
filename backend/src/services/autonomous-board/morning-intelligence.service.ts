@@ -12,6 +12,7 @@
 import prisma from '../../lib/prisma';
 import logger from '../../lib/logger';
 import Anthropic from '@anthropic-ai/sdk';
+import { calculateAndUpdateAllKPIs } from '../board/kpi-calculator.service';
 
 const anthropic = new Anthropic();
 
@@ -275,6 +276,19 @@ ARABIC: [ملخص]`,
  */
 export const generateMorningIntelligence = async () => {
   logger.info('[MorningIntelligence] Starting generation...');
+
+  // 0. Calculate and update all KPIs first
+  logger.info('[MorningIntelligence] Calculating KPIs from platform data...');
+  try {
+    const kpiResult = await calculateAndUpdateAllKPIs();
+    logger.info(`[MorningIntelligence] KPIs updated: ${kpiResult.updated}, Errors: ${kpiResult.errors.length}`);
+    if (kpiResult.errors.length > 0) {
+      logger.warn(`[MorningIntelligence] KPI calculation errors: ${kpiResult.errors.join(', ')}`);
+    }
+  } catch (error) {
+    logger.error('[MorningIntelligence] KPI calculation failed:', error);
+    // Continue with report generation even if KPI calculation fails
+  }
 
   // 1. Generate report number
   const reportNumber = await generateReportNumber();

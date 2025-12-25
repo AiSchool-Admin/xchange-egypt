@@ -141,6 +141,23 @@ const generateTaskId = (): string => {
 };
 
 /**
+ * Get next report number for a given type
+ */
+const getNextReportNumber = async (type: string): Promise<number> => {
+  const year = new Date().getFullYear();
+  const count = await prisma.boardMemberDailyReport.count({
+    where: {
+      type: type as any,
+      createdAt: {
+        gte: new Date(year, 0, 1),
+        lt: new Date(year + 1, 0, 1),
+      },
+    },
+  });
+  return count + 1;
+};
+
+/**
  * Generate daily content package
  * يتم تشغيلها يومياً الساعة 7:00 صباحاً
  */
@@ -204,6 +221,41 @@ Focus on:
         stories: parsed.stories || [],
         generatedAt: new Date(),
       };
+
+      // Save to BoardMemberDailyReport
+      const youssefMember = await prisma.boardMember.findFirst({
+        where: { role: 'CMO' },
+      });
+
+      if (youssefMember) {
+        const reportNumber = `CP-${new Date().getFullYear()}-${String(await getNextReportNumber('CONTENT_PACKAGE')).padStart(3, '0')}`;
+
+        await prisma.boardMemberDailyReport.create({
+          data: {
+            reportNumber,
+            type: 'CONTENT_PACKAGE',
+            memberId: youssefMember.id,
+            memberRole: 'CMO',
+            date: new Date(),
+            scheduledTime: '07:00',
+            title: 'Daily Content Package',
+            titleAr: 'حزمة المحتوى اليومية',
+            summary: `Generated ${contentPackage.facebookPosts.length} Facebook posts, ${contentPackage.instagramPosts.length} Instagram posts, ${contentPackage.twitterPosts.length} Twitter posts, and ${contentPackage.stories.length} stories.`,
+            summaryAr: `تم إنشاء ${contentPackage.facebookPosts.length} منشورات فيسبوك، ${contentPackage.instagramPosts.length} منشورات انستجرام، ${contentPackage.twitterPosts.length} تغريدات، و${contentPackage.stories.length} قصص.`,
+            content: contentPackage as object,
+            keyMetrics: {
+              facebookPosts: contentPackage.facebookPosts.length,
+              instagramPosts: contentPackage.instagramPosts.length,
+              twitterPosts: contentPackage.twitterPosts.length,
+              stories: contentPackage.stories.length,
+            },
+            status: 'GENERATED',
+            generatedAt: new Date(),
+          },
+        });
+
+        logger.info(`[YoussefCMO] Content package saved to database: ${reportNumber}`);
+      }
 
       logger.info(`[YoussefCMO] Content package generated: ${contentPackage.id}`);
       return contentPackage;
