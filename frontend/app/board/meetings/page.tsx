@@ -83,6 +83,19 @@ export default function MeetingsPage() {
     return meetingDate >= today && meetingDate < tomorrow;
   }).sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
+  // Check if daily meetings exist (10 AM morning and 2 PM afternoon)
+  const hasMorningMeeting = todaysMeetings.some(m => {
+    const hour = new Date(m.scheduledAt).getHours();
+    return hour >= 9 && hour <= 11; // Between 9 AM and 11 AM
+  });
+
+  const hasAfternoonMeeting = todaysMeetings.some(m => {
+    const hour = new Date(m.scheduledAt).getHours();
+    return hour >= 13 && hour <= 15; // Between 1 PM and 3 PM
+  });
+
+  const needsDailyMeetings = !hasMorningMeeting || !hasAfternoonMeeting;
+
   // Next upcoming meeting (first one today that hasn't started, or first future one)
   const now = new Date();
   const nextMeeting = meetings
@@ -179,7 +192,7 @@ export default function MeetingsPage() {
               {new Date().toLocaleDateString('ar-EG', { weekday: 'long', month: 'long', day: 'numeric' })}
             </span>
           </div>
-          {todaysMeetings.length === 0 && (
+          {needsDailyMeetings && (
             <button
               onClick={handleScheduleTodaysMeetings}
               disabled={scheduling}
@@ -193,7 +206,7 @@ export default function MeetingsPage() {
               ) : (
                 <>
                   <span>➕</span>
-                  جدولة اجتماعات اليوم
+                  جدولة اجتماعات اليوم (10 ص + 2 م)
                 </>
               )}
             </button>
