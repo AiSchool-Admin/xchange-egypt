@@ -4,6 +4,187 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { founderFetch } from '@/lib/api/founder';
 
+// Modal Component for Report Details
+const ReportModal = ({
+  isOpen,
+  onClose,
+  report,
+  type,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  report: any;
+  type: 'content' | 'financial' | 'operations' | 'closing';
+}) => {
+  if (!isOpen || !report) return null;
+
+  const getTitle = () => {
+    switch (type) {
+      case 'content': return 'حزمة المحتوى اليومية';
+      case 'financial': return 'التقرير المالي اليومي';
+      case 'operations': return 'تقرير العمليات اليومي';
+      case 'closing': return 'تقرير الإغلاق اليومي';
+    }
+  };
+
+  const getColor = () => {
+    switch (type) {
+      case 'content': return 'pink';
+      case 'financial': return 'green';
+      case 'operations': return 'orange';
+      case 'closing': return 'indigo';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-900 rounded-2xl border border-${getColor()}-500/50 shadow-2xl`}>
+        {/* Header */}
+        <div className={`sticky top-0 p-4 bg-gray-900 border-b border-${getColor()}-500/30 flex items-center justify-between`}>
+          <div>
+            <h2 className="text-xl font-bold text-white">{getTitle()}</h2>
+            <p className="text-sm text-gray-400">{report.reportNumber}</p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+            <span className="text-2xl text-gray-400">×</span>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Summary */}
+          {(report.summaryAr || report.summary || report.executiveSummaryAr || report.executiveSummary) && (
+            <div className="p-4 bg-gray-800/50 rounded-xl">
+              <h3 className="text-sm font-medium text-gray-400 mb-2">الملخص</h3>
+              <p className="text-white leading-relaxed">
+                {report.summaryAr || report.summary || report.executiveSummaryAr || report.executiveSummary}
+              </p>
+            </div>
+          )}
+
+          {/* Content Package Details */}
+          {type === 'content' && report.content && (
+            <div className="space-y-4">
+              {/* Social Posts */}
+              {report.content.socialPosts && (
+                <div className="p-4 bg-pink-500/10 border border-pink-500/30 rounded-xl">
+                  <h3 className="text-sm font-medium text-pink-400 mb-3">📱 المنشورات الاجتماعية</h3>
+                  <div className="space-y-3">
+                    {report.content.socialPosts.map((post: any, i: number) => (
+                      <div key={i} className="p-3 bg-gray-900/50 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">
+                            {post.platform === 'facebook' ? '📘' : post.platform === 'instagram' ? '📸' : post.platform === 'twitter' ? '🐦' : '📱'}
+                          </span>
+                          <span className="text-sm font-medium text-white capitalize">{post.platform}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${post.type === 'promo' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                            {post.type}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{post.content}</p>
+                        {post.hashtags && post.hashtags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {post.hashtags.map((tag: string, j: number) => (
+                              <span key={j} className="text-xs text-blue-400">#{tag}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Stories */}
+              {report.content.stories && report.content.stories.length > 0 && (
+                <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+                  <h3 className="text-sm font-medium text-purple-400 mb-3">📖 القصص</h3>
+                  <div className="space-y-2">
+                    {report.content.stories.map((story: any, i: number) => (
+                      <div key={i} className="p-3 bg-gray-900/50 rounded-lg">
+                        <p className="text-sm font-medium text-white">{story.title}</p>
+                        <p className="text-xs text-gray-400">{story.platform} • {story.type}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Email Campaigns */}
+              {report.content.emailCampaigns && report.content.emailCampaigns.length > 0 && (
+                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                  <h3 className="text-sm font-medium text-blue-400 mb-3">📧 حملات البريد</h3>
+                  <div className="space-y-2">
+                    {report.content.emailCampaigns.map((email: any, i: number) => (
+                      <div key={i} className="p-3 bg-gray-900/50 rounded-lg">
+                        <p className="text-sm font-medium text-white">{email.subject}</p>
+                        <p className="text-xs text-gray-400 mt-1">{email.preview}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Key Metrics */}
+          {report.keyMetrics && Object.keys(report.keyMetrics).length > 0 && (
+            <div className="p-4 bg-gray-800/50 rounded-xl">
+              <h3 className="text-sm font-medium text-gray-400 mb-3">📊 المقاييس الرئيسية</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {Object.entries(report.keyMetrics).map(([key, value]) => (
+                  <div key={key} className="p-3 bg-gray-900/50 rounded-lg text-center">
+                    <p className="text-xs text-gray-400 mb-1">{key}</p>
+                    <p className={`text-lg font-bold text-${getColor()}-400`}>{String(value)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Alerts */}
+          {report.alerts && report.alerts.length > 0 && (
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+              <h3 className="text-sm font-medium text-red-400 mb-3">🚨 التنبيهات</h3>
+              <ul className="space-y-2">
+                {report.alerts.map((alert: any, i: number) => (
+                  <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
+                    <span className="text-red-400">•</span>
+                    {alert.message || alert}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Insights */}
+          {report.insights && report.insights.length > 0 && (
+            <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+              <h3 className="text-sm font-medium text-yellow-400 mb-3">💡 الرؤى</h3>
+              <ul className="space-y-2">
+                {report.insights.map((insight: any, i: number) => (
+                  <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
+                    <span className="text-yellow-400">•</span>
+                    {insight.insight || insight}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Generated Time */}
+          {report.generatedAt && (
+            <p className="text-xs text-gray-500 text-center">
+              تم التوليد: {new Date(report.generatedAt).toLocaleString('ar-EG')}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface KPISnapshot {
   code: string;
   name: string;
@@ -82,6 +263,7 @@ export default function AutonomousDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionResult, setActionResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [selectedReport, setSelectedReport] = useState<{ report: any; type: 'content' | 'financial' | 'operations' | 'closing' } | null>(null);
 
   const fetchDashboard = async () => {
     try {
@@ -146,6 +328,21 @@ export default function AutonomousDashboardPage() {
     }
   };
 
+  // Generate Morning Intelligence
+  const handleGenerateMorningIntelligence = async () => {
+    setActionLoading('intelligence');
+    setActionResult(null);
+    try {
+      const response = await founderFetch('/board/autonomous/morning-intelligence/generate', { method: 'POST' });
+      setActionResult({ type: 'success', message: 'تم توليد الاستخبارات الصباحية بنجاح' });
+      await fetchDashboard();
+    } catch (error: any) {
+      setActionResult({ type: 'error', message: error.message || 'فشل توليد الاستخبارات الصباحية' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
@@ -172,42 +369,54 @@ export default function AutonomousDashboardPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleGenerateMorningIntelligence}
+              disabled={actionLoading !== null}
+              className="px-3 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              {actionLoading === 'intelligence' ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <span>🌅</span>
+              )}
+              الاستخبارات
+            </button>
             <button
               onClick={handleInitializeKPIs}
               disabled={actionLoading !== null}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               {actionLoading === 'initialize' ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : (
                 <span>⚙️</span>
               )}
-              تهيئة المؤشرات
+              تهيئة
             </button>
             <button
               onClick={handleCalculateKPIs}
               disabled={actionLoading !== null}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               {actionLoading === 'calculate' ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : (
                 <span>📊</span>
               )}
-              حساب المؤشرات
+              حساب KPIs
             </button>
             <button
               onClick={handleGenerateReports}
               disabled={actionLoading !== null}
-              className="px-4 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               {actionLoading === 'reports' ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : (
                 <span>📝</span>
               )}
-              توليد التقارير
+              التقارير
             </button>
           </div>
         </div>
@@ -443,7 +652,10 @@ export default function AutonomousDashboardPage() {
       {/* Board Member Reports Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Content Package - حزمة المحتوى (07:00 AM - Youssef CMO) */}
-        <div className="p-6 bg-gradient-to-br from-pink-900/30 to-red-900/30 rounded-2xl border border-pink-700/50">
+        <div
+          onClick={() => dashboard?.contentPackage && setSelectedReport({ report: dashboard.contentPackage, type: 'content' })}
+          className={`p-6 bg-gradient-to-br from-pink-900/30 to-red-900/30 rounded-2xl border border-pink-700/50 ${dashboard?.contentPackage ? 'cursor-pointer hover:border-pink-500/70 hover:shadow-lg hover:shadow-pink-500/10 transition-all' : ''}`}
+        >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <span className="text-xl">📣</span> حزمة المحتوى
@@ -459,11 +671,18 @@ export default function AutonomousDashboardPage() {
               <p className="text-sm text-gray-300 leading-relaxed">
                 {dashboard.contentPackage.summaryAr || dashboard.contentPackage.summary || 'تم إنشاء حزمة المحتوى اليومية'}
               </p>
+              {/* Content Preview */}
+              {dashboard.contentPackage.content?.socialPosts && (
+                <div className="pt-2 border-t border-pink-500/20">
+                  <p className="text-xs text-pink-400 mb-1">📱 {dashboard.contentPackage.content.socialPosts.length} منشورات جاهزة</p>
+                </div>
+              )}
               {dashboard.contentPackage.generatedAt && (
                 <p className="text-xs text-gray-500">
                   تم التوليد: {new Date(dashboard.contentPackage.generatedAt).toLocaleTimeString('ar-EG')}
                 </p>
               )}
+              <p className="text-xs text-pink-400 text-center mt-2">اضغط لعرض التفاصيل ←</p>
             </div>
           ) : (
             <div className="text-center py-4">
@@ -474,7 +693,10 @@ export default function AutonomousDashboardPage() {
         </div>
 
         {/* Financial Report - التقرير المالي (07:30 AM - Laila CFO) */}
-        <div className="p-6 bg-gradient-to-br from-green-900/30 to-emerald-900/30 rounded-2xl border border-green-700/50">
+        <div
+          onClick={() => dashboard?.financialReport && setSelectedReport({ report: dashboard.financialReport, type: 'financial' })}
+          className={`p-6 bg-gradient-to-br from-green-900/30 to-emerald-900/30 rounded-2xl border border-green-700/50 ${dashboard?.financialReport ? 'cursor-pointer hover:border-green-500/70 hover:shadow-lg hover:shadow-green-500/10 transition-all' : ''}`}
+        >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <span className="text-xl">💰</span> التقرير المالي
@@ -500,6 +722,7 @@ export default function AutonomousDashboardPage() {
                   ))}
                 </div>
               )}
+              <p className="text-xs text-green-400 text-center mt-2">اضغط لعرض التفاصيل ←</p>
             </div>
           ) : (
             <div className="text-center py-4">
@@ -510,7 +733,10 @@ export default function AutonomousDashboardPage() {
         </div>
 
         {/* Operations Report - تقرير العمليات (05:00 PM - Omar COO) */}
-        <div className="p-6 bg-gradient-to-br from-orange-900/30 to-amber-900/30 rounded-2xl border border-orange-700/50">
+        <div
+          onClick={() => dashboard?.operationsReport && setSelectedReport({ report: dashboard.operationsReport, type: 'operations' })}
+          className={`p-6 bg-gradient-to-br from-orange-900/30 to-amber-900/30 rounded-2xl border border-orange-700/50 ${dashboard?.operationsReport ? 'cursor-pointer hover:border-orange-500/70 hover:shadow-lg hover:shadow-orange-500/10 transition-all' : ''}`}
+        >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <span className="text-xl">⚙️</span> تقرير العمليات
@@ -536,6 +762,7 @@ export default function AutonomousDashboardPage() {
                   ))}
                 </ul>
               )}
+              <p className="text-xs text-orange-400 text-center mt-2">اضغط لعرض التفاصيل ←</p>
             </div>
           ) : (
             <div className="text-center py-4">
@@ -546,7 +773,10 @@ export default function AutonomousDashboardPage() {
         </div>
 
         {/* Closing Report - تقرير الإغلاق (06:00 PM) */}
-        <div className="p-6 bg-gradient-to-br from-indigo-900/30 to-violet-900/30 rounded-2xl border border-indigo-700/50">
+        <div
+          onClick={() => dashboard?.closingReport && setSelectedReport({ report: dashboard.closingReport, type: 'closing' })}
+          className={`p-6 bg-gradient-to-br from-indigo-900/30 to-violet-900/30 rounded-2xl border border-indigo-700/50 ${dashboard?.closingReport ? 'cursor-pointer hover:border-indigo-500/70 hover:shadow-lg hover:shadow-indigo-500/10 transition-all' : ''}`}
+        >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <span className="text-xl">📊</span> تقرير الإغلاق
@@ -575,6 +805,7 @@ export default function AutonomousDashboardPage() {
                   <p className="text-lg font-bold text-indigo-400">{dashboard.closingReport.actionItemsCreated}</p>
                 </div>
               </div>
+              <p className="text-xs text-indigo-400 text-center mt-2">اضغط لعرض التفاصيل ←</p>
             </div>
           ) : (
             <div className="text-center py-4">
@@ -584,6 +815,14 @@ export default function AutonomousDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Report Modal */}
+      <ReportModal
+        isOpen={!!selectedReport}
+        onClose={() => setSelectedReport(null)}
+        report={selectedReport?.report}
+        type={selectedReport?.type || 'content'}
+      />
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

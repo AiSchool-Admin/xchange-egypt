@@ -35,6 +35,7 @@ export default function MeetingsPage() {
   const [loading, setLoading] = useState(true);
   const [scheduling, setScheduling] = useState(false);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'STANDUP' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'EMERGENCY'>('all');
 
   const fetchMeetings = async () => {
     try {
@@ -137,10 +138,23 @@ export default function MeetingsPage() {
 
   const filteredMeetings = meetings.filter(m => {
     const meetingDate = new Date(m.scheduledAt);
-    if (filter === 'upcoming') return meetingDate >= now && m.status !== 'COMPLETED';
-    if (filter === 'completed') return m.status === 'COMPLETED';
-    return true;
+    // Status filter
+    let statusMatch = true;
+    if (filter === 'upcoming') statusMatch = meetingDate >= now && m.status !== 'COMPLETED';
+    if (filter === 'completed') statusMatch = m.status === 'COMPLETED';
+    // Type filter
+    const typeMatch = typeFilter === 'all' || m.type === typeFilter;
+    return statusMatch && typeMatch;
   });
+
+  // Group meetings by type for classification
+  const meetingsByType = {
+    daily: filteredMeetings.filter(m => m.type === 'STANDUP'),
+    weekly: filteredMeetings.filter(m => m.type === 'WEEKLY'),
+    monthly: filteredMeetings.filter(m => m.type === 'MONTHLY'),
+    quarterly: filteredMeetings.filter(m => m.type === 'QUARTERLY'),
+    emergency: filteredMeetings.filter(m => m.type === 'EMERGENCY'),
+  };
 
   const formatTime = (dateStr: string) => {
     return new Date(dateStr).toLocaleTimeString('ar-EG', {
@@ -296,20 +310,59 @@ export default function MeetingsPage() {
       )}
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6">
-        {(['all', 'upcoming', 'completed'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
-              filter === f
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50'
-            }`}
-          >
-            {f === 'all' ? 'جميع الاجتماعات' : f === 'upcoming' ? 'القادمة' : 'المكتملة'}
-          </button>
-        ))}
+      <div className="space-y-4 mb-6">
+        {/* Status Filter */}
+        <div className="flex flex-wrap gap-2">
+          <span className="text-sm text-gray-400 self-center ml-2">الحالة:</span>
+          {(['all', 'upcoming', 'completed'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                filter === f
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50'
+              }`}
+            >
+              {f === 'all' ? 'الكل' : f === 'upcoming' ? 'القادمة' : 'المكتملة'}
+            </button>
+          ))}
+        </div>
+
+        {/* Type Filter */}
+        <div className="flex flex-wrap gap-2">
+          <span className="text-sm text-gray-400 self-center ml-2">النوع:</span>
+          {([
+            { value: 'all', label: 'الكل', icon: '📋' },
+            { value: 'STANDUP', label: 'يومي', icon: '☀️' },
+            { value: 'WEEKLY', label: 'أسبوعي', icon: '📅' },
+            { value: 'MONTHLY', label: 'شهري', icon: '📊' },
+            { value: 'QUARTERLY', label: 'ربع سنوي', icon: '🎯' },
+            { value: 'EMERGENCY', label: 'طوارئ', icon: '🚨' },
+          ] as const).map((t) => (
+            <button
+              key={t.value}
+              onClick={() => setTypeFilter(t.value as any)}
+              className={`px-3 py-2 rounded-lg transition-colors flex items-center gap-1 ${
+                typeFilter === t.value
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-gray-800/50 text-gray-400 hover:bg-gray-700/50'
+              }`}
+            >
+              <span>{t.icon}</span>
+              <span className="text-sm">{t.label}</span>
+              {t.value !== 'all' && (
+                <span className="text-xs bg-gray-700/50 px-1.5 rounded">
+                  {t.value === 'STANDUP' ? meetingsByType.daily.length :
+                   t.value === 'WEEKLY' ? meetingsByType.weekly.length :
+                   t.value === 'MONTHLY' ? meetingsByType.monthly.length :
+                   t.value === 'QUARTERLY' ? meetingsByType.quarterly.length :
+                   meetingsByType.emergency.length}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* All Meetings List */}

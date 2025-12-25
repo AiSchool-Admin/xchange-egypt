@@ -1190,6 +1190,32 @@ export const getMorningIntelligenceHistory = async (req: Request, res: Response)
   }
 };
 
+/**
+ * Generate Morning Intelligence manually
+ * توليد الاستخبارات الصباحية يدوياً
+ */
+export const generateMorningIntelligence = async (req: Request, res: Response) => {
+  try {
+    logger.info('[BoardController] Generating Morning Intelligence manually...');
+
+    // Import and run the morning intelligence generator
+    const { generateMorningIntelligence: generateIntelligence } = await import(
+      '../services/autonomous-board/morning-intelligence.service'
+    );
+
+    const report = await generateIntelligence();
+
+    res.json({
+      success: true,
+      message: 'تم توليد الاستخبارات الصباحية بنجاح',
+      data: report,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] generateMorningIntelligence error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // --- Environment Scans - المسح البيئي ---
 
 export const getEnvironmentScans = async (req: Request, res: Response) => {

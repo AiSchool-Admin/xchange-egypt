@@ -139,6 +139,7 @@ router.get('/autonomous/dashboard', authenticateFounder, boardController.getAuto
 // --- Morning Intelligence - الاستخبارات الصباحية ---
 router.get('/autonomous/intelligence', authenticateFounder, boardController.getMorningIntelligence);
 router.get('/autonomous/intelligence/history', authenticateFounder, boardController.getMorningIntelligenceHistory);
+router.post('/autonomous/morning-intelligence/generate', authenticateFounder, boardController.generateMorningIntelligence);
 
 // --- Environment Scans - المسح البيئي ---
 router.get('/autonomous/scans', authenticateFounder, boardController.getEnvironmentScans);
