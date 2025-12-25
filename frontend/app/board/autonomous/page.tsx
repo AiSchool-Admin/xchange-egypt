@@ -343,6 +343,28 @@ export default function AutonomousDashboardPage() {
     }
   };
 
+  // Run Autonomous Meeting
+  const handleRunMeeting = async (type: 'MORNING' | 'AFTERNOON') => {
+    setActionLoading('meeting');
+    setActionResult(null);
+    try {
+      const response = await founderFetch('/board/autonomous/meetings/run', {
+        method: 'POST',
+        body: JSON.stringify({ type }),
+      });
+      const meetingType = type === 'MORNING' ? 'الصباحي' : 'المسائي';
+      setActionResult({
+        type: 'success',
+        message: `تم عقد الاجتماع ${meetingType} بنجاح - MOM: ${response.data?.mom?.momNumber || 'N/A'}`,
+      });
+      await fetchDashboard();
+    } catch (error: any) {
+      setActionResult({ type: 'error', message: error.message || 'فشل عقد الاجتماع' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-8 flex items-center justify-center min-h-screen">
@@ -417,6 +439,18 @@ export default function AutonomousDashboardPage() {
                 <span>📝</span>
               )}
               التقارير
+            </button>
+            <button
+              onClick={() => handleRunMeeting('MORNING')}
+              disabled={actionLoading !== null}
+              className="px-3 py-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+            >
+              {actionLoading === 'meeting' ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <span>☀️</span>
+              )}
+              عقد اجتماع
             </button>
           </div>
         </div>

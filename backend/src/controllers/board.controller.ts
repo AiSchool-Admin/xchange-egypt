@@ -1216,6 +1216,40 @@ export const generateMorningIntelligence = async (req: Request, res: Response) =
   }
 };
 
+/**
+ * Run Autonomous Meeting manually
+ * تشغيل اجتماع ذاتي يدوياً
+ */
+export const runAutonomousMeetingManually = async (req: Request, res: Response) => {
+  try {
+    const { type = 'MORNING' } = req.body; // MORNING or AFTERNOON
+
+    logger.info(`[BoardController] Running ${type} autonomous meeting manually...`);
+
+    // Import and run the autonomous meeting
+    const { runAutonomousMeeting } = await import(
+      '../services/autonomous-board/autonomous-meeting.service'
+    );
+
+    const result = await runAutonomousMeeting(type);
+
+    res.json({
+      success: true,
+      message: `تم عقد الاجتماع ${type === 'MORNING' ? 'الصباحي' : 'المسائي'} بنجاح`,
+      data: {
+        meeting: result.meeting,
+        session: result.session,
+        mom: result.mom,
+        discussionCount: result.discussionLog.length,
+        ideasCount: result.ideas.length,
+      },
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] runAutonomousMeetingManually error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 // --- Environment Scans - المسح البيئي ---
 
 export const getEnvironmentScans = async (req: Request, res: Response) => {

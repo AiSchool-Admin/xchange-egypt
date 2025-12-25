@@ -18,6 +18,7 @@
 import prisma from '../../lib/prisma';
 import logger from '../../lib/logger';
 import Anthropic from '@anthropic-ai/sdk';
+import { generateMOM } from './mom-generator.service';
 
 const anthropic = new Anthropic();
 
@@ -496,13 +497,46 @@ export const runAutonomousMeeting = async (type: MeetingType) => {
     });
   }
 
-  logger.info(`[AutonomousMeeting] ${type} meeting completed: ${meetingNumber}`);
+  // 8. Generate MOM (Meeting Minutes)
+  logger.info(`[AutonomousMeeting] Generating MOM for meeting ${meetingNumber}...`);
+
+  // Prepare KPI highlights for MOM
+  const kpiHighlights = kpiSnapshot.map((kpi: any) => ({
+    code: kpi.code || kpi.name || 'KPI',
+    status: kpi.status || 'GREEN',
+    flag: kpi.flag || '🟢',
+  }));
+
+  // Generate the MOM with discussion, decisions, action items, and ideas
+  const mom = await generateMOM(
+    meeting.id,
+    type,
+    discussionLog.map(entry => ({
+      speaker: entry.speaker,
+      role: entry.role,
+      content: entry.content,
+      timestamp: entry.timestamp,
+      phase: entry.phase,
+    })),
+    [], // decisions - currently not captured, can be enhanced later
+    [], // actionItems - currently not captured, can be enhanced later
+    allIdeas.map(idea => ({
+      title: idea.title,
+      description: idea.description,
+      technique: idea.technique,
+      proposedBy: idea.proposedBy,
+    })),
+    kpiHighlights
+  );
+
+  logger.info(`[AutonomousMeeting] ${type} meeting completed: ${meetingNumber}, MOM: ${mom.momNumber}`);
 
   return {
     meeting,
     session,
     discussionLog,
     ideas: allIdeas,
+    mom,
   };
 };
 

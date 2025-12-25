@@ -164,6 +164,9 @@ router.put('/autonomous/competitors/:competitorId', authenticateFounder, boardCo
 router.get('/autonomous/closing-reports', authenticateFounder, boardController.getDailyClosingReports);
 router.get('/autonomous/closing-reports/:reportId', authenticateFounder, boardController.getDailyClosingReport);
 
+// --- Run Autonomous Meeting Manually - تشغيل اجتماع ذاتي يدوياً ---
+router.post('/autonomous/meetings/run', authenticateFounder, boardController.runAutonomousMeetingManually);
+
 // ============================================
 // Company Phase Routes - مسارات مرحلة الشركة
 // ============================================
