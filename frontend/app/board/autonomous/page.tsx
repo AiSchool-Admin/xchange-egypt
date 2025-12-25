@@ -1042,7 +1042,7 @@ export default function AutonomousDashboardPage() {
       />
 
       {/* Quick Links */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Link
           href="/board/moms"
           className="p-4 bg-gray-800/50 rounded-xl border border-gray-700/50 hover:border-gray-600 transition-colors"
@@ -1074,6 +1074,14 @@ export default function AutonomousDashboardPage() {
           <span className="text-2xl mb-2 block">📅</span>
           <p className="font-medium text-white">الاجتماعات</p>
           <p className="text-sm text-gray-400">جدول الاجتماعات</p>
+        </Link>
+        <Link
+          href="/board/testing"
+          className="p-4 bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-xl border border-purple-500/50 hover:border-purple-400 transition-colors"
+        >
+          <span className="text-2xl mb-2 block">🧪</span>
+          <p className="font-medium text-white">صفحة الاختبارات</p>
+          <p className="text-sm text-gray-400">اختبار جميع الوظائف</p>
         </Link>
       </div>
     </div>

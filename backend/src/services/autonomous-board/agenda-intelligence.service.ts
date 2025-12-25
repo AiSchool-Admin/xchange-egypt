@@ -38,7 +38,7 @@ export interface AgendaItem {
 
 export interface MeetingAgenda {
   id: string;
-  meetingType: 'MORNING' | 'AFTERNOON' | 'EMERGENCY';
+  meetingType: 'MORNING' | 'AFTERNOON' | 'EMERGENCY' | 'WEEKLY';
   date: Date;
   totalDuration: number; // minutes
   items: AgendaItem[];
@@ -755,10 +755,115 @@ Provide response in JSON format:
 };
 
 /**
+ * Get weekly strategic agenda items
+ */
+const getWeeklyStrategicItems = async (): Promise<AgendaItem[]> => {
+  const items: AgendaItem[] = [];
+  const phaseConfig = getCurrentPhaseConfig();
+
+  // 1. Weekly Performance Review
+  items.push({
+    id: generateAgendaItemId(),
+    title: 'Weekly Performance Review',
+    titleAr: 'مراجعة الأداء الأسبوعي',
+    description: 'Comprehensive review of all KPIs and business metrics for the past week',
+    type: 'REVIEW',
+    priority: 'HIGH',
+    timeAllocation: 20,
+    leadMember: BoardRole.CFO,
+    participants: [BoardRole.CEO, BoardRole.COO, BoardRole.CTO],
+    context: 'Weekly strategic review of business performance',
+    requiredDecision: false,
+    relatedKPIs: ['GMV', 'NRR', 'CAC', 'ARPU', 'CLV'],
+    relatedAlerts: [],
+    source: 'SYSTEM',
+    founderOverride: false,
+  });
+
+  // 2. Strategic Initiatives Update
+  items.push({
+    id: generateAgendaItemId(),
+    title: 'Strategic Initiatives Progress',
+    titleAr: 'تقدم المبادرات الاستراتيجية',
+    description: 'Review progress on current phase strategic initiatives and milestones',
+    type: 'STRATEGIC',
+    priority: 'CRITICAL',
+    timeAllocation: 25,
+    leadMember: BoardRole.CEO,
+    participants: [BoardRole.CTO, BoardRole.CMO, BoardRole.COO, BoardRole.CFO],
+    context: `Current phase: ${phaseConfig.phase} - ${phaseConfig.primaryGoal}`,
+    requiredDecision: true,
+    relatedKPIs: [],
+    relatedAlerts: [],
+    source: 'SYSTEM',
+    founderOverride: false,
+  });
+
+  // 3. Technology & Product Roadmap
+  items.push({
+    id: generateAgendaItemId(),
+    title: 'Technology & Product Roadmap',
+    titleAr: 'خارطة طريق التقنية والمنتج',
+    description: 'Review technical debt, development velocity, and upcoming releases',
+    type: 'STRATEGIC',
+    priority: 'HIGH',
+    timeAllocation: 15,
+    leadMember: BoardRole.CTO,
+    participants: [BoardRole.CEO, BoardRole.COO],
+    context: 'Weekly technology strategy alignment',
+    requiredDecision: false,
+    relatedKPIs: ['TechDebtRatio', 'FeatureVelocity'],
+    relatedAlerts: [],
+    source: 'SYSTEM',
+    founderOverride: false,
+  });
+
+  // 4. Market & Competitor Analysis
+  items.push({
+    id: generateAgendaItemId(),
+    title: 'Market & Competitor Analysis',
+    titleAr: 'تحليل السوق والمنافسين',
+    description: 'Review market trends, competitor movements, and strategic positioning',
+    type: 'STRATEGIC',
+    priority: 'MEDIUM',
+    timeAllocation: 15,
+    leadMember: BoardRole.CMO,
+    participants: [BoardRole.CEO, BoardRole.CTO],
+    context: 'Weekly market intelligence briefing',
+    requiredDecision: false,
+    relatedKPIs: ['MarketShare'],
+    relatedAlerts: [],
+    source: 'INTELLIGENCE',
+    founderOverride: false,
+  });
+
+  // 5. Resource Allocation & Budget Review
+  items.push({
+    id: generateAgendaItemId(),
+    title: 'Resource & Budget Allocation',
+    titleAr: 'توزيع الموارد والميزانية',
+    description: 'Review spending against budget and resource allocation efficiency',
+    type: 'REVIEW',
+    priority: 'HIGH',
+    timeAllocation: 15,
+    leadMember: BoardRole.CFO,
+    participants: [BoardRole.CEO, BoardRole.COO],
+    context: 'Weekly financial health check',
+    requiredDecision: true,
+    relatedKPIs: ['BurnRate', 'Runway', 'GrossMargin'],
+    relatedAlerts: [],
+    source: 'SYSTEM',
+    founderOverride: false,
+  });
+
+  return items;
+};
+
+/**
  * Main function to generate meeting agenda
  */
 export const generateMeetingAgenda = async (
-  meetingType: 'MORNING' | 'AFTERNOON' | 'EMERGENCY',
+  meetingType: 'MORNING' | 'AFTERNOON' | 'EMERGENCY' | 'WEEKLY',
   maxDuration: number = 60, // default 60 minutes
   founderOverrides?: AgendaItem[]
 ): Promise<MeetingAgenda> => {
@@ -767,16 +872,26 @@ export const generateMeetingAgenda = async (
   // Collect agenda items from all sources
   const systemItems = await getSystemAgendaItems();
   const intelligenceItems = await getIntelligenceAgendaItems();
-  const platformItems = meetingType !== 'EMERGENCY'
-    ? await getXChangePlatformItems(meetingType as 'MORNING' | 'AFTERNOON')
-    : [];
-  const innovationItems = meetingType !== 'EMERGENCY'
-    ? await getInnovationAgendaItems(meetingType as 'MORNING' | 'AFTERNOON')
-    : [];
+
+  // Get type-specific items
+  let platformItems: AgendaItem[] = [];
+  let innovationItems: AgendaItem[] = [];
+  let weeklyItems: AgendaItem[] = [];
+
+  if (meetingType === 'WEEKLY') {
+    // Weekly strategic meetings have different items
+    weeklyItems = await getWeeklyStrategicItems();
+  } else if (meetingType !== 'EMERGENCY') {
+    platformItems = await getXChangePlatformItems(meetingType as 'MORNING' | 'AFTERNOON');
+    innovationItems = await getInnovationAgendaItems(meetingType as 'MORNING' | 'AFTERNOON');
+  }
+
   const phaseItems = await getPhaseSpecificItems();
 
-  // Combine all items - platform items are prioritized for relevance
-  let allItems = [...systemItems, ...platformItems, ...intelligenceItems, ...innovationItems, ...phaseItems];
+  // Combine all items - weekly items are prioritized for strategic meetings
+  let allItems = meetingType === 'WEEKLY'
+    ? [...weeklyItems, ...systemItems, ...intelligenceItems, ...phaseItems]
+    : [...systemItems, ...platformItems, ...intelligenceItems, ...innovationItems, ...phaseItems];
 
   // Add founder overrides with highest priority
   if (founderOverrides && founderOverrides.length > 0) {
