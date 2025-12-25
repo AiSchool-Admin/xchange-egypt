@@ -9,13 +9,13 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ============================================
--- CreateTable: BoardMemberDailyReport
+-- CreateTable: BoardMemberDailyReport (with UUID for id and member_id)
 -- ============================================
 CREATE TABLE IF NOT EXISTS "board_member_daily_reports" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "report_number" TEXT NOT NULL,
     "type" "BoardMemberReportType" NOT NULL,
-    "member_id" TEXT NOT NULL,
+    "member_id" UUID NOT NULL,
     "member_role" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "scheduled_time" TEXT,

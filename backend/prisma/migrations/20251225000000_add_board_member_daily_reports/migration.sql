@@ -10,14 +10,15 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ============================================
 -- CreateTable: BoardMemberDailyReport - تقارير أعضاء المجلس اليومية
+-- Uses UUID for id and member_id to match board_members table
 -- ============================================
 CREATE TABLE IF NOT EXISTS "board_member_daily_reports" (
-    "id" TEXT NOT NULL,
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
     "report_number" TEXT NOT NULL,
 
     -- Report Type and Author
     "type" "BoardMemberReportType" NOT NULL,
-    "member_id" TEXT NOT NULL,
+    "member_id" UUID NOT NULL,
     "member_role" TEXT NOT NULL,
 
     -- Timing
