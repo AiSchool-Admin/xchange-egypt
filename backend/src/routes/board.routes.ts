@@ -87,6 +87,7 @@ router.get('/meetings', authenticateFounder, boardController.getMeetings);
 router.get('/meetings/upcoming', authenticateFounder, boardController.getUpcomingMeetings);
 router.post('/meetings', authenticateFounder, boardController.scheduleMeeting);
 router.get('/meetings/:meetingId', authenticateFounder, boardController.getMeeting);
+router.put('/meetings/:meetingId/agenda', authenticateFounder, boardController.updateMeetingAgenda);
 router.post('/meetings/:meetingId/start', authenticateFounder, boardController.startMeeting);
 router.post('/meetings/:meetingId/end', authenticateFounder, boardController.endMeeting);
 

@@ -574,6 +574,55 @@ export const endMeeting = async (req: Request, res: Response) => {
   }
 };
 
+/**
+ * Update meeting agenda - تحديث أجندة الاجتماع
+ */
+export const updateMeetingAgenda = async (req: Request, res: Response) => {
+  try {
+    const { meetingId } = req.params;
+    const { agenda } = req.body;
+
+    if (!agenda || !Array.isArray(agenda)) {
+      throw new AppError(400, 'الأجندة مطلوبة ويجب أن تكون قائمة');
+    }
+
+    // Verify meeting exists and is still SCHEDULED
+    const existingMeeting = await prisma.boardMeeting.findUnique({
+      where: { id: meetingId },
+    });
+
+    if (!existingMeeting) {
+      throw new AppError(404, 'الاجتماع غير موجود');
+    }
+
+    if (existingMeeting.status !== 'SCHEDULED') {
+      throw new AppError(400, 'لا يمكن تعديل أجندة اجتماع بدأ أو انتهى');
+    }
+
+    // Update the agenda
+    const meeting = await prisma.boardMeeting.update({
+      where: { id: meetingId },
+      data: {
+        agenda: agenda,
+        updatedAt: new Date(),
+      },
+      include: {
+        attendees: {
+          include: {
+            member: true,
+          },
+        },
+      },
+    });
+
+    logger.info(`[BoardController] Agenda updated for meeting ${meetingId}`);
+    res.json({ success: true, data: meeting });
+  } catch (error: any) {
+    logger.error('[BoardController] updateMeetingAgenda error:', error);
+    res.status(error.statusCode || 500).json({ success: false, error: error.message });
+  }
+};
+
 // --- KPIs - مؤشرات الأداء ---
 
 export const getKPIs = async (req: Request, res: Response) => {
