@@ -316,9 +316,9 @@ const initializeReports = async (): Promise<{
     const omar = await prisma.boardMember.findFirst({ where: { role: 'COO' } });
 
     // Import report generators
-    const { generateYoussefContentPackage } = await import('./youssef-cmo.service');
-    const { generateLailaFinancialReport } = await import('./laila-cfo.service');
-    const { generateOmarOperationsReport } = await import('./omar-coo.service');
+    const { generateDailyContentPackage } = await import('./youssef-cmo.service');
+    const { generateDailyFinancialReport } = await import('./laila-cfo.service');
+    const { generateDailyOperationsReport } = await import('./omar-coo.service');
 
     // Content Package (Youssef CMO)
     try {
@@ -332,7 +332,7 @@ const initializeReports = async (): Promise<{
       if (existingContent) {
         results.content = { success: true, reportNumber: existingContent.reportNumber };
       } else if (youssef) {
-        const content = await generateYoussefContentPackage();
+        const content = await generateDailyContentPackage();
         results.content = { success: true, reportNumber: content.reportNumber };
       }
     } catch (e: any) {
@@ -351,7 +351,7 @@ const initializeReports = async (): Promise<{
       if (existingFinancial) {
         results.financial = { success: true, reportNumber: existingFinancial.reportNumber };
       } else if (laila) {
-        const financial = await generateLailaFinancialReport();
+        const financial = await generateDailyFinancialReport();
         results.financial = { success: true, reportNumber: financial.reportNumber };
       }
     } catch (e: any) {
@@ -370,7 +370,7 @@ const initializeReports = async (): Promise<{
       if (existingOps) {
         results.operations = { success: true, reportNumber: existingOps.reportNumber };
       } else if (omar) {
-        const ops = await generateOmarOperationsReport();
+        const ops = await generateDailyOperationsReport();
         results.operations = { success: true, reportNumber: ops.reportNumber };
       }
     } catch (e: any) {
