@@ -94,15 +94,7 @@ const initializeKPIs = async (): Promise<{ success: boolean; updated: number; er
   try {
     logger.info('[MasterInit] Initializing KPIs...');
 
-    // First ensure KPIs exist
-    const existingKPIs = await prisma.kPIMetric.count();
-    if (existingKPIs === 0) {
-      // Import and run initialization
-      const { initializeKPIsFromConfig } = await import('../board/kpi-calculator.service');
-      await initializeKPIsFromConfig();
-    }
-
-    // Then calculate from real data
+    // Calculate KPIs from real data
     const result = await calculateAndUpdateAllKPIs();
     logger.info(`[MasterInit] KPIs updated: ${result.updated}`);
 
