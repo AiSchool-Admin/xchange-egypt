@@ -333,7 +333,7 @@ const initializeReports = async (): Promise<{
         results.content = { success: true, reportNumber: existingContent.reportNumber };
       } else if (youssef) {
         const content = await generateDailyContentPackage();
-        results.content = { success: true, reportNumber: content.reportNumber };
+        results.content = { success: true, reportNumber: content.id };
       }
     } catch (e: any) {
       logger.error('[MasterInit] Content report failed:', e.message);
@@ -352,7 +352,7 @@ const initializeReports = async (): Promise<{
         results.financial = { success: true, reportNumber: existingFinancial.reportNumber };
       } else if (laila) {
         const financial = await generateDailyFinancialReport();
-        results.financial = { success: true, reportNumber: financial.reportNumber };
+        results.financial = { success: true, reportNumber: financial.id };
       }
     } catch (e: any) {
       logger.error('[MasterInit] Financial report failed:', e.message);
@@ -371,7 +371,7 @@ const initializeReports = async (): Promise<{
         results.operations = { success: true, reportNumber: existingOps.reportNumber };
       } else if (omar) {
         const ops = await generateDailyOperationsReport();
-        results.operations = { success: true, reportNumber: ops.reportNumber };
+        results.operations = { success: true, reportNumber: ops.id };
       }
     } catch (e: any) {
       logger.error('[MasterInit] Operations report failed:', e.message);
