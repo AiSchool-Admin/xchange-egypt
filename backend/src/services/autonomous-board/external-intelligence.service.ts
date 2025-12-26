@@ -547,16 +547,17 @@ export const saveExternalIntelligence = async (
   try {
     // Save to environment scan table or create alerts
     for (const alert of report.alerts) {
+      const alertNumber = `ALT-EXT-${Date.now()}-${Math.random().toString(36).substring(7)}`;
       await prisma.boardAlert.create({
         data: {
+          alertNumber,
           title: alert.title.substring(0, 200),
           titleAr: alert.titleAr.substring(0, 200),
           description: `External Intelligence: ${alert.type}`,
           descriptionAr: `استخبارات خارجية: ${alert.type}`,
           severity: alert.severity === 'CRITICAL' ? 'CRITICAL' : alert.severity === 'WARNING' ? 'WARNING' : 'INFO',
           status: 'ACTIVE',
-          type: 'ENVIRONMENT_CHANGE',
-          source: 'EXTERNAL_INTELLIGENCE',
+          sourceType: 'EXTERNAL_INTELLIGENCE',
         },
       }).catch(() => {
         // Ignore duplicate alerts
