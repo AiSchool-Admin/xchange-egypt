@@ -796,6 +796,324 @@ const HealthDisplay = ({ data }: { data: any }) => {
   );
 };
 
+// External Intelligence Display
+const ExternalIntelligenceDisplay = ({ data }: { data: any }) => {
+  if (!data) return null;
+
+  const newsRelevanceColor = (relevance: number) => {
+    if (relevance >= 0.7) return 'text-green-400';
+    if (relevance >= 0.4) return 'text-yellow-400';
+    return 'text-gray-400';
+  };
+
+  const impactColor = (impact: string) => {
+    switch (impact) {
+      case 'HIGH': return 'bg-red-500/20 text-red-400';
+      case 'MEDIUM': return 'bg-yellow-500/20 text-yellow-400';
+      case 'LOW': return 'bg-green-500/20 text-green-400';
+      default: return 'bg-gray-500/20 text-gray-400';
+    }
+  };
+
+  const sentimentColor = (sentiment: string) => {
+    switch (sentiment) {
+      case 'POSITIVE': return 'text-green-400';
+      case 'NEGATIVE': return 'text-red-400';
+      case 'NEUTRAL': return 'text-gray-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const sentimentIcon = (sentiment: string) => {
+    switch (sentiment) {
+      case 'POSITIVE': return '📈';
+      case 'NEGATIVE': return '📉';
+      case 'NEUTRAL': return '➡️';
+      default: return '❓';
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header with Summary */}
+      <div className="p-4 bg-indigo-500/10 border border-indigo-500/30 rounded-xl">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            🌐 الاستخبارات الخارجية
+          </h3>
+          <span className="text-sm text-gray-400">
+            {data.timestamp ? new Date(data.timestamp).toLocaleString('ar-EG') : 'غير محدد'}
+          </span>
+        </div>
+        {data.summary && (
+          <p className="text-gray-300 text-sm leading-relaxed">{data.summary}</p>
+        )}
+      </div>
+
+      {/* News from RSS Feeds */}
+      {data.news && data.news.length > 0 && (
+        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+          <h4 className="text-sm font-medium text-blue-400 mb-3 flex items-center gap-2">
+            📰 الأخبار المحلية والعالمية ({data.news.length})
+          </h4>
+          <div className="space-y-3 max-h-[400px] overflow-y-auto">
+            {data.news.map((item: any, i: number) => (
+              <div key={i} className="p-3 bg-gray-900/50 rounded-lg">
+                <div className="flex items-start justify-between gap-2">
+                  <h5 className="text-sm font-medium text-white flex-1">{item.title}</h5>
+                  <span className={`text-xs px-2 py-0.5 rounded ${impactColor(item.impact)}`}>
+                    {item.impact}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">{item.description}</p>
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-3 text-xs">
+                    <span className="text-gray-500">{item.source}</span>
+                    <span className={newsRelevanceColor(item.relevance)}>
+                      📊 صلة: {Math.round((item.relevance || 0) * 100)}%
+                    </span>
+                    <span className={sentimentColor(item.sentiment)}>
+                      {sentimentIcon(item.sentiment)} {item.sentiment}
+                    </span>
+                  </div>
+                  {item.publishedAt && (
+                    <span className="text-xs text-gray-500">
+                      {new Date(item.publishedAt).toLocaleDateString('ar-EG')}
+                    </span>
+                  )}
+                </div>
+                {item.actionItems && item.actionItems.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-700">
+                    <span className="text-xs text-yellow-400">💡 الإجراءات المقترحة:</span>
+                    <ul className="mt-1">
+                      {item.actionItems.map((action: string, j: number) => (
+                        <li key={j} className="text-xs text-gray-300 flex items-start gap-1">
+                          <span className="text-yellow-400">•</span> {action}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Competitor Analysis */}
+      {data.competitors && data.competitors.length > 0 && (
+        <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-xl">
+          <h4 className="text-sm font-medium text-orange-400 mb-3 flex items-center gap-2">
+            🏢 تحليل المنافسين ({data.competitors.length})
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {data.competitors.map((competitor: any, i: number) => (
+              <div key={i} className="p-3 bg-gray-900/50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="text-sm font-medium text-white">{competitor.name}</h5>
+                  <span className={`text-xs px-2 py-0.5 rounded ${
+                    competitor.threatLevel === 'HIGH' ? 'bg-red-500/20 text-red-400' :
+                    competitor.threatLevel === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-green-500/20 text-green-400'
+                  }`}>
+                    تهديد: {competitor.threatLevel}
+                  </span>
+                </div>
+                {competitor.recentActivity && (
+                  <p className="text-xs text-gray-400 mb-2">{competitor.recentActivity}</p>
+                )}
+                {competitor.strengths && competitor.strengths.length > 0 && (
+                  <div className="mb-2">
+                    <span className="text-xs text-green-400">نقاط القوة:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {competitor.strengths.map((s: string, j: number) => (
+                        <span key={j} className="text-xs px-1.5 py-0.5 bg-green-500/10 text-green-300 rounded">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {competitor.weaknesses && competitor.weaknesses.length > 0 && (
+                  <div>
+                    <span className="text-xs text-red-400">نقاط الضعف:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {competitor.weaknesses.map((w: string, j: number) => (
+                        <span key={j} className="text-xs px-1.5 py-0.5 bg-red-500/10 text-red-300 rounded">
+                          {w}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Economic Indicators */}
+      {data.economicIndicators && (
+        <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+          <h4 className="text-sm font-medium text-green-400 mb-3 flex items-center gap-2">
+            📊 المؤشرات الاقتصادية
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {/* USD/EGP Rate */}
+            {data.economicIndicators.usdEgp && (
+              <div className="p-3 bg-gray-900/50 rounded-lg text-center">
+                <span className="text-xs text-gray-400">USD/EGP</span>
+                <p className="text-xl font-bold text-white mt-1">
+                  {data.economicIndicators.usdEgp.rate?.toFixed(2) || 'N/A'}
+                </p>
+                {data.economicIndicators.usdEgp.change && (
+                  <span className={`text-xs ${data.economicIndicators.usdEgp.change > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                    {data.economicIndicators.usdEgp.change > 0 ? '↑' : '↓'}
+                    {Math.abs(data.economicIndicators.usdEgp.change).toFixed(2)}%
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Inflation */}
+            {data.economicIndicators.inflation && (
+              <div className="p-3 bg-gray-900/50 rounded-lg text-center">
+                <span className="text-xs text-gray-400">التضخم</span>
+                <p className="text-xl font-bold text-white mt-1">
+                  {data.economicIndicators.inflation.rate?.toFixed(1) || 'N/A'}%
+                </p>
+                <span className="text-xs text-gray-500">
+                  {data.economicIndicators.inflation.trend || 'مستقر'}
+                </span>
+              </div>
+            )}
+
+            {/* Consumer Confidence */}
+            {data.economicIndicators.consumerConfidence && (
+              <div className="p-3 bg-gray-900/50 rounded-lg text-center">
+                <span className="text-xs text-gray-400">ثقة المستهلك</span>
+                <p className="text-xl font-bold text-white mt-1">
+                  {data.economicIndicators.consumerConfidence.index || 'N/A'}
+                </p>
+                <span className={`text-xs ${
+                  data.economicIndicators.consumerConfidence.sentiment === 'POSITIVE' ? 'text-green-400' :
+                  data.economicIndicators.consumerConfidence.sentiment === 'NEGATIVE' ? 'text-red-400' :
+                  'text-gray-400'
+                }`}>
+                  {data.economicIndicators.consumerConfidence.sentiment}
+                </span>
+              </div>
+            )}
+
+            {/* E-commerce Growth */}
+            {data.economicIndicators.ecommerceGrowth && (
+              <div className="p-3 bg-gray-900/50 rounded-lg text-center">
+                <span className="text-xs text-gray-400">نمو التجارة الإلكترونية</span>
+                <p className="text-xl font-bold text-green-400 mt-1">
+                  {data.economicIndicators.ecommerceGrowth.rate?.toFixed(1) || 'N/A'}%
+                </p>
+                <span className="text-xs text-gray-500">معدل النمو</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Market Trends */}
+      {data.marketTrends && data.marketTrends.length > 0 && (
+        <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+          <h4 className="text-sm font-medium text-purple-400 mb-3 flex items-center gap-2">
+            📈 اتجاهات السوق
+          </h4>
+          <div className="space-y-2">
+            {data.marketTrends.map((trend: any, i: number) => (
+              <div key={i} className="p-3 bg-gray-900/50 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className={`text-lg ${
+                    trend.direction === 'UP' ? 'text-green-400' :
+                    trend.direction === 'DOWN' ? 'text-red-400' : 'text-gray-400'
+                  }`}>
+                    {trend.direction === 'UP' ? '📈' : trend.direction === 'DOWN' ? '📉' : '➡️'}
+                  </span>
+                  <div>
+                    <p className="text-sm text-white">{trend.name}</p>
+                    <p className="text-xs text-gray-400">{trend.description}</p>
+                  </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded ${impactColor(trend.impact)}`}>
+                  {trend.impact}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Alerts Generated */}
+      {data.alertsGenerated && data.alertsGenerated.length > 0 && (
+        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+          <h4 className="text-sm font-medium text-red-400 mb-3 flex items-center gap-2">
+            🚨 التنبيهات المُنشأة ({data.alertsGenerated.length})
+          </h4>
+          <ul className="space-y-2">
+            {data.alertsGenerated.map((alert: any, i: number) => (
+              <li key={i} className="p-2 bg-gray-900/50 rounded-lg flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${
+                  alert.severity === 'CRITICAL' ? 'bg-red-500' :
+                  alert.severity === 'HIGH' ? 'bg-orange-500' :
+                  'bg-yellow-500'
+                }`}></span>
+                <span className="text-sm text-gray-300">{alert.message || alert.title}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Data Sources */}
+      {data.sources && (
+        <div className="p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-xl">
+          <h4 className="text-sm font-medium text-cyan-400 mb-3">🔗 مصادر البيانات</h4>
+          <div className="flex flex-wrap gap-2">
+            {data.sources.rss && (
+              <span className="px-2 py-1 bg-gray-800 text-gray-300 rounded text-xs flex items-center gap-1">
+                📡 RSS ({data.sources.rss.count || 0} مصادر)
+                {data.sources.rss.success ? '✅' : '❌'}
+              </span>
+            )}
+            {data.sources.competitors && (
+              <span className="px-2 py-1 bg-gray-800 text-gray-300 rounded text-xs flex items-center gap-1">
+                🏢 المنافسين ({data.sources.competitors.count || 0})
+                {data.sources.competitors.success ? '✅' : '❌'}
+              </span>
+            )}
+            {data.sources.economic && (
+              <span className="px-2 py-1 bg-gray-800 text-gray-300 rounded text-xs flex items-center gap-1">
+                📊 اقتصادية
+                {data.sources.economic.success ? '✅' : '❌'}
+              </span>
+            )}
+            {data.sources.ai && (
+              <span className="px-2 py-1 bg-gray-800 text-gray-300 rounded text-xs flex items-center gap-1">
+                🤖 AI تحليل
+                {data.sources.ai.success ? '✅' : '❌'}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Raw Data for Debug */}
+      <details className="p-4 bg-gray-800/50 rounded-xl">
+        <summary className="text-sm font-medium text-gray-400 cursor-pointer">🔧 البيانات الخام (للتشخيص)</summary>
+        <pre className="mt-3 text-xs text-gray-300 whitespace-pre-wrap overflow-x-auto">
+          {JSON.stringify(data, null, 2)}
+        </pre>
+      </details>
+    </div>
+  );
+};
+
 export default function BoardTestingPage() {
   const [results, setResults] = useState<Record<string, TestResult>>({});
   const [activeTest, setActiveTest] = useState<string | null>(null);
@@ -1004,9 +1322,27 @@ export default function BoardTestingPage() {
     setActiveTest(null);
   };
 
+  // Test: External Intelligence
+  const testExternalIntelligence = async () => {
+    const testName = 'الاستخبارات الخارجية';
+    setActiveTest(testName);
+    updateResult(testName, { status: 'loading', data: null });
+    try {
+      const response = await founderFetch('/board/external-intelligence/generate', {
+        method: 'POST',
+        body: JSON.stringify({ saveAlerts: false }),
+      });
+      updateResult(testName, { status: 'success', data: response.data, timestamp: new Date() });
+    } catch (error: any) {
+      updateResult(testName, { status: 'error', error: error.message, timestamp: new Date() });
+    }
+    setActiveTest(null);
+  };
+
   const tests = [
     { name: 'التهيئة الشاملة للمجلس', icon: '🚀', color: 'emerald', action: testMasterInitialization, type: 'master' },
     { name: 'فحص صحة المجلس', icon: '💚', color: 'teal', action: testBoardHealth, type: 'health' },
+    { name: 'الاستخبارات الخارجية', icon: '🌐', color: 'indigo', action: testExternalIntelligence, type: 'external' },
     { name: 'أجندة الاجتماع الصباحي', icon: '🌅', color: 'cyan', action: testMorningAgenda, type: 'agenda' },
     { name: 'أجندة الاجتماع المسائي', icon: '🌆', color: 'orange', action: testEveningAgenda, type: 'agenda' },
     { name: 'أجندة الاجتماع الأسبوعي الاستراتيجي', icon: '📅', color: 'purple', action: testWeeklyAgenda, type: 'agenda' },
@@ -1084,6 +1420,9 @@ export default function BoardTestingPage() {
         )}
         {test.type === 'health' && result.data && (
           <HealthDisplay data={result.data} />
+        )}
+        {test.type === 'external' && result.data && (
+          <ExternalIntelligenceDisplay data={result.data} />
         )}
       </div>
     );

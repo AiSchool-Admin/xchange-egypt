@@ -184,4 +184,10 @@ router.post('/master/initialize', authenticateFounder, boardController.masterBoa
 // Check board health/initialization status
 router.get('/master/health', authenticateFounder, boardController.getBoardHealthStatus);
 
+// ============================================
+// External Intelligence Routes - الاستخبارات الخارجية
+// ============================================
+// Generate external intelligence (RSS + Competitors + Economy)
+router.post('/external-intelligence/generate', authenticateFounder, boardController.generateExternalIntelligenceReport);
+
 export default router;

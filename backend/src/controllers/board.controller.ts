@@ -1871,3 +1871,34 @@ export const getBoardHealthStatus = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+/**
+ * Generate External Intelligence Report
+ * توليد تقرير الاستخبارات الخارجية
+ */
+export const generateExternalIntelligenceReport = async (req: Request, res: Response) => {
+  try {
+    logger.info('[BoardController] Generating external intelligence report...');
+
+    const { generateExternalIntelligence, saveExternalIntelligence } = await import(
+      '../services/autonomous-board/external-intelligence.service'
+    );
+
+    const report = await generateExternalIntelligence();
+
+    // Optionally save alerts to database
+    const { saveAlerts = true } = req.body;
+    if (saveAlerts) {
+      await saveExternalIntelligence(report);
+    }
+
+    res.json({
+      success: true,
+      data: report,
+      message: `تم توليد تقرير الاستخبارات: ${report.news.length} أخبار، ${report.competitorUpdates.length} تحديثات منافسين`,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] generateExternalIntelligenceReport error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
