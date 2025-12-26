@@ -58,14 +58,14 @@ const wasInitializedToday = async (): Promise<boolean> => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const lastInit = await prisma.boardInitializationLog?.findFirst({
+  // Check if morning intelligence exists for today as a proxy for initialization
+  const intelligence = await prisma.morningIntelligence.findFirst({
     where: {
-      createdAt: { gte: today },
+      date: { gte: today },
     },
-    orderBy: { createdAt: 'desc' },
   }).catch(() => null);
 
-  return !!lastInit;
+  return !!intelligence;
 };
 
 /**
@@ -73,13 +73,12 @@ const wasInitializedToday = async (): Promise<boolean> => {
  */
 const logInitialization = async (result: InitializationResult): Promise<void> => {
   try {
-    // Check if table exists, if not skip logging
-    await prisma.$executeRaw`
-      INSERT INTO board_initialization_log (id, result, created_at)
-      VALUES (gen_random_uuid(), ${JSON.stringify(result)}::jsonb, NOW())
-    `.catch(() => {
-      // Table might not exist, that's okay
-      logger.warn('[MasterInit] Could not log initialization - table may not exist');
+    // Log to console for now since we don't have a dedicated table
+    logger.info('[MasterInit] Initialization completed', {
+      success: result.success,
+      totalSuccess: result.summary.totalSuccess,
+      totalFailed: result.summary.totalFailed,
+      executionTimeMs: result.summary.executionTimeMs,
     });
   } catch (error) {
     logger.warn('[MasterInit] Could not log initialization');
