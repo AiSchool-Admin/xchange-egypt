@@ -11,7 +11,7 @@
 
 import prisma from '../../lib/prisma';
 import logger from '../../lib/logger';
-import { calculateAndUpdateAllKPIs } from '../kpi/kpi-calculator.service';
+import { calculateAndUpdateAllKPIs } from '../board/kpi-calculator.service';
 import { generateMeetingAgenda } from './agenda-intelligence.service';
 import { generateMOM } from './mom-generator.service';
 import { BOARD_MEMBERS_CONFIG, BoardRole } from '../../config/board/board-members.config';
@@ -98,7 +98,7 @@ const initializeKPIs = async (): Promise<{ success: boolean; updated: number; er
     const existingKPIs = await prisma.kPIMetric.count();
     if (existingKPIs === 0) {
       // Import and run initialization
-      const { initializeKPIsFromConfig } = await import('../kpi/kpi-calculator.service');
+      const { initializeKPIsFromConfig } = await import('../board/kpi-calculator.service');
       await initializeKPIsFromConfig();
     }
 
@@ -203,10 +203,8 @@ const initializeMeetings = async (): Promise<{
             description: 'Daily strategic review and decision making',
             descriptionAr: 'مراجعة استراتيجية يومية واتخاذ القرارات',
             scheduledAt: morningTime,
-            durationMinutes: 45,
+            duration: 45,
             status: 'SCHEDULED',
-            isRecurring: true,
-            recurrencePattern: 'DAILY',
             agenda: agenda.items as any,
             attendees: {
               create: boardMembers.map((m) => ({
@@ -238,10 +236,8 @@ const initializeMeetings = async (): Promise<{
             description: 'Operational review and task alignment',
             descriptionAr: 'مراجعة العمليات ومواءمة المهام',
             scheduledAt: afternoonTime,
-            durationMinutes: 30,
+            duration: 30,
             status: 'SCHEDULED',
-            isRecurring: true,
-            recurrencePattern: 'DAILY',
             agenda: agenda.items as any,
             attendees: {
               create: boardMembers.map((m) => ({
@@ -320,9 +316,9 @@ const initializeReports = async (): Promise<{
     const omar = await prisma.boardMember.findFirst({ where: { role: 'COO' } });
 
     // Import report generators
-    const { generateYoussefContentPackage } = await import('./board-members/youssef-cmo.service');
-    const { generateLailaFinancialReport } = await import('./board-members/laila-cfo.service');
-    const { generateOmarOperationsReport } = await import('./board-members/omar-coo.service');
+    const { generateYoussefContentPackage } = await import('./youssef-cmo.service');
+    const { generateLailaFinancialReport } = await import('./laila-cfo.service');
+    const { generateOmarOperationsReport } = await import('./omar-coo.service');
 
     // Content Package (Youssef CMO)
     try {
@@ -347,7 +343,7 @@ const initializeReports = async (): Promise<{
     try {
       const existingFinancial = await prisma.boardMemberDailyReport.findFirst({
         where: {
-          type: 'FINANCIAL',
+          type: 'FINANCIAL_REPORT',
           date: { gte: today },
         },
       });
@@ -366,7 +362,7 @@ const initializeReports = async (): Promise<{
     try {
       const existingOps = await prisma.boardMemberDailyReport.findFirst({
         where: {
-          type: 'OPERATIONS',
+          type: 'OPERATIONS_REPORT',
           date: { gte: today },
         },
       });
@@ -571,8 +567,8 @@ export const getBoardHealthStatus = async (): Promise<{
     prisma.morningIntelligence.findFirst({ where: { date: { gte: today } } }),
     prisma.boardMeeting.count({ where: { scheduledAt: { gte: today } } }),
     prisma.boardMemberDailyReport.findFirst({ where: { type: 'CONTENT_PACKAGE', date: { gte: today } } }),
-    prisma.boardMemberDailyReport.findFirst({ where: { type: 'FINANCIAL', date: { gte: today } } }),
-    prisma.boardMemberDailyReport.findFirst({ where: { type: 'OPERATIONS', date: { gte: today } } }),
+    prisma.boardMemberDailyReport.findFirst({ where: { type: 'FINANCIAL_REPORT', date: { gte: today } } }),
+    prisma.boardMemberDailyReport.findFirst({ where: { type: 'OPERATIONS_REPORT', date: { gte: today } } }),
   ]);
 
   const kpiCount = await prisma.kPIMetric.count();

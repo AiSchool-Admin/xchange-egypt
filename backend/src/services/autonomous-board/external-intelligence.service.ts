@@ -553,7 +553,7 @@ export const saveExternalIntelligence = async (
           titleAr: alert.titleAr.substring(0, 200),
           description: `External Intelligence: ${alert.type}`,
           descriptionAr: `استخبارات خارجية: ${alert.type}`,
-          severity: alert.severity === 'CRITICAL' ? 'CRITICAL' : alert.severity === 'WARNING' ? 'HIGH' : 'MEDIUM',
+          severity: alert.severity === 'CRITICAL' ? 'CRITICAL' : alert.severity === 'WARNING' ? 'WARNING' : 'INFO',
           status: 'ACTIVE',
           type: 'ENVIRONMENT_CHANGE',
           source: 'EXTERNAL_INTELLIGENCE',
