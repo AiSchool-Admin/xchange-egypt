@@ -1819,3 +1819,55 @@ export const updateCompanyPhase = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
+
+/**
+ * Master Board Initialization - Initialize ALL board components
+ * التهيئة الشاملة للمجلس
+ */
+export const masterBoardInitialize = async (req: Request, res: Response) => {
+  try {
+    const { forceRefresh = false, components } = req.body;
+
+    logger.info('[BoardController] Master board initialization requested');
+
+    const { initializeBoard } = await import(
+      '../services/autonomous-board/master-initialization.service'
+    );
+
+    const result = await initializeBoard({ forceRefresh, components });
+
+    res.json({
+      success: result.success,
+      data: result,
+      message: result.success
+        ? `تم تهيئة المجلس بنجاح في ${result.summary.executionTimeMs}ms`
+        : `فشلت بعض العناصر: ${result.summary.totalFailed} من أصل ${result.summary.totalSuccess + result.summary.totalFailed}`,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] masterBoardInitialize error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+/**
+ * Get Board Health Status - Check initialization status without modifying
+ * حالة صحة المجلس
+ */
+export const getBoardHealthStatus = async (req: Request, res: Response) => {
+  try {
+    const { getBoardHealthStatus: getHealth } = await import(
+      '../services/autonomous-board/master-initialization.service'
+    );
+
+    const status = await getHealth();
+
+    res.json({
+      success: true,
+      data: status,
+      needsInitialization: !status.initialized,
+    });
+  } catch (error: any) {
+    logger.error('[BoardController] getBoardHealthStatus error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

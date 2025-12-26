@@ -176,4 +176,12 @@ router.post('/autonomous/agenda/generate', authenticateFounder, boardController.
 router.get('/phase', authenticateFounder, boardController.getCompanyPhase);
 router.put('/phase', authenticateFounder, boardController.updateCompanyPhase);
 
+// ============================================
+// Master Initialization Routes - التهيئة الشاملة
+// ============================================
+// Initialize ALL board components at once
+router.post('/master/initialize', authenticateFounder, boardController.masterBoardInitialize);
+// Check board health/initialization status
+router.get('/master/health', authenticateFounder, boardController.getBoardHealthStatus);
+
 export default router;

@@ -626,6 +626,176 @@ const IntelligenceDisplay = ({ intelligence }: { intelligence: any }) => {
   );
 };
 
+// Master Initialization Display
+const MasterInitDisplay = ({ data }: { data: any }) => {
+  if (!data) return null;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className={`p-4 rounded-xl ${data.success ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            {data.success ? '✅' : '⚠️'} نتيجة التهيئة
+          </h3>
+          <span className="text-sm text-gray-400">{data.summary?.executionTimeMs}ms</span>
+        </div>
+        <div className="grid grid-cols-2 gap-4 text-center">
+          <div className="p-3 bg-green-500/20 rounded-lg">
+            <p className="text-2xl font-bold text-green-400">{data.summary?.totalSuccess || 0}</p>
+            <p className="text-xs text-gray-400">نجح</p>
+          </div>
+          <div className="p-3 bg-red-500/20 rounded-lg">
+            <p className="text-2xl font-bold text-red-400">{data.summary?.totalFailed || 0}</p>
+            <p className="text-xs text-gray-400">فشل</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Components Status */}
+      <div className="p-4 bg-gray-800/50 rounded-xl">
+        <h4 className="text-sm font-medium text-gray-400 mb-3">📊 حالة المكونات</h4>
+        <div className="space-y-2">
+          {/* KPIs */}
+          <div className="flex items-center justify-between p-2 bg-gray-900/50 rounded">
+            <span className="text-sm text-white">📈 مؤشرات الأداء (KPIs)</span>
+            <span className={`text-xs px-2 py-1 rounded ${data.components?.kpis?.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+              {data.components?.kpis?.success ? `✓ ${data.components.kpis.updated} تحديث` : '✗ فشل'}
+            </span>
+          </div>
+          {/* Morning Intelligence */}
+          <div className="flex items-center justify-between p-2 bg-gray-900/50 rounded">
+            <span className="text-sm text-white">🌅 الاستخبارات الصباحية</span>
+            <span className={`text-xs px-2 py-1 rounded ${data.components?.morningIntelligence?.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+              {data.components?.morningIntelligence?.success ? `✓ ${data.components.morningIntelligence.reportNumber || 'OK'}` : '✗ فشل'}
+            </span>
+          </div>
+          {/* Meetings */}
+          <div className="flex items-center justify-between p-2 bg-gray-900/50 rounded">
+            <span className="text-sm text-white">📅 الاجتماعات</span>
+            <span className={`text-xs px-2 py-1 rounded ${data.components?.meetings?.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+              {data.components?.meetings?.success ? `✓ ${data.components.meetings.created} جديد, ${data.components.meetings.existing} موجود` : '✗ فشل'}
+            </span>
+          </div>
+          {/* Agendas */}
+          <div className="flex items-center justify-between p-2 bg-gray-900/50 rounded">
+            <span className="text-sm text-white">📋 الأجندات</span>
+            <span className={`text-xs px-2 py-1 rounded ${data.components?.agendas?.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+              {data.components?.agendas?.success ? `✓ ${data.components.agendas.generated?.join(', ') || 'OK'}` : '✗ فشل'}
+            </span>
+          </div>
+          {/* Reports */}
+          <div className="flex items-center justify-between p-2 bg-gray-900/50 rounded">
+            <span className="text-sm text-white">📝 التقارير</span>
+            <div className="flex gap-2">
+              <span className={`text-xs px-2 py-1 rounded ${data.components?.reports?.content?.success ? 'bg-pink-500/20 text-pink-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                📣 {data.components?.reports?.content?.success ? '✓' : '✗'}
+              </span>
+              <span className={`text-xs px-2 py-1 rounded ${data.components?.reports?.financial?.success ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                💰 {data.components?.reports?.financial?.success ? '✓' : '✗'}
+              </span>
+              <span className={`text-xs px-2 py-1 rounded ${data.components?.reports?.operations?.success ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                ⚙️ {data.components?.reports?.operations?.success ? '✓' : '✗'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Next Run */}
+      {data.nextScheduledRun && (
+        <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg text-center">
+          <span className="text-sm text-blue-400">
+            ⏰ التشغيل التلقائي التالي: {new Date(data.nextScheduledRun).toLocaleString('ar-EG')}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Health Display
+const HealthDisplay = ({ data }: { data: any }) => {
+  if (!data) return null;
+
+  return (
+    <div className="space-y-4">
+      {/* Initialization Status */}
+      <div className={`p-4 rounded-xl ${data.initialized ? 'bg-green-500/10 border border-green-500/30' : 'bg-yellow-500/10 border border-yellow-500/30'}`}>
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          {data.initialized ? '💚 المجلس مهيأ' : '💛 يحتاج تهيئة'}
+        </h3>
+        {data.lastInitialization && (
+          <p className="text-sm text-gray-400 mt-1">
+            آخر تهيئة: {new Date(data.lastInitialization).toLocaleString('ar-EG')}
+          </p>
+        )}
+      </div>
+
+      {/* Components Health */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* KPIs */}
+        <div className="p-3 bg-gray-800/50 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <span>📊</span>
+            <span className="text-sm font-medium text-white">مؤشرات الأداء</span>
+          </div>
+          <p className="text-2xl font-bold text-blue-400">{data.components?.kpis?.count || 0}</p>
+          <p className="text-xs text-gray-400">
+            آخر تحديث: {data.components?.kpis?.lastUpdate ? new Date(data.components.kpis.lastUpdate).toLocaleTimeString('ar-EG') : 'غير معروف'}
+          </p>
+        </div>
+
+        {/* Morning Intelligence */}
+        <div className="p-3 bg-gray-800/50 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <span>🌅</span>
+            <span className="text-sm font-medium text-white">استخبارات اليوم</span>
+          </div>
+          <p className={`text-2xl font-bold ${data.components?.morningIntelligence?.hasToday ? 'text-green-400' : 'text-gray-400'}`}>
+            {data.components?.morningIntelligence?.hasToday ? '✓' : '✗'}
+          </p>
+          <p className="text-xs text-gray-400">
+            {data.components?.morningIntelligence?.reportNumber || 'لم يتم التوليد'}
+          </p>
+        </div>
+
+        {/* Meetings */}
+        <div className="p-3 bg-gray-800/50 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <span>📅</span>
+            <span className="text-sm font-medium text-white">اجتماعات اليوم</span>
+          </div>
+          <p className="text-2xl font-bold text-purple-400">{data.components?.meetings?.todayCount || 0}</p>
+          <p className="text-xs text-gray-400">اجتماعات مجدولة</p>
+        </div>
+
+        {/* Reports */}
+        <div className="p-3 bg-gray-800/50 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <span>📝</span>
+            <span className="text-sm font-medium text-white">تقارير اليوم</span>
+          </div>
+          <div className="flex gap-2 mt-1">
+            <span className={`px-2 py-1 rounded text-xs ${data.components?.reports?.contentToday ? 'bg-pink-500/20 text-pink-400' : 'bg-gray-700 text-gray-500'}`}>📣</span>
+            <span className={`px-2 py-1 rounded text-xs ${data.components?.reports?.financialToday ? 'bg-green-500/20 text-green-400' : 'bg-gray-700 text-gray-500'}`}>💰</span>
+            <span className={`px-2 py-1 rounded text-xs ${data.components?.reports?.operationsToday ? 'bg-orange-500/20 text-orange-400' : 'bg-gray-700 text-gray-500'}`}>⚙️</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Suggestion */}
+      {!data.initialized && (
+        <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
+          <p className="text-sm text-yellow-400">
+            ⚠️ المجلس يحتاج تهيئة اليوم. اضغط على "التهيئة الشاملة للمجلس" لتفعيل جميع العناصر.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function BoardTestingPage() {
   const [results, setResults] = useState<Record<string, TestResult>>({});
   const [activeTest, setActiveTest] = useState<string | null>(null);
@@ -803,7 +973,40 @@ export default function BoardTestingPage() {
     setActiveTest(null);
   };
 
+  // Test: Master Board Initialization
+  const testMasterInitialization = async () => {
+    const testName = 'التهيئة الشاملة للمجلس';
+    setActiveTest(testName);
+    updateResult(testName, { status: 'loading', data: null });
+    try {
+      const response = await founderFetch('/board/master/initialize', {
+        method: 'POST',
+        body: JSON.stringify({ forceRefresh: true }),
+      });
+      updateResult(testName, { status: 'success', data: response.data, timestamp: new Date() });
+    } catch (error: any) {
+      updateResult(testName, { status: 'error', error: error.message, timestamp: new Date() });
+    }
+    setActiveTest(null);
+  };
+
+  // Test: Board Health Check
+  const testBoardHealth = async () => {
+    const testName = 'فحص صحة المجلس';
+    setActiveTest(testName);
+    updateResult(testName, { status: 'loading', data: null });
+    try {
+      const response = await founderFetch('/board/master/health');
+      updateResult(testName, { status: 'success', data: response.data, timestamp: new Date() });
+    } catch (error: any) {
+      updateResult(testName, { status: 'error', error: error.message, timestamp: new Date() });
+    }
+    setActiveTest(null);
+  };
+
   const tests = [
+    { name: 'التهيئة الشاملة للمجلس', icon: '🚀', color: 'emerald', action: testMasterInitialization, type: 'master' },
+    { name: 'فحص صحة المجلس', icon: '💚', color: 'teal', action: testBoardHealth, type: 'health' },
     { name: 'أجندة الاجتماع الصباحي', icon: '🌅', color: 'cyan', action: testMorningAgenda, type: 'agenda' },
     { name: 'أجندة الاجتماع المسائي', icon: '🌆', color: 'orange', action: testEveningAgenda, type: 'agenda' },
     { name: 'أجندة الاجتماع الأسبوعي الاستراتيجي', icon: '📅', color: 'purple', action: testWeeklyAgenda, type: 'agenda' },
@@ -875,6 +1078,12 @@ export default function BoardTestingPage() {
         )}
         {test.type === 'intelligence' && result.data?.intelligence && (
           <IntelligenceDisplay intelligence={result.data.intelligence} />
+        )}
+        {test.type === 'master' && result.data && (
+          <MasterInitDisplay data={result.data} />
+        )}
+        {test.type === 'health' && result.data && (
+          <HealthDisplay data={result.data} />
         )}
       </div>
     );
