@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { founderFetch } from '@/lib/api/founder';
 import {
   getBoardMembers,
   getConversations,
@@ -36,6 +37,26 @@ export default function BoardDashboard() {
   const [decisionDashboard, setDecisionDashboard] = useState<DecisionDashboard | null>(null);
   const [companyPhase, setCompanyPhase] = useState<CompanyPhaseResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(false);
+  const [initResult, setInitResult] = useState<any>(null);
+
+  const handleMasterInitialize = async () => {
+    setInitializing(true);
+    setInitResult(null);
+    try {
+      const response = await founderFetch('/board/master/initialize', {
+        method: 'POST',
+        body: JSON.stringify({ forceRefresh: true }),
+      });
+      setInitResult({ success: true, data: response.data });
+      // Refresh dashboard data after initialization
+      window.location.reload();
+    } catch (error: any) {
+      setInitResult({ success: false, error: error.message });
+    } finally {
+      setInitializing(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -173,9 +194,53 @@ export default function BoardDashboard() {
               {status.claude.isAvailable ? 'المجلس جاهز ومتاح' : 'خدمة Claude غير متاحة حالياً'}
             </span>
           </div>
-          <div className="text-sm text-gray-500">
-            {status.claude.requestsThisMinute}/{status.claude.maxRequestsPerMinute} طلب/دقيقة
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">
+              {status.claude.requestsThisMinute}/{status.claude.maxRequestsPerMinute} طلب/دقيقة
+            </div>
+            <button
+              onClick={handleMasterInitialize}
+              disabled={initializing}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                initializing
+                  ? 'bg-gray-600 text-gray-400 cursor-wait'
+                  : 'bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:from-emerald-600 hover:to-green-700'
+              }`}
+            >
+              {initializing ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  جاري التهيئة...
+                </>
+              ) : (
+                <>
+                  <span>🚀</span>
+                  التهيئة الشاملة
+                </>
+              )}
+            </button>
           </div>
+        </div>
+      )}
+
+      {/* Init Result */}
+      {initResult && (
+        <div className={`mb-6 p-4 rounded-xl border ${
+          initResult.success
+            ? 'bg-green-500/10 border-green-500/30 text-green-400'
+            : 'bg-red-500/10 border-red-500/30 text-red-400'
+        }`}>
+          {initResult.success ? (
+            <div className="flex items-center gap-2">
+              <span>✅</span>
+              <span>تمت التهيئة بنجاح! جاري تحديث الصفحة...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span>❌</span>
+              <span>فشلت التهيئة: {initResult.error}</span>
+            </div>
+          )}
         </div>
       )}
 
