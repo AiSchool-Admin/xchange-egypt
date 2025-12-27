@@ -274,7 +274,7 @@ export const listAuctions = async (query: ListAuctionsQuery) => {
       page,
       limit,
       total,
-      pages: Math.ceil(total / limit),
+      pages: limit > 0 ? Math.ceil(total / limit) : 1,
     },
   };
 };
@@ -952,7 +952,7 @@ export const getAuctionBids = async (auctionId: string, page: number = 1, limit:
       page,
       limit,
       total,
-      pages: Math.ceil(total / limit),
+      pages: limit > 0 ? Math.ceil(total / limit) : 1,
     },
   };
 };

@@ -819,7 +819,7 @@ export const searchItems = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
   return {
     items: items as unknown as ItemWithSeller[],
@@ -871,7 +871,7 @@ export const getUserItems = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
   return {
     items: items as unknown as ItemWithSeller[],
@@ -988,7 +988,7 @@ export const getCategoryItems = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
   return {
     items: items as unknown as ItemWithSeller[],

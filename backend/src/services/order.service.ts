@@ -388,7 +388,7 @@ export const getMyOrders = async (
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages: limit > 0 ? Math.ceil(total / limit) : 1,
       hasMore: page * limit < total,
     },
   };

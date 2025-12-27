@@ -785,7 +785,7 @@ export const getMyBarterOffers = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
   return {
     items: offers,
@@ -877,7 +877,7 @@ export const searchBarterableItems = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
   return {
     items,
@@ -933,15 +933,6 @@ export const findBarterMatches = async (
           id: true,
           fullName: true,
           avatar: true,
-        },
-        include: {
-          items: {
-            where: {
-              categoryId: myItem.categoryId,
-              id: { not: itemId },
-            },
-            take: 5,
-          },
         },
       },
       category: {

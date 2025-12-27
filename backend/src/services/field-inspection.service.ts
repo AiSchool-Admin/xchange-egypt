@@ -174,8 +174,7 @@ async function findAvailableInspector(governorate: string): Promise<any> {
       isActive: true,
       isVerified: true,
       serviceAreas: {
-        path: [],
-        array_contains: governorate,
+        has: governorate,
       },
     },
     orderBy: [{ rating: 'desc' }, { totalInspections: 'desc' }],
