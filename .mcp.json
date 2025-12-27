@@ -9,7 +9,14 @@
     },
     "fetch": {
       "command": "npx",
-      "args": ["-y", "@anthropic-ai/mcp-server-fetch"]
+      "args": ["-y", "@modelcontextprotocol/server-fetch"]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}"
+      }
     }
   }
 }
