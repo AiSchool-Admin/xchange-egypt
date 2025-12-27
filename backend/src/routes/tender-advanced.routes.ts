@@ -54,13 +54,13 @@ router.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const filters = {
-        category: req.query.category ? (String(req.query.category) as tenderAdvancedService.ServiceCategory) : undefined,
+        category: req.query.category ? (String(req.query.category) as tenderAdvancedService.TenderCategory) : undefined,
         governorate: req.query.governorate ? String(req.query.governorate) : undefined,
         city: req.query.city ? String(req.query.city) : undefined,
-        urgency: req.query.urgency ? (req.query.urgency as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT') : undefined,
-        budgetMin: req.query.budgetMin ? parseFloat(req.query.budgetMin as string) : undefined,
-        budgetMax: req.query.budgetMax ? parseFloat(req.query.budgetMax as string) : undefined,
-        status: req.query.status ? String(req.query.status) : undefined,
+        urgency: req.query.urgency ? (req.query.urgency as tenderAdvancedService.TenderUrgency) : undefined,
+        minBudget: req.query.budgetMin ? parseFloat(req.query.budgetMin as string) : undefined,
+        maxBudget: req.query.budgetMax ? parseFloat(req.query.budgetMax as string) : undefined,
+        status: req.query.status ? (req.query.status as tenderAdvancedService.TenderRequestStatus) : undefined,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
       };
@@ -254,7 +254,7 @@ router.get(
       }
       const filters = {
         role: req.query.role as 'buyer' | 'vendor',
-        status: req.query.status as 'DRAFT' | 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | undefined,
+        status: req.query.status ? (req.query.status as tenderAdvancedService.TenderContractStatus) : undefined,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
       };

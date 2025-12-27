@@ -176,6 +176,12 @@ model User {
   // مجلس إدارة AI - للمستخدمين المعينين كأعضاء بشريين في المجلس
   boardMembership           BoardMember[]             @relation("BoardMemberUser")
 
+  // نظام المناقصات المتقدم - Tender System Relations
+  tenderRequests            TenderServiceRequest[]    @relation("TenderServiceRequests")
+  tenderQuotes              TenderQuote[]             @relation("TenderQuotes")
+  tenderContractsAsBuyer    TenderContract[]          @relation("TenderContractsBuyer")
+  tenderContractsAsVendor   TenderContract[]          @relation("TenderContractsVendor")
+
   @@map("users")
   @@index([email])
   @@index([phone])
@@ -9337,6 +9343,245 @@ model BoardMemberDailyReport {
   @@index([memberId])
   @@index([type])
   @@index([memberRole])
+}
+
+
+// ============================================
+// Tender Service Request - طلب خدمة المناقصة
+// ============================================
+model TenderServiceRequest {
+  id                    String                  @id @default(uuid())
+  referenceNumber       String                  @unique @map("reference_number") // SR-2025-000001
+  requesterId           String                  @map("requester_id")
+
+  // معلومات الطلب
+  title                 String
+  titleAr               String?                 @map("title_ar")
+  description           String                  @db.Text
+  descriptionAr         String?                 @map("description_ar") @db.Text
+
+  // التصنيف
+  category              TenderCategory          @default(OTHER)
+
+  // الميزانية
+  budgetMin             Float?                  @map("budget_min")
+  budgetMax             Float?                  @map("budget_max")
+  currency              String                  @default("EGP")
+
+  // الموقع
+  governorate           String
+  city                  String?
+  district              String?
+
+  // الإلحاح والمواعيد
+  urgency               TenderUrgency           @default(NORMAL)
+  deadline              DateTime?
+  expectedStartDate     DateTime?               @map("expected_start_date")
+  expectedDuration      String?                 @map("expected_duration") // "2 weeks", "1 month"
+
+  // المتطلبات
+  requirements          Json?                   // [{ requirement, mandatory: true/false }]
+  attachments           String[]                @default([])
+
+  // الحالة
+  status                TenderRequestStatus     @default(OPEN)
+
+  // الإحصائيات
+  quotesCount           Int                     @default(0) @map("quotes_count")
+  viewsCount            Int                     @default(0) @map("views_count")
+
+  // الصلاحية
+  expiresAt             DateTime?               @map("expires_at")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+  closedAt              DateTime?               @map("closed_at")
+
+  // العلاقات
+  requester             User                    @relation("TenderServiceRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  quotes                TenderQuote[]
+  contract              TenderContract?
+
+  @@map("tender_service_requests")
+  @@index([requesterId])
+  @@index([category])
+  @@index([status])
+  @@index([governorate])
+  @@index([urgency])
+  @@index([createdAt])
+}
+
+// ============================================
+// Tender Quote - عرض سعر المناقصة
+// ============================================
+model TenderQuote {
+  id                    String                  @id @default(uuid())
+  quoteNumber           String                  @unique @map("quote_number") // QT-2025-000001
+  requestId             String                  @map("request_id")
+  providerId            String                  @map("provider_id")
+
+  // السعر
+  price                 Float
+  currency              String                  @default("EGP")
+  priceBreakdown        Json?                   @map("price_breakdown") // [{ item, amount }]
+
+  // التفاصيل
+  description           String                  @db.Text
+  descriptionAr         String?                 @map("description_ar") @db.Text
+
+  // المدة والتسليم
+  estimatedDuration     String                  @map("estimated_duration") // "2 weeks", "10 days"
+  deliveryDate          DateTime?               @map("delivery_date")
+
+  // الشروط
+  termsAndConditions    String?                 @map("terms_conditions") @db.Text
+  warranty              String?                 // "1 year", "6 months"
+
+  // المرفقات
+  attachments           String[]                @default([])
+
+  // الحالة
+  status                TenderQuoteStatus       @default(PENDING)
+
+  // التقييم
+  technicalScore        Float?                  @map("technical_score")
+  financialScore        Float?                  @map("financial_score")
+  totalScore            Float?                  @map("total_score")
+  evaluationNotes       String?                 @map("evaluation_notes") @db.Text
+  evaluatedAt           DateTime?               @map("evaluated_at")
+  evaluatedBy           String?                 @map("evaluated_by")
+
+  // الصلاحية
+  validUntil            DateTime?               @map("valid_until")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+
+  // العلاقات
+  request               TenderServiceRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  provider              User                    @relation("TenderQuotes", fields: [providerId], references: [id], onDelete: Cascade)
+  contract              TenderContract?
+
+  @@map("tender_quotes")
+  @@index([requestId])
+  @@index([providerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// Tender Contract - عقد المناقصة
+// ============================================
+model TenderContract {
+  id                    String                  @id @default(uuid())
+  contractNumber        String                  @unique @map("contract_number") // CON-2025-000001
+  requestId             String                  @unique @map("request_id")
+  quoteId               String                  @unique @map("quote_id")
+  buyerId               String                  @map("buyer_id")
+  vendorId              String                  @map("vendor_id")
+
+  // قيمة العقد
+  totalAmount           Float                   @map("total_amount")
+  currency              String                  @default("EGP")
+
+  // الشروط
+  terms                 String?                 @db.Text
+  termsAr               String?                 @map("terms_ar") @db.Text
+
+  // المراحل
+  milestones            Json?                   // [{ id, title, amount, dueDate, status }]
+
+  // التوقيعات
+  buyerSigned           Boolean                 @default(false) @map("buyer_signed")
+  buyerSignedAt         DateTime?               @map("buyer_signed_at")
+  vendorSigned          Boolean                 @default(false) @map("vendor_signed")
+  vendorSignedAt        DateTime?               @map("vendor_signed_at")
+
+  // الحالة
+  status                TenderContractStatus    @default(PENDING_SIGNATURES)
+
+  // التقدم
+  completedMilestones   Int                     @default(0) @map("completed_milestones")
+  totalMilestones       Int                     @default(0) @map("total_milestones")
+  progressPercentage    Float                   @default(0) @map("progress_percentage")
+
+  // المدفوعات
+  paidAmount            Float                   @default(0) @map("paid_amount")
+  pendingAmount         Float                   @default(0) @map("pending_amount")
+
+  // التواريخ
+  startDate             DateTime?               @map("start_date")
+  expectedEndDate       DateTime?               @map("expected_end_date")
+  actualEndDate         DateTime?               @map("actual_end_date")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+
+  // العلاقات
+  request               TenderServiceRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  quote                 TenderQuote             @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  buyer                 User                    @relation("TenderContractsBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  vendor                User                    @relation("TenderContractsVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("tender_contracts")
+  @@index([buyerId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Tender Enums
+enum TenderCategory {
+  HOME_SERVICES       // خدمات المنزل
+  IT_SERVICES         // خدمات تقنية المعلومات
+  CONSTRUCTION        // البناء والتشييد
+  CONSULTING          // الاستشارات
+  MARKETING           // التسويق
+  LEGAL               // الخدمات القانونية
+  ACCOUNTING          // المحاسبة
+  TRANSPORT           // النقل
+  CLEANING            // التنظيف
+  MAINTENANCE         // الصيانة
+  DESIGN              // التصميم
+  TRAINING            // التدريب
+  OTHER               // أخرى
+}
+
+enum TenderUrgency {
+  URGENT              // عاجل
+  NORMAL              // عادي
+  FLEXIBLE            // مرن
+}
+
+enum TenderRequestStatus {
+  DRAFT               // مسودة
+  OPEN                // مفتوح للعروض
+  UNDER_REVIEW        // قيد المراجعة
+  AWARDED             // تم الترسية
+  CANCELLED           // ملغي
+  EXPIRED             // منتهي الصلاحية
+  COMPLETED           // مكتمل
+}
+
+enum TenderQuoteStatus {
+  PENDING             // في الانتظار
+  UNDER_REVIEW        // قيد المراجعة
+  SHORTLISTED         // في القائمة المختصرة
+  ACCEPTED            // مقبول
+  REJECTED            // مرفوض
+  WITHDRAWN           // منسحب
+}
+
+enum TenderContractStatus {
+  PENDING_SIGNATURES  // في انتظار التوقيعات
+  ACTIVE              // نشط
+  IN_PROGRESS         // قيد التنفيذ
+  COMPLETED           // مكتمل
+  DISPUTED            // متنازع عليه
+  TERMINATED          // منتهي
 }
 
 
