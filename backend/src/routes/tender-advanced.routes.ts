@@ -384,9 +384,12 @@ router.post(
 router.post(
   '/contracts/:id/milestones/:milestoneId/reject',
   authenticate,
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request & { user?: { id: string } }, res: Response, next: NextFunction) => {
     try {
-      const buyerId = (req as any).user.id;
+      const buyerId = req.user?.id;
+      if (!buyerId) {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
       const { reason } = req.body;
       const result = await tenderAdvancedService.rejectMilestone(
         req.params.id,

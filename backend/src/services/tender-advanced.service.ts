@@ -1435,9 +1435,9 @@ export const approveMilestone = async (
     approvedAt: new Date(),
   };
 
-  // Calculate progress
+  // Calculate progress (avoid division by zero)
   const completedCount = milestones.filter((m: any) => m.status === 'APPROVED').length;
-  const progressPercentage = (completedCount / milestones.length) * 100;
+  const progressPercentage = milestones.length > 0 ? (completedCount / milestones.length) * 100 : 0;
 
   await prisma.tenderContract.update({
     where: { id: contractId },

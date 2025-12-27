@@ -101,14 +101,19 @@ export async function getOrCreateWallet(userId: string): Promise<WalletInfo> {
     wallet = await prisma.wallet.findUnique({ where: { userId } });
   }
 
+  // Ensure wallet exists before returning
+  if (!wallet) {
+    throw new Error('Failed to create or retrieve wallet');
+  }
+
   return {
-    id: wallet!.id,
-    userId: wallet!.userId,
-    balance: wallet!.balance,
-    frozenBalance: wallet!.frozenBalance,
-    availableBalance: wallet!.balance - wallet!.frozenBalance,
-    lifetimeEarned: wallet!.lifetimeEarned,
-    lifetimeSpent: wallet!.lifetimeSpent,
+    id: wallet.id,
+    userId: wallet.userId,
+    balance: wallet.balance,
+    frozenBalance: wallet.frozenBalance,
+    availableBalance: wallet.balance - wallet.frozenBalance,
+    lifetimeEarned: wallet.lifetimeEarned,
+    lifetimeSpent: wallet.lifetimeSpent,
   };
 }
 
