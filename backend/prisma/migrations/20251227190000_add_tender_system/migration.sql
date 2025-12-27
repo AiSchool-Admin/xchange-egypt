@@ -25,6 +25,7 @@ CREATE TABLE "tender_service_requests" (
     "category" "TenderCategory" NOT NULL DEFAULT 'OTHER',
     "budget_min" DOUBLE PRECISION,
     "budget_max" DOUBLE PRECISION,
+    "currency" TEXT NOT NULL DEFAULT 'EGP',
     "governorate" TEXT NOT NULL,
     "city" TEXT,
     "district" TEXT,
@@ -33,15 +34,14 @@ CREATE TABLE "tender_service_requests" (
     "expected_start_date" TIMESTAMP(3),
     "expected_duration" TEXT,
     "requirements" JSONB,
-    "attachments" TEXT[],
+    "attachments" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "status" "TenderRequestStatus" NOT NULL DEFAULT 'OPEN',
     "quotes_count" INTEGER NOT NULL DEFAULT 0,
     "views_count" INTEGER NOT NULL DEFAULT 0,
     "expires_at" TIMESTAMP(3),
-    "awarded_at" TIMESTAMP(3),
-    "completed_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "closed_at" TIMESTAMP(3),
 
     CONSTRAINT "tender_service_requests_pkey" PRIMARY KEY ("id")
 );
@@ -53,22 +53,23 @@ CREATE TABLE "tender_quotes" (
     "request_id" TEXT NOT NULL,
     "provider_id" TEXT NOT NULL,
     "price" DOUBLE PRECISION NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'EGP',
+    "price_breakdown" JSONB,
     "description" TEXT NOT NULL,
     "description_ar" TEXT,
     "estimated_duration" TEXT NOT NULL,
     "delivery_date" TIMESTAMP(3),
-    "terms_and_conditions" TEXT,
+    "terms_conditions" TEXT,
     "warranty" TEXT,
-    "price_breakdown" JSONB,
-    "attachments" TEXT[],
+    "attachments" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "status" "TenderQuoteStatus" NOT NULL DEFAULT 'PENDING',
     "technical_score" DOUBLE PRECISION,
     "financial_score" DOUBLE PRECISION,
     "total_score" DOUBLE PRECISION,
     "evaluation_notes" TEXT,
-    "valid_until" TIMESTAMP(3),
-    "submitted_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "evaluated_at" TIMESTAMP(3),
+    "evaluated_by" TEXT,
+    "valid_until" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -84,18 +85,23 @@ CREATE TABLE "tender_contracts" (
     "buyer_id" TEXT NOT NULL,
     "vendor_id" TEXT NOT NULL,
     "total_amount" DOUBLE PRECISION NOT NULL,
-    "status" "TenderContractStatus" NOT NULL DEFAULT 'PENDING_SIGNATURES',
+    "currency" TEXT NOT NULL DEFAULT 'EGP',
     "terms" TEXT,
+    "terms_ar" TEXT,
     "milestones" JSONB,
-    "progress" INTEGER NOT NULL DEFAULT 0,
     "buyer_signed" BOOLEAN NOT NULL DEFAULT false,
     "buyer_signed_at" TIMESTAMP(3),
     "vendor_signed" BOOLEAN NOT NULL DEFAULT false,
     "vendor_signed_at" TIMESTAMP(3),
-    "started_at" TIMESTAMP(3),
-    "completed_at" TIMESTAMP(3),
-    "cancelled_at" TIMESTAMP(3),
-    "cancellation_reason" TEXT,
+    "status" "TenderContractStatus" NOT NULL DEFAULT 'PENDING_SIGNATURES',
+    "completed_milestones" INTEGER NOT NULL DEFAULT 0,
+    "total_milestones" INTEGER NOT NULL DEFAULT 0,
+    "progress_percentage" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "paid_amount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "pending_amount" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "start_date" TIMESTAMP(3),
+    "expected_end_date" TIMESTAMP(3),
+    "actual_end_date" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
@@ -109,13 +115,19 @@ CREATE UNIQUE INDEX "tender_service_requests_reference_number_key" ON "tender_se
 CREATE INDEX "tender_service_requests_requester_id_idx" ON "tender_service_requests"("requester_id");
 
 -- CreateIndex
-CREATE INDEX "tender_service_requests_status_idx" ON "tender_service_requests"("status");
-
--- CreateIndex
 CREATE INDEX "tender_service_requests_category_idx" ON "tender_service_requests"("category");
 
 -- CreateIndex
+CREATE INDEX "tender_service_requests_status_idx" ON "tender_service_requests"("status");
+
+-- CreateIndex
 CREATE INDEX "tender_service_requests_governorate_idx" ON "tender_service_requests"("governorate");
+
+-- CreateIndex
+CREATE INDEX "tender_service_requests_urgency_idx" ON "tender_service_requests"("urgency");
+
+-- CreateIndex
+CREATE INDEX "tender_service_requests_created_at_idx" ON "tender_service_requests"("created_at");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "tender_quotes_quote_number_key" ON "tender_quotes"("quote_number");
@@ -128,6 +140,9 @@ CREATE INDEX "tender_quotes_provider_id_idx" ON "tender_quotes"("provider_id");
 
 -- CreateIndex
 CREATE INDEX "tender_quotes_status_idx" ON "tender_quotes"("status");
+
+-- CreateIndex
+CREATE INDEX "tender_quotes_created_at_idx" ON "tender_quotes"("created_at");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "tender_contracts_contract_number_key" ON "tender_contracts"("contract_number");
@@ -147,23 +162,26 @@ CREATE INDEX "tender_contracts_vendor_id_idx" ON "tender_contracts"("vendor_id")
 -- CreateIndex
 CREATE INDEX "tender_contracts_status_idx" ON "tender_contracts"("status");
 
--- AddForeignKey
-ALTER TABLE "tender_service_requests" ADD CONSTRAINT "tender_service_requests_requester_id_fkey" FOREIGN KEY ("requester_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "tender_contracts_created_at_idx" ON "tender_contracts"("created_at");
 
 -- AddForeignKey
-ALTER TABLE "tender_quotes" ADD CONSTRAINT "tender_quotes_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "tender_service_requests"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tender_service_requests" ADD CONSTRAINT "tender_service_requests_requester_id_fkey" FOREIGN KEY ("requester_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tender_quotes" ADD CONSTRAINT "tender_quotes_provider_id_fkey" FOREIGN KEY ("provider_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tender_quotes" ADD CONSTRAINT "tender_quotes_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "tender_service_requests"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tender_contracts" ADD CONSTRAINT "tender_contracts_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "tender_service_requests"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tender_quotes" ADD CONSTRAINT "tender_quotes_provider_id_fkey" FOREIGN KEY ("provider_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tender_contracts" ADD CONSTRAINT "tender_contracts_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "tender_quotes"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tender_contracts" ADD CONSTRAINT "tender_contracts_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "tender_service_requests"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tender_contracts" ADD CONSTRAINT "tender_contracts_buyer_id_fkey" FOREIGN KEY ("buyer_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tender_contracts" ADD CONSTRAINT "tender_contracts_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "tender_quotes"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tender_contracts" ADD CONSTRAINT "tender_contracts_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "tender_contracts" ADD CONSTRAINT "tender_contracts_buyer_id_fkey" FOREIGN KEY ("buyer_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tender_contracts" ADD CONSTRAINT "tender_contracts_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
