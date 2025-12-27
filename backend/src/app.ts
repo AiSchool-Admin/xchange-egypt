@@ -3,6 +3,7 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { env, isDevelopment } from './config/env';
@@ -131,6 +132,9 @@ app.set('trust proxy', 1);
 // Security headers
 app.use(helmet());
 
+// Compression - reduce response size
+app.use(compression());
+
 // CORS configuration - Allow Vercel domains dynamically
 app.use(
   cors({
@@ -210,13 +214,51 @@ app.get('/', (_req: Request, res: Response) => {
   });
 });
 
-// Health check
+// Health check - Basic
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     environment: env.server.nodeEnv,
+    uptime: process.uptime(),
   });
+});
+
+// Health check - Detailed with DB status
+app.get('/health/detailed', async (_req: Request, res: Response) => {
+  try {
+    // Test database connection
+    await prisma.$queryRaw`SELECT 1`;
+
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      environment: env.server.nodeEnv,
+      uptime: process.uptime(),
+      database: 'connected',
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB',
+      },
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Readiness probe (for Kubernetes/Railway)
+app.get('/ready', async (_req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).send('OK');
+  } catch {
+    res.status(503).send('Not Ready');
+  }
 });
 
 // API v1 routes
