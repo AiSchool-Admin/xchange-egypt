@@ -1,12 +1,19 @@
 /**
  * TEMPORARY SEED ROUTES - DELETE AFTER USE
  * One-time endpoints to seed data in production
+ *
+ * ⚠️ SECURITY: All routes require super admin authentication
  */
 
 import { Router } from 'express';
 import prisma from '../lib/prisma';
+import { authenticateAdmin, requireSuperAdmin } from '../middleware/adminAuth';
 
 const router = Router();
+
+// Apply admin authentication to ALL seed routes
+router.use(authenticateAdmin);
+router.use(requireSuperAdmin);
 
 interface CategoryData {
   nameEn: string;

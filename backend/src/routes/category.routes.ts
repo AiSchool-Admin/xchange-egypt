@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as categoryController from '../controllers/category.controller';
 import { validate } from '../middleware/validate';
-import { authenticate } from '../middleware/auth';
+import { authenticate, isAdmin } from '../middleware/auth';
 import {
   createCategorySchema,
   updateCategorySchema,
@@ -54,24 +54,23 @@ router.get('/:id', validate(getCategoryByIdSchema), categoryController.getCatego
 // ============================================
 // Protected Routes (Admin Only)
 // ============================================
-// Note: For MVP, these routes require authentication.
-// TODO: Add role-based access control (admin middleware) in production
 
 /**
  * @route   POST /api/v1/categories
  * @desc    Create new category
- * @access  Private (Admin) - Currently: Authenticated users
+ * @access  Private (Admin only)
  */
-router.post('/', authenticate, validate(createCategorySchema), categoryController.createCategory);
+router.post('/', authenticate, isAdmin, validate(createCategorySchema), categoryController.createCategory);
 
 /**
  * @route   PUT /api/v1/categories/:id
  * @desc    Update category
- * @access  Private (Admin) - Currently: Authenticated users
+ * @access  Private (Admin only)
  */
 router.put(
   '/:id',
   authenticate,
+  isAdmin,
   validate(getCategoryByIdSchema),
   validate(updateCategorySchema),
   categoryController.updateCategory
@@ -80,11 +79,12 @@ router.put(
 /**
  * @route   DELETE /api/v1/categories/:id
  * @desc    Delete category
- * @access  Private (Admin) - Currently: Authenticated users
+ * @access  Private (Admin only)
  */
 router.delete(
   '/:id',
   authenticate,
+  isAdmin,
   validate(getCategoryByIdSchema),
   categoryController.deleteCategory
 );
