@@ -53,16 +53,30 @@ router.get(
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Parse and validate numeric parameters
+      const minBudget = req.query.budgetMin ? parseFloat(req.query.budgetMin as string) : undefined;
+      const maxBudget = req.query.budgetMax ? parseFloat(req.query.budgetMax as string) : undefined;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+
+      // Validate numeric values are not NaN
+      if (minBudget !== undefined && isNaN(minBudget)) {
+        return res.status(400).json({ success: false, message: 'Invalid budgetMin value' });
+      }
+      if (maxBudget !== undefined && isNaN(maxBudget)) {
+        return res.status(400).json({ success: false, message: 'Invalid budgetMax value' });
+      }
+
       const filters = {
         category: req.query.category ? (String(req.query.category) as tenderAdvancedService.TenderCategory) : undefined,
         governorate: req.query.governorate ? String(req.query.governorate) : undefined,
         city: req.query.city ? String(req.query.city) : undefined,
         urgency: req.query.urgency ? (req.query.urgency as tenderAdvancedService.TenderUrgency) : undefined,
-        minBudget: req.query.budgetMin ? parseFloat(req.query.budgetMin as string) : undefined,
-        maxBudget: req.query.budgetMax ? parseFloat(req.query.budgetMax as string) : undefined,
+        minBudget,
+        maxBudget,
         status: req.query.status ? (req.query.status as tenderAdvancedService.TenderRequestStatus) : undefined,
-        page: req.query.page ? parseInt(req.query.page as string) : 1,
-        limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+        page: isNaN(page) ? 1 : page,
+        limit: isNaN(limit) ? 20 : Math.min(limit, 100), // Cap at 100
       };
       const result = await tenderAdvancedService.getServiceRequests(filters);
       res.json({
