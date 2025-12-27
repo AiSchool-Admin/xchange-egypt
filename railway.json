@@ -2,13 +2,13 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "cd backend && npm install && npm run build"
+    "buildCommand": "cd backend && npm ci --prefer-offline && npm run build"
   },
   "deploy": {
-    "startCommand": "cd backend && DATABASE_URL=$DIRECT_DATABASE_URL npx prisma migrate deploy && npm start",
+    "startCommand": "cd backend && npx prisma migrate deploy --skip-generate && npm start",
     "healthcheckPath": "/health",
-    "healthcheckTimeout": 30000,
+    "healthcheckTimeout": 60000,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "restartPolicyMaxRetries": 5
   }
 }
