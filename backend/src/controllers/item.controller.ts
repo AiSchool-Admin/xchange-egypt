@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import * as itemService from '../services/item.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
 import { ItemCondition, PromotionTier } from '../types';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Create a new item
@@ -14,7 +17,10 @@ export const createItem = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const imageFiles = req.files as Express.Multer.File[] | undefined;
 
     // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
@@ -72,7 +78,10 @@ export const updateItem = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
     const updateData: {
@@ -122,7 +131,10 @@ export const deleteItem = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     await itemService.deleteItem(id, userId);
 
@@ -171,7 +183,10 @@ export const getMyItems = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { page, limit } = req.query;
 
     const result = await itemService.getUserItems(
@@ -263,7 +278,10 @@ export const addItemImages = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const imageFiles = req.files as Express.Multer.File[];
 
     if (!imageFiles || imageFiles.length === 0) {
@@ -289,7 +307,10 @@ export const removeItemImages = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { imagesToRemove } = req.body;
 
     const item = await itemService.removeItemImages(id, userId, imagesToRemove);
@@ -362,7 +383,10 @@ export const promoteItem = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { tier, durationDays } = req.body;
 
     if (!tier) {
@@ -391,7 +415,10 @@ export const removePromotion = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const item = await itemService.removePromotion(id, userId);
 

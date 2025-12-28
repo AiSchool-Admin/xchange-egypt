@@ -6,8 +6,11 @@
 
 import { Request, Response, NextFunction } from 'express';
 import * as reviewService from '../services/review.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middleware/auth.middleware';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 // ============================================
 // Review CRUD Controllers
@@ -23,7 +26,10 @@ export const createReview = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const review = await reviewService.createReview(userId, req.body);
 
     return successResponse(res, review, 'Review created successfully', 201);
@@ -78,7 +84,10 @@ export const updateReview = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const review = await reviewService.updateReview(
       req.params.id,
       userId,
@@ -101,7 +110,10 @@ export const deleteReview = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     await reviewService.deleteReview(req.params.id, userId);
 
     return successResponse(res, null, 'Review deleted successfully');
@@ -124,7 +136,10 @@ export const addReviewResponse = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const response = await reviewService.addReviewResponse(
       req.params.id,
       userId,
@@ -147,7 +162,10 @@ export const updateReviewResponse = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const response = await reviewService.updateReviewResponse(
       req.params.id,
       userId,
@@ -170,7 +188,10 @@ export const deleteReviewResponse = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     await reviewService.deleteReviewResponse(req.params.id, userId);
 
     return successResponse(res, null, 'Response deleted successfully');
@@ -193,7 +214,10 @@ export const voteReview = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const vote = await reviewService.voteReview(
       req.params.id,
       userId,
@@ -216,7 +240,10 @@ export const removeVote = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     await reviewService.removeVote(req.params.id, userId);
 
     return successResponse(res, null, 'Vote removed successfully');
@@ -239,7 +266,10 @@ export const reportReview = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const report = await reviewService.reportReview(
       req.params.id,
       userId,
@@ -303,7 +333,10 @@ export const canReviewTransaction = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const result = await reviewService.canReviewTransaction(
       req.params.transactionId,
       userId

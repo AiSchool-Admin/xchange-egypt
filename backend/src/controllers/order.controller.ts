@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import * as orderService from '../services/order.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
 import { OrderStatus, PaymentMethod } from '../types';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Get user's orders
@@ -9,7 +12,10 @@ import { OrderStatus, PaymentMethod } from '../types';
  */
 export const getMyOrders = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { page, limit, status } = req.query;
 
     const result = await orderService.getMyOrders(
@@ -31,7 +37,10 @@ export const getMyOrders = async (req: Request, res: Response, next: NextFunctio
  */
 export const getOrderById = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId } = req.params;
 
     const order = await orderService.getOrderById(userId, orderId);
@@ -48,7 +57,10 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
  */
 export const createOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { shippingAddressId, shippingAddress, paymentMethod, notes } = req.body as {
       shippingAddressId?: string;
       shippingAddress?: {
@@ -86,7 +98,10 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
  */
 export const cancelOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId } = req.params;
 
     const order = await orderService.cancelOrder(userId, orderId);
@@ -102,7 +117,10 @@ export const cancelOrder = async (req: Request, res: Response, next: NextFunctio
  */
 export const getShippingAddresses = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const addresses = await orderService.getShippingAddresses(userId);
     return successResponse(res, addresses, 'Addresses retrieved successfully');
   } catch (error) {
@@ -116,7 +134,10 @@ export const getShippingAddresses = async (req: Request, res: Response, next: Ne
  */
 export const createShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const addressData = req.body as {
       fullName: string;
       phone: string;
@@ -140,7 +161,10 @@ export const createShippingAddress = async (req: Request, res: Response, next: N
  */
 export const updateShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { addressId } = req.params;
     const addressData = req.body as Record<string, unknown>;
 
@@ -157,7 +181,10 @@ export const updateShippingAddress = async (req: Request, res: Response, next: N
  */
 export const deleteShippingAddress = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { addressId } = req.params;
 
     await orderService.deleteShippingAddress(userId, addressId);
@@ -186,7 +213,10 @@ export const getGovernorates = async (_req: Request, res: Response, next: NextFu
  */
 export const createAuctionOrder = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user!.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { auctionId, shippingAddressId, shippingAddress, paymentMethod, notes } = req.body as {
       auctionId: string;
       shippingAddressId?: string;
