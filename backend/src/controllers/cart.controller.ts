@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import * as cartService from '../services/cart.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Get user's cart
@@ -8,7 +11,10 @@ import { successResponse } from '../utils/response';
  */
 export const getCart = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const cart = await cartService.getCart(userId);
     return successResponse(res, cart, 'Cart retrieved successfully');
   } catch (error) {
@@ -23,7 +29,10 @@ export const getCart = async (req: Request, res: Response, next: NextFunction) =
  */
 export const addToCart = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { listingId, itemId, quantity } = req.body;
     // Use listingId if provided, otherwise use itemId
     const id = listingId || itemId;
@@ -40,7 +49,10 @@ export const addToCart = async (req: Request, res: Response, next: NextFunction)
  */
 export const updateCartItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { listingId } = req.params;
     const { quantity } = req.body;
     const cart = await cartService.updateCartItemQuantity(userId, listingId, quantity);
@@ -56,7 +68,10 @@ export const updateCartItem = async (req: Request, res: Response, next: NextFunc
  */
 export const removeFromCart = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { listingId } = req.params;
     const cart = await cartService.removeFromCart(userId, listingId);
     return successResponse(res, cart, 'Item removed from cart');
@@ -71,7 +86,10 @@ export const removeFromCart = async (req: Request, res: Response, next: NextFunc
  */
 export const clearCart = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const cart = await cartService.clearCart(userId);
     return successResponse(res, cart, 'Cart cleared');
   } catch (error) {
@@ -85,7 +103,10 @@ export const clearCart = async (req: Request, res: Response, next: NextFunction)
  */
 export const getCartTotal = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const total = await cartService.getCartTotal(userId);
     return successResponse(res, total, 'Cart total retrieved');
   } catch (error) {
