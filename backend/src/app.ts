@@ -97,6 +97,7 @@ import founderRoutes from './routes/founder.routes';
 import docsRoutes from './routes/docs.routes';
 import watchlistRoutes from './routes/watchlist.routes';
 import pricePredictionRoutes from './routes/price-prediction.routes';
+import testRunnerRoutes from './routes/test-runner.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -518,6 +519,9 @@ app.use('/api/v1/watchlist', watchlistRoutes);
 
 // Price Prediction - التنبؤ بالأسعار
 app.use('/api/v1/price-prediction', pricePredictionRoutes);
+
+// Test Runner - تشغيل الاختبارات (20 سيناريو)
+app.use('/api/v1/test-runner', testRunnerRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
