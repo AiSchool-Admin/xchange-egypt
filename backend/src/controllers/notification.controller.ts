@@ -7,7 +7,10 @@
 import { Request, Response, NextFunction } from 'express';
 import * as notificationService from '../services/notification.service';
 import * as emailService from '../services/email.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 // ============================================
 // In-App Notifications
@@ -23,7 +26,10 @@ export const getNotifications = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const {
       isRead,
       type,
@@ -56,7 +62,10 @@ export const getUnreadCount = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const count = await notificationService.getUnreadCount(userId);
 
     return successResponse(res, { count }, 'Unread count retrieved successfully');
@@ -76,7 +85,10 @@ export const markAsRead = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const notification = await notificationService.markAsRead(id, userId);
 
@@ -96,7 +108,10 @@ export const markAllAsRead = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const count = await notificationService.markAllAsRead(userId);
 
     return successResponse(
@@ -120,7 +135,10 @@ export const deleteNotification = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     await notificationService.deleteNotification(id, userId);
 
@@ -140,7 +158,10 @@ export const deleteAllRead = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const count = await notificationService.deleteAllRead(userId);
 
     return successResponse(
@@ -167,7 +188,10 @@ export const getPreferences = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const preferences = await notificationService.getUserPreferences(userId);
 
     return successResponse(res, preferences, 'Preferences retrieved successfully');
@@ -186,7 +210,10 @@ export const updatePreferences = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const updates = req.body;
 
     const preferences = await notificationService.updatePreferences(userId, updates);
