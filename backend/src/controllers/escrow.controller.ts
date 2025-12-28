@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import * as escrowService from '../services/escrow.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Get user's escrows
@@ -8,7 +11,10 @@ import { successResponse } from '../utils/response';
  */
 export const getMyEscrows = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { role, status, limit, offset } = req.query;
 
     const result = await escrowService.getUserEscrows(userId, {
@@ -49,7 +55,10 @@ export const getEscrow = async (req: Request, res: Response, next: NextFunction)
  */
 export const createEscrow = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const escrow = await escrowService.createEscrow({
       ...req.body,
       buyerId: userId,
@@ -68,7 +77,10 @@ export const createEscrow = async (req: Request, res: Response, next: NextFuncti
 export const fundEscrow = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const result = await escrowService.fundEscrow(id, userId);
 
@@ -89,7 +101,10 @@ export const fundEscrow = async (req: Request, res: Response, next: NextFunction
 export const markDelivered = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { evidence } = req.body;
 
     const result = await escrowService.markDelivered(id, userId, evidence);
@@ -111,7 +126,10 @@ export const markDelivered = async (req: Request, res: Response, next: NextFunct
 export const confirmReceipt = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const result = await escrowService.confirmReceipt(id, userId);
 
@@ -132,7 +150,10 @@ export const confirmReceipt = async (req: Request, res: Response, next: NextFunc
 export const cancelEscrow = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { reason } = req.body;
 
     const result = await escrowService.cancelEscrow(id, userId, reason || 'Cancelled by user');
@@ -154,7 +175,10 @@ export const cancelEscrow = async (req: Request, res: Response, next: NextFuncti
 export const openDispute = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { reason, description, evidence, requestedAmount, requestedOutcome } = req.body;
 
     const result = await escrowService.openDispute({
@@ -203,7 +227,10 @@ export const getDispute = async (req: Request, res: Response, next: NextFunction
 export const respondToDispute = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { disputeId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { message, attachments } = req.body;
 
     const result = await escrowService.respondToDispute(disputeId, userId, message, attachments);

@@ -2,7 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import * as barterService from '../services/barter.service';
 import * as bundleService from '../services/barter-bundle.service';
 import * as smartMatchService from '../services/smartMatch.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Create a barter offer (with bundle & preferences support)
@@ -14,7 +17,10 @@ export const createBarterOffer = async (
   next: NextFunction
 ) => {
   try {
-    const initiatorId = req.user.id;
+    const initiatorId = getUserId(req);
+    if (!initiatorId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const offerData = req.body;
 
     // Use new bundle service
@@ -37,7 +43,10 @@ export const getBarterOfferById = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const offer = await barterService.getBarterOfferById(offerId, userId);
 
@@ -58,7 +67,10 @@ export const acceptBarterOffer = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const offer = await barterService.acceptBarterOffer(offerId, userId);
 
@@ -79,7 +91,10 @@ export const rejectBarterOffer = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { reason } = req.body;
 
     const offer = await barterService.rejectBarterOffer(offerId, userId, reason);
@@ -101,7 +116,10 @@ export const createCounterOffer = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const counterOfferData = req.body;
 
     const offer = await barterService.createCounterOffer(offerId, userId, counterOfferData);
@@ -123,7 +141,10 @@ export const cancelBarterOffer = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const offer = await barterService.cancelBarterOffer(offerId, userId);
 
@@ -143,7 +164,10 @@ export const getMyBarterOffers = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { type, status, page, limit } = req.query;
 
     const result = await barterService.getMyBarterOffers(
@@ -195,7 +219,10 @@ export const findBarterMatches = async (
 ) => {
   try {
     const { itemId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { categoryId } = req.query;
 
     const matches = await barterService.findBarterMatches(
@@ -221,7 +248,10 @@ export const completeBarterExchange = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { confirmationNotes } = req.body;
 
     const offer = await barterService.completeBarterExchange(
@@ -250,7 +280,10 @@ export const getMatchingOffers = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { page, limit } = req.query;
 
     const matches = await bundleService.findMatchingOffersForUser(
@@ -276,7 +309,10 @@ export const getBestMatch = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const bestMatch = await bundleService.getBestMatchingPreferenceSet(offerId, userId);
 
@@ -305,7 +341,10 @@ export const getSmartMatches = async (
 ) => {
   try {
     const { offerId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const matches = await smartMatchService.getSmartMatches(offerId, userId);
 
@@ -327,7 +366,10 @@ export const findMyMatchingItem = async (
 ) => {
   try {
     const { itemId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const match = await barterService.findMyMatchingItemForBarter(itemId, userId);
 
