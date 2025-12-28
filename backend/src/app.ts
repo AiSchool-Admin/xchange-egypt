@@ -21,6 +21,7 @@ import {
   additionalSecurityHeaders,
   securityLogger,
   bruteForceProtection,
+  requestLogger,
 } from './middleware/security';
 
 // Import routes
@@ -161,6 +162,9 @@ app.use(additionalSecurityHeaders);
 
 // Security logging (detect suspicious requests)
 app.use(securityLogger);
+
+// Request logging (monitor all requests/responses)
+app.use(requestLogger);
 
 // Input sanitization (prevent XSS)
 app.use(sanitizeInput);

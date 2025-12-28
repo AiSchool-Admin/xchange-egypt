@@ -404,3 +404,58 @@ export const securityMiddleware = [
   sanitizeInput,
   securityLogger,
 ];
+
+// ============================================
+// Request Logging Middleware
+// ============================================
+
+/**
+ * Middleware لتسجيل جميع الطلبات والردود
+ * يوفر مراقبة شاملة للأداء والأخطاء
+ */
+export const requestLogger = (req: Request, res: Response, next: NextFunction) => {
+  const startTime = Date.now();
+  const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+  // إضافة request ID للتتبع
+  req.headers['x-request-id'] = requestId;
+
+  // تسجيل الطلب الوارد
+  logger.info(`→ ${req.method} ${req.path}`, {
+    requestId,
+    ip: req.ip,
+    userAgent: req.headers['user-agent']?.substring(0, 50),
+    query: Object.keys(req.query).length > 0 ? req.query : undefined,
+  });
+
+  // اعتراض الرد لتسجيل التفاصيل
+  const originalSend = res.send.bind(res);
+  res.send = function (body: unknown) {
+    const duration = Date.now() - startTime;
+    const level = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+
+    if (level === 'error') {
+      logger.error(`← ${req.method} ${req.path} ${res.statusCode} (${duration}ms)`, {
+        requestId,
+        statusCode: res.statusCode,
+        duration,
+      });
+    } else if (level === 'warn') {
+      logger.warn(`← ${req.method} ${req.path} ${res.statusCode} (${duration}ms)`, {
+        requestId,
+        statusCode: res.statusCode,
+        duration,
+      });
+    } else {
+      logger.info(`← ${req.method} ${req.path} ${res.statusCode} (${duration}ms)`, {
+        requestId,
+        statusCode: res.statusCode,
+        duration,
+      });
+    }
+
+    return originalSend(body);
+  };
+
+  next();
+};
