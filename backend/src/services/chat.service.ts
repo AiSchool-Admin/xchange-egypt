@@ -581,9 +581,15 @@ export const setUserOnline = async (
  * Set user offline
  */
 export const setUserOffline = async (userId: string): Promise<void> => {
-  await prisma.userPresence.update({
+  await prisma.userPresence.upsert({
     where: { userId },
-    data: {
+    update: {
+      isOnline: false,
+      lastSeenAt: new Date(),
+      socketId: null,
+    },
+    create: {
+      userId,
       isOnline: false,
       lastSeenAt: new Date(),
       socketId: null,

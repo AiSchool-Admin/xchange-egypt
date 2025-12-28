@@ -10,6 +10,7 @@ import {
 } from '../utils/errors';
 import { sendEmailNow } from './email.service';
 import { generateEmailTemplate } from '../utils/email-templates';
+import logger from '../lib/logger';
 import type {
   RegisterIndividualInput,
   RegisterBusinessInput,
@@ -299,16 +300,13 @@ export const refreshAccessToken = async (refreshToken: string) => {
 
 /**
  * Logout user (invalidate refresh token)
+ * Idempotent - succeeds even if token doesn't exist
  */
 export const logout = async (refreshToken: string) => {
-  // Delete refresh token from database
-  const deleted = await prisma.refreshToken.deleteMany({
+  // Delete refresh token from database (idempotent)
+  await prisma.refreshToken.deleteMany({
     where: { token: refreshToken },
   });
-
-  if (deleted.count === 0) {
-    throw new NotFoundError('Refresh token not found');
-  }
 
   return { message: 'Logged out successfully' };
 };
@@ -487,7 +485,7 @@ export const forgotPassword = async (data: ForgotPasswordInput) => {
     html: emailHtml,
   });
 
-  console.log(`Password reset email sent to: ${user.email}`);
+  logger.info(`Password reset email sent to: ${user.email}`);
 
   return {
     message: 'If your email is registered, you will receive a password reset link.',
