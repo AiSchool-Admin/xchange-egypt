@@ -5,250 +5,9 @@
  * صفحة عروض المقايضة الخاصة بي
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-
-interface BarterProposal {
-  id: string;
-  type: string;
-  status: string;
-  requested_car: {
-    id: string;
-    make: string;
-    model: string;
-    year: number;
-    price: number;
-    owner: {
-      id: string;
-      name: string;
-    };
-  };
-  offered_car?: {
-    id: string;
-    make: string;
-    model: string;
-    year: number;
-    price: number;
-  };
-  offered_description?: string;
-  cash_difference: number;
-  cash_direction: 'PAY' | 'RECEIVE' | 'NONE';
-  message?: string;
-  proposer: {
-    id: string;
-    name: string;
-    phone: string;
-  };
-  counter_offer?: {
-    cash_difference: number;
-    message: string;
-    created_at: string;
-  };
-  created_at: string;
-  updated_at: string;
-  expires_at: string;
-}
-
-// بيانات تجريبية لعروض المقايضة
-const mockBarterProposals: BarterProposal[] = [
-  {
-    id: 'BP001',
-    type: 'CAR_TO_CAR',
-    status: 'PENDING',
-    requested_car: {
-      id: '1',
-      make: 'Toyota',
-      model: 'Camry',
-      year: 2022,
-      price: 850000,
-      owner: {
-        id: 'user2',
-        name: 'محمد علي',
-      },
-    },
-    offered_car: {
-      id: 'mycar1',
-      make: 'Honda',
-      model: 'Civic',
-      year: 2021,
-      price: 720000,
-    },
-    cash_difference: 130000,
-    cash_direction: 'PAY',
-    message: 'مهتم بالمقايضة، السيارة بحالة ممتازة وصيانة وكالة كاملة',
-    proposer: {
-      id: 'user1',
-      name: 'أنت',
-      phone: '01098765432',
-    },
-    created_at: '2024-12-10T10:00:00Z',
-    updated_at: '2024-12-10T10:00:00Z',
-    expires_at: '2024-12-17T10:00:00Z',
-  },
-  {
-    id: 'BP002',
-    type: 'CAR_TO_CAR',
-    status: 'COUNTER_OFFERED',
-    requested_car: {
-      id: '2',
-      make: 'BMW',
-      model: '320i',
-      year: 2021,
-      price: 1200000,
-      owner: {
-        id: 'user3',
-        name: 'خالد محمود',
-      },
-    },
-    offered_car: {
-      id: 'mycar2',
-      make: 'Mercedes-Benz',
-      model: 'C180',
-      year: 2020,
-      price: 1050000,
-    },
-    cash_difference: 100000,
-    cash_direction: 'PAY',
-    message: 'سيارتي فل أوبشن وحالتها ممتازة',
-    proposer: {
-      id: 'user1',
-      name: 'أنت',
-      phone: '01098765432',
-    },
-    counter_offer: {
-      cash_difference: 150000,
-      message: 'أحتاج فرق 150,000 جنيه نظراً لأن سيارتي موديل أحدث',
-      created_at: '2024-12-11T14:00:00Z',
-    },
-    created_at: '2024-12-09T15:00:00Z',
-    updated_at: '2024-12-11T14:00:00Z',
-    expires_at: '2024-12-16T15:00:00Z',
-  },
-  {
-    id: 'BP003',
-    type: 'CAR_TO_CAR',
-    status: 'ACCEPTED',
-    requested_car: {
-      id: '3',
-      make: 'Hyundai',
-      model: 'Tucson',
-      year: 2023,
-      price: 950000,
-      owner: {
-        id: 'user4',
-        name: 'أحمد حسن',
-      },
-    },
-    offered_car: {
-      id: 'mycar3',
-      make: 'Kia',
-      model: 'Sportage',
-      year: 2022,
-      price: 870000,
-    },
-    cash_difference: 80000,
-    cash_direction: 'PAY',
-    message: 'عرض مقايضة مع فرق بسيط',
-    proposer: {
-      id: 'user1',
-      name: 'أنت',
-      phone: '01098765432',
-    },
-    created_at: '2024-12-05T11:00:00Z',
-    updated_at: '2024-12-07T16:00:00Z',
-    expires_at: '2024-12-12T11:00:00Z',
-  },
-  {
-    id: 'BP004',
-    type: 'CAR_TO_CAR',
-    status: 'PENDING',
-    requested_car: {
-      id: 'mycar4',
-      make: 'Nissan',
-      model: 'Sentra',
-      year: 2021,
-      price: 520000,
-      owner: {
-        id: 'user1',
-        name: 'أنت',
-      },
-    },
-    offered_description: 'شيفروليه أوبترا 2020 - فضي - أوتوماتيك - 45,000 كم',
-    cash_difference: 50000,
-    cash_direction: 'RECEIVE',
-    message: 'سيارتي بحالة ممتازة وأقدم لك فرق 50,000 جنيه',
-    proposer: {
-      id: 'user5',
-      name: 'سامي إبراهيم',
-      phone: '01111222333',
-    },
-    created_at: '2024-12-11T09:00:00Z',
-    updated_at: '2024-12-11T09:00:00Z',
-    expires_at: '2024-12-18T09:00:00Z',
-  },
-  {
-    id: 'BP005',
-    type: 'CAR_TO_CAR',
-    status: 'REJECTED',
-    requested_car: {
-      id: 'mycar5',
-      make: 'Toyota',
-      model: 'Corolla',
-      year: 2022,
-      price: 750000,
-      owner: {
-        id: 'user1',
-        name: 'أنت',
-      },
-    },
-    offered_description: 'هيونداي أكسنت 2019 - أبيض - 70,000 كم',
-    cash_difference: 200000,
-    cash_direction: 'RECEIVE',
-    message: 'مستعد لدفع فرق 200,000 جنيه',
-    proposer: {
-      id: 'user6',
-      name: 'معرض النجم',
-      phone: '01000111222',
-    },
-    created_at: '2024-12-01T10:00:00Z',
-    updated_at: '2024-12-02T14:00:00Z',
-    expires_at: '2024-12-08T10:00:00Z',
-  },
-  {
-    id: 'BP006',
-    type: 'CAR_TO_CAR',
-    status: 'EXPIRED',
-    requested_car: {
-      id: '6',
-      make: 'Kia',
-      model: 'Cerato',
-      year: 2021,
-      price: 620000,
-      owner: {
-        id: 'user7',
-        name: 'محمد سعيد',
-      },
-    },
-    offered_car: {
-      id: 'mycar6',
-      make: 'Hyundai',
-      model: 'Elantra',
-      year: 2020,
-      price: 580000,
-    },
-    cash_difference: 40000,
-    cash_direction: 'PAY',
-    message: 'مقايضة + فرق بسيط',
-    proposer: {
-      id: 'user1',
-      name: 'أنت',
-      phone: '01098765432',
-    },
-    created_at: '2024-11-20T10:00:00Z',
-    updated_at: '2024-11-20T10:00:00Z',
-    expires_at: '2024-11-27T10:00:00Z',
-  },
-];
+import { getMyBarterProposals, respondToBarterProposal, BarterProposal } from '@/lib/api/cars';
 
 const statusFilters = [
   { value: '', label: 'جميع الحالات' },
@@ -266,7 +25,9 @@ const directionFilters = [
 ];
 
 export default function MyBarterPage() {
-  const [proposals, setProposals] = useState<BarterProposal[]>(mockBarterProposals);
+  const [proposals, setProposals] = useState<BarterProposal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedDirection, setSelectedDirection] = useState('');
   const [showResponseModal, setShowResponseModal] = useState(false);
@@ -274,8 +35,41 @@ export default function MyBarterPage() {
   const [selectedProposal, setSelectedProposal] = useState<BarterProposal | null>(null);
   const [counterOfferAmount, setCounterOfferAmount] = useState(0);
   const [counterOfferMessage, setCounterOfferMessage] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
-  const currentUserId = 'user1';
+  // Get current user ID from localStorage or auth context
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  // Fetch proposals from API
+  const fetchProposals = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getMyBarterProposals('all');
+      const data = response.data?.proposals || response.data || [];
+      setProposals(data);
+
+      // Try to get current user ID from the response or localStorage
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const user = JSON.parse(storedUser);
+            setCurrentUserId(user.id || '');
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      console.error('Error fetching barter proposals:', err);
+      setError(err.response?.data?.message || 'حدث خطأ في تحميل البيانات');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProposals();
+  }, [fetchProposals]);
 
   const filteredProposals = proposals.filter(p => {
     if (selectedStatus && p.status !== selectedStatus) return false;
@@ -311,18 +105,36 @@ export default function MyBarterPage() {
   const isMyProposal = (proposal: BarterProposal) => proposal.proposer.id === currentUserId;
   const isReceivedProposal = (proposal: BarterProposal) => proposal.requested_car.owner.id === currentUserId;
 
-  const handleAccept = (proposal: BarterProposal) => {
-    setProposals(proposals.map(p =>
-      p.id === proposal.id ? { ...p, status: 'ACCEPTED', updated_at: new Date().toISOString() } : p
-    ));
-    alert('تم قبول العرض! سيتم إنشاء معاملة جديدة.');
+  const handleAccept = async (proposal: BarterProposal) => {
+    try {
+      setActionLoading(true);
+      await respondToBarterProposal(proposal.id, { action: 'accept' });
+      setProposals(proposals.map(p =>
+        p.id === proposal.id ? { ...p, status: 'ACCEPTED', updated_at: new Date().toISOString() } : p
+      ));
+      alert('تم قبول العرض! سيتم إنشاء معاملة جديدة.');
+    } catch (err: any) {
+      console.error('Error accepting proposal:', err);
+      alert(err.response?.data?.message || 'حدث خطأ في قبول العرض');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleReject = (proposal: BarterProposal) => {
-    setProposals(proposals.map(p =>
-      p.id === proposal.id ? { ...p, status: 'REJECTED', updated_at: new Date().toISOString() } : p
-    ));
-    alert('تم رفض العرض');
+  const handleReject = async (proposal: BarterProposal) => {
+    try {
+      setActionLoading(true);
+      await respondToBarterProposal(proposal.id, { action: 'reject' });
+      setProposals(proposals.map(p =>
+        p.id === proposal.id ? { ...p, status: 'REJECTED', updated_at: new Date().toISOString() } : p
+      ));
+      alert('تم رفض العرض');
+    } catch (err: any) {
+      console.error('Error rejecting proposal:', err);
+      alert(err.response?.data?.message || 'حدث خطأ في رفض العرض');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const openCounterModal = (proposal: BarterProposal) => {
@@ -332,45 +144,78 @@ export default function MyBarterPage() {
     setShowCounterModal(true);
   };
 
-  const submitCounterOffer = () => {
+  const submitCounterOffer = async () => {
     if (!selectedProposal) return;
-    setProposals(proposals.map(p =>
-      p.id === selectedProposal.id
-        ? {
-            ...p,
-            status: 'COUNTER_OFFERED',
-            counter_offer: {
-              cash_difference: counterOfferAmount,
-              message: counterOfferMessage,
-              created_at: new Date().toISOString(),
-            },
-            updated_at: new Date().toISOString(),
-          }
-        : p
-    ));
-    setShowCounterModal(false);
-    alert('تم إرسال العرض المقابل');
+    try {
+      setActionLoading(true);
+      await respondToBarterProposal(selectedProposal.id, {
+        action: 'counter',
+        counterOffer: {
+          cashDifference: counterOfferAmount,
+          message: counterOfferMessage,
+        }
+      });
+      setProposals(proposals.map(p =>
+        p.id === selectedProposal.id
+          ? {
+              ...p,
+              status: 'COUNTER_OFFERED',
+              counter_offer: {
+                cash_difference: counterOfferAmount,
+                message: counterOfferMessage,
+                created_at: new Date().toISOString(),
+              },
+              updated_at: new Date().toISOString(),
+            }
+          : p
+      ));
+      setShowCounterModal(false);
+      alert('تم إرسال العرض المقابل');
+    } catch (err: any) {
+      console.error('Error submitting counter offer:', err);
+      alert(err.response?.data?.message || 'حدث خطأ في إرسال العرض المقابل');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const acceptCounterOffer = (proposal: BarterProposal) => {
-    setProposals(proposals.map(p =>
-      p.id === proposal.id
-        ? {
-            ...p,
-            status: 'ACCEPTED',
-            cash_difference: proposal.counter_offer?.cash_difference || proposal.cash_difference,
-            updated_at: new Date().toISOString(),
-          }
-        : p
-    ));
-    alert('تم قبول العرض المقابل! سيتم إنشاء معاملة جديدة.');
+  const acceptCounterOffer = async (proposal: BarterProposal) => {
+    try {
+      setActionLoading(true);
+      await respondToBarterProposal(proposal.id, { action: 'accept' });
+      setProposals(proposals.map(p =>
+        p.id === proposal.id
+          ? {
+              ...p,
+              status: 'ACCEPTED',
+              cash_difference: proposal.counter_offer?.cash_difference || proposal.cash_difference,
+              updated_at: new Date().toISOString(),
+            }
+          : p
+      ));
+      alert('تم قبول العرض المقابل! سيتم إنشاء معاملة جديدة.');
+    } catch (err: any) {
+      console.error('Error accepting counter offer:', err);
+      alert(err.response?.data?.message || 'حدث خطأ في قبول العرض المقابل');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleCancel = (proposal: BarterProposal) => {
-    setProposals(proposals.map(p =>
-      p.id === proposal.id ? { ...p, status: 'CANCELLED', updated_at: new Date().toISOString() } : p
-    ));
-    alert('تم إلغاء العرض');
+  const handleCancel = async (proposal: BarterProposal) => {
+    try {
+      setActionLoading(true);
+      await respondToBarterProposal(proposal.id, { action: 'reject' });
+      setProposals(proposals.map(p =>
+        p.id === proposal.id ? { ...p, status: 'CANCELLED', updated_at: new Date().toISOString() } : p
+      ));
+      alert('تم إلغاء العرض');
+    } catch (err: any) {
+      console.error('Error cancelling proposal:', err);
+      alert(err.response?.data?.message || 'حدث خطأ في إلغاء العرض');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // Statistics
@@ -467,7 +312,26 @@ export default function MyBarterPage() {
         </div>
 
         {/* Proposals List */}
-        {filteredProposals.length === 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="inline-block w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-gray-600">جاري التحميل...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">حدث خطأ</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={fetchProposals}
+              className="text-purple-600 hover:text-purple-800 font-medium"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        ) : filteredProposals.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />

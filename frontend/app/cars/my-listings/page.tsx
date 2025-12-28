@@ -5,133 +5,9 @@
  * صفحة إعلاناتي للسيارات
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-
-interface CarListing {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  price: number;
-  mileage: number;
-  fuel_type: string;
-  transmission: string;
-  body_type: string;
-  exterior_color: string;
-  condition: string;
-  city: string;
-  governorate: string;
-  images: string[];
-  status: string;
-  accepts_barter: boolean;
-  verification_level: string;
-  views_count: number;
-  inquiries_count: number;
-  favorites_count: number;
-  created_at: string;
-  expires_at: string;
-}
-
-// بيانات تجريبية لإعلانات المستخدم
-const mockMyListings: CarListing[] = [
-  {
-    id: '1',
-    make: 'Toyota',
-    model: 'Camry',
-    year: 2022,
-    price: 850000,
-    mileage: 35000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SEDAN',
-    exterior_color: 'أبيض لؤلؤي',
-    condition: 'EXCELLENT',
-    city: 'القاهرة',
-    governorate: 'القاهرة',
-    images: ['/cars/camry.jpg'],
-    status: 'ACTIVE',
-    accepts_barter: true,
-    verification_level: 'VERIFIED',
-    views_count: 245,
-    inquiries_count: 12,
-    favorites_count: 8,
-    created_at: '2024-12-01T10:00:00Z',
-    expires_at: '2025-01-01T10:00:00Z',
-  },
-  {
-    id: '2',
-    make: 'Hyundai',
-    model: 'Tucson',
-    year: 2021,
-    price: 680000,
-    mileage: 55000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SUV',
-    exterior_color: 'فضي',
-    condition: 'GOOD',
-    city: 'الجيزة',
-    governorate: 'الجيزة',
-    images: ['/cars/tucson.jpg'],
-    status: 'PENDING_REVIEW',
-    accepts_barter: false,
-    verification_level: 'BASIC',
-    views_count: 0,
-    inquiries_count: 0,
-    favorites_count: 0,
-    created_at: '2024-12-10T15:00:00Z',
-    expires_at: '2025-01-10T15:00:00Z',
-  },
-  {
-    id: '3',
-    make: 'BMW',
-    model: '320i',
-    year: 2020,
-    price: 1100000,
-    mileage: 70000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SEDAN',
-    exterior_color: 'أسود',
-    condition: 'GOOD',
-    city: 'الإسكندرية',
-    governorate: 'الإسكندرية',
-    images: ['/cars/bmw.jpg'],
-    status: 'SOLD',
-    accepts_barter: true,
-    verification_level: 'INSPECTED',
-    views_count: 520,
-    inquiries_count: 35,
-    favorites_count: 22,
-    created_at: '2024-11-15T10:00:00Z',
-    expires_at: '2024-12-15T10:00:00Z',
-  },
-  {
-    id: '4',
-    make: 'Kia',
-    model: 'Sportage',
-    year: 2023,
-    price: 920000,
-    mileage: 18000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SUV',
-    exterior_color: 'أحمر',
-    condition: 'LIKE_NEW',
-    city: 'القاهرة',
-    governorate: 'القاهرة',
-    images: ['/cars/sportage.jpg'],
-    status: 'EXPIRED',
-    accepts_barter: true,
-    verification_level: 'CERTIFIED',
-    views_count: 180,
-    inquiries_count: 8,
-    favorites_count: 5,
-    created_at: '2024-10-01T10:00:00Z',
-    expires_at: '2024-11-01T10:00:00Z',
-  },
-];
+import { getMyCarListings, updateCarListing, deleteCarListing, CarListing } from '@/lib/api/cars';
 
 const statusFilters = [
   { value: '', label: 'جميع الحالات' },
@@ -143,10 +19,33 @@ const statusFilters = [
 ];
 
 export default function MyListingsPage() {
-  const [listings, setListings] = useState<CarListing[]>(mockMyListings);
+  const [listings, setListings] = useState<CarListing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedListing, setSelectedListing] = useState<CarListing | null>(null);
+
+  // Fetch listings from API
+  const fetchListings = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getMyCarListings();
+      const data = response.data?.listings || response.data || [];
+      setListings(data);
+    } catch (err: any) {
+      console.error('Error fetching my listings:', err);
+      setError(err.response?.data?.message || 'حدث خطأ في تحميل البيانات. يرجى تسجيل الدخول.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
 
   const filteredListings = selectedStatus
     ? listings.filter(l => l.status === selectedStatus)
@@ -191,31 +90,58 @@ export default function MyListingsPage() {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedListing) {
-      setListings(listings.filter(l => l.id !== selectedListing.id));
-      setShowDeleteModal(false);
-      setSelectedListing(null);
+      try {
+        setActionLoading(true);
+        await deleteCarListing(selectedListing.id);
+        setListings(listings.filter(l => l.id !== selectedListing.id));
+        setShowDeleteModal(false);
+        setSelectedListing(null);
+      } catch (err: any) {
+        console.error('Error deleting listing:', err);
+        alert(err.response?.data?.message || 'حدث خطأ في حذف الإعلان');
+      } finally {
+        setActionLoading(false);
+      }
     }
   };
 
-  const handleRenew = (listing: CarListing) => {
-    const newExpiry = new Date();
-    newExpiry.setMonth(newExpiry.getMonth() + 1);
-    setListings(listings.map(l =>
-      l.id === listing.id
-        ? { ...l, status: 'ACTIVE', expires_at: newExpiry.toISOString() }
-        : l
-    ));
-    alert(`تم تجديد إعلان ${listing.make} ${listing.model} بنجاح!`);
+  const handleRenew = async (listing: CarListing) => {
+    try {
+      setActionLoading(true);
+      const newExpiry = new Date();
+      newExpiry.setMonth(newExpiry.getMonth() + 1);
+      await updateCarListing(listing.id, { status: 'ACTIVE', expires_at: newExpiry.toISOString() } as any);
+      setListings(listings.map(l =>
+        l.id === listing.id
+          ? { ...l, status: 'ACTIVE', expires_at: newExpiry.toISOString() }
+          : l
+      ));
+      alert(`تم تجديد إعلان ${listing.make} ${listing.model} بنجاح!`);
+    } catch (err: any) {
+      console.error('Error renewing listing:', err);
+      alert(err.response?.data?.message || 'حدث خطأ في تجديد الإعلان');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleMarkAsSold = (listing: CarListing) => {
-    setListings(listings.map(l =>
-      l.id === listing.id
-        ? { ...l, status: 'SOLD' }
-        : l
-    ));
+  const handleMarkAsSold = async (listing: CarListing) => {
+    try {
+      setActionLoading(true);
+      await updateCarListing(listing.id, { status: 'SOLD' } as any);
+      setListings(listings.map(l =>
+        l.id === listing.id
+          ? { ...l, status: 'SOLD' }
+          : l
+      ));
+    } catch (err: any) {
+      console.error('Error marking as sold:', err);
+      alert(err.response?.data?.message || 'حدث خطأ في تحديث الحالة');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // Statistics
@@ -298,7 +224,26 @@ export default function MyListingsPage() {
         </div>
 
         {/* Listings */}
-        {filteredListings.length === 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-gray-600">جاري التحميل...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">حدث خطأ</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={fetchListings}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        ) : filteredListings.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />

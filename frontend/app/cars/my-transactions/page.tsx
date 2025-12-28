@@ -5,193 +5,9 @@
  * صفحة معاملاتي للسيارات
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-
-interface CarTransaction {
-  id: string;
-  transaction_type: string;
-  car: {
-    id: string;
-    make: string;
-    model: string;
-    year: number;
-    price: number;
-  };
-  buyer: {
-    id: string;
-    name: string;
-    phone: string;
-  };
-  seller: {
-    id: string;
-    name: string;
-    phone: string;
-  };
-  agreed_price: number;
-  platform_fee_buyer: number;
-  platform_fee_seller: number;
-  escrow_amount: number;
-  status: string;
-  payment_method: string;
-  created_at: string;
-  updated_at: string;
-  completed_at?: string;
-  notes?: string;
-}
-
-// بيانات تجريبية للمعاملات
-const mockTransactions: CarTransaction[] = [
-  {
-    id: 'TXN001',
-    transaction_type: 'DIRECT_SALE',
-    car: {
-      id: '1',
-      make: 'Toyota',
-      model: 'Camry',
-      year: 2022,
-      price: 850000,
-    },
-    buyer: {
-      id: 'user2',
-      name: 'محمد علي',
-      phone: '01012345678',
-    },
-    seller: {
-      id: 'user1',
-      name: 'أنت',
-      phone: '01098765432',
-    },
-    agreed_price: 840000,
-    platform_fee_buyer: 12600,
-    platform_fee_seller: 12600,
-    escrow_amount: 852600,
-    status: 'COMPLETED',
-    payment_method: 'BANK_TRANSFER',
-    created_at: '2024-12-01T10:00:00Z',
-    updated_at: '2024-12-05T15:30:00Z',
-    completed_at: '2024-12-05T15:30:00Z',
-  },
-  {
-    id: 'TXN002',
-    transaction_type: 'DIRECT_SALE',
-    car: {
-      id: '2',
-      make: 'BMW',
-      model: '320i',
-      year: 2021,
-      price: 1200000,
-    },
-    buyer: {
-      id: 'user1',
-      name: 'أنت',
-      phone: '01098765432',
-    },
-    seller: {
-      id: 'user3',
-      name: 'خالد محمود',
-      phone: '01123456789',
-    },
-    agreed_price: 1180000,
-    platform_fee_buyer: 17700,
-    platform_fee_seller: 17700,
-    escrow_amount: 1197700,
-    status: 'IN_ESCROW',
-    payment_method: 'ESCROW',
-    created_at: '2024-12-08T14:00:00Z',
-    updated_at: '2024-12-09T10:00:00Z',
-    notes: 'في انتظار فحص السيارة',
-  },
-  {
-    id: 'TXN003',
-    transaction_type: 'BARTER',
-    car: {
-      id: '3',
-      make: 'Mercedes-Benz',
-      model: 'C200',
-      year: 2020,
-      price: 1400000,
-    },
-    buyer: {
-      id: 'user4',
-      name: 'أحمد حسن',
-      phone: '01234567890',
-    },
-    seller: {
-      id: 'user1',
-      name: 'أنت',
-      phone: '01098765432',
-    },
-    agreed_price: 1350000,
-    platform_fee_buyer: 20250,
-    platform_fee_seller: 20250,
-    escrow_amount: 100000,
-    status: 'PENDING_INSPECTION',
-    payment_method: 'ESCROW',
-    created_at: '2024-12-10T09:00:00Z',
-    updated_at: '2024-12-10T09:00:00Z',
-    notes: 'مقايضة + فرق 100,000 جنيه',
-  },
-  {
-    id: 'TXN004',
-    transaction_type: 'DIRECT_SALE',
-    car: {
-      id: '4',
-      make: 'Hyundai',
-      model: 'Tucson',
-      year: 2023,
-      price: 950000,
-    },
-    buyer: {
-      id: 'user5',
-      name: 'سامي إبراهيم',
-      phone: '01111222333',
-    },
-    seller: {
-      id: 'user1',
-      name: 'أنت',
-      phone: '01098765432',
-    },
-    agreed_price: 920000,
-    platform_fee_buyer: 13800,
-    platform_fee_seller: 13800,
-    escrow_amount: 0,
-    status: 'CANCELLED',
-    payment_method: 'CASH',
-    created_at: '2024-11-28T11:00:00Z',
-    updated_at: '2024-11-30T16:00:00Z',
-    notes: 'تم الإلغاء بناءً على طلب المشتري',
-  },
-  {
-    id: 'TXN005',
-    transaction_type: 'DIRECT_SALE',
-    car: {
-      id: '5',
-      make: 'Kia',
-      model: 'Sportage',
-      year: 2022,
-      price: 780000,
-    },
-    buyer: {
-      id: 'user1',
-      name: 'أنت',
-      phone: '01098765432',
-    },
-    seller: {
-      id: 'user6',
-      name: 'معرض النجم',
-      phone: '01000111222',
-    },
-    agreed_price: 760000,
-    platform_fee_buyer: 11400,
-    platform_fee_seller: 11400,
-    escrow_amount: 771400,
-    status: 'PENDING_PAYMENT',
-    payment_method: 'ESCROW',
-    created_at: '2024-12-11T08:00:00Z',
-    updated_at: '2024-12-11T08:00:00Z',
-  },
-];
+import { getMyTransactions, updateTransactionStatus, CarTransaction } from '@/lib/api/cars';
 
 const statusFilters = [
   { value: '', label: 'جميع الحالات' },
@@ -210,10 +26,43 @@ const roleFilters = [
 ];
 
 export default function MyTransactionsPage() {
-  const [transactions] = useState<CarTransaction[]>(mockTransactions);
+  const [transactions, setTransactions] = useState<CarTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
-  const currentUserId = 'user1'; // افتراضي للمستخدم الحالي
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+  // Fetch transactions from API
+  const fetchTransactions = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getMyTransactions('all');
+      const data = response.data?.transactions || response.data || [];
+      setTransactions(data);
+
+      // Get current user ID from localStorage
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const user = JSON.parse(storedUser);
+            setCurrentUserId(user.id || '');
+          } catch {}
+        }
+      }
+    } catch (err: any) {
+      console.error('Error fetching transactions:', err);
+      setError(err.response?.data?.message || 'حدث خطأ في تحميل البيانات. يرجى تسجيل الدخول.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   const filteredTransactions = transactions.filter(t => {
     if (selectedStatus && t.status !== selectedStatus) return false;
@@ -391,7 +240,26 @@ export default function MyTransactionsPage() {
         </div>
 
         {/* Transactions List */}
-        {filteredTransactions.length === 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <div className="inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-gray-600">جاري التحميل...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
+            <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">حدث خطأ</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={fetchTransactions}
+              className="text-blue-600 hover:text-blue-800 font-medium"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        ) : filteredTransactions.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-12 text-center">
             <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />

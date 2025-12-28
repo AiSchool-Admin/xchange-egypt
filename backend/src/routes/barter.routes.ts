@@ -4,6 +4,7 @@ import * as barterChainController from '../controllers/barter-chain.controller';
 import * as realtimeMatchingService from '../services/realtime-matching.service';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import prisma from '../lib/prisma';
 import {
   createBarterOfferSchema,
   acceptBarterOfferSchema,
@@ -29,6 +30,132 @@ import {
 const router = Router();
 
 // Public routes
+
+/**
+ * Get public platform statistics for barter homepage
+ * GET /api/v1/barter/stats
+ */
+router.get('/stats', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    // Get counts in parallel for better performance
+    const [
+      totalItems,
+      activeOffers,
+      completedTrades,
+      activeUsers,
+      categoryCounts,
+    ] = await Promise.all([
+      // Total barterable items
+      prisma.item.count({
+        where: { allowBarter: true, status: 'ACTIVE' },
+      }),
+      // Active barter offers
+      prisma.barterOffer.count({
+        where: { status: 'PENDING' },
+      }),
+      // Completed barter trades
+      prisma.barterOffer.count({
+        where: { status: 'COMPLETED' },
+      }),
+      // Active users (users with at least one item or transaction in last 30 days)
+      prisma.user.count({
+        where: {
+          OR: [
+            { items: { some: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } } },
+            { sentBarterOffers: { some: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } } },
+          ],
+        },
+      }),
+      // Category counts with icons
+      prisma.category.findMany({
+        where: { isActive: true, parentId: null },
+        select: {
+          id: true,
+          nameAr: true,
+          nameEn: true,
+          icon: true,
+          slug: true,
+          _count: {
+            select: {
+              items: {
+                where: { status: 'ACTIVE', allowBarter: true },
+              },
+            },
+          },
+        },
+        orderBy: { sortOrder: 'asc' },
+        take: 8,
+      }),
+    ]);
+
+    // Calculate success rate (completed / total offers * 100)
+    const totalOffers = await prisma.barterOffer.count();
+    const successRate = totalOffers > 0 ? Math.round((completedTrades / totalOffers) * 100) : 95;
+
+    // Estimate saved money (sum of completed trade values)
+    const savedMoneyResult = await prisma.barterOffer.aggregate({
+      where: { status: 'COMPLETED' },
+      _sum: { cashAddition: true },
+    });
+
+    // Calculate total value from completed items
+    const completedItemValues = await prisma.item.aggregate({
+      where: {
+        barterOffersAsOffered: { some: { status: 'COMPLETED' } },
+      },
+      _sum: { estimatedValue: true },
+    });
+
+    const savedMoney = (completedItemValues._sum.estimatedValue || 0) + (savedMoneyResult._sum.cashAddition || 0);
+
+    // Format categories
+    const categories = categoryCounts.map((cat, index) => ({
+      id: cat.id,
+      name: cat.nameAr || cat.nameEn || 'عام',
+      icon: cat.icon || getDefaultCategoryIcon(index),
+      count: cat._count.items,
+      slug: cat.slug,
+      color: getCategoryGradient(index),
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          totalItems,
+          activeOffers,
+          completedTrades,
+          successRate,
+          savedMoney,
+          activeUsers,
+        },
+        categories,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Helper functions for category styling
+function getDefaultCategoryIcon(index: number): string {
+  const icons = ['📱', '🛋️', '👗', '📚', '🚗', '⚽', '🧸', '🔌'];
+  return icons[index % icons.length];
+}
+
+function getCategoryGradient(index: number): string {
+  const gradients = [
+    'from-blue-500 to-indigo-600',
+    'from-amber-500 to-orange-600',
+    'from-pink-500 to-rose-600',
+    'from-emerald-500 to-teal-600',
+    'from-slate-600 to-gray-800',
+    'from-green-500 to-emerald-600',
+    'from-purple-500 to-violet-600',
+    'from-red-500 to-rose-600',
+  ];
+  return gradients[index % gradients.length];
+}
 
 /**
  * Search barterable items

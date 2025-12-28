@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
+import apiClient from '@/lib/api/client';
 
 interface PriceHistory {
   date: string;
@@ -9,84 +10,83 @@ interface PriceHistory {
 }
 
 interface PricePrediction {
-  currentPrice: number;
   predictedPrice: number;
-  confidence: number;
-  trend: 'UP' | 'DOWN' | 'STABLE';
-  recommendation: 'BUY_NOW' | 'WAIT' | 'BEST_PRICE';
-  bestTimeToBuy?: string;
-  priceHistory: PriceHistory[];
-  factors: {
-    name: string;
-    impact: 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL';
-    description: string;
-  }[];
-  similarItems: {
-    id: string;
-    title: string;
+  confidenceScore: number;
+  priceRange: {
+    min: number;
+    max: number;
+  };
+  marketAnalysis: {
+    trend: 'UP' | 'DOWN' | 'STABLE';
+    demandLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+    competitionLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+    seasonalFactor: number;
+  };
+  recommendations: {
+    type: string;
     price: number;
-    priceChange: number;
+    description: string;
+    descriptionAr: string;
+    expectedDays: number;
   }[];
+  dataQuality: string;
+  sampleSize: number;
+  modelVersion: string;
 }
 
 interface SearchResult {
   id: string;
   title: string;
   category: string;
+  categoryId?: string;
   currentPrice: number;
+  condition?: string;
   image?: string;
 }
 
-const mockSearchResults: SearchResult[] = [
-  { id: '1', title: 'iPhone 15 Pro Max 256GB', category: 'هواتف', currentPrice: 62000 },
-  { id: '2', title: 'iPhone 15 Pro 128GB', category: 'هواتف', currentPrice: 52000 },
-  { id: '3', title: 'Samsung Galaxy S24 Ultra', category: 'هواتف', currentPrice: 55000 },
-  { id: '4', title: 'MacBook Pro M3 14"', category: 'لابتوب', currentPrice: 95000 },
-];
+// Search items from API
+const searchItems = async (query: string): Promise<SearchResult[]> => {
+  try {
+    const response = await apiClient.get('/price-prediction/search', {
+      params: { q: query }
+    });
+    return response.data.data?.items || [];
+  } catch (error) {
+    console.error('Search error:', error);
+    return [];
+  }
+};
 
-const mockPrediction: PricePrediction = {
-  currentPrice: 62000,
-  predictedPrice: 58000,
-  confidence: 87,
-  trend: 'DOWN',
-  recommendation: 'WAIT',
-  bestTimeToBuy: '2024-02-15',
-  priceHistory: [
-    { date: '2024-01-01', price: 68000 },
-    { date: '2024-01-05', price: 67000 },
-    { date: '2024-01-10', price: 65000 },
-    { date: '2024-01-15', price: 64000 },
-    { date: '2024-01-20', price: 63000 },
-    { date: '2024-01-25', price: 62500 },
-    { date: '2024-01-30', price: 62000 },
-  ],
-  factors: [
-    {
-      name: 'إطلاق iPhone 16',
-      impact: 'NEGATIVE',
-      description: 'من المتوقع إطلاق الجيل الجديد في سبتمبر، مما سيخفض أسعار الموديل الحالي',
-    },
-    {
-      name: 'سعر الدولار',
-      impact: 'NEGATIVE',
-      description: 'استقرار سعر الصرف يساعد على انخفاض الأسعار',
-    },
-    {
-      name: 'موسم العروض',
-      impact: 'POSITIVE',
-      description: 'رمضان والعيد قادمان، توقع عروض خاصة',
-    },
-    {
-      name: 'العرض والطلب',
-      impact: 'NEUTRAL',
-      description: 'الطلب مستقر مع توفر جيد في السوق',
-    },
-  ],
-  similarItems: [
-    { id: '1', title: 'iPhone 15 Pro 128GB', price: 52000, priceChange: -5 },
-    { id: '2', title: 'iPhone 14 Pro Max', price: 45000, priceChange: -8 },
-    { id: '3', title: 'Samsung S24 Ultra', price: 55000, priceChange: -3 },
-  ],
+// Get price prediction from API
+const getPricePrediction = async (categoryId: string, condition: string, title?: string): Promise<PricePrediction | null> => {
+  try {
+    const response = await apiClient.post('/price-prediction/predict', {
+      categoryId,
+      condition,
+      title
+    });
+    return response.data.data;
+  } catch (error) {
+    console.error('Prediction error:', error);
+    return null;
+  }
+};
+
+// Get price history from API
+const getPriceHistory = async (categoryId: string, condition?: string): Promise<PriceHistory[]> => {
+  try {
+    const response = await apiClient.get(`/price-prediction/history/${categoryId}`, {
+      params: { condition, days: 30 }
+    });
+    const history = response.data.data?.history || [];
+    return history.map((h: any) => ({
+      date: h.date,
+      price: h.avgPrice || h.medianPrice || 0
+    }));
+  } catch (error) {
+    console.error('History error:', error);
+    return [];
+  }
 };
 
 const formatPrice = (price: number) => {
@@ -98,58 +98,94 @@ export default function PricePredictorPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [selectedItem, setSelectedItem] = useState<SearchResult | null>(null);
   const [prediction, setPrediction] = useState<PricePrediction | null>(null);
+  const [priceHistory, setPriceHistory] = useState<PriceHistory[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [priceAlert, setPriceAlert] = useState({ enabled: false, targetPrice: '' });
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = (query: string) => {
+  const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
     if (query.length >= 2) {
-      // Simulate search
-      const results = mockSearchResults.filter(item =>
-        item.title.toLowerCase().includes(query.toLowerCase())
-      );
-      setSearchResults(results);
+      setSearchLoading(true);
+      try {
+        const results = await searchItems(query);
+        setSearchResults(results);
+      } catch (err) {
+        console.error('Search error:', err);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
     } else {
       setSearchResults([]);
     }
-  };
+  }, []);
 
-  const selectItem = (item: SearchResult) => {
+  const selectItem = async (item: SearchResult) => {
     setSelectedItem(item);
     setSearchResults([]);
     setSearchQuery(item.title);
     setLoading(true);
+    setError(null);
 
-    // Simulate AI prediction
-    setTimeout(() => {
-      setPrediction(mockPrediction);
+    try {
+      // Get prediction from API
+      const categoryId = item.categoryId || 'default';
+      const condition = item.condition || 'GOOD';
+
+      const [predictionData, historyData] = await Promise.all([
+        getPricePrediction(categoryId, condition, item.title),
+        getPriceHistory(categoryId, condition)
+      ]);
+
+      if (predictionData) {
+        setPrediction(predictionData);
+        setPriceHistory(historyData);
+      } else {
+        setError('لم نتمكن من الحصول على توقع السعر. قد لا تتوفر بيانات كافية لهذا المنتج.');
+      }
+    } catch (err: any) {
+      console.error('Prediction error:', err);
+      setError('حدث خطأ في تحليل السعر. يرجى المحاولة مرة أخرى.');
+    } finally {
       setLoading(false);
-    }, 1500);
+    }
   };
 
-  const getRecommendationStyle = (rec: string) => {
-    switch (rec) {
-      case 'BUY_NOW':
-        return { bg: 'bg-green-100', text: 'text-green-700', label: '🛒 اشتري الآن!', desc: 'السعر مناسب جداً' };
-      case 'WAIT':
-        return { bg: 'bg-amber-100', text: 'text-amber-700', label: '⏳ انتظر قليلاً', desc: 'السعر سينخفض قريباً' };
-      case 'BEST_PRICE':
-        return { bg: 'bg-blue-100', text: 'text-blue-700', label: '⭐ أفضل سعر!', desc: 'هذا أقل سعر تاريخياً' };
+  const getRecommendationStyle = (type: string) => {
+    switch (type) {
+      case 'QUICK_SALE':
+        return { bg: 'bg-green-100', text: 'text-green-700', label: '🛒 بيع سريع', desc: 'سعر للبيع خلال أيام' };
+      case 'COMPETITIVE':
+        return { bg: 'bg-blue-100', text: 'text-blue-700', label: '💪 سعر تنافسي', desc: 'للبيع السريع' };
+      case 'VALUE':
+        return { bg: 'bg-amber-100', text: 'text-amber-700', label: '⭐ القيمة العادلة', desc: 'السعر المناسب للسوق' };
+      case 'PREMIUM':
+        return { bg: 'bg-purple-100', text: 'text-purple-700', label: '👑 سعر مميز', desc: 'للطلب العالي' };
       default:
         return { bg: 'bg-gray-100', text: 'text-gray-700', label: '📊 تحليل', desc: '' };
     }
   };
 
-  const getTrendIcon = (trend: string) => {
+  const getTrendStyle = (trend: string) => {
     switch (trend) {
-      case 'UP': return '📈';
-      case 'DOWN': return '📉';
-      default: return '➡️';
+      case 'UP': return { icon: '📈', label: 'في ارتفاع', color: 'text-red-600' };
+      case 'DOWN': return { icon: '📉', label: 'في انخفاض', color: 'text-green-600' };
+      default: return { icon: '➡️', label: 'مستقر', color: 'text-gray-600' };
     }
   };
 
-  const maxPrice = prediction ? Math.max(...prediction.priceHistory.map(p => p.price)) : 0;
-  const minPrice = prediction ? Math.min(...prediction.priceHistory.map(p => p.price)) : 0;
+  const getDemandStyle = (level: string) => {
+    switch (level) {
+      case 'HIGH': return { label: 'طلب عالي', color: 'text-red-600' };
+      case 'LOW': return { label: 'طلب منخفض', color: 'text-green-600' };
+      default: return { label: 'طلب متوسط', color: 'text-yellow-600' };
+    }
+  };
+
+  const maxPrice = priceHistory.length > 0 ? Math.max(...priceHistory.map(p => p.price)) : 0;
+  const minPrice = priceHistory.length > 0 ? Math.min(...priceHistory.map(p => p.price)) : 0;
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -212,8 +248,25 @@ export default function PricePredictorPage() {
           </div>
         )}
 
+        {/* Error State */}
+        {error && !loading && (
+          <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
+            <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">تعذر التحليل</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="text-indigo-600 hover:text-indigo-800 font-medium"
+            >
+              حاول مرة أخرى
+            </button>
+          </div>
+        )}
+
         {/* Prediction Results */}
-        {prediction && !loading && (
+        {prediction && !loading && !error && (
           <div className="space-y-6">
             {/* Main Prediction Card */}
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -228,11 +281,13 @@ export default function PricePredictorPage() {
                       <p className="text-gray-500">{selectedItem?.category}</p>
                     </div>
                   </div>
-                  <div className={`px-6 py-3 rounded-xl ${getRecommendationStyle(prediction.recommendation).bg}`}>
-                    <span className={`text-lg font-bold ${getRecommendationStyle(prediction.recommendation).text}`}>
-                      {getRecommendationStyle(prediction.recommendation).label}
-                    </span>
-                  </div>
+                  {prediction.recommendations?.[0] && (
+                    <div className={`px-6 py-3 rounded-xl ${getRecommendationStyle(prediction.recommendations[0].type).bg}`}>
+                      <span className={`text-lg font-bold ${getRecommendationStyle(prediction.recommendations[0].type).text}`}>
+                        {getRecommendationStyle(prediction.recommendations[0].type).label}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -242,7 +297,7 @@ export default function PricePredictorPage() {
                   <div className="text-center p-4 bg-gray-50 rounded-xl">
                     <p className="text-sm text-gray-500 mb-1">السعر الحالي</p>
                     <p className="text-2xl font-bold text-gray-900">
-                      {formatPrice(prediction.currentPrice)} ج.م
+                      {formatPrice(selectedItem?.currentPrice || 0)} ج.م
                     </p>
                   </div>
 
@@ -252,8 +307,8 @@ export default function PricePredictorPage() {
                     <p className="text-2xl font-bold text-indigo-700">
                       {formatPrice(prediction.predictedPrice)} ج.م
                     </p>
-                    <p className="text-sm text-green-600 mt-1">
-                      وفر {formatPrice(prediction.currentPrice - prediction.predictedPrice)} ج.م
+                    <p className="text-xs text-gray-500 mt-1">
+                      ({formatPrice(prediction.priceRange.min)} - {formatPrice(prediction.priceRange.max)})
                     </p>
                   </div>
 
@@ -261,126 +316,119 @@ export default function PricePredictorPage() {
                   <div className="text-center p-4 bg-gray-50 rounded-xl">
                     <p className="text-sm text-gray-500 mb-1">اتجاه السعر</p>
                     <p className="text-3xl">
-                      {getTrendIcon(prediction.trend)}
+                      {getTrendStyle(prediction.marketAnalysis.trend).icon}
                     </p>
-                    <p className="text-sm text-gray-700 mt-1">
-                      {prediction.trend === 'DOWN' ? 'في انخفاض' : prediction.trend === 'UP' ? 'في ارتفاع' : 'مستقر'}
+                    <p className={`text-sm mt-1 ${getTrendStyle(prediction.marketAnalysis.trend).color}`}>
+                      {getTrendStyle(prediction.marketAnalysis.trend).label}
                     </p>
                   </div>
 
                   {/* Confidence */}
                   <div className="text-center p-4 bg-gray-50 rounded-xl">
                     <p className="text-sm text-gray-500 mb-1">دقة التوقع</p>
-                    <p className="text-2xl font-bold text-gray-900">{prediction.confidence}%</p>
+                    <p className="text-2xl font-bold text-gray-900">{prediction.confidenceScore}%</p>
                     <div className="w-full h-2 bg-gray-200 rounded-full mt-2">
                       <div
                         className="h-full bg-green-500 rounded-full"
-                        style={{ width: `${prediction.confidence}%` }}
+                        style={{ width: `${prediction.confidenceScore}%` }}
                       ></div>
                     </div>
                   </div>
                 </div>
 
-                {/* Best Time to Buy */}
-                {prediction.bestTimeToBuy && (
-                  <div className="mt-6 p-4 bg-amber-50 rounded-xl flex items-center gap-4">
-                    <span className="text-3xl">📅</span>
-                    <div>
-                      <p className="font-bold text-amber-800">أفضل وقت للشراء</p>
-                      <p className="text-amber-700">
-                        حوالي {new Date(prediction.bestTimeToBuy).toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' })}
-                      </p>
-                    </div>
+                {/* Market Analysis */}
+                <div className="mt-6 grid md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-gray-50 rounded-xl text-center">
+                    <p className="text-sm text-gray-500 mb-1">مستوى الطلب</p>
+                    <p className={`font-bold ${getDemandStyle(prediction.marketAnalysis.demandLevel).color}`}>
+                      {getDemandStyle(prediction.marketAnalysis.demandLevel).label}
+                    </p>
                   </div>
-                )}
+                  <div className="p-4 bg-gray-50 rounded-xl text-center">
+                    <p className="text-sm text-gray-500 mb-1">المنافسة</p>
+                    <p className="font-bold text-gray-700">
+                      {prediction.marketAnalysis.competitionLevel === 'HIGH' ? 'منافسة عالية' :
+                       prediction.marketAnalysis.competitionLevel === 'LOW' ? 'منافسة منخفضة' : 'منافسة متوسطة'}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 rounded-xl text-center">
+                    <p className="text-sm text-gray-500 mb-1">جودة البيانات</p>
+                    <p className="font-bold text-gray-700">
+                      {prediction.dataQuality === 'EXCELLENT' ? 'ممتازة' :
+                       prediction.dataQuality === 'GOOD' ? 'جيدة' : 'محدودة'}
+                      <span className="text-xs text-gray-500 mr-1">({prediction.sampleSize} عينة)</span>
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Price History Chart */}
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">📊 تاريخ الأسعار</h3>
+            {priceHistory.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-6">📊 تاريخ الأسعار</h3>
 
-              <div className="relative h-64">
-                {/* Simple Chart Visualization */}
-                <div className="absolute inset-0 flex items-end justify-between gap-1 px-4">
-                  {prediction.priceHistory.map((point, index) => {
-                    const height = ((point.price - minPrice) / (maxPrice - minPrice)) * 100;
+                <div className="relative h-64">
+                  {/* Simple Chart Visualization */}
+                  <div className="absolute inset-0 flex items-end justify-between gap-1 px-4">
+                    {priceHistory.map((point, index) => {
+                      const height = maxPrice !== minPrice
+                        ? ((point.price - minPrice) / (maxPrice - minPrice)) * 100
+                        : 50;
+                      return (
+                        <div key={index} className="flex-1 flex flex-col items-center">
+                          <div
+                            className="w-full bg-gradient-to-t from-indigo-500 to-indigo-400 rounded-t-lg transition-all hover:from-indigo-600 hover:to-indigo-500"
+                            style={{ height: `${Math.max(height, 10)}%` }}
+                            title={`${formatPrice(point.price)} ج.م`}
+                          ></div>
+                          <span className="text-xs text-gray-500 mt-2 rotate-45 origin-right">
+                            {new Date(point.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Y-axis labels */}
+                  <div className="absolute right-0 top-0 bottom-8 flex flex-col justify-between text-xs text-gray-500">
+                    <span>{formatPrice(maxPrice)}</span>
+                    <span>{formatPrice((maxPrice + minPrice) / 2)}</span>
+                    <span>{formatPrice(minPrice)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Recommendations */}
+            {prediction.recommendations && prediction.recommendations.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-sm p-6">
+                <h3 className="text-lg font-bold text-gray-900 mb-6">💡 توصيات التسعير</h3>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {prediction.recommendations.map((rec, index) => {
+                    const style = getRecommendationStyle(rec.type);
                     return (
-                      <div key={index} className="flex-1 flex flex-col items-center">
-                        <div
-                          className="w-full bg-gradient-to-t from-indigo-500 to-indigo-400 rounded-t-lg transition-all hover:from-indigo-600 hover:to-indigo-500"
-                          style={{ height: `${Math.max(height, 10)}%` }}
-                          title={`${formatPrice(point.price)} ج.م`}
-                        ></div>
-                        <span className="text-xs text-gray-500 mt-2 rotate-45 origin-right">
-                          {new Date(point.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
-                        </span>
+                      <div
+                        key={index}
+                        className={`p-4 rounded-xl ${style.bg} border`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`font-bold ${style.text}`}>{style.label}</span>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900 mb-1">
+                          {formatPrice(rec.price)} ج.م
+                        </p>
+                        <p className="text-sm text-gray-600">{rec.descriptionAr}</p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          متوقع البيع خلال {rec.expectedDays} يوم
+                        </p>
                       </div>
                     );
                   })}
                 </div>
-
-                {/* Y-axis labels */}
-                <div className="absolute right-0 top-0 bottom-8 flex flex-col justify-between text-xs text-gray-500">
-                  <span>{formatPrice(maxPrice)}</span>
-                  <span>{formatPrice((maxPrice + minPrice) / 2)}</span>
-                  <span>{formatPrice(minPrice)}</span>
-                </div>
               </div>
-            </div>
-
-            {/* Price Factors */}
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">🎯 عوامل تؤثر على السعر</h3>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                {prediction.factors.map((factor, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-xl ${
-                      factor.impact === 'POSITIVE'
-                        ? 'bg-green-50 border border-green-200'
-                        : factor.impact === 'NEGATIVE'
-                        ? 'bg-red-50 border border-red-200'
-                        : 'bg-gray-50 border border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl">
-                        {factor.impact === 'POSITIVE' ? '📈' : factor.impact === 'NEGATIVE' ? '📉' : '➡️'}
-                      </span>
-                      <span className="font-bold text-gray-900">{factor.name}</span>
-                    </div>
-                    <p className="text-sm text-gray-600">{factor.description}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Similar Items */}
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-6">🔄 منتجات مشابهة</h3>
-
-              <div className="grid md:grid-cols-3 gap-4">
-                {prediction.similarItems.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/items/${item.id}`}
-                    className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-                  >
-                    <p className="font-medium text-gray-900 mb-2">{item.title}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-primary-600">
-                        {formatPrice(item.price)} ج.م
-                      </span>
-                      <span className={`text-sm ${item.priceChange < 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {item.priceChange > 0 ? '+' : ''}{item.priceChange}%
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Price Alert */}
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-sm p-6 text-white">
@@ -410,15 +458,15 @@ export default function PricePredictorPage() {
         )}
 
         {/* Empty State */}
-        {!prediction && !loading && (
+        {!prediction && !loading && !error && (
           <div className="bg-white rounded-2xl shadow-sm p-12 text-center">
             <div className="text-6xl mb-4">🔮</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">اكتشف أفضل وقت للشراء</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">تعرف على السعر المناسب</h2>
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              ابحث عن أي منتج وسيقوم الذكاء الاصطناعي بتحليل اتجاهات السوق وتوقع أفضل وقت للشراء
+              ابحث عن أي منتج وسيقوم الذكاء الاصطناعي بتحليل بيانات السوق وتقديم توصيات التسعير المناسبة
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              {['iPhone 15', 'MacBook', 'PlayStation 5', 'تويوتا كورولا'].map((item) => (
+              {['iPhone', 'سيارة', 'لابتوب', 'شقة'].map((item) => (
                 <button
                   key={item}
                   onClick={() => handleSearch(item)}

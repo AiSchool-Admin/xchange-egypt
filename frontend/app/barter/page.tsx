@@ -1,31 +1,52 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { getBarterItems, BarterItem } from '@/lib/api/barter';
 import { getCategories, Category } from '@/lib/api/categories';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { getBarterRecommendations, BarterMatch, formatMatchScore } from '@/lib/api/ai';
+import apiClient from '@/lib/api/client';
 
-// بيانات تجريبية للعرض
-const DEMO_STATS = {
-  totalItems: 12847,
-  activeOffers: 3456,
-  completedTrades: 28934,
-  successRate: 94,
-  savedMoney: 15600000,
-  activeUsers: 45230,
+// Types for platform stats
+interface PlatformStats {
+  totalItems: number;
+  activeOffers: number;
+  completedTrades: number;
+  successRate: number;
+  savedMoney: number;
+  activeUsers: number;
+}
+
+interface CategoryWithCount {
+  id: string;
+  name: string;
+  icon: string;
+  count: number;
+  slug?: string;
+  color: string;
+}
+
+// Default stats (shown while loading)
+const DEFAULT_STATS: PlatformStats = {
+  totalItems: 0,
+  activeOffers: 0,
+  completedTrades: 0,
+  successRate: 95,
+  savedMoney: 0,
+  activeUsers: 0,
 };
 
-const DEMO_CATEGORIES = [
-  { id: '1', name: 'إلكترونيات', icon: '📱', count: 4523, color: 'from-blue-500 to-indigo-600' },
-  { id: '2', name: 'أثاث منزلي', icon: '🛋️', count: 2847, color: 'from-amber-500 to-orange-600' },
-  { id: '3', name: 'ملابس وأزياء', icon: '👗', count: 3156, color: 'from-pink-500 to-rose-600' },
-  { id: '4', name: 'كتب ومجلات', icon: '📚', count: 1892, color: 'from-emerald-500 to-teal-600' },
-  { id: '5', name: 'سيارات', icon: '🚗', count: 956, color: 'from-slate-600 to-gray-800' },
-  { id: '6', name: 'رياضة', icon: '⚽', count: 1234, color: 'from-green-500 to-emerald-600' },
-  { id: '7', name: 'أطفال', icon: '🧸', count: 2341, color: 'from-purple-500 to-violet-600' },
-  { id: '8', name: 'أجهزة منزلية', icon: '🔌', count: 1678, color: 'from-red-500 to-rose-600' },
+// Default categories (shown while loading)
+const DEFAULT_CATEGORIES: CategoryWithCount[] = [
+  { id: '1', name: 'إلكترونيات', icon: '📱', count: 0, color: 'from-blue-500 to-indigo-600' },
+  { id: '2', name: 'أثاث منزلي', icon: '🛋️', count: 0, color: 'from-amber-500 to-orange-600' },
+  { id: '3', name: 'ملابس وأزياء', icon: '👗', count: 0, color: 'from-pink-500 to-rose-600' },
+  { id: '4', name: 'كتب ومجلات', icon: '📚', count: 0, color: 'from-emerald-500 to-teal-600' },
+  { id: '5', name: 'سيارات', icon: '🚗', count: 0, color: 'from-slate-600 to-gray-800' },
+  { id: '6', name: 'رياضة', icon: '⚽', count: 0, color: 'from-green-500 to-emerald-600' },
+  { id: '7', name: 'أطفال', icon: '🧸', count: 0, color: 'from-purple-500 to-violet-600' },
+  { id: '8', name: 'أجهزة منزلية', icon: '🔌', count: 0, color: 'from-red-500 to-rose-600' },
 ];
 
 const FEATURES = [
@@ -81,6 +102,11 @@ export default function BarterPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Platform Stats
+  const [platformStats, setPlatformStats] = useState<PlatformStats>(DEFAULT_STATS);
+  const [statCategories, setStatCategories] = useState<CategoryWithCount[]>(DEFAULT_CATEGORIES);
+  const [loadingStats, setLoadingStats] = useState(true);
+
   // AI Recommendations
   const [recommendations, setRecommendations] = useState<BarterMatch[]>([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
@@ -96,9 +122,29 @@ export default function BarterPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  // Load platform stats
+  const loadPlatformStats = useCallback(async () => {
+    try {
+      setLoadingStats(true);
+      const response = await apiClient.get('/barter/stats');
+      if (response.data.success) {
+        setPlatformStats(response.data.data.stats);
+        if (response.data.data.categories?.length > 0) {
+          setStatCategories(response.data.data.categories);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load platform stats:', err);
+      // Keep default stats on error
+    } finally {
+      setLoadingStats(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadCategories();
-  }, []);
+    loadPlatformStats();
+  }, [loadPlatformStats]);
 
   // Load AI recommendations when user is logged in
   useEffect(() => {
@@ -235,25 +281,43 @@ export default function BarterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white/20 transition-all">
                 <div className="text-4xl font-bold text-yellow-300 mb-1">
-                  {DEMO_STATS.completedTrades.toLocaleString('ar-EG')}+
+                  {loadingStats ? (
+                    <span className="animate-pulse">...</span>
+                  ) : (
+                    <>{platformStats.completedTrades.toLocaleString('ar-EG')}+</>
+                  )}
                 </div>
                 <div className="text-teal-100">صفقة ناجحة</div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white/20 transition-all">
                 <div className="text-4xl font-bold text-yellow-300 mb-1">
-                  {DEMO_STATS.activeUsers.toLocaleString('ar-EG')}+
+                  {loadingStats ? (
+                    <span className="animate-pulse">...</span>
+                  ) : (
+                    <>{platformStats.activeUsers.toLocaleString('ar-EG')}+</>
+                  )}
                 </div>
                 <div className="text-teal-100">مستخدم نشط</div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white/20 transition-all">
                 <div className="text-4xl font-bold text-yellow-300 mb-1">
-                  {DEMO_STATS.successRate}%
+                  {loadingStats ? (
+                    <span className="animate-pulse">...</span>
+                  ) : (
+                    <>{platformStats.successRate}%</>
+                  )}
                 </div>
                 <div className="text-teal-100">نسبة النجاح</div>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 text-center hover:bg-white/20 transition-all">
                 <div className="text-4xl font-bold text-yellow-300 mb-1">
-                  {(DEMO_STATS.savedMoney / 1000000).toFixed(1)}M
+                  {loadingStats ? (
+                    <span className="animate-pulse">...</span>
+                  ) : (
+                    <>{platformStats.savedMoney >= 1000000
+                        ? `${(platformStats.savedMoney / 1000000).toFixed(1)}M`
+                        : platformStats.savedMoney.toLocaleString('ar-EG')}</>
+                  )}
                 </div>
                 <div className="text-teal-100">جنيه تم توفيره</div>
               </div>
@@ -439,7 +503,7 @@ export default function BarterPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          {DEMO_CATEGORIES.map((cat) => (
+          {statCategories.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
@@ -452,7 +516,7 @@ export default function BarterPage() {
               <span className="text-3xl mb-2">{cat.icon}</span>
               <span className="font-bold text-sm">{cat.name}</span>
               <span className={`text-xs mt-1 ${selectedCategory === cat.id ? 'text-white/80' : 'text-gray-500'}`}>
-                {cat.count.toLocaleString('ar-EG')} منتج
+                {loadingStats ? '...' : cat.count.toLocaleString('ar-EG')} منتج
               </span>
             </button>
           ))}

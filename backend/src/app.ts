@@ -95,6 +95,8 @@ import aiAdvancedRoutes from './routes/ai-advanced.routes';
 import boardRoutes from './routes/board.routes';
 import founderRoutes from './routes/founder.routes';
 import docsRoutes from './routes/docs.routes';
+import watchlistRoutes from './routes/watchlist.routes';
+import pricePredictionRoutes from './routes/price-prediction.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -510,6 +512,12 @@ app.use('/api/v1/founder', founderRoutes);
 
 // API Documentation - توثيق API
 app.use('/api/v1/docs', docsRoutes);
+
+// Watchlist / Favorites - قائمة المتابعة
+app.use('/api/v1/watchlist', watchlistRoutes);
+
+// Price Prediction - التنبؤ بالأسعار
+app.use('/api/v1/price-prediction', pricePredictionRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
