@@ -1,6 +1,28 @@
 import { Router } from 'express';
 import * as paymentController from '../controllers/payment.controller';
 import { authenticate, optionalAuth } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import {
+  getPaymentMethodsSchema,
+  calculateFeesSchema,
+  initiatePaymentSchema,
+  checkPaymentStatusSchema,
+  processRefundSchema,
+  initiateInstapaySchema,
+  verifyInstapaySchema,
+  createFawryPaymentSchema,
+  checkFawryStatusSchema,
+  initiatePaymobCardSchema,
+  initiatePaymobWalletSchema,
+  initiatePaymobKioskSchema,
+  getPaymobStatusSchema,
+  refundPaymobSchema,
+  initiateVodafoneCashSchema,
+  checkVodafoneCashStatusSchema,
+  refundVodafoneCashSchema,
+  confirmCodSchema,
+  markCodCollectedSchema,
+} from '../validations/payment.validation';
 
 const router = Router();
 
@@ -15,31 +37,31 @@ const router = Router();
  * Get available payment methods
  * GET /api/v1/payment/methods
  */
-router.get('/methods', optionalAuth, paymentController.getPaymentMethods);
+router.get('/methods', optionalAuth, validate(getPaymentMethodsSchema), paymentController.getPaymentMethods);
 
 /**
  * Calculate payment fees
  * GET /api/v1/payment/fees
  */
-router.get('/fees', paymentController.calculateFees);
+router.get('/fees', validate(calculateFeesSchema), paymentController.calculateFees);
 
 /**
  * Initiate payment (unified endpoint)
  * POST /api/v1/payment/initiate
  */
-router.post('/initiate', authenticate, paymentController.initiatePayment);
+router.post('/initiate', authenticate, validate(initiatePaymentSchema), paymentController.initiatePayment);
 
 /**
  * Check payment status
  * GET /api/v1/payment/status/:transactionId
  */
-router.get('/status/:transactionId', authenticate, paymentController.checkPaymentStatus);
+router.get('/status/:transactionId', authenticate, validate(checkPaymentStatusSchema), paymentController.checkPaymentStatus);
 
 /**
  * Process refund
  * POST /api/v1/payment/refund
  */
-router.post('/refund', authenticate, paymentController.processRefund);
+router.post('/refund', authenticate, validate(processRefundSchema), paymentController.processRefund);
 
 /**
  * =====================================================
@@ -52,13 +74,13 @@ router.post('/refund', authenticate, paymentController.processRefund);
  * Initiate InstaPay payment
  * POST /api/v1/payment/instapay/initiate
  */
-router.post('/instapay/initiate', authenticate, paymentController.initiateInstapay);
+router.post('/instapay/initiate', authenticate, validate(initiateInstapaySchema), paymentController.initiateInstapay);
 
 /**
  * Verify InstaPay payment
  * GET /api/v1/payment/instapay/verify/:transactionId
  */
-router.get('/instapay/verify/:transactionId', paymentController.verifyInstapay);
+router.get('/instapay/verify/:transactionId', validate(verifyInstapaySchema), paymentController.verifyInstapay);
 
 /**
  * InstaPay callback (webhook)
@@ -77,13 +99,13 @@ router.post('/instapay/callback', paymentController.instapayCallback);
  * Create Fawry payment reference
  * POST /api/v1/payment/fawry/create
  */
-router.post('/fawry/create', authenticate, paymentController.createFawryPayment);
+router.post('/fawry/create', authenticate, validate(createFawryPaymentSchema), paymentController.createFawryPayment);
 
 /**
  * Check Fawry payment status
  * GET /api/v1/payment/fawry/status/:referenceNumber
  */
-router.get('/fawry/status/:referenceNumber', paymentController.checkFawryStatus);
+router.get('/fawry/status/:referenceNumber', validate(checkFawryStatusSchema), paymentController.checkFawryStatus);
 
 /**
  * Fawry callback (webhook)
@@ -102,25 +124,25 @@ router.post('/fawry/callback', paymentController.fawryCallback);
  * Initiate Paymob card payment
  * POST /api/v1/payment/paymob/card
  */
-router.post('/paymob/card', authenticate, paymentController.initiatePaymobCard);
+router.post('/paymob/card', authenticate, validate(initiatePaymobCardSchema), paymentController.initiatePaymobCard);
 
 /**
  * Initiate Paymob wallet payment
  * POST /api/v1/payment/paymob/wallet
  */
-router.post('/paymob/wallet', authenticate, paymentController.initiatePaymobWallet);
+router.post('/paymob/wallet', authenticate, validate(initiatePaymobWalletSchema), paymentController.initiatePaymobWallet);
 
 /**
  * Initiate Paymob kiosk payment (Aman/Masary)
  * POST /api/v1/payment/paymob/kiosk
  */
-router.post('/paymob/kiosk', authenticate, paymentController.initiatePaymobKiosk);
+router.post('/paymob/kiosk', authenticate, validate(initiatePaymobKioskSchema), paymentController.initiatePaymobKiosk);
 
 /**
  * Check Paymob transaction status
  * GET /api/v1/payment/paymob/status/:transactionId
  */
-router.get('/paymob/status/:transactionId', authenticate, paymentController.getPaymobStatus);
+router.get('/paymob/status/:transactionId', authenticate, validate(getPaymobStatusSchema), paymentController.getPaymobStatus);
 
 /**
  * Paymob callback (webhook)
@@ -132,7 +154,7 @@ router.post('/paymob/callback', paymentController.paymobCallback);
  * Refund Paymob transaction
  * POST /api/v1/payment/paymob/refund
  */
-router.post('/paymob/refund', authenticate, paymentController.refundPaymob);
+router.post('/paymob/refund', authenticate, validate(refundPaymobSchema), paymentController.refundPaymob);
 
 /**
  * =====================================================
@@ -145,13 +167,13 @@ router.post('/paymob/refund', authenticate, paymentController.refundPaymob);
  * Initiate Vodafone Cash payment
  * POST /api/v1/payment/vodafone/initiate
  */
-router.post('/vodafone/initiate', authenticate, paymentController.initiateVodafoneCash);
+router.post('/vodafone/initiate', authenticate, validate(initiateVodafoneCashSchema), paymentController.initiateVodafoneCash);
 
 /**
  * Check Vodafone Cash payment status
  * GET /api/v1/payment/vodafone/status/:transactionId
  */
-router.get('/vodafone/status/:transactionId', authenticate, paymentController.checkVodafoneCashStatus);
+router.get('/vodafone/status/:transactionId', authenticate, validate(checkVodafoneCashStatusSchema), paymentController.checkVodafoneCashStatus);
 
 /**
  * Vodafone Cash callback (webhook)
@@ -163,7 +185,7 @@ router.post('/vodafone/callback', paymentController.vodafoneCashCallback);
  * Refund Vodafone Cash payment
  * POST /api/v1/payment/vodafone/refund
  */
-router.post('/vodafone/refund', authenticate, paymentController.refundVodafoneCash);
+router.post('/vodafone/refund', authenticate, validate(refundVodafoneCashSchema), paymentController.refundVodafoneCash);
 
 /**
  * Get Vodafone Cash merchant balance (admin only)
@@ -182,12 +204,12 @@ router.get('/vodafone/balance', authenticate, paymentController.getVodafoneCashB
  * Confirm Cash on Delivery order
  * POST /api/v1/payment/cod/confirm
  */
-router.post('/cod/confirm', authenticate, paymentController.confirmCashOnDelivery);
+router.post('/cod/confirm', authenticate, validate(confirmCodSchema), paymentController.confirmCashOnDelivery);
 
 /**
  * Mark COD as collected (for delivery personnel)
  * POST /api/v1/payment/cod/collected
  */
-router.post('/cod/collected', authenticate, paymentController.markCodCollected);
+router.post('/cod/collected', authenticate, validate(markCodCollectedSchema), paymentController.markCodCollected);
 
 export default router;

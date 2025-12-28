@@ -518,11 +518,11 @@ model Item {
   listingType     ListingType   @default(DIRECT_SALE) @map("listing_type")
 
   condition       ItemCondition @default(GOOD)
-  estimatedValue  Float         @map("estimated_value") // In EGP
+  estimatedValue  Decimal         @map("estimated_value") // In EGP
   images          String[]      // Array of image URLs
 
   // Type-specific fields
-  cashAmount      Float?        @map("cash_amount")     // For CASH type
+  cashAmount      Decimal?        @map("cash_amount")     // For CASH type
   serviceHours    Float?        @map("service_hours")   // For SERVICE type
   serviceDuration String?       @map("service_duration") // e.g., "1 day", "2 weeks"
 
@@ -547,13 +547,13 @@ model Item {
 
   // للمعادن والوزن
   weightKg            Float?            @map("weight_kg")
-  pricePerKg          Float?            @map("price_per_kg")
+  pricePerKg          Decimal?            @map("price_per_kg")
   metalType           MetalType?        @map("metal_type")
   metalPurity         Float?            @map("metal_purity")  // نسبة نقاء المعدن
 
   // قابلية الإصلاح
   isRepairable        Boolean?          @map("is_repairable")
-  repairCostEstimate  Float?            @map("repair_cost_estimate")
+  repairCostEstimate  Decimal?            @map("repair_cost_estimate")
   workingPartsDesc    String?           @map("working_parts_desc")
   defectDescription   String?           @map("defect_description")
 
@@ -575,7 +575,7 @@ model Item {
   hasGarden           Boolean?          @map("has_garden")            // يوجد حديقة
   hasSecurity         Boolean?          @map("has_security")          // يوجد أمن
   hasPool             Boolean?          @map("has_pool")              // يوجد حمام سباحة
-  rentPrice           Float?            @map("rent_price")            // سعر الإيجار الشهري
+  rentPrice           Decimal?            @map("rent_price")            // سعر الإيجار الشهري
   isNegotiable        Boolean?          @map("is_negotiable")         // قابل للتفاوض
 
   // ============================================
@@ -601,13 +601,13 @@ model Item {
   deliveryAvailable   Boolean           @default(false) @map("delivery_available")
   deliveryProvider    DeliveryProvider? @map("delivery_provider")
   deliverySpeed       DeliverySpeed?    @map("delivery_speed")
-  deliveryCost        Float?            @map("delivery_cost")
+  deliveryCost        Decimal?            @map("delivery_cost")
   freeDelivery        Boolean           @default(false) @map("free_delivery")
 
   installmentAvailable Boolean          @default(false) @map("installment_available")
   installmentProvider InstallmentProvider? @map("installment_provider")
   installmentMonths   Int[]             @map("installment_months")    // e.g., [6, 12, 18, 24]
-  minDownPayment      Float?            @map("min_down_payment")      // الحد الأدنى للمقدم
+  minDownPayment      Decimal?            @map("min_down_payment")      // الحد الأدنى للمقدم
 
   // Specs (flexible JSON)
   specifications  Json?         @map("specifications")
@@ -617,8 +617,8 @@ model Item {
   desiredItemTitle      String?   @map("desired_item_title")       // Title of the wanted item (e.g., "سيارة سيدان")
   desiredItemDescription String?  @map("desired_item_description") // Description of the wanted item
   desiredKeywords       String?   @map("desired_keywords") // Comma-separated keywords
-  desiredValueMin       Float?    @map("desired_value_min") // Minimum acceptable value
-  desiredValueMax       Float?    @map("desired_value_max") // Maximum acceptable value
+  desiredValueMin       Decimal?    @map("desired_value_min") // Minimum acceptable value
+  desiredValueMax       Decimal?    @map("desired_value_max") // Maximum acceptable value
 
   // Status
   status          ItemStatus    @default(ACTIVE)
@@ -739,8 +739,8 @@ model StockAdjustment {
   notes           String?                                     // Additional notes
 
   // Cost tracking (optional)
-  unitCost        Float?              @map("unit_cost")       // Cost per unit at time of adjustment
-  totalCost       Float?              @map("total_cost")      // Total cost of this adjustment
+  unitCost        Decimal?              @map("unit_cost")       // Cost per unit at time of adjustment
+  totalCost       Decimal?              @map("total_cost")      // Total cost of this adjustment
 
   // Timestamps
   createdAt       DateTime            @default(now()) @map("created_at")
@@ -782,14 +782,14 @@ model Listing {
   listingType ListingType     @map("listing_type")
 
   // Pricing (nullable for barter)
-  price       Float?
+  price       Decimal?
   currency    String          @default("EGP")
 
   // Auction specific
-  startingBid Float?          @map("starting_bid")
-  currentBid  Float?          @map("current_bid")
-  bidIncrement Float?         @map("bid_increment")
-  reservePrice Float?         @map("reserve_price")
+  startingBid Decimal?          @map("starting_bid")
+  currentBid  Decimal?          @map("current_bid")
+  bidIncrement Decimal?         @map("bid_increment")
+  reservePrice Decimal?         @map("reserve_price")
 
   // Timing
   startDate   DateTime        @default(now()) @map("start_date")
@@ -898,9 +898,9 @@ model Order {
   userId            String        @map("user_id")
   orderNumber       String        @unique @map("order_number")
   status            OrderStatus   @default(PENDING)
-  subtotal          Float
-  shippingCost      Float         @map("shipping_cost")
-  total             Float
+  subtotal          Decimal
+  shippingCost      Decimal         @map("shipping_cost")
+  total             Decimal
   shippingAddressId String        @map("shipping_address_id")
   paymentMethod     String        @map("payment_method")
   paymentId         String?       @map("payment_id")
@@ -927,7 +927,7 @@ model OrderItem {
   listingId   String   @map("listing_id")
   sellerId    String   @map("seller_id")
   quantity    Int
-  price       Float
+  price       Decimal
 
   order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Restrict)
@@ -979,7 +979,7 @@ model BarterOffer {
 
   // Offered items (BUNDLE SUPPORT - can be multiple items)
   offeredItemIds    String[]           @map("offered_item_ids")
-  offeredBundleValue Float             @map("offered_bundle_value")  // Auto-calculated
+  offeredBundleValue Decimal             @map("offered_bundle_value")  // Auto-calculated
 
   // Preference sets (alternative bundles user wants)
   // User can specify multiple preference sets with priorities
@@ -989,8 +989,8 @@ model BarterOffer {
   matchedPreferenceSetId String?       @map("matched_preference_set_id")
 
   // Cash support
-  offeredCashAmount   Float              @default(0) @map("offered_cash_amount")
-  requestedCashAmount Float              @default(0) @map("requested_cash_amount")
+  offeredCashAmount   Decimal              @default(0) @map("offered_cash_amount")
+  requestedCashAmount Decimal              @default(0) @map("requested_cash_amount")
 
   // Additional info
   notes             String?
@@ -1039,8 +1039,8 @@ model ItemRequest {
   categoryId        String?        @map("category_id")          // Level 1: Root category
   subcategoryId     String?        @map("subcategory_id")       // Level 2: Sub-category
   subSubcategoryId  String?        @map("sub_subcategory_id")   // Level 3: Sub-sub-category
-  minPrice          Float?         @map("min_price")
-  maxPrice          Float?         @map("max_price")
+  minPrice          Decimal?         @map("min_price")
+  maxPrice          Decimal?         @map("max_price")
   condition         ItemCondition?
   keywords          String[]
   createdAt         DateTime       @default(now()) @map("created_at")
@@ -1068,10 +1068,10 @@ model BarterPreferenceSet {
   items             BarterPreferenceItem[]
 
   // Auto-calculated total value
-  totalValue        Float              @map("total_value")
+  totalValue        Decimal              @map("total_value")
 
   // Value difference from offered bundle
-  valueDifference   Float              @map("value_difference")
+  valueDifference   Decimal              @map("value_difference")
 
   // Is this preference set balanced? (within acceptable range)
   isBalanced        Boolean            @default(true) @map("is_balanced")
@@ -1099,7 +1099,7 @@ model BarterPreferenceItem {
   itemId            String             @map("item_id")
 
   // Item details (denormalized for performance)
-  itemValue         Float              @map("item_value")
+  itemValue         Decimal              @map("item_value")
 
   // Timestamps
   createdAt         DateTime           @default(now()) @map("created_at")
@@ -1140,7 +1140,7 @@ model BarterChain {
   description     String?            // Human-readable description of the chain
 
   // Commission tracking
-  commissionAmount   Float?          @map("commission_amount")    // Platform commission in EGP
+  commissionAmount   Decimal?          @map("commission_amount")    // Platform commission in EGP
   commissionRate     Float?          @map("commission_rate")      // Commission rate (e.g., 0.05 for 5%)
   commissionStatus   String?         @map("commission_status")    // PENDING, COLLECTED, WAIVED
   commissionPaidAt   DateTime?       @map("commission_paid_at")   // When commission was paid
@@ -1148,7 +1148,7 @@ model BarterChain {
 
   // Cash flow tracking
   involvesCash    Boolean            @default(false) @map("involves_cash") // Does this chain involve cash?
-  totalCashFlow   Float              @default(0) @map("total_cash_flow")   // Total cash in chain
+  totalCashFlow   Decimal              @default(0) @map("total_cash_flow")   // Total cash in chain
 
   // Status
   status          BarterChainStatus  @default(PROPOSED)
@@ -1205,7 +1205,7 @@ model BarterParticipant {
   hasCounterProposal     Boolean    @default(false) @map("has_counter_proposal")
   counterProposalItemId  String?    @map("counter_proposal_item_id")  // Alternative item to give
   counterProposalMessage String?    @map("counter_proposal_message")  // Reason for counter
-  counterProposalCash    Float?     @map("counter_proposal_cash")     // Cash adjustment
+  counterProposalCash    Decimal?     @map("counter_proposal_cash")     // Cash adjustment
   counterProposalStatus  String?    @map("counter_proposal_status")   // PENDING, ACCEPTED, REJECTED
 
   // Timestamps
@@ -1310,7 +1310,7 @@ model CashFlow {
   toUserId        String          @map("to_user_id")
 
   // Amount
-  amount          Float
+  amount          Decimal
   currency        String          @default("EGP")
   flowType        CashFlowType    @default(CHAIN_BALANCE) @map("flow_type")
 
@@ -1368,11 +1368,11 @@ model Auction {
   listingId         String        @unique @map("listing_id")
 
   // Pricing
-  startingPrice     Float         @map("starting_price")
-  currentPrice      Float         @map("current_price")
-  buyNowPrice       Float?        @map("buy_now_price")
-  reservePrice      Float?        @map("reserve_price")
-  minBidIncrement   Float         @default(1.0) @map("min_bid_increment")
+  startingPrice     Decimal         @map("starting_price")
+  currentPrice      Decimal         @map("current_price")
+  buyNowPrice       Decimal?        @map("buy_now_price")
+  reservePrice      Decimal?        @map("reserve_price")
+  minBidIncrement   Decimal         @default(1.0) @map("min_bid_increment")
 
   // Timing
   startTime         DateTime      @map("start_time")
@@ -1419,12 +1419,12 @@ model AuctionBid {
   bidderId        String     @map("bidder_id")
 
   // Bid details
-  bidAmount       Float      @map("bid_amount")
-  previousBid     Float?     @map("previous_bid") // Previous bid by this user
+  bidAmount       Decimal      @map("bid_amount")
+  previousBid     Decimal?     @map("previous_bid") // Previous bid by this user
 
   // Auto-bid (proxy bidding)
   isAutoBid       Boolean    @default(false) @map("is_auto_bid")
-  maxAutoBid      Float?     @map("max_auto_bid") // Maximum they're willing to bid
+  maxAutoBid      Decimal?     @map("max_auto_bid") // Maximum they're willing to bid
 
   // Status
   status          BidStatus  @default(ACTIVE)
@@ -1496,8 +1496,8 @@ model ReverseAuction {
   deliveryPreference String?           @map("delivery_preference") // "PICKUP", "DELIVERY", "BOTH"
 
   // Budget & Pricing
-  maxBudget         Float?              @map("max_budget")    // Maximum willing to pay (optional)
-  targetPrice       Float?              @map("target_price")  // Target/desired price (optional)
+  maxBudget         Decimal?              @map("max_budget")    // Maximum willing to pay (optional)
+  targetPrice       Decimal?              @map("target_price")  // Target/desired price (optional)
 
   // Timing
   startDate         DateTime            @default(now()) @map("start_date")
@@ -1507,7 +1507,7 @@ model ReverseAuction {
   status            ReverseAuctionStatus @default(DRAFT)
   totalBids         Int                 @default(0) @map("total_bids")
   uniqueBidders     Int                 @default(0) @map("unique_bidders")
-  lowestBid         Float?              @map("lowest_bid")    // Current lowest bid
+  lowestBid         Decimal?              @map("lowest_bid")    // Current lowest bid
   views             Int                 @default(0)
 
   // Winner
@@ -1547,8 +1547,8 @@ model ReverseAuctionBid {
   sellerId          String                  @map("seller_id")
 
   // Bid details
-  bidAmount         Float                   @map("bid_amount")      // Offered price
-  previousBid       Float?                  @map("previous_bid")    // Their previous bid (if rebidding)
+  bidAmount         Decimal                   @map("bid_amount")      // Offered price
+  previousBid       Decimal?                  @map("previous_bid")    // Their previous bid (if rebidding)
 
   // Item offered
   itemId            String?                 @map("item_id")         // If seller has existing item
@@ -1559,7 +1559,7 @@ model ReverseAuctionBid {
   // Delivery & Terms
   deliveryOption    String                  @map("delivery_option") // "PICKUP", "DELIVERY", "BOTH"
   deliveryDays      Int?                    @map("delivery_days")   // Estimated delivery time
-  deliveryCost      Float                   @default(0) @map("delivery_cost") // Delivery fee
+  deliveryCost      Decimal                   @default(0) @map("delivery_cost") // Delivery fee
 
   // Seller notes
   notes             String?                 // Additional information
@@ -1623,7 +1623,7 @@ model Transaction {
   transactionType TransactionType @map("transaction_type")
 
   // Payment
-  amount          Float?
+  amount          Decimal?
   currency        String          @default("EGP")
   paymentMethod   String?         @map("payment_method")
   paymentStatus   PaymentStatus   @default(PENDING) @map("payment_status")
@@ -1826,7 +1826,7 @@ model WishListItem {
   categoryId  String?   @map("category_id")
   description String
   keywords    String[]  // For matching
-  maxPrice    Float?    @map("max_price")
+  maxPrice    Decimal?    @map("max_price")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
@@ -2343,10 +2343,10 @@ model Wallet {
   userId          String      @unique @map("user_id")
 
   // Balances
-  balance         Float       @default(0)          // رصيد XCoin المتاح
-  frozenBalance   Float       @default(0) @map("frozen_balance")  // رصيد مجمد (في صفقات جارية)
-  lifetimeEarned  Float       @default(0) @map("lifetime_earned") // إجمالي ما تم كسبه
-  lifetimeSpent   Float       @default(0) @map("lifetime_spent")  // إجمالي ما تم إنفاقه
+  balance         Decimal       @default(0)          // رصيد XCoin المتاح
+  frozenBalance   Decimal       @default(0) @map("frozen_balance")  // رصيد مجمد (في صفقات جارية)
+  lifetimeEarned  Decimal       @default(0) @map("lifetime_earned") // إجمالي ما تم كسبه
+  lifetimeSpent   Decimal       @default(0) @map("lifetime_spent")  // إجمالي ما تم إنفاقه
 
   // Timestamps
   createdAt       DateTime    @default(now()) @map("created_at")
@@ -2403,9 +2403,9 @@ model WalletTransaction {
 
   // Transaction details
   type            WalletTransactionType
-  amount          Float                     // موجب للإضافة، سالب للخصم
-  balanceBefore   Float                     @map("balance_before")
-  balanceAfter    Float                     @map("balance_after")
+  amount          Decimal                     // موجب للإضافة، سالب للخصم
+  balanceBefore   Decimal                     @map("balance_before")
+  balanceAfter    Decimal                     @map("balance_after")
 
   // Status
   status          WalletTransactionStatus   @default(COMPLETED)
@@ -2553,9 +2553,9 @@ model Escrow {
   sellerId        String        @map("seller_id")
 
   // Amount
-  amount          Float                     // المبلغ بالجنيه أو XCoin
+  amount          Decimal                     // المبلغ بالجنيه أو XCoin
   currency        String        @default("EGP")
-  xcoinAmount     Float?        @map("xcoin_amount")  // مبلغ XCoin إن وجد
+  xcoinAmount     Decimal?        @map("xcoin_amount")  // مبلغ XCoin إن وجد
 
   // Related entities
   transactionId   String?       @map("transaction_id")
@@ -2578,7 +2578,7 @@ model Escrow {
 
   // Facilitator (if any)
   facilitatorId   String?       @map("facilitator_id")
-  facilitatorFee  Float?        @map("facilitator_fee")
+  facilitatorFee  Decimal?        @map("facilitator_fee")
 
   // Notes
   notes           String?
@@ -2660,7 +2660,7 @@ model Dispute {
   evidence        String[]          @default([])  // صور/ملفات إثبات
 
   // Requested outcome
-  requestedAmount Float?            @map("requested_amount")
+  requestedAmount Decimal?            @map("requested_amount")
   requestedOutcome String?          @map("requested_outcome")
 
   // Status
@@ -2668,7 +2668,7 @@ model Dispute {
 
   // Resolution
   resolution      DisputeResolution?
-  resolutionAmount Float?           @map("resolution_amount")
+  resolutionAmount Decimal?           @map("resolution_amount")
   resolutionNotes String?           @map("resolution_notes")
   resolvedBy      String?           @map("resolved_by")
   resolvedAt      DateTime?         @map("resolved_at")
@@ -2973,11 +2973,11 @@ model BarterPool {
   // Target
   targetCategoryId String?          @map("target_category_id")
   targetDescription String          @map("target_description")
-  targetMinValue  Float             @map("target_min_value")
-  targetMaxValue  Float             @map("target_max_value")
+  targetMinValue  Decimal             @map("target_min_value")
+  targetMaxValue  Decimal             @map("target_max_value")
 
   // Pool value
-  currentValue    Float             @default(0) @map("current_value")
+  currentValue    Decimal             @default(0) @map("current_value")
   participantCount Int              @default(0) @map("participant_count")
   maxParticipants Int               @default(10) @map("max_participants")
 
@@ -2990,7 +2990,7 @@ model BarterPool {
   // Matched offer (when found)
   matchedItemId   String?           @map("matched_item_id")
   matchedSellerId String?           @map("matched_seller_id")
-  matchedValue    Float?            @map("matched_value")
+  matchedValue    Decimal?            @map("matched_value")
 
   // Deadline
   deadline        DateTime
@@ -3017,9 +3017,9 @@ model BarterPoolParticipant {
 
   // Contribution
   itemId          String?     @map("item_id")       // الصنف المقدم
-  cashAmount      Float       @default(0) @map("cash_amount")  // مبلغ نقدي
-  xcoinAmount     Float       @default(0) @map("xcoin_amount") // مبلغ XCoin
-  totalValue      Float       @map("total_value")   // إجمالي المساهمة
+  cashAmount      Decimal       @default(0) @map("cash_amount")  // مبلغ نقدي
+  xcoinAmount     Decimal       @default(0) @map("xcoin_amount") // مبلغ XCoin
+  totalValue      Decimal       @map("total_value")   // إجمالي المساهمة
 
   // Share percentage
   sharePercentage Float       @map("share_percentage")  // نسبة الحصة
@@ -3078,16 +3078,16 @@ model Facilitator {
 
   // Commission
   commissionRate  Float               @default(0.03) @map("commission_rate")  // 3% default
-  minCommission   Float               @default(50) @map("min_commission")     // 50 جنيه حد أدنى
+  minCommission   Decimal               @default(50) @map("min_commission")     // 50 جنيه حد أدنى
 
   // Insurance
-  insuranceCoverage Float             @default(10000) @map("insurance_coverage")  // تغطية التأمين
-  insuranceBalance Float              @default(0) @map("insurance_balance")       // رصيد التأمين
+  insuranceCoverage Decimal             @default(10000) @map("insurance_coverage")  // تغطية التأمين
+  insuranceBalance Decimal              @default(0) @map("insurance_balance")       // رصيد التأمين
 
   // Statistics
   totalDeals      Int                 @default(0) @map("total_deals")
   successfulDeals Int                 @default(0) @map("successful_deals")
-  totalVolume     Float               @default(0) @map("total_volume")  // إجمالي قيمة الصفقات
+  totalVolume     Decimal               @default(0) @map("total_volume")  // إجمالي قيمة الصفقات
   avgRating       Float               @default(0) @map("avg_rating")
 
   // Verification
@@ -3137,7 +3137,7 @@ model FacilitatorAssignment {
   status          String      @default("ASSIGNED")  // 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'
 
   // Commission
-  commissionAmount Float      @map("commission_amount")
+  commissionAmount Decimal      @map("commission_amount")
   commissionPaid  Boolean     @default(false) @map("commission_paid")
 
   // Notes
@@ -3203,8 +3203,8 @@ model Referral {
   referralCode    String      @map("referral_code")
 
   // Rewards
-  referrerReward  Float       @default(0) @map("referrer_reward")
-  referredReward  Float       @default(0) @map("referred_reward")
+  referrerReward  Decimal       @default(0) @map("referrer_reward")
+  referredReward  Decimal       @default(0) @map("referred_reward")
 
   // Status
   rewardsClaimed  Boolean     @default(false) @map("rewards_claimed")
@@ -3231,8 +3231,8 @@ model ReferralCode {
   maxUsages       Int?        @map("max_usages")  // null = unlimited
 
   // Rewards
-  referrerReward  Float       @default(100) @map("referrer_reward")  // XCoin للمحيل
-  referredReward  Float       @default(50) @map("referred_reward")   // XCoin للمحال
+  referrerReward  Decimal       @default(100) @map("referrer_reward")  // XCoin للمحيل
+  referredReward  Decimal       @default(50) @map("referred_reward")   // XCoin للمحال
 
   // Status
   isActive        Boolean     @default(true) @map("is_active")
@@ -3270,12 +3270,12 @@ model MarketInsight {
   totalListings   Int         @default(0) @map("total_listings")
   totalDeals      Int         @default(0) @map("total_deals")
   totalBarters    Int         @default(0) @map("total_barters")
-  totalVolume     Float       @default(0) @map("total_volume")
+  totalVolume     Decimal       @default(0) @map("total_volume")
 
   // Price metrics
-  avgPrice        Float?      @map("avg_price")
-  minPrice        Float?      @map("min_price")
-  maxPrice        Float?      @map("max_price")
+  avgPrice        Decimal?      @map("avg_price")
+  minPrice        Decimal?      @map("min_price")
+  maxPrice        Decimal?      @map("max_price")
   priceChange     Float?      @map("price_change")  // % change from previous period
 
   // Demand metrics
@@ -3304,14 +3304,14 @@ model XChangeIndex {
   date            DateTime    @unique
 
   // Index value
-  indexValue      Float       @map("index_value")
-  previousValue   Float?      @map("previous_value")
+  indexValue      Decimal       @map("index_value")
+  previousValue   Decimal?      @map("previous_value")
   changePercent   Float?      @map("change_percent")
 
   // Components
-  barterVolume    Float       @map("barter_volume")
-  directSaleVolume Float      @map("direct_sale_volume")
-  auctionVolume   Float       @map("auction_volume")
+  barterVolume    Decimal       @map("barter_volume")
+  directSaleVolume Decimal      @map("direct_sale_volume")
+  auctionVolume   Decimal       @map("auction_volume")
 
   // Activity metrics
   activeUsers     Int         @map("active_users")
@@ -3345,10 +3345,10 @@ model PricePrediction {
   description     String?
 
   // Prediction results
-  predictedPrice  Float       @map("predicted_price")
+  predictedPrice  Decimal       @map("predicted_price")
   confidenceScore Float       @map("confidence_score")  // 0-100
-  priceRangeMin   Float       @map("price_range_min")
-  priceRangeMax   Float       @map("price_range_max")
+  priceRangeMin   Decimal       @map("price_range_min")
+  priceRangeMax   Decimal       @map("price_range_max")
 
   // Prediction factors
   marketTrend     String?     @map("market_trend")      // 'UP', 'DOWN', 'STABLE'
@@ -3362,7 +3362,7 @@ model PricePrediction {
   modelVersion    String      @map("model_version")
 
   // Recommendations
-  suggestedPrice  Float?      @map("suggested_price")
+  suggestedPrice  Decimal?      @map("suggested_price")
   priceStrategy   String?     @map("price_strategy")    // 'COMPETITIVE', 'PREMIUM', 'VALUE'
   recommendations Json?
 
@@ -3395,14 +3395,14 @@ model PriceHistory {
   periodType      String      @default("DAILY") @map("period_type")  // 'DAILY', 'WEEKLY', 'MONTHLY'
 
   // Price statistics
-  avgPrice        Float       @map("avg_price")
-  minPrice        Float       @map("min_price")
-  maxPrice        Float       @map("max_price")
-  medianPrice     Float       @map("median_price")
+  avgPrice        Decimal       @map("avg_price")
+  minPrice        Decimal       @map("min_price")
+  maxPrice        Decimal       @map("max_price")
+  medianPrice     Decimal       @map("median_price")
 
   // Volume
   sampleCount     Int         @map("sample_count")
-  totalVolume     Float       @map("total_volume")
+  totalVolume     Decimal       @map("total_volume")
 
   // Trends
   priceChange     Float?      @map("price_change")      // % change from previous period
@@ -3494,7 +3494,7 @@ model UserSubscription {
 
   // Billing
   billingCycle    String              @default("MONTHLY") @map("billing_cycle") // 'MONTHLY', 'YEARLY'
-  currentPrice    Float               @map("current_price")
+  currentPrice    Decimal               @map("current_price")
   currency        String              @default("EGP")
 
   // Dates
@@ -3641,13 +3641,13 @@ model PriceAlert {
   searchQuery     String?     @map("search_query")    // تتبع بحث
 
   // Alert conditions
-  targetPrice     Float?      @map("target_price")    // سعر مستهدف
+  targetPrice     Decimal?      @map("target_price")    // سعر مستهدف
   priceDropPercent Float?     @map("price_drop_percent") // نسبة انخفاض
   alertOnNew      Boolean     @default(true) @map("alert_on_new")  // تنبيه عند إضافة جديد
 
   // Additional filters
   minCondition    ItemCondition? @map("min_condition")
-  maxPrice        Float?      @map("max_price")
+  maxPrice        Decimal?      @map("max_price")
   governorate     String?
 
   // Notification preferences
@@ -3821,7 +3821,7 @@ model Installment {
 
   // Installment details
   installmentNumber Int             @map("installment_number")
-  amount          Float
+  amount          Decimal
   dueDate         DateTime          @map("due_date")
 
   // Payment
@@ -3891,7 +3891,7 @@ model GroupBuy {
 
   // Current discount
   currentDiscount Float           @default(0) @map("current_discount")
-  currentPrice    Float           @map("current_price")
+  currentPrice    Decimal           @map("current_price")
 
   // Timing
   startDate       DateTime        @map("start_date")
@@ -4008,7 +4008,7 @@ model Warranty {
   durationMonths  Int             @map("duration_months")
 
   // Pricing
-  price           Float           @default(0)   // For extended warranty
+  price           Decimal           @default(0)   // For extended warranty
   isPaid          Boolean         @default(true) @map("is_paid")
 
   // Status
@@ -4669,7 +4669,7 @@ model ScrapDealerVerification {
 model MetalPrice {
   id              String      @id @default(uuid())
   metalType       MetalType   @map("metal_type")
-  pricePerKg      Float       @map("price_per_kg")
+  pricePerKg      Decimal       @map("price_per_kg")
   currency        String      @default("EGP")
   source          String?     // مصدر السعر
   date            DateTime    @db.Date
@@ -5216,7 +5216,7 @@ model Property {
   priceNegotiable   Boolean             @default(true) @map("price_negotiable")
 
   // التسعير (للإيجار)
-  rentPrice         Float?              @map("rent_price")
+  rentPrice         Decimal?              @map("rent_price")
   rentPeriod        String?             @map("rent_period")
 
   // التقسيط
@@ -5259,7 +5259,7 @@ model Property {
   floorPlanUrl      String?             @map("floor_plan_url")
 
   // التقييم
-  estimatedValue    Float?              @map("estimated_value")
+  estimatedValue    Decimal?              @map("estimated_value")
   lastValuationDate DateTime?           @map("last_valuation_date")
 
   // الوقت
@@ -5360,10 +5360,10 @@ model DeliveryBooking {
   packageDescription String?          @map("package_description")
   isFragile       Boolean             @default(false) @map("is_fragile")
 
-  deliveryCost    Float               @map("delivery_cost")
+  deliveryCost    Decimal               @map("delivery_cost")
   insuranceCost   Float?              @map("insurance_cost")
   codAmount       Float?              @map("cod_amount")
-  totalCost       Float               @map("total_cost")
+  totalCost       Decimal               @map("total_cost")
 
   deliverySpeed   DeliverySpeed?      @map("delivery_speed")
   hasInsurance    Boolean             @default(false) @map("has_insurance")
@@ -5490,7 +5490,7 @@ model LiveAuction {
   streamKey       String?           @map("stream_key")
   viewerCount     Int               @default(0) @map("viewer_count")
   peakViewers     Int               @default(0) @map("peak_viewers")
-  currentBid      Float?            @map("current_bid")
+  currentBid      Decimal?            @map("current_bid")
   currentBidderId String?           @map("current_bidder_id")
   totalBids       Int               @default(0) @map("total_bids")
   status          LiveAuctionStatus @default(SCHEDULED)
@@ -5628,7 +5628,7 @@ model FacilitatorCertification {
   level           CertificationLevel  @default(BRONZE)
   specialization  String[]
   completedDeals  Int                 @map("completed_deals")
-  totalValue      Float               @map("total_value")
+  totalValue      Decimal               @map("total_value")
   avgRating       Float               @map("avg_rating")
   trainingCompleted Boolean           @default(false) @map("training_completed")
   examPassed      Boolean             @default(false) @map("exam_passed")
@@ -6439,7 +6439,7 @@ model CarListing {
 
   // التسعير
   askingPrice         Float                   @map("asking_price")
-  estimatedValue      Float?                  @map("estimated_value")  // التقييم الآلي
+  estimatedValue      Decimal?                  @map("estimated_value")  // التقييم الآلي
   priceNegotiable     Boolean                 @default(true) @map("price_negotiable")
 
   // نوع البائع
@@ -6887,7 +6887,7 @@ model CarInspection {
 model RentalPayment {
   id                String        @id @default(uuid())
   contractId        String        @map("contract_id")
-  amount            Float
+  amount            Decimal
   dueDate           DateTime      @map("due_date")
   paidDate          DateTime?     @map("paid_date")
   status            String        @default("PENDING")
@@ -6917,7 +6917,7 @@ model RentalDispute {
   disputedAmount    Float?        @map("disputed_amount")
   status            String        @default("OPEN")
   resolution        String?
-  resolutionAmount  Float?        @map("resolution_amount")
+  resolutionAmount  Decimal?        @map("resolution_amount")
   resolvedAt        DateTime?     @map("resolved_at")
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
@@ -8062,7 +8062,7 @@ model ServiceQuote {
   status                ServiceQuoteStatus      @default(PENDING)
 
   // السعر
-  price                 Float
+  price                 Decimal
   currency              String                  @default("EGP")
   priceBreakdown        Json?                   @map("price_breakdown")
 
@@ -8671,8 +8671,8 @@ model KPIMetric {
   unit            String?                                         // %, EGP, عدد, etc.
 
   // Current Value - القيمة الحالية
-  currentValue    Float                   @map("current_value")
-  previousValue   Float?                  @map("previous_value")  // القيمة السابقة للمقارنة
+  currentValue    Decimal                   @map("current_value")
+  previousValue   Decimal?                  @map("previous_value")  // القيمة السابقة للمقارنة
 
   // Thresholds - العتبات
   targetValue     Float                   @map("target_value")    // الهدف
@@ -9422,7 +9422,7 @@ model TenderQuote {
   providerId            String                  @map("provider_id")
 
   // السعر
-  price                 Float
+  price                 Decimal
   currency              String                  @default("EGP")
   priceBreakdown        Json?                   @map("price_breakdown") // [{ item, amount }]
 
