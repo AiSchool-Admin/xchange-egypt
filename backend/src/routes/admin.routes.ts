@@ -5,7 +5,31 @@
 
 import { Router } from 'express';
 import { authenticateAdmin, requirePermission, requireSuperAdmin, requireRole } from '../middleware/adminAuth';
+import { validate } from '../middleware/validate';
 import * as adminController from '../controllers/admin.controller';
+import {
+  adminLoginSchema,
+  adminRefreshSchema,
+  adminSetupSchema,
+  adminForceSetupSchema,
+  adminResetPasswordSchema,
+  createAdminSchema,
+  updateAdminSchema,
+  deleteAdminSchema,
+  listUsersSchema,
+  getUserSchema,
+  suspendUserSchema,
+  activateUserSchema,
+  deleteUserSchema,
+  listListingsSchema,
+  deleteListingSchema,
+  featureListingSchema,
+  updateSettingSchema,
+  updateReportSchema,
+  createCategorySchema,
+  updateCategorySchema,
+  deleteCategorySchema,
+} from '../validations/admin.validation';
 import { AdminRole } from '../types';
 
 const router = Router();
@@ -18,31 +42,31 @@ const router = Router();
  * Admin Login
  * POST /api/v1/admin/auth/login
  */
-router.post('/auth/login', adminController.login);
+router.post('/auth/login', validate(adminLoginSchema), adminController.login);
 
 /**
  * Admin Refresh Token
  * POST /api/v1/admin/auth/refresh
  */
-router.post('/auth/refresh', adminController.refreshToken);
+router.post('/auth/refresh', validate(adminRefreshSchema), adminController.refreshToken);
 
 /**
  * Initial Super Admin Setup (only works if no admin exists)
  * POST /api/v1/admin/auth/setup
  */
-router.post('/auth/setup', adminController.initialSetup);
+router.post('/auth/setup', validate(adminSetupSchema), adminController.initialSetup);
 
 /**
  * Force Setup - Create or reset super admin (requires ADMIN_SETUP_KEY)
  * POST /api/v1/admin/auth/force-setup
  */
-router.post('/auth/force-setup', adminController.forceSetup);
+router.post('/auth/force-setup', validate(adminForceSetupSchema), adminController.forceSetup);
 
 /**
  * Reset Password (requires ADMIN_SETUP_KEY)
  * POST /api/v1/admin/auth/reset-password
  */
-router.post('/auth/reset-password', adminController.resetPassword);
+router.post('/auth/reset-password', validate(adminResetPasswordSchema), adminController.resetPassword);
 
 // ==========================================
 // Authenticated Routes
@@ -83,6 +107,7 @@ router.post(
   '/admins',
   authenticateAdmin,
   requireSuperAdmin,
+  validate(createAdminSchema),
   adminController.createAdmin
 );
 
@@ -94,6 +119,7 @@ router.put(
   '/admins/:adminId',
   authenticateAdmin,
   requireSuperAdmin,
+  validate(updateAdminSchema),
   adminController.updateAdmin
 );
 
@@ -105,6 +131,7 @@ router.delete(
   '/admins/:adminId',
   authenticateAdmin,
   requireSuperAdmin,
+  validate(deleteAdminSchema),
   adminController.deleteAdmin
 );
 
@@ -146,6 +173,7 @@ router.get(
   '/users',
   authenticateAdmin,
   requirePermission('users:read'),
+  validate(listUsersSchema),
   adminController.getUsers
 );
 
@@ -157,6 +185,7 @@ router.get(
   '/users/:userId',
   authenticateAdmin,
   requirePermission('users:read'),
+  validate(getUserSchema),
   adminController.getUserDetails
 );
 
@@ -168,6 +197,7 @@ router.post(
   '/users/:userId/suspend',
   authenticateAdmin,
   requirePermission('users:suspend'),
+  validate(suspendUserSchema),
   adminController.suspendUser
 );
 
@@ -179,6 +209,7 @@ router.post(
   '/users/:userId/activate',
   authenticateAdmin,
   requirePermission('users:update'),
+  validate(activateUserSchema),
   adminController.activateUser
 );
 
@@ -190,6 +221,7 @@ router.delete(
   '/users/:userId',
   authenticateAdmin,
   requirePermission('users:delete'),
+  validate(deleteUserSchema),
   adminController.deleteUser
 );
 
@@ -205,6 +237,7 @@ router.get(
   '/listings',
   authenticateAdmin,
   requirePermission('listings:read'),
+  validate(listListingsSchema),
   adminController.getListings
 );
 
@@ -216,6 +249,7 @@ router.delete(
   '/listings/:itemId',
   authenticateAdmin,
   requirePermission('listings:delete'),
+  validate(deleteListingSchema),
   adminController.deleteListing
 );
 
@@ -227,6 +261,7 @@ router.post(
   '/listings/:itemId/feature',
   authenticateAdmin,
   requirePermission('listings:feature'),
+  validate(featureListingSchema),
   adminController.featureListing
 );
 
@@ -253,6 +288,7 @@ router.put(
   '/settings/:key',
   authenticateAdmin,
   requirePermission('settings:update'),
+  validate(updateSettingSchema),
   adminController.updateSetting
 );
 
@@ -279,6 +315,7 @@ router.put(
   '/reports/:reportId',
   authenticateAdmin,
   requirePermission('reports:resolve'),
+  validate(updateReportSchema),
   adminController.resolveReport
 );
 
@@ -294,6 +331,7 @@ router.post(
   '/categories',
   authenticateAdmin,
   requirePermission('categories:manage'),
+  validate(createCategorySchema),
   adminController.createCategory
 );
 
@@ -305,6 +343,7 @@ router.put(
   '/categories/:categoryId',
   authenticateAdmin,
   requirePermission('categories:manage'),
+  validate(updateCategorySchema),
   adminController.updateCategory
 );
 
@@ -316,6 +355,7 @@ router.delete(
   '/categories/:categoryId',
   authenticateAdmin,
   requirePermission('categories:manage'),
+  validate(deleteCategorySchema),
   adminController.deleteCategory
 );
 
