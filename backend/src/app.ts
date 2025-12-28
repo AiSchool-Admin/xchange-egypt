@@ -22,6 +22,18 @@ import {
   registerLimiter,
   passwordResetLimiter,
   uploadLimiter,
+  searchLimiter,
+  createContentLimiter,
+  auctionBidLimiter,
+  chatLimiter,
+  transactionLimiter,
+  aiLimiter,
+  notificationLimiter,
+  sensitiveOperationsLimiter,
+  reportLimiter,
+  comparisonLimiter,
+  walletLimiter,
+  adminLimiter,
   sanitizeInput,
   additionalSecurityHeaders,
   securityLogger,
@@ -332,35 +344,35 @@ app.use('/api/v1/items', itemRoutes);
 // Listing routes
 app.use('/api/v1/listings', listingRoutes);
 
-// Transaction routes
-app.use('/api/v1/transactions', transactionRoutes);
+// Transaction routes (with transaction rate limiter)
+app.use('/api/v1/transactions', transactionLimiter, transactionRoutes);
 
 // Barter routes
 app.use('/api/v1/barter', barterRoutes);
 
-// Auction routes
-app.use('/api/v1/auctions', auctionRoutes);
+// Auction routes (with bid rate limiter)
+app.use('/api/v1/auctions', auctionBidLimiter, auctionRoutes);
 
-// Reverse Auction routes
-app.use('/api/v1/reverse-auctions', reverseAuctionRoutes);
+// Reverse Auction routes (with bid rate limiter)
+app.use('/api/v1/reverse-auctions', auctionBidLimiter, reverseAuctionRoutes);
 
 // Image routes
 app.use('/api/v1/images', imageRoutes);
 
-// Notification routes
-app.use('/api/v1/notifications', notificationRoutes);
+// Notification routes (with notification rate limiter)
+app.use('/api/v1/notifications', notificationLimiter, notificationRoutes);
 
 // Review routes
 app.use('/api/v1/reviews', reviewRoutes);
 
-// Search routes
-app.use('/api/v1/search', searchRoutes);
+// Search routes (with search rate limiter)
+app.use('/api/v1/search', searchLimiter, searchRoutes);
 
-// Chat routes
-app.use('/api/v1/chat', chatRoutes);
+// Chat routes (with chat rate limiter)
+app.use('/api/v1/chat', chatLimiter, chatRoutes);
 
 // Admin routes (for retroactive matching, etc.)
-app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/admin', adminLimiter, adminRoutes);
 
 // TEMPORARY: Seed routes (DELETE AFTER USE)
 app.use('/api/v1/seed', seedRoutes);
@@ -371,14 +383,14 @@ app.use('/api/v1/cart', cartRoutes);
 // Order routes
 app.use('/api/v1/orders', orderRoutes);
 
-// Payment routes
-app.use('/api/v1/payment', paymentRoutes);
+// Payment routes (with wallet rate limiter)
+app.use('/api/v1/payment', walletLimiter, paymentRoutes);
 
 // Push notification routes
 app.use('/api/v1/push', pushRoutes);
 
-// AI features routes (FREE services)
-app.use('/api/v1/ai', aiRoutes);
+// AI features routes (FREE services) - with AI rate limiter
+app.use('/api/v1/ai', aiLimiter, aiRoutes);
 
 // Inventory routes
 app.use('/api/v1/inventory', inventoryRoutes);
@@ -392,8 +404,8 @@ app.use('/api/v1/demand', demandMarketplaceRoutes);
 // Flash Deals
 app.use('/api/v1/flash-deals', flashDealsRoutes);
 
-// Escrow System (Smart Escrow & Disputes)
-app.use('/api/v1/escrow', escrowRoutes);
+// Escrow System (Smart Escrow & Disputes) - with transaction limiter
+app.use('/api/v1/escrow', transactionLimiter, escrowRoutes);
 
 // Barter Pools (Collective Barter)
 app.use('/api/v1/barter-pools', barterPoolRoutes);
@@ -401,14 +413,14 @@ app.use('/api/v1/barter-pools', barterPoolRoutes);
 // Facilitators Network
 app.use('/api/v1/facilitators', facilitatorRoutes);
 
-// AI Assistant
-app.use('/api/v1/ai-assistant', aiAssistantRoutes);
+// AI Assistant (with AI rate limiter)
+app.use('/api/v1/ai-assistant', aiLimiter, aiAssistantRoutes);
 
-// AI Listing (Sell with AI)
-app.use('/api/v1/ai-listing', aiListingRoutes);
+// AI Listing (Sell with AI) - with AI rate limiter
+app.use('/api/v1/ai-listing', aiLimiter, aiListingRoutes);
 
-// XChange Wallet
-app.use('/api/v1/wallet', walletRoutes);
+// XChange Wallet (with wallet rate limiter)
+app.use('/api/v1/wallet', walletLimiter, walletRoutes);
 
 // Exchange Points (Safe meetup locations)
 app.use('/api/v1/exchange-points', exchangePointsRoutes);
@@ -425,8 +437,8 @@ app.use('/api/v1/matching', matchingRoutes);
 // Real Estate / Property Marketplace routes - سوق العقارات
 app.use('/api/v1/properties', propertyRoutes);
 
-// Item Comparison routes - نظام مقارنة المنتجات
-app.use('/api/v1/comparisons', comparisonRoutes);
+// Item Comparison routes - نظام مقارنة المنتجات (with comparison limiter)
+app.use('/api/v1/comparisons', comparisonLimiter, comparisonRoutes);
 
 // Delivery routes - خدمة التوصيل المدمجة
 app.use('/api/v1/delivery', deliveryRoutes);
@@ -461,11 +473,11 @@ app.use('/api/v1/tenders', tenderAdvancedRoutes);
 // Transport - نظام النقل الذكي ومقارنة الأسعار
 app.use('/api/v1/transport', transportRoutes);
 
-// Admin Pricing - إدارة التسعير والذكاء الاصطناعي
-app.use('/api/v1/admin/pricing', adminPricingRoutes);
+// Admin Pricing - إدارة التسعير والذكاء الاصطناعي (with admin rate limiter)
+app.use('/api/v1/admin/pricing', adminLimiter, adminPricingRoutes);
 
-// Advanced AI Features - الذكاء الاصطناعي المتقدم
-app.use('/api/v1/ai-advanced', aiAdvancedRoutes);
+// Advanced AI Features - الذكاء الاصطناعي المتقدم (with AI rate limiter)
+app.use('/api/v1/ai-advanced', aiLimiter, aiAdvancedRoutes);
 
 // AI Board of Directors - مجلس إدارة AI
 app.use('/api/v1/board', boardRoutes);

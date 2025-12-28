@@ -117,6 +117,244 @@ export const uploadLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+/**
+ * Rate Limiter للبحث
+ * 60 طلب في الدقيقة
+ */
+export const searchLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 60,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد عمليات البحث كبير جداً. يرجى التباطؤ.',
+      messageEn: 'Too many search requests. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate Limiter لإنشاء المحتوى (إعلانات، عروض، إلخ)
+ * 20 إنشاء كل 10 دقائق
+ */
+export const createContentLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20,
+  message: {
+    success: false,
+    error: {
+      message: 'تم تجاوز عدد الإعلانات المسموح إنشاؤها. يرجى المحاولة لاحقاً.',
+      messageEn: 'Too many listings created. Please try again later.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate Limiter للمزادات (المزايدة)
+ * 30 مزايدة في الدقيقة
+ */
+export const auctionBidLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 30,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد المزايدات كبير جداً. يرجى التباطؤ.',
+      messageEn: 'Too many bids. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate Limiter للمحادثات والرسائل
+ * 100 رسالة في الدقيقة
+ */
+export const chatLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد الرسائل كبير جداً. يرجى التباطؤ.',
+      messageEn: 'Too many messages. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate Limiter للمعاملات المالية
+ * 10 معاملات في الدقيقة
+ */
+export const transactionLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 10,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد المعاملات كبير جداً. يرجى التباطؤ.',
+      messageEn: 'Too many transactions. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('Transaction rate limit exceeded', {
+      ip: req.ip,
+      userId: (req as unknown as { user?: { id: string } }).user?.id,
+    });
+    res.status(429).json(options.message);
+  },
+});
+
+/**
+ * Rate Limiter للـ AI Services
+ * 20 طلب في الدقيقة (الـ AI مكلف)
+ */
+export const aiLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 20,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد طلبات الذكاء الاصطناعي كبير جداً. يرجى التباطؤ.',
+      messageEn: 'Too many AI requests. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate Limiter للإشعارات
+ * 50 طلب في الدقيقة
+ */
+export const notificationLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 50,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد طلبات الإشعارات كبير جداً. يرجى التباطؤ.',
+      messageEn: 'Too many notification requests. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate Limiter للعمليات الحساسة (حذف، تعديل الحساب)
+ * 5 عمليات كل 5 دقائق
+ */
+export const sensitiveOperationsLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 5,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد العمليات الحساسة كبير جداً. يرجى المحاولة لاحقاً.',
+      messageEn: 'Too many sensitive operations. Please try again later.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('Sensitive operations rate limit exceeded', {
+      ip: req.ip,
+      path: req.path,
+      userId: (req as unknown as { user?: { id: string } }).user?.id,
+    });
+    res.status(429).json(options.message);
+  },
+});
+
+/**
+ * Rate Limiter للتقارير والشكاوى
+ * 10 تقارير كل ساعة
+ */
+export const reportLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: {
+    success: false,
+    error: {
+      message: 'تم تجاوز عدد التقارير المسموحة. يرجى المحاولة لاحقاً.',
+      messageEn: 'Too many reports submitted. Please try again later.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate Limiter للمقارنات
+ * 100 طلب في الدقيقة
+ */
+export const comparisonLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد طلبات المقارنة كبير جداً. يرجى التباطؤ.',
+      messageEn: 'Too many comparison requests. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate Limiter للمحفظة والدفع
+ * 15 عملية كل 5 دقائق
+ */
+export const walletLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 15,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد عمليات المحفظة كبير جداً. يرجى التباطؤ.',
+      messageEn: 'Too many wallet operations. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res, next, options) => {
+    logger.warn('Wallet rate limit exceeded', {
+      ip: req.ip,
+      userId: (req as unknown as { user?: { id: string } }).user?.id,
+    });
+    res.status(429).json(options.message);
+  },
+});
+
+/**
+ * Rate Limiter للـ Admin endpoints
+ * 100 طلب في الدقيقة
+ */
+export const adminLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100,
+  message: {
+    success: false,
+    error: {
+      message: 'عدد طلبات الإدارة كبير جداً. يرجى التباطؤ.',
+      messageEn: 'Too many admin requests. Please slow down.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // ============================================
 // Input Sanitization
 // ============================================
