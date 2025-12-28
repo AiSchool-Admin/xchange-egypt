@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Automatic Item Categorization Service
  * FREE keyword-based system for Egyptian market
@@ -466,7 +467,7 @@ export function shouldAutoCategorize(confidence: number): boolean {
  *   'حالة ممتازة 256 جيجا'
  * );
  *
- * console.log(result);
+ * logger.info(result);
  * // {
  * //   categorySlug: 'smartphones',
  * //   categoryId: 'uuid-here',

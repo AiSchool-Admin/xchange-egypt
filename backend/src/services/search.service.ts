@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Advanced Search Service
  *
@@ -493,7 +494,7 @@ export const trackSearch = async (
     }
   } catch (error) {
     // Don't throw - tracking failures shouldn't break search
-    console.error('Failed to track search:', error);
+    logger.error('Failed to track search:', error);
   }
 };
 

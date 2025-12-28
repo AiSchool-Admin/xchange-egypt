@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Real-Time Barter Matching Service
  *
@@ -62,7 +63,7 @@ export const initializeWebSocket = (socketServer: SocketIOServer): void => {
 
   // Handle client connections
   io.on('connection', (socket) => {
-    console.log(`[RealTimeMatching] Client connected: ${socket.id}`);
+    logger.info(`[RealTimeMatching] Client connected: ${socket.id}`);
 
     // Authenticate user from handshake
     const userId = socket.handshake.auth?.userId;
@@ -70,15 +71,15 @@ export const initializeWebSocket = (socketServer: SocketIOServer): void => {
     if (userId) {
       // Join user-specific room for targeted notifications
       socket.join(`user:${userId}`);
-      console.log(`[RealTimeMatching] User ${userId} joined their notification room`);
+      logger.info(`[RealTimeMatching] User ${userId} joined their notification room`);
     }
 
     socket.on('disconnect', () => {
-      console.log(`[RealTimeMatching] Client disconnected: ${socket.id}`);
+      logger.info(`[RealTimeMatching] Client disconnected: ${socket.id}`);
     });
   });
 
-  console.log('[RealTimeMatching] WebSocket server initialized');
+  logger.info('[RealTimeMatching] WebSocket server initialized');
 };
 
 /**
@@ -86,13 +87,13 @@ export const initializeWebSocket = (socketServer: SocketIOServer): void => {
  */
 const notifyUser = (userId: string, notification: MatchNotification): void => {
   if (!io) {
-    console.warn('[RealTimeMatching] WebSocket not initialized, cannot send notification');
+    logger.warn('[RealTimeMatching] WebSocket not initialized, cannot send notification');
     return;
   }
 
   // Send to user's specific room
   io.to(`user:${userId}`).emit('match:found', notification);
-  console.log(`[RealTimeMatching] Sent notification to user ${userId}:`, notification.opportunityId);
+  logger.info(`[RealTimeMatching] Sent notification to user ${userId}:`, notification.opportunityId);
 };
 
 /**
@@ -113,18 +114,18 @@ const broadcastMatchActivity = (activity: { type: string; count: number }): void
  */
 const handleItemCreated = async (payload: ItemCreatedPayload): Promise<void> => {
   if (isProcessing) {
-    console.log('[RealTimeMatching] Already processing, skipping...');
+    logger.info('[RealTimeMatching] Already processing, skipping...');
     return;
   }
 
   isProcessing = true;
 
   try {
-    console.log(`[RealTimeMatching] Processing new item: ${payload.itemId} by user ${payload.userId}`);
+    logger.info(`[RealTimeMatching] Processing new item: ${payload.itemId} by user ${payload.userId}`);
 
     // Only process if item has barter preferences
     if (!payload.hasBarterPreferences) {
-      console.log('[RealTimeMatching] Item has no barter preferences, skipping');
+      logger.info('[RealTimeMatching] Item has no barter preferences, skipping');
       return;
     }
 
@@ -138,10 +139,10 @@ const handleItemCreated = async (payload: ItemCreatedPayload): Promise<void> => 
     });
 
     if (item) {
-      console.log(`[RealTimeMatching] Item details:`);
-      console.log(`  - Offering: ${item.category?.nameEn} (${item.categoryId})`);
-      console.log(`  - Wants: ${item.desiredCategory?.nameEn || 'NULL'} (${item.desiredCategoryId || 'NULL'})`);
-      console.log(`  - Keywords: "${item.desiredKeywords || 'NULL'}"`);
+      logger.info(`[RealTimeMatching] Item details:`);
+      logger.info(`  - Offering: ${item.category?.nameEn} (${item.categoryId})`);
+      logger.info(`  - Wants: ${item.desiredCategory?.nameEn || 'NULL'} (${item.desiredCategoryId || 'NULL'})`);
+      logger.info(`  - Keywords: "${item.desiredKeywords || 'NULL'}"`);
     }
 
     // Find matches for this specific item
@@ -155,13 +156,13 @@ const handleItemCreated = async (payload: ItemCreatedPayload): Promise<void> => 
       }
     );
 
-    console.log(`[RealTimeMatching] Found ${matches.totalMatches} potential matches`);
+    logger.info(`[RealTimeMatching] Found ${matches.totalMatches} potential matches`);
 
     // Log all match scores for debugging
     if (matches.cycles.length > 0) {
-      console.log(`[RealTimeMatching] Match scores:`);
+      logger.info(`[RealTimeMatching] Match scores:`);
       matches.cycles.forEach((cycle, index) => {
-        console.log(`  Match ${index + 1}: ${(cycle.averageScore * 100).toFixed(1)}% (threshold: 60%)`);
+        logger.info(`  Match ${index + 1}: ${(cycle.averageScore * 100).toFixed(1)}% (threshold: 60%)`);
       });
     }
 
@@ -170,7 +171,7 @@ const handleItemCreated = async (payload: ItemCreatedPayload): Promise<void> => 
       cycle => cycle.averageScore >= MIN_MATCH_SCORE_FOR_NOTIFICATION
     );
 
-    console.log(`[RealTimeMatching] High-quality matches (≥60%): ${highQualityMatches.length}/${matches.cycles.length}`);
+    logger.info(`[RealTimeMatching] High-quality matches (≥60%): ${highQualityMatches.length}/${matches.cycles.length}`);
 
     // Notify all participants in top matches
     const notificationsSent = await notifyParticipants(
@@ -179,7 +180,7 @@ const handleItemCreated = async (payload: ItemCreatedPayload): Promise<void> => 
       'new_match'
     );
 
-    console.log(`[RealTimeMatching] Sent ${notificationsSent} notifications`);
+    logger.info(`[RealTimeMatching] Sent ${notificationsSent} notifications`);
 
     // Broadcast activity
     broadcastMatchActivity({
@@ -191,7 +192,7 @@ const handleItemCreated = async (payload: ItemCreatedPayload): Promise<void> => 
     invalidateCache();
 
   } catch (error) {
-    console.error('[RealTimeMatching] Error processing item created:', error);
+    logger.error('[RealTimeMatching] Error processing item created:', error);
   } finally {
     isProcessing = false;
   }
@@ -202,7 +203,7 @@ const handleItemCreated = async (payload: ItemCreatedPayload): Promise<void> => 
  */
 const handleItemUpdated = async (payload: ItemUpdatedPayload): Promise<void> => {
   if (isProcessing) {
-    console.log('[RealTimeMatching] Already processing, skipping...');
+    logger.info('[RealTimeMatching] Already processing, skipping...');
     return;
   }
 
@@ -213,14 +214,14 @@ const handleItemUpdated = async (payload: ItemUpdatedPayload): Promise<void> => 
     payload.changes.description;
 
   if (!hasRelevantChanges) {
-    console.log('[RealTimeMatching] No relevant changes, skipping');
+    logger.info('[RealTimeMatching] No relevant changes, skipping');
     return;
   }
 
   isProcessing = true;
 
   try {
-    console.log(`[RealTimeMatching] Processing updated item: ${payload.itemId}`);
+    logger.info(`[RealTimeMatching] Processing updated item: ${payload.itemId}`);
 
     // Find matches for updated item
     const matches = await matchingService.findMatchesForUser(
@@ -243,7 +244,7 @@ const handleItemUpdated = async (payload: ItemUpdatedPayload): Promise<void> => 
       'updated_match'
     );
 
-    console.log(`[RealTimeMatching] Sent ${notificationsSent} update notifications`);
+    logger.info(`[RealTimeMatching] Sent ${notificationsSent} update notifications`);
 
     // Broadcast activity
     broadcastMatchActivity({
@@ -255,7 +256,7 @@ const handleItemUpdated = async (payload: ItemUpdatedPayload): Promise<void> => 
     invalidateCache();
 
   } catch (error) {
-    console.error('[RealTimeMatching] Error processing item updated:', error);
+    logger.error('[RealTimeMatching] Error processing item updated:', error);
   } finally {
     isProcessing = false;
   }
@@ -289,7 +290,7 @@ const notifyParticipants = async (
       });
 
       if (recentNotification) {
-        console.log(`[RealTimeMatching] User ${userId} already notified recently, skipping`);
+        logger.info(`[RealTimeMatching] User ${userId} already notified recently, skipping`);
         continue;
       }
 
@@ -343,7 +344,7 @@ const notifyParticipants = async (
  */
 const invalidateCache = (): void => {
   if (graphCache) {
-    console.log('[RealTimeMatching] Invalidating graph cache');
+    logger.info('[RealTimeMatching] Invalidating graph cache');
     graphCache = null;
   }
 };
@@ -364,22 +365,22 @@ const isCacheValid = (): boolean => {
  * Start listening to item events for real-time matching
  */
 export const startRealtimeMatching = (): void => {
-  console.log('[RealTimeMatching] Starting real-time matching service...');
+  logger.info('[RealTimeMatching] Starting real-time matching service...');
 
   // Register event listeners
   itemEvents.onItemCreated(handleItemCreated);
   itemEvents.onItemUpdated(handleItemUpdated);
 
-  console.log('[RealTimeMatching] Event listeners registered');
-  console.log(`[RealTimeMatching] Min match score for notifications: ${MIN_MATCH_SCORE_FOR_NOTIFICATION * 100}%`);
-  console.log(`[RealTimeMatching] Max notifications per event: ${MAX_NOTIFICATIONS_PER_EVENT}`);
+  logger.info('[RealTimeMatching] Event listeners registered');
+  logger.info(`[RealTimeMatching] Min match score for notifications: ${MIN_MATCH_SCORE_FOR_NOTIFICATION * 100}%`);
+  logger.info(`[RealTimeMatching] Max notifications per event: ${MAX_NOTIFICATIONS_PER_EVENT}`);
 };
 
 /**
  * Stop real-time matching service
  */
 export const stopRealtimeMatching = (): void => {
-  console.log('[RealTimeMatching] Stopping real-time matching service...');
+  logger.info('[RealTimeMatching] Stopping real-time matching service...');
   itemEvents.removeAllListeners();
 };
 
@@ -394,7 +395,7 @@ export const triggerMatchingForItem = async (
   userId: string,
   itemId: string
 ): Promise<{ matchCount: number; notificationsSent: number }> => {
-  console.log(`[RealTimeMatching] Manual trigger for item ${itemId}`);
+  logger.info(`[RealTimeMatching] Manual trigger for item ${itemId}`);
 
   const matches = await matchingService.findMatchesForUser(userId, itemId, {
     includeCycles: true,

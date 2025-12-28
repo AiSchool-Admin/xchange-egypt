@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Email Service
  *
@@ -18,7 +19,7 @@ const getTransporter = (): nodemailer.Transporter | null => {
 
   // Check if SMTP credentials are configured
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-    console.warn('SMTP credentials not configured, emails will be logged to console');
+    logger.warn('SMTP credentials not configured, emails will be logged to console');
     return null;
   }
 
@@ -109,14 +110,14 @@ export const sendEmailNow = async (options: EmailOptions): Promise<boolean> => {
 
   // If no transporter or in development without SMTP, log to console
   if (!emailTransporter || process.env.NODE_ENV !== 'production') {
-    console.log('=====================================');
-    console.log('📧 EMAIL ' + (process.env.NODE_ENV !== 'production' ? '(Development Mode)' : '(SMTP Not Configured)'));
-    console.log('=====================================');
-    console.log('To:', to);
-    console.log('Subject:', subject);
-    console.log('-------------------------------------');
-    console.log('HTML Preview:', html.substring(0, 500) + (html.length > 500 ? '...' : ''));
-    console.log('=====================================\n');
+    logger.info('=====================================');
+    logger.info('📧 EMAIL ' + (process.env.NODE_ENV !== 'production' ? '(Development Mode)' : '(SMTP Not Configured)'));
+    logger.info('=====================================');
+    logger.info('To:', to);
+    logger.info('Subject:', subject);
+    logger.info('-------------------------------------');
+    logger.info('HTML Preview:', html.substring(0, 500) + (html.length > 500 ? '...' : ''));
+    logger.info('=====================================\n');
 
     // In development, return true to simulate success
     if (process.env.NODE_ENV !== 'production') {
@@ -124,7 +125,7 @@ export const sendEmailNow = async (options: EmailOptions): Promise<boolean> => {
     }
 
     // In production without SMTP config, log warning but don't fail
-    console.warn('⚠️ SMTP not configured - email not sent to:', to);
+    logger.warn('⚠️ SMTP not configured - email not sent to:', to);
     return false;
   }
 
@@ -138,10 +139,10 @@ export const sendEmailNow = async (options: EmailOptions): Promise<boolean> => {
       text: text || undefined,
     });
 
-    console.log(`✅ Email sent successfully to ${to}, messageId: ${info.messageId}`);
+    logger.info(`✅ Email sent successfully to ${to}, messageId: ${info.messageId}`);
     return true;
   } catch (error) {
-    console.error('❌ Email sending failed:', error);
+    logger.error('❌ Email sending failed:', error);
     return false;
   }
 };

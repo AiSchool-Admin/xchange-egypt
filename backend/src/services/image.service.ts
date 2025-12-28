@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Image Service
  *
@@ -90,7 +91,7 @@ export const initializeUploadDirectories = async (): Promise<void> => {
       await fs.access(dir);
     } catch {
       await fs.mkdir(dir, { recursive: true });
-      console.log(`✅ Created directory: ${dir}`);
+      logger.info(`✅ Created directory: ${dir}`);
     }
   }
 };
@@ -319,7 +320,7 @@ export const uploadImage = async (
     }
   } catch (cloudError) {
     // Log error but continue with local storage fallback
-    console.error('Cloud storage upload failed, using local storage:', cloudError);
+    logger.error('Cloud storage upload failed, using local storage:', cloudError);
 
     // Fall back to local storage
     const directory = getDirectoryForCategory(category);
@@ -557,5 +558,5 @@ export const getStorageStats = async (): Promise<{
 
 // Initialize directories on module load
 initializeUploadDirectories().catch((error) => {
-  console.error('Failed to initialize upload directories:', error);
+  logger.error('Failed to initialize upload directories:', error);
 });

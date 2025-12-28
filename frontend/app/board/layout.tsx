@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -9,6 +10,12 @@ import { getBoardMembers, getServiceStatus, BoardMember, ServiceStatus } from '@
 interface BoardLayoutProps {
   children: React.ReactNode;
 }
+
+
+export const metadata: Metadata = {
+  title: 'مجلس الإدارة - Xchange',
+  description: 'نظام إدارة الشركة بالذكاء الاصطناعي',
+};
 
 export default function BoardLayout({ children }: BoardLayoutProps) {
   const router = useRouter();

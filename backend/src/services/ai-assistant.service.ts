@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 import prisma from '../lib/prisma';
 import { geminiService } from './gemini.service';
 
@@ -180,7 +181,7 @@ export class AIAssistantService {
   ): Promise<AIResponse> {
     // GEMINI-ONLY MODE: Send all queries directly to Gemini
     // This allows for natural, intelligent responses to any question
-    console.log('[AI Assistant] Processing query with Gemini-only mode:', content.substring(0, 50));
+    logger.info('[AI Assistant] Processing query with Gemini-only mode:', content.substring(0, 50));
     return await this.handleGeneralQuery(content, userId);
   }
 
@@ -284,7 +285,7 @@ export class AIAssistantService {
    * Handle general queries - uses Gemini AI when available
    */
   private async handleGeneralQuery(content: string, userId: string): Promise<AIResponse> {
-    console.log('[AI Assistant] handleGeneralQuery called with:', content.substring(0, 50));
+    logger.info('[AI Assistant] handleGeneralQuery called with:', content.substring(0, 50));
 
     // Get user stats for context
     const [itemsCount, offersCount, user] = await Promise.all([
@@ -295,14 +296,14 @@ export class AIAssistantService {
 
     // Try Gemini AI (required in Gemini-only mode)
     const geminiStats = geminiService.getUsageStats();
-    console.log('[AI Assistant] Gemini stats:', JSON.stringify(geminiStats));
+    logger.info('[AI Assistant] Gemini stats:', JSON.stringify(geminiStats));
 
     const geminiAvailable = geminiService.isAvailable();
-    console.log('[AI Assistant] Gemini available:', geminiAvailable);
+    logger.info('[AI Assistant] Gemini available:', geminiAvailable);
 
     if (geminiAvailable) {
       try {
-        console.log('[AI Assistant] Calling Gemini...');
+        logger.info('[AI Assistant] Calling Gemini...');
 
         // Try to get recent conversation history (may fail if table doesn't exist)
         let conversationHistory: Array<{ role: string; content: string }> = [];
@@ -320,7 +321,7 @@ export class AIAssistantService {
             content: m.content,
           }));
         } catch (msgError) {
-          console.log('[AI Assistant] Could not fetch message history, proceeding without it');
+          logger.info('[AI Assistant] Could not fetch message history, proceeding without it');
         }
 
         const geminiResponse = await geminiService.generateResponse(content, {
@@ -329,24 +330,24 @@ export class AIAssistantService {
           conversationHistory,
         });
 
-        console.log('[AI Assistant] Gemini response:', geminiResponse ? 'success' : 'null');
+        logger.info('[AI Assistant] Gemini response:', geminiResponse ? 'success' : 'null');
 
         if (geminiResponse) {
-          console.log('[AI Assistant] Using Gemini response');
+          logger.info('[AI Assistant] Using Gemini response');
           return {
             message: geminiResponse,
             confidence: 0.9,
           };
         } else {
-          console.log('[AI Assistant] Gemini returned null, using fallback');
+          logger.info('[AI Assistant] Gemini returned null, using fallback');
         }
       } catch (error) {
-        console.error('[AI Assistant] Gemini error, falling back to rule-based:', error);
+        logger.error('[AI Assistant] Gemini error, falling back to rule-based:', error);
       }
     }
 
     // Gemini unavailable - show error message
-    console.log('[AI Assistant] Gemini unavailable, showing error');
+    logger.info('[AI Assistant] Gemini unavailable, showing error');
     return {
       message: `⚠️ **عذراً، خدمة الذكاء الاصطناعي غير متاحة حالياً**\n\nيرجى التحقق من:\n• إعداد GOOGLE_AI_API_KEY في Railway\n• صحة مفتاح API\n\n_هذه الرسالة تظهر لأن المساعد يعمل بوضع Gemini فقط_`,
       confidence: 0.1,

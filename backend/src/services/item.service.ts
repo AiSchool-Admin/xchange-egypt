@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 import { ItemCondition, PromotionTier } from '../types/prisma-enums';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { processItemImage } from '../utils/image';
@@ -1155,7 +1156,7 @@ const cleanupImages = async (imagePaths: string[]): Promise<void> => {
       await fs.unlink(fullPath);
     } catch (error) {
       // Ignore errors (file might not exist)
-      console.error(`Failed to delete image: ${imagePath}`, error);
+      logger.error(`Failed to delete image: ${imagePath}`, error);
     }
   }
 };

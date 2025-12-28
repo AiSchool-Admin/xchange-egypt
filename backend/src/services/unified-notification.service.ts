@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Unified Notification Service
  * نظام الإشعارات الموحد
@@ -43,7 +44,7 @@ let io: SocketIOServer | null = null;
  */
 export const initializeNotificationService = (socketIO: SocketIOServer): void => {
   io = socketIO;
-  console.log('Unified Notification Service initialized');
+  logger.info('Unified Notification Service initialized');
 };
 
 // ============================================
@@ -146,7 +147,7 @@ async function sendPushNotification(
   // Would send push notifications here
   // For now, just log
   if (subscriptions.length > 0) {
-    console.log(`Push notification to user ${userId}: ${title}`);
+    logger.info(`Push notification to user ${userId}: ${title}`);
   }
 }
 

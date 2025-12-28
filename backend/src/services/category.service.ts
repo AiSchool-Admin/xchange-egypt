@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 import prisma from '../lib/prisma';
 import { NotFoundError, ConflictError, BadRequestError } from '../utils/errors';
 import { cacheOrFetch, deleteCache, deleteCachePattern, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
@@ -124,11 +125,11 @@ async function ensureCategoriesExist() {
   try {
     const count = await prisma.category.count();
     if (count > 0) {
-      console.log(`[Categories] Found ${count} existing categories`);
+      logger.info(`[Categories] Found ${count} existing categories`);
       return;
     }
 
-    console.log('[Categories] No categories found, auto-seeding default categories...');
+    logger.info('[Categories] No categories found, auto-seeding default categories...');
 
     for (const category of DEFAULT_CATEGORIES) {
       // Create parent category
@@ -161,9 +162,9 @@ async function ensureCategoriesExist() {
     }
 
     const newCount = await prisma.category.count();
-    console.log(`[Categories] Auto-seeded ${newCount} categories successfully`);
+    logger.info(`[Categories] Auto-seeded ${newCount} categories successfully`);
   } catch (error) {
-    console.error('[Categories] Failed to auto-seed categories:', error);
+    logger.error('[Categories] Failed to auto-seed categories:', error);
     // Don't throw - let the request continue without categories
   }
 }

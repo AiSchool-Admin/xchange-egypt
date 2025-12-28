@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Google Gemini AI Service
  * Free tier: 15 requests/minute, 1M tokens/day
@@ -51,12 +52,12 @@ class GeminiService {
   initialize() {
     const apiKey = process.env.GOOGLE_AI_API_KEY;
 
-    console.log('[Gemini] Attempting initialization...');
-    console.log('[Gemini] API Key present:', !!apiKey);
-    console.log('[Gemini] API Key length:', apiKey?.length || 0);
+    logger.info('[Gemini] Attempting initialization...');
+    logger.info('[Gemini] API Key present:', !!apiKey);
+    logger.info('[Gemini] API Key length:', apiKey?.length || 0);
 
     if (!apiKey) {
-      console.log('[Gemini] API key not configured - using fallback mode');
+      logger.info('[Gemini] API key not configured - using fallback mode');
       this.isConfigured = false;
       return false;
     }
@@ -73,10 +74,10 @@ class GeminiService {
         },
       });
       this.isConfigured = true;
-      console.log('[Gemini] Service initialized successfully with model: gemini-1.5-flash-latest');
+      logger.info('[Gemini] Service initialized successfully with model: gemini-1.5-flash-latest');
       return true;
     } catch (error: any) {
-      console.error('[Gemini] Failed to initialize:', error.message);
+      logger.error('[Gemini] Failed to initialize:', error.message);
       this.isConfigured = false;
       return false;
     }
@@ -87,7 +88,7 @@ class GeminiService {
    */
   ensureInitialized() {
     if (!this.isConfigured && process.env.GOOGLE_AI_API_KEY) {
-      console.log('[Gemini] Re-initializing...');
+      logger.info('[Gemini] Re-initializing...');
       this.initialize();
     }
   }
@@ -128,7 +129,7 @@ class GeminiService {
     }
   ): Promise<string | null> {
     if (!this.isAvailable()) {
-      console.log('[Gemini] Not available or rate limited');
+      logger.info('[Gemini] Not available or rate limited');
       return null;
     }
 
@@ -169,15 +170,15 @@ ${historyText ? `المحادثة السابقة:\n${historyText}\n` : ''}
         .replace(/^(المساعد:|الرد:)\s*/i, '') // Remove prefix
         .trim();
 
-      console.log(`[Gemini] Generated response (${cleanedText.length} chars)`);
+      logger.info(`[Gemini] Generated response (${cleanedText.length} chars)`);
       return cleanedText;
 
     } catch (error: any) {
-      console.error('[Gemini] Error generating response:', error.message);
+      logger.error('[Gemini] Error generating response:', error.message);
 
       // Handle specific errors
       if (error.message?.includes('RATE_LIMIT')) {
-        console.log('[Gemini] Rate limit reached');
+        logger.info('[Gemini] Rate limit reached');
         this.requestCount = this.MAX_REQUESTS_PER_MINUTE; // Force fallback
       }
 

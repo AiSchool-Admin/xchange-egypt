@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * XCoin Wallet Service
  * خدمة محفظة XCoin - نظام العملة الداخلية للمنصة
@@ -195,7 +196,7 @@ export async function creditWallet(
 
     return { success: true, ...result };
   } catch (error) {
-    console.error('Credit wallet error:', error);
+    logger.error('Credit wallet error:', error);
     return { success: false, error: 'Failed to credit wallet' };
   }
 }
@@ -263,7 +264,7 @@ export async function debitWallet(
 
     return { success: true, ...result };
   } catch (error: unknown) {
-    console.error('Debit wallet error:', error);
+    logger.error('Debit wallet error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to debit wallet';
     return { success: false, error: errorMessage };
   }
@@ -364,7 +365,7 @@ export async function transferXCoin(params: TransferParams): Promise<Transaction
 
     return { success: true, ...result };
   } catch (error: unknown) {
-    console.error('Transfer error:', error);
+    logger.error('Transfer error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to transfer';
     return { success: false, error: errorMessage };
   }
@@ -426,7 +427,7 @@ export async function freezeBalance(
 
     return { success: true, ...result };
   } catch (error: unknown) {
-    console.error('Freeze balance error:', error);
+    logger.error('Freeze balance error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to freeze balance';
     return { success: false, error: errorMessage };
   }
@@ -511,7 +512,7 @@ export async function releaseFrozenBalance(
 
     return { success: true, ...result };
   } catch (error: unknown) {
-    console.error('Release frozen balance error:', error);
+    logger.error('Release frozen balance error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to release frozen balance';
     return { success: false, error: errorMessage };
   }
@@ -561,7 +562,7 @@ export async function refundFrozenBalance(
 
     return { success: true, ...result };
   } catch (error: unknown) {
-    console.error('Refund frozen balance error:', error);
+    logger.error('Refund frozen balance error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to refund frozen balance';
     return { success: false, error: errorMessage };
   }

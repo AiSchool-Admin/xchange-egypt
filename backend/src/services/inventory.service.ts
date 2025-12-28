@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Inventory Service
  *
@@ -425,7 +426,7 @@ export const createInventoryItem = async (
 
     // Trigger proximity matching asynchronously (don't wait)
     proximityMatching.processNewSupplyItem(item.id).catch(err => {
-      console.error('[Inventory] Error processing proximity matching:', err);
+      logger.error('[Inventory] Error processing proximity matching:', err);
     });
 
     // Emit item created event for smart matching notifications
@@ -437,7 +438,7 @@ export const createInventoryItem = async (
       hasBarterPreferences,
       timestamp: new Date(),
     });
-    console.log(`[Inventory] Item created event emitted for ${item.id}, hasBarterPreferences: ${hasBarterPreferences}`);
+    logger.info(`[Inventory] Item created event emitted for ${item.id}, hasBarterPreferences: ${hasBarterPreferences}`);
 
     // For BARTER listings, also create a DEMAND entry for what user wants
     // هذا يضمن ظهور الصنف المطلوب في جانب الطلب
@@ -470,14 +471,14 @@ export const createInventoryItem = async (
           },
         });
         linkedDemandId = demandOffer.id;
-        console.log(`[Inventory] Created linked DEMAND ${demandOffer.id} for SUPPLY ${item.id}`);
+        logger.info(`[Inventory] Created linked DEMAND ${demandOffer.id} for SUPPLY ${item.id}`);
 
         // Trigger proximity matching for the demand side too
         proximityMatching.processNewDemandItem(demandOffer.id).catch(err => {
-          console.error('[Inventory] Error processing proximity matching for linked demand:', err);
+          logger.error('[Inventory] Error processing proximity matching for linked demand:', err);
         });
       } catch (err) {
-        console.error('[Inventory] Error creating linked demand for barter:', err);
+        logger.error('[Inventory] Error creating linked demand for barter:', err);
         // Don't fail the whole operation if demand creation fails
       }
     }
@@ -547,9 +548,9 @@ export const createInventoryItem = async (
 
     // Trigger smart matching to notify supply owners about this new demand
     notifyDirectPurchaseMatches(item.id, userId).catch(err => {
-      console.error('[Inventory] Error notifying direct purchase matches:', err);
+      logger.error('[Inventory] Error notifying direct purchase matches:', err);
     });
-    console.log(`[Inventory] DEMAND item created: ${item.id} (${demandListingType}), triggering smart matching`);
+    logger.info(`[Inventory] DEMAND item created: ${item.id} (${demandListingType}), triggering smart matching`);
 
     return {
       id: item.id,

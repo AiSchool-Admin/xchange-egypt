@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Smart Escrow & Dispute Resolution Service
  * خدمة الضمان الذكي وحل النزاعات
@@ -678,7 +679,7 @@ async function createMilestone(
 function scheduleAutoRelease(escrowId: string, hoursAfterDelivery: number) {
   // In production, this would use a job queue (Bull, Agenda, etc.)
   // For now, we'll just log it
-  console.log(`Auto-release scheduled for escrow ${escrowId} in ${hoursAfterDelivery} hours`);
+  logger.info(`Auto-release scheduled for escrow ${escrowId} in ${hoursAfterDelivery} hours`);
 
   // Simple timeout for demo (not recommended for production)
   setTimeout(async () => {

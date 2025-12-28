@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Unified Matching Orchestrator Service
  * نظام المطابقة الذكية الموحد
@@ -187,7 +188,7 @@ const startCacheCleanup = () => {
         notificationCache.delete(key);
       }
     });
-    console.log(`[UnifiedMatching] Cache cleaned, ${notificationCache.size} entries remaining`);
+    logger.info(`[UnifiedMatching] Cache cleaned, ${notificationCache.size} entries remaining`);
   }, 10 * 60 * 1000);
 };
 
@@ -213,35 +214,35 @@ export const initUnifiedMatching = (socketServer?: SocketIOServer): void => {
   // Start cache cleanup interval
   startCacheCleanup();
 
-  console.log('[UnifiedMatching] Initializing unified matching service...');
+  logger.info('[UnifiedMatching] Initializing unified matching service...');
 
   // Listen for new items
   itemEvents.onItemCreated(async (payload: ItemCreatedPayload) => {
-    console.log(`[UnifiedMatching] New item created: ${payload.itemId}`);
+    logger.info(`[UnifiedMatching] New item created: ${payload.itemId}`);
     await processNewItem(payload.itemId, payload.userId);
   });
 
   // Listen for item updates (status change to ACTIVE)
   itemEvents.onItemUpdated(async (payload: ItemUpdatedPayload) => {
     if (payload.status === 'ACTIVE' && payload.previousStatus !== 'ACTIVE') {
-      console.log(`[UnifiedMatching] Item activated: ${payload.itemId}`);
+      logger.info(`[UnifiedMatching] Item activated: ${payload.itemId}`);
       await processNewItem(payload.itemId, payload.userId);
     }
   });
 
   // Listen for new barter offers
   barterEvents.onOfferCreated(async (payload: BarterOfferCreatedPayload) => {
-    console.log(`[UnifiedMatching] New barter offer: ${payload.offerId}`);
+    logger.info(`[UnifiedMatching] New barter offer: ${payload.offerId}`);
     await processNewBarterOffer(payload);
   });
 
   // Listen for new reverse auctions (purchase requests)
   reverseAuctionEvents.onAuctionCreated(async (payload: ReverseAuctionCreatedPayload) => {
-    console.log(`[UnifiedMatching] New reverse auction: ${payload.auctionId}`);
+    logger.info(`[UnifiedMatching] New reverse auction: ${payload.auctionId}`);
     await processNewReverseAuction(payload);
   });
 
-  console.log('[UnifiedMatching] Service initialized ✅');
+  logger.info('[UnifiedMatching] Service initialized ✅');
 };
 
 // ============================================
@@ -296,10 +297,10 @@ export const processNewItem = async (itemId: string, sellerId: string): Promise<
     // Send notifications for high-quality matches
     await sendMatchNotifications(allMatches, sellerId);
 
-    console.log(`[UnifiedMatching] Processed item ${itemId}: ${allMatches.length} matches found`);
+    logger.info(`[UnifiedMatching] Processed item ${itemId}: ${allMatches.length} matches found`);
 
   } catch (error) {
-    console.error('[UnifiedMatching] Error processing item:', error);
+    logger.error('[UnifiedMatching] Error processing item:', error);
   }
 
   return allMatches;
@@ -792,7 +793,7 @@ const sendMatchNotifications = async (matches: MatchResult[], initiatorId: strin
     const lastNotified = notificationCache.get(cacheKey);
 
     if (lastNotified && Date.now() - lastNotified < NOTIFICATION_COOLDOWN_MS) {
-      console.log(`[UnifiedMatching] Skipping duplicate notification: ${cacheKey}`);
+      logger.info(`[UnifiedMatching] Skipping duplicate notification: ${cacheKey}`);
       continue;
     }
 
@@ -841,7 +842,7 @@ const sendMatchNotifications = async (matches: MatchResult[], initiatorId: strin
       });
     }
 
-    console.log(`[UnifiedMatching] Notified user ${match.matchedItem.sellerId} about ${match.type} match (${Math.round(match.score * 100)}%)`);
+    logger.info(`[UnifiedMatching] Notified user ${match.matchedItem.sellerId} about ${match.type} match (${Math.round(match.score * 100)}%)`);
   }
 };
 
@@ -999,7 +1000,7 @@ const processNewReverseAuction = async (payload: ReverseAuctionCreatedPayload): 
     }
   }
 
-  console.log(`[UnifiedMatching] Processed reverse auction ${auctionId}: ${supplyItems.length} sellers notified`);
+  logger.info(`[UnifiedMatching] Processed reverse auction ${auctionId}: ${supplyItems.length} sellers notified`);
 };
 
 // ============================================

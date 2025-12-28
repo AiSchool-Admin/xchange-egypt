@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Barter Bundle Service
  *
@@ -233,7 +234,7 @@ export const createBundleOffer = async (
   userId: string,
   input: CreateBundleOfferInput
 ): Promise<any> => {
-  console.log('[createBundleOffer] Starting with input:', JSON.stringify(input, null, 2));
+  logger.info('[createBundleOffer] Starting with input:', JSON.stringify(input, null, 2));
 
   const {
     offeredItemIds = [],
@@ -327,7 +328,7 @@ export const createBundleOffer = async (
   const defaultExpiry = new Date();
   defaultExpiry.setDate(defaultExpiry.getDate() + 14);
 
-  console.log('[createBundleOffer] Creating barter offer with:', {
+  logger.info('[createBundleOffer] Creating barter offer with:', {
     userId,
     recipientId: isOpenOffer ? null : recipientId,
     offeredItemIds,
@@ -355,9 +356,9 @@ export const createBundleOffer = async (
         status: 'PENDING',
       },
     });
-    console.log('[createBundleOffer] Created barter offer:', barterOffer.id);
+    logger.info('[createBundleOffer] Created barter offer:', barterOffer.id);
   } catch (error: any) {
-    console.error('[createBundleOffer] Error creating barter offer:', error.message, error.stack);
+    logger.error('[createBundleOffer] Error creating barter offer:', error.message, error.stack);
     throw error;
   }
 
@@ -365,9 +366,9 @@ export const createBundleOffer = async (
   if (preferenceSets.length > 0) {
     try {
       await createPreferenceSets(barterOffer.id, offeredBundleValue, preferenceSets);
-      console.log('[createBundleOffer] Created preference sets');
+      logger.info('[createBundleOffer] Created preference sets');
     } catch (error: any) {
-      console.error('[createBundleOffer] Error creating preference sets:', error.message, error.stack);
+      logger.error('[createBundleOffer] Error creating preference sets:', error.message, error.stack);
       throw error;
     }
   }

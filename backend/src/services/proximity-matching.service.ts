@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Proximity Matching Service
  *
@@ -108,7 +109,7 @@ let io: SocketIOServer | null = null;
  */
 export const initializeProximityMatching = (socketServer: SocketIOServer): void => {
   io = socketServer;
-  console.log('[ProximityMatching] Service initialized');
+  logger.info('[ProximityMatching] Service initialized');
 };
 
 // ============================================
@@ -432,7 +433,7 @@ export const findBarterMatches = async (
     }
   }
 
-  console.log(`[ProximityMatching] Found ${matches.length} barter matches for item ${itemId}`);
+  logger.info(`[ProximityMatching] Found ${matches.length} barter matches for item ${itemId}`);
 
   return matches
     .sort((a, b) => b.score - a.score)
@@ -766,7 +767,7 @@ export const notifyProximityMatch = async (
     };
 
     io.to(`user:${userId}`).emit('proximity_match', notification);
-    console.log(`[ProximityMatching] Notified user ${userId} about match ${match.id}`);
+    logger.info(`[ProximityMatching] Notified user ${userId} about match ${match.id}`);
   }
 };
 
@@ -774,7 +775,7 @@ export const notifyProximityMatch = async (
  * Process new Supply item and find/notify matches
  */
 export const processNewSupplyItem = async (itemId: string): Promise<number> => {
-  console.log(`[ProximityMatching] Processing new supply item: ${itemId}`);
+  logger.info(`[ProximityMatching] Processing new supply item: ${itemId}`);
 
   try {
     let notificationCount = 0;
@@ -784,7 +785,7 @@ export const processNewSupplyItem = async (itemId: string): Promise<number> => {
       minScore: MIN_NOTIFICATION_SCORE
     });
 
-    console.log(`[ProximityMatching] Found ${demandMatches.length} demand matches`);
+    logger.info(`[ProximityMatching] Found ${demandMatches.length} demand matches`);
 
     for (const match of demandMatches) {
       // Notify the demand owner about the new supply
@@ -797,7 +798,7 @@ export const processNewSupplyItem = async (itemId: string): Promise<number> => {
       minScore: MIN_NOTIFICATION_SCORE
     });
 
-    console.log(`[ProximityMatching] Found ${barterMatches.length} barter matches`);
+    logger.info(`[ProximityMatching] Found ${barterMatches.length} barter matches`);
 
     for (const match of barterMatches) {
       // Notify the other item owner about potential barter
@@ -805,10 +806,10 @@ export const processNewSupplyItem = async (itemId: string): Promise<number> => {
       notificationCount++;
     }
 
-    console.log(`[ProximityMatching] Total notifications sent: ${notificationCount}`);
+    logger.info(`[ProximityMatching] Total notifications sent: ${notificationCount}`);
     return notificationCount;
   } catch (error) {
-    console.error('[ProximityMatching] Error processing supply item:', error);
+    logger.error('[ProximityMatching] Error processing supply item:', error);
     return 0;
   }
 };
@@ -817,14 +818,14 @@ export const processNewSupplyItem = async (itemId: string): Promise<number> => {
  * Process new Demand item and find/notify matches
  */
 export const processNewDemandItem = async (demandId: string): Promise<number> => {
-  console.log(`[ProximityMatching] Processing new demand: ${demandId}`);
+  logger.info(`[ProximityMatching] Processing new demand: ${demandId}`);
 
   try {
     const matches = await findMatchesForDemand(demandId, {
       minScore: MIN_NOTIFICATION_SCORE
     });
 
-    console.log(`[ProximityMatching] Found ${matches.length} matches`);
+    logger.info(`[ProximityMatching] Found ${matches.length} matches`);
 
     let notificationCount = 0;
 
@@ -836,7 +837,7 @@ export const processNewDemandItem = async (demandId: string): Promise<number> =>
 
     return notificationCount;
   } catch (error) {
-    console.error('[ProximityMatching] Error processing demand:', error);
+    logger.error('[ProximityMatching] Error processing demand:', error);
     return 0;
   }
 };

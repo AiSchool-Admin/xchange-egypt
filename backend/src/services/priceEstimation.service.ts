@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Price Estimation Service
  * FREE statistical model for Egyptian market
@@ -396,7 +397,7 @@ export async function validatePrice(
  *   '256GB, barely used'
  * );
  *
- * console.log(estimate);
+ * logger.info(estimate);
  * // {
  * //   estimatedPrice: 34000,
  * //   priceRange: { min: 27200, max: 40800 },

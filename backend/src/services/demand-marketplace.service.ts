@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Demand Marketplace Service
  *
@@ -499,7 +500,7 @@ export const notifyMatchingSupplyUsers = async (
 export const initDemandMarketplaceListeners = (): void => {
   // Notification listeners are now handled by smart-matching.service.ts
   // This function is kept for backwards compatibility
-  console.log('[DemandMarketplace] Listeners disabled - using smart-matching.service.ts instead');
+  logger.info('[DemandMarketplace] Listeners disabled - using smart-matching.service.ts instead');
 };
 
 // ============================================

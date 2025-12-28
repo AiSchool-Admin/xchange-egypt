@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 import { AuctionStatus, BidStatus, ListingType, ListingStatus, ItemStatus } from '../types';
 import { CreateAuctionInput, UpdateAuctionInput, PlaceBidInput, ListAuctionsQuery } from '../validations/auction.validation';
 import { NotFoundError, ForbiddenError, BadRequestError, InternalServerError } from '../utils/errors';
@@ -440,7 +441,7 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
     return newBid;
     });
   } catch (dbError: any) {
-    console.error('Database error during bid placement:', {
+    logger.error('Database error during bid placement:', {
       auctionId,
       userId,
       bidAmount: actualBidAmount,
