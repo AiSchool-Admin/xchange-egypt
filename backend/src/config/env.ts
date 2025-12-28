@@ -42,6 +42,9 @@ const envSchema = z.object({
   // File Upload
   MAX_FILE_SIZE_MB: z.string().default('5'),
   MAX_FILES_PER_UPLOAD: z.string().default('10'),
+
+  // Admin Emails (comma-separated list)
+  ADMIN_EMAILS: z.string().default(''),
 });
 
 // Validate and export environment variables
@@ -86,6 +89,9 @@ const parseEnv = () => {
       upload: {
         maxFileSizeMB: parseInt(env.MAX_FILE_SIZE_MB, 10),
         maxFilesPerUpload: parseInt(env.MAX_FILES_PER_UPLOAD, 10),
+      },
+      admin: {
+        emails: env.ADMIN_EMAILS ? env.ADMIN_EMAILS.split(',').map((e) => e.trim().toLowerCase()) : [],
       },
     };
   } catch (error) {
