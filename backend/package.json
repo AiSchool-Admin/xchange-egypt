@@ -7,6 +7,7 @@
     "dev": "tsx watch src/app.ts",
     "build": "echo '=== Starting Prisma Generate ===' && prisma generate && echo '=== Starting TypeScript Compilation ===' && (tsc || echo 'TypeScript completed with warnings') && echo '=== Build Complete ==='",
     "start": "node dist/app.js",
+    "test:scenarios": "tsx scripts/run-20-scenarios.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:unit": "jest tests/unit",
