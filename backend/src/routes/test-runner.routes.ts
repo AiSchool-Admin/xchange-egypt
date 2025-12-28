@@ -203,7 +203,7 @@ async function runScenario2(): Promise<TestResult> {
     const user2 = await prisma.user.findUnique({ where: { email: 'test4@xchange.eg' } });
     steps.push({ step: 'تسجيل دخول المستخدم الثاني', status: user2 ? 'PASS' : 'FAIL' });
 
-    const barterItems = await prisma.item.count({ where: { allowBarter: true } });
+    const barterItems = await prisma.item.count({ where: { listingType: 'BARTER' } });
     steps.push({ step: 'فحص منتجات المقايضة', status: 'PASS' });
 
     const passed = steps.filter(s => s.status === 'PASS').length;
@@ -232,7 +232,7 @@ async function runScenario3(): Promise<TestResult> {
   const steps: { step: string; status: 'PASS' | 'FAIL'; error?: string }[] = [];
 
   try {
-    const auctions = await prisma.auctionListing.count();
+    const auctions = await prisma.auction.count();
     steps.push({ step: 'فحص جدول المزادات', status: 'PASS' });
 
     const user = await prisma.user.findUnique({ where: { email: 'test3@xchange.eg' } });
@@ -363,7 +363,7 @@ async function runScenario7(): Promise<TestResult> {
     const user = await prisma.user.findUnique({ where: { email: 'test10@xchange.eg' } });
     steps.push({ step: 'تسجيل دخول تاجر الذهب', status: user ? 'PASS' : 'FAIL' });
 
-    const goldListings = await prisma.goldListing.count();
+    const goldListings = await prisma.goldItem.count();
     steps.push({ step: 'فحص جدول الذهب', status: 'PASS' });
 
     const passed = steps.filter(s => s.status === 'PASS').length;
@@ -392,7 +392,7 @@ async function runScenario8(): Promise<TestResult> {
   const steps: { step: string; status: 'PASS' | 'FAIL'; error?: string }[] = [];
 
   try {
-    const scrapListings = await prisma.scrapListing.count();
+    const scrapListings = await prisma.item.count({ where: { isScrap: true } });
     steps.push({ step: 'فحص جدول الخردة', status: 'PASS' });
 
     const user = await prisma.user.findUnique({ where: { email: 'test7@xchange.eg' } });
@@ -462,8 +462,8 @@ async function runScenario10(): Promise<TestResult> {
     const user = await prisma.user.findUnique({ where: { email: 'test5@xchange.eg' } });
     steps.push({ step: 'تسجيل الدخول', status: user ? 'PASS' : 'FAIL' });
 
-    const priceAlerts = await prisma.priceAlert.count();
-    steps.push({ step: 'فحص جدول التنبيهات', status: 'PASS' });
+    const mobileFavorites = await prisma.mobileFavorite.count();
+    steps.push({ step: 'فحص قائمة المفضلات', status: 'PASS' });
 
     const passed = steps.filter(s => s.status === 'PASS').length;
     return {
@@ -679,7 +679,7 @@ async function runScenario17(): Promise<TestResult> {
   const steps: { step: string; status: 'PASS' | 'FAIL'; error?: string }[] = [];
 
   try {
-    const barterItems = await prisma.item.count({ where: { allowBarter: true } });
+    const barterItems = await prisma.item.count({ where: { listingType: 'BARTER' } });
     steps.push({ step: 'فحص منتجات المقايضة', status: 'PASS' });
 
     const barterOffers = await prisma.barterOffer.count();
@@ -775,7 +775,7 @@ async function runScenario20(): Promise<TestResult> {
     const flashDeals = await prisma.flashDeal.count();
     steps.push({ step: 'فحص العروض السريعة', status: 'PASS' });
 
-    const featuredItems = await prisma.item.count({ where: { featured: true } });
+    const featuredItems = await prisma.item.count({ where: { isFeatured: true } });
     steps.push({ step: 'فحص المنتجات المميزة', status: 'PASS' });
 
     const passed = steps.filter(s => s.status === 'PASS').length;
