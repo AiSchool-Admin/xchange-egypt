@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
 import * as authController from '../controllers/auth.controller';
 import { validate } from '../middleware/validate';
 import { authenticate } from '../middleware/auth';
@@ -11,33 +10,14 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from '../validations/auth.validation';
+import {
+  loginLimiter,
+  registerLimiter,
+  passwordResetLimiter,
+  bruteForceProtection,
+} from '../middleware/security';
 
 const router = Router();
-
-// Stricter rate limiter for auth endpoints (prevent brute force)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // 10 attempts per window
-  message: {
-    success: false,
-    error: 'تم تجاوز الحد الأقصى لمحاولات الدخول، انتظر 15 دقيقة',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true, // Only count failed attempts
-});
-
-// Password reset rate limiter (even stricter)
-const passwordLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // 3 attempts per hour
-  message: {
-    success: false,
-    error: 'تم تجاوز الحد الأقصى لطلبات إعادة تعيين كلمة المرور، حاول بعد ساعة',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 /**
  * @route   POST /api/v1/auth/register/individual
@@ -46,7 +26,7 @@ const passwordLimiter = rateLimit({
  */
 router.post(
   '/register/individual',
-  authLimiter,
+  registerLimiter,
   validate(registerIndividualSchema),
   authController.registerIndividual
 );
@@ -58,7 +38,7 @@ router.post(
  */
 router.post(
   '/register/business',
-  authLimiter,
+  registerLimiter,
   validate(registerBusinessSchema),
   authController.registerBusiness
 );
@@ -68,7 +48,13 @@ router.post(
  * @desc    Login user
  * @access  Public
  */
-router.post('/login', authLimiter, validate(loginSchema), authController.login);
+router.post(
+  '/login',
+  loginLimiter,
+  bruteForceProtection,
+  validate(loginSchema),
+  authController.login
+);
 
 /**
  * @route   POST /api/v1/auth/refresh
@@ -110,13 +96,23 @@ router.put('/me', authenticate, authController.updateMe);
  * @desc    Request password reset
  * @access  Public
  */
-router.post('/forgot-password', passwordLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
+router.post(
+  '/forgot-password',
+  passwordResetLimiter,
+  validate(forgotPasswordSchema),
+  authController.forgotPassword
+);
 
 /**
  * @route   POST /api/v1/auth/reset-password
  * @desc    Reset password using token
  * @access  Public
  */
-router.post('/reset-password', passwordLimiter, validate(resetPasswordSchema), authController.resetPassword);
+router.post(
+  '/reset-password',
+  passwordResetLimiter,
+  validate(resetPasswordSchema),
+  authController.resetPassword
+);
 
 export default router;

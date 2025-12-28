@@ -11,6 +11,17 @@ import { connectRedis } from './config/redis';
 import prisma from './config/database';
 import { AppError } from './utils/errors';
 import logger from './lib/logger';
+import { sentryErrorHandler, sentryRequestHandler } from './lib/sentry';
+import {
+  loginLimiter,
+  registerLimiter,
+  passwordResetLimiter,
+  uploadLimiter,
+  sanitizeInput,
+  additionalSecurityHeaders,
+  securityLogger,
+  bruteForceProtection,
+} from './middleware/security';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -129,8 +140,30 @@ const io = new SocketIOServer(httpServer, {
 // ============================================
 // Trust proxy - Required for Railway/production deployment
 app.set('trust proxy', 1);
-// Security headers
-app.use(helmet());
+
+// Sentry request handler (for performance tracking) - must be first
+app.use(sentryRequestHandler);
+
+// Security headers (Helmet + additional)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'wss:', 'https:'],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Needed for images from external sources
+}));
+app.use(additionalSecurityHeaders);
+
+// Security logging (detect suspicious requests)
+app.use(securityLogger);
+
+// Input sanitization (prevent XSS)
+app.use(sanitizeInput);
 
 // Compression - reduce response size
 app.use(compression());
@@ -437,6 +470,9 @@ app.use((_req: Request, res: Response) => {
     message: 'The requested resource was not found',
   });
 });
+
+// Sentry error handler (must be before global error handler)
+app.use(sentryErrorHandler);
 
 // Global error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
