@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import * as facilitatorService from '../services/facilitator.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Apply to become facilitator
@@ -8,7 +11,10 @@ import { successResponse } from '../utils/response';
  */
 export const applyForFacilitator = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const result = await facilitatorService.applyForFacilitator(userId, req.body);
 
     if (!result.success) {
@@ -87,7 +93,10 @@ export const getFacilitatorProfile = async (req: Request, res: Response, next: N
  */
 export const getMyFacilitatorProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const facilitator = await facilitatorService.getFacilitatorByUserId(userId);
 
     if (!facilitator) {
@@ -107,7 +116,10 @@ export const getMyFacilitatorProfile = async (req: Request, res: Response, next:
 export const updateFacilitatorProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const result = await facilitatorService.updateFacilitatorProfile(id, userId, req.body);
 
@@ -128,7 +140,10 @@ export const updateFacilitatorProfile = async (req: Request, res: Response, next
 export const toggleAvailability = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const result = await facilitatorService.toggleAvailability(id, userId);
 
@@ -149,7 +164,10 @@ export const toggleAvailability = async (req: Request, res: Response, next: Next
 export const assignFacilitator = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const result = await facilitatorService.assignFacilitator(id, {
       ...req.body,
@@ -172,7 +190,10 @@ export const assignFacilitator = async (req: Request, res: Response, next: NextF
  */
 export const getMyAssignments = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { status, limit, offset } = req.query;
 
     const facilitator = await facilitatorService.getFacilitatorByUserId(userId);
@@ -199,7 +220,10 @@ export const getMyAssignments = async (req: Request, res: Response, next: NextFu
 export const startAssignment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { assignmentId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const result = await facilitatorService.startAssignment(assignmentId, userId);
 
@@ -220,7 +244,10 @@ export const startAssignment = async (req: Request, res: Response, next: NextFun
 export const completeAssignment = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { assignmentId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { completionNotes } = req.body;
 
     const result = await facilitatorService.completeAssignment(assignmentId, userId, completionNotes);
@@ -242,7 +269,10 @@ export const completeAssignment = async (req: Request, res: Response, next: Next
 export const submitReview = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { assignmentId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const result = await facilitatorService.submitFacilitatorReview(assignmentId, userId, req.body);
 

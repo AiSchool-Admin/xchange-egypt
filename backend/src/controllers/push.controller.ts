@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import * as pushService from '../services/push.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Subscribe to push notifications
@@ -8,7 +11,10 @@ import { successResponse } from '../utils/response';
  */
 export const subscribe = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { endpoint, p256dh, auth } = req.body;
 
     const subscription = await pushService.subscribe(userId, {
@@ -29,7 +35,10 @@ export const subscribe = async (req: Request, res: Response, next: NextFunction)
  */
 export const unsubscribe = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { endpoint } = req.body;
 
     await pushService.unsubscribe(userId, endpoint);
@@ -46,7 +55,10 @@ export const unsubscribe = async (req: Request, res: Response, next: NextFunctio
  */
 export const getSubscriptions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const subscriptions = await pushService.getUserSubscriptions(userId);
 
@@ -62,7 +74,10 @@ export const getSubscriptions = async (req: Request, res: Response, next: NextFu
  */
 export const getStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const enabled = await pushService.hasPushEnabled(userId);
 

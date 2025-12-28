@@ -7,7 +7,10 @@
 import { Request, Response, NextFunction } from 'express';
 import * as inventoryService from '../services/inventory.service';
 import * as proximityService from '../services/proximity-matching.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Get user's inventory
@@ -19,7 +22,10 @@ export const getInventory = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { side, type, status, page, limit } = req.query;
 
     const result = await inventoryService.getUserInventory(userId, {
@@ -46,7 +52,10 @@ export const getStats = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const stats = await inventoryService.getInventoryStats(userId);
 
     return successResponse(res, stats, 'Stats retrieved successfully');
@@ -65,7 +74,10 @@ export const createItem = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const input = req.body;
 
     const item = await inventoryService.createInventoryItem(userId, input);
@@ -86,7 +98,10 @@ export const updateStatus = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { id } = req.params;
     const { status } = req.body;
 
@@ -108,7 +123,10 @@ export const deleteItem = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { id } = req.params;
 
     await inventoryService.deleteInventoryItem(id, userId);
@@ -129,7 +147,10 @@ export const findMatches = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { id } = req.params;
 
     const matches = await inventoryService.findMatchesForItem(id, userId);
@@ -197,7 +218,10 @@ export const getProximityMatches = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { type, limit } = req.query;
 
     const matches = await proximityService.getMatchesForUser(userId, {
@@ -303,7 +327,10 @@ export const adjustStock = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { id } = req.params;
     const { type, quantityChange, reason, notes, unitCost } = req.body;
 
@@ -332,7 +359,10 @@ export const getStockAdjustments = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { id } = req.params;
     const { page, limit } = req.query;
 
@@ -357,7 +387,10 @@ export const bulkImport = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { items } = req.body;
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -392,7 +425,10 @@ export const getLowStock = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { includeNegative, page, limit } = req.query;
 
     const result = await inventoryService.getLowStockItems(userId, {
@@ -417,7 +453,10 @@ export const updateStockSettings = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { id } = req.params;
     const { trackInventory, allowNegativeStock, lowStockThreshold, sku, barcode } = req.body;
 

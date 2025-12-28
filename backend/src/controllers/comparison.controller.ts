@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import * as comparisonService from '../services/comparison.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Create a new comparison
@@ -13,7 +16,10 @@ export const createComparison = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { itemIds, title, categorySlug, isPublic } = req.body;
 
     if (!itemIds || !Array.isArray(itemIds)) {
@@ -85,7 +91,10 @@ export const getUserComparisons = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { page, limit } = req.query;
 
     const result = await comparisonService.getUserComparisons(
@@ -111,7 +120,10 @@ export const updateComparison = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { title, itemIds, isPublic } = req.body;
 
     const comparison = await comparisonService.updateComparison(id, userId, {
@@ -137,7 +149,10 @@ export const deleteComparison = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     await comparisonService.deleteComparison(id, userId);
 

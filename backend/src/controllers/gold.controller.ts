@@ -5,7 +5,10 @@
 
 import { Request, Response, NextFunction } from 'express';
 import * as goldService from '../services/gold.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 // ============================================
 // Gold Prices
@@ -195,7 +198,10 @@ export const getItemById = async (req: Request, res: Response, next: NextFunctio
  */
 export const createItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const item = await goldService.createGoldItem(userId, req.body);
     return successResponse(res, item, 'تم إنشاء الإعلان بنجاح', 201);
   } catch (error) {
@@ -210,7 +216,10 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 export const updateItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const item = await goldService.updateGoldItem(id, userId, req.body);
     return successResponse(res, item, 'تم تحديث الإعلان بنجاح');
   } catch (error) {
@@ -225,7 +234,10 @@ export const updateItem = async (req: Request, res: Response, next: NextFunction
 export const deleteItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     await goldService.deleteGoldItem(id, userId);
     return successResponse(res, null, 'تم حذف الإعلان بنجاح');
   } catch (error) {
@@ -239,7 +251,10 @@ export const deleteItem = async (req: Request, res: Response, next: NextFunction
  */
 export const getMyItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const result = await goldService.getGoldItems({ sellerId: userId, status: undefined });
     return successResponse(res, result, 'قطع الذهب الخاصة بي');
   } catch (error) {
@@ -302,7 +317,10 @@ export const getPartnerById = async (req: Request, res: Response, next: NextFunc
  */
 export const createTransaction = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const transaction = await goldService.createGoldTransaction(buyerId, req.body);
     return successResponse(res, transaction, 'تم إنشاء الطلب بنجاح', 201);
   } catch (error: any) {
@@ -329,7 +347,10 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
 export const updateTransactionStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { status, notes } = req.body;
 
     const transaction = await goldService.updateTransactionStatus(id, userId, status, notes);
@@ -357,7 +378,10 @@ export const updateTransactionStatus = async (req: Request, res: Response, next:
  */
 export const getMyTransactions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const type = req.query.type as 'purchases' | 'sales' | 'all';
 
     const transactions = await goldService.getUserGoldTransactions(userId, type);

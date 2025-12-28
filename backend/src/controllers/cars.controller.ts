@@ -5,7 +5,10 @@
 
 import { Request, Response, NextFunction } from 'express';
 import * as carsService from '../services/cars.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 // ============================================
 // Car Prices (Reference)
@@ -186,7 +189,10 @@ export const getListingById = async (req: Request, res: Response, next: NextFunc
  */
 export const createListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const listing = await carsService.createCarListing(userId, req.body);
     return successResponse(res, listing, 'تم إنشاء الإعلان بنجاح', 201);
   } catch (error) {
@@ -201,7 +207,10 @@ export const createListing = async (req: Request, res: Response, next: NextFunct
 export const updateListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const listing = await carsService.updateCarListing(id, userId, req.body);
     return successResponse(res, listing, 'تم تحديث الإعلان بنجاح');
   } catch (error: any) {
@@ -222,7 +231,10 @@ export const updateListing = async (req: Request, res: Response, next: NextFunct
 export const deleteListing = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     await carsService.deleteCarListing(id, userId);
     return successResponse(res, null, 'تم حذف الإعلان بنجاح');
   } catch (error: any) {
@@ -242,7 +254,10 @@ export const deleteListing = async (req: Request, res: Response, next: NextFunct
  */
 export const getMyListings = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const result = await carsService.getCarListings({ sellerId: userId, status: undefined });
     return successResponse(res, result, 'إعلاناتي');
   } catch (error) {
@@ -306,7 +321,10 @@ export const getPartnerById = async (req: Request, res: Response, next: NextFunc
  */
 export const requestInspection = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const inspection = await carsService.requestCarInspection(userId, req.body);
     return successResponse(res, inspection, 'تم طلب الفحص بنجاح', 201);
   } catch (error) {
@@ -338,7 +356,10 @@ export const updateInspection = async (req: Request, res: Response, next: NextFu
  */
 export const createTransaction = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const transaction = await carsService.createCarTransaction(buyerId, req.body);
     return successResponse(res, transaction, 'تم إنشاء الطلب بنجاح', 201);
   } catch (error: any) {
@@ -365,7 +386,10 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
 export const updateTransactionStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { status, notes } = req.body;
 
     const transaction = await carsService.updateCarTransactionStatus(id, userId, status, notes);
@@ -393,7 +417,10 @@ export const updateTransactionStatus = async (req: Request, res: Response, next:
  */
 export const getMyTransactions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const type = req.query.type as 'purchases' | 'sales' | 'all';
 
     const transactions = await carsService.getUserCarTransactions(userId, type);
@@ -413,7 +440,10 @@ export const getMyTransactions = async (req: Request, res: Response, next: NextF
  */
 export const createBarterProposal = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const proposal = await carsService.createBarterProposal(userId, req.body);
     return successResponse(res, proposal, 'تم إرسال عرض المقايضة بنجاح', 201);
   } catch (error: any) {
@@ -458,7 +488,10 @@ export const createBarterProposal = async (req: Request, res: Response, next: Ne
 export const respondToBarterProposal = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { action, receiverResponse } = req.body;
 
     const proposal = await carsService.respondToBarterProposal(id, userId, {
@@ -490,7 +523,10 @@ export const respondToBarterProposal = async (req: Request, res: Response, next:
  */
 export const getMyBarterProposals = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const type = req.query.type as 'sent' | 'received' | 'all';
 
     const proposals = await carsService.getUserBarterProposals(userId, type);
