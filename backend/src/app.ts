@@ -94,6 +94,7 @@ import adminPricingRoutes from './routes/admin-pricing.routes';
 import aiAdvancedRoutes from './routes/ai-advanced.routes';
 import boardRoutes from './routes/board.routes';
 import founderRoutes from './routes/founder.routes';
+import docsRoutes from './routes/docs.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -167,8 +168,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://unpkg.com'],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://unpkg.com'],
       imgSrc: ["'self'", 'data:', 'https:'],
       connectSrc: ["'self'", 'wss:', 'https:'],
     },
@@ -484,6 +485,9 @@ app.use('/api/v1/board', boardRoutes);
 
 // Founder Portal - بوابة المؤسس
 app.use('/api/v1/founder', founderRoutes);
+
+// API Documentation - توثيق API
+app.use('/api/v1/docs', docsRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {

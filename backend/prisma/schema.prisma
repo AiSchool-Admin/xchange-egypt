@@ -705,6 +705,12 @@ model Item {
   // Delivery & Installment indexes
   @@index([deliveryAvailable])
   @@index([installmentAvailable])
+  // Additional composite indexes for common queries
+  @@index([status, categoryId, createdAt])
+  @@index([status, categoryId, governorate])
+  @@index([status, governorate, createdAt])
+  @@index([categoryId, governorate, status])
+  @@index([status, estimatedValue])
 }
 
 // ============================================
@@ -1041,6 +1047,12 @@ model BarterOffer {
   @@index([governorate])
   @@index([marketType, isOpenOffer])
   @@index([linkedItemId])
+  // Composite indexes for barter queries
+  @@index([status, createdAt])
+  @@index([status, expiresAt])
+  @@index([initiatorId, status])
+  @@index([recipientId, status])
+  @@index([status, governorate, marketType])
 }
 
 // Abstract item request for barter (when user doesn't want specific items)
@@ -1422,6 +1434,10 @@ model Auction {
   @@index([startTime])
   @@index([endTime])
   @@index([winnerId])
+  // Composite indexes for common auction queries
+  @@index([status, endTime])
+  @@index([status, startTime])
+  @@index([status, createdAt])
 }
 
 model AuctionBid {
@@ -1460,6 +1476,10 @@ model AuctionBid {
   @@index([bidderId])
   @@index([status])
   @@index([createdAt])
+  // Composite indexes for bid queries
+  @@index([auctionId, bidAmount])
+  @@index([bidderId, createdAt])
+  @@index([auctionId, status, createdAt])
 }
 
 // ============================================
@@ -1550,6 +1570,10 @@ model ReverseAuction {
   @@index([endDate])
   @@index([winnerId])
   @@index([lowestBid])
+  // Composite indexes for reverse auction queries
+  @@index([status, endDate])
+  @@index([status, categoryId])
+  @@index([buyerId, status])
 }
 
 // Seller's bid on a reverse auction

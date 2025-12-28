@@ -1,0 +1,850 @@
+openapi: 3.0.3
+info:
+  title: Xchange Egypt API
+  description: |
+    # Xchange Egypt API Documentation
+
+    منصة Xchange للتبادل والمقايضة في مصر
+
+    ## Overview
+    This API provides endpoints for:
+    - User authentication and management
+    - Item listings and search
+    - Auctions and bidding
+    - Barter system with smart matching
+    - Wallet and payments
+    - Real-time notifications
+    - AI-powered features
+
+    ## Authentication
+    Most endpoints require JWT authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your_token>
+    ```
+
+    ## Rate Limiting
+    - General API: 100 requests/minute
+    - Authentication: 5 requests/15 minutes
+    - Search: 60 requests/minute
+    - AI Services: 20 requests/minute
+
+  version: 1.0.0
+  contact:
+    name: Xchange Egypt Support
+    email: support@xchange.com.eg
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.xchange.com.eg/api/v1
+    description: Production
+  - url: http://localhost:3001/api/v1
+    description: Development
+
+tags:
+  - name: Auth
+    description: Authentication and authorization
+  - name: Users
+    description: User management
+  - name: Items
+    description: Item listings
+  - name: Auctions
+    description: Auction management
+  - name: Barter
+    description: Barter and exchange
+  - name: Wallet
+    description: Digital wallet operations
+  - name: Search
+    description: Search and discovery
+  - name: Notifications
+    description: Push notifications
+  - name: AI
+    description: AI-powered features
+
+paths:
+  # ============================================
+  # Authentication
+  # ============================================
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register new user
+      description: Create a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, fullName, phone]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  minLength: 8
+                  example: SecurePass123!
+                fullName:
+                  type: string
+                  example: محمد أحمد
+                phone:
+                  type: string
+                  example: "+201234567890"
+      responses:
+        201:
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        400:
+          $ref: '#/components/responses/BadRequest'
+        429:
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login user
+      description: Authenticate user and get access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        429:
+          $ref: '#/components/responses/TooManyRequests'
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout user
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Logout successful
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        200:
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+
+  # ============================================
+  # Items
+  # ============================================
+  /items:
+    get:
+      tags: [Items]
+      summary: List items
+      description: Get paginated list of items with filters
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: condition
+          in: query
+          schema:
+            type: string
+            enum: [NEW, LIKE_NEW, GOOD, FAIR, POOR]
+        - name: governorate
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, price_asc, price_desc, popular]
+      responses:
+        200:
+          description: Items retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemList'
+
+    post:
+      tags: [Items]
+      summary: Create new item
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateItem'
+      responses:
+        201:
+          description: Item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        401:
+          $ref: '#/components/responses/Unauthorized'
+
+  /items/{id}:
+    get:
+      tags: [Items]
+      summary: Get item by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Item retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        404:
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Items]
+      summary: Update item
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItem'
+      responses:
+        200:
+          description: Item updated
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        404:
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Items]
+      summary: Delete item
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Item deleted
+        401:
+          $ref: '#/components/responses/Unauthorized'
+        404:
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================
+  # Auctions
+  # ============================================
+  /auctions:
+    get:
+      tags: [Auctions]
+      summary: List auctions
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [SCHEDULED, ACTIVE, ENDED, CANCELLED]
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        200:
+          description: Auctions list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuctionList'
+
+  /auctions/{id}/bid:
+    post:
+      tags: [Auctions]
+      summary: Place bid
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount:
+                  type: number
+                  description: Bid amount in EGP
+      responses:
+        200:
+          description: Bid placed successfully
+        400:
+          description: Bid too low or auction ended
+        401:
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # Barter
+  # ============================================
+  /barter/offers:
+    get:
+      tags: [Barter]
+      summary: Get barter offers
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Barter offers list
+
+    post:
+      tags: [Barter]
+      summary: Create barter offer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBarterOffer'
+      responses:
+        201:
+          description: Offer created
+
+  /barter/matches:
+    get:
+      tags: [Barter]
+      summary: Get barter matches
+      description: AI-powered matching suggestions
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Barter matches
+
+  # ============================================
+  # Wallet
+  # ============================================
+  /wallet:
+    get:
+      tags: [Wallet]
+      summary: Get wallet info
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Wallet information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+
+  /wallet/transactions:
+    get:
+      tags: [Wallet]
+      summary: Get transaction history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [DEPOSIT, WITHDRAWAL, PURCHASE, SALE, REFUND]
+      responses:
+        200:
+          description: Transaction list
+
+  # ============================================
+  # Search
+  # ============================================
+  /search:
+    get:
+      tags: [Search]
+      summary: Search items
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [DIRECT_SALE, AUCTION, BARTER]
+      responses:
+        200:
+          description: Search results
+
+  # ============================================
+  # Notifications
+  # ============================================
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Get notifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: unreadOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Notifications list
+
+  /notifications/mark-read:
+    post:
+      tags: [Notifications]
+      summary: Mark notifications as read
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ids:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        200:
+          description: Marked as read
+
+  # ============================================
+  # AI Features
+  # ============================================
+  /ai/price-estimate:
+    post:
+      tags: [AI]
+      summary: Get AI price estimate
+      description: AI-powered price estimation based on item details
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, title]
+              properties:
+                category:
+                  type: string
+                title:
+                  type: string
+                description:
+                  type: string
+                condition:
+                  type: string
+                images:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        200:
+          description: Price estimate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  estimatedPrice:
+                    type: object
+                    properties:
+                      low:
+                        type: number
+                      average:
+                        type: number
+                      high:
+                        type: number
+                  confidence:
+                    type: number
+
+  /ai/suggest-description:
+    post:
+      tags: [AI]
+      summary: Generate item description
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                category:
+                  type: string
+                keywords:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        200:
+          description: Generated description
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/User'
+            accessToken:
+              type: string
+            refreshToken:
+              type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        phone:
+          type: string
+        avatar:
+          type: string
+        role:
+          type: string
+          enum: [USER, ADMIN, MODERATOR]
+        createdAt:
+          type: string
+          format: date-time
+
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        condition:
+          type: string
+          enum: [NEW, LIKE_NEW, GOOD, FAIR, POOR]
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+              isPrimary:
+                type: boolean
+        category:
+          $ref: '#/components/schemas/Category'
+        seller:
+          $ref: '#/components/schemas/User'
+        governorate:
+          type: string
+        city:
+          type: string
+        listingType:
+          type: string
+          enum: [DIRECT_SALE, AUCTION, BARTER, DIRECT_BUY]
+        status:
+          type: string
+          enum: [DRAFT, ACTIVE, SOLD, EXPIRED]
+        views:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    ItemList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Item'
+            pagination:
+              $ref: '#/components/schemas/Pagination'
+
+    CreateItem:
+      type: object
+      required: [title, price, categoryId, condition]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        categoryId:
+          type: string
+        condition:
+          type: string
+          enum: [NEW, LIKE_NEW, GOOD, FAIR, POOR]
+        governorate:
+          type: string
+        city:
+          type: string
+        listingType:
+          type: string
+          enum: [DIRECT_SALE, AUCTION, BARTER, DIRECT_BUY]
+
+    UpdateItem:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        condition:
+          type: string
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        nameAr:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+
+    AuctionList:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Auction'
+
+    Auction:
+      type: object
+      properties:
+        id:
+          type: string
+        item:
+          $ref: '#/components/schemas/Item'
+        startingPrice:
+          type: number
+        currentPrice:
+          type: number
+        reservePrice:
+          type: number
+        minBidIncrement:
+          type: number
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [SCHEDULED, ACTIVE, ENDED, CANCELLED]
+        bidCount:
+          type: integer
+        highestBidder:
+          $ref: '#/components/schemas/User'
+
+    CreateBarterOffer:
+      type: object
+      required: [offeredItemId, wantedItemId]
+      properties:
+        offeredItemId:
+          type: string
+        wantedItemId:
+          type: string
+        message:
+          type: string
+        cashDifference:
+          type: number
+
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: string
+        balance:
+          type: number
+        currency:
+          type: string
+          default: EGP
+        status:
+          type: string
+          enum: [ACTIVE, FROZEN, SUSPENDED]
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+        hasMore:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: false
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            messageAr:
+              type: string
+            code:
+              type: string
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
