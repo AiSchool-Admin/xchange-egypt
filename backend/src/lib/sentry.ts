@@ -14,7 +14,8 @@ import { Request, Response, NextFunction } from 'express';
 import logger from './logger';
 
 // Check if @sentry/node is installed
-let Sentry: typeof import('@sentry/node') | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let Sentry: any = null;
 try {
   Sentry = require('@sentry/node');
 } catch {

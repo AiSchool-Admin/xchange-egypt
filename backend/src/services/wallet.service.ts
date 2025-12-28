@@ -112,7 +112,7 @@ export async function getOrCreateWallet(userId: string): Promise<WalletInfo> {
     userId: wallet.userId,
     balance: wallet.balance,
     frozenBalance: wallet.frozenBalance,
-    availableBalance: wallet.balance - wallet.frozenBalance,
+    availableBalance: Number(wallet.balance) - Number(wallet.frozenBalance),
     lifetimeEarned: wallet.lifetimeEarned,
     lifetimeSpent: wallet.lifetimeSpent,
   };
@@ -226,12 +226,12 @@ export async function debitWallet(
         throw new Error('Wallet not found');
       }
 
-      const availableBalance = wallet.balance - wallet.frozenBalance;
+      const availableBalance = Number(wallet.balance) - Number(wallet.frozenBalance);
       if (availableBalance < amount) {
         throw new Error('Insufficient balance');
       }
 
-      const balanceBefore = wallet.balance;
+      const balanceBefore = Number(wallet.balance);
       const balanceAfter = balanceBefore - amount;
 
       // Update wallet
@@ -293,7 +293,7 @@ export async function transferXCoin(params: TransferParams): Promise<Transaction
         throw new Error('Sender wallet not found');
       }
 
-      const senderAvailable = senderWallet.balance - senderWallet.frozenBalance;
+      const senderAvailable = Number(senderWallet.balance) - Number(senderWallet.frozenBalance);
       if (senderAvailable < amount) {
         throw new Error('Insufficient balance');
       }
@@ -307,7 +307,7 @@ export async function transferXCoin(params: TransferParams): Promise<Transaction
       }
 
       // Debit sender
-      const senderBalanceBefore = senderWallet.balance;
+      const senderBalanceBefore = Number(senderWallet.balance);
       const senderBalanceAfter = senderBalanceBefore - amount;
 
       await tx.wallet.update({
@@ -334,7 +334,7 @@ export async function transferXCoin(params: TransferParams): Promise<Transaction
       });
 
       // Credit receiver
-      const receiverBalanceBefore = receiverWallet.balance;
+      const receiverBalanceBefore = Number(receiverWallet.balance);
       const receiverBalanceAfter = receiverBalanceBefore + amount;
 
       await tx.wallet.update({
@@ -392,12 +392,12 @@ export async function freezeBalance(
         throw new Error('Wallet not found');
       }
 
-      const availableBalance = wallet.balance - wallet.frozenBalance;
+      const availableBalance = Number(wallet.balance) - Number(wallet.frozenBalance);
       if (availableBalance < amount) {
         throw new Error('Insufficient available balance');
       }
 
-      const balanceBefore = wallet.balance;
+      const balanceBefore = Number(wallet.balance);
 
       // Update frozen balance
       await tx.wallet.update({
@@ -422,7 +422,7 @@ export async function freezeBalance(
         },
       });
 
-      return { transaction, newBalance: wallet.balance - wallet.frozenBalance - amount };
+      return { transaction, newBalance: Number(wallet.balance) - Number(wallet.frozenBalance) - amount };
     });
 
     return { success: true, ...result };
@@ -466,8 +466,8 @@ export async function releaseFrozenBalance(
           walletId: senderWallet.id,
           type: WalletTransactionType.ESCROW_RELEASE,
           amount: -amount,
-          balanceBefore: senderWallet.balance,
-          balanceAfter: senderWallet.balance - amount,
+          balanceBefore: Number(senderWallet.balance),
+          balanceAfter: Number(senderWallet.balance) - amount,
           status: WalletTransactionStatus.COMPLETED,
           description: 'تحرير رصيد الضمان للطرف الآخر',
           relatedEntityType: 'escrow',
@@ -497,8 +497,8 @@ export async function releaseFrozenBalance(
           walletId: receiverWallet.id,
           type: WalletTransactionType.ESCROW_RELEASE,
           amount,
-          balanceBefore: receiverWallet.balance,
-          balanceAfter: receiverWallet.balance + amount,
+          balanceBefore: Number(receiverWallet.balance),
+          balanceAfter: Number(receiverWallet.balance) + amount,
           status: WalletTransactionStatus.COMPLETED,
           description: 'استلام رصيد من الضمان',
           relatedEntityType: 'escrow',
@@ -548,8 +548,8 @@ export async function refundFrozenBalance(
           walletId: wallet.id,
           type: WalletTransactionType.ESCROW_REFUND,
           amount, // Positive - returning to available
-          balanceBefore: wallet.balance,
-          balanceAfter: wallet.balance,
+          balanceBefore: Number(wallet.balance),
+          balanceAfter: Number(wallet.balance),
           status: WalletTransactionStatus.COMPLETED,
           description: 'استرداد رصيد الضمان',
           relatedEntityType: 'escrow',
@@ -557,7 +557,7 @@ export async function refundFrozenBalance(
         },
       });
 
-      return { transaction, newBalance: wallet.balance - wallet.frozenBalance + amount };
+      return { transaction, newBalance: Number(wallet.balance) - Number(wallet.frozenBalance) + amount };
     });
 
     return { success: true, ...result };

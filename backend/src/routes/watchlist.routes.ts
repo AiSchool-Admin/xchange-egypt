@@ -93,7 +93,7 @@ router.post('/', async (req, res, next) => {
     const { itemId, targetPrice, notifyOnPriceDrop = true, notifyOnBackInStock = true } = req.body;
 
     if (!itemId) {
-      throw new AppError('Item ID is required', 400);
+      throw new AppError(400, 'Item ID is required');
     }
 
     // Check if item exists
@@ -102,7 +102,7 @@ router.post('/', async (req, res, next) => {
     });
 
     if (!item) {
-      throw new AppError('Item not found', 404);
+      throw new AppError(404, 'Item not found');
     }
 
     // Check if already in watchlist
@@ -111,7 +111,7 @@ router.post('/', async (req, res, next) => {
     });
 
     if (existing) {
-      throw new AppError('Item already in watchlist', 400);
+      throw new AppError(400, 'Item already in watchlist');
     }
 
     // Create price alert (used as watchlist item)
@@ -169,7 +169,7 @@ router.put('/:id', async (req, res, next) => {
     });
 
     if (!watchlistItem) {
-      throw new AppError('Watchlist item not found', 404);
+      throw new AppError(404, 'Watchlist item not found');
     }
 
     const updated = await prisma.priceAlert.update({
@@ -205,7 +205,7 @@ router.delete('/:id', async (req, res, next) => {
     });
 
     if (!watchlistItem) {
-      throw new AppError('Watchlist item not found', 404);
+      throw new AppError(404, 'Watchlist item not found');
     }
 
     await prisma.priceAlert.delete({
