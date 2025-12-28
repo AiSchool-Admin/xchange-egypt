@@ -1,0 +1,384 @@
+{
+  "timestamp": "2025-12-28T18:51:16.210Z",
+  "apiUrl": "https://xchange-egypt-production.up.railway.app/api/v1",
+  "summary": {
+    "passed": 0,
+    "partial": 1,
+    "failed": 19,
+    "total": 20
+  },
+  "successRate": 2.5,
+  "results": [
+    {
+      "scenario": 1,
+      "name": "Direct Mobile Sale",
+      "nameAr": "بيع مباشر لهاتف محمول",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل دخول البائع",
+          "status": "FAIL"
+        },
+        {
+          "step": "تسجيل دخول المشتري",
+          "status": "FAIL"
+        },
+        {
+          "step": "تصفح المنتجات",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 67
+    },
+    {
+      "scenario": 2,
+      "name": "Simple Barter Exchange",
+      "nameAr": "مقايضة بسيطة بين مستخدمين",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل دخول المستخدم الأول",
+          "status": "FAIL"
+        },
+        {
+          "step": "عرض منتجات المقايضة",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "تسجيل دخول المستخدم الثاني",
+          "status": "FAIL"
+        },
+        {
+          "step": "فحص مجموعة المقايضة",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 8
+    },
+    {
+      "scenario": 3,
+      "name": "Live Furniture Auction",
+      "nameAr": "مزاد حي على أثاث",
+      "status": "PARTIAL",
+      "steps": [
+        {
+          "step": "عرض المزادات النشطة",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "تسجيل دخول المزايد",
+          "status": "FAIL"
+        },
+        {
+          "step": "عرض تفاصيل المزاد",
+          "status": "PASS",
+          "error": "No active auctions found"
+        }
+      ],
+      "duration": 5
+    },
+    {
+      "scenario": 4,
+      "name": "Reverse Auction for Transport",
+      "nameAr": "مناقصة عكسية لخدمات نقل",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "عرض المناقصات العكسية",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "تسجيل دخول مقدم الخدمة",
+          "status": "FAIL"
+        },
+        {
+          "step": "إحصائيات المناقصات",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 5
+    },
+    {
+      "scenario": 5,
+      "name": "Property Listing",
+      "nameAr": "إدراج عقار للبيع",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل دخول مالك العقار",
+          "status": "FAIL"
+        },
+        {
+          "step": "عرض العقارات المتاحة",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "أنواع العقارات",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 5
+    },
+    {
+      "scenario": 6,
+      "name": "Car Barter",
+      "nameAr": "مقايضة سيارة",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل دخول مالك السيارة",
+          "status": "FAIL"
+        },
+        {
+          "step": "عرض السيارات المتاحة",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "ماركات السيارات",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 4
+    },
+    {
+      "scenario": 7,
+      "name": "Gold Trading",
+      "nameAr": "تداول الذهب",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل دخول تاجر الذهب",
+          "status": "FAIL"
+        },
+        {
+          "step": "عرض منتجات الذهب",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "أسعار الذهب الحالية",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 5
+    },
+    {
+      "scenario": 8,
+      "name": "Scrap Marketplace",
+      "nameAr": "سوق الخردة",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "عرض منتجات الخردة",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "فئات الخردة",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "تسجيل دخول جامع الخردة",
+          "status": "FAIL"
+        }
+      ],
+      "duration": 5004
+    },
+    {
+      "scenario": 9,
+      "name": "Escrow System",
+      "nameAr": "نظام الضمان",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل دخول المشتري",
+          "status": "FAIL"
+        }
+      ],
+      "duration": 3
+    },
+    {
+      "scenario": 10,
+      "name": "Watchlist",
+      "nameAr": "قائمة المتابعة",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل الدخول",
+          "status": "FAIL"
+        }
+      ],
+      "duration": 1
+    },
+    {
+      "scenario": 11,
+      "name": "Chat System",
+      "nameAr": "نظام المحادثة",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل الدخول",
+          "status": "FAIL"
+        }
+      ],
+      "duration": 1
+    },
+    {
+      "scenario": 12,
+      "name": "Notifications",
+      "nameAr": "الإشعارات",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل الدخول",
+          "status": "FAIL"
+        }
+      ],
+      "duration": 2
+    },
+    {
+      "scenario": 13,
+      "name": "Price Predictor",
+      "nameAr": "توقع الأسعار",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تحميل الفئات",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "فئات توقع الأسعار",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 3
+    },
+    {
+      "scenario": 14,
+      "name": "User Dashboard",
+      "nameAr": "لوحة التحكم",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل الدخول",
+          "status": "FAIL"
+        }
+      ],
+      "duration": 1
+    },
+    {
+      "scenario": 15,
+      "name": "Advanced Search",
+      "nameAr": "البحث المتقدم",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "البحث عن منتجات",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "تصفية حسب الفئة",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "تصفية حسب الموقع",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 4
+    },
+    {
+      "scenario": 16,
+      "name": "Order Management",
+      "nameAr": "إدارة الطلبات",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل الدخول",
+          "status": "FAIL"
+        }
+      ],
+      "duration": 1
+    },
+    {
+      "scenario": 17,
+      "name": "AI Smart Matching",
+      "nameAr": "المطابقة الذكية",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل الدخول",
+          "status": "FAIL"
+        }
+      ],
+      "duration": 2
+    },
+    {
+      "scenario": 18,
+      "name": "Multi-Party Barter Chain",
+      "nameAr": "سلسلة مقايضة متعددة",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل دخول المستخدم 1",
+          "status": "FAIL"
+        },
+        {
+          "step": "مجموعة المقايضة",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 3
+    },
+    {
+      "scenario": 19,
+      "name": "Installment System",
+      "nameAr": "نظام التقسيط",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "تسجيل الدخول",
+          "status": "FAIL"
+        }
+      ],
+      "duration": 2
+    },
+    {
+      "scenario": 20,
+      "name": "Flash Deals",
+      "nameAr": "العروض السريعة",
+      "status": "FAIL",
+      "steps": [
+        {
+          "step": "العروض السريعة النشطة",
+          "status": "FAIL",
+          "statusCode": 0
+        },
+        {
+          "step": "المنتجات المميزة",
+          "status": "FAIL",
+          "statusCode": 0
+        }
+      ],
+      "duration": 2
+    }
+  ]
+}
