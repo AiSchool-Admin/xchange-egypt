@@ -7,6 +7,7 @@ import { SocketProvider } from '@/lib/contexts/SocketContext';
 import Navigation from '@/components/Navigation';
 import FloatingAssistant from '@/components/FloatingAssistant';
 import PWAProvider from '@/components/pwa/PWAProvider';
+import SkipLinks from '@/components/accessibility/SkipLinks';
 
 export const viewport: Viewport = {
   themeColor: '#10b981',
@@ -90,12 +91,15 @@ export default async function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className={`${fontClass} antialiased bg-gray-50`}>
+        <SkipLinks />
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
             <SocketProvider>
               <PWAProvider>
                 <Navigation />
-                {children}
+                <main id="main-content" role="main" aria-label="المحتوى الرئيسي">
+                  {children}
+                </main>
                 <FloatingAssistant />
               </PWAProvider>
             </SocketProvider>
