@@ -5,8 +5,10 @@
 
 import { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
-import { env } from '../config/env';
+import crypto from 'crypto';
+import { env, isProduction } from '../config/env';
 import logger from '../lib/logger';
+import redis from '../config/redis';
 
 // ============================================
 // Rate Limiters للـ Endpoints الحساسة
@@ -434,6 +436,14 @@ function sanitizeString(str: string): string {
  * إضافة headers أمنية إضافية
  */
 export const additionalSecurityHeaders = (req: Request, res: Response, next: NextFunction) => {
+  // HSTS - إجبار استخدام HTTPS (سنة كاملة + includeSubDomains)
+  if (isProduction) {
+    res.setHeader(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains; preload'
+    );
+  }
+
   // منع التضمين في iframes من مواقع أخرى
   res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
@@ -509,38 +519,62 @@ export const securityLogger = (req: Request, res: Response, next: NextFunction) 
 };
 
 // ============================================
-// CSRF Protection (Token-based)
+// CSRF Protection (Redis-backed with fallback)
 // ============================================
 
-const csrfTokens = new Map<string, { token: string; expires: number }>();
+// Fallback in-memory storage (for when Redis is unavailable)
+const csrfTokensFallback = new Map<string, { token: string; expires: number }>();
+
+const CSRF_TOKEN_EXPIRY = 60 * 60; // 1 hour in seconds
+const CSRF_REDIS_PREFIX = 'csrf:';
 
 /**
- * إنشاء CSRF Token
+ * إنشاء CSRF Token مع دعم Redis
  */
-export const generateCsrfToken = (req: Request, res: Response) => {
-  const crypto = require('crypto');
+export const generateCsrfToken = async (req: Request, res: Response) => {
   const token = crypto.randomBytes(32).toString('hex');
   const sessionId = req.headers['x-session-id'] as string || req.ip || 'anonymous';
+  const key = `${CSRF_REDIS_PREFIX}${sessionId}`;
 
-  csrfTokens.set(sessionId, {
-    token,
-    expires: Date.now() + 60 * 60 * 1000, // ساعة واحدة
-  });
+  try {
+    // Try Redis first
+    if (redis && redis.isOpen) {
+      await redis.setEx(key, CSRF_TOKEN_EXPIRY, token);
+      logger.debug('CSRF token stored in Redis', { sessionId: sessionId.substring(0, 10) });
+    } else {
+      // Fallback to in-memory
+      csrfTokensFallback.set(sessionId, {
+        token,
+        expires: Date.now() + CSRF_TOKEN_EXPIRY * 1000,
+      });
 
-  // تنظيف التوكنات المنتهية
-  for (const [key, value] of csrfTokens) {
-    if (value.expires < Date.now()) {
-      csrfTokens.delete(key);
+      // Clean up expired tokens periodically
+      if (csrfTokensFallback.size > 1000) {
+        const now = Date.now();
+        for (const [k, v] of csrfTokensFallback) {
+          if (v.expires < now) {
+            csrfTokensFallback.delete(k);
+          }
+        }
+      }
     }
-  }
 
-  res.json({ csrfToken: token });
+    res.json({ csrfToken: token });
+  } catch (error) {
+    logger.error('Error generating CSRF token:', error);
+    // Fallback to in-memory on error
+    csrfTokensFallback.set(sessionId, {
+      token,
+      expires: Date.now() + CSRF_TOKEN_EXPIRY * 1000,
+    });
+    res.json({ csrfToken: token });
+  }
 };
 
 /**
- * التحقق من CSRF Token
+ * التحقق من CSRF Token مع دعم Redis
  */
-export const verifyCsrfToken = (req: Request, res: Response, next: NextFunction) => {
+export const verifyCsrfToken = async (req: Request, res: Response, next: NextFunction) => {
   // تخطي للـ GET, HEAD, OPTIONS
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
     return next();
@@ -554,84 +588,259 @@ export const verifyCsrfToken = (req: Request, res: Response, next: NextFunction)
 
   const sessionId = req.headers['x-session-id'] as string || req.ip || 'anonymous';
   const csrfToken = req.headers['x-csrf-token'] as string;
-  const storedData = csrfTokens.get(sessionId);
+  const key = `${CSRF_REDIS_PREFIX}${sessionId}`;
 
-  if (!storedData || storedData.token !== csrfToken || storedData.expires < Date.now()) {
-    logger.warn('CSRF token validation failed', {
-      ip: req.ip,
-      path: req.path,
-      hasToken: !!csrfToken,
-    });
+  try {
+    let storedToken: string | null = null;
 
+    // Try Redis first
+    if (redis && redis.isOpen) {
+      storedToken = await redis.get(key);
+    } else {
+      // Fallback to in-memory
+      const storedData = csrfTokensFallback.get(sessionId);
+      if (storedData && storedData.expires > Date.now()) {
+        storedToken = storedData.token;
+      }
+    }
+
+    if (!storedToken || storedToken !== csrfToken) {
+      logger.warn('CSRF token validation failed', {
+        ip: req.ip,
+        path: req.path,
+        hasToken: !!csrfToken,
+        hasStoredToken: !!storedToken,
+      });
+
+      return res.status(403).json({
+        success: false,
+        error: {
+          message: 'Invalid or expired CSRF token',
+          messageAr: 'رمز الحماية غير صالح أو منتهي',
+        },
+      });
+    }
+
+    next();
+  } catch (error) {
+    logger.error('Error verifying CSRF token:', error);
+    // On error, check fallback
+    const storedData = csrfTokensFallback.get(sessionId);
+    if (storedData && storedData.token === csrfToken && storedData.expires > Date.now()) {
+      return next();
+    }
     return res.status(403).json({
       success: false,
       error: {
-        message: 'Invalid or expired CSRF token',
-        messageAr: 'رمز الحماية غير صالح أو منتهي',
+        message: 'CSRF validation error',
+        messageAr: 'خطأ في التحقق من رمز الحماية',
       },
     });
   }
-
-  next();
 };
 
 // ============================================
-// Brute Force Protection
+// Brute Force Protection (Redis-backed with fallback)
 // ============================================
 
-const failedAttempts = new Map<string, { count: number; blockedUntil: number }>();
+const BRUTE_FORCE_PREFIX = 'bruteforce:';
+const BRUTE_FORCE_MAX_ATTEMPTS = 10;
+const BRUTE_FORCE_BLOCK_DURATION = 30 * 60; // 30 minutes in seconds
+
+// Fallback in-memory storage
+const failedAttemptsFallback = new Map<string, { count: number; blockedUntil: number }>();
 
 /**
- * حماية من هجمات Brute Force
+ * حماية من هجمات Brute Force مع دعم Redis
  */
-export const bruteForceProtection = (req: Request, res: Response, next: NextFunction) => {
+export const bruteForceProtection = async (req: Request, res: Response, next: NextFunction) => {
   const ip = req.ip || 'unknown';
   const now = Date.now();
-  const record = failedAttempts.get(ip);
+  const key = `${BRUTE_FORCE_PREFIX}${ip}`;
 
-  // تنظيف السجلات القديمة
-  if (record && record.blockedUntil < now) {
-    failedAttempts.delete(ip);
-  }
+  try {
+    let record: { count: number; blockedUntil: number } | null = null;
 
-  // التحقق من الحظر
-  if (record && record.blockedUntil > now) {
-    const remainingMinutes = Math.ceil((record.blockedUntil - now) / 60000);
-    logger.warn('Blocked IP attempted access', { ip, remainingMinutes });
-
-    return res.status(429).json({
-      success: false,
-      error: {
-        message: `تم حظر عنوان IP الخاص بك. يرجى المحاولة بعد ${remainingMinutes} دقيقة.`,
-        messageEn: `Your IP has been blocked. Please try again in ${remainingMinutes} minutes.`,
-      },
-    });
-  }
-
-  // تخزين الـ response الأصلي لاعتراضه
-  const originalJson = res.json.bind(res);
-  res.json = function (body: unknown) {
-    // إذا كان الرد خطأ مصادقة
-    if (res.statusCode === 401 || res.statusCode === 403) {
-      const current = failedAttempts.get(ip) || { count: 0, blockedUntil: 0 };
-      current.count++;
-
-      // حظر بعد 10 محاولات فاشلة
-      if (current.count >= 10) {
-        current.blockedUntil = now + 30 * 60 * 1000; // 30 دقيقة
-        logger.warn('IP blocked due to too many failed attempts', { ip, attempts: current.count });
+    // Try Redis first
+    if (redis && redis.isOpen) {
+      const data = await redis.get(key);
+      if (data) {
+        record = JSON.parse(data);
       }
-
-      failedAttempts.set(ip, current);
-    } else if (res.statusCode === 200) {
-      // إعادة تعيين العداد عند النجاح
-      failedAttempts.delete(ip);
+    } else {
+      // Fallback to in-memory
+      record = failedAttemptsFallback.get(ip) || null;
+      // Clean up expired records
+      if (record && record.blockedUntil < now) {
+        failedAttemptsFallback.delete(ip);
+        record = null;
+      }
     }
 
-    return originalJson(body);
-  };
+    // التحقق من الحظر
+    if (record && record.blockedUntil > now) {
+      const remainingMinutes = Math.ceil((record.blockedUntil - now) / 60000);
+      logger.warn('Blocked IP attempted access', { ip, remainingMinutes });
 
-  next();
+      return res.status(429).json({
+        success: false,
+        error: {
+          message: `تم حظر عنوان IP الخاص بك. يرجى المحاولة بعد ${remainingMinutes} دقيقة.`,
+          messageEn: `Your IP has been blocked. Please try again in ${remainingMinutes} minutes.`,
+        },
+      });
+    }
+
+    // تخزين الـ response الأصلي لاعتراضه
+    const originalJson = res.json.bind(res);
+    res.json = function (body: unknown) {
+      (async () => {
+        try {
+          if (res.statusCode === 401 || res.statusCode === 403) {
+            let current = { count: 0, blockedUntil: 0 };
+
+            if (redis && redis.isOpen) {
+              const data = await redis.get(key);
+              if (data) current = JSON.parse(data);
+            } else {
+              current = failedAttemptsFallback.get(ip) || current;
+            }
+
+            current.count++;
+
+            // حظر بعد 10 محاولات فاشلة
+            if (current.count >= BRUTE_FORCE_MAX_ATTEMPTS) {
+              current.blockedUntil = now + BRUTE_FORCE_BLOCK_DURATION * 1000;
+              logger.warn('IP blocked due to too many failed attempts', { ip, attempts: current.count });
+            }
+
+            if (redis && redis.isOpen) {
+              await redis.setEx(key, BRUTE_FORCE_BLOCK_DURATION, JSON.stringify(current));
+            } else {
+              failedAttemptsFallback.set(ip, current);
+            }
+          } else if (res.statusCode === 200) {
+            // إعادة تعيين العداد عند النجاح
+            if (redis && redis.isOpen) {
+              await redis.del(key);
+            } else {
+              failedAttemptsFallback.delete(ip);
+            }
+          }
+        } catch (err) {
+          logger.error('Error in brute force tracking:', err);
+        }
+      })();
+
+      return originalJson(body);
+    };
+
+    next();
+  } catch (error) {
+    logger.error('Error in brute force protection:', error);
+    next();
+  }
+};
+
+// ============================================
+// JWT Token Revocation System (Redis-backed)
+// ============================================
+
+const JWT_BLACKLIST_PREFIX = 'jwt:blacklist:';
+const JWT_BLACKLIST_FALLBACK = new Set<string>();
+
+/**
+ * إضافة JWT token إلى القائمة السوداء
+ * @param jti - معرف الـ token الفريد
+ * @param expiresInSeconds - مدة الصلاحية المتبقية بالثواني
+ */
+export const blacklistToken = async (jti: string, expiresInSeconds: number): Promise<boolean> => {
+  const key = `${JWT_BLACKLIST_PREFIX}${jti}`;
+
+  try {
+    if (redis && redis.isOpen) {
+      await redis.setEx(key, expiresInSeconds, '1');
+      logger.info('Token blacklisted in Redis', { jti: jti.substring(0, 8) });
+      return true;
+    } else {
+      // Fallback - store in memory (will be lost on restart)
+      JWT_BLACKLIST_FALLBACK.add(jti);
+      logger.warn('Token blacklisted in memory (Redis unavailable)', { jti: jti.substring(0, 8) });
+      return true;
+    }
+  } catch (error) {
+    logger.error('Error blacklisting token:', error);
+    JWT_BLACKLIST_FALLBACK.add(jti);
+    return false;
+  }
+};
+
+/**
+ * التحقق مما إذا كان الـ token في القائمة السوداء
+ * @param jti - معرف الـ token الفريد
+ */
+export const isTokenBlacklisted = async (jti: string): Promise<boolean> => {
+  const key = `${JWT_BLACKLIST_PREFIX}${jti}`;
+
+  try {
+    if (redis && redis.isOpen) {
+      const exists = await redis.exists(key);
+      return exists === 1;
+    } else {
+      return JWT_BLACKLIST_FALLBACK.has(jti);
+    }
+  } catch (error) {
+    logger.error('Error checking token blacklist:', error);
+    return JWT_BLACKLIST_FALLBACK.has(jti);
+  }
+};
+
+/**
+ * إلغاء جميع tokens لمستخدم معين
+ * يتطلب تخزين قائمة بـ JTIs للمستخدم
+ */
+export const revokeAllUserTokens = async (userId: string): Promise<boolean> => {
+  const userTokensKey = `user:tokens:${userId}`;
+
+  try {
+    if (redis && redis.isOpen) {
+      // Get all token JTIs for this user
+      const tokens = await redis.sMembers(userTokensKey);
+
+      // Blacklist each token
+      const pipeline = redis.multi();
+      for (const jti of tokens) {
+        pipeline.setEx(`${JWT_BLACKLIST_PREFIX}${jti}`, 24 * 60 * 60, '1'); // 24 hours
+      }
+      pipeline.del(userTokensKey);
+      await pipeline.exec();
+
+      logger.info('All user tokens revoked', { userId, count: tokens.length });
+      return true;
+    } else {
+      logger.warn('Cannot revoke all user tokens (Redis unavailable)', { userId });
+      return false;
+    }
+  } catch (error) {
+    logger.error('Error revoking user tokens:', error);
+    return false;
+  }
+};
+
+/**
+ * تسجيل token جديد للمستخدم (لتتبع الـ tokens النشطة)
+ */
+export const registerUserToken = async (userId: string, jti: string, expiresInSeconds: number): Promise<void> => {
+  const userTokensKey = `user:tokens:${userId}`;
+
+  try {
+    if (redis && redis.isOpen) {
+      await redis.sAdd(userTokensKey, jti);
+      await redis.expire(userTokensKey, expiresInSeconds);
+    }
+  } catch (error) {
+    logger.error('Error registering user token:', error);
+  }
 };
 
 /**

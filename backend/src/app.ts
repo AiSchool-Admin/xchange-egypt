@@ -164,18 +164,40 @@ app.set('trust proxy', 1);
 app.use(sentryRequestHandler);
 
 // Security headers (Helmet + additional)
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://unpkg.com'],
-      scriptSrc: ["'self'", "'unsafe-inline'", 'https://unpkg.com'],
-      imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'", 'wss:', 'https:'],
+// CSP is relaxed for /api/v1/docs (Swagger UI requires inline scripts/styles)
+// All other routes use strict CSP
+app.use((req, res, next) => {
+  const isDocsRoute = req.path.startsWith('/api/v1/docs');
+
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        // Swagger UI needs unsafe-inline, other routes don't
+        styleSrc: isDocsRoute
+          ? ["'self'", "'unsafe-inline'", 'https://unpkg.com']
+          : ["'self'"],
+        scriptSrc: isDocsRoute
+          ? ["'self'", "'unsafe-inline'", 'https://unpkg.com']
+          : ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'wss:', 'https:'],
+        // Additional security directives
+        frameAncestors: ["'self'"],
+        formAction: ["'self'"],
+        baseUri: ["'self'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
     },
-  },
-  crossOriginEmbedderPolicy: false, // Needed for images from external sources
-}));
+    crossOriginEmbedderPolicy: false, // Needed for images from external sources
+    // Additional Helmet settings
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    noSniff: true,
+    xssFilter: true,
+    hidePoweredBy: true,
+  })(req, res, next);
+});
 app.use(additionalSecurityHeaders);
 
 // Security logging (detect suspicious requests)
