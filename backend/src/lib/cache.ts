@@ -1,6 +1,6 @@
 /**
- * Cache utility for Redis caching
- * Provides type-safe caching with automatic JSON serialization
+ * Advanced Cache Utility with Redis + In-Memory Fallback
+ * نظام تخزين مؤقت متقدم يدعم Redis مع fallback للذاكرة
  */
 
 import redis from '../config/redis';
@@ -12,6 +12,44 @@ const CATEGORY_TTL = 3600; // 1 hour (categories change rarely)
 const SEARCH_TTL = 60; // 1 minute (search results change frequently)
 
 /**
+ * In-Memory Cache Configuration
+ */
+const MEMORY_CACHE_CONFIG = {
+  maxItems: 1000,
+  cleanupInterval: 60000, // دقيقة
+};
+
+/**
+ * In-Memory Cache (Fallback when Redis unavailable)
+ */
+interface MemoryCacheItem<T> {
+  value: T;
+  expiresAt: number;
+}
+
+const memoryCache = new Map<string, MemoryCacheItem<unknown>>();
+
+/**
+ * تنظيف العناصر المنتهية
+ */
+function cleanupExpiredItems(): void {
+  const now = Date.now();
+  let cleaned = 0;
+  for (const [key, item] of memoryCache) {
+    if (item.expiresAt < now) {
+      memoryCache.delete(key);
+      cleaned++;
+    }
+  }
+  if (cleaned > 0) {
+    logger.debug(`Memory cache cleanup: removed ${cleaned} expired items`);
+  }
+}
+
+// تنظيف دوري
+setInterval(cleanupExpiredItems, MEMORY_CACHE_CONFIG.cleanupInterval);
+
+/**
  * Check if Redis is available
  */
 export const isRedisAvailable = (): boolean => {
@@ -19,19 +57,27 @@ export const isRedisAvailable = (): boolean => {
 };
 
 /**
- * Get a cached value
+ * Get a cached value (with memory fallback)
  * @param key - Cache key
  * @returns Parsed value or null if not found/expired
  */
 export const getCache = async <T>(key: string): Promise<T | null> => {
-  if (!isRedisAvailable()) {
-    return null;
-  }
-
   try {
-    const value = await redis!.get(key);
-    if (!value) return null;
-    return JSON.parse(value) as T;
+    // Try Redis first
+    if (isRedisAvailable()) {
+      const value = await redis!.get(key);
+      if (!value) return null;
+      return JSON.parse(value) as T;
+    }
+
+    // Fallback to memory cache
+    const memItem = memoryCache.get(key) as MemoryCacheItem<T> | undefined;
+    if (!memItem) return null;
+    if (memItem.expiresAt < Date.now()) {
+      memoryCache.delete(key);
+      return null;
+    }
+    return memItem.value;
   } catch (error) {
     logger.error(`Cache get error for key ${key}:`, error);
     return null;
@@ -39,18 +85,33 @@ export const getCache = async <T>(key: string): Promise<T | null> => {
 };
 
 /**
- * Set a cached value
+ * Set a cached value (with memory fallback)
  * @param key - Cache key
  * @param value - Value to cache (will be JSON stringified)
  * @param ttl - Time to live in seconds (default: 5 minutes)
  */
 export const setCache = async <T>(key: string, value: T, ttl: number = DEFAULT_TTL): Promise<boolean> => {
-  if (!isRedisAvailable()) {
-    return false;
-  }
-
   try {
-    await redis!.setEx(key, ttl, JSON.stringify(value));
+    // Try Redis first
+    if (isRedisAvailable()) {
+      await redis!.setEx(key, ttl, JSON.stringify(value));
+      return true;
+    }
+
+    // Fallback to memory cache
+    if (memoryCache.size >= MEMORY_CACHE_CONFIG.maxItems) {
+      cleanupExpiredItems();
+      // Still full? Remove oldest
+      if (memoryCache.size >= MEMORY_CACHE_CONFIG.maxItems) {
+        const firstKey = memoryCache.keys().next().value;
+        if (firstKey) memoryCache.delete(firstKey);
+      }
+    }
+
+    memoryCache.set(key, {
+      value,
+      expiresAt: Date.now() + ttl * 1000,
+    });
     return true;
   } catch (error) {
     logger.error(`Cache set error for key ${key}:`, error);
@@ -63,12 +124,11 @@ export const setCache = async <T>(key: string, value: T, ttl: number = DEFAULT_T
  * @param key - Cache key
  */
 export const deleteCache = async (key: string): Promise<boolean> => {
-  if (!isRedisAvailable()) {
-    return false;
-  }
-
   try {
-    await redis!.del(key);
+    if (isRedisAvailable()) {
+      await redis!.del(key);
+    }
+    memoryCache.delete(key);
     return true;
   } catch (error) {
     logger.error(`Cache delete error for key ${key}:`, error);
@@ -81,18 +141,61 @@ export const deleteCache = async (key: string): Promise<boolean> => {
  * @param pattern - Pattern to match (e.g., "categories:*")
  */
 export const deleteCachePattern = async (pattern: string): Promise<boolean> => {
-  if (!isRedisAvailable()) {
-    return false;
-  }
-
   try {
-    const keys = await redis!.keys(pattern);
-    if (keys.length > 0) {
-      await redis!.del(keys);
+    // Redis
+    if (isRedisAvailable()) {
+      const keys = await redis!.keys(pattern);
+      if (keys.length > 0) {
+        await redis!.del(keys);
+      }
+    }
+
+    // Memory cache fallback
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+    for (const key of memoryCache.keys()) {
+      if (regex.test(key)) {
+        memoryCache.delete(key);
+      }
     }
     return true;
   } catch (error) {
     logger.error(`Cache delete pattern error for ${pattern}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Get cache statistics
+ */
+export const getCacheStats = async (): Promise<{
+  type: 'redis' | 'memory';
+  itemCount: number;
+  isAvailable: boolean;
+}> => {
+  if (isRedisAvailable()) {
+    try {
+      const dbSize = await redis!.dbSize();
+      return { type: 'redis', itemCount: dbSize, isAvailable: true };
+    } catch {
+      return { type: 'redis', itemCount: 0, isAvailable: false };
+    }
+  }
+  return { type: 'memory', itemCount: memoryCache.size, isAvailable: true };
+};
+
+/**
+ * Flush all cache
+ */
+export const flushCache = async (): Promise<boolean> => {
+  try {
+    if (isRedisAvailable()) {
+      await redis!.flushDb();
+    }
+    memoryCache.clear();
+    logger.info('Cache flushed');
+    return true;
+  } catch (error) {
+    logger.error('Cache flush error:', error);
     return false;
   }
 };
