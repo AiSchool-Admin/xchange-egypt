@@ -1,6 +1,6 @@
 import { AuctionStatus, BidStatus, ListingType, ListingStatus, ItemStatus } from '../types';
 import { CreateAuctionInput, UpdateAuctionInput, PlaceBidInput, ListAuctionsQuery } from '../validations/auction.validation';
-import { AppError } from '../middleware/errorHandler';
+import { AppError } from '../utils/errors';
 import { createNotification } from './notification.service';
 import prisma from '../lib/prisma';
 
