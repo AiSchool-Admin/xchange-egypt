@@ -8,7 +8,16 @@
  * - Request context tracking
  * - Performance timing
  * - Environment-aware output
+ * - File logging with rotation (production)
  */
+
+import fs from 'fs';
+import path from 'path';
+
+// Log rotation configuration
+const LOG_DIR = process.env.LOG_DIR || 'logs';
+const MAX_LOG_SIZE_MB = parseInt(process.env.MAX_LOG_SIZE_MB || '10', 10);
+const MAX_LOG_FILES = parseInt(process.env.MAX_LOG_FILES || '5', 10);
 
 export enum LogLevel {
   DEBUG = 'debug',
@@ -43,11 +52,70 @@ class Logger {
   private serviceName: string;
   private isProduction: boolean;
   private minLevel: LogLevel;
+  private fileLoggingEnabled: boolean;
+  private logFilePath: string;
+  private errorLogFilePath: string;
 
   constructor(serviceName: string = 'xchange-backend') {
     this.serviceName = serviceName;
     this.isProduction = process.env.NODE_ENV === 'production';
     this.minLevel = this.getMinLevel();
+    this.fileLoggingEnabled = process.env.ENABLE_FILE_LOGGING === 'true' || this.isProduction;
+    this.logFilePath = path.join(LOG_DIR, 'app.log');
+    this.errorLogFilePath = path.join(LOG_DIR, 'error.log');
+
+    if (this.fileLoggingEnabled) {
+      this.ensureLogDirectory();
+    }
+  }
+
+  private ensureLogDirectory(): void {
+    try {
+      if (!fs.existsSync(LOG_DIR)) {
+        fs.mkdirSync(LOG_DIR, { recursive: true });
+      }
+    } catch {
+      // Fallback: disable file logging if directory creation fails
+      this.fileLoggingEnabled = false;
+    }
+  }
+
+  private rotateLogIfNeeded(filePath: string): void {
+    try {
+      if (!fs.existsSync(filePath)) return;
+
+      const stats = fs.statSync(filePath);
+      const fileSizeMB = stats.size / (1024 * 1024);
+
+      if (fileSizeMB >= MAX_LOG_SIZE_MB) {
+        // Rotate logs
+        for (let i = MAX_LOG_FILES - 1; i >= 1; i--) {
+          const oldFile = `${filePath}.${i}`;
+          const newFile = `${filePath}.${i + 1}`;
+          if (fs.existsSync(oldFile)) {
+            if (i === MAX_LOG_FILES - 1) {
+              fs.unlinkSync(oldFile); // Delete oldest
+            } else {
+              fs.renameSync(oldFile, newFile);
+            }
+          }
+        }
+        fs.renameSync(filePath, `${filePath}.1`);
+      }
+    } catch {
+      // Silently handle rotation errors
+    }
+  }
+
+  private writeToFile(filePath: string, content: string): void {
+    if (!this.fileLoggingEnabled) return;
+
+    try {
+      this.rotateLogIfNeeded(filePath);
+      fs.appendFileSync(filePath, content + '\n');
+    } catch {
+      // Silently handle file write errors
+    }
   }
 
   private getMinLevel(): LogLevel {
@@ -117,7 +185,9 @@ class Logger {
     }
 
     const formatted = this.formatEntry(entry);
+    const jsonEntry = JSON.stringify(entry);
 
+    // Console output
     switch (level) {
       case LogLevel.ERROR:
         console.error(formatted);
@@ -130,6 +200,15 @@ class Logger {
         break;
       default:
         console.log(formatted);
+    }
+
+    // File logging (JSON format for parsing)
+    if (this.fileLoggingEnabled) {
+      this.writeToFile(this.logFilePath, jsonEntry);
+      // Also write errors to separate error log
+      if (level === LogLevel.ERROR) {
+        this.writeToFile(this.errorLogFilePath, jsonEntry);
+      }
     }
   }
 

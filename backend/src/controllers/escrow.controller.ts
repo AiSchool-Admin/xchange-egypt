@@ -40,7 +40,7 @@ export const getEscrow = async (req: Request, res: Response, next: NextFunction)
     const escrow = await escrowService.getEscrow(id);
 
     if (!escrow) {
-      return res.status(404).json({ success: false, message: 'Escrow not found' });
+      return errorResponse(res, 'Escrow not found', 404);
     }
 
     return successResponse(res, escrow, 'Escrow retrieved successfully');
@@ -85,7 +85,7 @@ export const fundEscrow = async (req: Request, res: Response, next: NextFunction
     const result = await escrowService.fundEscrow(id, userId);
 
     if (!result.success) {
-      return res.status(400).json({ success: false, message: result.error });
+      return errorResponse(res, result.error || 'Failed to fund escrow', 400);
     }
 
     return successResponse(res, result, 'Escrow funded successfully');
@@ -110,7 +110,7 @@ export const markDelivered = async (req: Request, res: Response, next: NextFunct
     const result = await escrowService.markDelivered(id, userId, evidence);
 
     if (!result.success) {
-      return res.status(400).json({ success: false, message: result.error });
+      return errorResponse(res, result.error || 'Failed to mark as delivered', 400);
     }
 
     return successResponse(res, result, 'Marked as delivered successfully');
@@ -134,7 +134,7 @@ export const confirmReceipt = async (req: Request, res: Response, next: NextFunc
     const result = await escrowService.confirmReceipt(id, userId);
 
     if (!result.success) {
-      return res.status(400).json({ success: false, message: result.error });
+      return errorResponse(res, result.error || 'Failed to confirm receipt', 400);
     }
 
     return successResponse(res, result, 'Receipt confirmed, funds released');
@@ -159,7 +159,7 @@ export const cancelEscrow = async (req: Request, res: Response, next: NextFuncti
     const result = await escrowService.cancelEscrow(id, userId, reason || 'Cancelled by user');
 
     if (!result.success) {
-      return res.status(400).json({ success: false, message: result.error });
+      return errorResponse(res, result.error || 'Failed to cancel escrow', 400);
     }
 
     return successResponse(res, result, 'Escrow cancelled successfully');
@@ -192,7 +192,7 @@ export const openDispute = async (req: Request, res: Response, next: NextFunctio
     });
 
     if (!result.success) {
-      return res.status(400).json({ success: false, message: result.error });
+      return errorResponse(res, result.error || 'Failed to open dispute', 400);
     }
 
     return successResponse(res, result.dispute, 'Dispute opened successfully', 201);
@@ -211,7 +211,7 @@ export const getDispute = async (req: Request, res: Response, next: NextFunction
     const dispute = await escrowService.getDispute(disputeId);
 
     if (!dispute) {
-      return res.status(404).json({ success: false, message: 'Dispute not found' });
+      return errorResponse(res, 'Dispute not found', 404);
     }
 
     return successResponse(res, dispute, 'Dispute retrieved successfully');
@@ -236,7 +236,7 @@ export const respondToDispute = async (req: Request, res: Response, next: NextFu
     const result = await escrowService.respondToDispute(disputeId, userId, message, attachments);
 
     if (!result.success) {
-      return res.status(400).json({ success: false, message: result.error });
+      return errorResponse(res, result.error || 'Failed to submit response', 400);
     }
 
     return successResponse(res, result, 'Response submitted successfully');

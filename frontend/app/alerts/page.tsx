@@ -8,11 +8,11 @@ import { getMyAlerts, createAlert, deleteAlert, toggleAlert, PriceAlert, AlertTy
 function AlertCard({ alert, onToggle, onDelete }: { alert: PriceAlert; onToggle: () => void; onDelete: () => void }) {
   const getTypeIcon = (type: AlertType) => {
     switch (type) {
-      case 'ITEM': return '&#128230;';
-      case 'CATEGORY': return '&#128193;';
-      case 'SEARCH': return '&#128269;';
-      case 'SELLER': return '&#128100;';
-      default: return '&#128276;';
+      case 'ITEM': return '📦';
+      case 'CATEGORY': return '📁';
+      case 'SEARCH': return '🔍';
+      case 'SELLER': return '👤';
+      default: return '🔔';
     }
   };
 
@@ -31,7 +31,7 @@ function AlertCard({ alert, onToggle, onDelete }: { alert: PriceAlert; onToggle:
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${alert.isActive ? 'bg-green-100' : 'bg-gray-100'}`}>
-            <span dangerouslySetInnerHTML={{ __html: getTypeIcon(alert.type) }} />
+            <span>{getTypeIcon(alert.type)}</span>
           </div>
           <div>
             <h3 className="font-bold text-gray-800">{alert.name}</h3>

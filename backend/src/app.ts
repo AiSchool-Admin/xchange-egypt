@@ -135,7 +135,7 @@ app.use(helmet());
 // Compression - reduce response size
 app.use(compression());
 
-// CORS configuration - Allow Vercel domains dynamically
+// CORS configuration - Strict in production, flexible in development
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -144,13 +144,13 @@ app.use(
         return callback(null, true);
       }
 
-      // Check if origin matches allowed patterns
+      // Check if origin matches allowed patterns from environment config
       const allowedOrigins = env.cors.origin;
-      const isAllowed = allowedOrigins.some((allowed) => {
+      const isExplicitlyAllowed = allowedOrigins.some((allowed) => {
         // Exact match
         if (allowed === origin) return true;
 
-        // Wildcard pattern matching for Vercel domains
+        // Wildcard pattern matching for specified domains
         if (allowed.includes('*')) {
           const pattern = allowed.replace(/\*/g, '.*');
           const regex = new RegExp(`^${pattern}$`);
@@ -160,14 +160,18 @@ app.use(
         return false;
       });
 
-      // Also allow all vercel.app domains for development
-      const isVercel = origin.endsWith('.vercel.app');
-      const isLocalhost = origin.includes('localhost');
+      // In development only: allow localhost and Vercel preview deployments
+      const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+      const isVercelPreview = origin.endsWith('.vercel.app');
+      const allowDevOrigins = isDevelopment && (isLocalhost || isVercelPreview);
 
-      if (isAllowed || isVercel || isLocalhost) {
+      if (isExplicitlyAllowed || allowDevOrigins) {
         callback(null, true);
       } else {
-        logger.warn(`CORS blocked origin: ${origin}`);
+        logger.warn(`CORS blocked origin: ${origin}`, {
+          blockedOrigin: origin,
+          environment: env.server.nodeEnv,
+        });
         callback(new Error('Not allowed by CORS'));
       }
     },

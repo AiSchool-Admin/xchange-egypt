@@ -187,6 +187,10 @@ model User {
   @@index([phone])
   @@index([userType])
   @@index([status])
+  // Composite indexes for performance
+  @@index([status, userType])
+  @@index([status, createdAt])
+  @@index([governorate, city])
 }
 
 model RefreshToken {
@@ -821,6 +825,11 @@ model Listing {
   @@index([listingType])
   @@index([status])
   @@index([endDate])
+  // Composite indexes for performance
+  @@index([status, listingType])
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([status, endDate])
 }
 
 // ============================================
@@ -919,6 +928,9 @@ model Order {
   @@index([userId])
   @@index([status])
   @@index([orderNumber])
+  // Composite indexes for performance
+  @@index([userId, status])
+  @@index([status, createdAt])
 }
 
 model OrderItem {
@@ -1649,6 +1661,11 @@ model Transaction {
   @@index([sellerId])
   @@index([paymentStatus])
   @@index([deliveryStatus])
+  // Composite indexes for performance
+  @@index([buyerId, paymentStatus])
+  @@index([sellerId, paymentStatus])
+  @@index([paymentStatus, deliveryStatus])
+  @@index([createdAt, paymentStatus])
 }
 
 // ============================================
@@ -1965,6 +1982,10 @@ model Notification {
   @@index([priority])
   @@index([createdAt])
   @@index([expiresAt])
+  // Composite indexes for performance
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([userId, type, isRead])
 }
 
 // User notification preferences
@@ -2263,6 +2284,10 @@ model Message {
   @@index([createdAt])
   @@index([status])
   @@index([isRead])
+  // Composite indexes for performance
+  @@index([conversationId, createdAt])
+  @@index([recipientId, isRead])
+  @@index([conversationId, isDeleted])
 }
 
 // User typing indicator (in-memory, but can be stored for offline)
