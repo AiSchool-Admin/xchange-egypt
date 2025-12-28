@@ -98,6 +98,7 @@ import docsRoutes from './routes/docs.routes';
 import watchlistRoutes from './routes/watchlist.routes';
 import pricePredictionRoutes from './routes/price-prediction.routes';
 import testRunnerRoutes from './routes/test-runner.routes';
+import e2eTestRunnerRoutes from './routes/e2e-test-runner.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -522,6 +523,9 @@ app.use('/api/v1/price-prediction', pricePredictionRoutes);
 
 // Test Runner - تشغيل الاختبارات (20 سيناريو)
 app.use('/api/v1/test-runner', testRunnerRoutes);
+
+// E2E Test Runner - اختبارات E2E حقيقية (20 سيناريو وظيفي)
+app.use('/api/v1/e2e-tests', e2eTestRunnerRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
