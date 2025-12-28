@@ -1,9 +1,15 @@
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '';
 
 /**
+ * Check if we're running on the client side
+ */
+const isClient = typeof window !== 'undefined';
+
+/**
  * Check if push notifications are supported
  */
 export const isPushSupported = (): boolean => {
+  if (!isClient) return false;
   return 'serviceWorker' in navigator && 'PushManager' in window;
 };
 
@@ -128,8 +134,8 @@ export const unsubscribeFromPush = async (apiUrl: string, token: string): Promis
  * Register service worker
  */
 export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration | null> => {
-  if (!('serviceWorker' in navigator)) {
-    console.log('Service worker not supported');
+  if (!isClient || !('serviceWorker' in navigator)) {
+    if (isClient) console.log('Service worker not supported');
     return null;
   }
 
@@ -164,6 +170,8 @@ export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration
  * Helper: Convert URL-safe base64 to Uint8Array
  */
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  if (!isClient) return new Uint8Array(0);
+
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
 
@@ -181,7 +189,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
  * Helper: Convert ArrayBuffer to base64
  */
 function arrayBufferToBase64(buffer: ArrayBuffer | null): string {
-  if (!buffer) return '';
+  if (!isClient || !buffer) return '';
 
   const bytes = new Uint8Array(buffer);
   let binary = '';
