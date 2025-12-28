@@ -13,6 +13,11 @@ import { AppError } from './utils/errors';
 import logger from './lib/logger';
 import { sentryErrorHandler, sentryRequestHandler } from './lib/sentry';
 import {
+  getHealthStatus,
+  getPerformanceStats,
+  startHealthMonitoring,
+} from './lib/monitoring';
+import {
   loginLimiter,
   registerLimiter,
   passwordResetLimiter,
@@ -265,29 +270,30 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// Health check - Detailed with DB status
+// Health check - Detailed with all services
 app.get('/health/detailed', async (_req: Request, res: Response) => {
   try {
-    // Test database connection
-    await prisma.$queryRaw`SELECT 1`;
-
-    res.status(200).json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      environment: env.server.nodeEnv,
-      uptime: process.uptime(),
-      database: 'connected',
-      memory: {
-        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + ' MB',
-        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024) + ' MB',
-      },
-    });
+    const health = await getHealthStatus();
+    const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
+    res.status(statusCode).json(health);
   } catch (error) {
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
-      database: 'disconnected',
       error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Performance metrics endpoint (for monitoring dashboards)
+app.get('/metrics', async (_req: Request, res: Response) => {
+  try {
+    const stats = await getPerformanceStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to get performance stats',
+      message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -560,12 +566,18 @@ const startServer = async () => {
       .then(() => logger.info('Daily meetings initialized at startup'))
       .catch(err => logger.error('Failed to initialize daily meetings:', err));
 
+    // Start health monitoring (checks every 60 seconds)
+    if (env.server.nodeEnv === 'production') {
+      startHealthMonitoring(60000);
+    }
+
     // Start HTTP server (Express + Socket.IO) - listen on 0.0.0.0 for Railway compatibility
     httpServer.listen(env.server.port, '0.0.0.0', () => {
       logger.info(`Server running on port ${env.server.port}`);
       logger.info(`Environment: ${env.server.nodeEnv}`);
       logger.info(`API URL: ${env.server.apiUrl}`);
       logger.info(`Health check: ${env.server.apiUrl}/health`);
+      logger.info(`Metrics: ${env.server.apiUrl}/metrics`);
       logger.info(`WebSocket available on ws://${env.server.port}`);
     });
   } catch (error) {
