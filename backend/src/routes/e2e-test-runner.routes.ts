@@ -676,18 +676,16 @@ async function scenario6_CarBarter(): Promise<E2ETestResult> {
     });
     if (!carOwner) throw new Error('Car owner not found');
 
-    // Create car listing
-    const carListing = await apiCall('POST', '/api/v1/cars', carOwner.token, {
+    // Create car listing (correct path: /api/v1/cars/listings)
+    const carListing = await apiCall('POST', '/api/v1/cars/listings', carOwner.token, {
       title: `E2E Toyota Camry ${Date.now()}`,
-      description: 'Toyota Camry 2020 for barter',
-      brand: 'Toyota',
+      make: 'Toyota',
       model: 'Camry',
       year: 2020,
       mileage: 50000,
       price: 450000,
-      listingType: 'BARTER',
       governorate: 'Cairo',
-      images: ['https://example.com/car.jpg']
+      description: 'Toyota Camry 2020 for barter'
     });
     steps.push({
       step: 'Create Car Listing',
@@ -696,8 +694,8 @@ async function scenario6_CarBarter(): Promise<E2ETestResult> {
       error: carListing.error
     });
 
-    // Search cars
-    const search = await apiCall('GET', '/api/v1/cars?brand=Toyota');
+    // Search cars (correct path: /api/v1/cars/listings)
+    const search = await apiCall('GET', '/api/v1/cars/listings?make=Toyota');
     steps.push({
       step: 'Search Cars',
       stepAr: 'البحث عن سيارات',
@@ -705,8 +703,8 @@ async function scenario6_CarBarter(): Promise<E2ETestResult> {
       error: search.error
     });
 
-    // Verify API
-    const apiCheck = await apiCall('GET', '/api/v1/cars');
+    // Verify API (correct path: /api/v1/cars/listings)
+    const apiCheck = await apiCall('GET', '/api/v1/cars/listings');
     steps.push({
       step: 'Cars API Working',
       stepAr: 'API السيارات يعمل',
@@ -760,8 +758,8 @@ async function scenario7_GoldTrading(): Promise<E2ETestResult> {
       error: prices.error
     });
 
-    // List gold items
-    const goldItems = await apiCall('GET', '/api/v1/gold');
+    // List gold items (correct path: /api/v1/gold/items)
+    const goldItems = await apiCall('GET', '/api/v1/gold/items');
     steps.push({
       step: 'List Gold Items',
       stepAr: 'عرض منتجات الذهب',
@@ -769,8 +767,8 @@ async function scenario7_GoldTrading(): Promise<E2ETestResult> {
       error: goldItems.error
     });
 
-    // Verify API
-    const apiCheck = await apiCall('GET', '/api/v1/gold');
+    // Verify API (correct path: /api/v1/gold/items)
+    const apiCheck = await apiCall('GET', '/api/v1/gold/items');
     steps.push({
       step: 'Gold API Working',
       stepAr: 'API الذهب يعمل',
@@ -815,8 +813,8 @@ async function scenario8_ScrapMarketplace(): Promise<E2ETestResult> {
     });
     if (!scrapDealer) throw new Error('Scrap dealer not found');
 
-    // List scrap items
-    const scrapItems = await apiCall('GET', '/api/v1/scrap');
+    // List scrap items (correct path: /api/v1/scrap/items)
+    const scrapItems = await apiCall('GET', '/api/v1/scrap/items');
     steps.push({
       step: 'List Scrap Items',
       stepAr: 'عرض منتجات الخردة',
@@ -824,17 +822,17 @@ async function scenario8_ScrapMarketplace(): Promise<E2ETestResult> {
       error: scrapItems.error
     });
 
-    // Get scrap categories
-    const categories = await apiCall('GET', '/api/v1/scrap/categories');
+    // Get metal prices (correct path: /api/v1/scrap/metal-prices)
+    const metalPrices = await apiCall('GET', '/api/v1/scrap/metal-prices');
     steps.push({
-      step: 'Get Scrap Categories',
-      stepAr: 'الحصول على فئات الخردة',
-      status: categories.success ? 'PASS' : 'FAIL',
-      error: categories.error
+      step: 'Get Metal Prices',
+      stepAr: 'الحصول على أسعار المعادن',
+      status: metalPrices.success ? 'PASS' : 'FAIL',
+      error: metalPrices.error
     });
 
-    // Verify API
-    const apiCheck = await apiCall('GET', '/api/v1/scrap');
+    // Verify API (correct path: /api/v1/scrap/items)
+    const apiCheck = await apiCall('GET', '/api/v1/scrap/items');
     steps.push({
       step: 'Scrap API Working',
       stepAr: 'API الخردة يعمل',
@@ -888,17 +886,17 @@ async function scenario9_EscrowPayment(): Promise<E2ETestResult> {
       error: wallet.error
     });
 
-    // Get escrow info
-    const escrowInfo = await apiCall('GET', '/api/v1/escrow', buyer.token);
+    // Get my escrows (correct path: /api/v1/escrow/my-escrows)
+    const escrowInfo = await apiCall('GET', '/api/v1/escrow/my-escrows', buyer.token);
     steps.push({
-      step: 'Get Escrow Info',
-      stepAr: 'معلومات الضمان',
+      step: 'Get My Escrows',
+      stepAr: 'معاملات الضمان الخاصة بي',
       status: escrowInfo.success ? 'PASS' : 'FAIL',
       error: escrowInfo.error
     });
 
-    // Verify escrow API
-    const apiCheck = await apiCall('GET', '/api/v1/escrow');
+    // Verify escrow API (correct path: /api/v1/escrow/my-escrows)
+    const apiCheck = await apiCall('GET', '/api/v1/escrow/my-escrows', buyer.token);
     steps.push({
       step: 'Escrow API Working',
       stepAr: 'API الضمان يعمل',
@@ -1398,17 +1396,17 @@ async function scenario17_AISmartMatching(): Promise<E2ETestResult> {
     });
     if (!user) throw new Error('User not found');
 
-    // Get matching suggestions
-    const matches = await apiCall('GET', '/api/v1/matching/suggestions', user.token);
+    // Get my matches (correct path: /api/v1/matching/my-matches)
+    const matches = await apiCall('GET', '/api/v1/matching/my-matches', user.token);
     steps.push({
-      step: 'Get Matching Suggestions',
-      stepAr: 'الحصول على اقتراحات المطابقة',
+      step: 'Get My Matches',
+      stepAr: 'الحصول على مطابقاتي',
       status: matches.success ? 'PASS' : 'FAIL',
       error: matches.error
     });
 
-    // Verify matching API
-    const apiCheck = await apiCall('GET', '/api/v1/matching', user.token);
+    // Verify matching API (correct path: /api/v1/matching/stats)
+    const apiCheck = await apiCall('GET', '/api/v1/matching/stats');
     steps.push({
       step: 'Matching API Working',
       stepAr: 'API المطابقة يعمل',
@@ -1508,18 +1506,19 @@ async function scenario19_InstallmentPayment(): Promise<E2ETestResult> {
     });
     if (!user) throw new Error('User not found');
 
-    // Get installment options
-    const options = await apiCall('GET', '/api/v1/installments/providers', user.token);
+    // Get installment plans (correct path: /api/v1/installments/plans)
+    const options = await apiCall('GET', '/api/v1/installments/plans?amount=10000');
     steps.push({
-      step: 'Get Installment Providers',
-      stepAr: 'الحصول على مزودي التقسيط',
+      step: 'Get Installment Plans',
+      stepAr: 'الحصول على خطط التقسيط',
       status: options.success ? 'PASS' : 'FAIL',
       error: options.error
     });
 
-    // Calculate installment
+    // Calculate installment (correct path with provider)
     const calculate = await apiCall('POST', '/api/v1/installments/calculate', user.token, {
       amount: 10000,
+      provider: 'VALU',
       months: 12
     });
     steps.push({
@@ -1529,8 +1528,8 @@ async function scenario19_InstallmentPayment(): Promise<E2ETestResult> {
       error: calculate.error
     });
 
-    // Verify installment API
-    const apiCheck = await apiCall('GET', '/api/v1/installments');
+    // Verify installment API (correct path: /api/v1/installments/plans)
+    const apiCheck = await apiCall('GET', '/api/v1/installments/plans?amount=5000');
     steps.push({
       step: 'Installment API Working',
       stepAr: 'API التقسيط يعمل',
@@ -1567,8 +1566,8 @@ async function scenario20_FlashDeals(): Promise<E2ETestResult> {
   const steps: E2ETestResult['steps'] = [];
 
   try {
-    // Get active flash deals
-    const deals = await apiCall('GET', '/api/v1/flash-deals?status=ACTIVE');
+    // Get active flash deals (correct path: /api/v1/flash-deals/active)
+    const deals = await apiCall('GET', '/api/v1/flash-deals/active');
     steps.push({
       step: 'Get Active Flash Deals',
       stepAr: 'الحصول على العروض النشطة',
@@ -1585,8 +1584,8 @@ async function scenario20_FlashDeals(): Promise<E2ETestResult> {
       error: featured.error
     });
 
-    // Verify flash deals API
-    const apiCheck = await apiCall('GET', '/api/v1/flash-deals');
+    // Verify flash deals API (correct path: /api/v1/flash-deals/active)
+    const apiCheck = await apiCall('GET', '/api/v1/flash-deals/active');
     steps.push({
       step: 'Flash Deals API Working',
       stepAr: 'API العروض السريعة يعمل',
