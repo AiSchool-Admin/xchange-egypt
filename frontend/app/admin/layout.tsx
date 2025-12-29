@@ -1,4 +1,3 @@
-import type { Metadata } from 'next';
 'use client';
 
 import React, { useEffect } from 'react';
@@ -167,12 +166,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
-
-
-export const metadata: Metadata = {
-  title: 'لوحة التحكم - Xchange',
-  description: 'إدارة منصة Xchange',
-};
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
