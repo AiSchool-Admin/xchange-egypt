@@ -226,7 +226,7 @@ model Category {
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
   // Self-referencing for subcategories
-  parent      Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  parent      Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children    Category[]  @relation("CategoryHierarchy")
 
   // Relations
@@ -652,7 +652,7 @@ model Item {
   // Relations
   seller                  User                    @relation("UserItems", fields: [sellerId], references: [id], onDelete: Cascade)
   category                Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  desiredCategory         Category?               @relation("ItemDesiredCategory", fields: [desiredCategoryId], references: [id])
+  desiredCategory         Category?               @relation("ItemDesiredCategory", fields: [desiredCategoryId], references: [id], onDelete: SetNull)
   listings                Listing[]
   barterPreferenceItems   BarterPreferenceItem[]  @relation("BarterPreferenceItems")
   participantsGiving      BarterParticipant[]     @relation("ParticipantGivingItem")
@@ -1070,7 +1070,7 @@ model ItemRequest {
   createdAt         DateTime       @default(now()) @map("created_at")
 
   barterOffer       BarterOffer    @relation(fields: [barterOfferId], references: [id], onDelete: Cascade)
-  category          Category?      @relation(fields: [categoryId], references: [id])
+  category          Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@map("item_requests")
   @@index([barterOfferId])
@@ -1427,7 +1427,7 @@ model Auction {
   // Relations
   listing           Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
   bids              AuctionBid[]
-  winningBid        AuctionBid?   @relation("WinningBid", fields: [winningBidId], references: [id])
+  winningBid        AuctionBid?   @relation("WinningBid", fields: [winningBidId], references: [id], onDelete: SetNull)
 
   @@map("auctions")
   @@index([status])
@@ -1560,7 +1560,7 @@ model ReverseAuction {
   buyer             User                @relation("ReverseAuctionBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
   category          Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   bids              ReverseAuctionBid[]
-  winningBid        ReverseAuctionBid?  @relation("WinningBid", fields: [winningBidId], references: [id])
+  winningBid        ReverseAuctionBid?  @relation("WinningBid", fields: [winningBidId], references: [id], onDelete: SetNull)
 
   @@map("reverse_auctions")
   @@index([buyerId])
@@ -2734,7 +2734,7 @@ model Dispute {
   updatedAt       DateTime          @updatedAt @map("updated_at")
 
   // Relations
-  escrow          Escrow            @relation(fields: [escrowId], references: [id])
+  escrow          Escrow            @relation(fields: [escrowId], references: [id], onDelete: Cascade)
   messages        DisputeMessage[]
 
   @@map("disputes")
@@ -3424,7 +3424,7 @@ model PricePrediction {
   expiresAt       DateTime    @map("expires_at")  // Prediction validity
 
   // Relations
-  category        Category    @relation(fields: [categoryId], references: [id])
+  category        Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("price_predictions")
   @@index([categoryId])
