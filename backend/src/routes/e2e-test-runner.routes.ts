@@ -10,9 +10,6 @@
 
 import { Router, Request, Response } from 'express';
 import prisma from '../config/database';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { env } from '../config/env';
 
 const router = Router();
 
@@ -37,22 +34,47 @@ interface TestUser {
 // Test credentials
 const TEST_PASSWORD = 'Test@1234';
 
-// Helper: Generate JWT token for a user (bypass login API for speed)
+// Helper: Get auth token by calling the actual login API
 async function getAuthToken(email: string): Promise<TestUser | null> {
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true, email: true, userType: true }
-  });
+  try {
+    // First check if user exists
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true }
+    });
 
-  if (!user) return null;
+    if (!user) return null;
 
-  const token = jwt.sign(
-    { userId: user.id, email: user.email, userType: user.userType },
-    env.jwt.secret,
-    { expiresIn: '1h' }
-  );
+    // Call the actual login API
+    const loginResponse = await fetch(`${API_BASE}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        password: TEST_PASSWORD
+      })
+    });
 
-  return { id: user.id, email: user.email, token };
+    if (!loginResponse.ok) {
+      // If login fails, return user info without token for partial testing
+      return { id: user.id, email: user.email, token: '' };
+    }
+
+    const loginData = await loginResponse.json();
+    const token = loginData.accessToken || loginData.token || loginData.data?.accessToken || '';
+
+    return { id: user.id, email: user.email, token };
+  } catch (error) {
+    // Fallback: return user without token
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true }
+    });
+    if (user) {
+      return { id: user.id, email: user.email, token: '' };
+    }
+    return null;
+  }
 }
 
 // Helper: Make authenticated API call
