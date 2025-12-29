@@ -41,13 +41,13 @@ const TEST_PASSWORD = 'Test@1234';
 async function getAuthToken(email: string): Promise<TestUser | null> {
   const user = await prisma.user.findUnique({
     where: { email },
-    select: { id: true, email: true, role: true }
+    select: { id: true, email: true, userType: true }
   });
 
   if (!user) return null;
 
   const token = jwt.sign(
-    { userId: user.id, email: user.email, role: user.role },
+    { userId: user.id, email: user.email, userType: user.userType },
     env.jwt.secret,
     { expiresIn: '1h' }
   );
