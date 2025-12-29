@@ -70,3 +70,7 @@ docker-compose.override.yml
 # Backups
 *.backup
 *.bak
+
+# Playwright
+playwright-report/
+test-results/
