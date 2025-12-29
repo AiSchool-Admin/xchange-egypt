@@ -217,12 +217,14 @@ export const getUserTransactions = async (
     const { userId } = req.params;
     const { role, status, page, limit } = req.query;
 
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
     const result = await transactionService.getUserTransactions(
       userId,
       role as any,
       status as any,
-      page ? parseInt(page as string) : undefined,
-      limit ? parseInt(limit as string) : undefined
+      !isNaN(parsedPage) && parsedPage > 0 ? parsedPage : undefined,
+      !isNaN(parsedLimit) && parsedLimit > 0 ? parsedLimit : undefined
     );
 
     return successResponse(res, result, 'User transactions retrieved successfully');
@@ -247,12 +249,14 @@ export const getMyTransactions = async (
     }
     const { role, status, page, limit } = req.query;
 
+    const parsedPage2 = Number(page);
+    const parsedLimit2 = Number(limit);
     const result = await transactionService.getUserTransactions(
       userId,
       role as any,
       status as any,
-      page ? parseInt(page as string) : undefined,
-      limit ? parseInt(limit as string) : undefined
+      !isNaN(parsedPage2) && parsedPage2 > 0 ? parsedPage2 : undefined,
+      !isNaN(parsedLimit2) && parsedLimit2 > 0 ? parsedLimit2 : undefined
     );
 
     return successResponse(res, result, 'Your transactions retrieved successfully');

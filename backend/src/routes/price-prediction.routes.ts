@@ -65,7 +65,7 @@ router.get('/history/:categoryId', async (req: Request, res: Response) => {
     const history = await pricePredictionService.getPriceHistory(
       categoryId,
       condition as any,
-      days ? parseInt(days as string) : 30
+      Number(days) || 30
     );
 
     return res.json({
@@ -229,7 +229,7 @@ router.get('/my-predictions', authenticate, async (req: Request, res: Response) 
 
     const predictions = await pricePredictionService.getUserPredictions(
       userId,
-      limit ? parseInt(limit as string) : 20
+      Number(limit) || 20
     );
 
     return res.json({

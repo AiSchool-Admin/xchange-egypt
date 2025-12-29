@@ -821,8 +821,8 @@ export const getRideHistory = async (req: Request, res: Response) => {
       data: {
         rides,
         pagination: {
-          limit: parseInt(limit as string),
-          offset: parseInt(offset as string),
+          limit: Number(limit) || 20,
+          offset: Number(offset) || 0,
           total: 0,
         },
       },

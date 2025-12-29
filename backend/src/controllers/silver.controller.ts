@@ -158,8 +158,8 @@ export const getItems = async (req: Request, res: Response, next: NextFunction) 
       allowBarter: req.query.allowBarter === 'true' ? true : req.query.allowBarter === 'false' ? false : undefined,
       allowGoldBarter: req.query.allowGoldBarter === 'true' ? true : req.query.allowGoldBarter === 'false' ? false : undefined,
       search: req.query.search as string,
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      page: Number(req.query.page) || 1,
+      limit: Number(req.query.limit) || 20,
       sortBy: req.query.sortBy as string,
       sortOrder: req.query.sortOrder as 'asc' | 'desc',
     };
