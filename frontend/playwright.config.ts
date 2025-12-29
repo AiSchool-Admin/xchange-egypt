@@ -12,6 +12,9 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'on',
     video: 'on',
+    launchOptions: {
+      slowMo: 1000,
+    },
   },
   projects: [
     {
