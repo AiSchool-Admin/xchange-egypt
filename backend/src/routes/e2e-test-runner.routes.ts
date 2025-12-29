@@ -60,8 +60,13 @@ async function getAuthToken(email: string): Promise<TestUser | null> {
       return { id: user.id, email: user.email, token: '' };
     }
 
-    const loginData = await loginResponse.json();
-    const token = loginData.accessToken || loginData.token || loginData.data?.accessToken || '';
+    const loginData = await loginResponse.json() as {
+      data?: { accessToken?: string };
+      accessToken?: string;
+      token?: string
+    };
+    // Token is in data.accessToken based on the sendSuccess response structure
+    const token = loginData.data?.accessToken || loginData.accessToken || loginData.token || '';
 
     return { id: user.id, email: user.email, token };
   } catch (error) {
@@ -98,13 +103,13 @@ async function apiCall(
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    const data = await response.json().catch(() => ({}));
+    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
 
     return {
       success: response.ok,
       status: response.status,
       data,
-      error: !response.ok ? (data.message || data.error || `HTTP ${response.status}`) : undefined,
+      error: !response.ok ? (String(data.message || data.error || `HTTP ${response.status}`)) : undefined,
     };
   } catch (error: any) {
     return {
@@ -248,9 +253,9 @@ async function scenario1_DirectSale(): Promise<E2ETestResult> {
         error: viewResult.error
       });
 
-      // Step 5: Add to cart
-      const cartResult = await apiCall('POST', '/api/v1/cart/add', buyer.token, {
-        itemId: createItemResult.data.item.id,
+      // Step 5: Add to cart (correct path is /api/v1/cart/items)
+      const cartResult = await apiCall('POST', '/api/v1/cart/items', buyer.token, {
+        listingId: createItemResult.data.item.id,
         quantity: 1
       });
       steps.push({
@@ -261,8 +266,8 @@ async function scenario1_DirectSale(): Promise<E2ETestResult> {
       });
     }
 
-    // Step 6: Verify order can be created
-    const ordersCheck = await apiCall('GET', '/api/v1/orders/my', buyer.token);
+    // Step 6: Verify order can be created (correct path is /api/v1/orders)
+    const ordersCheck = await apiCall('GET', '/api/v1/orders', buyer.token);
     steps.push({
       step: 'Verify Orders Endpoint',
       stepAr: 'التحقق من نقطة الطلبات',
@@ -370,8 +375,8 @@ async function scenario2_BarterExchange(): Promise<E2ETestResult> {
       });
     }
 
-    // Step 6: Check barter offers endpoint
-    const offersCheck = await apiCall('GET', '/api/v1/barter/offers/received', user1.token);
+    // Step 6: Check barter offers endpoint (correct path is /api/v1/barter/offers/my)
+    const offersCheck = await apiCall('GET', '/api/v1/barter/offers/my', user1.token);
     steps.push({
       step: 'Check Received Offers',
       stepAr: 'فحص العروض المستلمة',
@@ -1218,8 +1223,8 @@ async function scenario14_UserDashboard(): Promise<E2ETestResult> {
       error: myItems.error
     });
 
-    // Get my orders
-    const myOrders = await apiCall('GET', '/api/v1/orders/my', user.token);
+    // Get my orders (correct path is /api/v1/orders)
+    const myOrders = await apiCall('GET', '/api/v1/orders', user.token);
     steps.push({
       step: 'Get My Orders',
       stepAr: 'الحصول على طلباتي',
@@ -1329,8 +1334,8 @@ async function scenario16_OrderManagement(): Promise<E2ETestResult> {
     });
     if (!user) throw new Error('User not found');
 
-    // Get orders
-    const orders = await apiCall('GET', '/api/v1/orders/my', user.token);
+    // Get orders (correct path is /api/v1/orders)
+    const orders = await apiCall('GET', '/api/v1/orders', user.token);
     steps.push({
       step: 'Get Orders',
       stepAr: 'الحصول على الطلبات',
