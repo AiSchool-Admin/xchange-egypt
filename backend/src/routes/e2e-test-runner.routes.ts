@@ -34,9 +34,24 @@ interface TestUser {
 // Test credentials
 const TEST_PASSWORD = 'Test@1234';
 
+// Token cache to avoid repeated logins
+const tokenCache: Map<string, { token: string; expiresAt: number }> = new Map();
+
 // Helper: Get auth token by calling the actual login API
 async function getAuthToken(email: string): Promise<TestUser | null> {
   try {
+    // Check cache first (tokens valid for 10 minutes)
+    const cached = tokenCache.get(email);
+    if (cached && cached.expiresAt > Date.now()) {
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true }
+      });
+      if (user) {
+        return { id: user.id, email: user.email, token: cached.token };
+      }
+    }
+
     // First check if user exists
     const user = await prisma.user.findUnique({
       where: { email },
@@ -44,6 +59,9 @@ async function getAuthToken(email: string): Promise<TestUser | null> {
     });
 
     if (!user) return null;
+
+    // Small delay before login to avoid rate limiting
+    await delay(100);
 
     // Call the actual login API
     const loginResponse = await fetch(`${API_BASE}/api/v1/auth/login`, {
@@ -56,30 +74,41 @@ async function getAuthToken(email: string): Promise<TestUser | null> {
     });
 
     if (!loginResponse.ok) {
-      // If login fails, return user info without token for partial testing
-      return { id: user.id, email: user.email, token: '' };
+      // Return null if login fails - this means authentication failed
+      return null;
     }
 
     const loginData = await loginResponse.json() as {
-      data?: { accessToken?: string };
+      success?: boolean;
+      data?: { accessToken?: string; user?: { id?: string } };
       accessToken?: string;
       token?: string
     };
+
     // Token is in data.accessToken based on the sendSuccess response structure
     const token = loginData.data?.accessToken || loginData.accessToken || loginData.token || '';
 
+    if (!token) {
+      // No token received - authentication failed
+      return null;
+    }
+
+    // Cache the token for 10 minutes
+    tokenCache.set(email, {
+      token,
+      expiresAt: Date.now() + 10 * 60 * 1000
+    });
+
     return { id: user.id, email: user.email, token };
   } catch (error) {
-    // Fallback: return user without token
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true, email: true }
-    });
-    if (user) {
-      return { id: user.id, email: user.email, token: '' };
-    }
+    // Login failed - return null
     return null;
   }
+}
+
+// Helper: Check if user has valid token
+function hasValidToken(user: TestUser | null): boolean {
+  return user !== null && user.token !== '' && user.token.length > 10;
 }
 
 // Helper: Delay function to avoid rate limiting
@@ -289,14 +318,15 @@ async function scenario1_DirectSale(): Promise<E2ETestResult> {
   try {
     // Step 1: Login as seller
     const seller = await getAuthToken('test1@xchange.eg');
+    const sellerHasToken = hasValidToken(seller);
     steps.push({
       step: 'Seller Login',
       stepAr: 'تسجيل دخول البائع',
-      status: seller ? 'PASS' : 'FAIL',
-      details: seller ? `User ID: ${seller.id}` : undefined,
-      error: !seller ? 'User not found' : undefined
+      status: sellerHasToken ? 'PASS' : 'FAIL',
+      details: sellerHasToken ? `User ID: ${seller!.id}, Token: ${seller!.token.substring(0, 20)}...` : undefined,
+      error: !seller ? 'User not found or login failed' : (!sellerHasToken ? 'Failed to obtain auth token' : undefined)
     });
-    if (!seller) throw new Error('Seller not found');
+    if (!sellerHasToken) throw new Error('Seller login failed');
 
     // Step 2: Create a product for sale
     const createItemResult = await apiCall('POST', '/api/v1/items', seller.token, {
@@ -320,13 +350,15 @@ async function scenario1_DirectSale(): Promise<E2ETestResult> {
 
     // Step 3: Login as buyer
     const buyer = await getAuthToken('test5@xchange.eg');
+    const buyerHasToken = hasValidToken(buyer);
     steps.push({
       step: 'Buyer Login',
       stepAr: 'تسجيل دخول المشتري',
-      status: buyer ? 'PASS' : 'FAIL',
-      error: !buyer ? 'Buyer not found' : undefined
+      status: buyerHasToken ? 'PASS' : 'FAIL',
+      details: buyerHasToken ? `Token obtained` : undefined,
+      error: !buyerHasToken ? 'Buyer login failed - no valid token' : undefined
     });
-    if (!buyer) throw new Error('Buyer not found');
+    if (!buyerHasToken) throw new Error('Buyer login failed');
 
     // Step 4: Buyer views the item
     if (createItemResult.data?.item?.id) {
@@ -391,15 +423,17 @@ async function scenario2_BarterExchange(): Promise<E2ETestResult> {
   try {
     // Step 1: Login as user 1
     const user1 = await getAuthToken('test2@xchange.eg');
+    const user1HasToken = hasValidToken(user1);
     steps.push({
       step: 'User 1 Login',
       stepAr: 'تسجيل دخول المستخدم الأول',
-      status: user1 ? 'PASS' : 'FAIL'
+      status: user1HasToken ? 'PASS' : 'FAIL',
+      error: !user1HasToken ? 'Login failed - no valid token' : undefined
     });
-    if (!user1) throw new Error('User 1 not found');
+    if (!user1HasToken) throw new Error('User 1 login failed');
 
     // Step 2: Create barter item
-    const barterItem = await apiCall('POST', '/api/v1/items', user1.token, {
+    const barterItem = await apiCall('POST', '/api/v1/items', user1!.token, {
       title: `E2E Barter Item ${Date.now()}`,
       description: 'Laptop for barter - E2E Test',
       categoryId: await getFirstCategoryId(),
@@ -420,15 +454,17 @@ async function scenario2_BarterExchange(): Promise<E2ETestResult> {
 
     // Step 3: Login as user 2
     const user2 = await getAuthToken('test4@xchange.eg');
+    const user2HasToken = hasValidToken(user2);
     steps.push({
       step: 'User 2 Login',
       stepAr: 'تسجيل دخول المستخدم الثاني',
-      status: user2 ? 'PASS' : 'FAIL'
+      status: user2HasToken ? 'PASS' : 'FAIL',
+      error: !user2HasToken ? 'Login failed - no valid token' : undefined
     });
-    if (!user2) throw new Error('User 2 not found');
+    if (!user2HasToken) throw new Error('User 2 login failed');
 
     // Step 4: User 2 creates their item for exchange
-    const user2Item = await apiCall('POST', '/api/v1/items', user2.token, {
+    const user2Item = await apiCall('POST', '/api/v1/items', user2!.token, {
       title: `E2E Phone for Barter ${Date.now()}`,
       description: 'Samsung Galaxy for barter',
       categoryId: await getFirstCategoryId(),
