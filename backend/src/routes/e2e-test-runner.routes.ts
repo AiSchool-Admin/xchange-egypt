@@ -330,15 +330,15 @@ async function scenario1_DirectSale(): Promise<E2ETestResult> {
 
     // Step 2: Create a product for sale
     const createItemResult = await apiCall('POST', '/api/v1/items', seller.token, {
-      title: `E2E Test Phone ${Date.now()}`,
-      description: 'iPhone 14 Pro Max - E2E Test',
+      titleAr: `هاتف للبيع E2E ${Date.now()}`,
+      titleEn: `E2E Test Phone ${Date.now()}`,
+      descriptionAr: 'آيفون 14 برو ماكس - اختبار E2E - حالة ممتازة',
+      descriptionEn: 'iPhone 14 Pro Max - E2E Test - Excellent condition',
       categoryId: await getFirstCategoryId(),
       estimatedValue: 25000,
-      listingType: 'DIRECT_SALE',
       condition: 'LIKE_NEW',
-      images: ['https://example.com/phone.jpg'],
-      governorate: 'Cairo',
-      city: 'Nasr City'
+      location: 'Cairo, Nasr City',
+      governorate: 'Cairo'
     });
     steps.push({
       step: 'Create Item for Sale',
@@ -434,14 +434,14 @@ async function scenario2_BarterExchange(): Promise<E2ETestResult> {
 
     // Step 2: Create barter item
     const barterItem = await apiCall('POST', '/api/v1/items', user1!.token, {
-      title: `E2E Barter Item ${Date.now()}`,
-      description: 'Laptop for barter - E2E Test',
+      titleAr: `لابتوب للمقايضة E2E ${Date.now()}`,
+      titleEn: `E2E Barter Laptop ${Date.now()}`,
+      descriptionAr: 'لابتوب للمقايضة - اختبار E2E - حالة جيدة جداً',
+      descriptionEn: 'Laptop for barter - E2E Test - Very good condition',
       categoryId: await getFirstCategoryId(),
       estimatedValue: 15000,
-      listingType: 'BARTER',
       condition: 'GOOD',
-      images: ['https://example.com/laptop.jpg'],
-      desiredItemTitle: 'iPhone or Samsung phone',
+      location: 'Alexandria, Smouha',
       governorate: 'Alexandria'
     });
     steps.push({
@@ -465,13 +465,14 @@ async function scenario2_BarterExchange(): Promise<E2ETestResult> {
 
     // Step 4: User 2 creates their item for exchange
     const user2Item = await apiCall('POST', '/api/v1/items', user2!.token, {
-      title: `E2E Phone for Barter ${Date.now()}`,
-      description: 'Samsung Galaxy for barter',
+      titleAr: `هاتف سامسونج للمقايضة E2E ${Date.now()}`,
+      titleEn: `E2E Samsung Phone for Barter ${Date.now()}`,
+      descriptionAr: 'سامسونج جالاكسي للمقايضة - اختبار E2E - حالة ممتازة',
+      descriptionEn: 'Samsung Galaxy for barter - E2E Test - Excellent condition',
       categoryId: await getFirstCategoryId(),
       estimatedValue: 14000,
-      listingType: 'BARTER',
       condition: 'LIKE_NEW',
-      images: ['https://example.com/samsung.jpg'],
+      location: 'Alexandria, Glim',
       governorate: 'Alexandria'
     });
     steps.push({
@@ -634,13 +635,15 @@ async function scenario4_ReverseAuction(): Promise<E2ETestResult> {
 
   try {
     // Step 1: Login as requester
-    const requester = await getAuthToken('test7@xchange.eg');
+    const requester = await getAuthToken('test3@xchange.eg');
+    const requesterHasToken = hasValidToken(requester);
     steps.push({
       step: 'Requester Login',
       stepAr: 'تسجيل دخول صاحب الطلب',
-      status: requester ? 'PASS' : 'FAIL'
+      status: requesterHasToken ? 'PASS' : 'FAIL',
+      error: !requesterHasToken ? 'Login failed - no valid token' : undefined
     });
-    if (!requester) throw new Error('Requester not found');
+    if (!requesterHasToken) throw new Error('Requester login failed');
 
     // Step 2: Create reverse auction request
     const reverseAuction = await apiCall('POST', '/api/v1/reverse-auctions', requester.token, {
@@ -713,13 +716,15 @@ async function scenario5_PropertyListing(): Promise<E2ETestResult> {
   const steps: E2ETestResult['steps'] = [];
 
   try {
-    const owner = await getAuthToken('test8@xchange.eg');
+    const owner = await getAuthToken('test1@xchange.eg');
+    const ownerHasToken = hasValidToken(owner);
     steps.push({
       step: 'Property Owner Login',
       stepAr: 'تسجيل دخول مالك العقار',
-      status: owner ? 'PASS' : 'FAIL'
+      status: ownerHasToken ? 'PASS' : 'FAIL',
+      error: !ownerHasToken ? 'Login failed - no valid token' : undefined
     });
-    if (!owner) throw new Error('Owner not found');
+    if (!ownerHasToken) throw new Error('Owner login failed');
 
     // Create property listing
     const property = await apiCall('POST', '/api/v1/properties', owner.token, {
@@ -789,13 +794,15 @@ async function scenario6_CarBarter(): Promise<E2ETestResult> {
   const steps: E2ETestResult['steps'] = [];
 
   try {
-    const carOwner = await getAuthToken('test9@xchange.eg');
+    const carOwner = await getAuthToken('test2@xchange.eg');
+    const carOwnerHasToken = hasValidToken(carOwner);
     steps.push({
       step: 'Car Owner Login',
       stepAr: 'تسجيل دخول مالك السيارة',
-      status: carOwner ? 'PASS' : 'FAIL'
+      status: carOwnerHasToken ? 'PASS' : 'FAIL',
+      error: !carOwnerHasToken ? 'Login failed - no valid token' : undefined
     });
-    if (!carOwner) throw new Error('Car owner not found');
+    if (!carOwnerHasToken) throw new Error('Car owner login failed');
 
     // Create car listing (correct path: /api/v1/cars/listings)
     const carListing = await apiCall('POST', '/api/v1/cars/listings', carOwner.token, {
@@ -862,13 +869,15 @@ async function scenario7_GoldTrading(): Promise<E2ETestResult> {
   const steps: E2ETestResult['steps'] = [];
 
   try {
-    const goldTrader = await getAuthToken('test10@xchange.eg');
+    const goldTrader = await getAuthToken('test3@xchange.eg');
+    const goldTraderHasToken = hasValidToken(goldTrader);
     steps.push({
       step: 'Gold Trader Login',
       stepAr: 'تسجيل دخول تاجر الذهب',
-      status: goldTrader ? 'PASS' : 'FAIL'
+      status: goldTraderHasToken ? 'PASS' : 'FAIL',
+      error: !goldTraderHasToken ? 'Login failed - no valid token' : undefined
     });
-    if (!goldTrader) throw new Error('Gold trader not found');
+    if (!goldTraderHasToken) throw new Error('Gold trader login failed');
 
     // Get gold prices
     const prices = await apiCall('GET', '/api/v1/gold/prices');
@@ -926,13 +935,15 @@ async function scenario8_ScrapMarketplace(): Promise<E2ETestResult> {
   const steps: E2ETestResult['steps'] = [];
 
   try {
-    const scrapDealer = await getAuthToken('test7@xchange.eg');
+    const scrapDealer = await getAuthToken('test4@xchange.eg');
+    const scrapDealerHasToken = hasValidToken(scrapDealer);
     steps.push({
       step: 'Scrap Dealer Login',
       stepAr: 'تسجيل دخول تاجر الخردة',
-      status: scrapDealer ? 'PASS' : 'FAIL'
+      status: scrapDealerHasToken ? 'PASS' : 'FAIL',
+      error: !scrapDealerHasToken ? 'Login failed - no valid token' : undefined
     });
-    if (!scrapDealer) throw new Error('Scrap dealer not found');
+    if (!scrapDealerHasToken) throw new Error('Scrap dealer login failed');
 
     // List scrap items (correct path: /api/v1/scrap/items)
     const scrapItems = await apiCall('GET', '/api/v1/scrap/items');
@@ -1145,7 +1156,7 @@ async function scenario11_ChatMessaging(): Promise<E2ETestResult> {
     // Create or get conversation
     if (user2) {
       const startChat = await apiCall('POST', '/api/v1/chat/conversations', user1.token, {
-        participantId: user2.id
+        participant2Id: user2.id
       });
       steps.push({
         step: 'Start Conversation',
