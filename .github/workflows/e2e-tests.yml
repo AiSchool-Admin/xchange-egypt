@@ -1,0 +1,45 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, claude/*]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # تشغيل يدوي
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run E2E Tests
+        id: tests
+        run: |
+          echo "🧪 Running E2E Tests..."
+          RESPONSE=$(curl -s --max-time 120 https://xchange-egypt-production.up.railway.app/api/v1/e2e-tests/run)
+          echo "$RESPONSE" | jq .
+
+          # Extract success rate
+          SUCCESS_RATE=$(echo "$RESPONSE" | jq -r '.summary.successRate // "0%"')
+          PASSED=$(echo "$RESPONSE" | jq -r '.summary.passed // 0')
+          TOTAL=$(echo "$RESPONSE" | jq -r '.summary.total // 20')
+
+          echo "## 📊 E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Success Rate | $SUCCESS_RATE |" >> $GITHUB_STEP_SUMMARY
+          echo "| Passed | $PASSED / $TOTAL |" >> $GITHUB_STEP_SUMMARY
+
+          # Fail if success rate is below 50%
+          RATE_NUM=$(echo "$SUCCESS_RATE" | tr -d '%')
+          if [ "$RATE_NUM" -lt 50 ]; then
+            echo "❌ Tests failed - success rate below 50%"
+            exit 1
+          fi
+
+          echo "✅ Tests passed!"
+
+      - name: Health Check
+        run: |
+          curl -s https://xchange-egypt-production.up.railway.app/health | jq .
