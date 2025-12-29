@@ -224,7 +224,9 @@ test.describe('Xchange Egypt - Comprehensive E2E Tests', () => {
 
     test('9.2 Live auctions page', async ({ page }) => {
       await page.goto('/auctions/live');
-      await page.waitForLoadState('networkidle');
+      // Use domcontentloaded instead of networkidle because page has live timers
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(2000); // Wait for React to render
       await page.screenshot({ path: 'test-results/e2e/25-auctions-live.png', fullPage: true });
       console.log('✅ Live auctions page loaded');
     });
@@ -434,7 +436,9 @@ test.describe('Xchange Egypt - Comprehensive E2E Tests', () => {
 
     test('15.3 Marketplace page', async ({ page }) => {
       await page.goto('/marketplace');
-      await page.waitForLoadState('networkidle');
+      // Use domcontentloaded for faster load detection
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(2000); // Wait for React to render
       await page.screenshot({ path: 'test-results/e2e/50-marketplace.png', fullPage: true });
       console.log('✅ Marketplace page loaded');
     });
