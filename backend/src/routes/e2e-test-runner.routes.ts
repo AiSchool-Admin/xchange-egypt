@@ -82,7 +82,31 @@ async function getAuthToken(email: string): Promise<TestUser | null> {
   }
 }
 
-// Helper: Make authenticated API call
+// Helper: Delay function to avoid rate limiting
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Helper: Extract error message from various error formats
+function extractErrorMessage(data: Record<string, unknown>, status: number): string {
+  // Check for nested error objects
+  if (data.error && typeof data.error === 'object') {
+    const errObj = data.error as Record<string, unknown>;
+    if (errObj.message) return String(errObj.message);
+    if (errObj.error) return String(errObj.error);
+  }
+  // Check for direct message/error fields
+  if (data.message && typeof data.message === 'string') return data.message;
+  if (data.error && typeof data.error === 'string') return data.error;
+  // Check for validation errors
+  if (data.errors && Array.isArray(data.errors)) {
+    return data.errors.map((e: any) => e.message || e.msg || String(e)).join(', ');
+  }
+  // Fallback to HTTP status
+  return `HTTP ${status}`;
+}
+
+// Helper: Make authenticated API call with rate limit protection
 async function apiCall(
   method: string,
   endpoint: string,
@@ -90,6 +114,9 @@ async function apiCall(
   body?: any
 ): Promise<{ success: boolean; status: number; data?: any; error?: string }> {
   try {
+    // Small delay between API calls to avoid rate limiting (200ms)
+    await delay(200);
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -105,11 +132,28 @@ async function apiCall(
 
     const data = await response.json().catch(() => ({})) as Record<string, unknown>;
 
+    // If rate limited, wait and retry once
+    if (response.status === 429) {
+      await delay(2000);
+      const retryResponse = await fetch(`${API_BASE}${endpoint}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      const retryData = await retryResponse.json().catch(() => ({})) as Record<string, unknown>;
+      return {
+        success: retryResponse.ok,
+        status: retryResponse.status,
+        data: retryData,
+        error: !retryResponse.ok ? extractErrorMessage(retryData, retryResponse.status) : undefined,
+      };
+    }
+
     return {
       success: response.ok,
       status: response.status,
       data,
-      error: !response.ok ? (String(data.message || data.error || `HTTP ${response.status}`)) : undefined,
+      error: !response.ok ? extractErrorMessage(data, response.status) : undefined,
     };
   } catch (error: any) {
     return {
@@ -144,27 +188,68 @@ router.get('/run', async (_req: Request, res: Response) => {
   const results: E2ETestResult[] = [];
   const startTime = Date.now();
 
+  // Delay between scenarios to avoid rate limiting (1.5 seconds)
+  const SCENARIO_DELAY = 1500;
+
   try {
-    // Run all scenarios
+    // Run all scenarios with delays to avoid rate limiting
     results.push(await scenario1_DirectSale());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario2_BarterExchange());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario3_LiveAuction());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario4_ReverseAuction());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario5_PropertyListing());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario6_CarBarter());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario7_GoldTrading());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario8_ScrapMarketplace());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario9_EscrowPayment());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario10_WatchlistAlerts());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario11_ChatMessaging());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario12_Notifications());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario13_PricePrediction());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario14_UserDashboard());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario15_AdvancedSearch());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario16_OrderManagement());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario17_AISmartMatching());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario18_BarterChain());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario19_InstallmentPayment());
+    await delay(SCENARIO_DELAY);
+
     results.push(await scenario20_FlashDeals());
 
     const passed = results.filter(r => r.status === 'PASS').length;
