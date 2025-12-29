@@ -11,7 +11,7 @@ import { test, expect } from '@playwright/test';
 test.describe('سيناريو سارة - شراء iPhone مستعمل', () => {
 
   test('رحلة الشراء الكاملة مع التوثيق', async ({ page }) => {
-    test.setTimeout(180000); // 3 minutes timeout
+    test.setTimeout(300000); // 5 minutes timeout
 
     // ==========================================
     // الخطوة 1: الدخول لسوق الموبايلات
@@ -53,9 +53,6 @@ test.describe('سيناريو سارة - شراء iPhone مستعمل', () => {
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
-    // Look for filter elements
-    const filters = page.locator('[class*="filter"], [class*="sidebar"], form');
-
     await page.screenshot({
       path: 'test-results/sara-journey/03-filters-available.png',
       fullPage: true
@@ -81,7 +78,6 @@ test.describe('سيناريو سارة - شراء iPhone مستعمل', () => {
       });
       console.log('✅ تم عرض تفاصيل المنتج');
     } else {
-      // Navigate to a sample product page
       await page.goto('/mobiles/1');
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(2000);
@@ -98,10 +94,6 @@ test.describe('سيناريو سارة - شراء iPhone مستعمل', () => {
     // ==========================================
     console.log('\n✅ الخطوة 5: التحقق من شارات IMEI وصحة البطارية');
 
-    // Check for IMEI badge
-    const imeiBadge = page.locator('text=IMEI, text=تم التحقق, text=Verified, text=نظيف');
-    const batteryInfo = page.locator('text=البطارية, text=Battery, text=%');
-
     await page.screenshot({
       path: 'test-results/sara-journey/05-imei-battery-check.png',
       fullPage: true
@@ -112,8 +104,6 @@ test.describe('سيناريو سارة - شراء iPhone مستعمل', () => {
     // الخطوة 6: عرض معلومات البائع
     // ==========================================
     console.log('\n👤 الخطوة 6: عرض معلومات البائع وتقييماته');
-
-    const sellerInfo = page.locator('text=البائع, text=Seller, text=تقييم, text=Rating, text=⭐');
 
     await page.screenshot({
       path: 'test-results/sara-journey/06-seller-info.png',
@@ -135,8 +125,13 @@ test.describe('سيناريو سارة - شراء iPhone مستعمل', () => {
     });
     console.log('✅ صفحة تسجيل الدخول');
 
-    // Try to fill login form
-    const emailInput = page.locator('input[type="email"], input[name="email"], input[placeholder*="email"], input[placeholder*="بريد"]').first();
+    // ==========================================
+    // الخطوة 8: تسجيل الدخول الفعلي
+    // ==========================================
+    console.log('\n🔑 الخطوة 8: تسجيل الدخول ببيانات الاختبار');
+
+    // Fill login form
+    const emailInput = page.locator('input[type="email"], input[name="email"], input[placeholder*="email"], input[placeholder*="بريد"], input[placeholder*="Email"]').first();
     const passwordInput = page.locator('input[type="password"], input[name="password"]').first();
 
     if (await emailInput.count() > 0 && await passwordInput.count() > 0) {
@@ -148,186 +143,200 @@ test.describe('سيناريو سارة - شراء iPhone مستعمل', () => {
         fullPage: true
       });
       console.log('✅ تم ملء بيانات الدخول');
+
+      // Click login button
+      const loginButton = page.locator('button[type="submit"], button:has-text("تسجيل الدخول"), button:has-text("Login"), button:has-text("دخول")').first();
+      if (await loginButton.count() > 0) {
+        await loginButton.click();
+        await page.waitForTimeout(3000);
+        await page.waitForLoadState('domcontentloaded');
+
+        await page.screenshot({
+          path: 'test-results/sara-journey/09-after-login.png',
+          fullPage: true
+        });
+        console.log('✅ تم محاولة تسجيل الدخول');
+      }
     }
 
     // ==========================================
-    // الخطوة 8: صفحة التسجيل (بديل)
+    // الخطوة 9: صفحة التسجيل (بديل)
     // ==========================================
-    console.log('\n📝 الخطوة 8: صفحة إنشاء حساب جديد');
+    console.log('\n📝 الخطوة 9: صفحة إنشاء حساب جديد');
     await page.goto('/register');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/09-register-page.png',
+      path: 'test-results/sara-journey/10-register-page.png',
       fullPage: true
     });
     console.log('✅ صفحة التسجيل - إدخال رقم الهاتف المصري');
 
     // ==========================================
-    // الخطوة 9: صفحة المراسلات
+    // الخطوة 10: صفحة المراسلات
     // ==========================================
-    console.log('\n💬 الخطوة 9: التواصل مع البائع');
+    console.log('\n💬 الخطوة 10: التواصل مع البائع');
     await page.goto('/messages');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/10-messages.png',
+      path: 'test-results/sara-journey/11-messages.png',
       fullPage: true
     });
     console.log('✅ صفحة الرسائل للتواصل مع البائع');
 
     // ==========================================
-    // الخطوة 10: سلة التسوق
+    // الخطوة 11: سلة التسوق
     // ==========================================
-    console.log('\n🛒 الخطوة 10: سلة التسوق');
+    console.log('\n🛒 الخطوة 11: سلة التسوق');
     await page.goto('/cart');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/11-cart.png',
+      path: 'test-results/sara-journey/12-cart.png',
       fullPage: true
     });
     console.log('✅ صفحة سلة التسوق');
 
     // ==========================================
-    // الخطوة 11: صفحة الدفع
+    // الخطوة 12: صفحة الدفع
     // ==========================================
-    console.log('\n💳 الخطوة 11: صفحة الدفع واختيار طريقة الدفع');
+    console.log('\n💳 الخطوة 12: صفحة الدفع واختيار طريقة الدفع');
     await page.goto('/checkout');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/12-checkout.png',
+      path: 'test-results/sara-journey/13-checkout.png',
       fullPage: true
     });
     console.log('✅ صفحة الدفع - خيارات: Escrow، فوري، إنستاباي');
 
     // ==========================================
-    // الخطوة 12: معلومات Escrow
+    // الخطوة 13: معلومات Escrow
     // ==========================================
-    console.log('\n🛡️ الخطوة 12: نظام Escrow للحماية');
+    console.log('\n🛡️ الخطوة 13: نظام Escrow للحماية');
     await page.goto('/escrow');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/13-escrow.png',
+      path: 'test-results/sara-journey/14-escrow.png',
       fullPage: true
     });
     console.log('✅ صفحة Escrow - المال محجوز حتى الفحص');
 
     // ==========================================
-    // الخطوة 13: لوحة التحكم
+    // الخطوة 14: لوحة التحكم
     // ==========================================
-    console.log('\n📊 الخطوة 13: لوحة تحكم المستخدم');
+    console.log('\n📊 الخطوة 14: لوحة تحكم المستخدم');
     await page.goto('/dashboard');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/14-dashboard.png',
+      path: 'test-results/sara-journey/15-dashboard.png',
       fullPage: true
     });
     console.log('✅ لوحة التحكم الرئيسية');
 
     // ==========================================
-    // الخطوة 14: تتبع الطلبات
+    // الخطوة 15: تتبع الطلبات
     // ==========================================
-    console.log('\n📦 الخطوة 14: صفحة تتبع الطلبات');
+    console.log('\n📦 الخطوة 15: صفحة تتبع الطلبات');
     await page.goto('/dashboard/orders');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/15-orders.png',
+      path: 'test-results/sara-journey/16-orders.png',
       fullPage: true
     });
     console.log('✅ صفحة الطلبات - تتبع حالة الشحن');
 
     // ==========================================
-    // الخطوة 15: سجل المعاملات
+    // الخطوة 16: سجل المعاملات
     // ==========================================
-    console.log('\n📜 الخطوة 15: سجل المعاملات');
+    console.log('\n📜 الخطوة 16: سجل المعاملات');
     await page.goto('/dashboard/transactions');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/16-transactions.png',
+      path: 'test-results/sara-journey/17-transactions.png',
       fullPage: true
     });
     console.log('✅ سجل المعاملات المالية');
 
     // ==========================================
-    // الخطوة 16: المفضلة
+    // الخطوة 17: المفضلة
     // ==========================================
-    console.log('\n❤️ الخطوة 16: قائمة المفضلة');
+    console.log('\n❤️ الخطوة 17: قائمة المفضلة');
     await page.goto('/dashboard/favorites');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/17-favorites.png',
+      path: 'test-results/sara-journey/18-favorites.png',
       fullPage: true
     });
     console.log('✅ قائمة المفضلة');
 
     // ==========================================
-    // الخطوة 17: صفحة المساعدة
+    // الخطوة 18: صفحة المساعدة
     // ==========================================
-    console.log('\n❓ الخطوة 17: صفحة المساعدة والدعم');
+    console.log('\n❓ الخطوة 18: صفحة المساعدة والدعم');
     await page.goto('/help');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/18-help.png',
+      path: 'test-results/sara-journey/19-help.png',
       fullPage: true
     });
     console.log('✅ صفحة المساعدة - فتح نزاع إذا لزم');
 
     // ==========================================
-    // الخطوة 18: خيار المقايضة (بديل للشراء)
+    // الخطوة 19: خيار المقايضة (بديل للشراء)
     // ==========================================
-    console.log('\n🔄 الخطوة 18: خيار المقايضة بدلاً من الشراء');
+    console.log('\n🔄 الخطوة 19: خيار المقايضة بدلاً من الشراء');
     await page.goto('/mobiles/barter');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/19-barter-option.png',
+      path: 'test-results/sara-journey/20-barter-option.png',
       fullPage: true
     });
     console.log('✅ صفحة المقايضة - تبادل الموبايلات');
 
     // ==========================================
-    // الخطوة 19: سلاسل المقايضة الذكية
+    // الخطوة 20: سلاسل المقايضة الذكية
     // ==========================================
-    console.log('\n🔗 الخطوة 19: سلاسل المقايضة الثلاثية');
+    console.log('\n🔗 الخطوة 20: سلاسل المقايضة الثلاثية');
     await page.goto('/barter/chains');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/20-barter-chains.png',
+      path: 'test-results/sara-journey/21-barter-chains.png',
       fullPage: true
     });
     console.log('✅ سلاسل المقايضة - 3 أطراف أو أكثر');
 
     // ==========================================
-    // الخطوة 20: مقارنة الأسعار
+    // الخطوة 21: مقارنة الأسعار
     // ==========================================
-    console.log('\n📈 الخطوة 20: مقارنة الأسعار');
+    console.log('\n📈 الخطوة 21: مقارنة الأسعار');
     await page.goto('/compare');
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(2000);
 
     await page.screenshot({
-      path: 'test-results/sara-journey/21-price-compare.png',
+      path: 'test-results/sara-journey/22-price-compare.png',
       fullPage: true
     });
     console.log('✅ صفحة مقارنة الأسعار');
@@ -336,30 +345,11 @@ test.describe('سيناريو سارة - شراء iPhone مستعمل', () => {
     // ملخص الرحلة
     // ==========================================
     console.log('\n' + '='.repeat(50));
-    console.log('🎉 تم إكمال رحلة سارة بنجاح!');
+    console.log('🎉 تم إكمال رحلة سارة!');
     console.log('='.repeat(50));
-    console.log('\n📸 الصور المحفوظة: 21 صورة');
+    console.log('\n📸 الصور المحفوظة: 22 صورة');
     console.log('📁 المسار: test-results/sara-journey/');
-    console.log('\nالخطوات المنفذة:');
-    console.log('1. ✅ سوق الموبايلات');
-    console.log('2. ✅ البحث عن iPhone');
-    console.log('3. ✅ الفلاتر (السعر، الحالة)');
-    console.log('4. ✅ تفاصيل المنتج');
-    console.log('5. ✅ فحص IMEI والبطارية');
-    console.log('6. ✅ معلومات البائع');
-    console.log('7. ✅ تسجيل الدخول');
-    console.log('8. ✅ إنشاء حساب');
-    console.log('9. ✅ الرسائل');
-    console.log('10. ✅ سلة التسوق');
-    console.log('11. ✅ الدفع');
-    console.log('12. ✅ Escrow');
-    console.log('13. ✅ لوحة التحكم');
-    console.log('14. ✅ تتبع الطلبات');
-    console.log('15. ✅ سجل المعاملات');
-    console.log('16. ✅ المفضلة');
-    console.log('17. ✅ المساعدة');
-    console.log('18. ✅ المقايضة');
-    console.log('19. ✅ سلاسل المقايضة');
-    console.log('20. ✅ مقارنة الأسعار');
+    console.log('\n⚠️ ملاحظة: بعض الصفحات تتطلب تسجيل دخول حقيقي للوصول للمحتوى');
+    console.log('الصفحات المحمية: Dashboard, Orders, Transactions, Checkout, Cart');
   });
 });
