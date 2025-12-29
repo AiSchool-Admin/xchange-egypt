@@ -16,5 +16,16 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0"
-  }
+  },
+  "main": "run-production-test.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:61767/git/AiSchool-Admin/xchange-egypt"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
