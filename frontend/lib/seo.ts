@@ -47,7 +47,7 @@ interface GenerateMetadataOptions {
   image?: string;
   path?: string;
   noIndex?: boolean;
-  type?: 'website' | 'article' | 'product';
+  type?: 'website' | 'article';
 }
 
 export function generateMetadata({
@@ -242,7 +242,7 @@ export function generateItemMetadata(item: {
     keywords: item.category ? [item.category] : [],
     image,
     path: `/items/${item.id}`,
-    type: 'product',
+    type: 'article',
   });
 }
 

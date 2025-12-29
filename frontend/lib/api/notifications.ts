@@ -40,11 +40,13 @@ export const getNotifications = async (params?: {
   page?: number;
   limit?: number;
   isRead?: boolean;
+  type?: string;
 }): Promise<NotificationsResponse> => {
   const queryParams = new URLSearchParams();
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
   if (params?.isRead !== undefined) queryParams.append('isRead', params.isRead.toString());
+  if (params?.type) queryParams.append('type', params.type);
 
   const response = await apiClient.get(`/notifications?${queryParams.toString()}`);
   return response.data;

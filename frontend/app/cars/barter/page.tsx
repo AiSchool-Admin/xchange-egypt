@@ -607,9 +607,9 @@ export default function CarsBarterPage() {
                               </span>
                             )}
                           </div>
-                          {listing.barter_preferences?.preferred_makes?.length > 0 && (
+                          {(listing.barter_preferences?.preferred_makes?.length ?? 0) > 0 && (
                             <p className="text-xs text-purple-600 mt-2">
-                              يفضل: {listing.barter_preferences.preferred_makes.slice(0, 3).join('، ')}
+                              يفضل: {listing.barter_preferences?.preferred_makes?.slice(0, 3).join('، ')}
                             </p>
                           )}
                         </div>
