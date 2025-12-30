@@ -62,6 +62,7 @@ import tenderAdvancedRoutes from './routes/tender-advanced.routes';
 import transportRoutes from './routes/transport.routes';
 import adminPricingRoutes from './routes/admin-pricing.routes';
 import aiAdvancedRoutes from './routes/ai-advanced.routes';
+import statsRoutes from './routes/stats.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
@@ -373,6 +374,9 @@ app.use('/api/v1/admin/pricing', adminPricingRoutes);
 
 // Advanced AI Features - الذكاء الاصطناعي المتقدم
 app.use('/api/v1/ai-advanced', aiAdvancedRoutes);
+
+// Platform Statistics - إحصائيات المنصة
+app.use('/api/v1/stats', statsRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
