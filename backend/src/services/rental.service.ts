@@ -539,7 +539,7 @@ export const releaseDeposit = async (
   }
 
   // Calculate total deductions
-  const totalDeductions = deductions?.reduce((sum, d) => sum + d.amount, 0) || 0;
+  const totalDeductions = deductions?.reduce((sum, d) => sum + Number(d.amount), 0) || 0;
   const amountToRelease = contract.securityDeposit - totalDeductions;
 
   if (amountToRelease < 0) {

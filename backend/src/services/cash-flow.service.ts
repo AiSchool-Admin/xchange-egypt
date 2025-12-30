@@ -325,7 +325,7 @@ export const createChainCashFlows = async (chainId: string) => {
   // Update chain totals
   const totalCashFlow = cashFlows
     .filter((cf) => cf.flowType === CashFlowType.CHAIN_BALANCE)
-    .reduce((sum, cf) => sum + cf.amount, 0);
+    .reduce((sum, cf) => sum + Number(cf.amount), 0);
 
   await prisma.barterChain.update({
     where: { id: chainId },

@@ -372,12 +372,12 @@ export const initiatePaymobCard = async (req: Request, res: Response, next: Next
       },
       items: order.items?.map((item: any) => ({
         name: item.title || item.name,
-        amount: item.price * 100,
+        amount: Number(item.price) * 100,
         description: item.description,
         quantity: item.quantity,
       })) || [{
         name: `Order ${orderId}`,
-        amount: order.total * 100,
+        amount: Number(order.total) * 100,
         description: `Payment for order ${orderId}`,
         quantity: 1,
       }],

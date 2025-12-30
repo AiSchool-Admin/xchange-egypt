@@ -995,8 +995,8 @@ async function getPropertyPriceAnalysis(property: any): Promise<any> {
   });
 
   const avgPricePerSqm = comparables.length > 0
-    ? comparables.reduce((sum, p) => sum + (p.pricePerSqm || 0), 0) / comparables.length
-    : marketPrice?.pricePerSqmAvg || null;
+    ? comparables.reduce((sum, p) => sum + (p.pricePerSqm ? Number(p.pricePerSqm) : 0), 0) / comparables.length
+    : marketPrice?.pricePerSqmAvg ? Number(marketPrice.pricePerSqmAvg) : null;
 
   // Calculate price rating
   let priceRating: 'excellent' | 'good' | 'fair' | 'high' = 'fair';
@@ -1073,7 +1073,7 @@ export const estimatePropertyValue = async (data: {
   let basePricePerSqm = marketPrice?.pricePerSqmAvg || 30000; // Default fallback
 
   if (comparables.length > 0) {
-    basePricePerSqm = comparables.reduce((sum, p) => sum + (p.pricePerSqm || 0), 0) / comparables.length;
+    basePricePerSqm = comparables.reduce((sum, p) => sum + (p.pricePerSqm ? Number(p.pricePerSqm) : 0), 0) / comparables.length;
   }
 
   // Apply adjustments

@@ -457,7 +457,7 @@ export class ReportsService {
     const totalOrders = orders.length;
     // Transaction model doesn't have platformFee - estimate as 5% of revenue
     const totalCommission = totalRevenue * 0.05;
-    const refundAmount = refunds.reduce((sum, r) => sum + (r.amount || 0), 0);
+    const refundAmount = refunds.reduce((sum, r) => sum + (r.amount ? Number(r.amount) : 0), 0);
 
     // Get returning customers (users who made more than one order)
     const ordersByUser = orders.reduce((acc, order) => {

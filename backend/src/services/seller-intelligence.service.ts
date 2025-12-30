@@ -82,7 +82,7 @@ export async function getSellerDashboard(
   });
 
   // Calculate metrics
-  const totalRevenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+  const totalRevenue = transactions.reduce((sum, t) => sum + (t.amount ? Number(t.amount) : 0), 0);
   const totalSales = transactions.length;
   const averageOrderValue = totalSales > 0 ? totalRevenue / totalSales : 0;
 
@@ -181,7 +181,7 @@ export async function getQuickSellerStats(userId: string): Promise<{
   ]);
 
   return {
-    revenue: transactions.reduce((sum, t) => sum + (t.amount || 0), 0),
+    revenue: transactions.reduce((sum, t) => sum + (t.amount ? Number(t.amount) : 0), 0),
     sales: transactions.length,
     activeListings: listings,
     rating: user?.rating || 0,
@@ -214,7 +214,7 @@ function aggregateWeekly(transactions: { amount: number | null; createdAt: Date 
       (t) => t.createdAt.getTime() >= weekStart && t.createdAt.getTime() < weekEnd
     );
 
-    weeklyRevenue.push(weekTransactions.reduce((sum, t) => sum + (t.amount || 0), 0));
+    weeklyRevenue.push(weekTransactions.reduce((sum, t) => sum + (t.amount ? Number(t.amount) : 0), 0));
   }
 
   return weeklyRevenue.reverse();
