@@ -5,7 +5,7 @@
 
 import { Router } from 'express';
 import { platformStatsService } from '../services/platform-stats.service';
-import { authenticateToken, requireAdmin } from '../middleware/auth.middleware';
+import { authenticate, requireAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -56,7 +56,7 @@ router.get('/platform', async (req, res) => {
  * @desc Get full platform statistics (admin only)
  * @access Admin
  */
-router.get('/platform/full', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/platform/full', authenticate, requireAdmin, async (req, res) => {
   try {
     const stats = await platformStatsService.getPlatformStats();
 
@@ -78,12 +78,12 @@ router.get('/platform/full', authenticateToken, requireAdmin, async (req, res) =
  * @desc Get user-specific statistics
  * @access Private
  */
-router.get('/user/:userId', authenticateToken, async (req, res) => {
+router.get('/user/:userId', authenticate, async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Users can only view their own stats unless admin
-    if (req.user?.id !== userId && req.user?.role !== 'ADMIN') {
+    // Users can only view their own stats (admins use /platform/full route)
+    if (req.user?.id !== userId) {
       return res.status(403).json({
         success: false,
         error: 'Not authorized to view these statistics',
@@ -110,7 +110,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
  * @desc Get current user's statistics
  * @access Private
  */
-router.get('/my', authenticateToken, async (req, res) => {
+router.get('/my', authenticate, async (req, res) => {
   try {
     const userId = req.user?.id;
 
@@ -163,7 +163,7 @@ router.get('/categories', async (req, res) => {
  * @desc Get daily activity summary
  * @access Admin
  */
-router.get('/daily', authenticateToken, requireAdmin, async (req, res) => {
+router.get('/daily', authenticate, requireAdmin, async (req, res) => {
   try {
     const dateParam = req.query.date as string;
     const date = dateParam ? new Date(dateParam) : new Date();
