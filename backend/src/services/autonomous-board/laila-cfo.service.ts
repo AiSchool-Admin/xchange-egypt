@@ -182,7 +182,7 @@ export const generateDailyFinancialReport = async (): Promise<FinancialReport> =
     revenue: getKPIValue('REVENUE'),
     takeRate: 5,
     transactionCount,
-    averageOrderValue: avgOrderValue._avg.amount || 0,
+    averageOrderValue: avgOrderValue._avg.amount ? Number(avgOrderValue._avg.amount) : 0,
     revenueGrowth: 8.5, // Will be calculated from historical data
   };
 

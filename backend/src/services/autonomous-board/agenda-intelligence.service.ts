@@ -435,7 +435,7 @@ const getXChangePlatformItems = async (meetingType: 'MORNING' | 'AFTERNOON'): Pr
         _sum: { amount: true },
       });
 
-      const revenue = yesterdayTransactions._sum.amount || 0;
+      const revenue = yesterdayTransactions._sum.amount ? Number(yesterdayTransactions._sum.amount) : 0;
       items.push({
         id: generateAgendaItemId(),
         title: `Financial Snapshot: ${revenue.toLocaleString('ar-EG')} EGP yesterday`,

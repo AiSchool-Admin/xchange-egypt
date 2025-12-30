@@ -791,7 +791,7 @@ export async function getPlatformStats(days: number = 30) {
     totalDeals,
     activeDeals,
     totalSales: totalSales._count,
-    totalQuantitySold: totalSales._sum.quantity || 0,
+    totalQuantitySold: totalSales._sum.quantity ? Number(totalSales._sum.quantity) : 0,
     totalRevenue,
     totalSavings,
     avgDiscountPercent: dealsWithRevenue.length > 0

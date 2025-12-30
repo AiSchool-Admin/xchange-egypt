@@ -453,7 +453,7 @@ export class ReportsService {
       }),
     ]);
 
-    const totalRevenue = transactions._sum.amount || 0;
+    const totalRevenue = transactions._sum.amount ? Number(transactions._sum.amount) : 0;
     const totalOrders = orders.length;
     // Transaction model doesn't have platformFee - estimate as 5% of revenue
     const totalCommission = totalRevenue * 0.05;
@@ -1073,10 +1073,10 @@ export class ReportsService {
       }),
     ]);
 
-    const grossRevenue = transactions._sum.amount || 0;
+    const grossRevenue = transactions._sum.amount ? Number(transactions._sum.amount) : 0;
     // Transaction model doesn't have platformFee/sellerReceives - estimate 5% commission
     const totalCommissions = grossRevenue * 0.05;
-    const totalRefunds = refunds._sum.amount || 0;
+    const totalRefunds = refunds._sum.amount ? Number(refunds._sum.amount) : 0;
     const totalPayouts = grossRevenue * 0.95; // 95% to sellers
 
     return {
@@ -1105,7 +1105,7 @@ export class ReportsService {
       _count: true,
     });
 
-    const totalRevenue = transactions.reduce((sum, t) => sum + (t._sum.amount || 0), 0);
+    const totalRevenue = transactions.reduce((sum, t) => sum + (t._sum.amount ? Number(t._sum.amount) : 0), 0);
 
     const sourceAr: Record<string, string> = {
       DIRECT_SALE: 'بيع مباشر',
@@ -1114,13 +1114,16 @@ export class ReportsService {
       GOLD_TRADE: 'تجارة ذهب',
     };
 
-    return transactions.map((t) => ({
-      source: t.transactionType || 'UNKNOWN',
-      sourceAr: sourceAr[t.transactionType || ''] || t.transactionType || 'غير معروف',
-      revenue: t._sum.amount || 0,
-      percentage: totalRevenue > 0 ? ((t._sum.amount || 0) / totalRevenue) * 100 : 0,
-      transactionCount: t._count,
-    }));
+    return transactions.map((t) => {
+      const revenue = t._sum.amount ? Number(t._sum.amount) : 0;
+      return {
+        source: t.transactionType || 'UNKNOWN',
+        sourceAr: sourceAr[t.transactionType || ''] || t.transactionType || 'غير معروف',
+        revenue,
+        percentage: totalRevenue > 0 ? (revenue / totalRevenue) * 100 : 0,
+        transactionCount: t._count,
+      };
+    });
   }
 
   private async getCommissionBreakdown(
@@ -1147,13 +1150,16 @@ export class ReportsService {
     // Estimate 5% commission rate since Transaction model doesn't have platformFee
     const COMMISSION_RATE = 0.05;
 
-    return transactions.map((t) => ({
-      type: t.transactionType || 'UNKNOWN',
-      typeAr: typeAr[t.transactionType || ''] || t.transactionType || 'غير معروف',
-      amount: (t._sum.amount || 0) * COMMISSION_RATE,
-      transactionCount: t._count,
-      averageRate: COMMISSION_RATE * 100, // 5%
-    }));
+    return transactions.map((t) => {
+      const amount = t._sum.amount ? Number(t._sum.amount) : 0;
+      return {
+        type: t.transactionType || 'UNKNOWN',
+        typeAr: typeAr[t.transactionType || ''] || t.transactionType || 'غير معروف',
+        amount: amount * COMMISSION_RATE,
+        transactionCount: t._count,
+        averageRate: COMMISSION_RATE * 100, // 5%
+      };
+    });
   }
 
   private async getPayoutSummary(

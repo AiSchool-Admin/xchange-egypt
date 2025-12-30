@@ -674,10 +674,10 @@ export const searchProperties = async (
       hasMore: skip + properties.length < total,
     },
     priceStats: {
-      avgPricePerSqm: priceAggregation._avg.pricePerSqm,
+      avgPricePerSqm: priceAggregation._avg.pricePerSqm ? Number(priceAggregation._avg.pricePerSqm) : null,
       priceRange: {
-        min: priceAggregation._min.salePrice,
-        max: priceAggregation._max.salePrice,
+        min: priceAggregation._min.salePrice ? Number(priceAggregation._min.salePrice) : null,
+        max: priceAggregation._max.salePrice ? Number(priceAggregation._max.salePrice) : null,
       },
     },
   };

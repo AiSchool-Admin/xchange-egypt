@@ -106,7 +106,7 @@ router.get('/stats', async (_req: Request, res: Response, next: NextFunction) =>
       _sum: { estimatedValue: true },
     });
 
-    const savedMoney = (completedItemValues._sum.estimatedValue || 0) + (savedMoneyResult._sum.cashAddition || 0);
+    const savedMoney = (completedItemValues._sum.estimatedValue ? Number(completedItemValues._sum.estimatedValue) : 0) + (savedMoneyResult._sum.cashAddition ? Number(savedMoneyResult._sum.cashAddition) : 0);
 
     // Format categories
     const categories = categoryCounts.map((cat, index) => ({

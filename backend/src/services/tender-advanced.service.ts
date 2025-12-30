@@ -1241,11 +1241,11 @@ export const getPlatformStatistics = async () => {
   return {
     overview: {
       totalActiveRequests: activeRequests,
-      totalActiveValue: activeValue._sum.budgetMax || 0,
+      totalActiveValue: activeValue._sum.budgetMax ? Number(activeValue._sum.budgetMax) : 0,
       newToday,
     },
     trends: {
-      averageQuotesPerRequest: Math.round((avgQuotes._avg.quotesCount || 0) * 10) / 10,
+      averageQuotesPerRequest: Math.round((avgQuotes._avg.quotesCount ? Number(avgQuotes._avg.quotesCount) : 0) * 10) / 10,
     },
     categories: categoryDistribution.map(c => ({
       category: c.category,

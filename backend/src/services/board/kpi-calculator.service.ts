@@ -131,7 +131,7 @@ async function calculateGMV(): Promise<number> {
     },
   });
 
-  return result._sum.amount || 0;
+  return result._sum.amount ? Number(result._sum.amount) : 0;
 }
 
 /**
@@ -159,7 +159,7 @@ async function calculateRevenue(): Promise<number> {
     },
   });
 
-  return platformCommission + (subscriptionRevenue._sum.currentPrice || 0);
+  return platformCommission + (subscriptionRevenue._sum.currentPrice ? Number(subscriptionRevenue._sum.currentPrice) : 0);
 }
 
 /**
@@ -225,7 +225,7 @@ async function calculateLTV(): Promise<number> {
   // Retention rate (simplified)
   const retentionRate = (await calculateRetention()) / 100;
 
-  const avgValue = avgOrderValue._avg.amount || 0;
+  const avgValue = avgOrderValue._avg.amount ? Number(avgOrderValue._avg.amount) : 0;
   return Math.round(avgValue * avgTransactionsPerUser * (1 + retentionRate));
 }
 

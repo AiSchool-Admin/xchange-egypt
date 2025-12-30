@@ -541,7 +541,7 @@ export class AnalyticsService {
       },
       _sum: { amount: true },
     });
-    return result._sum.amount || 0;
+    return result._sum.amount ? Number(result._sum.amount) : 0;
   }
 
   private async getTotalOrders(start: Date, end: Date): Promise<number> {

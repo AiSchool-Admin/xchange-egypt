@@ -353,7 +353,7 @@ async function updateUserRating(userId: string): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
     data: {
-      rating: result._avg.overallRating || 0,
+      rating: result._avg.overallRating ? Number(result._avg.overallRating) : 0,
       totalReviews: result._count,
     },
   });

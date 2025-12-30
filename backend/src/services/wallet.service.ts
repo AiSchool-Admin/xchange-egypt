@@ -877,8 +877,8 @@ export async function getWalletStats(userId: string) {
 
   return {
     ...wallet,
-    last30DaysEarned: last30DaysEarned._sum.amount || 0,
-    last7DaysEarned: last7DaysEarned._sum.amount || 0,
+    last30DaysEarned: last30DaysEarned._sum.amount ? Number(last30DaysEarned._sum.amount) : 0,
+    last7DaysEarned: last7DaysEarned._sum.amount ? Number(last7DaysEarned._sum.amount) : 0,
     totalTransactions: transactionCount,
   };
 }

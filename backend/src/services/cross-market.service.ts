@@ -417,7 +417,7 @@ export const getMarketStatistics = async (): Promise<{
   });
   stats.GENERAL = {
     totalListings: generalStats._count,
-    totalValue: generalStats._sum.estimatedValue || 0,
+    totalValue: generalStats._sum.estimatedValue ? Number(generalStats._sum.estimatedValue) : 0,
   };
 
   // Gold market
@@ -428,7 +428,7 @@ export const getMarketStatistics = async (): Promise<{
   });
   stats.GOLD = {
     totalListings: goldStats._count,
-    totalValue: goldStats._sum.totalAskingPrice || 0,
+    totalValue: goldStats._sum.totalAskingPrice ? Number(goldStats._sum.totalAskingPrice) : 0,
   };
 
   // Silver market
@@ -439,7 +439,7 @@ export const getMarketStatistics = async (): Promise<{
   });
   stats.SILVER = {
     totalListings: silverStats._count,
-    totalValue: silverStats._sum.askingPrice || 0,
+    totalValue: silverStats._sum.askingPrice ? Number(silverStats._sum.askingPrice) : 0,
   };
 
   // Real Estate
@@ -450,7 +450,7 @@ export const getMarketStatistics = async (): Promise<{
   });
   stats.REAL_ESTATE = {
     totalListings: propertyStats._count,
-    totalValue: propertyStats._sum.salePrice || 0,
+    totalValue: propertyStats._sum.salePrice ? Number(propertyStats._sum.salePrice) : 0,
   };
 
   // Auctions
@@ -461,7 +461,7 @@ export const getMarketStatistics = async (): Promise<{
   });
   stats.AUCTIONS = {
     totalListings: auctionStats._count,
-    totalValue: auctionStats._sum.currentPrice || 0,
+    totalValue: auctionStats._sum.currentPrice ? Number(auctionStats._sum.currentPrice) : 0,
   };
 
   // Tenders
@@ -472,7 +472,7 @@ export const getMarketStatistics = async (): Promise<{
   });
   stats.TENDERS = {
     totalListings: tenderStats._count,
-    totalValue: tenderStats._sum.maxBudget || 0,
+    totalValue: tenderStats._sum.maxBudget ? Number(tenderStats._sum.maxBudget) : 0,
   };
 
   // Calculate totals

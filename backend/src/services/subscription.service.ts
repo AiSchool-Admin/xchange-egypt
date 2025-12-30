@@ -827,7 +827,7 @@ export async function recommendPlan(userId: string) {
     userActivity: {
       listingsLast30Days: listingCount,
       transactionsLast30Days: transactionCount,
-      avgListingPrice: avgPrice._avg.price || 0,
+      avgListingPrice: avgPrice._avg.price ? Number(avgPrice._avg.price) : 0,
     },
   };
 }
