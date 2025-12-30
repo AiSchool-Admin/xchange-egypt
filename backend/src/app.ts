@@ -18,26 +18,18 @@ import {
   startHealthMonitoring,
 } from './lib/monitoring';
 import {
-  loginLimiter,
-  registerLimiter,
-  passwordResetLimiter,
-  uploadLimiter,
   searchLimiter,
-  createContentLimiter,
   auctionBidLimiter,
   chatLimiter,
   transactionLimiter,
   aiLimiter,
   notificationLimiter,
-  sensitiveOperationsLimiter,
-  reportLimiter,
   comparisonLimiter,
   walletLimiter,
   adminLimiter,
   sanitizeInput,
   additionalSecurityHeaders,
   securityLogger,
-  bruteForceProtection,
   requestLogger,
 } from './middleware/security';
 
@@ -104,7 +96,7 @@ import statsRoutes from './routes/stats.routes';
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
 import { startLockCleanupJob } from './jobs/lockCleanup.job';
-import { startAutonomousBoardJobs, runMorningIntelligence } from './jobs/autonomousBoard.job';
+import { startAutonomousBoardJobs } from './jobs/autonomousBoard.job';
 import { initializeDailyMeetingsOnStartup } from './services/autonomous-board';
 
 // Import real-time matching
