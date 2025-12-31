@@ -25,8 +25,21 @@ export const getMyOrders = async (req: Request, res: Response, next: NextFunctio
       status as OrderStatus | undefined
     );
 
-    return successResponse(res, result, 'Orders retrieved successfully');
-  } catch (error) {
+    // Convert Decimal values to numbers for JSON serialization
+    const serializedOrders = result.orders.map((order: any) => ({
+      ...order,
+      subtotal: order.subtotal ? Number(order.subtotal) : 0,
+      shippingCost: order.shippingCost ? Number(order.shippingCost) : 0,
+      total: order.total ? Number(order.total) : 0,
+      items: order.items?.map((item: any) => ({
+        ...item,
+        price: item.price ? Number(item.price) : 0,
+      })) || [],
+    }));
+
+    return successResponse(res, { ...result, orders: serializedOrders }, 'Orders retrieved successfully');
+  } catch (error: any) {
+    console.error('[Orders API Error]', error?.message, error?.stack);
     next(error);
   }
 };
@@ -43,9 +56,23 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
     }
     const { orderId } = req.params;
 
-    const order = await orderService.getOrderById(userId, orderId);
-    return successResponse(res, order, 'Order retrieved successfully');
-  } catch (error) {
+    const order = await orderService.getOrderById(userId, orderId) as any;
+
+    // Convert Decimal values to numbers for JSON serialization
+    const serializedOrder = order ? {
+      ...order,
+      subtotal: order.subtotal ? Number(order.subtotal) : 0,
+      shippingCost: order.shippingCost ? Number(order.shippingCost) : 0,
+      total: order.total ? Number(order.total) : 0,
+      items: order.items?.map((item: any) => ({
+        ...item,
+        price: item.price ? Number(item.price) : 0,
+      })) || [],
+    } : null;
+
+    return successResponse(res, serializedOrder, 'Order retrieved successfully');
+  } catch (error: any) {
+    console.error('[Order By ID Error]', error?.message, error?.stack);
     next(error);
   }
 };

@@ -25,9 +25,9 @@ router.get('/', async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Also get price alerts for the user
+    // Also get price alerts for the user (only those with itemId)
     const priceAlerts = await prisma.priceAlert.findMany({
-      where: { userId, isActive: true },
+      where: { userId, isActive: true, itemId: { not: null } },
       include: {
         item: {
           include: {
@@ -46,30 +46,32 @@ router.get('/', async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Transform price alerts to watchlist format
-    const watchlist = priceAlerts.map((alert) => ({
-      id: alert.id,
-      itemId: alert.itemId,
-      item: {
-        id: alert.item.id,
-        title: alert.item.title,
-        price: Number(alert.item.estimatedValue),
-        images: alert.item.images?.map((url: string) => ({ url })) || [],
-        condition: alert.item.condition,
-        location: alert.item.governorate || alert.item.city || 'غير محدد',
-        status: alert.item.status,
-        listingType: alert.item.listingType,
-        seller: alert.item.seller,
-        category: alert.item.category,
-      },
-      priceAlerts: {
-        enabled: true,
-        targetPrice: alert.targetPrice ? Number(alert.targetPrice) : null,
-      },
-      notifyOnPriceDrop: alert.notifyOnPriceDrop,
-      notifyOnBackInStock: alert.notifyOnBackInStock,
-      addedAt: alert.createdAt.toISOString(),
-    }));
+    // Transform price alerts to watchlist format (filter out any with null items)
+    const watchlist = priceAlerts
+      .filter((alert) => alert.item !== null)
+      .map((alert) => ({
+        id: alert.id,
+        itemId: alert.itemId,
+        item: {
+          id: alert.item!.id,
+          title: alert.item!.title,
+          price: Number(alert.item!.estimatedValue) || 0,
+          images: alert.item!.images?.map((url: string) => ({ url })) || [],
+          condition: alert.item!.condition,
+          location: alert.item!.governorate || alert.item!.city || 'غير محدد',
+          status: alert.item!.status,
+          listingType: alert.item!.listingType,
+          seller: alert.item!.seller,
+          category: alert.item!.category,
+        },
+        priceAlerts: {
+          enabled: true,
+          targetPrice: alert.targetPrice ? Number(alert.targetPrice) : null,
+        },
+        notifyOnPriceDrop: alert.notifyOnPriceDrop,
+        notifyOnBackInStock: alert.notifyOnBackInStock,
+        addedAt: alert.createdAt.toISOString(),
+      }));
 
     res.json({
       success: true,
