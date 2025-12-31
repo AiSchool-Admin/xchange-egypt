@@ -25,7 +25,7 @@ export const getMyOrders = async (req: Request, res: Response, next: NextFunctio
       status as OrderStatus | undefined
     );
 
-    // Convert Decimal values to numbers for JSON serialization
+    // Convert Decimal values to numbers for JSON serialization (including nested listings)
     const serializedOrders = result.orders.map((order: any) => ({
       ...order,
       subtotal: order.subtotal ? Number(order.subtotal) : 0,
@@ -34,6 +34,18 @@ export const getMyOrders = async (req: Request, res: Response, next: NextFunctio
       items: order.items?.map((item: any) => ({
         ...item,
         price: item.price ? Number(item.price) : 0,
+        listing: item.listing ? {
+          ...item.listing,
+          price: item.listing.price ? Number(item.listing.price) : null,
+          startingBid: item.listing.startingBid ? Number(item.listing.startingBid) : null,
+          currentBid: item.listing.currentBid ? Number(item.listing.currentBid) : null,
+          bidIncrement: item.listing.bidIncrement ? Number(item.listing.bidIncrement) : null,
+          reservePrice: item.listing.reservePrice ? Number(item.listing.reservePrice) : null,
+          item: item.listing.item ? {
+            ...item.listing.item,
+            estimatedValue: item.listing.item.estimatedValue ? Number(item.listing.item.estimatedValue) : null,
+          } : null,
+        } : null,
       })) || [],
     }));
 
@@ -58,7 +70,7 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
 
     const order = await orderService.getOrderById(userId, orderId) as any;
 
-    // Convert Decimal values to numbers for JSON serialization
+    // Convert Decimal values to numbers for JSON serialization (including nested listings)
     const serializedOrder = order ? {
       ...order,
       subtotal: order.subtotal ? Number(order.subtotal) : 0,
@@ -67,6 +79,18 @@ export const getOrderById = async (req: Request, res: Response, next: NextFuncti
       items: order.items?.map((item: any) => ({
         ...item,
         price: item.price ? Number(item.price) : 0,
+        listing: item.listing ? {
+          ...item.listing,
+          price: item.listing.price ? Number(item.listing.price) : null,
+          startingBid: item.listing.startingBid ? Number(item.listing.startingBid) : null,
+          currentBid: item.listing.currentBid ? Number(item.listing.currentBid) : null,
+          bidIncrement: item.listing.bidIncrement ? Number(item.listing.bidIncrement) : null,
+          reservePrice: item.listing.reservePrice ? Number(item.listing.reservePrice) : null,
+          item: item.listing.item ? {
+            ...item.listing.item,
+            estimatedValue: item.listing.item.estimatedValue ? Number(item.listing.item.estimatedValue) : null,
+          } : null,
+        } : null,
       })) || [],
     } : null;
 
