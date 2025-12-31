@@ -269,6 +269,8 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting for E2E test routes
+  skip: (req) => req.path.startsWith('/api/v1/e2e-tests'),
 });
 
 app.use('/api/', limiter);

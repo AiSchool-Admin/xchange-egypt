@@ -861,7 +861,7 @@ async function scenario5_PropertyListing(): Promise<E2ETestResult> {
       areaSqm: 150,
       bedrooms: 3,
       bathrooms: 2,
-      finishingLevel: 'FULLY_FINISHED',
+      finishingLevel: 'SUPER_LUX',  // Fixed: FULLY_FINISHED -> SUPER_LUX (matches enum)
       governorate: 'Cairo',
       city: 'New Cairo',
       images: ['https://example.com/apt.jpg']
@@ -939,7 +939,7 @@ async function scenario6_CarBarter(): Promise<E2ETestResult> {
       year: 2020,
       bodyType: 'SEDAN',
       transmission: 'AUTOMATIC',
-      fuelType: 'GASOLINE',
+      fuelType: 'PETROL',  // Fixed: GASOLINE -> PETROL (matches enum)
       mileage: 50000,
       condition: 'EXCELLENT',
       serviceHistory: true,
