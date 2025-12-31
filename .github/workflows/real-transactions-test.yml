@@ -12,7 +12,7 @@ env:
 
 jobs:
   real-transactions:
-    name: 🛒 Real Transactions Test
+    name: Real Transactions Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: true
@@ -33,9 +33,6 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Create screenshots directory
-        run: mkdir -p screenshots
-
       - name: Run Real Transaction Tests
         run: |
           npx playwright test e2e/real-transactions.spec.ts --project=chromium --reporter=html --timeout=60000 2>&1 || true
@@ -45,7 +42,7 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH: 0
         continue-on-error: true
 
-      - name: Upload Test Report
+      - name: Upload Playwright Report (includes screenshots)
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -53,35 +50,35 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-      - name: List screenshots
-        if: always()
-        run: |
-          echo "📸 Screenshots directory contents:"
-          ls -la screenshots/ || echo "No screenshots found"
-
-      - name: Upload Screenshots
+      - name: Upload Test Results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: transaction-screenshots
-          path: screenshots/
+          name: test-results
+          path: test-results/
           retention-days: 7
 
       - name: Test Summary
         if: always()
         run: |
-          echo "## 🛒 Real Transactions Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Real Transactions Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Tests Performed:" >> $GITHUB_STEP_SUMMARY
-          echo "1. ✅ User Registration" >> $GITHUB_STEP_SUMMARY
-          echo "2. ✅ User Login" >> $GITHUB_STEP_SUMMARY
-          echo "3. ✅ Add Product for Sale" >> $GITHUB_STEP_SUMMARY
-          echo "4. ✅ Search for Products" >> $GITHUB_STEP_SUMMARY
-          echo "5. ✅ View Product & Click Buy" >> $GITHUB_STEP_SUMMARY
-          echo "6. ✅ Add to Cart" >> $GITHUB_STEP_SUMMARY
-          echo "7. ✅ Checkout Process" >> $GITHUB_STEP_SUMMARY
-          echo "8. ✅ Scrap Market Listing" >> $GITHUB_STEP_SUMMARY
-          echo "9. ✅ Send Message to Seller" >> $GITHUB_STEP_SUMMARY
-          echo "10. ✅ Make Price Offer" >> $GITHUB_STEP_SUMMARY
+          echo "1. Homepage loading" >> $GITHUB_STEP_SUMMARY
+          echo "2. Mobiles marketplace" >> $GITHUB_STEP_SUMMARY
+          echo "3. Scrap marketplace" >> $GITHUB_STEP_SUMMARY
+          echo "4. Login page" >> $GITHUB_STEP_SUMMARY
+          echo "5. Login attempt" >> $GITHUB_STEP_SUMMARY
+          echo "6. Register page" >> $GITHUB_STEP_SUMMARY
+          echo "7. Search functionality" >> $GITHUB_STEP_SUMMARY
+          echo "8. Sell page" >> $GITHUB_STEP_SUMMARY
+          echo "9. Cart page" >> $GITHUB_STEP_SUMMARY
+          echo "10. Checkout page" >> $GITHUB_STEP_SUMMARY
+          echo "11. Profile page" >> $GITHUB_STEP_SUMMARY
+          echo "12. Wallet page" >> $GITHUB_STEP_SUMMARY
+          echo "13. Product details" >> $GITHUB_STEP_SUMMARY
+          echo "14. Console errors check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📊 Check the uploaded artifacts for detailed report and screenshots" >> $GITHUB_STEP_SUMMARY
+          echo "**Screenshots are embedded in the Playwright HTML report**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download 'real-transactions-report' artifact and open index.html to view screenshots" >> $GITHUB_STEP_SUMMARY
