@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * اختبارات المعاملات الفعلية - Real Transaction Tests
@@ -8,14 +10,22 @@ import { test, expect } from '@playwright/test';
 // الموقع الحقيقي
 const BASE_URL = 'https://xchange.com.eg';
 
-// مجلد الصور - استخدام مسار مطلق
-const SCREENSHOTS_DIR = 'test-results/screenshots';
+// مجلد الصور - مسار مطلق من جذر المشروع
+const SCREENSHOTS_DIR = path.join(process.cwd(), 'screenshots');
 
 // بيانات مستخدم اختبار موجود
 const existingUser = {
   email: 'test1@xchange.eg',
   password: 'Test123456!',
 };
+
+// إنشاء مجلد الصور إذا لم يكن موجوداً
+test.beforeAll(async () => {
+  if (!fs.existsSync(SCREENSHOTS_DIR)) {
+    fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
+  }
+  console.log(`📁 Screenshots will be saved to: ${SCREENSHOTS_DIR}`);
+});
 
 test.describe('اختبارات المعاملات الفعلية', () => {
 
@@ -35,7 +45,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.waitForTimeout(3000);
 
     // التقاط صورة
-    await page.screenshot({ path: 'test-results/screenshots/01-homepage.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '01-homepage.png'), fullPage: true });
 
     // التحقق من العنوان
     const title = await page.title();
@@ -53,7 +63,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.goto(`${BASE_URL}/mobiles`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/screenshots/02-mobiles-page.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '02-mobiles-page.png'), fullPage: true });
 
     const url = page.url();
     console.log(`Current URL: ${url}`);
@@ -70,7 +80,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.goto(`${BASE_URL}/scrap`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/screenshots/03-scrap-page.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '03-scrap-page.png'), fullPage: true });
 
     const url = page.url();
     console.log(`Current URL: ${url}`);
@@ -85,7 +95,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/screenshots/04-login-page.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '04-login-page.png'), fullPage: true });
 
     // البحث عن نموذج تسجيل الدخول
     const emailInput = page.locator('input[type="email"], input[name="email"]').first();
@@ -108,7 +118,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.waitForTimeout(2000);
 
     // التقاط صورة قبل الدخول
-    await page.screenshot({ path: 'test-results/screenshots/05a-before-login.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '05a-before-login.png'), fullPage: true });
 
     // محاولة ملء النموذج
     const emailInput = page.locator('input[type="email"], input[name="email"]').first();
@@ -125,7 +135,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     }
 
     // التقاط صورة بعد ملء البيانات
-    await page.screenshot({ path: 'test-results/screenshots/05b-login-filled.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '05b-login-filled.png'), fullPage: true });
 
     // محاولة الضغط على زر الدخول
     const submitButton = page.locator('button[type="submit"]').first();
@@ -136,7 +146,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     }
 
     // التقاط صورة بعد محاولة الدخول
-    await page.screenshot({ path: 'test-results/screenshots/05c-after-login.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '05c-after-login.png'), fullPage: true });
 
     console.log(`Final URL: ${page.url()}`);
   });
@@ -150,7 +160,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.goto(`${BASE_URL}/register`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/screenshots/06-register-page.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '06-register-page.png'), fullPage: true });
 
     console.log(`Register page URL: ${page.url()}`);
   });
@@ -174,7 +184,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
       await page.waitForTimeout(3000);
     }
 
-    await page.screenshot({ path: 'test-results/screenshots/07-search-results.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '07-search-results.png'), fullPage: true });
 
     console.log(`Search results URL: ${page.url()}`);
   });
@@ -188,7 +198,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.goto(`${BASE_URL}/sell`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/screenshots/08-sell-page.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '08-sell-page.png'), fullPage: true });
 
     console.log(`Sell page URL: ${page.url()}`);
   });
@@ -202,7 +212,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.goto(`${BASE_URL}/cart`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/screenshots/09-cart-page.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '09-cart-page.png'), fullPage: true });
 
     console.log(`Cart page URL: ${page.url()}`);
   });
@@ -216,7 +226,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.goto(`${BASE_URL}/checkout`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/screenshots/10-checkout-page.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '10-checkout-page.png'), fullPage: true });
 
     console.log(`Checkout page URL: ${page.url()}`);
   });
@@ -230,7 +240,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.goto(`${BASE_URL}/profile`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/screenshots/11-profile-page.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '11-profile-page.png'), fullPage: true });
 
     console.log(`Profile page URL: ${page.url()}`);
   });
@@ -244,7 +254,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.goto(`${BASE_URL}/wallet`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForTimeout(3000);
 
-    await page.screenshot({ path: 'test-results/screenshots/12-wallet-page.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '12-wallet-page.png'), fullPage: true });
 
     console.log(`Wallet page URL: ${page.url()}`);
   });
@@ -259,7 +269,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     await page.waitForTimeout(3000);
 
     // التقاط صورة قبل النقر
-    await page.screenshot({ path: 'test-results/screenshots/13a-before-click.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '13a-before-click.png'), fullPage: true });
 
     // البحث عن كارت منتج والنقر عليه
     const productLink = page.locator('a[href*="/listing/"], a[href*="/product/"], .product-card a').first();
@@ -279,7 +289,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
     }
 
     // التقاط صورة صفحة المنتج
-    await page.screenshot({ path: 'test-results/screenshots/13b-product-details.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '13b-product-details.png'), fullPage: true });
 
     console.log(`Product page URL: ${page.url()}`);
   });
@@ -317,7 +327,7 @@ test.describe('اختبارات المعاملات الفعلية', () => {
       console.log('\n✅ No console errors found!');
     }
 
-    await page.screenshot({ path: 'test-results/screenshots/14-console-check.png', fullPage: true });
+    await page.screenshot({ path: path.join(SCREENSHOTS_DIR, '14-console-check.png'), fullPage: true });
   });
 });
 
