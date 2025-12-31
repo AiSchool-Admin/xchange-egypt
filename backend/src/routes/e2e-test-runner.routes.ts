@@ -211,6 +211,127 @@ router.get('/health', async (_req: Request, res: Response) => {
 });
 
 /**
+ * Debug endpoint to test individual APIs and show detailed errors
+ * GET /api/v1/e2e-tests/debug
+ */
+router.get('/debug', async (_req: Request, res: Response) => {
+  const debugResults: { api: string; status: string; error?: string; details?: any }[] = [];
+
+  try {
+    // Test 1: Login
+    const loginTest = await fetch(`${API_BASE}/api/v1/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test1@xchange.eg', password: TEST_PASSWORD })
+    });
+    const loginData = await loginTest.json().catch(() => ({})) as any;
+    const token = loginData.data?.accessToken || '';
+
+    debugResults.push({
+      api: 'POST /api/v1/auth/login',
+      status: loginTest.ok ? 'OK' : 'FAIL',
+      error: !loginTest.ok ? JSON.stringify(loginData) : undefined,
+      details: { hasToken: !!token }
+    });
+
+    if (token) {
+      // Test 2: Orders API
+      const ordersTest = await fetch(`${API_BASE}/api/v1/orders`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      const ordersData = await ordersTest.json().catch(() => ({})) as any;
+      debugResults.push({
+        api: 'GET /api/v1/orders',
+        status: ordersTest.ok ? 'OK' : 'FAIL',
+        error: !ordersTest.ok ? JSON.stringify(ordersData) : undefined,
+        details: ordersTest.ok ? { orderCount: ordersData?.data?.orders?.length || 0 } : undefined
+      });
+
+      // Test 3: Watchlist API
+      const watchlistTest = await fetch(`${API_BASE}/api/v1/watchlist`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+      });
+      const watchlistData = await watchlistTest.json().catch(() => ({})) as any;
+      debugResults.push({
+        api: 'GET /api/v1/watchlist',
+        status: watchlistTest.ok ? 'OK' : 'FAIL',
+        error: !watchlistTest.ok ? JSON.stringify(watchlistData) : undefined,
+        details: watchlistTest.ok ? { watchlistCount: watchlistData?.data?.total || 0 } : undefined
+      });
+
+      // Test 4: Auctions API
+      const auctionsTest = await fetch(`${API_BASE}/api/v1/auctions`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const auctionsData = await auctionsTest.json().catch(() => ({})) as any;
+      debugResults.push({
+        api: 'GET /api/v1/auctions',
+        status: auctionsTest.ok ? 'OK' : 'FAIL',
+        error: !auctionsTest.ok ? JSON.stringify(auctionsData) : undefined
+      });
+
+      // Test 5: Reverse Auctions API
+      const reverseAuctionsTest = await fetch(`${API_BASE}/api/v1/reverse-auctions`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const reverseAuctionsData = await reverseAuctionsTest.json().catch(() => ({})) as any;
+      debugResults.push({
+        api: 'GET /api/v1/reverse-auctions',
+        status: reverseAuctionsTest.ok ? 'OK' : 'FAIL',
+        error: !reverseAuctionsTest.ok ? JSON.stringify(reverseAuctionsData) : undefined
+      });
+
+      // Test 6: Properties API
+      const propertiesTest = await fetch(`${API_BASE}/api/v1/properties`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const propertiesData = await propertiesTest.json().catch(() => ({})) as any;
+      debugResults.push({
+        api: 'GET /api/v1/properties',
+        status: propertiesTest.ok ? 'OK' : 'FAIL',
+        error: !propertiesTest.ok ? JSON.stringify(propertiesData) : undefined
+      });
+
+      // Test 7: Cars API
+      const carsTest = await fetch(`${API_BASE}/api/v1/cars/listings`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const carsData = await carsTest.json().catch(() => ({})) as any;
+      debugResults.push({
+        api: 'GET /api/v1/cars/listings',
+        status: carsTest.ok ? 'OK' : 'FAIL',
+        error: !carsTest.ok ? JSON.stringify(carsData) : undefined
+      });
+
+      // Test 8: Price Prediction API
+      const pricePredictionTest = await fetch(`${API_BASE}/api/v1/price-prediction/categories`, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const pricePredictionData = await pricePredictionTest.json().catch(() => ({})) as any;
+      debugResults.push({
+        api: 'GET /api/v1/price-prediction/categories',
+        status: pricePredictionTest.ok ? 'OK' : 'FAIL',
+        error: !pricePredictionTest.ok ? JSON.stringify(pricePredictionData) : undefined
+      });
+    }
+
+    res.json({
+      success: true,
+      timestamp: new Date().toISOString(),
+      apiBase: API_BASE,
+      results: debugResults
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack,
+      results: debugResults
+    });
+  }
+});
+
+/**
  * Run all 20 E2E test scenarios
  */
 router.get('/run', async (_req: Request, res: Response) => {
@@ -544,31 +665,34 @@ async function scenario3_LiveAuction(): Promise<E2ETestResult> {
     });
     if (!auctioneer) throw new Error('Auctioneer not found');
 
-    // Step 2: Create listing for auction
-    const listingResult = await apiCall('POST', '/api/v1/listings', auctioneer.token, {
-      title: `E2E Auction Item ${Date.now()}`,
-      description: 'Antique furniture for auction',
+    // Step 2: Create item for auction
+    const itemResult = await apiCall('POST', '/api/v1/items', auctioneer.token, {
+      titleAr: `مزاد E2E - أثاث عتيق ${Date.now()}`,
+      titleEn: `E2E Auction Item ${Date.now()}`,
+      descriptionAr: 'أثاث عتيق نادر للبيع بالمزاد - حالة ممتازة',
+      descriptionEn: 'Rare antique furniture for auction - excellent condition',
       categoryId: await getFirstCategoryId(),
-      listingType: 'AUCTION',
-      startingPrice: 5000,
-      images: ['https://example.com/furniture.jpg'],
-      governorate: 'Giza'
+      estimatedValue: 5000,
+      condition: 'GOOD',
+      location: 'Giza, Dokki',
+      governorate: 'Giza',
+      listingType: 'AUCTION'
     });
     steps.push({
-      step: 'Create Auction Listing',
-      stepAr: 'إنشاء إعلان مزاد',
-      status: listingResult.success ? 'PASS' : 'FAIL',
-      details: listingResult.data?.listing?.id ? `Listing: ${listingResult.data.listing.id}` : undefined,
-      error: listingResult.error
+      step: 'Create Auction Item',
+      stepAr: 'إنشاء منتج للمزاد',
+      status: itemResult.success ? 'PASS' : 'FAIL',
+      details: itemResult.data?.item?.id ? `Item: ${itemResult.data.item.id}` : undefined,
+      error: itemResult.error
     });
 
     // Step 3: Create the auction
-    if (listingResult.data?.listing?.id) {
+    if (itemResult.data?.item?.id) {
       const auctionResult = await apiCall('POST', '/api/v1/auctions', auctioneer.token, {
-        listingId: listingResult.data.listing.id,
+        itemId: itemResult.data.item.id,
         startingPrice: 5000,
         minBidIncrement: 100,
-        startTime: new Date().toISOString(),
+        startTime: new Date(Date.now() + 60000).toISOString(), // Start in 1 minute
         endTime: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       });
       steps.push({
@@ -648,11 +772,12 @@ async function scenario4_ReverseAuction(): Promise<E2ETestResult> {
     // Step 2: Create reverse auction request
     const reverseAuction = await apiCall('POST', '/api/v1/reverse-auctions', requester.token, {
       title: `E2E Transport Service ${Date.now()}`,
-      description: 'Need furniture transport from Cairo to Alexandria',
+      description: 'Need furniture transport from Cairo to Alexandria - must be careful with antique items',
       categoryId: await getFirstCategoryId(),
+      condition: 'GOOD',
       maxBudget: 2000,
-      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      requirements: ['Careful handling', 'Insurance required']
+      endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      publicNotes: 'Careful handling, Insurance required'
     });
     steps.push({
       step: 'Create Reverse Auction',
@@ -729,13 +854,14 @@ async function scenario5_PropertyListing(): Promise<E2ETestResult> {
     // Create property listing
     const property = await apiCall('POST', '/api/v1/properties', owner.token, {
       title: `E2E Apartment ${Date.now()}`,
-      description: 'Luxury apartment for sale',
+      description: 'Luxury apartment for sale in New Cairo - fully finished',
       propertyType: 'APARTMENT',
       listingType: 'SALE',
-      price: 2500000,
-      area: 150,
+      salePrice: 2500000,
+      areaSqm: 150,
       bedrooms: 3,
       bathrooms: 2,
+      finishingLevel: 'FULLY_FINISHED',
       governorate: 'Cairo',
       city: 'New Cairo',
       images: ['https://example.com/apt.jpg']
@@ -807,13 +933,23 @@ async function scenario6_CarBarter(): Promise<E2ETestResult> {
     // Create car listing (correct path: /api/v1/cars/listings)
     const carListing = await apiCall('POST', '/api/v1/cars/listings', carOwner.token, {
       title: `E2E Toyota Camry ${Date.now()}`,
+      description: 'Toyota Camry 2020 for barter - excellent condition, full service history',
       make: 'Toyota',
       model: 'Camry',
       year: 2020,
+      bodyType: 'SEDAN',
+      transmission: 'AUTOMATIC',
+      fuelType: 'GASOLINE',
       mileage: 50000,
-      price: 450000,
-      governorate: 'Cairo',
-      description: 'Toyota Camry 2020 for barter'
+      condition: 'EXCELLENT',
+      serviceHistory: true,
+      colorExterior: 'White',
+      doors: 4,
+      seats: 5,
+      images: ['https://example.com/camry.jpg'],
+      askingPrice: 450000,
+      priceNegotiable: true,
+      openForBarter: true
     });
     steps.push({
       step: 'Create Car Listing',

@@ -105,27 +105,22 @@ router.get('/search', async (req: Request, res: Response) => {
       where: {
         status: 'ACTIVE',
         OR: [
-          { titleAr: { contains: q as string, mode: 'insensitive' } },
-          { titleEn: { contains: q as string, mode: 'insensitive' } },
-          { descriptionAr: { contains: q as string, mode: 'insensitive' } },
+          { title: { contains: q as string, mode: 'insensitive' } },
+          { description: { contains: q as string, mode: 'insensitive' } },
         ],
       },
       select: {
         id: true,
-        titleAr: true,
-        titleEn: true,
+        title: true,
         estimatedValue: true,
         condition: true,
+        images: true,
         category: {
           select: {
             id: true,
             nameAr: true,
             nameEn: true,
           },
-        },
-        images: {
-          take: 1,
-          select: { url: true },
         },
       },
       take: 10,
@@ -134,12 +129,12 @@ router.get('/search', async (req: Request, res: Response) => {
 
     const formattedItems = items.map(item => ({
       id: item.id,
-      title: item.titleAr || item.titleEn,
+      title: item.title,
       category: item.category?.nameAr || item.category?.nameEn || 'عام',
       categoryId: item.category?.id,
-      currentPrice: item.estimatedValue || 0,
+      currentPrice: Number(item.estimatedValue) || 0,
       condition: item.condition,
-      image: item.images[0]?.url,
+      image: item.images?.[0] || null,
     }));
 
     return res.json({
