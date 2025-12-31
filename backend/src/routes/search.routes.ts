@@ -6,7 +6,7 @@
 
 import { Router } from 'express';
 import * as searchController from '../controllers/search.controller';
-import { authenticate, optionalAuth } from '../middleware/auth';
+import { authenticate, optionalAuth, isAdmin } from '../middleware/auth';
 import { validate } from '../middleware/validation';
 import {
   searchSchema,
@@ -228,13 +228,14 @@ router.post(
 );
 
 /**
- * Create search suggestion (Admin)
+ * Create search suggestion (Admin only)
  * POST /api/v1/search/suggestions
  * Body: { keyword, displayText, category?, priority? }
  */
 router.post(
   '/suggestions',
-  authenticate, // Add admin role check here
+  authenticate,
+  isAdmin,
   validate(createSuggestionSchema),
   searchController.createSuggestion
 );

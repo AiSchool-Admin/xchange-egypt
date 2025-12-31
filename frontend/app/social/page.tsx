@@ -8,12 +8,12 @@ import { getFeed, followUser, unfollowUser, discoverUsers, ActivityItem, UserPro
 function ActivityCard({ activity }: { activity: ActivityItem }) {
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'NEW_LISTING': return '&#128230;';
-      case 'PRICE_DROP': return '&#128201;';
-      case 'SOLD': return '&#127881;';
-      case 'NEW_REVIEW': return '&#11088;';
-      case 'ACHIEVEMENT': return '&#127942;';
-      default: return '&#128276;';
+      case 'NEW_LISTING': return '📦';
+      case 'PRICE_DROP': return '📉';
+      case 'SOLD': return '🎉';
+      case 'NEW_REVIEW': return '⭐';
+      case 'ACHIEVEMENT': return '🏆';
+      default: return '🔔';
     }
   };
 
@@ -65,7 +65,7 @@ function ActivityCard({ activity }: { activity: ActivityItem }) {
             <Link href={`/users/${activity.userId}`} className="font-bold text-gray-800 hover:text-emerald-600">
               {activity.user.fullName}
             </Link>
-            <span dangerouslySetInnerHTML={{ __html: getActivityIcon(activity.type) }} />
+            <span>{getActivityIcon(activity.type)}</span>
           </div>
           <p className="text-gray-600">{getActivityText(activity)}</p>
           <span className="text-xs text-gray-400">{timeAgo(activity.createdAt)}</span>

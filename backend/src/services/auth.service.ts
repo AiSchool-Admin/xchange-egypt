@@ -10,6 +10,7 @@ import {
 } from '../utils/errors';
 import { sendEmailNow } from './email.service';
 import { generateEmailTemplate } from '../utils/email-templates';
+import logger from '../lib/logger';
 import type {
   RegisterIndividualInput,
   RegisterBusinessInput,
@@ -250,6 +251,7 @@ export const login = async (data: LoginInput) => {
 
 /**
  * Refresh access token using refresh token
+ * Implements token rotation: issues new refresh token on each use
  */
 export const refreshAccessToken = async (refreshToken: string) => {
   // Verify refresh token
@@ -267,7 +269,15 @@ export const refreshAccessToken = async (refreshToken: string) => {
   });
 
   if (!storedToken) {
-    throw new UnauthorizedError('Refresh token not found');
+    // Token not in DB - possible token reuse attack
+    // Invalidate all tokens for this user as a security measure
+    logger.warn('Refresh token reuse detected, invalidating all tokens for user', {
+      userId: decoded.userId,
+    });
+    await prisma.refreshToken.deleteMany({
+      where: { userId: decoded.userId },
+    });
+    throw new UnauthorizedError('Refresh token not found - possible token reuse detected');
   }
 
   // Check if token is expired
@@ -284,6 +294,11 @@ export const refreshAccessToken = async (refreshToken: string) => {
     throw new UnauthorizedError('User account is not active');
   }
 
+  // Token Rotation: Delete old refresh token
+  await prisma.refreshToken.delete({
+    where: { id: storedToken.id },
+  });
+
   // Generate new access token
   const newAccessToken = generateAccessToken({
     userId: decoded.userId,
@@ -291,24 +306,40 @@ export const refreshAccessToken = async (refreshToken: string) => {
     userType: decoded.userType,
   });
 
+  // Generate new refresh token (rotation)
+  const newRefreshToken = generateRefreshToken({
+    userId: decoded.userId,
+    email: decoded.email,
+    userType: decoded.userType,
+  });
+
+  // Store new refresh token in database
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  await prisma.refreshToken.create({
+    data: {
+      token: newRefreshToken,
+      userId: decoded.userId,
+      expiresAt,
+    },
+  });
+
+  logger.debug('Token rotation completed', { userId: decoded.userId });
+
   return {
     accessToken: newAccessToken,
-    refreshToken, // Return the same refresh token
+    refreshToken: newRefreshToken, // Return new rotated refresh token
   };
 };
 
 /**
  * Logout user (invalidate refresh token)
+ * Idempotent - succeeds even if token doesn't exist
  */
 export const logout = async (refreshToken: string) => {
-  // Delete refresh token from database
-  const deleted = await prisma.refreshToken.deleteMany({
+  // Delete refresh token from database (idempotent)
+  await prisma.refreshToken.deleteMany({
     where: { token: refreshToken },
   });
-
-  if (deleted.count === 0) {
-    throw new NotFoundError('Refresh token not found');
-  }
 
   return { message: 'Logged out successfully' };
 };
@@ -487,7 +518,7 @@ export const forgotPassword = async (data: ForgotPasswordInput) => {
     html: emailHtml,
   });
 
-  console.log(`Password reset email sent to: ${user.email}`);
+  logger.info(`Password reset email sent to: ${user.email}`);
 
   return {
     message: 'If your email is registered, you will receive a password reset link.',

@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Smart Matching Notification Service
  *
@@ -32,7 +33,7 @@ const makeUserItemKey = (userId: string, itemId: string): string => {
 // Clear old notification keys every 10 minutes
 setInterval(() => {
   recentlyNotifiedUsers.clear();
-  console.log('[SmartMatching] Cleared notification cache');
+  logger.info('[SmartMatching] Cleared notification cache');
 }, 10 * 60 * 1000);
 
 // ============================================
@@ -48,7 +49,7 @@ setInterval(() => {
 export const notifyBarterMatches = async (payload: BarterOfferCreatedPayload): Promise<void> => {
   // For barter offers created from inventory, don't trigger - let item events handle it
   if (!payload.offeredItemIds || payload.offeredItemIds.length === 0) {
-    console.log('[SmartMatching] Skipping barter offer without offered items (handled by item events)');
+    logger.info('[SmartMatching] Skipping barter offer without offered items (handled by item events)');
     return;
   }
 
@@ -77,7 +78,7 @@ export const notifyItemWithBarterMatches = async (itemId: string, sellerId: stri
 
     // Must have barter preferences
     if (!item.desiredCategoryId && !item.desiredItemTitle) {
-      console.log(`[SmartMatching] Item ${itemId} has no barter preferences, skipping`);
+      logger.info(`[SmartMatching] Item ${itemId} has no barter preferences, skipping`);
       return;
     }
 
@@ -86,7 +87,7 @@ export const notifyItemWithBarterMatches = async (itemId: string, sellerId: stri
     const myItemValue = item.estimatedValue.toLocaleString('ar-EG');
     const myWantedText = item.desiredItemTitle || item.desiredCategory?.nameAr || 'سلعة';
 
-    console.log(`[SmartMatching] Looking for PERFECT matches: ${myName} offers "${myItem}" and wants "${myWantedText}"`);
+    logger.info(`[SmartMatching] Looking for PERFECT matches: ${myName} offers "${myItem}" and wants "${myWantedText}"`);
 
     // Find items that match what I want (by category or title keyword)
     const matchConditions: any[] = [];
@@ -119,7 +120,7 @@ export const notifyItemWithBarterMatches = async (itemId: string, sellerId: stri
       },
     });
 
-    console.log(`[SmartMatching] Found ${potentialMatches.length} potential matches for "${myItem}"`);
+    logger.info(`[SmartMatching] Found ${potentialMatches.length} potential matches for "${myItem}"`);
 
     let perfectMatchCount = 0;
 
@@ -128,7 +129,7 @@ export const notifyItemWithBarterMatches = async (itemId: string, sellerId: stri
       // Skip if already notified this user about this item
       const notifKey = makeUserItemKey(otherItem.sellerId, itemId);
       if (recentlyNotifiedUsers.has(notifKey)) {
-        console.log(`[SmartMatching] Already notified user ${otherItem.sellerId} about item ${itemId}`);
+        logger.info(`[SmartMatching] Already notified user ${otherItem.sellerId} about item ${itemId}`);
         continue;
       }
 
@@ -144,7 +145,7 @@ export const notifyItemWithBarterMatches = async (itemId: string, sellerId: stri
         const theirItem = otherItem.title;
         const theirItemValue = otherItem.estimatedValue.toLocaleString('ar-EG');
 
-        console.log(`[SmartMatching] 🎯 PERFECT MATCH: ${myName} (${myItem}) ↔ ${theirName} (${theirItem})`);
+        logger.info(`[SmartMatching] 🎯 PERFECT MATCH: ${myName} (${myItem}) ↔ ${theirName} (${theirItem})`);
 
         // Send ONE clear notification to the other user
         await createNotification({
@@ -173,9 +174,9 @@ export const notifyItemWithBarterMatches = async (itemId: string, sellerId: stri
       // NO notification for partial matches - only perfect matches get notified
     }
 
-    console.log(`[SmartMatching] Sent ${perfectMatchCount} perfect match notification(s) for item ${itemId}`);
+    logger.info(`[SmartMatching] Sent ${perfectMatchCount} perfect match notification(s) for item ${itemId}`);
   } catch (error) {
-    console.error('[SmartMatching] Error in notifyItemWithBarterMatches:', error);
+    logger.error('[SmartMatching] Error in notifyItemWithBarterMatches:', error);
   }
 };
 
@@ -290,9 +291,9 @@ const handleStandaloneBarterOffer = async (payload: BarterOfferCreatedPayload): 
       }
     }
 
-    console.log(`[SmartMatching] ${notifiedUsers.size} users notified for barter offer ${offerId}`);
+    logger.info(`[SmartMatching] ${notifiedUsers.size} users notified for barter offer ${offerId}`);
   } catch (error) {
-    console.error('[SmartMatching] Error in handleStandaloneBarterOffer:', error);
+    logger.error('[SmartMatching] Error in handleStandaloneBarterOffer:', error);
   }
 };
 
@@ -409,9 +410,9 @@ export const notifySaleMatches = async (itemId: string, sellerId: string): Promi
       });
     }
 
-    console.log(`[SmartMatching] ${notifiedUsers.size} users notified for new sale item ${itemId}`);
+    logger.info(`[SmartMatching] ${notifiedUsers.size} users notified for new sale item ${itemId}`);
   } catch (error) {
-    console.error('[SmartMatching] Error in notifySaleMatches:', error);
+    logger.error('[SmartMatching] Error in notifySaleMatches:', error);
   }
 };
 
@@ -500,9 +501,9 @@ export const notifyDirectPurchaseMatches = async (demandId: string, buyerId: str
       });
     }
 
-    console.log(`[SmartMatching] ${notifiedUsers.size} sellers notified for new direct purchase demand ${demandId}`);
+    logger.info(`[SmartMatching] ${notifiedUsers.size} sellers notified for new direct purchase demand ${demandId}`);
   } catch (error) {
-    console.error('[SmartMatching] Error in notifyDirectPurchaseMatches:', error);
+    logger.error('[SmartMatching] Error in notifyDirectPurchaseMatches:', error);
   }
 };
 
@@ -563,9 +564,9 @@ export const notifyPurchaseRequestMatches = async (payload: ReverseAuctionCreate
       });
     }
 
-    console.log(`[SmartMatching] ${notifiedUsers.size} users notified for new purchase request ${auctionId}`);
+    logger.info(`[SmartMatching] ${notifiedUsers.size} users notified for new purchase request ${auctionId}`);
   } catch (error) {
-    console.error('[SmartMatching] Error in notifyPurchaseRequestMatches:', error);
+    logger.error('[SmartMatching] Error in notifyPurchaseRequestMatches:', error);
   }
 };
 
@@ -574,7 +575,7 @@ export const notifyPurchaseRequestMatches = async (payload: ReverseAuctionCreate
 // ============================================
 
 export const initSmartMatchingListeners = (): void => {
-  console.log('[SmartMatching] Initializing smart matching listeners...');
+  logger.info('[SmartMatching] Initializing smart matching listeners...');
 
   // Listen for new barter offers (standalone)
   barterEvents.onOfferCreated(async (payload: BarterOfferCreatedPayload) => {
@@ -605,5 +606,5 @@ export const initSmartMatchingListeners = (): void => {
     await notifyPurchaseRequestMatches(payload);
   });
 
-  console.log('[SmartMatching] Smart matching listeners initialized ✅');
+  logger.info('[SmartMatching] Smart matching listeners initialized ✅');
 };

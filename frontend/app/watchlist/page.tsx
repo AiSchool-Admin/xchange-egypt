@@ -1,173 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
-
-// Types
-interface WatchlistItem {
-  id: string;
-  itemId: string;
-  item: {
-    id: string;
-    title: string;
-    price: number;
-    originalPrice?: number;
-    images: { url: string }[];
-    condition: string;
-    location: string;
-    status: string;
-    listingType: 'DIRECT_SALE' | 'AUCTION' | 'BARTER';
-    auctionEndTime?: string;
-    currentBid?: number;
-    bidCount?: number;
-    seller: {
-      id: string;
-      fullName: string;
-      rating: number;
-    };
-  };
-  priceAlerts: {
-    enabled: boolean;
-    targetPrice?: number;
-  };
-  auctionAlerts: {
-    enabled: boolean;
-    minutesBefore: number;
-  };
-  similarItemsAlert: boolean;
-  addedAt: string;
-  lastPriceChange?: {
-    oldPrice: number;
-    newPrice: number;
-    changedAt: string;
-  };
-}
+import {
+  getWatchlist,
+  removeFromWatchlist,
+  updateWatchlistItem,
+  WatchlistItem
+} from '@/lib/api/watchlist';
+import { getNotifications } from '@/lib/api/notifications';
 
 interface Notification {
   id: string;
-  type: 'PRICE_DROP' | 'AUCTION_ENDING' | 'SIMILAR_ITEM' | 'BACK_IN_STOCK';
+  type: string;
   title: string;
   message: string;
-  itemId: string;
-  read: boolean;
+  data?: { itemId?: string };
+  isRead: boolean;
   createdAt: string;
 }
-
-// Mock data
-const mockWatchlist: WatchlistItem[] = [
-  {
-    id: '1',
-    itemId: 'item1',
-    item: {
-      id: 'item1',
-      title: 'iPhone 15 Pro Max 256GB - أزرق تيتانيوم',
-      price: 62000,
-      originalPrice: 65000,
-      images: [{ url: '' }],
-      condition: 'NEW',
-      location: 'القاهرة',
-      status: 'ACTIVE',
-      listingType: 'DIRECT_SALE',
-      seller: { id: '1', fullName: 'متجر التقنية', rating: 4.8 },
-    },
-    priceAlerts: { enabled: true, targetPrice: 60000 },
-    auctionAlerts: { enabled: false, minutesBefore: 30 },
-    similarItemsAlert: true,
-    addedAt: '2024-01-10',
-    lastPriceChange: { oldPrice: 65000, newPrice: 62000, changedAt: '2024-01-12' },
-  },
-  {
-    id: '2',
-    itemId: 'item2',
-    item: {
-      id: 'item2',
-      title: 'سيارة تويوتا كورولا 2022 - حالة ممتازة',
-      price: 850000,
-      images: [{ url: '' }],
-      condition: 'LIKE_NEW',
-      location: 'الجيزة',
-      status: 'ACTIVE',
-      listingType: 'AUCTION',
-      auctionEndTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
-      currentBid: 850000,
-      bidCount: 15,
-      seller: { id: '2', fullName: 'أحمد محمود', rating: 4.5 },
-    },
-    priceAlerts: { enabled: false },
-    auctionAlerts: { enabled: true, minutesBefore: 30 },
-    similarItemsAlert: false,
-    addedAt: '2024-01-08',
-  },
-  {
-    id: '3',
-    itemId: 'item3',
-    item: {
-      id: 'item3',
-      title: 'شقة 150 متر - مدينة نصر - تشطيب سوبر لوكس',
-      price: 2500000,
-      images: [{ url: '' }],
-      condition: 'NEW',
-      location: 'القاهرة',
-      status: 'ACTIVE',
-      listingType: 'DIRECT_SALE',
-      seller: { id: '3', fullName: 'عقارات النيل', rating: 4.9 },
-    },
-    priceAlerts: { enabled: true, targetPrice: 2300000 },
-    auctionAlerts: { enabled: false, minutesBefore: 30 },
-    similarItemsAlert: true,
-    addedAt: '2024-01-05',
-  },
-  {
-    id: '4',
-    itemId: 'item4',
-    item: {
-      id: 'item4',
-      title: 'MacBook Pro M3 Max - 36GB RAM',
-      price: 125000,
-      images: [{ url: '' }],
-      condition: 'NEW',
-      location: 'الإسكندرية',
-      status: 'SOLD',
-      listingType: 'DIRECT_SALE',
-      seller: { id: '4', fullName: 'تك ستور', rating: 4.7 },
-    },
-    priceAlerts: { enabled: false },
-    auctionAlerts: { enabled: false, minutesBefore: 30 },
-    similarItemsAlert: true,
-    addedAt: '2024-01-01',
-  },
-];
-
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'PRICE_DROP',
-    title: '📉 انخفاض السعر!',
-    message: 'انخفض سعر iPhone 15 Pro Max من 65,000 إلى 62,000 ج.م',
-    itemId: 'item1',
-    read: false,
-    createdAt: '2024-01-12T10:30:00',
-  },
-  {
-    id: '2',
-    type: 'AUCTION_ENDING',
-    title: '⏰ المزاد ينتهي قريباً!',
-    message: 'مزاد تويوتا كورولا ينتهي خلال ساعتين',
-    itemId: 'item2',
-    read: false,
-    createdAt: '2024-01-12T09:00:00',
-  },
-  {
-    id: '3',
-    type: 'SIMILAR_ITEM',
-    title: '🔍 منتج مشابه جديد',
-    message: 'تم إضافة شقة مشابهة في مدينة نصر بسعر 2,400,000 ج.م',
-    itemId: 'item3',
-    read: true,
-    createdAt: '2024-01-11T15:00:00',
-  },
-];
 
 const formatPrice = (price: number) => {
   return new Intl.NumberFormat('ar-EG').format(price);
@@ -192,34 +44,58 @@ export default function WatchlistPage() {
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'auctions' | 'price_alerts' | 'sold'>('all');
   const [showNotifications, setShowNotifications] = useState(false);
   const [editingAlerts, setEditingAlerts] = useState<string | null>(null);
   const [alertSettings, setAlertSettings] = useState<{
     priceAlert: boolean;
     targetPrice: string;
-    auctionAlert: boolean;
-    minutesBefore: number;
-    similarAlert: boolean;
+    notifyOnPriceDrop: boolean;
+    notifyOnBackInStock: boolean;
   }>({
     priceAlert: false,
     targetPrice: '',
-    auctionAlert: false,
-    minutesBefore: 30,
-    similarAlert: false,
+    notifyOnPriceDrop: true,
+    notifyOnBackInStock: true,
   });
 
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setWatchlist(mockWatchlist);
-      setNotifications(mockNotifications);
+  const fetchWatchlist = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [watchlistRes, notificationsRes] = await Promise.all([
+        getWatchlist(),
+        getNotifications({ limit: 10, type: 'PRICE_DROP' }).catch(() => ({ data: { notifications: [] } })),
+      ]);
+
+      setWatchlist(watchlistRes.data.watchlist || []);
+      setNotifications(notificationsRes.data?.notifications || []);
+    } catch (err: any) {
+      console.error('Error fetching watchlist:', err);
+      setError(err.response?.data?.error?.message || 'حدث خطأ في تحميل قائمة المتابعة');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   }, []);
 
-  const removeFromWatchlist = (id: string) => {
-    setWatchlist(prev => prev.filter(item => item.id !== id));
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchWatchlist();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated, fetchWatchlist]);
+
+  const handleRemoveFromWatchlist = async (id: string) => {
+    try {
+      await removeFromWatchlist(id);
+      setWatchlist(prev => prev.filter(item => item.id !== id));
+    } catch (err: any) {
+      console.error('Error removing from watchlist:', err);
+      alert(err.response?.data?.error?.message || 'حدث خطأ');
+    }
   };
 
   const openAlertSettings = (item: WatchlistItem) => {
@@ -227,36 +103,43 @@ export default function WatchlistPage() {
     setAlertSettings({
       priceAlert: item.priceAlerts.enabled,
       targetPrice: item.priceAlerts.targetPrice?.toString() || '',
-      auctionAlert: item.auctionAlerts.enabled,
-      minutesBefore: item.auctionAlerts.minutesBefore,
-      similarAlert: item.similarItemsAlert,
+      notifyOnPriceDrop: item.notifyOnPriceDrop,
+      notifyOnBackInStock: item.notifyOnBackInStock,
     });
   };
 
-  const saveAlertSettings = () => {
-    if (editingAlerts) {
+  const saveAlertSettings = async () => {
+    if (!editingAlerts) return;
+
+    try {
+      await updateWatchlistItem(editingAlerts, {
+        targetPrice: alertSettings.targetPrice ? parseInt(alertSettings.targetPrice) : undefined,
+        notifyOnPriceDrop: alertSettings.notifyOnPriceDrop,
+        notifyOnBackInStock: alertSettings.notifyOnBackInStock,
+      });
+
       setWatchlist(prev => prev.map(item => {
         if (item.id === editingAlerts) {
           return {
             ...item,
             priceAlerts: {
               enabled: alertSettings.priceAlert,
-              targetPrice: alertSettings.targetPrice ? parseInt(alertSettings.targetPrice) : undefined,
+              targetPrice: alertSettings.targetPrice ? parseInt(alertSettings.targetPrice) : null,
             },
-            auctionAlerts: {
-              enabled: alertSettings.auctionAlert,
-              minutesBefore: alertSettings.minutesBefore,
-            },
-            similarItemsAlert: alertSettings.similarAlert,
+            notifyOnPriceDrop: alertSettings.notifyOnPriceDrop,
+            notifyOnBackInStock: alertSettings.notifyOnBackInStock,
           };
         }
         return item;
       }));
       setEditingAlerts(null);
+    } catch (err: any) {
+      console.error('Error updating alerts:', err);
+      alert(err.response?.data?.error?.message || 'حدث خطأ في حفظ الإعدادات');
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const filteredWatchlist = watchlist.filter(item => {
     switch (activeTab) {
@@ -295,6 +178,24 @@ export default function WatchlistPage() {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">جاري تحميل قائمة المتابعة...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" dir="rtl">
+        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
+          <div className="text-6xl mb-4">❌</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">حدث خطأ</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={fetchWatchlist}
+            className="px-6 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors"
+          >
+            إعادة المحاولة
+          </button>
         </div>
       </div>
     );
@@ -342,9 +243,9 @@ export default function WatchlistPage() {
                     notifications.map((notif) => (
                       <Link
                         key={notif.id}
-                        href={`/items/${notif.itemId}`}
+                        href={`/items/${notif.data?.itemId || ''}`}
                         className={`block p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors ${
-                          !notif.read ? 'bg-primary-50' : ''
+                          !notif.isRead ? 'bg-primary-50' : ''
                         }`}
                       >
                         <div className="font-medium text-gray-900">{notif.title}</div>
@@ -374,7 +275,7 @@ export default function WatchlistPage() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`flex-shrink-0 py-2 px-4 rounded-lg font-medium transition-all flex items-center gap-2 ${
                 activeTab === tab.id
                   ? 'bg-primary-500 text-white'
@@ -398,7 +299,7 @@ export default function WatchlistPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-2">القائمة فارغة</h2>
             <p className="text-gray-600 mb-6">
               {activeTab === 'all'
-                ? 'ابدأ بإضافة منتجات إلى قائمة المتابعة'
+                ? 'ابدأ بإضافة منتجات إلى قائمة المتابعة من صفحة المنتج'
                 : 'لا توجد منتجات في هذا التصنيف'}
             </p>
             <Link
@@ -470,35 +371,39 @@ export default function WatchlistPage() {
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
                           <span>📍 {watchItem.item.location}</span>
                           <span>•</span>
-                          <span>⭐ {watchItem.item.seller.rating}</span>
+                          <span>⭐ {watchItem.item.seller?.rating || 0}</span>
                           <span>•</span>
-                          <Link href={`/store/${watchItem.item.seller.id}`} className="text-primary-600 hover:underline">
-                            {watchItem.item.seller.fullName}
+                          <Link href={`/users/${watchItem.item.seller?.id}`} className="text-primary-600 hover:underline">
+                            {watchItem.item.seller?.fullName || 'بائع'}
                           </Link>
                         </div>
 
                         {/* Price */}
                         <div className="mt-3">
                           {watchItem.item.listingType === 'AUCTION' ? (
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 flex-wrap">
                               <div>
                                 <span className="text-sm text-gray-500">المزايدة الحالية</span>
                                 <div className="text-2xl font-bold text-primary-600">
-                                  {formatPrice(watchItem.item.currentBid || 0)} ج.م
+                                  {formatPrice(watchItem.item.currentBid || watchItem.item.price)} ج.م
                                 </div>
                               </div>
-                              <div>
-                                <span className="text-sm text-gray-500">عدد المزايدات</span>
-                                <div className="text-lg font-bold text-gray-900">
-                                  {watchItem.item.bidCount}
+                              {watchItem.item.bidCount !== undefined && (
+                                <div>
+                                  <span className="text-sm text-gray-500">عدد المزايدات</span>
+                                  <div className="text-lg font-bold text-gray-900">
+                                    {watchItem.item.bidCount}
+                                  </div>
                                 </div>
-                              </div>
-                              <div className="bg-red-100 text-red-700 px-4 py-2 rounded-xl">
-                                <span className="text-sm">ينتهي خلال</span>
-                                <div className="text-lg font-bold">
-                                  {formatTimeRemaining(watchItem.item.auctionEndTime!)}
+                              )}
+                              {watchItem.item.auctionEndTime && (
+                                <div className="bg-red-100 text-red-700 px-4 py-2 rounded-xl">
+                                  <span className="text-sm">ينتهي خلال</span>
+                                  <div className="text-lg font-bold">
+                                    {formatTimeRemaining(watchItem.item.auctionEndTime)}
+                                  </div>
                                 </div>
-                              </div>
+                              )}
                             </div>
                           ) : (
                             <div className="flex items-center gap-3">
@@ -516,19 +421,19 @@ export default function WatchlistPage() {
 
                         {/* Active Alerts */}
                         <div className="flex flex-wrap gap-2 mt-3">
-                          {watchItem.priceAlerts.enabled && (
+                          {watchItem.priceAlerts.enabled && watchItem.priceAlerts.targetPrice && (
                             <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
-                              📉 تنبيه السعر: {formatPrice(watchItem.priceAlerts.targetPrice || 0)} ج.م
+                              📉 تنبيه السعر: {formatPrice(watchItem.priceAlerts.targetPrice)} ج.م
                             </span>
                           )}
-                          {watchItem.auctionAlerts.enabled && (
+                          {watchItem.notifyOnPriceDrop && (
                             <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm">
-                              ⏰ تنبيه قبل {watchItem.auctionAlerts.minutesBefore} دقيقة
+                              🔔 تنبيه انخفاض السعر
                             </span>
                           )}
-                          {watchItem.similarItemsAlert && (
+                          {watchItem.notifyOnBackInStock && (
                             <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
-                              🔍 منتجات مشابهة
+                              📦 تنبيه التوفر
                             </span>
                           )}
                         </div>
@@ -544,7 +449,7 @@ export default function WatchlistPage() {
                           🔔
                         </button>
                         <button
-                          onClick={() => removeFromWatchlist(watchItem.id)}
+                          onClick={() => handleRemoveFromWatchlist(watchItem.id)}
                           className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
                           title="إزالة من القائمة"
                         >
@@ -575,14 +480,14 @@ export default function WatchlistPage() {
                     </div>
                     <input
                       type="checkbox"
-                      checked={alertSettings.priceAlert}
-                      onChange={(e) => setAlertSettings(prev => ({ ...prev, priceAlert: e.target.checked }))}
+                      checked={alertSettings.notifyOnPriceDrop}
+                      onChange={(e) => setAlertSettings(prev => ({ ...prev, notifyOnPriceDrop: e.target.checked }))}
                       className="w-5 h-5 accent-primary-500"
                     />
                   </label>
-                  {alertSettings.priceAlert && (
+                  {alertSettings.notifyOnPriceDrop && (
                     <div className="mt-4">
-                      <label className="text-sm text-gray-600">السعر المستهدف (ج.م)</label>
+                      <label className="text-sm text-gray-600">السعر المستهدف (ج.م) - اختياري</label>
                       <input
                         type="number"
                         value={alertSettings.targetPrice}
@@ -594,49 +499,17 @@ export default function WatchlistPage() {
                   )}
                 </div>
 
-                {/* Auction Alert */}
+                {/* Back in Stock Alert */}
                 <div className="p-4 bg-gray-50 rounded-xl">
                   <label className="flex items-center justify-between cursor-pointer">
                     <div>
-                      <span className="font-medium text-gray-900">⏰ تنبيه انتهاء المزاد</span>
-                      <p className="text-sm text-gray-500 mt-1">احصل على إشعار قبل انتهاء المزاد</p>
+                      <span className="font-medium text-gray-900">📦 تنبيه التوفر</span>
+                      <p className="text-sm text-gray-500 mt-1">احصل على إشعار عند توفر المنتج مرة أخرى</p>
                     </div>
                     <input
                       type="checkbox"
-                      checked={alertSettings.auctionAlert}
-                      onChange={(e) => setAlertSettings(prev => ({ ...prev, auctionAlert: e.target.checked }))}
-                      className="w-5 h-5 accent-primary-500"
-                    />
-                  </label>
-                  {alertSettings.auctionAlert && (
-                    <div className="mt-4">
-                      <label className="text-sm text-gray-600">التنبيه قبل</label>
-                      <select
-                        value={alertSettings.minutesBefore}
-                        onChange={(e) => setAlertSettings(prev => ({ ...prev, minutesBefore: parseInt(e.target.value) }))}
-                        className="w-full mt-1 px-4 py-2 border border-gray-200 rounded-lg outline-none focus:border-primary-500"
-                      >
-                        <option value={15}>15 دقيقة</option>
-                        <option value={30}>30 دقيقة</option>
-                        <option value={60}>ساعة</option>
-                        <option value={120}>ساعتين</option>
-                        <option value={1440}>يوم كامل</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-
-                {/* Similar Items Alert */}
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <label className="flex items-center justify-between cursor-pointer">
-                    <div>
-                      <span className="font-medium text-gray-900">🔍 منتجات مشابهة</span>
-                      <p className="text-sm text-gray-500 mt-1">احصل على إشعار عند إضافة منتج مشابه</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={alertSettings.similarAlert}
-                      onChange={(e) => setAlertSettings(prev => ({ ...prev, similarAlert: e.target.checked }))}
+                      checked={alertSettings.notifyOnBackInStock}
+                      onChange={(e) => setAlertSettings(prev => ({ ...prev, notifyOnBackInStock: e.target.checked }))}
                       className="w-5 h-5 accent-primary-500"
                     />
                   </label>

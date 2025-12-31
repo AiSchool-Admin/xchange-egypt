@@ -749,7 +749,7 @@ export const getDashboardStats = async () => {
     orders: {
       total: totalOrders,
       completed: completedOrders,
-      totalValue: totalOrdersValue._sum.total || 0,
+      totalValue: totalOrdersValue._sum.total ? Number(totalOrdersValue._sum.total) : 0,
     },
     reports: {
       pending: pendingReports,

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { UnauthorizedError, ForbiddenError } from '../utils/errors';
 import { verifyAccessToken } from '../utils/jwt';
 import prisma from '../lib/prisma';
+import { env } from '../config/env';
 
 /**
  * Type alias for Request with authenticated user
@@ -110,15 +111,16 @@ export const requireIndividual = (req: Request, res: Response, next: NextFunctio
 
 /**
  * Middleware to check if user is an admin
+ * Admin emails are configured via ADMIN_EMAILS environment variable
  */
 export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
     return next(new UnauthorizedError('Authentication required'));
   }
 
-  // Check if user has admin privileges by email (admin emails list)
-  const adminEmails = ['admin@xchange.com', 'admin@xchange-egypt.com'];
-  if (!adminEmails.includes(req.user.email)) {
+  // Check if user has admin privileges by email (from environment variable)
+  const adminEmails = env.admin.emails;
+  if (adminEmails.length === 0 || !adminEmails.includes(req.user.email.toLowerCase())) {
     return next(new ForbiddenError('Admin access required'));
   }
 

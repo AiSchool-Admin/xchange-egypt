@@ -1,5 +1,7 @@
+import logger from '../lib/logger';
 import prisma from '../lib/prisma';
 import { NotFoundError, ConflictError, BadRequestError } from '../utils/errors';
+import { cacheOrFetch, deleteCache, deleteCachePattern, CACHE_KEYS, CACHE_TTL } from '../lib/cache';
 import type {
   CreateCategoryInput,
   UpdateCategoryInput,
@@ -123,11 +125,11 @@ async function ensureCategoriesExist() {
   try {
     const count = await prisma.category.count();
     if (count > 0) {
-      console.log(`[Categories] Found ${count} existing categories`);
+      logger.info(`[Categories] Found ${count} existing categories`);
       return;
     }
 
-    console.log('[Categories] No categories found, auto-seeding default categories...');
+    logger.info('[Categories] No categories found, auto-seeding default categories...');
 
     for (const category of DEFAULT_CATEGORIES) {
       // Create parent category
@@ -160,22 +162,62 @@ async function ensureCategoriesExist() {
     }
 
     const newCount = await prisma.category.count();
-    console.log(`[Categories] Auto-seeded ${newCount} categories successfully`);
+    logger.info(`[Categories] Auto-seeded ${newCount} categories successfully`);
   } catch (error) {
-    console.error('[Categories] Failed to auto-seed categories:', error);
+    logger.error('[Categories] Failed to auto-seed categories:', error);
     // Don't throw - let the request continue without categories
   }
 }
 
 /**
  * Get all categories (with hierarchy)
+ * Uses Redis caching for improved performance
  */
 export const getAllCategories = async (includeInactive = false) => {
   // Auto-seed categories if none exist
   await ensureCategoriesExist();
 
+  // Use cache for active categories (most common case)
+  if (!includeInactive) {
+    return cacheOrFetch(
+      CACHE_KEYS.ALL_CATEGORIES,
+      async () => {
+        return prisma.category.findMany({
+          where: { isActive: true },
+          include: {
+            parent: {
+              select: {
+                id: true,
+                nameAr: true,
+                nameEn: true,
+                slug: true,
+              },
+            },
+            children: {
+              where: { isActive: true },
+              orderBy: { order: 'asc' },
+              select: {
+                id: true,
+                nameAr: true,
+                nameEn: true,
+                slug: true,
+                icon: true,
+                image: true,
+                order: true,
+                isActive: true,
+              },
+            },
+          },
+          orderBy: [{ order: 'asc' }, { nameAr: 'asc' }],
+        });
+      },
+      CACHE_TTL.CATEGORIES
+    );
+  }
+
+  // Don't cache inactive categories (admin use)
   const categories = await prisma.category.findMany({
-    where: includeInactive ? {} : { isActive: true },
+    where: {},
     include: {
       parent: {
         select: {
@@ -186,7 +228,6 @@ export const getAllCategories = async (includeInactive = false) => {
         },
       },
       children: {
-        where: includeInactive ? {} : { isActive: true },
         orderBy: { order: 'asc' },
         select: {
           id: true,
@@ -370,6 +411,9 @@ export const createCategory = async (data: CreateCategoryInput) => {
     },
   });
 
+  // Invalidate category cache
+  await invalidateCategoryCache();
+
   return category;
 };
 
@@ -456,6 +500,9 @@ export const updateCategory = async (id: string, data: UpdateCategoryInput) => {
     },
   });
 
+  // Invalidate category cache
+  await invalidateCategoryCache();
+
   return category;
 };
 
@@ -494,6 +541,9 @@ export const deleteCategory = async (id: string) => {
     where: { id },
   });
 
+  // Invalidate category cache
+  await invalidateCategoryCache();
+
   return { message: 'Category deleted successfully' };
 };
 
@@ -516,14 +566,66 @@ const checkIsDescendant = async (ancestorId: string, descendantId: string): Prom
 
 /**
  * Get category tree (hierarchical structure)
+ * Uses Redis caching for improved performance
  */
 export const getCategoryTree = async (includeInactive = false) => {
   // Auto-seed categories if none exist
   await ensureCategoriesExist();
 
-  // Get all categories
+  // Build tree from categories
+  const buildTreeFromCategories = (allCategories: any[]) => {
+    const buildTree = (
+      parentId: string | null = null
+    ): Array<{
+      id: string;
+      nameAr: string;
+      nameEn: string;
+      slug: string;
+      icon: string | null;
+      image: string | null;
+      order: number;
+      isActive: boolean;
+      children: any[];
+    }> => {
+      return allCategories
+        .filter((cat) => cat.parentId === parentId)
+        .map((cat) => ({
+          ...cat,
+          children: buildTree(cat.id),
+        }));
+    };
+    return buildTree();
+  };
+
+  // Use cache for active categories
+  if (!includeInactive) {
+    return cacheOrFetch(
+      CACHE_KEYS.CATEGORY_TREE,
+      async () => {
+        const allCategories = await prisma.category.findMany({
+          where: { isActive: true },
+          orderBy: [{ order: 'asc' }, { nameAr: 'asc' }],
+          select: {
+            id: true,
+            nameAr: true,
+            nameEn: true,
+            slug: true,
+            icon: true,
+            image: true,
+            parentId: true,
+            order: true,
+            isActive: true,
+          },
+        });
+        return buildTreeFromCategories(allCategories);
+      },
+      CACHE_TTL.CATEGORIES
+    );
+  }
+
+  // Don't cache inactive categories
   const allCategories = await prisma.category.findMany({
-    where: includeInactive ? {} : { isActive: true },
+    where: {},
     orderBy: [{ order: 'asc' }, { nameAr: 'asc' }],
     select: {
       id: true,
@@ -538,27 +640,13 @@ export const getCategoryTree = async (includeInactive = false) => {
     },
   });
 
-  // Build tree structure
-  const buildTree = (
-    parentId: string | null = null
-  ): Array<{
-    id: string;
-    nameAr: string;
-    nameEn: string;
-    slug: string;
-    icon: string | null;
-    image: string | null;
-    order: number;
-    isActive: boolean;
-    children: any[];
-  }> => {
-    return allCategories
-      .filter((cat) => cat.parentId === parentId)
-      .map((cat) => ({
-        ...cat,
-        children: buildTree(cat.id),
-      }));
-  };
+  return buildTreeFromCategories(allCategories);
+};
 
-  return buildTree();
+/**
+ * Invalidate all category caches
+ * Called when categories are created, updated, or deleted
+ */
+export const invalidateCategoryCache = async () => {
+  await deleteCachePattern('categories:*');
 };

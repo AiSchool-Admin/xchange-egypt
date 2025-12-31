@@ -5,7 +5,10 @@
 
 import { Request, Response, NextFunction } from 'express';
 import * as barterChainService from '../services/barter-chain.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Discover smart barter opportunities for user's item
@@ -18,7 +21,10 @@ export const discoverOpportunities = async (
 ) => {
   try {
     const { itemId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const opportunities = await barterChainService.discoverBarterOpportunities(userId, itemId);
 
@@ -42,7 +48,10 @@ export const createSmartProposal = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const proposalData = req.body;
 
     const proposal = await barterChainService.createSmartProposal(userId, proposalData);
@@ -69,7 +78,10 @@ export const getBarterChain = async (
 ) => {
   try {
     const { chainId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const chain = await barterChainService.getBarterChainById(chainId, userId);
 
@@ -90,7 +102,10 @@ export const respondToProposal = async (
 ) => {
   try {
     const { chainId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const response = req.body;
 
     const chain = await barterChainService.respondToChainProposal(
@@ -120,7 +135,10 @@ export const cancelBarterChain = async (
 ) => {
   try {
     const { chainId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const chain = await barterChainService.cancelBarterChain(chainId, userId);
 
@@ -141,7 +159,10 @@ export const executeBarterChain = async (
 ) => {
   try {
     const { chainId } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const chain = await barterChainService.executeBarterChain(chainId, userId);
 
@@ -161,7 +182,10 @@ export const getMyBarterChains = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { status, page, limit } = req.query;
 
     const chains = await barterChainService.getMyBarterChains(
@@ -187,7 +211,10 @@ export const getPendingProposals = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const proposals = await barterChainService.getPendingProposals(userId);
 
@@ -207,7 +234,10 @@ export const getBarterChainStats = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const stats = await barterChainService.getBarterChainStats(userId);
 

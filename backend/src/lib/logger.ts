@@ -8,7 +8,16 @@
  * - Request context tracking
  * - Performance timing
  * - Environment-aware output
+ * - File logging with rotation (production)
  */
+
+import fs from 'fs';
+import path from 'path';
+
+// Log rotation configuration
+const LOG_DIR = process.env.LOG_DIR || 'logs';
+const MAX_LOG_SIZE_MB = parseInt(process.env.MAX_LOG_SIZE_MB || '10', 10);
+const MAX_LOG_FILES = parseInt(process.env.MAX_LOG_FILES || '5', 10);
 
 export enum LogLevel {
   DEBUG = 'debug',
@@ -43,11 +52,70 @@ class Logger {
   private serviceName: string;
   private isProduction: boolean;
   private minLevel: LogLevel;
+  private fileLoggingEnabled: boolean;
+  private logFilePath: string;
+  private errorLogFilePath: string;
 
   constructor(serviceName: string = 'xchange-backend') {
     this.serviceName = serviceName;
     this.isProduction = process.env.NODE_ENV === 'production';
     this.minLevel = this.getMinLevel();
+    this.fileLoggingEnabled = process.env.ENABLE_FILE_LOGGING === 'true' || this.isProduction;
+    this.logFilePath = path.join(LOG_DIR, 'app.log');
+    this.errorLogFilePath = path.join(LOG_DIR, 'error.log');
+
+    if (this.fileLoggingEnabled) {
+      this.ensureLogDirectory();
+    }
+  }
+
+  private ensureLogDirectory(): void {
+    try {
+      if (!fs.existsSync(LOG_DIR)) {
+        fs.mkdirSync(LOG_DIR, { recursive: true });
+      }
+    } catch {
+      // Fallback: disable file logging if directory creation fails
+      this.fileLoggingEnabled = false;
+    }
+  }
+
+  private rotateLogIfNeeded(filePath: string): void {
+    try {
+      if (!fs.existsSync(filePath)) return;
+
+      const stats = fs.statSync(filePath);
+      const fileSizeMB = stats.size / (1024 * 1024);
+
+      if (fileSizeMB >= MAX_LOG_SIZE_MB) {
+        // Rotate logs
+        for (let i = MAX_LOG_FILES - 1; i >= 1; i--) {
+          const oldFile = `${filePath}.${i}`;
+          const newFile = `${filePath}.${i + 1}`;
+          if (fs.existsSync(oldFile)) {
+            if (i === MAX_LOG_FILES - 1) {
+              fs.unlinkSync(oldFile); // Delete oldest
+            } else {
+              fs.renameSync(oldFile, newFile);
+            }
+          }
+        }
+        fs.renameSync(filePath, `${filePath}.1`);
+      }
+    } catch {
+      // Silently handle rotation errors
+    }
+  }
+
+  private writeToFile(filePath: string, content: string): void {
+    if (!this.fileLoggingEnabled) return;
+
+    try {
+      this.rotateLogIfNeeded(filePath);
+      fs.appendFileSync(filePath, content + '\n');
+    } catch {
+      // Silently handle file write errors
+    }
   }
 
   private getMinLevel(): LogLevel {
@@ -117,7 +185,9 @@ class Logger {
     }
 
     const formatted = this.formatEntry(entry);
+    const jsonEntry = JSON.stringify(entry);
 
+    // Console output
     switch (level) {
       case LogLevel.ERROR:
         console.error(formatted);
@@ -131,23 +201,53 @@ class Logger {
       default:
         console.log(formatted);
     }
+
+    // File logging (JSON format for parsing)
+    if (this.fileLoggingEnabled) {
+      this.writeToFile(this.logFilePath, jsonEntry);
+      // Also write errors to separate error log
+      if (level === LogLevel.ERROR) {
+        this.writeToFile(this.errorLogFilePath, jsonEntry);
+      }
+    }
   }
 
-  debug(message: string, context?: LogContext): void {
-    this.log(LogLevel.DEBUG, message, context);
+  debug(message: string, ...args: unknown[]): void {
+    const context = this.parseArgs(args);
+    this.log(LogLevel.DEBUG, message + context.suffix, context.ctx);
   }
 
-  info(message: string, context?: LogContext): void {
-    this.log(LogLevel.INFO, message, context);
+  info(message: string, ...args: unknown[]): void {
+    const context = this.parseArgs(args);
+    this.log(LogLevel.INFO, message + context.suffix, context.ctx);
   }
 
-  warn(message: string, context?: LogContext): void {
-    this.log(LogLevel.WARN, message, context);
+  warn(message: string, ...args: unknown[]): void {
+    const context = this.parseArgs(args);
+    this.log(LogLevel.WARN, message + context.suffix, context.ctx);
   }
 
-  error(message: string, error?: Error | unknown, context?: LogContext): void {
-    const err = error instanceof Error ? error : new Error(String(error));
-    this.log(LogLevel.ERROR, message, context, err);
+  error(message: string, ...args: unknown[]): void {
+    const { suffix, ctx, err } = this.parseArgs(args);
+    this.log(LogLevel.ERROR, message + suffix, ctx, err);
+  }
+
+  private parseArgs(args: unknown[]): { suffix: string; ctx?: LogContext; err?: Error } {
+    let suffix = '';
+    let ctx: LogContext | undefined;
+    let err: Error | undefined;
+
+    for (const arg of args) {
+      if (arg instanceof Error) {
+        err = arg;
+      } else if (typeof arg === 'object' && arg !== null && !Array.isArray(arg)) {
+        ctx = arg as LogContext;
+      } else if (arg !== undefined && arg !== null) {
+        suffix += ' ' + String(arg);
+      }
+    }
+
+    return { suffix, ctx, err };
   }
 
   // Performance timing helper
@@ -190,20 +290,20 @@ class ChildLogger {
     this.context = context;
   }
 
-  debug(message: string, context?: LogContext): void {
-    this.parent.debug(message, { ...this.context, ...context });
+  debug(message: string, ...args: unknown[]): void {
+    this.parent.debug(message, ...args, this.context);
   }
 
-  info(message: string, context?: LogContext): void {
-    this.parent.info(message, { ...this.context, ...context });
+  info(message: string, ...args: unknown[]): void {
+    this.parent.info(message, ...args, this.context);
   }
 
-  warn(message: string, context?: LogContext): void {
-    this.parent.warn(message, { ...this.context, ...context });
+  warn(message: string, ...args: unknown[]): void {
+    this.parent.warn(message, ...args, this.context);
   }
 
-  error(message: string, error?: Error | unknown, context?: LogContext): void {
-    this.parent.error(message, error, { ...this.context, ...context });
+  error(message: string, ...args: unknown[]): void {
+    this.parent.error(message, ...args, this.context);
   }
 }
 

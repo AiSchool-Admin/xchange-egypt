@@ -5,201 +5,19 @@
  * صفحة سوق مقايضة السيارات
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { getBarterListings, createBarterProposal, CarListing } from '@/lib/api/cars';
 
-// Types
-interface CarListing {
-  id: string;
-  make: string;
-  model: string;
-  year: number;
-  price: number;
-  mileage: number;
-  fuel_type: string;
-  transmission: string;
-  body_type: string;
-  exterior_color: string;
-  condition: string;
-  city: string;
-  governorate: string;
-  images: string[];
-  accepts_barter: boolean;
-  barter_preferences: any;
-  seller_type: string;
-  verification_level: string;
-  created_at: string;
-  user: {
-    id: string;
-    name: string;
+// Extended CarListing type for barter
+interface BarterCarListing extends CarListing {
+  barter_preferences?: {
+    types: string[];
+    preferred_makes: string[];
+    min_year: number;
+    accepts_cash_difference: boolean;
   };
 }
-
-// بيانات تجريبية للسيارات المتاحة للمقايضة
-const mockBarterListings: CarListing[] = [
-  {
-    id: '1',
-    make: 'Toyota',
-    model: 'Camry',
-    year: 2022,
-    price: 850000,
-    mileage: 35000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SEDAN',
-    exterior_color: 'أبيض لؤلؤي',
-    condition: 'EXCELLENT',
-    city: 'القاهرة',
-    governorate: 'القاهرة',
-    images: ['/cars/camry.jpg'],
-    accepts_barter: true,
-    barter_preferences: {
-      types: ['CAR_TO_CAR'],
-      preferred_makes: ['Honda', 'Hyundai', 'Kia'],
-      min_year: 2020,
-      accepts_cash_difference: true
-    },
-    seller_type: 'OWNER',
-    verification_level: 'VERIFIED',
-    created_at: '2024-12-10T10:00:00Z',
-    user: { id: '1', name: 'أحمد محمد' }
-  },
-  {
-    id: '2',
-    make: 'BMW',
-    model: '320i',
-    year: 2021,
-    price: 1200000,
-    mileage: 45000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SEDAN',
-    exterior_color: 'أسود معدني',
-    condition: 'EXCELLENT',
-    city: 'الإسكندرية',
-    governorate: 'الإسكندرية',
-    images: ['/cars/bmw.jpg'],
-    accepts_barter: true,
-    barter_preferences: {
-      types: ['CAR_TO_CAR', 'CAR_TO_PROPERTY'],
-      preferred_makes: ['Mercedes-Benz', 'Audi'],
-      min_year: 2019,
-      accepts_cash_difference: true
-    },
-    seller_type: 'OWNER',
-    verification_level: 'INSPECTED',
-    created_at: '2024-12-09T15:00:00Z',
-    user: { id: '2', name: 'محمد علي' }
-  },
-  {
-    id: '3',
-    make: 'Hyundai',
-    model: 'Tucson',
-    year: 2023,
-    price: 950000,
-    mileage: 15000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SUV',
-    exterior_color: 'رمادي',
-    condition: 'LIKE_NEW',
-    city: 'الجيزة',
-    governorate: 'الجيزة',
-    images: ['/cars/tucson.jpg'],
-    accepts_barter: true,
-    barter_preferences: {
-      types: ['CAR_TO_CAR'],
-      preferred_makes: ['Toyota', 'Nissan', 'Kia'],
-      min_year: 2021,
-      accepts_cash_difference: true
-    },
-    seller_type: 'DEALER',
-    verification_level: 'CERTIFIED',
-    created_at: '2024-12-08T12:00:00Z',
-    user: { id: '3', name: 'معرض النيل للسيارات' }
-  },
-  {
-    id: '4',
-    make: 'Mercedes-Benz',
-    model: 'C200',
-    year: 2020,
-    price: 1400000,
-    mileage: 60000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SEDAN',
-    exterior_color: 'فضي',
-    condition: 'GOOD',
-    city: 'المنصورة',
-    governorate: 'الدقهلية',
-    images: ['/cars/mercedes.jpg'],
-    accepts_barter: true,
-    barter_preferences: {
-      types: ['CAR_TO_CAR', 'CAR_TO_PROPERTY'],
-      preferred_makes: ['BMW', 'Audi', 'Lexus'],
-      min_year: 2018,
-      accepts_cash_difference: true
-    },
-    seller_type: 'OWNER',
-    verification_level: 'VERIFIED',
-    created_at: '2024-12-07T09:00:00Z',
-    user: { id: '4', name: 'خالد أحمد' }
-  },
-  {
-    id: '5',
-    make: 'Kia',
-    model: 'Sportage',
-    year: 2022,
-    price: 780000,
-    mileage: 28000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SUV',
-    exterior_color: 'أحمر',
-    condition: 'EXCELLENT',
-    city: 'طنطا',
-    governorate: 'الغربية',
-    images: ['/cars/sportage.jpg'],
-    accepts_barter: true,
-    barter_preferences: {
-      types: ['CAR_TO_CAR'],
-      preferred_makes: ['Hyundai', 'Toyota', 'Nissan'],
-      min_year: 2020,
-      accepts_cash_difference: false
-    },
-    seller_type: 'SHOWROOM',
-    verification_level: 'CERTIFIED',
-    created_at: '2024-12-06T14:00:00Z',
-    user: { id: '5', name: 'شركة الدلتا للسيارات' }
-  },
-  {
-    id: '6',
-    make: 'Nissan',
-    model: 'Sentra',
-    year: 2021,
-    price: 520000,
-    mileage: 40000,
-    fuel_type: 'PETROL',
-    transmission: 'AUTOMATIC',
-    body_type: 'SEDAN',
-    exterior_color: 'أزرق',
-    condition: 'GOOD',
-    city: 'أسيوط',
-    governorate: 'أسيوط',
-    images: ['/cars/sentra.jpg'],
-    accepts_barter: true,
-    barter_preferences: {
-      types: ['CAR_TO_CAR'],
-      preferred_makes: ['Toyota', 'Hyundai', 'Kia', 'Honda'],
-      min_year: 2019,
-      accepts_cash_difference: true
-    },
-    seller_type: 'OWNER',
-    verification_level: 'BASIC',
-    created_at: '2024-12-05T11:00:00Z',
-    user: { id: '6', name: 'سامي حسن' }
-  }
-];
 
 // الماركات المتاحة
 const availableMakes = ['Toyota', 'BMW', 'Mercedes-Benz', 'Hyundai', 'Kia', 'Nissan', 'Honda', 'Audi', 'Chevrolet', 'Ford'];
@@ -218,9 +36,10 @@ const bodyTypes = [
 const governorates = ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'الغربية', 'الشرقية', 'أسيوط', 'سوهاج', 'قنا', 'الأقصر'];
 
 export default function CarsBarterPage() {
-  const [listings, setListings] = useState<CarListing[]>(mockBarterListings);
-  const [filteredListings, setFilteredListings] = useState<CarListing[]>(mockBarterListings);
-  const [loading, setLoading] = useState(false);
+  const [listings, setListings] = useState<BarterCarListing[]>([]);
+  const [filteredListings, setFilteredListings] = useState<BarterCarListing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Filters
   const [selectedMake, setSelectedMake] = useState('');
@@ -240,6 +59,28 @@ export default function CarsBarterPage() {
     cash_difference: 0,
     message: ''
   });
+
+  // Fetch listings from API
+  const fetchListings = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getBarterListings();
+      const data = response.data?.listings || response.data || [];
+      setListings(data);
+      setFilteredListings(data);
+    } catch (err: any) {
+      console.error('Error fetching barter listings:', err);
+      setError(err.message || 'حدث خطأ في تحميل البيانات');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
 
   // Apply filters
   useEffect(() => {
@@ -326,18 +167,35 @@ export default function CarsBarterPage() {
     setShowProposalModal(true);
   };
 
+  const [submitting, setSubmitting] = useState(false);
+
   const submitProposal = async () => {
     if (!selectedListing) return;
 
-    // في الإنتاج سيتم إرسال العرض للـ API
-    alert(`تم إرسال عرض المقايضة بنجاح!
+    try {
+      setSubmitting(true);
+      await createBarterProposal({
+        requestedCarId: selectedListing.id,
+        offeredCarId: proposalData.offered_car_id || undefined,
+        offeredDescription: proposalData.offered_car_description,
+        cashDifference: proposalData.cash_difference,
+        message: proposalData.message
+      });
 
-السيارة المطلوبة: ${selectedListing.make} ${selectedListing.model} ${selectedListing.year}
-وصف سيارتك: ${proposalData.offered_car_description}
-فرق السعر: ${formatPrice(proposalData.cash_difference)} جنيه
-رسالتك: ${proposalData.message}`);
-
-    setShowProposalModal(false);
+      alert('تم إرسال عرض المقايضة بنجاح!');
+      setShowProposalModal(false);
+      setProposalData({
+        offered_car_id: '',
+        offered_car_description: '',
+        cash_difference: 0,
+        message: ''
+      });
+    } catch (err: any) {
+      console.error('Error submitting proposal:', err);
+      alert(err.response?.data?.message || 'حدث خطأ في إرسال العرض. يرجى تسجيل الدخول أولاً.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const clearFilters = () => {
@@ -622,6 +480,20 @@ export default function CarsBarterPage() {
                 <div className="inline-block w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
                 <p className="mt-4 text-gray-600">جاري التحميل...</p>
               </div>
+            ) : error ? (
+              <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+                <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">حدث خطأ</h3>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <button
+                  onClick={fetchListings}
+                  className="text-purple-600 hover:text-purple-800 font-medium"
+                >
+                  إعادة المحاولة
+                </button>
+              </div>
             ) : filteredListings.length === 0 ? (
               <div className="bg-white rounded-xl shadow-sm p-12 text-center">
                 <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -735,9 +607,9 @@ export default function CarsBarterPage() {
                               </span>
                             )}
                           </div>
-                          {listing.barter_preferences?.preferred_makes?.length > 0 && (
+                          {(listing.barter_preferences?.preferred_makes?.length ?? 0) > 0 && (
                             <p className="text-xs text-purple-600 mt-2">
-                              يفضل: {listing.barter_preferences.preferred_makes.slice(0, 3).join('، ')}
+                              يفضل: {listing.barter_preferences?.preferred_makes?.slice(0, 3).join('، ')}
                             </p>
                           )}
                         </div>
@@ -901,10 +773,10 @@ export default function CarsBarterPage() {
                 </button>
                 <button
                   onClick={submitProposal}
-                  disabled={!proposalData.offered_car_description}
+                  disabled={!proposalData.offered_car_description || submitting}
                   className="flex-1 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  إرسال العرض
+                  {submitting ? 'جاري الإرسال...' : 'إرسال العرض'}
                 </button>
               </div>
             </div>

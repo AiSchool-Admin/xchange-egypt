@@ -1,6 +1,12 @@
 import { Router } from 'express';
 import { walletController } from '../controllers/wallet.controller';
 import { authenticate } from '../middleware/auth';
+import { validate } from '../middleware/validate';
+import {
+  getTransactionsSchema,
+  transferSchema,
+  redeemSchema,
+} from '../validations/wallet.validation';
 
 const router = Router();
 
@@ -9,11 +15,11 @@ router.use(authenticate);
 
 // Wallet info
 router.get('/', walletController.getWallet);
-router.get('/transactions', walletController.getTransactions);
+router.get('/transactions', validate(getTransactionsSchema), walletController.getTransactions);
 
 // Actions
-router.post('/transfer', walletController.transfer);
-router.post('/redeem', walletController.redeem);
+router.post('/transfer', validate(transferSchema), walletController.transfer);
+router.post('/redeem', validate(redeemSchema), walletController.redeem);
 router.post('/claim-daily', walletController.claimDailyReward);
 
 // Opportunities

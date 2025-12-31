@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Unified Rating Service
  * نظام التقييم الموحد
@@ -327,7 +328,7 @@ export const reportReview = async (
   });
 
   // In a real implementation, create a report record
-  console.log(`Review ${reviewId} reported by ${reporterId}: ${reason}`);
+  logger.info(`Review ${reviewId} reported by ${reporterId}: ${reason}`);
 
   return {
     success: true,
@@ -352,7 +353,7 @@ async function updateUserRating(userId: string): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
     data: {
-      rating: result._avg.overallRating || 0,
+      rating: result._avg.overallRating ? Number(result._avg.overallRating) : 0,
       totalReviews: result._count,
     },
   });

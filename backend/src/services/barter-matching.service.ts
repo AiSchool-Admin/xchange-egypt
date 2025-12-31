@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Optimized Complex Barter Matching Engine
  *
@@ -477,7 +478,7 @@ export const buildBarterGraph = async (
 
       // FALLBACK: If relation is null, fetch category directly
       if (!desiredCat) {
-        console.log(`[BarterMatcher] WARNING: desiredCategory relation NULL for item ${item.id.substring(0, 8)}, fetching directly...`);
+        logger.info(`[BarterMatcher] WARNING: desiredCategory relation NULL for item ${item.id.substring(0, 8)}, fetching directly...`);
         desiredCat = await prisma.category.findUnique({
           where: { id: itemPreferences.desiredCategoryId },
           include: {
@@ -508,7 +509,7 @@ export const buildBarterGraph = async (
           desiredSubSubCategory = null;
         }
       } else {
-        console.log(`[BarterMatcher] ERROR: Could not load category ${itemPreferences.desiredCategoryId} for item ${item.id.substring(0, 8)}`);
+        logger.info(`[BarterMatcher] ERROR: Could not load category ${itemPreferences.desiredCategoryId} for item ${item.id.substring(0, 8)}`);
       }
     }
     // FALLBACK: Use barter offer preferences if item preferences not set
@@ -542,7 +543,7 @@ export const buildBarterGraph = async (
     nodes.set(`${listing.userId}-${listing.itemId}`, { listing });
   }
 
-  console.log(`[BarterMatcher] Built graph with ${listings.length} items`);
+  logger.info(`[BarterMatcher] Built graph with ${listings.length} items`);
 
   // Create edges based on match scores
   const edges: BarterEdge[] = [];
@@ -570,7 +571,7 @@ export const buildBarterGraph = async (
     }
   }
 
-  console.log(`[BarterMatcher] Created ${edges.length} edges (threshold: ${EDGE_THRESHOLD * 100}%)`);
+  logger.info(`[BarterMatcher] Created ${edges.length} edges (threshold: ${EDGE_THRESHOLD * 100}%)`);
 
   // DEBUG: Log edges involving requesting item if specified
   if (requestingItemId) {
@@ -580,24 +581,24 @@ export const buildBarterGraph = async (
     const fromEdges = itemEdges.filter(e => e.fromItemId === requestingItemId);
     const toEdges = itemEdges.filter(e => e.toItemId === requestingItemId);
 
-    console.log(`[BarterMatcher] Requesting item ${requestingItemId.substring(0, 8)}... has ${itemEdges.length} connected edges (${fromEdges.length} FROM, ${toEdges.length} TO)`);
+    logger.info(`[BarterMatcher] Requesting item ${requestingItemId.substring(0, 8)}... has ${itemEdges.length} connected edges (${fromEdges.length} FROM, ${toEdges.length} TO)`);
 
     // Show detailed breakdown for ALL edges (sorted by score)
     if (fromEdges.length > 0) {
-      console.log(`  FROM edges (sorted by score):`);
+      logger.info(`  FROM edges (sorted by score):`);
       fromEdges
         .sort((a, b) => b.matchScore - a.matchScore)
         .forEach(e => {
-          console.log(`    → ${e.toItemId.substring(0, 8)}: ${(e.matchScore * 100).toFixed(1)}% [desc=${(e.breakdown.descriptionScore * 100).toFixed(0)}% cat=${(e.breakdown.subCategoryScore * 100).toFixed(0)}% subcat=${(e.breakdown.subSubCategoryScore * 100).toFixed(0)}% loc=${(e.breakdown.locationScore * 100).toFixed(0)}%]`);
+          logger.info(`    → ${e.toItemId.substring(0, 8)}: ${(e.matchScore * 100).toFixed(1)}% [desc=${(e.breakdown.descriptionScore * 100).toFixed(0)}% cat=${(e.breakdown.subCategoryScore * 100).toFixed(0)}% subcat=${(e.breakdown.subSubCategoryScore * 100).toFixed(0)}% loc=${(e.breakdown.locationScore * 100).toFixed(0)}%]`);
         });
     }
 
     if (toEdges.length > 0) {
-      console.log(`  TO edges (sorted by score):`);
+      logger.info(`  TO edges (sorted by score):`);
       toEdges
         .sort((a, b) => b.matchScore - a.matchScore)
         .forEach(e => {
-          console.log(`    ← ${e.fromItemId.substring(0, 8)}: ${(e.matchScore * 100).toFixed(1)}% [desc=${(e.breakdown.descriptionScore * 100).toFixed(0)}% cat=${(e.breakdown.subCategoryScore * 100).toFixed(0)}% subcat=${(e.breakdown.subSubCategoryScore * 100).toFixed(0)}% loc=${(e.breakdown.locationScore * 100).toFixed(0)}%]`);
+          logger.info(`    ← ${e.fromItemId.substring(0, 8)}: ${(e.matchScore * 100).toFixed(1)}% [desc=${(e.breakdown.descriptionScore * 100).toFixed(0)}% cat=${(e.breakdown.subCategoryScore * 100).toFixed(0)}% subcat=${(e.breakdown.subSubCategoryScore * 100).toFixed(0)}% loc=${(e.breakdown.locationScore * 100).toFixed(0)}%]`);
         });
     }
 
@@ -606,17 +607,17 @@ export const buildBarterGraph = async (
       toEdges.some(toEdge => toEdge.fromItemId === fromEdge.toItemId)
     );
     if (bidirectionalEdges.length > 0) {
-      console.log(`  BIDIRECTIONAL MATCHES (potential 2-cycles): ${bidirectionalEdges.length}`);
+      logger.info(`  BIDIRECTIONAL MATCHES (potential 2-cycles): ${bidirectionalEdges.length}`);
       bidirectionalEdges.forEach(e => {
         const reverseEdge = toEdges.find(te => te.fromItemId === e.toItemId);
         const avgScore = ((e.matchScore + (reverseEdge?.matchScore || 0)) / 2) * 100;
-        console.log(`    ↔ item ${e.toItemId.substring(0, 8)}... (avg score: ${avgScore.toFixed(1)}%)`);
+        logger.info(`    ↔ item ${e.toItemId.substring(0, 8)}... (avg score: ${avgScore.toFixed(1)}%)`);
       });
     } else {
-      console.log(`  ⚠️ NO BIDIRECTIONAL MATCHES FOUND - checking why...`);
-      console.log(`     - Item wants to give to ${fromEdges.length} items`);
-      console.log(`     - ${toEdges.length} items want this item`);
-      console.log(`     - But none overlap for a 2-cycle`);
+      logger.info(`  ⚠️ NO BIDIRECTIONAL MATCHES FOUND - checking why...`);
+      logger.info(`     - Item wants to give to ${fromEdges.length} items`);
+      logger.info(`     - ${toEdges.length} items want this item`);
+      logger.info(`     - But none overlap for a 2-cycle`);
     }
   }
 
@@ -818,21 +819,21 @@ export const findMatchesForUser = async (
     // Pass the requesting user's item to include it in the graph
     const allCycles = await findBarterCycles(MAX_CYCLE_LENGTH, MIN_CYCLE_LENGTH, userId, itemId);
 
-    console.log(`[BarterMatcher] Found ${allCycles.length} total cycles in graph`);
+    logger.info(`[BarterMatcher] Found ${allCycles.length} total cycles in graph`);
 
     // DEBUG: Show what we're looking for
-    console.log(`[BarterMatcher] Looking for cycles with userId=${userId.substring(0, 8)}... AND itemId=${itemId.substring(0, 8)}...`);
+    logger.info(`[BarterMatcher] Looking for cycles with userId=${userId.substring(0, 8)}... AND itemId=${itemId.substring(0, 8)}...`);
 
     // DEBUG: Show ALL cycles to find the missing one
     if (allCycles.length > 0) {
-      console.log(`[BarterMatcher] Examining ALL ${allCycles.length} cycles:`);
+      logger.info(`[BarterMatcher] Examining ALL ${allCycles.length} cycles:`);
       allCycles.forEach((c, i) => {
         const participantInfo = c.participants.map(p =>
           `${p.userId.substring(0, 8)}/${p.itemId.substring(0, 8)}`
         ).join(' → ');
         const hasRequestingItem = c.participants.some(p => p.itemId === itemId);
         const marker = hasRequestingItem ? '✅ MATCH' : '  ';
-        console.log(`  ${marker} Cycle ${i + 1}: ${participantInfo} (score: ${(c.averageScore * 100).toFixed(1)}%)`);
+        logger.info(`  ${marker} Cycle ${i + 1}: ${participantInfo} (score: ${(c.averageScore * 100).toFixed(1)}%)`);
       });
     }
 
@@ -841,7 +842,7 @@ export const findMatchesForUser = async (
       c.participants.some(p => p.userId === userId && p.itemId === itemId)
     );
 
-    console.log(`[BarterMatcher] Filtered to ${cycles.length} cycles including user's item`);
+    logger.info(`[BarterMatcher] Filtered to ${cycles.length} cycles including user's item`);
   }
 
   // Take top results
@@ -972,7 +973,7 @@ export const createBarterChainProposal = async (cycle: BarterCycle): Promise<Bar
       });
       locks.push(lock);
     } catch (error) {
-      console.error(`Failed to lock item ${participant.itemId}:`, error);
+      logger.error(`Failed to lock item ${participant.itemId}:`, error);
       // If any lock fails, release all created locks and throw error
       for (const createdLock of locks) {
         await lockService.releaseLock({

@@ -644,14 +644,16 @@ async function recalculateShares(tx: any, poolId: string) {
 
   if (!pool || pool.currentValue === 0) return;
 
-  for (const participant of pool.participants) {
+  // Execute all updates in parallel to avoid N+1 queries
+  const updatePromises = pool.participants.map(participant => {
     const sharePercentage = (participant.totalValue / pool.currentValue) * 100;
-
-    await tx.barterPoolParticipant.update({
+    return tx.barterPoolParticipant.update({
       where: { id: participant.id },
       data: { sharePercentage },
     });
-  }
+  });
+
+  await Promise.all(updatePromises);
 }
 
 /**
@@ -667,9 +669,12 @@ export async function processExpiredPools() {
     },
   });
 
-  for (const pool of expiredPools) {
-    await prisma.barterPool.update({
-      where: { id: pool.id },
+  // Use updateMany instead of loop to avoid N+1 queries
+  if (expiredPools.length > 0) {
+    await prisma.barterPool.updateMany({
+      where: {
+        id: { in: expiredPools.map(p => p.id) },
+      },
       data: { status: BarterPoolStatus.FAILED },
     });
   }

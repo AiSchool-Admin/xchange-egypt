@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Intelligent Barter Recommendation Ranking
  * FREE AI-powered ranking for multi-party barter cycles
@@ -475,7 +476,7 @@ export async function getPersonalizedBarterRecommendations(
  * };
  *
  * const ranking = await rankBarterCycle(cycle);
- * console.log(ranking);
+ * logger.info(ranking);
  * // {
  * //   rankingScore: 87,
  * //   likelihood: 'high',

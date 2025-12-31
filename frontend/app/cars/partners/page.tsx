@@ -5,145 +5,9 @@
  * صفحة مراكز فحص السيارات
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-
-interface InspectionPartner {
-  id: string;
-  name: string;
-  name_en: string;
-  description: string;
-  address: string;
-  city: string;
-  governorate: string;
-  phone: string;
-  email: string;
-  website?: string;
-  working_hours: string;
-  services: string[];
-  inspection_price: number;
-  certification_level: string;
-  rating: number;
-  reviews_count: number;
-  is_active: boolean;
-  location_lat?: number;
-  location_lng?: number;
-}
-
-// بيانات تجريبية لمراكز الفحص
-const mockPartners: InspectionPartner[] = [
-  {
-    id: '1',
-    name: 'مركز الفحص الشامل',
-    name_en: 'Complete Inspection Center',
-    description: 'مركز فحص معتمد يقدم خدمات فحص شاملة للسيارات بأحدث الأجهزة والتقنيات الألمانية. فريق من المهندسين المتخصصين.',
-    address: '15 شارع التحرير، الدقي',
-    city: 'الجيزة',
-    governorate: 'الجيزة',
-    phone: '01012345678',
-    email: 'info@complete-inspection.com',
-    website: 'https://complete-inspection.com',
-    working_hours: 'يومياً من 9 صباحاً حتى 9 مساءً',
-    services: ['فحص شامل', 'فحص حوادث', 'فحص كمبيوتر', 'فحص فرامل', 'فحص تعليق', 'تقرير مفصل'],
-    inspection_price: 500,
-    certification_level: 'PLATINUM',
-    rating: 4.8,
-    reviews_count: 256,
-    is_active: true,
-  },
-  {
-    id: '2',
-    name: 'أوتو تشيك',
-    name_en: 'Auto Check',
-    description: 'خبرة أكثر من 15 عاماً في فحص السيارات. معتمدون من كبرى شركات التأمين والتمويل.',
-    address: '25 طريق الإسكندرية الصحراوي',
-    city: 'الإسكندرية',
-    governorate: 'الإسكندرية',
-    phone: '01123456789',
-    email: 'contact@autocheck.eg',
-    website: 'https://autocheck.eg',
-    working_hours: 'السبت - الخميس من 8 صباحاً حتى 8 مساءً',
-    services: ['فحص شامل', 'فحص حوادث', 'فحص كمبيوتر', 'فحص طلاء', 'تقرير مفصل'],
-    inspection_price: 450,
-    certification_level: 'GOLD',
-    rating: 4.6,
-    reviews_count: 189,
-    is_active: true,
-  },
-  {
-    id: '3',
-    name: 'كار سكان مصر',
-    name_en: 'Car Scan Egypt',
-    description: 'أحدث تقنيات الفحص بالأشعة والليزر. تقارير رقمية فورية مع صور وفيديو.',
-    address: '100 شارع مصطفى النحاس، مدينة نصر',
-    city: 'القاهرة',
-    governorate: 'القاهرة',
-    phone: '01234567890',
-    email: 'scan@carscan.eg',
-    working_hours: 'يومياً من 10 صباحاً حتى 10 مساءً',
-    services: ['فحص بالأشعة', 'فحص ليزر', 'فحص كمبيوتر', 'فحص شامل', 'تقرير رقمي', 'صور وفيديو'],
-    inspection_price: 650,
-    certification_level: 'PLATINUM',
-    rating: 4.9,
-    reviews_count: 312,
-    is_active: true,
-  },
-  {
-    id: '4',
-    name: 'مركز فحص الدلتا',
-    name_en: 'Delta Inspection Center',
-    description: 'المركز الرائد في منطقة الدلتا. أسعار تنافسية وجودة عالية.',
-    address: '5 شارع سعيد، طنطا',
-    city: 'طنطا',
-    governorate: 'الغربية',
-    phone: '01098765432',
-    email: 'delta@carinspection.com',
-    working_hours: 'السبت - الخميس من 9 صباحاً حتى 6 مساءً',
-    services: ['فحص شامل', 'فحص حوادث', 'فحص كمبيوتر', 'تقرير مفصل'],
-    inspection_price: 350,
-    certification_level: 'SILVER',
-    rating: 4.4,
-    reviews_count: 98,
-    is_active: true,
-  },
-  {
-    id: '5',
-    name: 'بريميوم كار تشيك',
-    name_en: 'Premium Car Check',
-    description: 'خدمة VIP للفحص مع خدمة توصيل السيارة. متخصصون في السيارات الفاخرة والرياضية.',
-    address: '50 شارع التسعين، التجمع الخامس',
-    city: 'القاهرة الجديدة',
-    governorate: 'القاهرة',
-    phone: '01111222333',
-    email: 'premium@carcheck.eg',
-    website: 'https://premiumcarcheck.eg',
-    working_hours: 'يومياً من 8 صباحاً حتى 11 مساءً',
-    services: ['فحص VIP', 'توصيل السيارة', 'فحص فاخر', 'فحص كمبيوتر متقدم', 'تقرير تفصيلي', 'ضمان التقرير'],
-    inspection_price: 850,
-    certification_level: 'PLATINUM',
-    rating: 4.9,
-    reviews_count: 145,
-    is_active: true,
-  },
-  {
-    id: '6',
-    name: 'تراست كار',
-    name_en: 'Trust Car',
-    description: 'مركز فحص موثوق بخبرة كبيرة. نقدم خدماتنا للأفراد والشركات.',
-    address: '30 طريق الحرية، المنصورة',
-    city: 'المنصورة',
-    governorate: 'الدقهلية',
-    phone: '01000111222',
-    email: 'trust@trustcar.eg',
-    working_hours: 'السبت - الخميس من 9 صباحاً حتى 7 مساءً',
-    services: ['فحص شامل', 'فحص تجاري', 'فحص أساطيل', 'فحص كمبيوتر', 'تقرير مفصل'],
-    inspection_price: 400,
-    certification_level: 'GOLD',
-    rating: 4.5,
-    reviews_count: 167,
-    is_active: true,
-  },
-];
+import { getInspectionPartners, InspectionPartner } from '@/lib/api/cars';
 
 const governorates = ['الكل', 'القاهرة', 'الجيزة', 'الإسكندرية', 'الغربية', 'الدقهلية'];
 const certificationLevels = [
@@ -154,11 +18,35 @@ const certificationLevels = [
 ];
 
 export default function PartnersPage() {
-  const [partners] = useState<InspectionPartner[]>(mockPartners);
+  const [partners, setPartners] = useState<InspectionPartner[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedGovernorate, setSelectedGovernorate] = useState('الكل');
   const [selectedCertification, setSelectedCertification] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'rating' | 'price' | 'reviews'>('rating');
+
+  // Fetch partners from API
+  const fetchPartners = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await getInspectionPartners(
+        selectedGovernorate !== 'الكل' ? { governorate: selectedGovernorate } : {}
+      );
+      const data = response.data?.partners || response.data || [];
+      setPartners(data);
+    } catch (err: any) {
+      console.error('Error fetching partners:', err);
+      setError(err.response?.data?.message || 'حدث خطأ في تحميل البيانات');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedGovernorate]);
+
+  useEffect(() => {
+    fetchPartners();
+  }, [fetchPartners]);
 
   // Filter and sort partners
   const filteredPartners = partners
@@ -355,10 +243,33 @@ export default function PartnersPage() {
 
         {/* Results Count */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold">{filteredPartners.length} مركز فحص متاح</h2>
+          <h2 className="text-xl font-bold">
+            {loading ? 'جاري التحميل...' : `${filteredPartners.length} مركز فحص متاح`}
+          </h2>
         </div>
 
-        {/* Partners Grid */}
+        {/* Loading State */}
+        {loading ? (
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <div className="inline-block w-8 h-8 border-4 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="mt-4 text-gray-600">جاري تحميل مراكز الفحص...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
+            <svg className="w-16 h-16 text-red-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">حدث خطأ</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={fetchPartners}
+              className="text-orange-600 hover:text-orange-800 font-medium"
+            >
+              إعادة المحاولة
+            </button>
+          </div>
+        ) : (
+        /* Partners Grid */
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPartners.map((partner) => {
             const certBadge = getCertificationBadge(partner.certification_level);
@@ -466,8 +377,9 @@ export default function PartnersPage() {
             );
           })}
         </div>
+        )}
 
-        {filteredPartners.length === 0 && (
+        {filteredPartners.length === 0 && !loading && !error && (
           <div className="bg-white rounded-xl shadow-sm p-12 text-center">
             <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

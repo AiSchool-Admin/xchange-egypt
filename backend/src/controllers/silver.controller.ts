@@ -5,7 +5,10 @@
 
 import { Request, Response, NextFunction } from 'express';
 import * as silverService from '../services/silver.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 // ============================================
 // Silver Prices
@@ -155,8 +158,8 @@ export const getItems = async (req: Request, res: Response, next: NextFunction) 
       allowBarter: req.query.allowBarter === 'true' ? true : req.query.allowBarter === 'false' ? false : undefined,
       allowGoldBarter: req.query.allowGoldBarter === 'true' ? true : req.query.allowGoldBarter === 'false' ? false : undefined,
       search: req.query.search as string,
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      page: Number(req.query.page) || 1,
+      limit: Number(req.query.limit) || 20,
       sortBy: req.query.sortBy as string,
       sortOrder: req.query.sortOrder as 'asc' | 'desc',
     };
@@ -196,7 +199,10 @@ export const getItemById = async (req: Request, res: Response, next: NextFunctio
  */
 export const createItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const item = await silverService.createSilverItem(userId, req.body);
     return successResponse(res, item, 'تم إنشاء الإعلان بنجاح', 201);
   } catch (error) {
@@ -211,7 +217,10 @@ export const createItem = async (req: Request, res: Response, next: NextFunction
 export const updateItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const item = await silverService.updateSilverItem(id, userId, req.body);
     return successResponse(res, item, 'تم تحديث الإعلان بنجاح');
   } catch (error) {
@@ -226,7 +235,10 @@ export const updateItem = async (req: Request, res: Response, next: NextFunction
 export const deleteItem = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     await silverService.deleteSilverItem(id, userId);
     return successResponse(res, null, 'تم حذف الإعلان بنجاح');
   } catch (error) {
@@ -240,7 +252,10 @@ export const deleteItem = async (req: Request, res: Response, next: NextFunction
  */
 export const getMyItems = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const result = await silverService.getSilverItems({ sellerId: userId, status: undefined });
     return successResponse(res, result, 'قطع الفضة الخاصة بي');
   } catch (error) {
@@ -303,7 +318,10 @@ export const getPartnerById = async (req: Request, res: Response, next: NextFunc
  */
 export const createTransaction = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const transaction = await silverService.createSilverTransaction(buyerId, req.body);
     return successResponse(res, transaction, 'تم إنشاء الطلب بنجاح', 201);
   } catch (error: any) {
@@ -330,7 +348,10 @@ export const createTransaction = async (req: Request, res: Response, next: NextF
 export const updateTransactionStatus = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { status, notes } = req.body;
 
     const transaction = await silverService.updateTransactionStatus(id, userId, status, notes);
@@ -358,7 +379,10 @@ export const updateTransactionStatus = async (req: Request, res: Response, next:
  */
 export const getMyTransactions = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const type = req.query.type as 'purchases' | 'sales' | 'all';
 
     const transactions = await silverService.getUserSilverTransactions(userId, type);

@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import * as transactionService from '../services/transaction.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Create a purchase transaction
@@ -12,7 +15,10 @@ export const createPurchase = async (
   next: NextFunction
 ) => {
   try {
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const purchaseData = req.body;
 
     const transaction = await transactionService.createPurchase(buyerId, purchaseData);
@@ -33,7 +39,10 @@ export const buyItem = async (
   next: NextFunction
 ) => {
   try {
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const purchaseData = req.body;
 
     const result = await transactionService.buyItemDirectly(buyerId, purchaseData);
@@ -55,7 +64,10 @@ export const getTransactionById = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const transaction = await transactionService.getTransactionById(id, userId);
 
@@ -76,7 +88,10 @@ export const updateDeliveryStatus = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { deliveryStatus } = req.body;
 
     const transaction = await transactionService.updateDeliveryStatus(
@@ -102,7 +117,10 @@ export const confirmPayment = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const transaction = await transactionService.confirmPayment(id, userId);
 
@@ -123,7 +141,10 @@ export const markAsShipped = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { trackingNumber } = req.body;
 
     const transaction = await transactionService.markAsShipped(id, userId, trackingNumber);
@@ -145,7 +166,10 @@ export const markAsDelivered = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const transaction = await transactionService.markAsDelivered(id, userId);
 
@@ -166,7 +190,10 @@ export const cancelTransaction = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { reason } = req.body;
 
     const transaction = await transactionService.cancelTransaction(id, userId, reason);
@@ -190,12 +217,14 @@ export const getUserTransactions = async (
     const { userId } = req.params;
     const { role, status, page, limit } = req.query;
 
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
     const result = await transactionService.getUserTransactions(
       userId,
       role as any,
       status as any,
-      page ? parseInt(page as string) : undefined,
-      limit ? parseInt(limit as string) : undefined
+      !isNaN(parsedPage) && parsedPage > 0 ? parsedPage : undefined,
+      !isNaN(parsedLimit) && parsedLimit > 0 ? parsedLimit : undefined
     );
 
     return successResponse(res, result, 'User transactions retrieved successfully');
@@ -214,15 +243,20 @@ export const getMyTransactions = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { role, status, page, limit } = req.query;
 
+    const parsedPage2 = Number(page);
+    const parsedLimit2 = Number(limit);
     const result = await transactionService.getUserTransactions(
       userId,
       role as any,
       status as any,
-      page ? parseInt(page as string) : undefined,
-      limit ? parseInt(limit as string) : undefined
+      !isNaN(parsedPage2) && parsedPage2 > 0 ? parsedPage2 : undefined,
+      !isNaN(parsedLimit2) && parsedLimit2 > 0 ? parsedLimit2 : undefined
     );
 
     return successResponse(res, result, 'Your transactions retrieved successfully');

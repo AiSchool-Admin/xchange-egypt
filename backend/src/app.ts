@@ -3,6 +3,7 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { env, isDevelopment } from './config/env';
@@ -10,6 +11,27 @@ import { connectRedis } from './config/redis';
 import prisma from './config/database';
 import { AppError } from './utils/errors';
 import logger from './lib/logger';
+import { sentryErrorHandler, sentryRequestHandler } from './lib/sentry';
+import {
+  getHealthStatus,
+  getPerformanceStats,
+  startHealthMonitoring,
+} from './lib/monitoring';
+import {
+  searchLimiter,
+  auctionBidLimiter,
+  chatLimiter,
+  transactionLimiter,
+  aiLimiter,
+  notificationLimiter,
+  comparisonLimiter,
+  walletLimiter,
+  adminLimiter,
+  sanitizeInput,
+  additionalSecurityHeaders,
+  securityLogger,
+  requestLogger,
+} from './middleware/security';
 
 // Import routes
 import authRoutes from './routes/auth.routes';
@@ -62,10 +84,20 @@ import tenderAdvancedRoutes from './routes/tender-advanced.routes';
 import transportRoutes from './routes/transport.routes';
 import adminPricingRoutes from './routes/admin-pricing.routes';
 import aiAdvancedRoutes from './routes/ai-advanced.routes';
+import boardRoutes from './routes/board.routes';
+import founderRoutes from './routes/founder.routes';
+import docsRoutes from './routes/docs.routes';
+import watchlistRoutes from './routes/watchlist.routes';
+import pricePredictionRoutes from './routes/price-prediction.routes';
+import testRunnerRoutes from './routes/test-runner.routes';
+import e2eTestRunnerRoutes from './routes/e2e-test-runner.routes';
+import statsRoutes from './routes/stats.routes';
 
 // Import background jobs
 import { startBarterMatcherJob } from './jobs/barterMatcher.job';
 import { startLockCleanupJob } from './jobs/lockCleanup.job';
+import { startAutonomousBoardJobs } from './jobs/autonomousBoard.job';
+import { initializeDailyMeetingsOnStartup } from './services/autonomous-board';
 
 // Import real-time matching
 import { initializeWebSocket, startRealtimeMatching } from './services/realtime-matching.service';
@@ -124,10 +156,60 @@ const io = new SocketIOServer(httpServer, {
 // ============================================
 // Trust proxy - Required for Railway/production deployment
 app.set('trust proxy', 1);
-// Security headers
-app.use(helmet());
 
-// CORS configuration - Allow Vercel domains dynamically
+// Sentry request handler (for performance tracking) - must be first
+app.use(sentryRequestHandler);
+
+// Security headers (Helmet + additional)
+// CSP is relaxed for /api/v1/docs (Swagger UI requires inline scripts/styles)
+// All other routes use strict CSP
+app.use((req, res, next) => {
+  const isDocsRoute = req.path.startsWith('/api/v1/docs');
+
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        // Swagger UI needs unsafe-inline, other routes don't
+        styleSrc: isDocsRoute
+          ? ["'self'", "'unsafe-inline'", 'https://unpkg.com']
+          : ["'self'"],
+        scriptSrc: isDocsRoute
+          ? ["'self'", "'unsafe-inline'", 'https://unpkg.com']
+          : ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'wss:', 'https:'],
+        // Additional security directives
+        frameAncestors: ["'self'"],
+        formAction: ["'self'"],
+        baseUri: ["'self'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // Needed for images from external sources
+    // Additional Helmet settings
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    noSniff: true,
+    xssFilter: true,
+    hidePoweredBy: true,
+  })(req, res, next);
+});
+app.use(additionalSecurityHeaders);
+
+// Security logging (detect suspicious requests)
+app.use(securityLogger);
+
+// Request logging (monitor all requests/responses)
+app.use(requestLogger);
+
+// Input sanitization (prevent XSS)
+app.use(sanitizeInput);
+
+// Compression - reduce response size
+app.use(compression());
+
+// CORS configuration - Strict in production, flexible in development
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -136,13 +218,13 @@ app.use(
         return callback(null, true);
       }
 
-      // Check if origin matches allowed patterns
+      // Check if origin matches allowed patterns from environment config
       const allowedOrigins = env.cors.origin;
-      const isAllowed = allowedOrigins.some((allowed) => {
+      const isExplicitlyAllowed = allowedOrigins.some((allowed) => {
         // Exact match
         if (allowed === origin) return true;
 
-        // Wildcard pattern matching for Vercel domains
+        // Wildcard pattern matching for specified domains
         if (allowed.includes('*')) {
           const pattern = allowed.replace(/\*/g, '.*');
           const regex = new RegExp(`^${pattern}$`);
@@ -152,14 +234,18 @@ app.use(
         return false;
       });
 
-      // Also allow all vercel.app domains for development
-      const isVercel = origin.endsWith('.vercel.app');
-      const isLocalhost = origin.includes('localhost');
+      // In development only: allow localhost and Vercel preview deployments
+      const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+      const isVercelPreview = origin.endsWith('.vercel.app');
+      const allowDevOrigins = isDevelopment && (isLocalhost || isVercelPreview);
 
-      if (isAllowed || isVercel || isLocalhost) {
+      if (isExplicitlyAllowed || allowDevOrigins) {
         callback(null, true);
       } else {
-        logger.warn(`CORS blocked origin: ${origin}`);
+        logger.warn(`CORS blocked origin: ${origin}`, {
+          blockedOrigin: origin,
+          environment: env.server.nodeEnv,
+        });
         callback(new Error('Not allowed by CORS'));
       }
     },
@@ -183,6 +269,8 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting for E2E test routes
+  skip: (req) => req.path.startsWith('/api/v1/e2e-tests'),
 });
 
 app.use('/api/', limiter);
@@ -206,13 +294,52 @@ app.get('/', (_req: Request, res: Response) => {
   });
 });
 
-// Health check
+// Health check - Basic
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     environment: env.server.nodeEnv,
+    uptime: process.uptime(),
   });
+});
+
+// Health check - Detailed with all services
+app.get('/health/detailed', async (_req: Request, res: Response) => {
+  try {
+    const health = await getHealthStatus();
+    const statusCode = health.status === 'healthy' ? 200 : health.status === 'degraded' ? 200 : 503;
+    res.status(statusCode).json(health);
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Performance metrics endpoint (for monitoring dashboards)
+app.get('/metrics', async (_req: Request, res: Response) => {
+  try {
+    const stats = await getPerformanceStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to get performance stats',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Readiness probe (for Kubernetes/Railway)
+app.get('/ready', async (_req: Request, res: Response) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).send('OK');
+  } catch {
+    res.status(503).send('Not Ready');
+  }
 });
 
 // API v1 routes
@@ -239,35 +366,35 @@ app.use('/api/v1/items', itemRoutes);
 // Listing routes
 app.use('/api/v1/listings', listingRoutes);
 
-// Transaction routes
-app.use('/api/v1/transactions', transactionRoutes);
+// Transaction routes (with transaction rate limiter)
+app.use('/api/v1/transactions', transactionLimiter, transactionRoutes);
 
 // Barter routes
 app.use('/api/v1/barter', barterRoutes);
 
-// Auction routes
-app.use('/api/v1/auctions', auctionRoutes);
+// Auction routes (with bid rate limiter)
+app.use('/api/v1/auctions', auctionBidLimiter, auctionRoutes);
 
-// Reverse Auction routes
-app.use('/api/v1/reverse-auctions', reverseAuctionRoutes);
+// Reverse Auction routes (with bid rate limiter)
+app.use('/api/v1/reverse-auctions', auctionBidLimiter, reverseAuctionRoutes);
 
 // Image routes
 app.use('/api/v1/images', imageRoutes);
 
-// Notification routes
-app.use('/api/v1/notifications', notificationRoutes);
+// Notification routes (with notification rate limiter)
+app.use('/api/v1/notifications', notificationLimiter, notificationRoutes);
 
 // Review routes
 app.use('/api/v1/reviews', reviewRoutes);
 
-// Search routes
-app.use('/api/v1/search', searchRoutes);
+// Search routes (with search rate limiter)
+app.use('/api/v1/search', searchLimiter, searchRoutes);
 
-// Chat routes
-app.use('/api/v1/chat', chatRoutes);
+// Chat routes (with chat rate limiter)
+app.use('/api/v1/chat', chatLimiter, chatRoutes);
 
 // Admin routes (for retroactive matching, etc.)
-app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/admin', adminLimiter, adminRoutes);
 
 // TEMPORARY: Seed routes (DELETE AFTER USE)
 app.use('/api/v1/seed', seedRoutes);
@@ -278,14 +405,14 @@ app.use('/api/v1/cart', cartRoutes);
 // Order routes
 app.use('/api/v1/orders', orderRoutes);
 
-// Payment routes
-app.use('/api/v1/payment', paymentRoutes);
+// Payment routes (with wallet rate limiter)
+app.use('/api/v1/payment', walletLimiter, paymentRoutes);
 
 // Push notification routes
 app.use('/api/v1/push', pushRoutes);
 
-// AI features routes (FREE services)
-app.use('/api/v1/ai', aiRoutes);
+// AI features routes (FREE services) - with AI rate limiter
+app.use('/api/v1/ai', aiLimiter, aiRoutes);
 
 // Inventory routes
 app.use('/api/v1/inventory', inventoryRoutes);
@@ -299,8 +426,8 @@ app.use('/api/v1/demand', demandMarketplaceRoutes);
 // Flash Deals
 app.use('/api/v1/flash-deals', flashDealsRoutes);
 
-// Escrow System (Smart Escrow & Disputes)
-app.use('/api/v1/escrow', escrowRoutes);
+// Escrow System (Smart Escrow & Disputes) - with transaction limiter
+app.use('/api/v1/escrow', transactionLimiter, escrowRoutes);
 
 // Barter Pools (Collective Barter)
 app.use('/api/v1/barter-pools', barterPoolRoutes);
@@ -308,14 +435,14 @@ app.use('/api/v1/barter-pools', barterPoolRoutes);
 // Facilitators Network
 app.use('/api/v1/facilitators', facilitatorRoutes);
 
-// AI Assistant
-app.use('/api/v1/ai-assistant', aiAssistantRoutes);
+// AI Assistant (with AI rate limiter)
+app.use('/api/v1/ai-assistant', aiLimiter, aiAssistantRoutes);
 
-// AI Listing (Sell with AI)
-app.use('/api/v1/ai-listing', aiListingRoutes);
+// AI Listing (Sell with AI) - with AI rate limiter
+app.use('/api/v1/ai-listing', aiLimiter, aiListingRoutes);
 
-// XChange Wallet
-app.use('/api/v1/wallet', walletRoutes);
+// XChange Wallet (with wallet rate limiter)
+app.use('/api/v1/wallet', walletLimiter, walletRoutes);
 
 // Exchange Points (Safe meetup locations)
 app.use('/api/v1/exchange-points', exchangePointsRoutes);
@@ -332,8 +459,8 @@ app.use('/api/v1/matching', matchingRoutes);
 // Real Estate / Property Marketplace routes - سوق العقارات
 app.use('/api/v1/properties', propertyRoutes);
 
-// Item Comparison routes - نظام مقارنة المنتجات
-app.use('/api/v1/comparisons', comparisonRoutes);
+// Item Comparison routes - نظام مقارنة المنتجات (with comparison limiter)
+app.use('/api/v1/comparisons', comparisonLimiter, comparisonRoutes);
 
 // Delivery routes - خدمة التوصيل المدمجة
 app.use('/api/v1/delivery', deliveryRoutes);
@@ -368,11 +495,35 @@ app.use('/api/v1/tenders', tenderAdvancedRoutes);
 // Transport - نظام النقل الذكي ومقارنة الأسعار
 app.use('/api/v1/transport', transportRoutes);
 
-// Admin Pricing - إدارة التسعير والذكاء الاصطناعي
-app.use('/api/v1/admin/pricing', adminPricingRoutes);
+// Admin Pricing - إدارة التسعير والذكاء الاصطناعي (with admin rate limiter)
+app.use('/api/v1/admin/pricing', adminLimiter, adminPricingRoutes);
 
-// Advanced AI Features - الذكاء الاصطناعي المتقدم
-app.use('/api/v1/ai-advanced', aiAdvancedRoutes);
+// Advanced AI Features - الذكاء الاصطناعي المتقدم (with AI rate limiter)
+app.use('/api/v1/ai-advanced', aiLimiter, aiAdvancedRoutes);
+
+// AI Board of Directors - مجلس إدارة AI
+app.use('/api/v1/board', boardRoutes);
+
+// Founder Portal - بوابة المؤسس
+app.use('/api/v1/founder', founderRoutes);
+
+// API Documentation - توثيق API
+app.use('/api/v1/docs', docsRoutes);
+
+// Watchlist / Favorites - قائمة المتابعة
+app.use('/api/v1/watchlist', watchlistRoutes);
+
+// Price Prediction - التنبؤ بالأسعار
+app.use('/api/v1/price-prediction', pricePredictionRoutes);
+
+// Test Runner - تشغيل الاختبارات (20 سيناريو)
+app.use('/api/v1/test-runner', testRunnerRoutes);
+
+// E2E Test Runner - اختبارات E2E حقيقية (20 سيناريو وظيفي)
+app.use('/api/v1/e2e-tests', e2eTestRunnerRoutes);
+
+// Platform Statistics - إحصائيات المنصة
+app.use('/api/v1/stats', statsRoutes);
 
 // 404 handler
 app.use((_req: Request, res: Response) => {
@@ -381,6 +532,9 @@ app.use((_req: Request, res: Response) => {
     message: 'The requested resource was not found',
   });
 });
+
+// Sentry error handler (must be before global error handler)
+app.use(sentryErrorHandler);
 
 // Global error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
@@ -455,12 +609,27 @@ const startServer = async () => {
       startLockCleanupJob();   // Runs every 5 minutes for cleanup
     }
 
+    // Start Autonomous AI Board scheduled jobs
+    startAutonomousBoardJobs();
+    logger.info('Autonomous AI Board jobs scheduled');
+
+    // Initialize daily meetings at startup (ensures meetings exist even if cron hasn't run)
+    initializeDailyMeetingsOnStartup()
+      .then(() => logger.info('Daily meetings initialized at startup'))
+      .catch(err => logger.error('Failed to initialize daily meetings:', err));
+
+    // Start health monitoring (checks every 60 seconds)
+    if (env.server.nodeEnv === 'production') {
+      startHealthMonitoring(60000);
+    }
+
     // Start HTTP server (Express + Socket.IO) - listen on 0.0.0.0 for Railway compatibility
     httpServer.listen(env.server.port, '0.0.0.0', () => {
       logger.info(`Server running on port ${env.server.port}`);
       logger.info(`Environment: ${env.server.nodeEnv}`);
       logger.info(`API URL: ${env.server.apiUrl}`);
       logger.info(`Health check: ${env.server.apiUrl}/health`);
+      logger.info(`Metrics: ${env.server.apiUrl}/metrics`);
       logger.info(`WebSocket available on ws://${env.server.port}`);
     });
   } catch (error) {

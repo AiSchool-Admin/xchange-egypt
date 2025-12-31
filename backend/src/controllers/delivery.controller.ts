@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import * as deliveryService from '../services/delivery.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Get delivery options for a route
@@ -44,7 +47,10 @@ export const createBooking = async (
   next: NextFunction
 ) => {
   try {
-    const senderId = req.user.id;
+    const senderId = getUserId(req);
+    if (!senderId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const {
       orderId,
       transactionId,
@@ -123,7 +129,10 @@ export const getBooking = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const booking = await deliveryService.getBooking(id, userId);
 
@@ -143,7 +152,10 @@ export const getUserBookings = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { type, page, limit } = req.query;
 
     const result = await deliveryService.getUserBookings(
@@ -170,7 +182,10 @@ export const cancelBooking = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const booking = await deliveryService.cancelBooking(id, userId);
 

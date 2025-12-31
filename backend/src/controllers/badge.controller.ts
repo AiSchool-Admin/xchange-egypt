@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import * as badgeService from '../services/badge.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Get all available badges info
@@ -51,7 +54,10 @@ export const getMyBadges = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const badges = await badgeService.getUserBadges(userId);
 
@@ -71,7 +77,10 @@ export const checkMyBadges = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const awardedBadges = await badgeService.checkAndAwardAutomaticBadges(userId);
 
@@ -119,7 +128,10 @@ export const submitVerificationRequest = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { badgeType, documents } = req.body;
 
     if (!badgeType) {
@@ -148,7 +160,10 @@ export const awardBadge = async (
   next: NextFunction
 ) => {
   try {
-    const adminId = req.user.id;
+    const adminId = getUserId(req);
+    if (!adminId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { userId, badgeType, notes } = req.body;
 
     if (!userId || !badgeType) {

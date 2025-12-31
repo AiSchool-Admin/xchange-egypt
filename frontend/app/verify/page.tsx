@@ -6,12 +6,12 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { getMyVerification, getLevelRequirements, submitVerification, LevelRequirements, VerificationLevel } from '@/lib/api/verification';
 
 const LEVEL_COLORS: Record<string, { bg: string; text: string; border: string; icon: string }> = {
-  UNVERIFIED: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200', icon: '&#10067;' },
-  BASIC: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200', icon: '&#128100;' },
-  VERIFIED: { bg: 'bg-green-100', text: 'text-green-600', border: 'border-green-200', icon: '&#9989;' },
-  BUSINESS: { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-200', icon: '&#128188;' },
-  PREMIUM: { bg: 'bg-amber-100', text: 'text-amber-600', border: 'border-amber-200', icon: '&#11088;' },
-  TRUSTED: { bg: 'bg-gradient-to-br from-amber-100 to-yellow-100', text: 'text-amber-700', border: 'border-amber-300', icon: '&#127942;' },
+  UNVERIFIED: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200', icon: '❓' },
+  BASIC: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200', icon: '👤' },
+  VERIFIED: { bg: 'bg-green-100', text: 'text-green-600', border: 'border-green-200', icon: '✅' },
+  BUSINESS: { bg: 'bg-purple-100', text: 'text-purple-600', border: 'border-purple-200', icon: '💼' },
+  PREMIUM: { bg: 'bg-amber-100', text: 'text-amber-600', border: 'border-amber-200', icon: '⭐' },
+  TRUSTED: { bg: 'bg-gradient-to-br from-amber-100 to-yellow-100', text: 'text-amber-700', border: 'border-amber-300', icon: '🏆' },
 };
 
 function LevelCard({
@@ -37,7 +37,7 @@ function LevelCard({
       {/* Header */}
       <div className={`p-4 ${colors.bg}`}>
         <div className="flex items-center gap-3">
-          <span className="text-3xl" dangerouslySetInnerHTML={{ __html: colors.icon }} />
+          <span className="text-3xl">{colors.icon}</span>
           <div>
             <h3 className={`text-lg font-bold ${colors.text}`}>{level.nameAr}</h3>
             {isCurrent && (
@@ -333,7 +333,7 @@ export default function VerifyPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl ${LEVEL_COLORS[currentLevel].bg}`}>
-                <span dangerouslySetInnerHTML={{ __html: LEVEL_COLORS[currentLevel].icon }} />
+                <span>{LEVEL_COLORS[currentLevel].icon}</span>
               </div>
               <div>
                 <div className="text-sm text-gray-500">مستواك الحالي</div>

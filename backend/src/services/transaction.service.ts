@@ -196,66 +196,81 @@ export const buyItemDirectly = async (
     throw new BadRequestError('You cannot buy your own item');
   }
 
-  // Create or find a listing for this item
-  let listing = await prisma.listing.findFirst({
-    where: { itemId: item.id, status: 'ACTIVE' },
-  });
+  // Use a transaction to ensure atomicity and prevent race conditions
+  const { transaction, listing } = await prisma.$transaction(async (tx) => {
+    // Double-check item is still available (with row-level lock)
+    const currentItem = await tx.item.findUnique({
+      where: { id: item.id },
+      select: { status: true },
+    });
 
-  if (!listing) {
-    // Create a listing automatically
-    listing = await prisma.listing.create({
+    if (!currentItem || currentItem.status !== 'ACTIVE') {
+      throw new BadRequestError('Item is no longer available for purchase');
+    }
+
+    // Create or find a listing for this item
+    let listingRecord = await tx.listing.findFirst({
+      where: { itemId: item.id, status: 'ACTIVE' },
+    });
+
+    if (!listingRecord) {
+      // Create a listing automatically
+      listingRecord = await tx.listing.create({
+        data: {
+          itemId: item.id,
+          userId: item.sellerId,
+          listingType: 'DIRECT_SALE',
+          price: item.estimatedValue,
+          currency: 'EGP',
+          status: 'ACTIVE',
+        },
+      });
+    }
+
+    // Update item status to SOLD first (prevents other buyers)
+    await tx.item.update({
+      where: { id: item.id },
+      data: { status: 'SOLD' },
+    });
+
+    // Update listing status
+    await tx.listing.update({
+      where: { id: listingRecord.id },
+      data: { status: 'COMPLETED' },
+    });
+
+    // Create the transaction record
+    const txRecord = await tx.transaction.create({
       data: {
-        itemId: item.id,
-        userId: item.sellerId,
-        listingType: 'DIRECT_SALE',
-        price: item.estimatedValue,
+        listingId: listingRecord.id,
+        buyerId,
+        sellerId: item.sellerId,
+        transactionType: 'DIRECT_SALE',
+        amount: item.estimatedValue,
         currency: 'EGP',
-        status: 'ACTIVE',
+        paymentMethod: purchaseData.paymentMethod,
+        paymentStatus: 'PENDING',
+        deliveryStatus: 'PENDING',
+      },
+      include: {
+        buyer: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        },
       },
     });
-  }
 
-  // Create the transaction
-  const transaction = await prisma.transaction.create({
-    data: {
-      listingId: listing.id,
-      buyerId,
-      sellerId: item.sellerId,
-      transactionType: 'DIRECT_SALE',
-      amount: item.estimatedValue,
-      currency: 'EGP',
-      paymentMethod: purchaseData.paymentMethod,
-      paymentStatus: 'PENDING',
-      deliveryStatus: 'PENDING',
-    },
-    include: {
-      buyer: {
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-        },
-      },
-      seller: {
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-        },
-      },
-    },
-  });
-
-  // Update item status to SOLD
-  await prisma.item.update({
-    where: { id: item.id },
-    data: { status: 'SOLD' },
-  });
-
-  // Update listing status
-  await prisma.listing.update({
-    where: { id: listing.id },
-    data: { status: 'COMPLETED' },
+    return { transaction: txRecord, listing: listingRecord };
   });
 
   // Send notification to seller about the sale
@@ -821,7 +836,7 @@ export const getUserTransactions = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
   return {
     transactions,

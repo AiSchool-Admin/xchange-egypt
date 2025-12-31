@@ -13,11 +13,11 @@ const TIER_COLORS: Record<string, { bg: string; text: string; border: string; gr
 };
 
 const TIER_ICONS: Record<string, string> = {
-  FREE: '&#127775;',
-  BASIC: '&#11088;',
-  PROFESSIONAL: '&#128142;',
-  BUSINESS: '&#128081;',
-  ENTERPRISE: '&#127942;',
+  FREE: '🌟',
+  BASIC: '⭐',
+  PROFESSIONAL: '💎',
+  BUSINESS: '👑',
+  ENTERPRISE: '🏆',
 };
 
 function PlanCard({
@@ -55,7 +55,7 @@ function PlanCard({
       {/* Header */}
       <div className={`p-6 ${colors.bg}`}>
         <div className="flex items-center gap-3 mb-2">
-          <span className="text-3xl" dangerouslySetInnerHTML={{ __html: TIER_ICONS[plan.tier] }} />
+          <span className="text-3xl">{TIER_ICONS[plan.tier]}</span>
           <div>
             <h3 className={`text-xl font-bold ${colors.text}`}>{plan.nameAr}</h3>
             <p className="text-gray-500 text-sm">{plan.descriptionAr}</p>

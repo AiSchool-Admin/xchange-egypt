@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Barter Chain Service
  *
@@ -147,7 +148,7 @@ export const createSmartProposal = async (
         entityId: proposal.id,
       });
     } catch (error) {
-      console.error(`Failed to notify participant ${participant.userId}:`, error);
+      logger.error(`Failed to notify participant ${participant.userId}:`, error);
     }
   }
 
@@ -308,7 +309,7 @@ export const respondToChainProposal = async (
     try {
       await cashFlowService.createChainCashFlows(chainId);
     } catch (error) {
-      console.error('Failed to create cash flows:', error);
+      logger.error('Failed to create cash flows:', error);
       // Don't fail the whole operation if cash flows fail
     }
   }
@@ -501,7 +502,7 @@ export const executeBarterChain = async (chainId: string, userId: string): Promi
             }
           }
         } catch (error) {
-          console.error(`Failed to process participant ${participant.userId}:`, error);
+          logger.error(`Failed to process participant ${participant.userId}:`, error);
         }
       }
 

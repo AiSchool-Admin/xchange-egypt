@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import * as installmentService from '../services/installment.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
 import { BadRequestError } from '../utils/errors';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Get available installment plans for an amount
@@ -90,7 +93,10 @@ export const createInstallmentRequest = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const {
       itemId,
       provider,
@@ -136,7 +142,10 @@ export const getUserInstallmentRequests = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { page, limit } = req.query;
 
     const result = await installmentService.getUserInstallmentRequests(

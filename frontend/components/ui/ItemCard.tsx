@@ -1,8 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
+import { toggleWatchlist, checkWatchlistStatus } from '@/lib/api/watchlist';
+import { getOrCreateConversation } from '@/lib/api/chat';
 
 // ============================================
 // Types
@@ -161,8 +164,25 @@ export default function ItemCard({
   className = '',
 }: ItemCardProps) {
   const { user } = useAuth();
+  const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<'chat' | 'barter' | null>(null);
+
+  // Check if item is in watchlist on mount
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!user || !id) return;
+      try {
+        const status = await checkWatchlistStatus(id);
+        setIsFavorite(status.data.inWatchlist);
+      } catch (err) {
+        console.error('Failed to check watchlist status:', err);
+      }
+    };
+    checkFavoriteStatus();
+  }, [user, id]);
 
   // Get primary image
   const getImageUrl = (): string => {
@@ -193,11 +213,73 @@ export default function ItemCard({
   const displayLocation = location || governorate || '';
 
   // Handle favorite toggle
-  const toggleFavorite = (e: React.MouseEvent) => {
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsFavorite(!isFavorite);
-    // TODO: Implement API call to save favorite
+
+    if (!user) {
+      router.push('/login?redirect=' + encodeURIComponent(`/items/${id}`));
+      return;
+    }
+
+    if (favoriteLoading) return;
+
+    setFavoriteLoading(true);
+    try {
+      const result = await toggleWatchlist(id);
+      setIsFavorite(result.inWatchlist);
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
+  // Handle start chat with seller
+  const handleStartChat = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      router.push('/login?redirect=' + encodeURIComponent(`/items/${id}`));
+      return;
+    }
+
+    if (!seller?.id || seller.id === user.id) {
+      return;
+    }
+
+    if (actionLoading) return;
+
+    setActionLoading('chat');
+    try {
+      const result = await getOrCreateConversation(seller.id, id);
+      router.push(`/chat/${result.data.id}`);
+    } catch (err) {
+      console.error('Failed to start chat:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle barter offer
+  const handleBarter = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      router.push('/login?redirect=' + encodeURIComponent(`/barter/respond/${id}`));
+      return;
+    }
+
+    router.push(`/barter/respond/${id}`);
+  };
+
+  // Handle view details
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/items/${id}`);
   };
 
   // Featured badge
@@ -353,28 +435,37 @@ export default function ItemCard({
           {/* Action Buttons */}
           <div className="absolute top-2 left-2 z-10 flex flex-col gap-2">
             {/* Favorite Button */}
-            {showActions && user && (
+            {showActions && (
               <button
-                onClick={toggleFavorite}
+                onClick={handleToggleFavorite}
+                disabled={favoriteLoading}
                 className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ${
                   isFavorite
                     ? 'bg-red-500 text-white'
                     : 'bg-white/90 backdrop-blur-sm text-gray-600 hover:bg-white hover:text-red-500'
-                }`}
+                } ${favoriteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                title={isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
               >
-                <svg
-                  className="w-5 h-5"
-                  fill={isFavorite ? 'currentColor' : 'none'}
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                  />
-                </svg>
+                {favoriteLoading ? (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5"
+                    fill={isFavorite ? 'currentColor' : 'none'}
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                )}
               </button>
             )}
 
@@ -499,26 +590,33 @@ export default function ItemCard({
               isHovered ? 'opacity-100 max-h-20' : 'opacity-0 max-h-0 overflow-hidden'
             }`}>
               <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  // TODO: Implement chat
-                }}
-                className="flex items-center justify-center gap-1 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
+                onClick={handleStartChat}
+                disabled={actionLoading === 'chat' || !seller?.id || seller?.id === user?.id}
+                className={`flex items-center justify-center gap-1 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors ${
+                  (actionLoading === 'chat' || !seller?.id || seller?.id === user?.id) ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                title={seller?.id === user?.id ? 'لا يمكنك التواصل مع نفسك' : 'تواصل مع البائع'}
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
+                {actionLoading === 'chat' ? (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                )}
                 تواصل
               </button>
-              {listingType === 'DIRECT_SALE' ? (
+              {listingType === 'DIRECT_SALE' || listingType === 'BARTER' ? (
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // TODO: Implement barter
-                  }}
-                  className="flex items-center justify-center gap-1 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-sm font-medium text-white transition-colors"
+                  onClick={handleBarter}
+                  disabled={seller?.id === user?.id}
+                  className={`flex items-center justify-center gap-1 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-sm font-medium text-white transition-colors ${
+                    seller?.id === user?.id ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  title={seller?.id === user?.id ? 'هذا المنتج لك' : 'قدم عرض مقايضة'}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
@@ -527,13 +625,13 @@ export default function ItemCard({
                 </button>
               ) : (
                 <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // TODO: View details
-                  }}
+                  onClick={handleViewDetails}
                   className="flex items-center justify-center gap-1 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-sm font-medium text-white transition-colors"
                 >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
                   عرض التفاصيل
                 </button>
               )}

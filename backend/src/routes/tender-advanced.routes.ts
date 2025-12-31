@@ -53,16 +53,30 @@ router.get(
   authenticate,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      // Parse and validate numeric parameters
+      const minBudget = req.query.budgetMin ? parseFloat(req.query.budgetMin as string) : undefined;
+      const maxBudget = req.query.budgetMax ? parseFloat(req.query.budgetMax as string) : undefined;
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+
+      // Validate numeric values are not NaN
+      if (minBudget !== undefined && isNaN(minBudget)) {
+        return res.status(400).json({ success: false, message: 'Invalid budgetMin value' });
+      }
+      if (maxBudget !== undefined && isNaN(maxBudget)) {
+        return res.status(400).json({ success: false, message: 'Invalid budgetMax value' });
+      }
+
       const filters = {
-        category: req.query.category ? (String(req.query.category) as tenderAdvancedService.ServiceCategory) : undefined,
+        category: req.query.category ? (String(req.query.category) as tenderAdvancedService.TenderCategory) : undefined,
         governorate: req.query.governorate ? String(req.query.governorate) : undefined,
         city: req.query.city ? String(req.query.city) : undefined,
-        urgency: req.query.urgency ? (req.query.urgency as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT') : undefined,
-        budgetMin: req.query.budgetMin ? parseFloat(req.query.budgetMin as string) : undefined,
-        budgetMax: req.query.budgetMax ? parseFloat(req.query.budgetMax as string) : undefined,
-        status: req.query.status ? String(req.query.status) : undefined,
-        page: req.query.page ? parseInt(req.query.page as string) : 1,
-        limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+        urgency: req.query.urgency ? (req.query.urgency as tenderAdvancedService.TenderUrgency) : undefined,
+        minBudget,
+        maxBudget,
+        status: req.query.status ? (req.query.status as tenderAdvancedService.TenderRequestStatus) : undefined,
+        page: isNaN(page) ? 1 : page,
+        limit: isNaN(limit) ? 20 : Math.min(limit, 100), // Cap at 100
       };
       const result = await tenderAdvancedService.getServiceRequests(filters);
       res.json({
@@ -254,7 +268,7 @@ router.get(
       }
       const filters = {
         role: req.query.role as 'buyer' | 'vendor',
-        status: req.query.status as 'DRAFT' | 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | undefined,
+        status: req.query.status ? (req.query.status as tenderAdvancedService.TenderContractStatus) : undefined,
         page: req.query.page ? parseInt(req.query.page as string) : 1,
         limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
       };
@@ -384,9 +398,12 @@ router.post(
 router.post(
   '/contracts/:id/milestones/:milestoneId/reject',
   authenticate,
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request & { user?: { id: string } }, res: Response, next: NextFunction) => {
     try {
-      const buyerId = (req as any).user.id;
+      const buyerId = req.user?.id;
+      if (!buyerId) {
+        return res.status(401).json({ success: false, message: 'User not authenticated' });
+      }
       const { reason } = req.body;
       const result = await tenderAdvancedService.rejectMilestone(
         req.params.id,

@@ -541,7 +541,7 @@ export class AnalyticsService {
       },
       _sum: { amount: true },
     });
-    return result._sum.amount || 0;
+    return result._sum.amount ? Number(result._sum.amount) : 0;
   }
 
   private async getTotalOrders(start: Date, end: Date): Promise<number> {
@@ -1065,7 +1065,7 @@ export class AnalyticsService {
     });
 
     const categoryMap = new Map<string, { name: string; nameAr: string; count: number; totalPrice: number }>();
-    let totalListings = listings.length;
+    const totalListings = listings.length;
 
     listings.forEach((l) => {
       if (l.item?.category) {
@@ -1079,7 +1079,7 @@ export class AnalyticsService {
         categoryMap.set(catId, {
           ...existing,
           count: existing.count + 1,
-          totalPrice: existing.totalPrice + (l.price || 0),
+          totalPrice: existing.totalPrice + (l.price ? Number(l.price) : 0),
         });
       }
     });
@@ -1117,7 +1117,7 @@ export class AnalyticsService {
       where: { status: 'ACTIVE' },
       _avg: { price: true },
     });
-    return result._avg.price || 0;
+    return result._avg.price ? Number(result._avg.price) : 0;
   }
 
   private async getAverageTimeToSell(_start: Date, _end: Date): Promise<number> {

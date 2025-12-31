@@ -6,7 +6,10 @@
 
 import { Request, Response, NextFunction } from 'express';
 import * as chatService from '../services/chat.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 // ============================================
 // Conversation Controllers
@@ -22,7 +25,10 @@ export const getOrCreateConversation = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { participant2Id, itemId, transactionId } = req.body;
 
     const conversation = await chatService.getOrCreateConversation(
@@ -48,7 +54,10 @@ export const getUserConversations = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 20;
 
@@ -70,7 +79,10 @@ export const getConversationById = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const conversation = await chatService.getConversationById(req.params.id, userId);
 
     return successResponse(res, conversation, 'Conversation retrieved successfully');
@@ -89,7 +101,10 @@ export const deleteConversation = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     await chatService.deleteConversation(req.params.id, userId);
 
     return successResponse(res, null, 'Conversation deleted successfully');
@@ -112,7 +127,10 @@ export const sendMessage = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const message = await chatService.sendMessage(userId, req.body);
 
     return successResponse(res, message, 'Message sent successfully', 201);
@@ -131,7 +149,10 @@ export const getMessages = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { conversationId } = req.params;
     const { page, limit, before, after } = req.query;
 
@@ -159,7 +180,10 @@ export const markMessagesAsRead = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { conversationId } = req.params;
 
     const count = await chatService.markMessagesAsRead(conversationId, userId);
@@ -180,7 +204,10 @@ export const editMessage = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { id } = req.params;
     const { content } = req.body;
 
@@ -202,7 +229,10 @@ export const deleteMessage = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     await chatService.deleteMessage(req.params.id, userId);
 
     return successResponse(res, null, 'Message deleted successfully');
@@ -266,7 +296,10 @@ export const blockUser = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { blockedUserId, reason } = req.body;
 
     const blocked = await chatService.blockUser(userId, blockedUserId, reason);
@@ -287,7 +320,10 @@ export const unblockUser = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     await chatService.unblockUser(userId, req.params.userId);
 
     return successResponse(res, null, 'User unblocked successfully');
@@ -306,7 +342,10 @@ export const getBlockedUsers = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const blocked = await chatService.getBlockedUsers(userId);
 
     return successResponse(res, blocked, 'Blocked users retrieved successfully');
@@ -329,7 +368,10 @@ export const getUnreadCount = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const count = await chatService.getUnreadCount(userId);
 
     return successResponse(res, { count }, 'Unread count retrieved successfully');

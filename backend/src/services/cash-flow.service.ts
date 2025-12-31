@@ -325,7 +325,7 @@ export const createChainCashFlows = async (chainId: string) => {
   // Update chain totals
   const totalCashFlow = cashFlows
     .filter((cf) => cf.flowType === CashFlowType.CHAIN_BALANCE)
-    .reduce((sum, cf) => sum + cf.amount, 0);
+    .reduce((sum, cf) => sum + Number(cf.amount), 0);
 
   await prisma.barterChain.update({
     where: { id: chainId },
@@ -364,7 +364,7 @@ export const getChainPendingTotal = async (chainId: string) => {
     },
   });
 
-  return result._sum.amount || 0;
+  return result._sum.amount ? Number(result._sum.amount) : 0;
 };
 
 // ============================================
@@ -484,11 +484,15 @@ export const getUserCashFlowSummary = async (userId: string) => {
     }),
   ]);
 
+  const sentAmount = sent._sum.amount ? Number(sent._sum.amount) : 0;
+  const receivedAmount = received._sum.amount ? Number(received._sum.amount) : 0;
+  const pendingAmt = pending._sum.amount ? Number(pending._sum.amount) : 0;
+
   return {
-    totalSent: sent._sum.amount || 0,
-    totalReceived: received._sum.amount || 0,
-    pendingAmount: pending._sum.amount || 0,
-    netFlow: (received._sum.amount || 0) - (sent._sum.amount || 0),
+    totalSent: sentAmount,
+    totalReceived: receivedAmount,
+    pendingAmount: pendingAmt,
+    netFlow: receivedAmount - sentAmount,
   };
 };
 
@@ -520,14 +524,14 @@ export const getCashFlowStats = async () => {
 
   return {
     totalTransactions: total,
-    completedAmount: completed._sum.amount || 0,
+    completedAmount: completed._sum.amount ? Number(completed._sum.amount) : 0,
     completedCount: completed._count,
-    pendingAmount: pending._sum.amount || 0,
+    pendingAmount: pending._sum.amount ? Number(pending._sum.amount) : 0,
     pendingCount: pending._count,
     failedCount: failed,
     byType: byType.reduce((acc, item) => {
       acc[item.flowType] = {
-        amount: item._sum.amount || 0,
+        amount: item._sum.amount ? Number(item._sum.amount) : 0,
         count: item._count,
       };
       return acc;

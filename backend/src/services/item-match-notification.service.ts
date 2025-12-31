@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Item Match Notification Service
  *
@@ -223,9 +224,9 @@ export const notifyMatchingUsers = async (payload: ItemCreatedPayload): Promise<
       });
     }
 
-    console.log(`[ItemMatchNotification] Sent ${usersToNotify.length} notifications for item ${itemId}`);
+    logger.info(`[ItemMatchNotification] Sent ${usersToNotify.length} notifications for item ${itemId}`);
   } catch (error) {
-    console.error('[ItemMatchNotification] Error sending notifications:', error);
+    logger.error('[ItemMatchNotification] Error sending notifications:', error);
   }
 };
 
@@ -249,7 +250,7 @@ const formatPrice = (price: number): string => {
  * DO NOT initialize this service.
  */
 export const initItemMatchNotifications = (): void => {
-  console.log('[ItemMatchNotification] ⚠️ DEPRECATED - Use smart-matching.service.ts instead');
-  console.log('[ItemMatchNotification] This service is NOT being initialized to prevent duplicate notifications');
+  logger.info('[ItemMatchNotification] ⚠️ DEPRECATED - Use smart-matching.service.ts instead');
+  logger.info('[ItemMatchNotification] This service is NOT being initialized to prevent duplicate notifications');
   // DO NOT add event listeners here - smart-matching.service.ts handles all notifications
 };

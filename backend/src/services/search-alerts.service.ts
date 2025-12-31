@@ -423,8 +423,8 @@ export class SearchAlertsService {
     return {
       totalAlerts,
       activeAlerts,
-      totalSent: totalSent._sum.alertsSent || 0,
-      matchedItems: matchedItems._sum.matchedItems || 0,
+      totalSent: totalSent._sum.alertsSent ? Number(totalSent._sum.alertsSent) : 0,
+      matchedItems: matchedItems._sum.matchedItems ? Number(matchedItems._sum.matchedItems) : 0,
     };
   }
 

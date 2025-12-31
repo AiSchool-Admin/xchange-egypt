@@ -14,6 +14,12 @@ import {
   uploadItemImages,
   uploadBidImages,
 } from '../middleware/upload.middleware';
+import {
+  validateUploadedFile,
+  secureFilenameMiddleware,
+  logUpload,
+} from '../middleware/upload-security';
+import { uploadLimiter } from '../middleware/security';
 
 const router = Router();
 
@@ -32,7 +38,11 @@ const router = Router();
 router.post(
   '/upload',
   authenticate,
+  uploadLimiter,
   uploadSingle,
+  validateUploadedFile,
+  secureFilenameMiddleware,
+  logUpload,
   imageController.uploadSingleImage
 );
 
@@ -47,7 +57,11 @@ router.post(
 router.post(
   '/upload-multiple',
   authenticate,
+  uploadLimiter,
   uploadMultiple,
+  validateUploadedFile,
+  secureFilenameMiddleware,
+  logUpload,
   imageController.uploadMultipleImages
 );
 
@@ -60,7 +74,11 @@ router.post(
 router.post(
   '/upload-avatar',
   authenticate,
+  uploadLimiter,
   uploadAvatar,
+  validateUploadedFile,
+  secureFilenameMiddleware,
+  logUpload,
   imageController.uploadAvatar
 );
 
@@ -73,7 +91,11 @@ router.post(
 router.post(
   '/upload-item-images',
   authenticate,
+  uploadLimiter,
   uploadItemImages,
+  validateUploadedFile,
+  secureFilenameMiddleware,
+  logUpload,
   imageController.uploadItemImages
 );
 
@@ -86,7 +108,11 @@ router.post(
 router.post(
   '/upload-bid-images',
   authenticate,
+  uploadLimiter,
   uploadBidImages,
+  validateUploadedFile,
+  secureFilenameMiddleware,
+  logUpload,
   imageController.uploadBidImages
 );
 

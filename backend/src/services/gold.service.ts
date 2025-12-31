@@ -692,7 +692,7 @@ export const getGoldStatistics = async () => {
     totalTransactions,
     completedTransactions,
     totalPartners,
-    totalTransactionValue: totalValue._sum.totalAmount || 0,
+    totalTransactionValue: totalValue._sum.totalAmount ? Number(totalValue._sum.totalAmount) : 0,
   };
 };
 // Gold Marketplace - Fri Dec 12 06:57:39 UTC 2025

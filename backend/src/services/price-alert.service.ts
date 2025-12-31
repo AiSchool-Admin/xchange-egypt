@@ -581,7 +581,7 @@ export async function getUserAlertStats(userId: string) {
   return {
     totalAlerts: total,
     activeAlerts: active,
-    totalTriggers: triggered._sum.triggerCount || 0,
+    totalTriggers: triggered._sum.triggerCount ? Number(triggered._sum.triggerCount) : 0,
   };
 }
 

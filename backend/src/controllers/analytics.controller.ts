@@ -11,6 +11,9 @@ import { realTimeMetrics } from '../services/analytics/realtime.service';
 import { reportsService, ReportFormat, ReportPeriod } from '../services/analytics/reports.service';
 import { successResponse, errorResponse } from '../utils/response';
 
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
+
 /**
  * =====================================================
  * DASHBOARD ENDPOINTS
@@ -441,7 +444,10 @@ export const comparePeriods = async (req: Request, res: Response, next: NextFunc
  */
 export const getSellerDashboard = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const period = (req.query.period as TimePeriod) || 'month';
 
     // This would fetch seller-specific analytics
@@ -471,7 +477,10 @@ export const getSellerDashboard = async (req: Request, res: Response, next: Next
  */
 export const getSellerPerformance = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const period = (req.query.period as TimePeriod) || 'month';
 
     const performance = {

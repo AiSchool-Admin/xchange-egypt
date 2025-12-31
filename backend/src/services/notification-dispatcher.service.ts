@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Notification Dispatcher
  *
@@ -35,7 +36,7 @@ const sendSMS = async (phone: string, message: string): Promise<SMSResponse> => 
       const fromNumber = process.env.TWILIO_PHONE_NUMBER;
 
       if (!accountSid || !authToken || !fromNumber) {
-        console.warn('Twilio credentials not configured');
+        logger.warn('Twilio credentials not configured');
         return { success: false, error: 'SMS provider not configured' };
       }
 
@@ -58,10 +59,10 @@ const sendSMS = async (phone: string, message: string): Promise<SMSResponse> => 
       const result: any = await response.json();
 
       if (response.ok) {
-        console.log(`✅ SMS sent to ${phone}, SID: ${result.sid}`);
+        logger.info(`✅ SMS sent to ${phone}, SID: ${result.sid}`);
         return { success: true, messageId: result.sid };
       } else {
-        console.error(`❌ SMS failed: ${result.message}`);
+        logger.error(`❌ SMS failed: ${result.message}`);
         return { success: false, error: result.message };
       }
     } else if (provider === 'victorylink') {
@@ -95,7 +96,7 @@ const sendSMS = async (phone: string, message: string): Promise<SMSResponse> => 
 
     return { success: false, error: 'Unknown SMS provider' };
   } catch (error: any) {
-    console.error('SMS send error:', error);
+    logger.error('SMS send error:', error);
     return { success: false, error: error.message };
   }
 };
@@ -123,7 +124,7 @@ const sendPushNotification = async (
   const serverKey = process.env.FIREBASE_SERVER_KEY;
 
   if (!serverKey) {
-    console.warn('Firebase server key not configured');
+    logger.warn('Firebase server key not configured');
     return { success: false, error: 'Push notifications not configured' };
   }
 
@@ -153,18 +154,18 @@ const sendPushNotification = async (
     const result: any = await response.json();
 
     if (response.ok) {
-      console.log(`✅ Push sent to ${tokens.length} devices, success: ${result.success}, failure: ${result.failure}`);
+      logger.info(`✅ Push sent to ${tokens.length} devices, success: ${result.success}, failure: ${result.failure}`);
       return {
         success: result.success > 0,
         successCount: result.success,
         failureCount: result.failure,
       };
     } else {
-      console.error(`❌ Push failed:`, result);
+      logger.error(`❌ Push failed:`, result);
       return { success: false, error: result.error || 'FCM error' };
     }
   } catch (error: any) {
-    console.error('Push notification error:', error);
+    logger.error('Push notification error:', error);
     return { success: false, error: error.message };
   }
 };
@@ -238,7 +239,7 @@ export const dispatch = async (input: DispatchNotificationInput): Promise<{
   });
 
   if (!user) {
-    console.error(`User ${userId} not found`);
+    logger.error(`User ${userId} not found`);
     return results;
   }
 
@@ -262,7 +263,7 @@ export const dispatch = async (input: DispatchNotificationInput): Promise<{
       });
       results.inApp = true;
     } catch (error) {
-      console.error('In-app notification failed:', error);
+      logger.error('In-app notification failed:', error);
     }
   }
 
@@ -294,7 +295,7 @@ export const dispatch = async (input: DispatchNotificationInput): Promise<{
       });
       results.email = true;
     } catch (error) {
-      console.error('Email notification failed:', error);
+      logger.error('Email notification failed:', error);
     }
   }
 
@@ -314,10 +315,10 @@ export const dispatch = async (input: DispatchNotificationInput): Promise<{
         const smsResponse = await sendSMS(userPhone.phone, message);
         results.sms = smsResponse.success;
       } else if (!process.env.SMS_API_KEY) {
-        console.log(`📱 SMS (Not Configured): To: ${userPhone?.phone}, Message: ${message.substring(0, 50)}...`);
+        logger.info(`📱 SMS (Not Configured): To: ${userPhone?.phone}, Message: ${message.substring(0, 50)}...`);
       }
     } catch (error) {
-      console.error('SMS notification failed:', error);
+      logger.error('SMS notification failed:', error);
     }
   }
 
@@ -330,13 +331,13 @@ export const dispatch = async (input: DispatchNotificationInput): Promise<{
   ) {
     try {
       if (!process.env.FIREBASE_SERVER_KEY) {
-        console.log(`🔔 Push (Not Configured): Title: ${title}, Message: ${message.substring(0, 50)}...`);
+        logger.info(`🔔 Push (Not Configured): Title: ${title}, Message: ${message.substring(0, 50)}...`);
       } else {
         // Push notifications ready - need FCM token storage to be implemented
-        console.log(`🔔 Push (Token Storage Needed): User ${userId}, Title: ${title}`);
+        logger.info(`🔔 Push (Token Storage Needed): User ${userId}, Title: ${title}`);
       }
     } catch (error) {
-      console.error('Push notification failed:', error);
+      logger.error('Push notification failed:', error);
     }
   }
 
@@ -359,7 +360,7 @@ export const dispatchBulk = async (
 
     const promises = batch.map((userId) =>
       dispatch({ ...input, userId }).catch((error) => {
-        console.error(`Failed to dispatch to user ${userId}:`, error);
+        logger.error(`Failed to dispatch to user ${userId}:`, error);
         return null;
       })
     );

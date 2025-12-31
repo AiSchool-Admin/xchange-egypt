@@ -6,7 +6,7 @@
 import { Request, Response, NextFunction } from 'express';
 import * as adminService from '../services/admin.service';
 import * as matchingService from '../services/barter-matching.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
 import prisma from '../lib/prisma';
 import { AdminRequest } from '../middleware/adminAuth';
 import { getAdminPermissions } from '../middleware/adminAuth';
@@ -99,10 +99,7 @@ export const initialSetup = async (req: Request, res: Response, next: NextFuncti
     const { email, password, fullName } = req.body;
 
     if (!email || !password || !fullName) {
-      return res.status(400).json({
-        success: false,
-        message: 'البريد الإلكتروني وكلمة المرور والاسم مطلوبون',
-      });
+      return errorResponse(res, 'البريد الإلكتروني وكلمة المرور والاسم مطلوبون', 400);
     }
 
     const admin = await adminService.createInitialSuperAdmin(email, password, fullName);
@@ -122,10 +119,7 @@ export const forceSetup = async (req: Request, res: Response, next: NextFunction
     const { email, password, fullName, setupKey } = req.body;
 
     if (!email || !password || !fullName || !setupKey) {
-      return res.status(400).json({
-        success: false,
-        message: 'جميع الحقول مطلوبة: email, password, fullName, setupKey',
-      });
+      return errorResponse(res, 'جميع الحقول مطلوبة: email, password, fullName, setupKey', 400);
     }
 
     const result = await adminService.forceCreateSuperAdmin(email, password, fullName, setupKey);
@@ -149,10 +143,7 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
     const { email, newPassword, setupKey } = req.body;
 
     if (!email || !newPassword || !setupKey) {
-      return res.status(400).json({
-        success: false,
-        message: 'جميع الحقول مطلوبة: email, newPassword, setupKey',
-      });
+      return errorResponse(res, 'جميع الحقول مطلوبة: email, newPassword, setupKey', 400);
     }
 
     const admin = await adminService.resetAdminPassword(email, newPassword, setupKey);
@@ -235,10 +226,7 @@ export const deleteAdmin = async (req: Request, res: Response, next: NextFunctio
 
     // Prevent self-deletion
     if (adminId === adminReq.adminId) {
-      return res.status(400).json({
-        success: false,
-        message: 'لا يمكنك حذف حسابك الخاص',
-      });
+      return errorResponse(res, 'لا يمكنك حذف حسابك الخاص', 400);
     }
 
     await adminService.updateAdmin(adminId, { status: 'DELETED' }, adminReq.adminId);

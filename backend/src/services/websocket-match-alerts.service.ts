@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * WebSocket Match Alerts Service
  * خدمة تنبيهات المطابقة الفورية
@@ -82,14 +83,14 @@ const userAlertRooms: Map<string, Set<string>> = new Map();
 export function initializeMatchAlerts(socketIo: SocketIOServer): void {
   io = socketIo;
 
-  console.log('[MatchAlerts] Initializing WebSocket match alerts service');
+  logger.info('[MatchAlerts] Initializing WebSocket match alerts service');
 
   io.on('connection', (socket) => {
     const userId = socket.data.userId;
 
     if (!userId) return;
 
-    console.log(`[MatchAlerts] User ${userId} connected for alerts`);
+    logger.info(`[MatchAlerts] User ${userId} connected for alerts`);
 
     // Join user's personal alert room
     socket.join(`alerts:${userId}`);
@@ -127,7 +128,7 @@ export function initializeMatchAlerts(socketIo: SocketIOServer): void {
 
         if (callback) callback({ success: true, subscription });
       } catch (error: unknown) {
-        console.error('[MatchAlerts] Error subscribing:', error);
+        logger.error('[MatchAlerts] Error subscribing:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         if (callback) callback({ success: false, error: errorMessage });
       }
@@ -157,7 +158,7 @@ export function initializeMatchAlerts(socketIo: SocketIOServer): void {
 
         if (callback) callback({ success: true, subscription: updated });
       } catch (error: unknown) {
-        console.error('[MatchAlerts] Error updating preferences:', error);
+        logger.error('[MatchAlerts] Error updating preferences:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         if (callback) callback({ success: false, error: errorMessage });
       }
@@ -179,7 +180,7 @@ export function initializeMatchAlerts(socketIo: SocketIOServer): void {
 
         if (callback) callback({ success: true });
       } catch (error: unknown) {
-        console.error('[MatchAlerts] Error unsubscribing:', error);
+        logger.error('[MatchAlerts] Error unsubscribing:', error);
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         if (callback) callback({ success: false, error: errorMessage });
       }
@@ -201,7 +202,7 @@ export function initializeMatchAlerts(socketIo: SocketIOServer): void {
         const { alertId } = data;
         await markAlertAsSeen(userId, alertId);
       } catch (error) {
-        console.error('[MatchAlerts] Error acknowledging alert:', error);
+        logger.error('[MatchAlerts] Error acknowledging alert:', error);
       }
     });
 
@@ -211,7 +212,7 @@ export function initializeMatchAlerts(socketIo: SocketIOServer): void {
     });
   });
 
-  console.log('[MatchAlerts] WebSocket match alerts service initialized');
+  logger.info('[MatchAlerts] WebSocket match alerts service initialized');
 }
 
 // ============================================
@@ -279,7 +280,7 @@ export function sendAlertToUser(userId: string, alert: MatchAlert): void {
 
   // Store alert for later retrieval
   storeAlert(userId, alert).catch(err =>
-    console.error('[MatchAlerts] Error storing alert:', err)
+    logger.error('[MatchAlerts] Error storing alert:', err)
   );
 }
 
@@ -538,8 +539,8 @@ export async function sendAuctionAlert(
         priority: 'HIGH',
         title: '😮 You\'ve Been Outbid!',
         titleAr: '😮 تم تجاوز عرضك!',
-        message: `New bid: ${formatPrice(auction.listing.currentBid)} on "${auction.listing.item.title}"`,
-        messageAr: `عرض جديد: ${formatPrice(auction.listing.currentBid)} ج.م على "${auction.listing.item.title}"`,
+        message: `New bid: ${formatPrice(Number(auction.listing.currentBid))} on "${auction.listing.item.title}"`,
+        messageAr: `عرض جديد: ${formatPrice(Number(auction.listing.currentBid))} ج.م على "${auction.listing.item.title}"`,
         imageUrl: auction.listing.item.images[0],
         actionUrl: `/auctions/${auctionId}`,
         actionText: 'Bid Higher',

@@ -173,11 +173,24 @@ model User {
   serviceRequests           ServiceRequest[]          @relation("ServiceRequests")
   marketplaceNotifications  MarketplaceNotification[] @relation("MarketplaceNotifications")
 
+  // مجلس إدارة AI - للمستخدمين المعينين كأعضاء بشريين في المجلس
+  boardMembership           BoardMember[]             @relation("BoardMemberUser")
+
+  // نظام المناقصات المتقدم - Tender System Relations
+  tenderRequests            TenderServiceRequest[]    @relation("TenderServiceRequests")
+  tenderQuotes              TenderQuote[]             @relation("TenderQuotes")
+  tenderContractsAsBuyer    TenderContract[]          @relation("TenderContractsBuyer")
+  tenderContractsAsVendor   TenderContract[]          @relation("TenderContractsVendor")
+
   @@map("users")
   @@index([email])
   @@index([phone])
   @@index([userType])
   @@index([status])
+  // Composite indexes for performance
+  @@index([status, userType])
+  @@index([status, createdAt])
+  @@index([governorate, city])
 }
 
 model RefreshToken {
@@ -213,7 +226,7 @@ model Category {
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
   // Self-referencing for subcategories
-  parent      Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  parent      Category?   @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
   children    Category[]  @relation("CategoryHierarchy")
 
   // Relations
@@ -223,6 +236,7 @@ model Category {
   wishListItems    WishListItem[]
   itemRequests     ItemRequest[]
   pricePredictions PricePrediction[]
+  priceAlerts      PriceAlert[]     @relation("CategoryPriceAlerts")
 
   @@map("categories")
   @@index([slug])
@@ -509,11 +523,11 @@ model Item {
   listingType     ListingType   @default(DIRECT_SALE) @map("listing_type")
 
   condition       ItemCondition @default(GOOD)
-  estimatedValue  Float         @map("estimated_value") // In EGP
+  estimatedValue  Decimal         @map("estimated_value") // In EGP
   images          String[]      // Array of image URLs
 
   // Type-specific fields
-  cashAmount      Float?        @map("cash_amount")     // For CASH type
+  cashAmount      Decimal?        @map("cash_amount")     // For CASH type
   serviceHours    Float?        @map("service_hours")   // For SERVICE type
   serviceDuration String?       @map("service_duration") // e.g., "1 day", "2 weeks"
 
@@ -538,13 +552,13 @@ model Item {
 
   // للمعادن والوزن
   weightKg            Float?            @map("weight_kg")
-  pricePerKg          Float?            @map("price_per_kg")
+  pricePerKg          Decimal?            @map("price_per_kg")
   metalType           MetalType?        @map("metal_type")
   metalPurity         Float?            @map("metal_purity")  // نسبة نقاء المعدن
 
   // قابلية الإصلاح
   isRepairable        Boolean?          @map("is_repairable")
-  repairCostEstimate  Float?            @map("repair_cost_estimate")
+  repairCostEstimate  Decimal?            @map("repair_cost_estimate")
   workingPartsDesc    String?           @map("working_parts_desc")
   defectDescription   String?           @map("defect_description")
 
@@ -566,7 +580,7 @@ model Item {
   hasGarden           Boolean?          @map("has_garden")            // يوجد حديقة
   hasSecurity         Boolean?          @map("has_security")          // يوجد أمن
   hasPool             Boolean?          @map("has_pool")              // يوجد حمام سباحة
-  rentPrice           Float?            @map("rent_price")            // سعر الإيجار الشهري
+  rentPrice           Decimal?            @map("rent_price")            // سعر الإيجار الشهري
   isNegotiable        Boolean?          @map("is_negotiable")         // قابل للتفاوض
 
   // ============================================
@@ -592,13 +606,13 @@ model Item {
   deliveryAvailable   Boolean           @default(false) @map("delivery_available")
   deliveryProvider    DeliveryProvider? @map("delivery_provider")
   deliverySpeed       DeliverySpeed?    @map("delivery_speed")
-  deliveryCost        Float?            @map("delivery_cost")
+  deliveryCost        Decimal?            @map("delivery_cost")
   freeDelivery        Boolean           @default(false) @map("free_delivery")
 
   installmentAvailable Boolean          @default(false) @map("installment_available")
   installmentProvider InstallmentProvider? @map("installment_provider")
   installmentMonths   Int[]             @map("installment_months")    // e.g., [6, 12, 18, 24]
-  minDownPayment      Float?            @map("min_down_payment")      // الحد الأدنى للمقدم
+  minDownPayment      Decimal?            @map("min_down_payment")      // الحد الأدنى للمقدم
 
   // Specs (flexible JSON)
   specifications  Json?         @map("specifications")
@@ -608,8 +622,8 @@ model Item {
   desiredItemTitle      String?   @map("desired_item_title")       // Title of the wanted item (e.g., "سيارة سيدان")
   desiredItemDescription String?  @map("desired_item_description") // Description of the wanted item
   desiredKeywords       String?   @map("desired_keywords") // Comma-separated keywords
-  desiredValueMin       Float?    @map("desired_value_min") // Minimum acceptable value
-  desiredValueMax       Float?    @map("desired_value_max") // Maximum acceptable value
+  desiredValueMin       Decimal?    @map("desired_value_min") // Minimum acceptable value
+  desiredValueMax       Decimal?    @map("desired_value_max") // Maximum acceptable value
 
   // Status
   status          ItemStatus    @default(ACTIVE)
@@ -639,7 +653,7 @@ model Item {
   // Relations
   seller                  User                    @relation("UserItems", fields: [sellerId], references: [id], onDelete: Cascade)
   category                Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  desiredCategory         Category?               @relation("ItemDesiredCategory", fields: [desiredCategoryId], references: [id])
+  desiredCategory         Category?               @relation("ItemDesiredCategory", fields: [desiredCategoryId], references: [id], onDelete: SetNull)
   listings                Listing[]
   barterPreferenceItems   BarterPreferenceItem[]  @relation("BarterPreferenceItems")
   participantsGiving      BarterParticipant[]     @relation("ParticipantGivingItem")
@@ -648,6 +662,7 @@ model Item {
   inventoryLocks          InventoryLock[]         @relation("InventoryLocks")
   scrapSellerOffers       ScrapSellerOffer[]      @relation("ScrapOfferItem")
   stockAdjustments        StockAdjustment[]       @relation("ItemStockAdjustments")
+  priceAlerts             PriceAlert[]            @relation("ItemPriceAlerts")
 
   @@map("items")
   @@index([sellerId])
@@ -692,6 +707,12 @@ model Item {
   // Delivery & Installment indexes
   @@index([deliveryAvailable])
   @@index([installmentAvailable])
+  // Additional composite indexes for common queries
+  @@index([status, categoryId, createdAt])
+  @@index([status, categoryId, governorate])
+  @@index([status, governorate, createdAt])
+  @@index([categoryId, governorate, status])
+  @@index([status, estimatedValue])
 }
 
 // ============================================
@@ -730,8 +751,8 @@ model StockAdjustment {
   notes           String?                                     // Additional notes
 
   // Cost tracking (optional)
-  unitCost        Float?              @map("unit_cost")       // Cost per unit at time of adjustment
-  totalCost       Float?              @map("total_cost")      // Total cost of this adjustment
+  unitCost        Decimal?              @map("unit_cost")       // Cost per unit at time of adjustment
+  totalCost       Decimal?              @map("total_cost")      // Total cost of this adjustment
 
   // Timestamps
   createdAt       DateTime            @default(now()) @map("created_at")
@@ -773,14 +794,14 @@ model Listing {
   listingType ListingType     @map("listing_type")
 
   // Pricing (nullable for barter)
-  price       Float?
+  price       Decimal?
   currency    String          @default("EGP")
 
   // Auction specific
-  startingBid Float?          @map("starting_bid")
-  currentBid  Float?          @map("current_bid")
-  bidIncrement Float?         @map("bid_increment")
-  reservePrice Float?         @map("reserve_price")
+  startingBid Decimal?          @map("starting_bid")
+  currentBid  Decimal?          @map("current_bid")
+  bidIncrement Decimal?         @map("bid_increment")
+  reservePrice Decimal?         @map("reserve_price")
 
   // Timing
   startDate   DateTime        @default(now()) @map("start_date")
@@ -812,6 +833,11 @@ model Listing {
   @@index([listingType])
   @@index([status])
   @@index([endDate])
+  // Composite indexes for performance
+  @@index([status, listingType])
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([status, endDate])
 }
 
 // ============================================
@@ -889,9 +915,9 @@ model Order {
   userId            String        @map("user_id")
   orderNumber       String        @unique @map("order_number")
   status            OrderStatus   @default(PENDING)
-  subtotal          Float
-  shippingCost      Float         @map("shipping_cost")
-  total             Float
+  subtotal          Decimal
+  shippingCost      Decimal         @map("shipping_cost")
+  total             Decimal
   shippingAddressId String        @map("shipping_address_id")
   paymentMethod     String        @map("payment_method")
   paymentId         String?       @map("payment_id")
@@ -910,6 +936,9 @@ model Order {
   @@index([userId])
   @@index([status])
   @@index([orderNumber])
+  // Composite indexes for performance
+  @@index([userId, status])
+  @@index([status, createdAt])
 }
 
 model OrderItem {
@@ -918,7 +947,7 @@ model OrderItem {
   listingId   String   @map("listing_id")
   sellerId    String   @map("seller_id")
   quantity    Int
-  price       Float
+  price       Decimal
 
   order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Restrict)
@@ -970,7 +999,7 @@ model BarterOffer {
 
   // Offered items (BUNDLE SUPPORT - can be multiple items)
   offeredItemIds    String[]           @map("offered_item_ids")
-  offeredBundleValue Float             @map("offered_bundle_value")  // Auto-calculated
+  offeredBundleValue Decimal             @map("offered_bundle_value")  // Auto-calculated
 
   // Preference sets (alternative bundles user wants)
   // User can specify multiple preference sets with priorities
@@ -980,8 +1009,8 @@ model BarterOffer {
   matchedPreferenceSetId String?       @map("matched_preference_set_id")
 
   // Cash support
-  offeredCashAmount   Float              @default(0) @map("offered_cash_amount")
-  requestedCashAmount Float              @default(0) @map("requested_cash_amount")
+  offeredCashAmount   Decimal              @default(0) @map("offered_cash_amount")
+  requestedCashAmount Decimal              @default(0) @map("requested_cash_amount")
 
   // Additional info
   notes             String?
@@ -1020,6 +1049,12 @@ model BarterOffer {
   @@index([governorate])
   @@index([marketType, isOpenOffer])
   @@index([linkedItemId])
+  // Composite indexes for barter queries
+  @@index([status, createdAt])
+  @@index([status, expiresAt])
+  @@index([initiatorId, status])
+  @@index([recipientId, status])
+  @@index([status, governorate, marketType])
 }
 
 // Abstract item request for barter (when user doesn't want specific items)
@@ -1030,14 +1065,14 @@ model ItemRequest {
   categoryId        String?        @map("category_id")          // Level 1: Root category
   subcategoryId     String?        @map("subcategory_id")       // Level 2: Sub-category
   subSubcategoryId  String?        @map("sub_subcategory_id")   // Level 3: Sub-sub-category
-  minPrice          Float?         @map("min_price")
-  maxPrice          Float?         @map("max_price")
+  minPrice          Decimal?         @map("min_price")
+  maxPrice          Decimal?         @map("max_price")
   condition         ItemCondition?
   keywords          String[]
   createdAt         DateTime       @default(now()) @map("created_at")
 
   barterOffer       BarterOffer    @relation(fields: [barterOfferId], references: [id], onDelete: Cascade)
-  category          Category?      @relation(fields: [categoryId], references: [id])
+  category          Category?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
   @@map("item_requests")
   @@index([barterOfferId])
@@ -1059,10 +1094,10 @@ model BarterPreferenceSet {
   items             BarterPreferenceItem[]
 
   // Auto-calculated total value
-  totalValue        Float              @map("total_value")
+  totalValue        Decimal              @map("total_value")
 
   // Value difference from offered bundle
-  valueDifference   Float              @map("value_difference")
+  valueDifference   Decimal              @map("value_difference")
 
   // Is this preference set balanced? (within acceptable range)
   isBalanced        Boolean            @default(true) @map("is_balanced")
@@ -1090,7 +1125,7 @@ model BarterPreferenceItem {
   itemId            String             @map("item_id")
 
   // Item details (denormalized for performance)
-  itemValue         Float              @map("item_value")
+  itemValue         Decimal              @map("item_value")
 
   // Timestamps
   createdAt         DateTime           @default(now()) @map("created_at")
@@ -1131,7 +1166,7 @@ model BarterChain {
   description     String?            // Human-readable description of the chain
 
   // Commission tracking
-  commissionAmount   Float?          @map("commission_amount")    // Platform commission in EGP
+  commissionAmount   Decimal?          @map("commission_amount")    // Platform commission in EGP
   commissionRate     Float?          @map("commission_rate")      // Commission rate (e.g., 0.05 for 5%)
   commissionStatus   String?         @map("commission_status")    // PENDING, COLLECTED, WAIVED
   commissionPaidAt   DateTime?       @map("commission_paid_at")   // When commission was paid
@@ -1139,7 +1174,7 @@ model BarterChain {
 
   // Cash flow tracking
   involvesCash    Boolean            @default(false) @map("involves_cash") // Does this chain involve cash?
-  totalCashFlow   Float              @default(0) @map("total_cash_flow")   // Total cash in chain
+  totalCashFlow   Decimal              @default(0) @map("total_cash_flow")   // Total cash in chain
 
   // Status
   status          BarterChainStatus  @default(PROPOSED)
@@ -1196,7 +1231,7 @@ model BarterParticipant {
   hasCounterProposal     Boolean    @default(false) @map("has_counter_proposal")
   counterProposalItemId  String?    @map("counter_proposal_item_id")  // Alternative item to give
   counterProposalMessage String?    @map("counter_proposal_message")  // Reason for counter
-  counterProposalCash    Float?     @map("counter_proposal_cash")     // Cash adjustment
+  counterProposalCash    Decimal?     @map("counter_proposal_cash")     // Cash adjustment
   counterProposalStatus  String?    @map("counter_proposal_status")   // PENDING, ACCEPTED, REJECTED
 
   // Timestamps
@@ -1301,7 +1336,7 @@ model CashFlow {
   toUserId        String          @map("to_user_id")
 
   // Amount
-  amount          Float
+  amount          Decimal
   currency        String          @default("EGP")
   flowType        CashFlowType    @default(CHAIN_BALANCE) @map("flow_type")
 
@@ -1359,11 +1394,11 @@ model Auction {
   listingId         String        @unique @map("listing_id")
 
   // Pricing
-  startingPrice     Float         @map("starting_price")
-  currentPrice      Float         @map("current_price")
-  buyNowPrice       Float?        @map("buy_now_price")
-  reservePrice      Float?        @map("reserve_price")
-  minBidIncrement   Float         @default(1.0) @map("min_bid_increment")
+  startingPrice     Decimal         @map("starting_price")
+  currentPrice      Decimal         @map("current_price")
+  buyNowPrice       Decimal?        @map("buy_now_price")
+  reservePrice      Decimal?        @map("reserve_price")
+  minBidIncrement   Decimal         @default(1.0) @map("min_bid_increment")
 
   // Timing
   startTime         DateTime      @map("start_time")
@@ -1394,13 +1429,17 @@ model Auction {
   // Relations
   listing           Listing       @relation(fields: [listingId], references: [id], onDelete: Cascade)
   bids              AuctionBid[]
-  winningBid        AuctionBid?   @relation("WinningBid", fields: [winningBidId], references: [id])
+  winningBid        AuctionBid?   @relation("WinningBid", fields: [winningBidId], references: [id], onDelete: SetNull)
 
   @@map("auctions")
   @@index([status])
   @@index([startTime])
   @@index([endTime])
   @@index([winnerId])
+  // Composite indexes for common auction queries
+  @@index([status, endTime])
+  @@index([status, startTime])
+  @@index([status, createdAt])
 }
 
 model AuctionBid {
@@ -1410,12 +1449,12 @@ model AuctionBid {
   bidderId        String     @map("bidder_id")
 
   // Bid details
-  bidAmount       Float      @map("bid_amount")
-  previousBid     Float?     @map("previous_bid") // Previous bid by this user
+  bidAmount       Decimal      @map("bid_amount")
+  previousBid     Decimal?     @map("previous_bid") // Previous bid by this user
 
   // Auto-bid (proxy bidding)
   isAutoBid       Boolean    @default(false) @map("is_auto_bid")
-  maxAutoBid      Float?     @map("max_auto_bid") // Maximum they're willing to bid
+  maxAutoBid      Decimal?     @map("max_auto_bid") // Maximum they're willing to bid
 
   // Status
   status          BidStatus  @default(ACTIVE)
@@ -1439,6 +1478,10 @@ model AuctionBid {
   @@index([bidderId])
   @@index([status])
   @@index([createdAt])
+  // Composite indexes for bid queries
+  @@index([auctionId, bidAmount])
+  @@index([bidderId, createdAt])
+  @@index([auctionId, status, createdAt])
 }
 
 // ============================================
@@ -1487,8 +1530,8 @@ model ReverseAuction {
   deliveryPreference String?           @map("delivery_preference") // "PICKUP", "DELIVERY", "BOTH"
 
   // Budget & Pricing
-  maxBudget         Float?              @map("max_budget")    // Maximum willing to pay (optional)
-  targetPrice       Float?              @map("target_price")  // Target/desired price (optional)
+  maxBudget         Decimal?              @map("max_budget")    // Maximum willing to pay (optional)
+  targetPrice       Decimal?              @map("target_price")  // Target/desired price (optional)
 
   // Timing
   startDate         DateTime            @default(now()) @map("start_date")
@@ -1498,7 +1541,7 @@ model ReverseAuction {
   status            ReverseAuctionStatus @default(DRAFT)
   totalBids         Int                 @default(0) @map("total_bids")
   uniqueBidders     Int                 @default(0) @map("unique_bidders")
-  lowestBid         Float?              @map("lowest_bid")    // Current lowest bid
+  lowestBid         Decimal?              @map("lowest_bid")    // Current lowest bid
   views             Int                 @default(0)
 
   // Winner
@@ -1519,7 +1562,7 @@ model ReverseAuction {
   buyer             User                @relation("ReverseAuctionBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
   category          Category            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   bids              ReverseAuctionBid[]
-  winningBid        ReverseAuctionBid?  @relation("WinningBid", fields: [winningBidId], references: [id])
+  winningBid        ReverseAuctionBid?  @relation("WinningBid", fields: [winningBidId], references: [id], onDelete: SetNull)
 
   @@map("reverse_auctions")
   @@index([buyerId])
@@ -1529,6 +1572,10 @@ model ReverseAuction {
   @@index([endDate])
   @@index([winnerId])
   @@index([lowestBid])
+  // Composite indexes for reverse auction queries
+  @@index([status, endDate])
+  @@index([status, categoryId])
+  @@index([buyerId, status])
 }
 
 // Seller's bid on a reverse auction
@@ -1538,8 +1585,8 @@ model ReverseAuctionBid {
   sellerId          String                  @map("seller_id")
 
   // Bid details
-  bidAmount         Float                   @map("bid_amount")      // Offered price
-  previousBid       Float?                  @map("previous_bid")    // Their previous bid (if rebidding)
+  bidAmount         Decimal                   @map("bid_amount")      // Offered price
+  previousBid       Decimal?                  @map("previous_bid")    // Their previous bid (if rebidding)
 
   // Item offered
   itemId            String?                 @map("item_id")         // If seller has existing item
@@ -1550,7 +1597,7 @@ model ReverseAuctionBid {
   // Delivery & Terms
   deliveryOption    String                  @map("delivery_option") // "PICKUP", "DELIVERY", "BOTH"
   deliveryDays      Int?                    @map("delivery_days")   // Estimated delivery time
-  deliveryCost      Float                   @default(0) @map("delivery_cost") // Delivery fee
+  deliveryCost      Decimal                   @default(0) @map("delivery_cost") // Delivery fee
 
   // Seller notes
   notes             String?                 // Additional information
@@ -1614,7 +1661,7 @@ model Transaction {
   transactionType TransactionType @map("transaction_type")
 
   // Payment
-  amount          Float?
+  amount          Decimal?
   currency        String          @default("EGP")
   paymentMethod   String?         @map("payment_method")
   paymentStatus   PaymentStatus   @default(PENDING) @map("payment_status")
@@ -1640,6 +1687,11 @@ model Transaction {
   @@index([sellerId])
   @@index([paymentStatus])
   @@index([deliveryStatus])
+  // Composite indexes for performance
+  @@index([buyerId, paymentStatus])
+  @@index([sellerId, paymentStatus])
+  @@index([paymentStatus, deliveryStatus])
+  @@index([createdAt, paymentStatus])
 }
 
 // ============================================
@@ -1817,7 +1869,7 @@ model WishListItem {
   categoryId  String?   @map("category_id")
   description String
   keywords    String[]  // For matching
-  maxPrice    Float?    @map("max_price")
+  maxPrice    Decimal?    @map("max_price")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
@@ -1956,6 +2008,10 @@ model Notification {
   @@index([priority])
   @@index([createdAt])
   @@index([expiresAt])
+  // Composite indexes for performance
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([userId, type, isRead])
 }
 
 // User notification preferences
@@ -2254,6 +2310,10 @@ model Message {
   @@index([createdAt])
   @@index([status])
   @@index([isRead])
+  // Composite indexes for performance
+  @@index([conversationId, createdAt])
+  @@index([recipientId, isRead])
+  @@index([conversationId, isDeleted])
 }
 
 // User typing indicator (in-memory, but can be stored for offline)
@@ -2334,10 +2394,10 @@ model Wallet {
   userId          String      @unique @map("user_id")
 
   // Balances
-  balance         Float       @default(0)          // رصيد XCoin المتاح
-  frozenBalance   Float       @default(0) @map("frozen_balance")  // رصيد مجمد (في صفقات جارية)
-  lifetimeEarned  Float       @default(0) @map("lifetime_earned") // إجمالي ما تم كسبه
-  lifetimeSpent   Float       @default(0) @map("lifetime_spent")  // إجمالي ما تم إنفاقه
+  balance         Decimal       @default(0)          // رصيد XCoin المتاح
+  frozenBalance   Decimal       @default(0) @map("frozen_balance")  // رصيد مجمد (في صفقات جارية)
+  lifetimeEarned  Decimal       @default(0) @map("lifetime_earned") // إجمالي ما تم كسبه
+  lifetimeSpent   Decimal       @default(0) @map("lifetime_spent")  // إجمالي ما تم إنفاقه
 
   // Timestamps
   createdAt       DateTime    @default(now()) @map("created_at")
@@ -2394,9 +2454,9 @@ model WalletTransaction {
 
   // Transaction details
   type            WalletTransactionType
-  amount          Float                     // موجب للإضافة، سالب للخصم
-  balanceBefore   Float                     @map("balance_before")
-  balanceAfter    Float                     @map("balance_after")
+  amount          Decimal                     // موجب للإضافة، سالب للخصم
+  balanceBefore   Decimal                     @map("balance_before")
+  balanceAfter    Decimal                     @map("balance_after")
 
   // Status
   status          WalletTransactionStatus   @default(COMPLETED)
@@ -2544,9 +2604,9 @@ model Escrow {
   sellerId        String        @map("seller_id")
 
   // Amount
-  amount          Float                     // المبلغ بالجنيه أو XCoin
+  amount          Decimal                     // المبلغ بالجنيه أو XCoin
   currency        String        @default("EGP")
-  xcoinAmount     Float?        @map("xcoin_amount")  // مبلغ XCoin إن وجد
+  xcoinAmount     Decimal?        @map("xcoin_amount")  // مبلغ XCoin إن وجد
 
   // Related entities
   transactionId   String?       @map("transaction_id")
@@ -2569,7 +2629,7 @@ model Escrow {
 
   // Facilitator (if any)
   facilitatorId   String?       @map("facilitator_id")
-  facilitatorFee  Float?        @map("facilitator_fee")
+  facilitatorFee  Decimal?        @map("facilitator_fee")
 
   // Notes
   notes           String?
@@ -2651,7 +2711,7 @@ model Dispute {
   evidence        String[]          @default([])  // صور/ملفات إثبات
 
   // Requested outcome
-  requestedAmount Float?            @map("requested_amount")
+  requestedAmount Decimal?            @map("requested_amount")
   requestedOutcome String?          @map("requested_outcome")
 
   // Status
@@ -2659,7 +2719,7 @@ model Dispute {
 
   // Resolution
   resolution      DisputeResolution?
-  resolutionAmount Float?           @map("resolution_amount")
+  resolutionAmount Decimal?           @map("resolution_amount")
   resolutionNotes String?           @map("resolution_notes")
   resolvedBy      String?           @map("resolved_by")
   resolvedAt      DateTime?         @map("resolved_at")
@@ -2676,7 +2736,7 @@ model Dispute {
   updatedAt       DateTime          @updatedAt @map("updated_at")
 
   // Relations
-  escrow          Escrow            @relation(fields: [escrowId], references: [id])
+  escrow          Escrow            @relation(fields: [escrowId], references: [id], onDelete: Cascade)
   messages        DisputeMessage[]
 
   @@map("disputes")
@@ -2964,11 +3024,11 @@ model BarterPool {
   // Target
   targetCategoryId String?          @map("target_category_id")
   targetDescription String          @map("target_description")
-  targetMinValue  Float             @map("target_min_value")
-  targetMaxValue  Float             @map("target_max_value")
+  targetMinValue  Decimal             @map("target_min_value")
+  targetMaxValue  Decimal             @map("target_max_value")
 
   // Pool value
-  currentValue    Float             @default(0) @map("current_value")
+  currentValue    Decimal             @default(0) @map("current_value")
   participantCount Int              @default(0) @map("participant_count")
   maxParticipants Int               @default(10) @map("max_participants")
 
@@ -2981,7 +3041,7 @@ model BarterPool {
   // Matched offer (when found)
   matchedItemId   String?           @map("matched_item_id")
   matchedSellerId String?           @map("matched_seller_id")
-  matchedValue    Float?            @map("matched_value")
+  matchedValue    Decimal?            @map("matched_value")
 
   // Deadline
   deadline        DateTime
@@ -3008,9 +3068,9 @@ model BarterPoolParticipant {
 
   // Contribution
   itemId          String?     @map("item_id")       // الصنف المقدم
-  cashAmount      Float       @default(0) @map("cash_amount")  // مبلغ نقدي
-  xcoinAmount     Float       @default(0) @map("xcoin_amount") // مبلغ XCoin
-  totalValue      Float       @map("total_value")   // إجمالي المساهمة
+  cashAmount      Decimal       @default(0) @map("cash_amount")  // مبلغ نقدي
+  xcoinAmount     Decimal       @default(0) @map("xcoin_amount") // مبلغ XCoin
+  totalValue      Decimal       @map("total_value")   // إجمالي المساهمة
 
   // Share percentage
   sharePercentage Float       @map("share_percentage")  // نسبة الحصة
@@ -3069,16 +3129,16 @@ model Facilitator {
 
   // Commission
   commissionRate  Float               @default(0.03) @map("commission_rate")  // 3% default
-  minCommission   Float               @default(50) @map("min_commission")     // 50 جنيه حد أدنى
+  minCommission   Decimal               @default(50) @map("min_commission")     // 50 جنيه حد أدنى
 
   // Insurance
-  insuranceCoverage Float             @default(10000) @map("insurance_coverage")  // تغطية التأمين
-  insuranceBalance Float              @default(0) @map("insurance_balance")       // رصيد التأمين
+  insuranceCoverage Decimal             @default(10000) @map("insurance_coverage")  // تغطية التأمين
+  insuranceBalance Decimal              @default(0) @map("insurance_balance")       // رصيد التأمين
 
   // Statistics
   totalDeals      Int                 @default(0) @map("total_deals")
   successfulDeals Int                 @default(0) @map("successful_deals")
-  totalVolume     Float               @default(0) @map("total_volume")  // إجمالي قيمة الصفقات
+  totalVolume     Decimal               @default(0) @map("total_volume")  // إجمالي قيمة الصفقات
   avgRating       Float               @default(0) @map("avg_rating")
 
   // Verification
@@ -3128,7 +3188,7 @@ model FacilitatorAssignment {
   status          String      @default("ASSIGNED")  // 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'
 
   // Commission
-  commissionAmount Float      @map("commission_amount")
+  commissionAmount Decimal      @map("commission_amount")
   commissionPaid  Boolean     @default(false) @map("commission_paid")
 
   // Notes
@@ -3194,8 +3254,8 @@ model Referral {
   referralCode    String      @map("referral_code")
 
   // Rewards
-  referrerReward  Float       @default(0) @map("referrer_reward")
-  referredReward  Float       @default(0) @map("referred_reward")
+  referrerReward  Decimal       @default(0) @map("referrer_reward")
+  referredReward  Decimal       @default(0) @map("referred_reward")
 
   // Status
   rewardsClaimed  Boolean     @default(false) @map("rewards_claimed")
@@ -3222,8 +3282,8 @@ model ReferralCode {
   maxUsages       Int?        @map("max_usages")  // null = unlimited
 
   // Rewards
-  referrerReward  Float       @default(100) @map("referrer_reward")  // XCoin للمحيل
-  referredReward  Float       @default(50) @map("referred_reward")   // XCoin للمحال
+  referrerReward  Decimal       @default(100) @map("referrer_reward")  // XCoin للمحيل
+  referredReward  Decimal       @default(50) @map("referred_reward")   // XCoin للمحال
 
   // Status
   isActive        Boolean     @default(true) @map("is_active")
@@ -3261,12 +3321,12 @@ model MarketInsight {
   totalListings   Int         @default(0) @map("total_listings")
   totalDeals      Int         @default(0) @map("total_deals")
   totalBarters    Int         @default(0) @map("total_barters")
-  totalVolume     Float       @default(0) @map("total_volume")
+  totalVolume     Decimal       @default(0) @map("total_volume")
 
   // Price metrics
-  avgPrice        Float?      @map("avg_price")
-  minPrice        Float?      @map("min_price")
-  maxPrice        Float?      @map("max_price")
+  avgPrice        Decimal?      @map("avg_price")
+  minPrice        Decimal?      @map("min_price")
+  maxPrice        Decimal?      @map("max_price")
   priceChange     Float?      @map("price_change")  // % change from previous period
 
   // Demand metrics
@@ -3295,14 +3355,14 @@ model XChangeIndex {
   date            DateTime    @unique
 
   // Index value
-  indexValue      Float       @map("index_value")
-  previousValue   Float?      @map("previous_value")
+  indexValue      Decimal       @map("index_value")
+  previousValue   Decimal?      @map("previous_value")
   changePercent   Float?      @map("change_percent")
 
   // Components
-  barterVolume    Float       @map("barter_volume")
-  directSaleVolume Float      @map("direct_sale_volume")
-  auctionVolume   Float       @map("auction_volume")
+  barterVolume    Decimal       @map("barter_volume")
+  directSaleVolume Decimal      @map("direct_sale_volume")
+  auctionVolume   Decimal       @map("auction_volume")
 
   // Activity metrics
   activeUsers     Int         @map("active_users")
@@ -3336,10 +3396,10 @@ model PricePrediction {
   description     String?
 
   // Prediction results
-  predictedPrice  Float       @map("predicted_price")
+  predictedPrice  Decimal       @map("predicted_price")
   confidenceScore Float       @map("confidence_score")  // 0-100
-  priceRangeMin   Float       @map("price_range_min")
-  priceRangeMax   Float       @map("price_range_max")
+  priceRangeMin   Decimal       @map("price_range_min")
+  priceRangeMax   Decimal       @map("price_range_max")
 
   // Prediction factors
   marketTrend     String?     @map("market_trend")      // 'UP', 'DOWN', 'STABLE'
@@ -3353,7 +3413,7 @@ model PricePrediction {
   modelVersion    String      @map("model_version")
 
   // Recommendations
-  suggestedPrice  Float?      @map("suggested_price")
+  suggestedPrice  Decimal?      @map("suggested_price")
   priceStrategy   String?     @map("price_strategy")    // 'COMPETITIVE', 'PREMIUM', 'VALUE'
   recommendations Json?
 
@@ -3366,7 +3426,7 @@ model PricePrediction {
   expiresAt       DateTime    @map("expires_at")  // Prediction validity
 
   // Relations
-  category        Category    @relation(fields: [categoryId], references: [id])
+  category        Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("price_predictions")
   @@index([categoryId])
@@ -3386,14 +3446,14 @@ model PriceHistory {
   periodType      String      @default("DAILY") @map("period_type")  // 'DAILY', 'WEEKLY', 'MONTHLY'
 
   // Price statistics
-  avgPrice        Float       @map("avg_price")
-  minPrice        Float       @map("min_price")
-  maxPrice        Float       @map("max_price")
-  medianPrice     Float       @map("median_price")
+  avgPrice        Decimal       @map("avg_price")
+  minPrice        Decimal       @map("min_price")
+  maxPrice        Decimal       @map("max_price")
+  medianPrice     Decimal       @map("median_price")
 
   // Volume
   sampleCount     Int         @map("sample_count")
-  totalVolume     Float       @map("total_volume")
+  totalVolume     Decimal       @map("total_volume")
 
   // Trends
   priceChange     Float?      @map("price_change")      // % change from previous period
@@ -3485,7 +3545,7 @@ model UserSubscription {
 
   // Billing
   billingCycle    String              @default("MONTHLY") @map("billing_cycle") // 'MONTHLY', 'YEARLY'
-  currentPrice    Float               @map("current_price")
+  currentPrice    Decimal               @map("current_price")
   currency        String              @default("EGP")
 
   // Dates
@@ -3632,13 +3692,18 @@ model PriceAlert {
   searchQuery     String?     @map("search_query")    // تتبع بحث
 
   // Alert conditions
-  targetPrice     Float?      @map("target_price")    // سعر مستهدف
+  targetPrice     Decimal?      @map("target_price")    // سعر مستهدف
   priceDropPercent Float?     @map("price_drop_percent") // نسبة انخفاض
   alertOnNew      Boolean     @default(true) @map("alert_on_new")  // تنبيه عند إضافة جديد
+  alertType       String      @default("BELOW") @map("alert_type") // BELOW, ABOVE, CHANGE
+
+  // Watchlist notification preferences
+  notifyOnPriceDrop   Boolean   @default(true) @map("notify_on_price_drop")
+  notifyOnBackInStock Boolean   @default(true) @map("notify_on_back_in_stock")
 
   // Additional filters
   minCondition    ItemCondition? @map("min_condition")
-  maxPrice        Float?      @map("max_price")
+  maxPrice        Decimal?      @map("max_price")
   governorate     String?
 
   // Notification preferences
@@ -3658,6 +3723,8 @@ model PriceAlert {
 
   // Relations
   user            User        @relation("UserPriceAlerts", fields: [userId], references: [id], onDelete: Cascade)
+  item            Item?       @relation("ItemPriceAlerts", fields: [itemId], references: [id], onDelete: Cascade)
+  category        Category?   @relation("CategoryPriceAlerts", fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("price_alerts")
   @@index([userId])
@@ -3812,7 +3879,7 @@ model Installment {
 
   // Installment details
   installmentNumber Int             @map("installment_number")
-  amount          Float
+  amount          Decimal
   dueDate         DateTime          @map("due_date")
 
   // Payment
@@ -3882,7 +3949,7 @@ model GroupBuy {
 
   // Current discount
   currentDiscount Float           @default(0) @map("current_discount")
-  currentPrice    Float           @map("current_price")
+  currentPrice    Decimal           @map("current_price")
 
   // Timing
   startDate       DateTime        @map("start_date")
@@ -3999,7 +4066,7 @@ model Warranty {
   durationMonths  Int             @map("duration_months")
 
   // Pricing
-  price           Float           @default(0)   // For extended warranty
+  price           Decimal           @default(0)   // For extended warranty
   isPaid          Boolean         @default(true) @map("is_paid")
 
   // Status
@@ -4660,7 +4727,7 @@ model ScrapDealerVerification {
 model MetalPrice {
   id              String      @id @default(uuid())
   metalType       MetalType   @map("metal_type")
-  pricePerKg      Float       @map("price_per_kg")
+  pricePerKg      Decimal       @map("price_per_kg")
   currency        String      @default("EGP")
   source          String?     // مصدر السعر
   date            DateTime    @db.Date
@@ -4849,6 +4916,61 @@ model AdminActivityLog {
   @@index([action])
   @@index([targetType, targetId])
   @@index([createdAt])
+}
+
+// ============================================
+// Founder System - نظام المؤسس/رئيس مجلس الإدارة
+// ============================================
+
+model Founder {
+  id                String        @id @default(uuid())
+  email             String        @unique
+  passwordHash      String        @map("password_hash")
+  fullName          String        @map("full_name")
+  phone             String?
+  avatar            String?
+  title             String        @default("المؤسس ورئيس مجلس الإدارة")
+  companyName       String        @map("company_name") @default("XChange Egypt")
+
+  // معلومات الأمان
+  lastLoginAt       DateTime?     @map("last_login_at")
+  lastLoginIp       String?       @map("last_login_ip")
+  failedLoginAttempts Int         @default(0) @map("failed_login_attempts")
+  lockedUntil       DateTime?     @map("locked_until")
+
+  // المصادقة الثنائية
+  twoFactorEnabled  Boolean       @default(false) @map("two_factor_enabled")
+  twoFactorSecret   String?       @map("two_factor_secret")
+
+  // Timestamps
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  // Relations - مجلس الإدارة AI
+  boardConversations BoardConversation[]
+  boardMessages      BoardMessage[]
+  boardTasksApproved BoardTask[]
+  boardDecisions     BoardDecision[]
+  refreshTokens      FounderRefreshToken[]
+
+  @@map("founders")
+  @@index([email])
+}
+
+model FounderRefreshToken {
+  id          String    @id @default(uuid())
+  token       String    @unique
+  founderId   String    @map("founder_id")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  ipAddress   String?   @map("ip_address")
+  userAgent   String?   @map("user_agent")
+
+  founder     Founder   @relation(fields: [founderId], references: [id], onDelete: Cascade)
+
+  @@map("founder_refresh_tokens")
+  @@index([founderId])
+  @@index([expiresAt])
 }
 
 // إعدادات المنصة - Platform Settings
@@ -5152,7 +5274,7 @@ model Property {
   priceNegotiable   Boolean             @default(true) @map("price_negotiable")
 
   // التسعير (للإيجار)
-  rentPrice         Float?              @map("rent_price")
+  rentPrice         Decimal?              @map("rent_price")
   rentPeriod        String?             @map("rent_period")
 
   // التقسيط
@@ -5195,7 +5317,7 @@ model Property {
   floorPlanUrl      String?             @map("floor_plan_url")
 
   // التقييم
-  estimatedValue    Float?              @map("estimated_value")
+  estimatedValue    Decimal?              @map("estimated_value")
   lastValuationDate DateTime?           @map("last_valuation_date")
 
   // الوقت
@@ -5296,10 +5418,10 @@ model DeliveryBooking {
   packageDescription String?          @map("package_description")
   isFragile       Boolean             @default(false) @map("is_fragile")
 
-  deliveryCost    Float               @map("delivery_cost")
+  deliveryCost    Decimal               @map("delivery_cost")
   insuranceCost   Float?              @map("insurance_cost")
   codAmount       Float?              @map("cod_amount")
-  totalCost       Float               @map("total_cost")
+  totalCost       Decimal               @map("total_cost")
 
   deliverySpeed   DeliverySpeed?      @map("delivery_speed")
   hasInsurance    Boolean             @default(false) @map("has_insurance")
@@ -5426,7 +5548,7 @@ model LiveAuction {
   streamKey       String?           @map("stream_key")
   viewerCount     Int               @default(0) @map("viewer_count")
   peakViewers     Int               @default(0) @map("peak_viewers")
-  currentBid      Float?            @map("current_bid")
+  currentBid      Decimal?            @map("current_bid")
   currentBidderId String?           @map("current_bidder_id")
   totalBids       Int               @default(0) @map("total_bids")
   status          LiveAuctionStatus @default(SCHEDULED)
@@ -5564,7 +5686,7 @@ model FacilitatorCertification {
   level           CertificationLevel  @default(BRONZE)
   specialization  String[]
   completedDeals  Int                 @map("completed_deals")
-  totalValue      Float               @map("total_value")
+  totalValue      Decimal               @map("total_value")
   avgRating       Float               @map("avg_rating")
   trainingCompleted Boolean           @default(false) @map("training_completed")
   examPassed      Boolean             @default(false) @map("exam_passed")
@@ -6375,7 +6497,7 @@ model CarListing {
 
   // التسعير
   askingPrice         Float                   @map("asking_price")
-  estimatedValue      Float?                  @map("estimated_value")  // التقييم الآلي
+  estimatedValue      Decimal?                  @map("estimated_value")  // التقييم الآلي
   priceNegotiable     Boolean                 @default(true) @map("price_negotiable")
 
   // نوع البائع
@@ -6823,7 +6945,7 @@ model CarInspection {
 model RentalPayment {
   id                String        @id @default(uuid())
   contractId        String        @map("contract_id")
-  amount            Float
+  amount            Decimal
   dueDate           DateTime      @map("due_date")
   paidDate          DateTime?     @map("paid_date")
   status            String        @default("PENDING")
@@ -6853,7 +6975,7 @@ model RentalDispute {
   disputedAmount    Float?        @map("disputed_amount")
   status            String        @default("OPEN")
   resolution        String?
-  resolutionAmount  Float?        @map("resolution_amount")
+  resolutionAmount  Decimal?        @map("resolution_amount")
   resolvedAt        DateTime?     @map("resolved_at")
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
@@ -7998,7 +8120,7 @@ model ServiceQuote {
   status                ServiceQuoteStatus      @default(PENDING)
 
   // السعر
-  price                 Float
+  price                 Decimal
   currency              String                  @default("EGP")
   priceBreakdown        Json?                   @map("price_breakdown")
 
@@ -8065,3 +8187,1476 @@ model MarketplaceNotification {
   @@index([createdAt])
 }
 
+// ============================================
+// AI BOARD OF DIRECTORS - مجلس إدارة AI
+// ============================================
+
+enum BoardRole {
+  CEO
+  CTO
+  CFO
+  CMO
+  COO
+  CLO
+}
+
+enum BoardMemberType {
+  AI
+  HUMAN
+  HYBRID
+}
+
+enum BoardMemberStatus {
+  ACTIVE
+  INACTIVE
+  ON_LEAVE
+}
+
+enum AIModel {
+  OPUS
+  SONNET
+  HAIKU
+}
+
+enum CEOMode {
+  LEADER
+  STRATEGIST
+  VISIONARY
+}
+
+enum BoardConversationType {
+  MEETING
+  QUESTION
+  TASK_DISCUSSION
+  BRAINSTORM
+  REVIEW
+}
+
+enum BoardConversationStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum BoardMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+enum BoardTaskType {
+  ANALYSIS
+  PLANNING
+  RECOMMENDATION
+  EXECUTION
+}
+
+enum BoardTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum BoardTaskStatus {
+  PENDING
+  IN_PROGRESS
+  AWAITING_APPROVAL
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum BoardApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+enum BoardDecisionOutcome {
+  APPROVED
+  REJECTED
+  DEFERRED
+  NEEDS_MORE_INFO
+}
+
+enum BoardVoteType {
+  APPROVE
+  REJECT
+  ABSTAIN
+}
+
+enum BoardFileType {
+  PDF
+  DOCX
+  XLSX
+  PPTX
+  MD
+  JSON
+  CSV
+}
+
+// Board Member (AI or Human)
+model BoardMember {
+  id              String            @id @default(uuid())
+  name            String            // "Karim", "Nadia", etc.
+  nameAr          String            @map("name_ar") // "كريم", "نادية"
+  role            BoardRole
+  type            BoardMemberType   @default(AI)
+  model           AIModel?          // OPUS, SONNET, HAIKU (null if human)
+  status          BoardMemberStatus @default(ACTIVE)
+  avatar          String?           // صورة العضو
+
+  // If human is assigned
+  userId          String?           @map("user_id")
+  user            User?             @relation("BoardMemberUser", fields: [userId], references: [id])
+
+  // AI Assistant (kept when human is assigned)
+  aiAssistantId   String?           @unique @map("ai_assistant_id")
+  aiAssistant     BoardMember?      @relation("HumanAIAssistant", fields: [aiAssistantId], references: [id])
+  humanMember     BoardMember?      @relation("HumanAIAssistant")
+
+  // Personality & expertise
+  systemPrompt    String            @db.Text @map("system_prompt")
+  personality     Json?             // { traits: [], style: "", expertise: [] }
+
+  // Relations
+  messages        BoardMessage[]
+  assignedTasks   BoardTask[]       @relation("BoardTaskAssignedTo")
+  createdTasks    BoardTask[]       @relation("BoardTaskCreatedBy")
+  votes           BoardVote[]
+  outputs         BoardOutput[]
+
+  // Governance Relations - علاقات الحوكمة
+  meetingAttendances    BoardMeetingAttendee[]
+  actionItemsAssigned   ActionItem[]            @relation("ActionItemAssignee")
+  actionItemsCreated    ActionItem[]            @relation("ActionItemAssigner")
+  kpisOwned             KPIMetric[]
+  alertsAssigned        BoardAlert[]            @relation("AlertAssignee")
+  alertsAcknowledged    BoardAlert[]            @relation("AlertAcknowledger")
+  alertsResolved        BoardAlert[]            @relation("AlertResolver")
+  spadeDecisionsMade    BoardDecisionSPADE[]    @relation("SPADEDecisionMaker")
+  spadeDecisionsInitiated BoardDecisionSPADE[]  @relation("SPADEInitiator")
+  spadeConsultations    BoardMemberOnSPADE[]    @relation("SPADEMemberConsultant")
+  alternativesProposed  SPADEAlternative[]      @relation("AlternativeProposer")
+
+  // Autonomous Board Relations - علاقات المجلس الذاتي
+  ideasProposed         InnovationIdea[]        @relation("IdeaProposer")
+  ideasOwned            InnovationIdea[]        @relation("IdeaOwner")
+  dailyReports          BoardMemberDailyReport[]
+
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  @@map("board_members")
+  @@index([role])
+  @@index([type])
+  @@index([status])
+}
+
+// Board Conversation/Meeting
+model BoardConversation {
+  id              String                    @id @default(uuid())
+  type            BoardConversationType     @default(QUESTION)
+  topic           String
+  topicAr         String?                   @map("topic_ar")
+  status          BoardConversationStatus   @default(ACTIVE)
+
+  // Participants - المؤسس فقط
+  founderId       String                    @map("founder_id")
+  founder         Founder                   @relation(fields: [founderId], references: [id])
+
+  // Content
+  messages        BoardMessage[]
+  decisions       BoardDecision[]
+  tasks           BoardTask[]
+
+  // Features activated in this conversation
+  featuresUsed    String[]                  @default([]) @map("features_used")
+
+  // Summary (generated at end)
+  summary         String?                   @db.Text
+  summaryAr       String?                   @db.Text @map("summary_ar")
+
+  // Linked Meeting - اجتماع مرتبط
+  linkedMeeting   BoardMeeting?             @relation("MeetingConversation")
+
+  startedAt       DateTime                  @default(now()) @map("started_at")
+  endedAt         DateTime?                 @map("ended_at")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  @@map("board_conversations")
+  @@index([founderId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Individual Message
+model BoardMessage {
+  id              String                @id @default(uuid())
+  conversationId  String                @map("conversation_id")
+  conversation    BoardConversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  // Sender (member or founder)
+  memberId        String?               @map("member_id")
+  member          BoardMember?          @relation(fields: [memberId], references: [id])
+  founderId       String?               @map("founder_id")
+  founder         Founder?              @relation(fields: [founderId], references: [id])
+
+  role            BoardMessageRole      @default(USER)
+  content         String                @db.Text
+  contentAr       String?               @db.Text @map("content_ar")
+
+  // AI metadata
+  model           AIModel?
+  tokensUsed      Int?                  @map("tokens_used")
+  toolsUsed       String[]              @default([]) @map("tools_used")
+
+  // CEO mode (if applicable)
+  ceoMode         CEOMode?              @map("ceo_mode")
+
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  @@map("board_messages")
+  @@index([conversationId])
+  @@index([memberId])
+  @@index([founderId])
+  @@index([createdAt])
+}
+
+// Task assigned to member(s)
+model BoardTask {
+  id              String                @id @default(uuid())
+  conversationId  String?               @map("conversation_id")
+  conversation    BoardConversation?    @relation(fields: [conversationId], references: [id])
+
+  title           String
+  titleAr         String?               @map("title_ar")
+  description     String                @db.Text
+  descriptionAr   String?               @db.Text @map("description_ar")
+
+  type            BoardTaskType         @default(ANALYSIS)
+  priority        BoardTaskPriority     @default(MEDIUM)
+  status          BoardTaskStatus       @default(PENDING)
+
+  // Assignment
+  assignedToId    String                @map("assigned_to_id")
+  assignedTo      BoardMember           @relation("BoardTaskAssignedTo", fields: [assignedToId], references: [id])
+  createdById     String                @map("created_by_id")
+  createdBy       BoardMember           @relation("BoardTaskCreatedBy", fields: [createdById], references: [id])
+
+  // Approval - المؤسس يوافق على المهام
+  requiresApproval Boolean              @default(true) @map("requires_approval")
+  approvalStatus  BoardApprovalStatus?  @map("approval_status")
+  approvedById    String?               @map("approved_by_id")
+  approvedBy      Founder?              @relation(fields: [approvedById], references: [id])
+  approvedAt      DateTime?             @map("approved_at")
+  rejectionReason String?               @map("rejection_reason")
+
+  // Output
+  outputs         BoardOutput[]
+
+  dueDate         DateTime?             @map("due_date")
+  completedAt     DateTime?             @map("completed_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  @@map("board_tasks")
+  @@index([conversationId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+// Decision made by board
+model BoardDecision {
+  id              String                @id @default(uuid())
+  conversationId  String                @map("conversation_id")
+  conversation    BoardConversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  topic           String
+  topicAr         String?               @map("topic_ar")
+  description     String                @db.Text
+  descriptionAr   String?               @db.Text @map("description_ar")
+
+  // Voting
+  votes           BoardVote[]
+  outcome         BoardDecisionOutcome?
+
+  // Founder final decision - قرار المؤسس النهائي
+  founderDecision BoardDecisionOutcome? @map("founder_decision")
+  founderNotes    String?               @map("founder_notes")
+  decidedById     String?               @map("decided_by_id")
+  decidedBy       Founder?              @relation(fields: [decidedById], references: [id])
+  decidedAt       DateTime?             @map("decided_at")
+
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  @@map("board_decisions")
+  @@index([conversationId])
+  @@index([outcome])
+  @@index([createdAt])
+}
+
+// Vote from board member
+model BoardVote {
+  id              String                @id @default(uuid())
+  decisionId      String                @map("decision_id")
+  decision        BoardDecision         @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+  memberId        String                @map("member_id")
+  member          BoardMember           @relation(fields: [memberId], references: [id])
+
+  vote            BoardVoteType
+  reasoning       String                @db.Text
+  reasoningAr     String?               @db.Text @map("reasoning_ar")
+
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  @@unique([decisionId, memberId])
+  @@map("board_votes")
+  @@index([decisionId])
+  @@index([memberId])
+}
+
+// Output file generated
+model BoardOutput {
+  id              String                @id @default(uuid())
+  taskId          String                @map("task_id")
+  task            BoardTask             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  title           String
+  titleAr         String?               @map("title_ar")
+  fileType        BoardFileType         @map("file_type")
+  filePath        String                @map("file_path")
+  fileSize        Int?                  @map("file_size")
+
+  generatedById   String                @map("generated_by_id")
+  generatedBy     BoardMember           @relation(fields: [generatedById], references: [id])
+
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  @@map("board_outputs")
+  @@index([taskId])
+  @@index([generatedById])
+}
+
+// ============================================
+// BOARD GOVERNANCE SYSTEM - اجتماعات، KPIs، تنبيهات، SPADE
+// ============================================
+
+// Meeting Type - أنواع الاجتماعات
+enum BoardMeetingType {
+  STANDUP       // يومي - 15 دقيقة
+  WEEKLY        // أسبوعي - ساعة
+  MONTHLY       // شهري - نصف يوم
+  QUARTERLY     // ربع سنوي - يوم كامل
+  EMERGENCY     // طوارئ - فوري
+}
+
+// Meeting Status
+enum BoardMeetingStatus {
+  SCHEDULED     // مجدول
+  IN_PROGRESS   // جاري
+  COMPLETED     // مكتمل
+  CANCELLED     // ملغي
+}
+
+// Board Meeting - الاجتماعات
+model BoardMeeting {
+  id              String                  @id @default(uuid())
+  meetingNumber   String                  @unique @map("meeting_number")  // STD-2025-001
+  type            BoardMeetingType
+  status          BoardMeetingStatus      @default(SCHEDULED)
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String?                 @db.Text
+  descriptionAr   String?                 @db.Text @map("description_ar")
+
+  // Agenda - جدول الأعمال
+  agenda          Json?                   // قائمة بنود الأجندة
+  agendaTemplateId String?                @map("agenda_template_id")
+
+  // Time - Africa/Cairo timezone
+  scheduledAt     DateTime                @map("scheduled_at")
+  startedAt       DateTime?               @map("started_at")
+  endedAt         DateTime?               @map("ended_at")
+  duration        Int?                    // بالدقائق
+
+  // Participants - المشاركون
+  attendees       BoardMeetingAttendee[]
+
+  // Trigger - سبب الاجتماع (للطوارئ)
+  triggerAlertId  String?                 @unique @map("trigger_alert_id")
+  triggerAlert    BoardAlert?             @relation("MeetingTrigger", fields: [triggerAlertId], references: [id])
+
+  // Outcome - النتائج
+  summary         String?                 @db.Text
+  summaryAr       String?                 @db.Text @map("summary_ar")
+  actionItems     ActionItem[]
+  decisions       BoardDecisionSPADE[]    @relation("MeetingDecisions")
+
+  // Linked conversation
+  conversationId  String?                 @unique @map("conversation_id")
+  conversation    BoardConversation?      @relation("MeetingConversation", fields: [conversationId], references: [id])
+
+  // Autonomous Board Relations
+  intelligence    MorningIntelligence?    @relation("IntelligenceMeeting")
+  meetingMinutes  MeetingMinutes?         @relation("MeetingMOM")
+  autonomousSession AutonomousMeetingSession? @relation("AutonomousSession")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("board_meetings")
+  @@index([type])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+// Meeting Attendee - حضور الاجتماع
+model BoardMeetingAttendee {
+  id              String                  @id @default(uuid())
+  meetingId       String                  @map("meeting_id")
+  meeting         BoardMeeting            @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  memberId        String                  @map("member_id")
+  member          BoardMember             @relation(fields: [memberId], references: [id])
+
+  attended        Boolean                 @default(false)
+  joinedAt        DateTime?               @map("joined_at")
+  leftAt          DateTime?               @map("left_at")
+  notes           String?                 @db.Text
+
+  @@unique([meetingId, memberId])
+  @@map("board_meeting_attendees")
+  @@index([meetingId])
+  @@index([memberId])
+}
+
+// Action Item Status
+enum ActionItemStatus {
+  PENDING         // في الانتظار
+  IN_PROGRESS     // جاري التنفيذ
+  COMPLETED       // مكتمل
+  OVERDUE         // متأخر
+  CANCELLED       // ملغي
+}
+
+// Action Item Priority
+enum ActionItemPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Action Item - بنود العمل من الاجتماعات
+model ActionItem {
+  id              String                  @id @default(uuid())
+  itemNumber      String                  @unique @map("item_number")  // ACT-2025-001
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String?                 @db.Text
+  descriptionAr   String?                 @db.Text @map("description_ar")
+
+  status          ActionItemStatus        @default(PENDING)
+  priority        ActionItemPriority      @default(MEDIUM)
+
+  // Assignment - التكليف
+  assigneeId      String                  @map("assignee_id")
+  assignee        BoardMember             @relation("ActionItemAssignee", fields: [assigneeId], references: [id])
+  assignedById    String                  @map("assigned_by_id")
+  assignedBy      BoardMember             @relation("ActionItemAssigner", fields: [assignedById], references: [id])
+
+  // Source - المصدر
+  meetingId       String?                 @map("meeting_id")
+  meeting         BoardMeeting?           @relation(fields: [meetingId], references: [id])
+  decisionId      String?                 @map("decision_id")
+  decision        BoardDecisionSPADE?     @relation(fields: [decisionId], references: [id])
+
+  // Dates
+  dueDate         DateTime                @map("due_date")
+  completedAt     DateTime?               @map("completed_at")
+
+  // Progress
+  progress        Int                     @default(0)  // 0-100
+  notes           String?                 @db.Text
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("action_items")
+  @@index([status])
+  @@index([priority])
+  @@index([assigneeId])
+  @@index([dueDate])
+}
+
+// KPI Status - حالة المؤشر
+enum KPIStatus {
+  GREEN           // ممتاز - ضمن الهدف
+  YELLOW          // تحذير - قريب من الحد
+  RED             // خطر - تجاوز الحد
+}
+
+// KPI Category - فئة المؤشر
+enum KPICategory {
+  FINANCIAL       // مالي
+  OPERATIONAL     // تشغيلي
+  CUSTOMER        // عملاء
+  TECHNICAL       // تقني
+  GROWTH          // نمو
+  LEGAL           // قانوني
+}
+
+// KPI Metric - مؤشرات الأداء
+model KPIMetric {
+  id              String                  @id @default(uuid())
+  code            String                  @unique                 // GMV, CAC, NPS, etc.
+
+  name            String
+  nameAr          String                  @map("name_ar")
+  description     String?                 @db.Text
+  descriptionAr   String?                 @db.Text @map("description_ar")
+
+  category        KPICategory
+  unit            String?                                         // %, EGP, عدد, etc.
+
+  // Current Value - القيمة الحالية
+  currentValue    Decimal                   @map("current_value")
+  previousValue   Decimal?                  @map("previous_value")  // القيمة السابقة للمقارنة
+
+  // Thresholds - العتبات
+  targetValue     Float                   @map("target_value")    // الهدف
+  warningThreshold Float                  @map("warning_threshold")  // عتبة التحذير (YELLOW)
+  criticalThreshold Float                 @map("critical_threshold") // عتبة الخطر (RED)
+  thresholdDirection String               @default("above") @map("threshold_direction") // above = أعلى أفضل, below = أقل أفضل
+
+  // Status
+  status          KPIStatus               @default(GREEN)
+  trend           String?                 // up, down, stable
+  trendPercentage Float?                  @map("trend_percentage")
+
+  // Owner - المسؤول
+  ownerId         String                  @map("owner_id")
+  owner           BoardMember             @relation(fields: [ownerId], references: [id])
+
+  // History
+  history         KPIHistory[]
+  alerts          BoardAlert[]            @relation("KPIAlerts")
+
+  // Refresh
+  lastUpdatedAt   DateTime                @map("last_updated_at")
+  refreshInterval Int                     @default(86400) @map("refresh_interval") // بالثواني - افتراضي يوم
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("kpi_metrics")
+  @@index([category])
+  @@index([status])
+  @@index([ownerId])
+}
+
+// KPI History - سجل المؤشرات
+model KPIHistory {
+  id              String                  @id @default(uuid())
+  kpiId           String                  @map("kpi_id")
+  kpi             KPIMetric               @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+
+  value           Float
+  status          KPIStatus
+  recordedAt      DateTime                @default(now()) @map("recorded_at")
+
+  @@map("kpi_history")
+  @@index([kpiId])
+  @@index([recordedAt])
+}
+
+// Alert Severity - خطورة التنبيه
+enum AlertSeverity {
+  INFO            // معلومات
+  WARNING         // تحذير
+  CRITICAL        // حرج
+  EMERGENCY       // طوارئ
+}
+
+// Alert Status
+enum AlertStatus {
+  ACTIVE          // نشط
+  ACKNOWLEDGED    // تم الاستلام
+  RESOLVED        // تم الحل
+  DISMISSED       // تم التجاهل
+}
+
+// Board Alert - التنبيهات
+model BoardAlert {
+  id              String                  @id @default(uuid())
+  alertNumber     String                  @unique @map("alert_number")  // ALT-2025-001
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String                  @db.Text
+  descriptionAr   String                  @db.Text @map("description_ar")
+
+  severity        AlertSeverity
+  status          AlertStatus             @default(ACTIVE)
+
+  // Source - مصدر التنبيه
+  sourceType      String                  @map("source_type")     // KPI, SYSTEM, MANUAL
+  sourceId        String?                 @map("source_id")
+
+  // Linked KPI
+  kpiId           String?                 @map("kpi_id")
+  kpi             KPIMetric?              @relation("KPIAlerts", fields: [kpiId], references: [id])
+
+  // Triggered Meeting - اجتماع طوارئ
+  triggeredMeeting BoardMeeting?          @relation("MeetingTrigger")
+
+  // Assignment
+  assignedToId    String?                 @map("assigned_to_id")
+  assignedTo      BoardMember?            @relation("AlertAssignee", fields: [assignedToId], references: [id])
+
+  // Response
+  acknowledgedById String?                @map("acknowledged_by_id")
+  acknowledgedBy  BoardMember?            @relation("AlertAcknowledger", fields: [acknowledgedById], references: [id])
+  acknowledgedAt  DateTime?               @map("acknowledged_at")
+
+  resolvedById    String?                 @map("resolved_by_id")
+  resolvedBy      BoardMember?            @relation("AlertResolver", fields: [resolvedById], references: [id])
+  resolvedAt      DateTime?               @map("resolved_at")
+  resolution      String?                 @db.Text
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("board_alerts")
+  @@index([severity])
+  @@index([status])
+  @@index([kpiId])
+  @@index([createdAt])
+}
+
+// SPADE Role - أدوار إطار SPADE
+enum SPADERole {
+  SETTING         // S - تحديد السياق
+  PEOPLE          // P - تحديد المشاركين
+  ALTERNATIVES    // A - توليد البدائل
+  DECIDE          // D - اتخاذ القرار
+  EXPLAIN         // E - شرح القرار
+}
+
+// SPADE Status
+enum SPADEStatus {
+  INITIATED       // بدأ
+  SETTING_PHASE   // مرحلة تحديد السياق
+  PEOPLE_PHASE    // مرحلة تحديد المشاركين
+  ALTERNATIVES_PHASE // مرحلة البدائل
+  DECIDE_PHASE    // مرحلة القرار
+  EXPLAIN_PHASE   // مرحلة الشرح
+  COMPLETED       // مكتمل
+  CANCELLED       // ملغي
+}
+
+// Board Decision SPADE - قرارات بإطار SPADE
+model BoardDecisionSPADE {
+  id              String                  @id @default(uuid())
+  decisionNumber  String                  @unique @map("decision_number")  // DEC-2025-001
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String                  @db.Text
+  descriptionAr   String                  @db.Text @map("description_ar")
+
+  status          SPADEStatus             @default(INITIATED)
+  currentPhase    SPADERole               @default(SETTING) @map("current_phase")
+
+  // S - Setting (السياق)
+  context         String?                 @db.Text
+  contextAr       String?                 @db.Text @map("context_ar")
+  constraints     Json?                   // القيود
+  deadline        DateTime?               // موعد القرار
+
+  // P - People (المشاركين)
+  decisionMakerId String                  @map("decision_maker_id")  // صاحب القرار النهائي
+  decisionMaker   BoardMember             @relation("SPADEDecisionMaker", fields: [decisionMakerId], references: [id])
+  consultants     BoardMemberOnSPADE[]    @relation("SPADEConsultants")
+
+  // A - Alternatives (البدائل)
+  alternatives    SPADEAlternative[]
+
+  // D - Decide (القرار)
+  selectedAlternativeId String?           @map("selected_alternative_id")
+  selectedAlternative   SPADEAlternative? @relation("SelectedAlternative", fields: [selectedAlternativeId], references: [id])
+  decidedAt       DateTime?               @map("decided_at")
+
+  // E - Explain (الشرح)
+  explanation     String?                 @db.Text
+  explanationAr   String?                 @db.Text @map("explanation_ar")
+  communicationPlan String?               @db.Text @map("communication_plan")
+
+  // Action Items - بنود العمل
+  actionItems     ActionItem[]
+
+  // Meeting
+  meetingId       String?                 @map("meeting_id")
+  meeting         BoardMeeting?           @relation("MeetingDecisions", fields: [meetingId], references: [id])
+
+  // Metadata
+  initiatedById   String                  @map("initiated_by_id")
+  initiatedBy     BoardMember             @relation("SPADEInitiator", fields: [initiatedById], references: [id])
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("board_decisions_spade")
+  @@index([status])
+  @@index([currentPhase])
+  @@index([decisionMakerId])
+}
+
+// SPADE Consultant - مستشار في قرار SPADE
+model BoardMemberOnSPADE {
+  id              String                  @id @default(uuid())
+  decisionId      String                  @map("decision_id")
+  decision        BoardDecisionSPADE      @relation("SPADEConsultants", fields: [decisionId], references: [id], onDelete: Cascade)
+  memberId        String                  @map("member_id")
+  member          BoardMember             @relation("SPADEMemberConsultant", fields: [memberId], references: [id])
+
+  role            String?                 // Approver, Contributor, Informed
+  opinion         String?                 @db.Text
+  opinionAr       String?                 @db.Text @map("opinion_ar")
+  votedFor        String?                 @map("voted_for")       // ID of alternative they support
+
+  @@unique([decisionId, memberId])
+  @@map("board_member_on_spade")
+  @@index([decisionId])
+  @@index([memberId])
+}
+
+// SPADE Alternative - بديل في إطار SPADE
+model SPADEAlternative {
+  id              String                  @id @default(uuid())
+  decisionId      String                  @map("decision_id")
+  decision        BoardDecisionSPADE      @relation(fields: [decisionId], references: [id], onDelete: Cascade)
+
+  title           String
+  titleAr         String                  @map("title_ar")
+  description     String                  @db.Text
+  descriptionAr   String                  @db.Text @map("description_ar")
+
+  // Analysis
+  pros            Json?                   // المميزات
+  cons            Json?                   // العيوب
+  risks           Json?                   // المخاطر
+  cost            Float?                  // التكلفة التقديرية
+  timeEstimate    String?                 @map("time_estimate")   // الوقت المتوقع
+
+  // Scoring
+  score           Float?                  // النتيجة الإجمالية
+  votes           Int                     @default(0)
+
+  // Proposed by
+  proposedById    String                  @map("proposed_by_id")
+  proposedBy      BoardMember             @relation("AlternativeProposer", fields: [proposedById], references: [id])
+
+  // Selected
+  selectedIn      BoardDecisionSPADE[]    @relation("SelectedAlternative")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+
+  @@map("spade_alternatives")
+  @@index([decisionId])
+  @@index([proposedById])
+}
+
+// ============================================
+// 🤖 AUTONOMOUS AI BOARD SYSTEM - نظام المجلس الذاتي
+// ============================================
+
+// Enums for Autonomous Board
+enum MOMApprovalStatus {
+  PENDING
+  APPROVED
+  PARTIALLY_APPROVED
+  REJECTED
+  DISCUSSION_REQUESTED
+}
+
+enum IntelligenceSignalType {
+  OPPORTUNITY
+  THREAT
+  ANOMALY
+  TREND
+  URGENT
+}
+
+enum IdeaStatus {
+  PROPOSED
+  UNDER_REVIEW
+  APPROVED
+  IN_PROGRESS
+  IMPLEMENTED
+  REJECTED
+  DEFERRED
+}
+
+enum ThreatLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ScanType {
+  MARKET
+  REGULATORY
+  TECHNOLOGY
+  ECONOMIC
+  CONSUMER
+  COMPETITIVE
+}
+
+enum DecisionType {
+  TYPE_1_STRATEGIC   // Requires founder approval
+  TYPE_2_OPERATIONAL // Auto-executes after 4 hours
+}
+
+// ============================================
+// Morning Intelligence - الاستخبارات الصباحية
+// ============================================
+model MorningIntelligence {
+  id              String                  @id @default(uuid())
+  reportNumber    String                  @unique @map("report_number") // INT-2025-001
+  date            DateTime                @default(now())
+
+  // KPI Snapshot - لقطة المؤشرات
+  kpiSnapshot     Json                    @map("kpi_snapshot")     // { code: value, status, change% }
+
+  // Anomalies - الانحرافات
+  anomalies       Json?                   // [{ kpi, deviation%, severity, explanation }]
+
+  // Signals - الإشارات
+  opportunities   Json?                   // [{ title, description, priority, source }]
+  threats         Json?                   // [{ title, description, severity, source }]
+  internalIssues  Json?                   @map("internal_issues") // [{ title, description, department }]
+
+  // Generated Agenda - جدول الأعمال المقترح
+  suggestedAgenda Json?                   @map("suggested_agenda") // [{ topic, priority, estimatedTime }]
+
+  // AI Analysis - تحليل الذكاء الاصطناعي
+  executiveSummary    String?             @db.Text @map("executive_summary")
+  executiveSummaryAr  String?             @db.Text @map("executive_summary_ar")
+  keyInsights         Json?               @map("key_insights")
+  recommendedActions  Json?               @map("recommended_actions")
+
+  // Status
+  processedAt     DateTime?               @map("processed_at")
+  ceoReviewedAt   DateTime?               @map("ceo_reviewed_at")
+
+  // Link to meeting
+  meetingId       String?                 @unique @map("meeting_id")
+  meeting         BoardMeeting?           @relation("IntelligenceMeeting", fields: [meetingId], references: [id])
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("morning_intelligence")
+  @@index([date])
+}
+
+// ============================================
+// Environment Scan - المسح البيئي الخارجي
+// ============================================
+model EnvironmentScan {
+  id              String                  @id @default(uuid())
+  scanNumber      String                  @unique @map("scan_number") // SCAN-2025-W05-SUN
+  weekNumber      Int                     @map("week_number")
+  dayOfWeek       String                  @map("day_of_week")      // SUN or WED
+  date            DateTime                @default(now())
+
+  // Market Intelligence - ذكاء السوق
+  marketTrends    Json?                   @map("market_trends")    // [{ trend, impact, source }]
+  competitorMoves Json?                   @map("competitor_moves") // [{ competitor, move, threat_level }]
+
+  // Regulatory Monitoring - المراقبة التنظيمية
+  regulatoryChanges Json?                 @map("regulatory_changes") // [{ change, impact, deadline }]
+
+  // Technology Trends - اتجاهات التكنولوجيا
+  techTrends      Json?                   @map("tech_trends")      // [{ trend, relevance, adoption_timeline }]
+
+  // Economic Indicators - المؤشرات الاقتصادية
+  economicIndicators Json?                @map("economic_indicators") // { exchangeRate, inflation, marketSentiment }
+
+  // Consumer Behavior - سلوك المستهلك
+  consumerInsights Json?                  @map("consumer_insights") // [{ insight, source, actionable }]
+
+  // SWOT Update - تحديث SWOT
+  swotAnalysis    Json?                   @map("swot_analysis")    // { strengths, weaknesses, opportunities, threats }
+
+  // Strategic Recommendations
+  strategicRecommendations Json?          @map("strategic_recommendations")
+  urgentActions   Json?                   @map("urgent_actions")
+
+  // Scan Metadata
+  sourcesUsed     Json?                   @map("sources_used")     // [{ source, reliability }]
+  confidenceLevel Float?                  @map("confidence_level") // 0-100%
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("environment_scans")
+  @@index([date])
+  @@index([weekNumber])
+}
+
+// ============================================
+// Meeting Minutes (MOM) - محاضر الاجتماعات
+// ============================================
+model MeetingMinutes {
+  id              String                  @id @default(uuid())
+  momNumber       String                  @unique @map("mom_number") // MOM-2025-001-AM
+  meetingType     String                  @map("meeting_type")     // MORNING or AFTERNOON
+  date            DateTime                @default(now())
+
+  // Link to BoardMeeting
+  meetingId       String                  @unique @map("meeting_id")
+  meeting         BoardMeeting            @relation("MeetingMOM", fields: [meetingId], references: [id])
+
+  // Situation Summary - ملخص الوضع
+  situationSummary    String?             @db.Text @map("situation_summary")
+  situationSummaryAr  String?             @db.Text @map("situation_summary_ar")
+  kpiHighlights       Json?               @map("kpi_highlights")   // [{ code, status, flag }]
+
+  // Signals Discussed - الإشارات المناقشة
+  signalsDiscussed    Json?               @map("signals_discussed") // [{ type, title, discussion, resolution }]
+
+  // Discussion Log - سجل النقاش
+  discussionLog       Json?               @map("discussion_log")   // [{ speaker, role, content, timestamp }]
+
+  // Decisions Made - القرارات المتخذة
+  decisions           Json?               // [{ id, type, title, rationale, owner, deadline, votes }]
+
+  // Action Items - بنود العمل
+  actionItemsSummary  Json?               @map("action_items_summary") // [{ id, task, owner, deadline, priority }]
+
+  // Innovation Section - قسم الابتكار
+  innovationScore     Int?                @map("innovation_score") @default(0) // 1-10
+  ideasGenerated      Int?                @map("ideas_generated") @default(0)
+
+  // Approval Workflow - سير الموافقة
+  approvalStatus      MOMApprovalStatus   @default(PENDING) @map("approval_status")
+  approvalDeadline    DateTime?           @map("approval_deadline") // 4-hour SLA for Type 2
+  approvedAt          DateTime?           @map("approved_at")
+  approvedById        String?             @map("approved_by_id")
+  approvalNotes       String?             @db.Text @map("approval_notes")
+
+  // Auto-execution for Type 2 decisions
+  autoExecutedAt      DateTime?           @map("auto_executed_at")
+
+  // Notifications sent
+  remindersSent       Int                 @default(0) @map("reminders_sent")
+  lastReminderAt      DateTime?           @map("last_reminder_at")
+
+  // Related Ideas
+  ideas               InnovationIdea[]    @relation("MOMIdeas")
+
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+
+  @@map("meeting_minutes")
+  @@index([date])
+  @@index([approvalStatus])
+}
+
+// ============================================
+// Innovation Ideas - أفكار الابتكار
+// ============================================
+model InnovationIdea {
+  id              String                  @id @default(uuid())
+  ideaNumber      String                  @unique @map("idea_number") // IDEA-2025-034
+
+  // Idea Details
+  title           String
+  titleAr         String?                 @map("title_ar")
+  description     String                  @db.Text
+  descriptionAr   String?                 @db.Text @map("description_ar")
+
+  // Source - from which meeting/technique
+  sourceType      String                  @map("source_type")      // 10X_THINKING, CROSS_POLLINATION, CUSTOMER_OBSESSION, etc.
+  momId           String?                 @map("mom_id")
+  mom             MeetingMinutes?         @relation("MOMIdeas", fields: [momId], references: [id])
+
+  // Proposer
+  proposedById    String                  @map("proposed_by_id")
+  proposedBy      BoardMember             @relation("IdeaProposer", fields: [proposedById], references: [id])
+
+  // Scoring
+  feasibilityScore    Int?                @map("feasibility_score")  // 1-10
+  innovationScore     Int?                @map("innovation_score")   // 1-10
+  impactScore         Int?                @map("impact_score")       // 1-10
+  overallScore        Float?              @map("overall_score")
+
+  // Status
+  status          IdeaStatus              @default(PROPOSED)
+
+  // Implementation
+  ownerId         String?                 @map("owner_id")
+  owner           BoardMember?            @relation("IdeaOwner", fields: [ownerId], references: [id])
+  implementationPlan  String?             @db.Text @map("implementation_plan")
+  implementedAt   DateTime?               @map("implemented_at")
+
+  // Results (if implemented)
+  results         String?                 @db.Text
+  impactMeasured  Json?                   @map("impact_measured")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("innovation_ideas")
+  @@index([status])
+  @@index([proposedById])
+}
+
+// ============================================
+// Competitor Watch - مراقبة المنافسين
+// ============================================
+model CompetitorWatch {
+  id              String                  @id @default(uuid())
+
+  // Competitor Info
+  competitorName  String                  @map("competitor_name")  // OLX, Noon, Amazon, Jumia, Dubizzle
+  competitorType  String                  @map("competitor_type")  // DIRECT, INDIRECT, EMERGING
+
+  // Intelligence
+  lastActivity    String?                 @db.Text @map("last_activity")
+  activityDate    DateTime?               @map("activity_date")
+
+  // Threat Assessment
+  threatLevel     ThreatLevel             @default(MEDIUM) @map("threat_level")
+  marketShare     Float?                  @map("market_share")     // Estimated %
+
+  // Comparative Analysis
+  strengths       Json?                   // What they do better
+  weaknesses      Json?                   // What we do better
+  pricing         Json?                   // Pricing comparison
+  features        Json?                   // Feature comparison
+
+  // Strategic Response
+  recommendedResponse String?             @db.Text @map("recommended_response")
+  urgency         String?                 // LOW, MEDIUM, HIGH, IMMEDIATE
+
+  // Tracking
+  lastScannedAt   DateTime?               @map("last_scanned_at")
+  dataSource      String?                 @map("data_source")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("competitor_watch")
+  @@index([competitorName])
+  @@index([threatLevel])
+}
+
+// ============================================
+// Daily Closing Report - تقرير الإغلاق اليومي
+// ============================================
+model DailyClosingReport {
+  id              String                  @id @default(uuid())
+  reportNumber    String                  @unique @map("report_number") // CLO-2025-001
+  date            DateTime                @default(now())
+
+  // Summary
+  executiveSummary    String?             @db.Text @map("executive_summary")
+  executiveSummaryAr  String?             @db.Text @map("executive_summary_ar")
+
+  // KPIs End of Day
+  kpiEndOfDay     Json?                   @map("kpi_end_of_day")
+  kpiChanges      Json?                   @map("kpi_changes")      // Changes from morning
+
+  // Meetings Summary
+  meetingsHeld    Int                     @default(0) @map("meetings_held")
+  decisionsCount  Int                     @default(0) @map("decisions_count")
+  actionItemsCreated Int                  @default(0) @map("action_items_created")
+  ideasGenerated  Int                     @default(0) @map("ideas_generated")
+
+  // Approval Status
+  pendingApprovals    Int                 @default(0) @map("pending_approvals")
+  approvedToday       Int                 @default(0) @map("approved_today")
+  autoExecuted        Int                 @default(0) @map("auto_executed")
+
+  // Tomorrow Preview
+  tomorrowAgenda  Json?                   @map("tomorrow_agenda")
+  tomorrowAlerts  Json?                   @map("tomorrow_alerts")
+
+  // Founder Interaction
+  founderInteractionMinutes Int?          @map("founder_interaction_minutes")
+  founderDecisions    Int?                @map("founder_decisions")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("daily_closing_reports")
+  @@index([date])
+}
+
+// ============================================
+// Autonomous Meeting Session - جلسة الاجتماع الذاتي
+// ============================================
+model AutonomousMeetingSession {
+  id              String                  @id @default(uuid())
+  sessionNumber   String                  @unique @map("session_number") // SES-2025-001-AM
+
+  // Meeting Details
+  meetingId       String                  @unique @map("meeting_id")
+  meeting         BoardMeeting            @relation("AutonomousSession", fields: [meetingId], references: [id])
+
+  // Participants (AI Board Members)
+  participants    Json                    // [{ memberId, role, joinedAt, leftAt }]
+
+  // Discussion Phases
+  currentPhase    String?                 @map("current_phase")    // OPENING, SITUATION, SIGNALS, DECISIONS, INNOVATION, CLOSING
+  phaseHistory    Json?                   @map("phase_history")    // [{ phase, startedAt, endedAt, summary }]
+
+  // AI Interactions
+  messageCount    Int                     @default(0) @map("message_count")
+  totalTokensUsed Int                     @default(0) @map("total_tokens_used")
+
+  // Innovation Techniques Used
+  techniquesUsed  Json?                   @map("techniques_used")  // [{ technique, result }]
+
+  // Role Rotation
+  currentRoles    Json?                   @map("current_roles")    // { dreamer, devilsAdvocate, realist, oracle }
+
+  // Status
+  status          String                  @default("IN_PROGRESS")
+  startedAt       DateTime                @default(now()) @map("started_at")
+  endedAt         DateTime?               @map("ended_at")
+  duration        Int?                    // in minutes
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("autonomous_meeting_sessions")
+  @@index([status])
+}
+
+// ============================================
+// Board Member Daily Report - تقرير عضو المجلس اليومي
+// ============================================
+
+enum BoardMemberReportType {
+  CONTENT_PACKAGE     // حزمة المحتوى - يوسف
+  FINANCIAL_REPORT    // التقرير المالي - ليلى
+  OPERATIONS_REPORT   // تقرير العمليات - عمر
+  LEGAL_REPORT        // تقرير قانوني - هنا
+  TECHNICAL_REPORT    // تقرير تقني - نادية
+  STRATEGIC_REPORT    // تقرير استراتيجي - كريم
+}
+
+model BoardMemberDailyReport {
+  id              String                  @id @default(uuid())
+  reportNumber    String                  @unique @map("report_number") // CMO-2025-001
+
+  // Report Type and Author
+  type            BoardMemberReportType
+  memberId        String                  @map("member_id")
+  member          BoardMember             @relation(fields: [memberId], references: [id])
+  memberRole      String                  @map("member_role") // CEO, CTO, CFO, CMO, COO, CLO
+
+  // Timing
+  date            DateTime                @default(now())
+  scheduledTime   String?                 @map("scheduled_time") // "07:00", "07:30", "17:00"
+
+  // Content
+  title           String
+  titleAr         String?                 @map("title_ar")
+  summary         String?                 @db.Text
+  summaryAr       String?                 @map("summary_ar") @db.Text
+  content         Json                    // Full report content as JSON
+
+  // Metrics
+  keyMetrics      Json?                   @map("key_metrics") // { metric: value, ... }
+  alerts          Json?                   // [{ type, message, severity }]
+  insights        Json?                   // [{ insight, importance }]
+  recommendations Json?                   // [{ recommendation, priority }]
+
+  // Status
+  status          String                  @default("GENERATED") // GENERATING, GENERATED, REVIEWED, FAILED
+  generatedAt     DateTime?               @map("generated_at")
+  reviewedAt      DateTime?               @map("reviewed_at")
+  reviewedBy      String?                 @map("reviewed_by")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("board_member_daily_reports")
+  @@index([date])
+  @@index([memberId])
+  @@index([type])
+  @@index([memberRole])
+}
+
+
+// ============================================
+// Tender Service Request - طلب خدمة المناقصة
+// ============================================
+model TenderServiceRequest {
+  id                    String                  @id @default(uuid())
+  referenceNumber       String                  @unique @map("reference_number") // SR-2025-000001
+  requesterId           String                  @map("requester_id")
+
+  // معلومات الطلب
+  title                 String
+  titleAr               String?                 @map("title_ar")
+  description           String                  @db.Text
+  descriptionAr         String?                 @map("description_ar") @db.Text
+
+  // التصنيف
+  category              TenderCategory          @default(OTHER)
+
+  // الميزانية
+  budgetMin             Float?                  @map("budget_min")
+  budgetMax             Float?                  @map("budget_max")
+  currency              String                  @default("EGP")
+
+  // الموقع
+  governorate           String
+  city                  String?
+  district              String?
+
+  // الإلحاح والمواعيد
+  urgency               TenderUrgency           @default(NORMAL)
+  deadline              DateTime?
+  expectedStartDate     DateTime?               @map("expected_start_date")
+  expectedDuration      String?                 @map("expected_duration") // "2 weeks", "1 month"
+
+  // المتطلبات
+  requirements          Json?                   // [{ requirement, mandatory: true/false }]
+  attachments           String[]                @default([])
+
+  // الحالة
+  status                TenderRequestStatus     @default(OPEN)
+
+  // الإحصائيات
+  quotesCount           Int                     @default(0) @map("quotes_count")
+  viewsCount            Int                     @default(0) @map("views_count")
+
+  // الصلاحية
+  expiresAt             DateTime?               @map("expires_at")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+  closedAt              DateTime?               @map("closed_at")
+
+  // العلاقات
+  requester             User                    @relation("TenderServiceRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  quotes                TenderQuote[]
+  contract              TenderContract?
+
+  @@map("tender_service_requests")
+  @@index([requesterId])
+  @@index([category])
+  @@index([status])
+  @@index([governorate])
+  @@index([urgency])
+  @@index([createdAt])
+}
+
+// ============================================
+// Tender Quote - عرض سعر المناقصة
+// ============================================
+model TenderQuote {
+  id                    String                  @id @default(uuid())
+  quoteNumber           String                  @unique @map("quote_number") // QT-2025-000001
+  requestId             String                  @map("request_id")
+  providerId            String                  @map("provider_id")
+
+  // السعر
+  price                 Decimal
+  currency              String                  @default("EGP")
+  priceBreakdown        Json?                   @map("price_breakdown") // [{ item, amount }]
+
+  // التفاصيل
+  description           String                  @db.Text
+  descriptionAr         String?                 @map("description_ar") @db.Text
+
+  // المدة والتسليم
+  estimatedDuration     String                  @map("estimated_duration") // "2 weeks", "10 days"
+  deliveryDate          DateTime?               @map("delivery_date")
+
+  // الشروط
+  termsAndConditions    String?                 @map("terms_conditions") @db.Text
+  warranty              String?                 // "1 year", "6 months"
+
+  // المرفقات
+  attachments           String[]                @default([])
+
+  // الحالة
+  status                TenderQuoteStatus       @default(PENDING)
+
+  // التقييم
+  technicalScore        Float?                  @map("technical_score")
+  financialScore        Float?                  @map("financial_score")
+  totalScore            Float?                  @map("total_score")
+  evaluationNotes       String?                 @map("evaluation_notes") @db.Text
+  evaluatedAt           DateTime?               @map("evaluated_at")
+  evaluatedBy           String?                 @map("evaluated_by")
+
+  // الصلاحية
+  validUntil            DateTime?               @map("valid_until")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+
+  // العلاقات
+  request               TenderServiceRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  provider              User                    @relation("TenderQuotes", fields: [providerId], references: [id], onDelete: Cascade)
+  contract              TenderContract?
+
+  @@map("tender_quotes")
+  @@index([requestId])
+  @@index([providerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================
+// Tender Contract - عقد المناقصة
+// ============================================
+model TenderContract {
+  id                    String                  @id @default(uuid())
+  contractNumber        String                  @unique @map("contract_number") // CON-2025-000001
+  requestId             String                  @unique @map("request_id")
+  quoteId               String                  @unique @map("quote_id")
+  buyerId               String                  @map("buyer_id")
+  vendorId              String                  @map("vendor_id")
+
+  // قيمة العقد
+  totalAmount           Float                   @map("total_amount")
+  currency              String                  @default("EGP")
+
+  // الشروط
+  terms                 String?                 @db.Text
+  termsAr               String?                 @map("terms_ar") @db.Text
+
+  // المراحل
+  milestones            Json?                   // [{ id, title, amount, dueDate, status }]
+
+  // التوقيعات
+  buyerSigned           Boolean                 @default(false) @map("buyer_signed")
+  buyerSignedAt         DateTime?               @map("buyer_signed_at")
+  vendorSigned          Boolean                 @default(false) @map("vendor_signed")
+  vendorSignedAt        DateTime?               @map("vendor_signed_at")
+
+  // الحالة
+  status                TenderContractStatus    @default(PENDING_SIGNATURES)
+
+  // التقدم
+  completedMilestones   Int                     @default(0) @map("completed_milestones")
+  totalMilestones       Int                     @default(0) @map("total_milestones")
+  progressPercentage    Float                   @default(0) @map("progress_percentage")
+
+  // المدفوعات
+  paidAmount            Float                   @default(0) @map("paid_amount")
+  pendingAmount         Float                   @default(0) @map("pending_amount")
+
+  // التواريخ
+  startDate             DateTime?               @map("start_date")
+  expectedEndDate       DateTime?               @map("expected_end_date")
+  actualEndDate         DateTime?               @map("actual_end_date")
+
+  // الطوابع الزمنية
+  createdAt             DateTime                @default(now()) @map("created_at")
+  updatedAt             DateTime                @updatedAt @map("updated_at")
+
+  // العلاقات
+  request               TenderServiceRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  quote                 TenderQuote             @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  buyer                 User                    @relation("TenderContractsBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  vendor                User                    @relation("TenderContractsVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@map("tender_contracts")
+  @@index([buyerId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Tender Enums
+enum TenderCategory {
+  HOME_SERVICES       // خدمات المنزل
+  IT_SERVICES         // خدمات تقنية المعلومات
+  CONSTRUCTION        // البناء والتشييد
+  CONSULTING          // الاستشارات
+  MARKETING           // التسويق
+  LEGAL               // الخدمات القانونية
+  ACCOUNTING          // المحاسبة
+  TRANSPORT           // النقل
+  CLEANING            // التنظيف
+  MAINTENANCE         // الصيانة
+  DESIGN              // التصميم
+  TRAINING            // التدريب
+  OTHER               // أخرى
+}
+
+enum TenderUrgency {
+  URGENT              // عاجل
+  NORMAL              // عادي
+  FLEXIBLE            // مرن
+}
+
+enum TenderRequestStatus {
+  DRAFT               // مسودة
+  OPEN                // مفتوح للعروض
+  UNDER_REVIEW        // قيد المراجعة
+  AWARDED             // تم الترسية
+  CANCELLED           // ملغي
+  EXPIRED             // منتهي الصلاحية
+  COMPLETED           // مكتمل
+}
+
+enum TenderQuoteStatus {
+  PENDING             // في الانتظار
+  UNDER_REVIEW        // قيد المراجعة
+  SHORTLISTED         // في القائمة المختصرة
+  ACCEPTED            // مقبول
+  REJECTED            // مرفوض
+  WITHDRAWN           // منسحب
+}
+
+enum TenderContractStatus {
+  PENDING_SIGNATURES  // في انتظار التوقيعات
+  ACTIVE              // نشط
+  IN_PROGRESS         // قيد التنفيذ
+  COMPLETED           // مكتمل
+  DISPUTED            // متنازع عليه
+  TERMINATED          // منتهي
+}
+
+
+// ============================================
+// System Settings - إعدادات النظام
+// ============================================
+model SystemSettings {
+  id              String                  @id @default(uuid())
+  key             String                  @unique
+  value           String
+  description     String?
+  descriptionAr   String?                 @map("description_ar")
+  category        String?                 @default("general")
+
+  createdAt       DateTime                @default(now()) @map("created_at")
+  updatedAt       DateTime                @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+  @@index([category])
+}

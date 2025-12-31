@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import * as listingService from '../services/listing.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 /**
  * Create a direct sale listing
@@ -12,7 +15,10 @@ export const createSaleListing = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const listingData = req.body;
 
     const listing = await listingService.createSaleListing(userId, listingData);
@@ -54,7 +60,10 @@ export const updateListing = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const updateData = req.body;
 
     const listing = await listingService.updateListing(id, userId, updateData);
@@ -76,7 +85,10 @@ export const deleteListing = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     await listingService.deleteListing(id, userId);
 
@@ -101,7 +113,10 @@ export const activateListing = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const listing = await listingService.activateListing(id, userId);
 
@@ -122,7 +137,10 @@ export const cancelListing = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const listing = await listingService.cancelListing(id, userId);
 
@@ -143,7 +161,10 @@ export const markListingAsCompleted = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const listing = await listingService.markListingAsCompleted(id, userId);
 

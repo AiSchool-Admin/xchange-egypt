@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Cloud Storage Service
  *
@@ -33,9 +34,9 @@ if (isR2Configured) {
       secretAccessKey: env.storage.r2.secretAccessKey,
     },
   });
-  console.log('✅ Cloudflare R2 storage configured');
+  logger.info('✅ Cloudflare R2 storage configured');
 } else {
-  console.log('⚠️  R2 not configured, using local storage');
+  logger.info('⚠️  R2 not configured, using local storage');
 }
 
 // Local storage paths

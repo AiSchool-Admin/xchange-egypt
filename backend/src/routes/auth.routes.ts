@@ -10,6 +10,12 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
 } from '../validations/auth.validation';
+import {
+  loginLimiter,
+  registerLimiter,
+  passwordResetLimiter,
+  bruteForceProtection,
+} from '../middleware/security';
 
 const router = Router();
 
@@ -20,6 +26,7 @@ const router = Router();
  */
 router.post(
   '/register/individual',
+  registerLimiter,
   validate(registerIndividualSchema),
   authController.registerIndividual
 );
@@ -31,6 +38,7 @@ router.post(
  */
 router.post(
   '/register/business',
+  registerLimiter,
   validate(registerBusinessSchema),
   authController.registerBusiness
 );
@@ -40,7 +48,13 @@ router.post(
  * @desc    Login user
  * @access  Public
  */
-router.post('/login', validate(loginSchema), authController.login);
+router.post(
+  '/login',
+  loginLimiter,
+  bruteForceProtection,
+  validate(loginSchema),
+  authController.login
+);
 
 /**
  * @route   POST /api/v1/auth/refresh
@@ -82,13 +96,23 @@ router.put('/me', authenticate, authController.updateMe);
  * @desc    Request password reset
  * @access  Public
  */
-router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
+router.post(
+  '/forgot-password',
+  passwordResetLimiter,
+  validate(forgotPasswordSchema),
+  authController.forgotPassword
+);
 
 /**
  * @route   POST /api/v1/auth/reset-password
  * @desc    Reset password using token
  * @access  Public
  */
-router.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword);
+router.post(
+  '/reset-password',
+  passwordResetLimiter,
+  validate(resetPasswordSchema),
+  authController.resetPassword
+);
 
 export default router;

@@ -1011,7 +1011,7 @@ export const getCarStatistics = async () => {
     completedTransactions,
     totalPartners,
     barterListings,
-    totalTransactionValue: totalValue._sum.totalAmount || 0,
+    totalTransactionValue: totalValue._sum.totalAmount ? Number(totalValue._sum.totalAmount) : 0,
     bySellerType: bySellerType.reduce((acc, item) => {
       acc[item.sellerType] = item._count;
       return acc;
@@ -1036,6 +1036,6 @@ export const getPopularCars = async () => {
   return makes.map(m => ({
     make: m.make,
     count: m._count,
-    avgPrice: Math.round(m._avg.askingPrice || 0),
+    avgPrice: Math.round(m._avg.askingPrice ? Number(m._avg.askingPrice) : 0),
   }));
 };

@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 /**
  * Socket Service
  *
@@ -15,20 +16,46 @@ const userSockets: Map<string, string> = new Map();
 // Store socket to user mapping: socketId -> userId
 const socketUsers: Map<string, string> = new Map();
 
+// Store interval ID for cleanup
+let typingCleanupInterval: NodeJS.Timeout | null = null;
+
 /**
  * Attach chat event handlers to an existing Socket.IO server
  * (Used when Socket.IO server is already created in app.ts)
  */
 export const attachChatEventHandlers = (io: SocketIOServer): void => {
-  console.log('[ChatSocket] Attaching chat event handlers to existing Socket.IO server');
+  logger.info('[ChatSocket] Attaching chat event handlers to existing Socket.IO server');
   setupChatEvents(io);
 
+  // Clean up any existing interval to prevent duplicates
+  if (typingCleanupInterval) {
+    clearInterval(typingCleanupInterval);
+  }
+
   // Clean up expired typing indicators every 10 seconds
-  setInterval(async () => {
-    await chatService.clearExpiredTypingIndicators();
+  typingCleanupInterval = setInterval(async () => {
+    try {
+      await chatService.clearExpiredTypingIndicators();
+    } catch (error) {
+      logger.error('[ChatSocket] Error clearing typing indicators:', error);
+    }
   }, 10000);
 
-  console.log('[ChatSocket] Chat event handlers attached successfully');
+  logger.info('[ChatSocket] Chat event handlers attached successfully');
+};
+
+/**
+ * Cleanup socket service resources
+ * Call this on server shutdown
+ */
+export const cleanupSocketService = (): void => {
+  if (typingCleanupInterval) {
+    clearInterval(typingCleanupInterval);
+    typingCleanupInterval = null;
+  }
+  userSockets.clear();
+  socketUsers.clear();
+  logger.info('[ChatSocket] Socket service cleaned up');
 };
 
 /**
@@ -66,7 +93,7 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
   io.on('connection', async (socket: Socket) => {
     const userId = socket.data.userId;
 
-    console.log(`User ${userId} connected with socket ${socket.id}`);
+    logger.info(`User ${userId} connected with socket ${socket.id}`);
 
     // Store connection
     userSockets.set(userId, socket.id);
@@ -115,7 +142,7 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
         // Acknowledge to sender
         if (callback) callback({ success: true, message });
       } catch (error: any) {
-        console.error('Error sending message:', error);
+        logger.error('Error sending message:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -147,7 +174,7 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
 
         if (callback) callback({ success: true, count });
       } catch (error: any) {
-        console.error('Error marking as read:', error);
+        logger.error('Error marking as read:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -169,7 +196,7 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
 
         if (callback) callback({ success: true, message });
       } catch (error: any) {
-        console.error('Error editing message:', error);
+        logger.error('Error editing message:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -189,7 +216,7 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
 
         if (callback) callback({ success: true });
       } catch (error: any) {
-        console.error('Error deleting message:', error);
+        logger.error('Error deleting message:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -215,11 +242,11 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
 
         // Join the conversation room
         socket.join(`conversation:${conversationId}`);
-        console.log(`[ChatSocket] User ${userId} joined conversation ${conversationId}`);
+        logger.info(`[ChatSocket] User ${userId} joined conversation ${conversationId}`);
 
         if (callback) callback({ success: true });
       } catch (error: any) {
-        console.error('[ChatSocket] Error joining conversation:', error);
+        logger.error('[ChatSocket] Error joining conversation:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -233,11 +260,11 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
 
         // Leave the conversation room
         socket.leave(`conversation:${conversationId}`);
-        console.log(`[ChatSocket] User ${userId} left conversation ${conversationId}`);
+        logger.info(`[ChatSocket] User ${userId} left conversation ${conversationId}`);
 
         if (callback) callback({ success: true });
       } catch (error: any) {
-        console.error('[ChatSocket] Error leaving conversation:', error);
+        logger.error('[ChatSocket] Error leaving conversation:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -270,7 +297,7 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
           });
         }
       } catch (error) {
-        console.error('Error handling typing event:', error);
+        logger.error('Error handling typing event:', error);
       }
     });
 
@@ -296,7 +323,7 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
           });
         }
       } catch (error) {
-        console.error('Error handling stop_typing event:', error);
+        logger.error('Error handling stop_typing event:', error);
       }
     });
 
@@ -315,7 +342,7 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
 
         if (callback) callback({ success: true, presence });
       } catch (error: any) {
-        console.error('Error checking presence:', error);
+        logger.error('Error checking presence:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -325,7 +352,7 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
     // ============================================
 
     socket.on('disconnect', async () => {
-      console.log(`User ${userId} disconnected`);
+      logger.info(`User ${userId} disconnected`);
 
       // Remove from maps
       userSockets.delete(userId);
@@ -339,10 +366,8 @@ export const initializeSocketServer = (httpServer: HTTPServer): SocketIOServer =
     });
   });
 
-  // Clean up expired typing indicators every 10 seconds
-  setInterval(async () => {
-    await chatService.clearExpiredTypingIndicators();
-  }, 10000);
+  // Note: Typing indicator cleanup is handled in attachChatEventHandlers
+  // which is the recommended way to use this service
 
   return io;
 };
@@ -375,7 +400,7 @@ async function broadcastPresenceUpdate(
       }
     });
   } catch (error) {
-    console.error('Error broadcasting presence update:', error);
+    logger.error('Error broadcasting presence update:', error);
   }
 }
 
@@ -384,10 +409,10 @@ async function broadcastPresenceUpdate(
  * Called by attachChatEventHandlers to add chat functionality
  */
 function setupChatEvents(io: SocketIOServer): void {
-  // Register a middleware for chat-specific authentication (optional - may already be handled)
+  // Register a middleware for chat-specific authentication
   io.use(async (socket: Socket, next) => {
-    // If userId is already set by another middleware (like realtime-matching), skip
-    if (socket.data.userId) {
+    // If userId is already set by another middleware, validate it's from a token
+    if (socket.data.userId && socket.data.verified) {
       return next();
     }
 
@@ -397,26 +422,37 @@ function setupChatEvents(io: SocketIOServer): void {
       if (token) {
         const decoded = verifyAccessToken(token);
         socket.data.userId = decoded.userId;
+        socket.data.verified = true; // Mark as verified via JWT
+        return next();
       }
 
+      // No token provided - allow connection but mark as unauthenticated
+      // This allows for public notifications but blocks chat features
+      socket.data.userId = null;
+      socket.data.verified = false;
       next();
     } catch (error) {
-      // Allow connection even without auth for matching notifications
-      // Chat events will fail gracefully if no userId
-      next();
+      // Invalid token - reject with error instead of silently allowing
+      logger.warn('[ChatSocket] Auth failed for socket:', socket.id, error instanceof Error ? error.message : 'Unknown error');
+      socket.data.userId = null;
+      socket.data.verified = false;
+      next(); // Still allow connection for public features, but no chat
     }
   });
 
   // Handle new connections for chat events
   io.on('connection', async (socket: Socket) => {
     const userId = socket.data.userId;
+    const isVerified = socket.data.verified === true;
 
-    // Only set up chat events if user is authenticated
-    if (!userId) {
-      return; // Skip chat setup for unauthenticated connections
+    // Only set up chat events if user is authenticated with verified JWT
+    if (!userId || !isVerified) {
+      // Still allow connection for public features, just don't set up chat
+      logger.info(`[ChatSocket] Unauthenticated connection: ${socket.id} (public mode)`);
+      return;
     }
 
-    console.log(`[ChatSocket] User ${userId} connected with socket ${socket.id}`);
+    logger.info(`[ChatSocket] User ${userId} connected with socket ${socket.id} (verified)`);
 
     // Store connection
     userSockets.set(userId, socket.id);
@@ -430,7 +466,7 @@ function setupChatEvents(io: SocketIOServer): void {
       // Send online status to user's contacts
       await broadcastPresenceUpdate(io, userId, true);
     } catch (error) {
-      console.error('[ChatSocket] Error setting user online:', error);
+      logger.error('[ChatSocket] Error setting user online:', error);
     }
 
     // ============================================
@@ -460,7 +496,7 @@ function setupChatEvents(io: SocketIOServer): void {
 
         if (callback) callback({ success: true, message });
       } catch (error: any) {
-        console.error('[ChatSocket] Error sending message:', error);
+        logger.error('[ChatSocket] Error sending message:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -489,7 +525,7 @@ function setupChatEvents(io: SocketIOServer): void {
 
         if (callback) callback({ success: true, count });
       } catch (error: any) {
-        console.error('[ChatSocket] Error marking as read:', error);
+        logger.error('[ChatSocket] Error marking as read:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -508,7 +544,7 @@ function setupChatEvents(io: SocketIOServer): void {
 
         if (callback) callback({ success: true, message });
       } catch (error: any) {
-        console.error('[ChatSocket] Error editing message:', error);
+        logger.error('[ChatSocket] Error editing message:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -519,7 +555,7 @@ function setupChatEvents(io: SocketIOServer): void {
         await chatService.deleteMessage(messageId, userId);
         if (callback) callback({ success: true });
       } catch (error: any) {
-        console.error('[ChatSocket] Error deleting message:', error);
+        logger.error('[ChatSocket] Error deleting message:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -542,11 +578,11 @@ function setupChatEvents(io: SocketIOServer): void {
 
         // Join the conversation room
         socket.join(`conversation:${conversationId}`);
-        console.log(`[ChatSocket] User ${userId} joined conversation ${conversationId}`);
+        logger.info(`[ChatSocket] User ${userId} joined conversation ${conversationId}`);
 
         if (callback) callback({ success: true });
       } catch (error: any) {
-        console.error('[ChatSocket] Error joining conversation:', error);
+        logger.error('[ChatSocket] Error joining conversation:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -557,11 +593,11 @@ function setupChatEvents(io: SocketIOServer): void {
 
         // Leave the conversation room
         socket.leave(`conversation:${conversationId}`);
-        console.log(`[ChatSocket] User ${userId} left conversation ${conversationId}`);
+        logger.info(`[ChatSocket] User ${userId} left conversation ${conversationId}`);
 
         if (callback) callback({ success: true });
       } catch (error: any) {
-        console.error('[ChatSocket] Error leaving conversation:', error);
+        logger.error('[ChatSocket] Error leaving conversation:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -591,7 +627,7 @@ function setupChatEvents(io: SocketIOServer): void {
           });
         }
       } catch (error) {
-        console.error('[ChatSocket] Error handling typing event:', error);
+        logger.error('[ChatSocket] Error handling typing event:', error);
       }
     });
 
@@ -614,7 +650,7 @@ function setupChatEvents(io: SocketIOServer): void {
           });
         }
       } catch (error) {
-        console.error('[ChatSocket] Error handling stop_typing event:', error);
+        logger.error('[ChatSocket] Error handling stop_typing event:', error);
       }
     });
 
@@ -628,7 +664,7 @@ function setupChatEvents(io: SocketIOServer): void {
         const presence = await chatService.getMultipleUserPresence(userIds);
         if (callback) callback({ success: true, presence });
       } catch (error: any) {
-        console.error('[ChatSocket] Error checking presence:', error);
+        logger.error('[ChatSocket] Error checking presence:', error);
         if (callback) callback({ success: false, error: error.message });
       }
     });
@@ -638,7 +674,7 @@ function setupChatEvents(io: SocketIOServer): void {
     // ============================================
 
     socket.on('disconnect', async () => {
-      console.log(`[ChatSocket] User ${userId} disconnected`);
+      logger.info(`[ChatSocket] User ${userId} disconnected`);
 
       // Remove from maps
       userSockets.delete(userId);
@@ -650,7 +686,7 @@ function setupChatEvents(io: SocketIOServer): void {
         // Broadcast offline status
         await broadcastPresenceUpdate(io, userId, false);
       } catch (error) {
-        console.error('[ChatSocket] Error setting user offline:', error);
+        logger.error('[ChatSocket] Error setting user offline:', error);
       }
     });
   });

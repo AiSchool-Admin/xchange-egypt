@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 import { OrderStatus } from '../types/prisma-enums';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { clearCart, getCart } from './cart.service';
@@ -334,7 +335,7 @@ export const createOrder = async (
     }
   } catch (notificationError) {
     // Log but don't fail the order if notifications fail
-    console.error('Failed to send order notifications:', notificationError);
+    logger.error('Failed to send order notifications:', notificationError);
   }
 
   return order;
@@ -388,7 +389,7 @@ export const getMyOrders = async (
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages: limit > 0 ? Math.ceil(total / limit) : 1,
       hasMore: page * limit < total,
     },
   };
@@ -853,7 +854,7 @@ export const createAuctionOrder = async (
       actionText: 'عرض الطلبات',
     });
   } catch (notificationError) {
-    console.error('Failed to send auction order notifications:', notificationError);
+    logger.error('Failed to send auction order notifications:', notificationError);
   }
 
   return order;

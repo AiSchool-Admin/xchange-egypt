@@ -1,6 +1,7 @@
+import logger from '../lib/logger';
 import { AuctionStatus, BidStatus, ListingType, ListingStatus, ItemStatus } from '../types';
 import { CreateAuctionInput, UpdateAuctionInput, PlaceBidInput, ListAuctionsQuery } from '../validations/auction.validation';
-import { AppError } from '../middleware/errorHandler';
+import { NotFoundError, ForbiddenError, BadRequestError, InternalServerError } from '../utils/errors';
 import { createNotification } from './notification.service';
 import prisma from '../lib/prisma';
 
@@ -15,15 +16,15 @@ export const createAuction = async (userId: string, data: CreateAuctionInput) =>
   });
 
   if (!item) {
-    throw new AppError('Item not found', 404);
+    throw new NotFoundError('Item not found');
   }
 
   if (item.sellerId !== userId) {
-    throw new AppError('You can only create auctions for your own items', 403);
+    throw new ForbiddenError('You can only create auctions for your own items');
   }
 
   if (item.status !== ItemStatus.ACTIVE) {
-    throw new AppError('Item must be active to create an auction', 400);
+    throw new BadRequestError('Item must be active to create an auction');
   }
 
   // 2. Check if item already has an active listing
@@ -32,7 +33,7 @@ export const createAuction = async (userId: string, data: CreateAuctionInput) =>
   );
 
   if (hasActiveListing) {
-    throw new AppError('Item already has an active listing', 400);
+    throw new BadRequestError('Item already has an active listing');
   }
 
   // 3. Create listing and auction in a transaction
@@ -163,7 +164,7 @@ export const getAuctionById = async (auctionId: string, userId?: string) => {
   });
 
   if (!auction) {
-    throw new AppError('Auction not found', 404);
+    throw new NotFoundError('Auction not found');
   }
 
   // Increment views
@@ -274,7 +275,7 @@ export const listAuctions = async (query: ListAuctionsQuery) => {
       page,
       limit,
       total,
-      pages: Math.ceil(total / limit),
+      pages: limit > 0 ? Math.ceil(total / limit) : 1,
     },
   };
 };
@@ -301,42 +302,41 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
   });
 
   if (!auction) {
-    throw new AppError('Auction not found', 404);
+    throw new NotFoundError('Auction not found');
   }
 
   // Validate listing and item exist (data integrity check)
   if (!auction.listing) {
-    throw new AppError('Auction listing not found - data integrity issue', 500);
+    throw new InternalServerError('Auction listing not found - data integrity issue');
   }
 
   if (!auction.listing.item) {
-    throw new AppError('Auction item not found - data integrity issue', 500);
+    throw new InternalServerError('Auction item not found - data integrity issue');
   }
 
   // 2. Validate auction status and timing
   if (auction.status !== AuctionStatus.ACTIVE) {
-    throw new AppError('Auction is not active', 400);
+    throw new BadRequestError('Auction is not active');
   }
 
   const now = new Date();
   if (now < auction.startTime) {
-    throw new AppError('Auction has not started yet', 400);
+    throw new BadRequestError('Auction has not started yet');
   }
 
   if (now > auction.endTime) {
-    throw new AppError('Auction has ended', 400);
+    throw new BadRequestError('Auction has ended');
   }
 
   // 3. Validate bid amount
   if (auction.listing.item.sellerId === userId) {
-    throw new AppError('You cannot bid on your own auction', 400);
+    throw new BadRequestError('You cannot bid on your own auction');
   }
 
   const minimumBid = auction.currentPrice + auction.minBidIncrement;
   if (data.bidAmount < minimumBid) {
-    throw new AppError(
-      `Bid must be at least ${minimumBid} (current price + minimum increment)`,
-      400
+    throw new BadRequestError(
+      `Bid must be at least ${minimumBid} (current price + minimum increment)`
     );
   }
 
@@ -441,7 +441,7 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
     return newBid;
     });
   } catch (dbError: any) {
-    console.error('Database error during bid placement:', {
+    logger.error('Database error during bid placement:', {
       auctionId,
       userId,
       bidAmount: actualBidAmount,
@@ -450,7 +450,7 @@ export const placeBid = async (auctionId: string, userId: string, data: PlaceBid
       code: dbError.code,
       meta: dbError.meta,
     });
-    throw new AppError(`فشل في تسجيل المزايدة: ${dbError.message}`, 500);
+    throw new InternalServerError(`فشل في تسجيل المزايدة: ${dbError.message}`);
   }
 
   // Get auction details for notifications
@@ -531,19 +531,19 @@ export const buyNow = async (auctionId: string, userId: string) => {
   });
 
   if (!auction) {
-    throw new AppError('Auction not found', 404);
+    throw new NotFoundError('Auction not found');
   }
 
   if (!auction.buyNowPrice) {
-    throw new AppError('This auction does not have a buy now option', 400);
+    throw new BadRequestError('This auction does not have a buy now option');
   }
 
   if (auction.status !== AuctionStatus.ACTIVE) {
-    throw new AppError('Auction is not active', 400);
+    throw new BadRequestError('Auction is not active');
   }
 
   if (auction.listing.item.sellerId === userId) {
-    throw new AppError('You cannot buy your own item', 400);
+    throw new BadRequestError('You cannot buy your own item');
   }
 
   // Complete the auction immediately
@@ -681,19 +681,19 @@ export const cancelAuction = async (auctionId: string, userId: string, reason?: 
   });
 
   if (!auction) {
-    throw new AppError('Auction not found', 404);
+    throw new NotFoundError('Auction not found');
   }
 
   if (auction.listing.item.sellerId !== userId) {
-    throw new AppError('You can only cancel your own auctions', 403);
+    throw new ForbiddenError('You can only cancel your own auctions');
   }
 
   if (auction.status === AuctionStatus.COMPLETED || auction.status === AuctionStatus.ENDED) {
-    throw new AppError('Cannot cancel a completed or ended auction', 400);
+    throw new BadRequestError('Cannot cancel a completed or ended auction');
   }
 
   if (auction.totalBids > 0) {
-    throw new AppError('Cannot cancel auction with existing bids', 400);
+    throw new BadRequestError('Cannot cancel auction with existing bids');
   }
 
   await prisma.$transaction([
@@ -731,11 +731,11 @@ export const endAuction = async (auctionId: string) => {
   });
 
   if (!auction) {
-    throw new AppError('Auction not found', 404);
+    throw new NotFoundError('Auction not found');
   }
 
   if (auction.status === AuctionStatus.COMPLETED) {
-    throw new AppError('Auction already completed', 400);
+    throw new BadRequestError('Auction already completed');
   }
 
   const winningBid = auction.bids[0];
@@ -923,7 +923,7 @@ export const getAuctionBids = async (auctionId: string, page: number = 1, limit:
   });
 
   if (!auction) {
-    throw new AppError('Auction not found', 404);
+    throw new NotFoundError('Auction not found');
   }
 
   const [bids, total] = await Promise.all([
@@ -952,7 +952,7 @@ export const getAuctionBids = async (auctionId: string, page: number = 1, limit:
       page,
       limit,
       total,
-      pages: Math.ceil(total / limit),
+      pages: limit > 0 ? Math.ceil(total / limit) : 1,
     },
   };
 };
@@ -1067,15 +1067,15 @@ export const updateAuction = async (
   });
 
   if (!auction) {
-    throw new AppError('Auction not found', 404);
+    throw new NotFoundError('Auction not found');
   }
 
   if (auction.listing.item.sellerId !== userId) {
-    throw new AppError('You can only update your own auctions', 403);
+    throw new ForbiddenError('You can only update your own auctions');
   }
 
   if (auction.status === AuctionStatus.ACTIVE && auction.totalBids > 0) {
-    throw new AppError('Cannot update auction with existing bids', 400);
+    throw new BadRequestError('Cannot update auction with existing bids');
   }
 
   const updatedAuction = await prisma.auction.update({

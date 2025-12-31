@@ -1,41 +1,16 @@
-// Error handling utilities
-export class AppError extends Error {
-  constructor(
-    public message: string,
-    public statusCode: number = 500,
-    public isOperational: boolean = true
-  ) {
-    super(message);
-    Object.setPrototypeOf(this, AppError.prototype);
-  }
-}
+/**
+ * Error Handler Middleware
+ * Re-exports error classes from utils/errors.ts for backwards compatibility
+ */
 
-export class NotFoundError extends AppError {
-  constructor(message: string = 'Resource not found') {
-    super(message, 404);
-  }
-}
-
-export class BadRequestError extends AppError {
-  constructor(message: string = 'Bad request') {
-    super(message, 400);
-  }
-}
-
-export class UnauthorizedError extends AppError {
-  constructor(message: string = 'Unauthorized') {
-    super(message, 401);
-  }
-}
-
-export class ForbiddenError extends AppError {
-  constructor(message: string = 'Forbidden') {
-    super(message, 403);
-  }
-}
-
-export class ConflictError extends AppError {
-  constructor(message: string = 'Conflict') {
-    super(message, 409);
-  }
-}
+// Re-export all error classes from the canonical source
+export {
+  AppError,
+  BadRequestError,
+  UnauthorizedError,
+  ForbiddenError,
+  NotFoundError,
+  ConflictError,
+  ValidationError,
+  InternalServerError,
+} from '../utils/errors';

@@ -6,10 +6,10 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { getMyWarranties, fileClaim, Warranty, WarrantyClaim } from '@/lib/api/warranty';
 
 const WARRANTY_TYPE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  SELLER: { label: 'ضمان البائع', icon: '&#128100;', color: 'bg-blue-100 text-blue-700' },
-  PLATFORM: { label: 'ضمان المنصة', icon: '&#128737;', color: 'bg-green-100 text-green-700' },
-  EXTENDED: { label: 'ضمان ممتد', icon: '&#128176;', color: 'bg-purple-100 text-purple-700' },
-  INSURANCE: { label: 'تأمين شامل', icon: '&#127919;', color: 'bg-amber-100 text-amber-700' },
+  SELLER: { label: 'ضمان البائع', icon: '👤', color: 'bg-blue-100 text-blue-700' },
+  PLATFORM: { label: 'ضمان المنصة', icon: '🛡️', color: 'bg-green-100 text-green-700' },
+  EXTENDED: { label: 'ضمان ممتد', icon: '💰', color: 'bg-purple-100 text-purple-700' },
+  INSURANCE: { label: 'تأمين شامل', icon: '🎯', color: 'bg-amber-100 text-amber-700' },
 };
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -31,7 +31,7 @@ function WarrantyCard({ warranty, onFileClaim }: { warranty: Warranty; onFileCla
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className={`px-3 py-1 rounded-full text-sm font-bold ${typeInfo.color}`}>
-            <span dangerouslySetInnerHTML={{ __html: typeInfo.icon }} /> {typeInfo.label}
+            <span>{typeInfo.icon}</span> {typeInfo.label}
           </span>
           <span className={`w-2 h-2 rounded-full ${statusInfo.color}`} />
           <span className="text-sm text-gray-500">{statusInfo.label}</span>

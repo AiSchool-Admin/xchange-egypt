@@ -691,6 +691,6 @@ export const getSilverStatistics = async () => {
     totalTransactions,
     completedTransactions,
     totalPartners,
-    totalTransactionValue: totalValue._sum.totalAmount || 0,
+    totalTransactionValue: totalValue._sum.totalAmount ? Number(totalValue._sum.totalAmount) : 0,
   };
 };

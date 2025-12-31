@@ -1,3 +1,4 @@
+import logger from '../lib/logger';
 import { ItemCondition, PromotionTier } from '../types/prisma-enums';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors';
 import { processItemImage } from '../utils/image';
@@ -819,7 +820,7 @@ export const searchItems = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
   return {
     items: items as unknown as ItemWithSeller[],
@@ -871,7 +872,7 @@ export const getUserItems = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
   return {
     items: items as unknown as ItemWithSeller[],
@@ -988,7 +989,7 @@ export const getCategoryItems = async (
     },
   });
 
-  const totalPages = Math.ceil(total / limit);
+  const totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
 
   return {
     items: items as unknown as ItemWithSeller[],
@@ -1155,7 +1156,7 @@ const cleanupImages = async (imagePaths: string[]): Promise<void> => {
       await fs.unlink(fullPath);
     } catch (error) {
       // Ignore errors (file might not exist)
-      console.error(`Failed to delete image: ${imagePath}`, error);
+      logger.error(`Failed to delete image: ${imagePath}`, error);
     }
   }
 };

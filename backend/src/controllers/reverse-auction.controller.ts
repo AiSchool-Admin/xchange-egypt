@@ -6,7 +6,10 @@
 
 import { Request, Response, NextFunction } from 'express';
 import * as reverseAuctionService from '../services/reverse-auction.service';
-import { successResponse } from '../utils/response';
+import { successResponse, errorResponse } from '../utils/response';
+
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
 
 // ============================================
 // Reverse Auction Management (Buyer Side)
@@ -22,7 +25,10 @@ export const createReverseAuction = async (
   next: NextFunction
 ) => {
   try {
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const auctionData = req.body;
 
     const auction = await reverseAuctionService.createReverseAuction(buyerId, auctionData);
@@ -95,7 +101,10 @@ export const updateReverseAuction = async (
 ) => {
   try {
     const { id } = req.params;
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const updateData = req.body;
 
     const auction = await reverseAuctionService.updateReverseAuction(id, buyerId, updateData);
@@ -117,7 +126,10 @@ export const cancelReverseAuction = async (
 ) => {
   try {
     const { id } = req.params;
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const auction = await reverseAuctionService.cancelReverseAuction(id, buyerId);
 
@@ -138,7 +150,10 @@ export const deleteReverseAuction = async (
 ) => {
   try {
     const { id } = req.params;
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     await reverseAuctionService.deleteReverseAuction(id, buyerId);
 
@@ -163,7 +178,10 @@ export const submitBid = async (
 ) => {
   try {
     const { id: reverseAuctionId } = req.params;
-    const sellerId = req.user.id;
+    const sellerId = getUserId(req);
+    if (!sellerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const bidData = {
       ...req.body,
       reverseAuctionId,
@@ -213,7 +231,10 @@ export const updateBid = async (
 ) => {
   try {
     const { bidId } = req.params;
-    const sellerId = req.user.id;
+    const sellerId = getUserId(req);
+    if (!sellerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const updateData = req.body;
 
     const bid = await reverseAuctionService.updateBid(bidId, sellerId, updateData);
@@ -235,7 +256,10 @@ export const withdrawBid = async (
 ) => {
   try {
     const { bidId } = req.params;
-    const sellerId = req.user.id;
+    const sellerId = getUserId(req);
+    if (!sellerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const bid = await reverseAuctionService.withdrawBid(bidId, sellerId);
 
@@ -255,7 +279,10 @@ export const getMyBids = async (
   next: NextFunction
 ) => {
   try {
-    const sellerId = req.user.id;
+    const sellerId = getUserId(req);
+    if (!sellerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const filters = {
       status: req.query.status as string | undefined,
       page: req.query.page ? parseInt(req.query.page as string) : 1,
@@ -286,7 +313,10 @@ export const awardAuction = async (
   try {
     const { id } = req.params;
     const { bidId } = req.body;
-    const buyerId = req.user.id;
+    const buyerId = getUserId(req);
+    if (!buyerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const auction = await reverseAuctionService.awardAuction(id, bidId, buyerId);
 
@@ -307,7 +337,10 @@ export const completeAuction = async (
 ) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const auction = await reverseAuctionService.completeAuction(id, userId);
 
@@ -331,7 +364,10 @@ export const getStatistics = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
 
     const stats = await reverseAuctionService.getAuctionStatistics(userId);
 

@@ -12,6 +12,9 @@ import {
 import * as orderService from '../services/order.service';
 import { successResponse, errorResponse } from '../utils/response';
 
+// Helper to safely get user ID from request
+const getUserId = (req: Request): string | null => req.user?.id || null;
+
 /**
  * =====================================================
  * UNIFIED PAYMENT GATEWAY ENDPOINTS
@@ -72,7 +75,10 @@ export const calculateFees = async (req: Request, res: Response, next: NextFunct
  */
 export const initiatePayment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId, method, walletPhone } = req.body;
 
     // Validate method
@@ -196,7 +202,10 @@ export const processRefund = async (req: Request, res: Response, next: NextFunct
  */
 export const initiateInstapay = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId } = req.body;
 
     // Get order to verify ownership and get amount
@@ -268,7 +277,10 @@ export const instapayCallback = async (req: Request, res: Response, next: NextFu
  */
 export const createFawryPayment = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId, paymentMethod } = req.body;
 
     // Get order to verify ownership and get amount
@@ -340,7 +352,10 @@ export const fawryCallback = async (req: Request, res: Response, next: NextFunct
  */
 export const initiatePaymobCard = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId } = req.body;
 
     const order = await orderService.getOrderById(userId, orderId);
@@ -357,12 +372,12 @@ export const initiatePaymobCard = async (req: Request, res: Response, next: Next
       },
       items: order.items?.map((item: any) => ({
         name: item.title || item.name,
-        amount: item.price * 100,
+        amount: Number(item.price) * 100,
         description: item.description,
         quantity: item.quantity,
       })) || [{
         name: `Order ${orderId}`,
-        amount: order.total * 100,
+        amount: Number(order.total) * 100,
         description: `Payment for order ${orderId}`,
         quantity: 1,
       }],
@@ -381,7 +396,10 @@ export const initiatePaymobCard = async (req: Request, res: Response, next: Next
  */
 export const initiatePaymobWallet = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId, walletPhone } = req.body;
 
     if (!walletPhone) {
@@ -424,7 +442,10 @@ export const initiatePaymobWallet = async (req: Request, res: Response, next: Ne
  */
 export const initiatePaymobKiosk = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId } = req.body;
 
     const order = await orderService.getOrderById(userId, orderId);
@@ -530,7 +551,10 @@ export const refundPaymob = async (req: Request, res: Response, next: NextFuncti
  */
 export const initiateVodafoneCash = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId, customerPhone } = req.body;
 
     const order = await orderService.getOrderById(userId, orderId);
@@ -643,7 +667,10 @@ export const getVodafoneCashBalance = async (req: Request, res: Response, next: 
  */
 export const confirmCashOnDelivery = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user.id;
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
     const { orderId } = req.body;
 
     const order = await orderService.getOrderById(userId, orderId);
