@@ -236,6 +236,7 @@ model Category {
   wishListItems    WishListItem[]
   itemRequests     ItemRequest[]
   pricePredictions PricePrediction[]
+  priceAlerts      PriceAlert[]     @relation("CategoryPriceAlerts")
 
   @@map("categories")
   @@index([slug])
@@ -661,6 +662,7 @@ model Item {
   inventoryLocks          InventoryLock[]         @relation("InventoryLocks")
   scrapSellerOffers       ScrapSellerOffer[]      @relation("ScrapOfferItem")
   stockAdjustments        StockAdjustment[]       @relation("ItemStockAdjustments")
+  priceAlerts             PriceAlert[]            @relation("ItemPriceAlerts")
 
   @@map("items")
   @@index([sellerId])
@@ -3693,6 +3695,11 @@ model PriceAlert {
   targetPrice     Decimal?      @map("target_price")    // سعر مستهدف
   priceDropPercent Float?     @map("price_drop_percent") // نسبة انخفاض
   alertOnNew      Boolean     @default(true) @map("alert_on_new")  // تنبيه عند إضافة جديد
+  alertType       String      @default("BELOW") @map("alert_type") // BELOW, ABOVE, CHANGE
+
+  // Watchlist notification preferences
+  notifyOnPriceDrop   Boolean   @default(true) @map("notify_on_price_drop")
+  notifyOnBackInStock Boolean   @default(true) @map("notify_on_back_in_stock")
 
   // Additional filters
   minCondition    ItemCondition? @map("min_condition")
@@ -3716,6 +3723,8 @@ model PriceAlert {
 
   // Relations
   user            User        @relation("UserPriceAlerts", fields: [userId], references: [id], onDelete: Cascade)
+  item            Item?       @relation("ItemPriceAlerts", fields: [itemId], references: [id], onDelete: Cascade)
+  category        Category?   @relation("CategoryPriceAlerts", fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("price_alerts")
   @@index([userId])
