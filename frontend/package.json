@@ -7,7 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:firefox": "playwright test --project=firefox",
+    "test:e2e:webkit": "playwright test --project=webkit",
+    "test:e2e:mobile": "playwright test --project=mobile-chrome --project=mobile-safari",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -30,6 +39,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
+    "wait-on": "^7.2.0",
     "@types/google.maps": "^3.58.1",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.42",
