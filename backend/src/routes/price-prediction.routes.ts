@@ -192,7 +192,7 @@ router.get('/categories', async (req: Request, res: Response) => {
           },
         },
       },
-      orderBy: { sortOrder: 'asc' },
+      orderBy: { order: 'asc' },
     });
 
     return res.json({

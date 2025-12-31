@@ -1219,7 +1219,7 @@ async function scenario10_WatchlistAlerts(): Promise<E2ETestResult> {
     });
 
     // Get search alerts
-    const alerts = await apiCall('GET', '/api/v1/search-alerts', user.token);
+    const alerts = await apiCall('GET', '/api/v1/search-alerts/alerts', user.token);
     steps.push({
       step: 'Get Search Alerts',
       stepAr: 'تنبيهات البحث',
@@ -1413,7 +1413,7 @@ async function scenario13_PricePrediction(): Promise<E2ETestResult> {
     if (!user) throw new Error('User not found');
 
     // Get price prediction
-    const prediction = await apiCall('POST', '/api/v1/price-prediction/estimate', user.token, {
+    const prediction = await apiCall('POST', '/api/v1/price-prediction/predict', user.token, {
       title: 'iPhone 14 Pro Max',
       categoryId: await getFirstCategoryId(),
       condition: 'LIKE_NEW'
