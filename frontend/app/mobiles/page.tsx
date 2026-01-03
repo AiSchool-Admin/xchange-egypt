@@ -234,10 +234,10 @@ function MobilesContent() {
                     onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                     placeholder="ابحث عن iPhone, Samsung, Xiaomi..."
-                    className="w-full px-6 py-4 pr-14 rounded-2xl text-gray-900 text-lg placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-white/30 shadow-xl"
+                    className="w-full ps-6 pe-40 py-4 rounded-2xl text-gray-900 text-lg placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-white/30 shadow-xl"
                     dir="rtl"
                   />
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                     {searchQuery && (
                       <button
                         onClick={clearSearch}
