@@ -858,7 +858,7 @@ export default function HomePage() {
             {user ? (
               <>
                 <Link
-                  href="/inventory/add"
+                  href="/listing/new"
                   className="px-8 py-4 bg-white text-emerald-600 rounded-xl font-bold text-lg hover:bg-white/90 transition-colors shadow-lg"
                 >
                   {t('home.cta.addFirstListing')}
@@ -879,10 +879,10 @@ export default function HomePage() {
                   {t('home.cta.createFreeAccount')}
                 </Link>
                 <Link
-                  href="/login"
+                  href="/listing/new"
                   className="px-8 py-4 bg-white/20 text-white rounded-xl font-bold text-lg hover:bg-white/30 transition-colors"
                 >
-                  {t('home.cta.login')}
+                  {t('home.cta.addListing')}
                 </Link>
               </>
             )}

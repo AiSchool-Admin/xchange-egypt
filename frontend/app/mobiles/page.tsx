@@ -318,14 +318,14 @@ function MobilesContent() {
 
               <div className={`flex flex-wrap gap-4 justify-center ${locale === 'ar' ? 'md:justify-start' : 'md:justify-start'}`}>
                 <Link
-                  href="/mobiles/sell"
+                  href="/listing/new?category=MOBILE&back=/mobiles"
                   className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-colors flex items-center gap-2"
                 >
                   <Smartphone className="w-5 h-5" />
                   {t('sellYourMobile')}
                 </Link>
                 <Link
-                  href="/mobiles/barter"
+                  href="/listing/new?category=MOBILE&transaction=BARTER&back=/mobiles"
                   className="bg-white/20 backdrop-blur text-white px-6 py-3 rounded-xl font-bold hover:bg-white/30 transition-colors flex items-center gap-2"
                 >
                   <RefreshCw className="w-5 h-5" />
