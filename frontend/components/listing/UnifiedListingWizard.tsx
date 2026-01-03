@@ -149,58 +149,106 @@ export default function UnifiedListingWizard({
     setIsSubmitting(true);
 
     try {
-      const listing: UnifiedListing = {
-        category: selectedCategory,
-        transactionType: selectedTransactionType,
-        data: {
-          ...formData,
-          ...categorySpecificData
-        } as any,
-        pricing: pricingData as any,
-        auction: selectedTransactionType === 'AUCTION' ? auctionData as any : undefined,
-        barter: selectedTransactionType === 'BARTER' ? barterData as any : undefined
+      // Map category to backend categoryId (these should be actual category IDs from your database)
+      const categoryIdMap: Record<ListingCategory, string> = {
+        MOBILE: 'mobile-phones',
+        CAR: 'vehicles',
+        PROPERTY: 'real-estate',
+        GOLD: 'gold-jewelry',
+        LUXURY: 'luxury-items',
+        SCRAP: 'scrap-materials',
+        GENERAL: 'general'
+      };
+
+      // Map transaction type to listing type
+      const listingTypeMap: Record<TransactionType, string> = {
+        DIRECT_SALE: 'DIRECT_SALE',
+        DIRECT_PURCHASE: 'DIRECT_BUY',
+        AUCTION: 'AUCTION',
+        REVERSE_AUCTION: 'REVERSE_AUCTION',
+        BARTER: 'BARTER'
+      };
+
+      // Build the payload according to CreateItemData interface
+      const payload = {
+        titleAr: formData.title || '',
+        titleEn: formData.title || '', // Use Arabic title as English fallback
+        descriptionAr: formData.description || '',
+        descriptionEn: formData.description || '', // Use Arabic description as English fallback
+        condition: (categorySpecificData as any).condition || 'GOOD',
+        categoryId: categoryIdMap[selectedCategory],
+        estimatedValue: pricingData.price ? parseFloat(String(pricingData.price)) : undefined,
+        location: formData.governorate || 'القاهرة',
+        governorate: formData.governorate || 'القاهرة',
+        listingType: listingTypeMap[selectedTransactionType],
+        imageUrls: formData.images || [],
+        // Barter preferences
+        desiredKeywords: (barterData as any).preferences || undefined,
+        desiredValueMin: (barterData as any).minValue ? parseFloat(String((barterData as any).minValue)) : undefined,
+        desiredValueMax: (barterData as any).maxValue ? parseFloat(String((barterData as any).maxValue)) : undefined,
+        // Category-specific data as additional fields
+        ...categorySpecificData
       };
 
       if (onComplete) {
+        const listing: UnifiedListing = {
+          category: selectedCategory,
+          transactionType: selectedTransactionType,
+          data: {
+            ...formData,
+            ...categorySpecificData
+          } as any,
+          pricing: pricingData as any,
+          auction: selectedTransactionType === 'AUCTION' ? auctionData as any : undefined,
+          barter: selectedTransactionType === 'BARTER' ? barterData as any : undefined
+        };
         await onComplete(listing);
       } else {
-        // Default: call API based on category
-        const response = await submitListing(listing);
-        if (response.success) {
-          router.push(`/listing/${response.data.id}/success`);
+        // Call the items API
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const response = await fetch(`${apiUrl}/items`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Redirect based on category
+          const redirectMap: Record<ListingCategory, string> = {
+            MOBILE: '/mobiles',
+            CAR: '/cars',
+            PROPERTY: '/properties',
+            GOLD: '/gold',
+            LUXURY: '/luxury',
+            SCRAP: '/scrap',
+            GENERAL: '/items'
+          };
+
+          // Show success message
+          alert('تم نشر الإعلان بنجاح!');
+
+          // Redirect to the item page or category page
+          const itemId = result.data?.id;
+          if (itemId) {
+            router.push(`/items/${itemId}`);
+          } else {
+            router.push(options.backUrl || redirectMap[selectedCategory] || '/items');
+          }
+        } else {
+          throw new Error(result.message || 'فشل في نشر الإعلان');
         }
       }
     } catch (error) {
       console.error('Error submitting listing:', error);
-      alert('حدث خطأ أثناء نشر الإعلان');
+      alert(error instanceof Error ? error.message : 'حدث خطأ أثناء نشر الإعلان');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // API submission based on category
-  const submitListing = async (listing: UnifiedListing) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    const endpoints: Record<ListingCategory, string> = {
-      MOBILE: '/mobiles/listings',
-      CAR: '/cars/listings',
-      PROPERTY: '/properties',
-      GOLD: '/gold/listings',
-      LUXURY: '/luxury/listings',
-      SCRAP: '/scrap/listings',
-      GENERAL: '/items'
-    };
-
-    const response = await fetch(`${apiUrl}${endpoints[listing.category]}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-      },
-      body: JSON.stringify(listing)
-    });
-
-    return response.json();
   };
 
   // Render current step content
