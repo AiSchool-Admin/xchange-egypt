@@ -96,25 +96,52 @@ export default function MobileListingDetailPage() {
   const router = useRouter();
   const [listing, setListing] = useState<MobileListing | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showBarterModal, setShowBarterModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
 
   useEffect(() => {
-    fetchListing();
+    if (params.id) {
+      fetchListing();
+    }
   }, [params.id]);
 
   const fetchListing = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${params.id}`);
-      const data = await response.json();
-      if (data.success) {
-        setListing(data.data);
+      setError(null);
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        console.error('API URL not configured');
+        setError('عذراً، حدث خطأ في الإعدادات');
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching listing:', error);
+
+      const response = await fetch(`${apiUrl}/mobiles/listings/${params.id}`);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('الإعلان غير موجود');
+        } else {
+          setError('حدث خطأ أثناء تحميل البيانات');
+        }
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        setListing(data.data);
+      } else {
+        setError('الإعلان غير موجود');
+      }
+    } catch (err) {
+      console.error('Error fetching listing:', err);
+      setError('تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت');
     } finally {
       setLoading(false);
     }
@@ -171,15 +198,25 @@ export default function MobileListingDetailPage() {
     );
   }
 
-  if (!listing) {
+  if (error || !listing) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center" dir="rtl">
         <Smartphone className="w-16 h-16 text-gray-400 mb-4" />
-        <h2 className="text-xl font-bold text-gray-900 mb-2">الإعلان غير موجود</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">
+          {error || 'الإعلان غير موجود'}
+        </h2>
         <p className="text-gray-600 mb-4">قد يكون تم حذفه أو انتهت صلاحيته</p>
-        <Link href="/mobiles" className="bg-indigo-600 text-white px-6 py-2 rounded-lg">
-          العودة للقائمة
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={() => fetchListing()}
+            className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            إعادة المحاولة
+          </button>
+          <Link href="/mobiles" className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+            العودة للقائمة
+          </Link>
+        </div>
       </div>
     );
   }
