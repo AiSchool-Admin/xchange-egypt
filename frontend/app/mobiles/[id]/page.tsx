@@ -222,7 +222,7 @@ export default function MobileListingDetailPage() {
   }
 
   const condition = CONDITION_LABELS[listing.condition] || CONDITION_LABELS['C'];
-  const trustLevel = TRUST_LEVELS[listing.seller.trustLevel] || TRUST_LEVELS['new'];
+  const trustLevel = TRUST_LEVELS[listing.seller?.trustLevel || 'new'] || TRUST_LEVELS['new'];
   const TrustIcon = trustLevel.icon;
 
   return (
@@ -538,53 +538,62 @@ export default function MobileListingDetailPage() {
             {/* Seller Info */}
             <div className="bg-white rounded-xl shadow-sm p-6 sticky top-20">
               <h2 className="text-lg font-bold mb-4">البائع</h2>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  <Image
-                    src={listing.seller.avatar || '/images/default-avatar.png'}
-                    alt={listing.seller.name}
-                    width={60}
-                    height={60}
-                    className="rounded-full"
-                  />
-                  {listing.seller.isVerified && (
-                    <CheckCircle className="absolute -bottom-1 -right-1 w-5 h-5 text-blue-500 bg-white rounded-full" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-bold">{listing.seller.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${trustLevel.color}`}>
-                      <TrustIcon className="w-3 h-3" />
-                      {trustLevel.label}
-                    </span>
+              {listing.seller ? (
+                <>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="relative">
+                      <Image
+                        src={listing.seller.avatar || '/images/default-avatar.png'}
+                        alt={listing.seller.name}
+                        width={60}
+                        height={60}
+                        className="rounded-full"
+                      />
+                      {listing.seller.isVerified && (
+                        <CheckCircle className="absolute -bottom-1 -right-1 w-5 h-5 text-blue-500 bg-white rounded-full" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-bold">{listing.seller.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${trustLevel.color}`}>
+                          <TrustIcon className="w-3 h-3" />
+                          {trustLevel.label}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 text-yellow-500 mb-1">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="font-bold">{listing.seller.rating.toFixed(1)}</span>
+                  <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-center gap-1 text-yellow-500 mb-1">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="font-bold">{listing.seller.rating?.toFixed(1) || '0.0'}</span>
+                      </div>
+                      <p className="text-gray-500">{listing.seller.reviewCount || 0} تقييم</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="font-bold text-indigo-600">{listing.seller.completedSales || 0}</p>
+                      <p className="text-gray-500">صفقة مكتملة</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="font-bold text-green-600">{listing.seller.responseRate || 0}%</p>
+                      <p className="text-gray-500">معدل الرد</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="font-bold text-gray-700">
+                        {listing.seller.joinedAt ? new Date(listing.seller.joinedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short' }) : '-'}
+                      </p>
+                      <p className="text-gray-500">تاريخ الانضمام</p>
+                    </div>
                   </div>
-                  <p className="text-gray-500">{listing.seller.reviewCount} تقييم</p>
+                </>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>معلومات البائع غير متوفرة</p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="font-bold text-indigo-600">{listing.seller.completedSales}</p>
-                  <p className="text-gray-500">صفقة مكتملة</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="font-bold text-green-600">{listing.seller.responseRate}%</p>
-                  <p className="text-gray-500">معدل الرد</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="font-bold text-gray-700">
-                    {new Date(listing.seller.joinedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short' })}
-                  </p>
-                  <p className="text-gray-500">تاريخ الانضمام</p>
-                </div>
-              </div>
+              )}
 
               {/* Action Buttons */}
               <div className="space-y-3">
