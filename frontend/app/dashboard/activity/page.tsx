@@ -652,7 +652,7 @@ export default function ActivityDashboardPage() {
                 <p className="text-gray-600 mb-6">ابدأ بإضافة منتجات أو التسوق لتظهر حركاتك هنا</p>
                 <div className="flex justify-center gap-4">
                   <Link
-                    href="/inventory/add"
+                    href="/listing/new"
                     className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
                   >
                     ➕ أضف منتج

@@ -221,7 +221,7 @@ export default function PromotePage() {
                 <h3 className="text-lg font-bold text-gray-900 mb-2">لا توجد إعلانات نشطة</h3>
                 <p className="text-gray-500 mb-6">أنشئ إعلاناً أولاً ثم عد لترويجه</p>
                 <Link
-                  href="/inventory/add"
+                  href="/listing/new"
                   className="px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition"
                 >
                   إنشاء إعلان جديد

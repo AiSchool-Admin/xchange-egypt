@@ -117,7 +117,7 @@ export default function InventoryPage() {
                 إدارة المخزون
               </Link>
               <Link
-                href="/inventory/add"
+                href="/listing/new"
                 className="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-purple-50 transition-all transform hover:scale-105 shadow-lg"
               >
                 <span className="text-xl">+</span>
@@ -182,7 +182,7 @@ export default function InventoryPage() {
             {/* Quick Add Cards */}
             <div className="grid sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
               <Link
-                href={`/inventory/add?side=${activeTab.toLowerCase()}&type=goods`}
+                href="/listing/new"
                 className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1 border-2 border-transparent hover:border-purple-300"
               >
                 <div className="text-4xl mb-3">📦</div>
@@ -190,7 +190,7 @@ export default function InventoryPage() {
                 <div className="text-sm text-gray-500">Physical items</div>
               </Link>
               <Link
-                href={`/inventory/add?side=${activeTab.toLowerCase()}&type=services`}
+                href="/listing/new?category=GENERAL"
                 className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1 border-2 border-transparent hover:border-indigo-300"
               >
                 <div className="text-4xl mb-3">🛠️</div>
@@ -198,7 +198,7 @@ export default function InventoryPage() {
                 <div className="text-sm text-gray-500">Skills & work</div>
               </Link>
               <Link
-                href={`/inventory/add?side=${activeTab.toLowerCase()}&type=cash`}
+                href="/listing/new?category=GENERAL"
                 className="p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all transform hover:-translate-y-1 border-2 border-transparent hover:border-green-300"
               >
                 <div className="text-4xl mb-3">💰</div>
@@ -247,7 +247,7 @@ export default function InventoryPage() {
 
             {/* Add More Card */}
             <Link
-              href={`/inventory/add?side=${activeTab.toLowerCase()}`}
+              href="/listing/new"
               className="bg-white/50 rounded-2xl border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 transition-all flex items-center justify-center min-h-[200px]"
             >
               <div className="text-center">

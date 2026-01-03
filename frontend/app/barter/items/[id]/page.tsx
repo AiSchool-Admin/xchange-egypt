@@ -468,7 +468,7 @@ export default function BarterItemDetailPage() {
                       ليس لديك منتجات متاحة للمقايضة
                     </p>
                     <Link
-                      href="/inventory/add"
+                      href="/listing/new"
                       className="text-teal-600 hover:underline"
                     >
                       + أضف منتج جديد
