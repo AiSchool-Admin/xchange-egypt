@@ -218,6 +218,48 @@ export default function DetailsStep({
   // Debounce title for AI categorization
   const debouncedTitle = useDebounce(formData.title || '', 1000);
 
+  // Helper function to find category path in tree
+  const findCategoryPath = (cats: Category[], targetId: string, path: Category[] = []): Category[] | null => {
+    for (const cat of cats) {
+      if (cat.id === targetId) {
+        return [...path, cat];
+      }
+      if (cat.children) {
+        const found = findCategoryPath(cat.children, targetId, [...path, cat]);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  // Auto-populate category dropdowns from AI result
+  const autoPopulateCategoryFromAI = (categoryId: string) => {
+    const categoryPath = findCategoryPath(categories, categoryId);
+    if (categoryPath && categoryPath.length > 0) {
+      const level1Id = categoryPath[0]?.id || '';
+      const level2Id = categoryPath[1]?.id || '';
+      const level3Id = categoryPath[2]?.id || '';
+
+      // Populate level2 and level3 category arrays
+      const level1Category = categories.find(c => c.id === level1Id);
+      if (level1Category?.children) {
+        setLevel2Categories(level1Category.children);
+
+        if (level2Id) {
+          const level2Category = level1Category.children.find(c => c.id === level2Id);
+          if (level2Category?.children) {
+            setLevel3Categories(level2Category.children);
+          }
+        }
+      }
+
+      // Set all selections
+      setCategoryLevel1(level1Id);
+      setCategoryLevel2(level2Id);
+      setCategoryLevel3(level3Id);
+    }
+  };
+
   // AI Category Detection
   useEffect(() => {
     const detectCategory = async () => {
@@ -248,6 +290,11 @@ export default function DetailsStep({
               confidence: result.category.confidence,
               isMatch
             });
+
+            // Auto-populate category dropdowns from AI result
+            if (result.category.id && categories.length > 0) {
+              autoPopulateCategoryFromAI(result.category.id);
+            }
           } else {
             // AI returned a category we don't have mapped - show current as confirmed
             const categoryDetails = LISTING_CATEGORIES.find(c => c.id === category);
@@ -271,7 +318,7 @@ export default function DetailsStep({
     };
 
     detectCategory();
-  }, [debouncedTitle, formData.description, category]);
+  }, [debouncedTitle, formData.description, category, categories]);
 
   // Set default address from user profile (governorate, city, district, street)
   useEffect(() => {
@@ -484,7 +531,7 @@ export default function DetailsStep({
         {/* Title */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            عنوان الإعلان <span className="text-red-500">*</span>
+            اسم السلعة/الخدمة <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -574,7 +621,7 @@ export default function DetailsStep({
         {/* Description */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            الوصف <span className="text-red-500">*</span>
+            التفاصيل <span className="text-red-500">*</span>
           </label>
           <textarea
             value={formData.description || ''}
@@ -661,13 +708,15 @@ export default function DetailsStep({
         </div>
       </div>
 
-      {/* Category-Specific Fields */}
-      <div className="border-t pt-8">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">
-          تفاصيل {categoryInfo?.nameAr || 'المنتج'}
-        </h3>
-        {renderCategoryFields()}
-      </div>
+      {/* Category-Specific Fields (only for specific categories, not GENERAL/SCRAP) */}
+      {category !== 'GENERAL' && category !== 'SCRAP' && (
+        <div className="border-t pt-8">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            تفاصيل {categoryInfo?.nameAr || 'المنتج'}
+          </h3>
+          {renderCategoryFields()}
+        </div>
+      )}
 
       {/* Images */}
       <div className="border-t pt-8">
