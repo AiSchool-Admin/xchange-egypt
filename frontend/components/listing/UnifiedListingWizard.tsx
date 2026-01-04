@@ -134,7 +134,13 @@ export default function UnifiedListingWizard({
       case 'category':
         return !!selectedCategory;
       case 'details':
-        return !!(formData.title && formData.description && formData.governorate);
+        // Require at least Level 1 category from the 3-level selector
+        const hasCategory = !!(
+          categorySpecificData?.categoryLevel1 ||
+          categorySpecificData?.categoryLevel2 ||
+          categorySpecificData?.categoryLevel3
+        );
+        return !!(formData.title && formData.description && formData.governorate && hasCategory);
       case 'transaction':
         return !!selectedTransactionType;
       case 'review':
@@ -151,19 +157,20 @@ export default function UnifiedListingWizard({
     setIsSubmitting(true);
 
     try {
-      // Use actual backend categoryId if available, otherwise fall back to mapped values
-      const categoryIdMap: Record<ListingCategory, string> = {
-        MOBILE: 'mobile-phones',
-        CAR: 'vehicles',
-        PROPERTY: 'real-estate',
-        GOLD: 'gold-jewelry',
-        LUXURY: 'luxury-items',
-        SCRAP: 'scrap-materials',
-        GENERAL: 'general'
-      };
+      // Get the most specific category ID from the 3-level selector in DetailsStep
+      // Priority: Level 3 > Level 2 > Level 1 > selectedCategoryId from CategoryStep
+      const categoryFromDetailsStep =
+        categorySpecificData?.categoryLevel3 ||
+        categorySpecificData?.categoryLevel2 ||
+        categorySpecificData?.categoryLevel1;
 
-      // Use the actual selected category ID from backend if available
-      const finalCategoryId = selectedCategoryId || categoryIdMap[selectedCategory];
+      // Use the category from DetailsStep's 3-level selector if available
+      const finalCategoryId = categoryFromDetailsStep || selectedCategoryId;
+
+      // Validate we have a valid category ID
+      if (!finalCategoryId) {
+        throw new Error('يرجى اختيار الفئة من القائمة المنسدلة');
+      }
 
       // Map transaction type to listing type
       const listingTypeMap: Record<TransactionType, string> = {

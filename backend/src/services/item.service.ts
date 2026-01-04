@@ -309,17 +309,31 @@ export const createItemWithUrls = async (
   itemData: CreateItemData & { imageUrls?: string[]; listingType?: string }
 ): Promise<ItemWithSeller> => {
   // Verify category exists and is active
-  const category = await prisma.category.findUnique({
-    where: { id: itemData.categoryId },
-  });
+  // Support both UUID and slug lookups for backwards compatibility
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(itemData.categoryId);
+
+  let category;
+  if (isUUID) {
+    category = await prisma.category.findUnique({
+      where: { id: itemData.categoryId },
+    });
+  } else {
+    // Try to find by slug if not a UUID
+    category = await prisma.category.findUnique({
+      where: { slug: itemData.categoryId },
+    });
+  }
 
   if (!category) {
-    throw new NotFoundError('Category not found');
+    throw new NotFoundError(`Category not found: ${itemData.categoryId}`);
   }
 
   if (!category.isActive) {
     throw new BadRequestError('Cannot create item in inactive category');
   }
+
+  // Use the actual category ID (in case we looked up by slug)
+  const resolvedCategoryId = category.id;
 
   // Get user's governorate as fallback and convert to Arabic
   let governorate = itemData.governorate;
@@ -337,7 +351,7 @@ export const createItemWithUrls = async (
   const item = await prisma.item.create({
     data: {
       sellerId: userId,
-      categoryId: itemData.categoryId,
+      categoryId: resolvedCategoryId,
       title: itemData.title,
       description: itemData.description,
       condition: itemData.condition || 'GOOD',
