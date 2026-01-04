@@ -13,6 +13,7 @@ import {
   TRANSACTION_TYPES,
   CommonFields
 } from '@/types/listing';
+import { createItem, CreateItemData } from '@/lib/api/items';
 
 // Step Components
 import CategoryStep from './steps/CategoryStep';
@@ -204,20 +205,26 @@ export default function UnifiedListingWizard({
         };
         await onComplete(listing);
       } else {
-        // Call the items API (use /items/create for JSON submissions)
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        const response = await fetch(`${apiUrl}/items/create`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          },
-          body: JSON.stringify(payload)
-        });
+        // Call the items API using the createItem function
+        const createData: CreateItemData = {
+          titleAr: payload.titleAr,
+          titleEn: payload.titleEn,
+          descriptionAr: payload.descriptionAr,
+          descriptionEn: payload.descriptionEn,
+          condition: payload.condition,
+          categoryId: payload.categoryId,
+          estimatedValue: payload.estimatedValue,
+          location: payload.location,
+          governorate: payload.governorate,
+          imageUrls: payload.imageUrls,
+          desiredKeywords: payload.desiredKeywords,
+          desiredValueMin: payload.desiredValueMin,
+          desiredValueMax: payload.desiredValueMax
+        };
 
-        const result = await response.json();
+        const result = await createItem(createData);
 
-        if (response.ok && result.success) {
+        if (result.success) {
           // Redirect based on category
           const redirectMap: Record<ListingCategory, string> = {
             MOBILE: '/mobiles',

@@ -52,19 +52,58 @@ interface DetailsStepProps {
 
 // Map AI category slugs to our ListingCategory type
 const AI_CATEGORY_MAP: Record<string, ListingCategory> = {
+  // Mobile & Phones
   'mobile-phones': 'MOBILE',
   'smartphones': 'MOBILE',
+  'phones': 'MOBILE',
+  'iphone': 'MOBILE',
+  'samsung': 'MOBILE',
+  'huawei': 'MOBILE',
+  'oppo': 'MOBILE',
+  'xiaomi': 'MOBILE',
+  'mobiles': 'MOBILE',
+  'هواتف': 'MOBILE',
+  'موبايل': 'MOBILE',
+  'جوال': 'MOBILE',
+  // Vehicles & Cars
   'cars': 'CAR',
   'sedans': 'CAR',
   'suv': 'CAR',
   'motorcycles': 'CAR',
+  'vehicles': 'CAR',
+  'auto': 'CAR',
+  'truck': 'CAR',
+  'سيارات': 'CAR',
+  'سيارة': 'CAR',
+  'موتوسيكل': 'CAR',
+  // Real Estate
   'apartments': 'PROPERTY',
   'villas': 'PROPERTY',
   'land': 'PROPERTY',
+  'real-estate': 'PROPERTY',
+  'property': 'PROPERTY',
+  'houses': 'PROPERTY',
+  'شقق': 'PROPERTY',
+  'شقة': 'PROPERTY',
+  'فيلا': 'PROPERTY',
+  'عقارات': 'PROPERTY',
+  'أراضي': 'PROPERTY',
+  // Gold & Jewelry
   'gold': 'GOLD',
   'jewelry': 'GOLD',
+  'gold-jewelry': 'GOLD',
+  'diamonds': 'GOLD',
+  'ذهب': 'GOLD',
+  'مجوهرات': 'GOLD',
+  // Luxury
   'watches': 'LUXURY',
   'bags': 'LUXURY',
+  'luxury': 'LUXURY',
+  'luxury-items': 'LUXURY',
+  'designer': 'LUXURY',
+  'ساعات': 'LUXURY',
+  'حقائب': 'LUXURY',
+  // General Electronics & Items
   'laptops': 'GENERAL',
   'tablets': 'GENERAL',
   'tv': 'GENERAL',
@@ -78,9 +117,20 @@ const AI_CATEGORY_MAP: Record<string, ListingCategory> = {
   'gym-equipment': 'GENERAL',
   'bicycles': 'GENERAL',
   'books': 'GENERAL',
+  'electronics': 'GENERAL',
+  'furniture': 'GENERAL',
+  'appliances': 'GENERAL',
+  'general': 'GENERAL',
+  'أجهزة': 'GENERAL',
+  'الكترونيات': 'GENERAL',
+  'أثاث': 'GENERAL',
+  // Scrap & Recycling
   'scrap': 'SCRAP',
   'metal': 'SCRAP',
   'recycling': 'SCRAP',
+  'scrap-materials': 'SCRAP',
+  'خردة': 'SCRAP',
+  'سكراب': 'SCRAP',
 };
 
 export default function DetailsStep({
@@ -95,10 +145,12 @@ export default function DetailsStep({
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [suggestedCategory, setSuggestedCategory] = useState<{
     category: ListingCategory;
     categoryName: string;
     confidence: number;
+    isMatch: boolean; // true if AI confirms current category
   } | null>(null);
   const { user } = useAuth();
 
@@ -112,10 +164,12 @@ export default function DetailsStep({
     const detectCategory = async () => {
       if (!debouncedTitle || debouncedTitle.length < 5) {
         setSuggestedCategory(null);
+        setAiError(null);
         return;
       }
 
       setAiLoading(true);
+      setAiError(null);
       try {
         const result = await categorizeItem({
           title: debouncedTitle,
@@ -126,19 +180,32 @@ export default function DetailsStep({
           const aiSlug = result.category.id || result.category.name?.toLowerCase() || '';
           const mappedCategory = AI_CATEGORY_MAP[aiSlug];
 
-          if (mappedCategory && mappedCategory !== category) {
+          if (mappedCategory) {
             const categoryDetails = LISTING_CATEGORIES.find(c => c.id === mappedCategory);
+            const isMatch = mappedCategory === category;
             setSuggestedCategory({
               category: mappedCategory,
               categoryName: categoryDetails?.nameAr || mappedCategory,
-              confidence: result.category.confidence
+              confidence: result.category.confidence,
+              isMatch
             });
           } else {
-            setSuggestedCategory(null);
+            // AI returned a category we don't have mapped - show current as confirmed
+            const categoryDetails = LISTING_CATEGORIES.find(c => c.id === category);
+            setSuggestedCategory({
+              category: category,
+              categoryName: categoryDetails?.nameAr || category,
+              confidence: 0.5,
+              isMatch: true
+            });
           }
+        } else {
+          setSuggestedCategory(null);
         }
       } catch (error) {
         console.error('AI categorization error:', error);
+        setAiError('تعذر تحليل الفئة');
+        setSuggestedCategory(null);
       } finally {
         setAiLoading(false);
       }
@@ -147,10 +214,25 @@ export default function DetailsStep({
     detectCategory();
   }, [debouncedTitle, formData.description, category]);
 
-  // Set default governorate from user profile
+  // Set default address from user profile (governorate, city, district)
   useEffect(() => {
-    if (!formData.governorate && user?.governorate) {
-      onFormDataChange({ ...formData, governorate: user.governorate });
+    if (user && (user.governorate || user.city || user.district)) {
+      const updates: Partial<CommonFields> = { ...formData };
+      let hasUpdates = false;
+
+      if (!formData.governorate && user.governorate) {
+        updates.governorate = user.governorate;
+        hasUpdates = true;
+      }
+      if (!formData.city && (user.city || user.district)) {
+        // Use district first as it's more specific, then city
+        updates.city = user.district || user.city || '';
+        hasUpdates = true;
+      }
+
+      if (hasUpdates) {
+        onFormDataChange(updates);
+      }
     }
   }, [user]);
 
@@ -358,14 +440,43 @@ export default function DetailsStep({
             </div>
           )}
 
-          {/* AI Category Suggestion */}
-          {suggestedCategory && !aiLoading && onCategoryChange && (
+          {/* AI Error */}
+          {aiError && !aiLoading && (
+            <div className="mt-2 text-sm text-amber-600">
+              ⚠️ {aiError}
+            </div>
+          )}
+
+          {/* AI Category Confirmation (when AI agrees with current category) */}
+          {suggestedCategory && suggestedCategory.isMatch && !aiLoading && (
+            <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-green-800 font-medium">
+                    ✨ الذكاء الاصطناعي يؤكد اختيارك
+                  </p>
+                  <p className="text-sm text-green-600">
+                    الفئة "{suggestedCategory.categoryName}" مناسبة لمنتجك
+                    {suggestedCategory.confidence > 0.7 && ' (ثقة عالية)'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI Category Suggestion (when AI suggests different category) */}
+          {suggestedCategory && !suggestedCategory.isMatch && !aiLoading && onCategoryChange && (
             <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
               <div className="flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm text-purple-800 font-medium">
-                    اقتراح الذكاء الاصطناعي
+                    🤖 اقتراح الذكاء الاصطناعي
                   </p>
                   <p className="text-sm text-purple-600 mt-1">
                     يبدو أن منتجك ينتمي لفئة "{suggestedCategory.categoryName}"
