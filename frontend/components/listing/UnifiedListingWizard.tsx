@@ -251,7 +251,7 @@ export default function UnifiedListingWizard({
             router.push(options.backUrl || redirectMap[selectedCategory] || '/items');
           }
         } else {
-          throw new Error(result.message || 'فشل في نشر الإعلان');
+          throw new Error('فشل في نشر الإعلان');
         }
       }
     } catch (error) {
