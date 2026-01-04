@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Upload, X, MapPin, Navigation, Loader2, Sparkles } from 'lucide-react';
 import { ListingCategory, CommonFields, LISTING_CATEGORIES } from '@/types/listing';
 import { useAuth } from '@/lib/contexts/AuthContext';
@@ -52,89 +52,6 @@ interface DetailsStepProps {
   onCategoryChange?: (category: ListingCategory) => void;
 }
 
-// Map AI category slugs to our ListingCategory type
-const AI_CATEGORY_MAP: Record<string, ListingCategory> = {
-  // Mobile & Phones
-  'mobile-phones': 'MOBILE',
-  'smartphones': 'MOBILE',
-  'phones': 'MOBILE',
-  'iphone': 'MOBILE',
-  'samsung': 'MOBILE',
-  'huawei': 'MOBILE',
-  'oppo': 'MOBILE',
-  'xiaomi': 'MOBILE',
-  'mobiles': 'MOBILE',
-  'هواتف': 'MOBILE',
-  'موبايل': 'MOBILE',
-  'جوال': 'MOBILE',
-  // Vehicles & Cars
-  'cars': 'CAR',
-  'sedans': 'CAR',
-  'suv': 'CAR',
-  'motorcycles': 'CAR',
-  'vehicles': 'CAR',
-  'auto': 'CAR',
-  'truck': 'CAR',
-  'سيارات': 'CAR',
-  'سيارة': 'CAR',
-  'موتوسيكل': 'CAR',
-  // Real Estate
-  'apartments': 'PROPERTY',
-  'villas': 'PROPERTY',
-  'land': 'PROPERTY',
-  'real-estate': 'PROPERTY',
-  'property': 'PROPERTY',
-  'houses': 'PROPERTY',
-  'شقق': 'PROPERTY',
-  'شقة': 'PROPERTY',
-  'فيلا': 'PROPERTY',
-  'عقارات': 'PROPERTY',
-  'أراضي': 'PROPERTY',
-  // Gold & Jewelry
-  'gold': 'GOLD',
-  'jewelry': 'GOLD',
-  'gold-jewelry': 'GOLD',
-  'diamonds': 'GOLD',
-  'ذهب': 'GOLD',
-  'مجوهرات': 'GOLD',
-  // Luxury
-  'watches': 'LUXURY',
-  'bags': 'LUXURY',
-  'luxury': 'LUXURY',
-  'luxury-items': 'LUXURY',
-  'designer': 'LUXURY',
-  'ساعات': 'LUXURY',
-  'حقائب': 'LUXURY',
-  // General Electronics & Items
-  'laptops': 'GENERAL',
-  'tablets': 'GENERAL',
-  'tv': 'GENERAL',
-  'cameras': 'GENERAL',
-  'refrigerators': 'GENERAL',
-  'washing-machines': 'GENERAL',
-  'air-conditioners': 'GENERAL',
-  'sofas': 'GENERAL',
-  'beds': 'GENERAL',
-  'video-games': 'GENERAL',
-  'gym-equipment': 'GENERAL',
-  'bicycles': 'GENERAL',
-  'books': 'GENERAL',
-  'electronics': 'GENERAL',
-  'furniture': 'GENERAL',
-  'appliances': 'GENERAL',
-  'general': 'GENERAL',
-  'أجهزة': 'GENERAL',
-  'الكترونيات': 'GENERAL',
-  'أثاث': 'GENERAL',
-  // Scrap & Recycling
-  'scrap': 'SCRAP',
-  'metal': 'SCRAP',
-  'recycling': 'SCRAP',
-  'scrap-materials': 'SCRAP',
-  'خردة': 'SCRAP',
-  'سكراب': 'SCRAP',
-};
-
 export default function DetailsStep({
   category,
   formData,
@@ -159,6 +76,9 @@ export default function DetailsStep({
   const [categoryLevel3, setCategoryLevel3] = useState('');
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
+  // Ref to track if AI is auto-populating (to prevent useEffect from clearing values)
+  const isAIPopulating = useRef(false);
+
   const categoryInfo = LISTING_CATEGORIES.find(c => c.id === category);
 
   // Load categories from backend
@@ -177,7 +97,7 @@ export default function DetailsStep({
     loadCategories();
   }, []);
 
-  // Load level 2 categories when level 1 changes
+  // Load level 2 categories when level 1 changes (manual selection only)
   useEffect(() => {
     if (categoryLevel1) {
       const parentCategory = categories.find(c => c.id === categoryLevel1);
@@ -186,16 +106,19 @@ export default function DetailsStep({
       } else {
         setLevel2Categories([]);
       }
-      setLevel3Categories([]);
-      setCategoryLevel2('');
-      setCategoryLevel3('');
+      // Only clear level2/level3 if NOT being auto-populated by AI
+      if (!isAIPopulating.current) {
+        setLevel3Categories([]);
+        setCategoryLevel2('');
+        setCategoryLevel3('');
+      }
     } else {
       setLevel2Categories([]);
       setLevel3Categories([]);
     }
   }, [categoryLevel1, categories]);
 
-  // Load level 3 categories when level 2 changes
+  // Load level 3 categories when level 2 changes (manual selection only)
   useEffect(() => {
     if (categoryLevel2) {
       const level2Category = level2Categories.find(c => c.id === categoryLevel2);
@@ -204,7 +127,10 @@ export default function DetailsStep({
       } else {
         setLevel3Categories([]);
       }
-      setCategoryLevel3('');
+      // Only clear level3 if NOT being auto-populated by AI
+      if (!isAIPopulating.current) {
+        setCategoryLevel3('');
+      }
     } else {
       setLevel3Categories([]);
     }
@@ -235,6 +161,9 @@ export default function DetailsStep({
       const level2Id = categoryPath[1]?.id || '';
       const level3Id = categoryPath[2]?.id || '';
 
+      // Mark as AI populating to prevent useEffect from clearing values
+      isAIPopulating.current = true;
+
       // Populate level2 and level3 category arrays
       const level1Category = categories.find(c => c.id === level1Id);
       if (level1Category?.children) {
@@ -252,6 +181,12 @@ export default function DetailsStep({
       setCategoryLevel1(level1Id);
       setCategoryLevel2(level2Id);
       setCategoryLevel3(level3Id);
+
+      // Reset flag after React has processed the state updates
+      // Using requestAnimationFrame to ensure it happens after useEffects run
+      requestAnimationFrame(() => {
+        isAIPopulating.current = false;
+      });
     }
   };
 
