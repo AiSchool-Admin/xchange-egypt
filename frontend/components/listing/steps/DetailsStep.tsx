@@ -67,13 +67,13 @@ export default function DetailsStep({
   const [categorySuggestions, setCategorySuggestions] = useState<CategorySuggestionType[]>([]);
   const { user } = useAuth();
 
-  // 3-Level Category Selection State
+  // 3-Level Category Selection State - Initialize from categoryData if available
   const [categories, setCategories] = useState<Category[]>([]);
   const [level2Categories, setLevel2Categories] = useState<Category[]>([]);
   const [level3Categories, setLevel3Categories] = useState<Category[]>([]);
-  const [categoryLevel1, setCategoryLevel1] = useState('');
-  const [categoryLevel2, setCategoryLevel2] = useState('');
-  const [categoryLevel3, setCategoryLevel3] = useState('');
+  const [categoryLevel1, setCategoryLevel1] = useState(categoryData?.categoryLevel1 || '');
+  const [categoryLevel2, setCategoryLevel2] = useState(categoryData?.categoryLevel2 || '');
+  const [categoryLevel3, setCategoryLevel3] = useState(categoryData?.categoryLevel3 || '');
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   // Ref to track if AI is auto-populating (to prevent useEffect from clearing values)
@@ -135,6 +135,35 @@ export default function DetailsStep({
       setLevel3Categories([]);
     }
   }, [categoryLevel2, level2Categories]);
+
+  // Save category levels to categoryData whenever they change
+  useEffect(() => {
+    if (categoryLevel1 || categoryLevel2 || categoryLevel3) {
+      onCategoryDataChange({
+        ...categoryData,
+        categoryLevel1,
+        categoryLevel2,
+        categoryLevel3,
+      });
+    }
+  }, [categoryLevel1, categoryLevel2, categoryLevel3]);
+
+  // Restore level2/level3 categories from saved state when categories are loaded
+  useEffect(() => {
+    if (categories.length > 0 && categoryData?.categoryLevel1) {
+      const level1Category = categories.find(c => c.id === categoryData.categoryLevel1);
+      if (level1Category?.children) {
+        setLevel2Categories(level1Category.children);
+
+        if (categoryData?.categoryLevel2) {
+          const level2Category = level1Category.children.find(c => c.id === categoryData.categoryLevel2);
+          if (level2Category?.children) {
+            setLevel3Categories(level2Category.children);
+          }
+        }
+      }
+    }
+  }, [categories, categoryData?.categoryLevel1, categoryData?.categoryLevel2]);
 
   // Debounce title for AI categorization
   const debouncedTitle = useDebounce(formData.title || '', 1000);
