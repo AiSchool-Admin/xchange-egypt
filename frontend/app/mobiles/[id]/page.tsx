@@ -179,13 +179,13 @@ export default function MobileListingDetailPage() {
   };
 
   const nextImage = () => {
-    if (listing) {
+    if (listing && listing.images && listing.images.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % listing.images.length);
     }
   };
 
   const prevImage = () => {
-    if (listing) {
+    if (listing && listing.images && listing.images.length > 0) {
       setCurrentImageIndex((prev) => (prev - 1 + listing.images.length) % listing.images.length);
     }
   };
@@ -253,14 +253,14 @@ export default function MobileListingDetailPage() {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="relative aspect-square">
                 <Image
-                  src={listing.images[currentImageIndex] || '/images/mobile-placeholder.jpg'}
+                  src={listing.images?.[currentImageIndex] || '/images/mobile-placeholder.jpg'}
                   alt={listing.title}
                   fill
                   className="object-contain bg-gray-100"
                 />
 
                 {/* Navigation Arrows */}
-                {listing.images.length > 1 && (
+                {listing.images && listing.images.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
@@ -295,7 +295,7 @@ export default function MobileListingDetailPage() {
               </div>
 
               {/* Thumbnails */}
-              {listing.images.length > 1 && (
+              {listing.images && listing.images.length > 1 && (
                 <div className="p-4 flex gap-2 overflow-x-auto">
                   {listing.images.map((img, idx) => (
                     <button
