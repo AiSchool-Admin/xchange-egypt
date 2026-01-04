@@ -236,7 +236,7 @@ export default function DetailsStep({
   // Set default address from user profile (governorate, city, district, street)
   useEffect(() => {
     if (user && (user.governorate || user.city || user.district || user.street)) {
-      const updates: Partial<CommonFields> & { district?: string; street?: string } = { ...formData };
+      const updates: Partial<CommonFields> = { ...formData };
       let hasUpdates = false;
 
       if (!formData.governorate && user.governorate) {
@@ -247,17 +247,17 @@ export default function DetailsStep({
         updates.city = user.city;
         hasUpdates = true;
       }
-      if (!(formData as any).district && user.district) {
+      if (!formData.district && user.district) {
         updates.district = user.district;
         hasUpdates = true;
       }
-      if (!(formData as any).street && user.street) {
+      if (!formData.street && user.street) {
         updates.street = user.street;
         hasUpdates = true;
       }
 
       if (hasUpdates) {
-        onFormDataChange(updates as Partial<CommonFields>);
+        onFormDataChange(updates);
       }
     }
   }, [user]);
@@ -295,18 +295,30 @@ export default function DetailsStep({
               governorate.includes(g) || g.includes(governorate.replace('محافظة ', ''))
             );
 
+            // Extract city, district, and street from OpenStreetMap data
+            const city = address.city || address.town || address.village || '';
+            const district = address.suburb || address.neighbourhood || address.city_district || address.quarter || '';
+            const street = address.road || address.street || '';
+
+            // Build update object with all available location data
+            const locationUpdate: Partial<CommonFields> = {
+              ...formData,
+            };
+
             if (matchedGov) {
-              onFormDataChange({
-                ...formData,
-                governorate: matchedGov,
-                city: address.city || address.town || address.village || formData.city
-              });
-            } else if (governorate) {
-              onFormDataChange({
-                ...formData,
-                city: address.city || address.town || address.village || formData.city
-              });
+              locationUpdate.governorate = matchedGov;
             }
+            if (city) {
+              locationUpdate.city = city;
+            }
+            if (district) {
+              locationUpdate.district = district;
+            }
+            if (street) {
+              locationUpdate.street = street;
+            }
+
+            onFormDataChange(locationUpdate);
           }
         } catch (error) {
           console.error('Error getting location:', error);
@@ -760,8 +772,8 @@ export default function DetailsStep({
             </label>
             <input
               type="text"
-              value={(formData as any).district || ''}
-              onChange={(e) => handleInputChange('district' as any, e.target.value)}
+              value={formData.district || ''}
+              onChange={(e) => handleInputChange('district', e.target.value)}
               placeholder="مثال: الحي الأول، المنطقة الصناعية"
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
@@ -774,8 +786,8 @@ export default function DetailsStep({
             </label>
             <input
               type="text"
-              value={(formData as any).street || ''}
-              onChange={(e) => handleInputChange('street' as any, e.target.value)}
+              value={formData.street || ''}
+              onChange={(e) => handleInputChange('street', e.target.value)}
               placeholder="مثال: شارع الجمهورية، بجوار المسجد الكبير"
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />

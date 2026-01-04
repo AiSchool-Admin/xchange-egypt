@@ -150,6 +150,8 @@ export interface CommonFields {
   description: string;
   governorate: string;
   city?: string;
+  district?: string;  // الحي / المنطقة
+  street?: string;    // الشارع / العنوان التفصيلي
   images: string[];
 }
 

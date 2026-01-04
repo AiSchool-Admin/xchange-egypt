@@ -216,7 +216,9 @@ export const getItem = async (id: string): Promise<ItemResponse> => {
 
 // Create new item
 export const createItem = async (data: CreateItemData): Promise<ItemResponse> => {
-  const response = await apiClient.post('/items', data);
+  // Use /items/create for JSON data (when images are URLs)
+  // Use /items for multipart/form-data (when uploading files directly)
+  const response = await apiClient.post('/items/create', data);
   return response.data;
 };
 
