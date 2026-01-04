@@ -29,8 +29,16 @@ interface CategoryKeywords {
  */
 export const CATEGORY_KEYWORDS: CategoryKeywords[] = [
   // ============================================
-  // ELECTRONICS
+  // ELECTRONICS (Parent + subcategories)
   // ============================================
+  {
+    categorySlug: 'electronics',
+    keywords: {
+      ar: ['الكترونيات', 'إلكترونيات', 'أجهزة', 'اجهزة'],
+      en: ['electronics', 'electronic', 'devices', 'gadgets'],
+    },
+    weight: 3, // Low weight for parent - prefer specific subcategories
+  },
   {
     categorySlug: 'mobile-phones',
     keywords: {
@@ -117,8 +125,16 @@ export const CATEGORY_KEYWORDS: CategoryKeywords[] = [
   },
 
   // ============================================
-  // VEHICLES
+  // VEHICLES (Parent + subcategories)
   // ============================================
+  {
+    categorySlug: 'vehicles',
+    keywords: {
+      ar: ['مركبات', 'عربيات', 'سيارات'],
+      en: ['vehicles', 'automotive', 'auto'],
+    },
+    weight: 3,
+  },
   {
     categorySlug: 'cars',
     keywords: {
@@ -153,8 +169,16 @@ export const CATEGORY_KEYWORDS: CategoryKeywords[] = [
   },
 
   // ============================================
-  // REAL ESTATE
+  // REAL ESTATE (Parent + subcategories)
   // ============================================
+  {
+    categorySlug: 'real-estate',
+    keywords: {
+      ar: ['عقارات', 'عقار', 'ايجار', 'بيع'],
+      en: ['real estate', 'property', 'realty'],
+    },
+    weight: 3,
+  },
   {
     categorySlug: 'apartments',
     keywords: {
@@ -181,44 +205,95 @@ export const CATEGORY_KEYWORDS: CategoryKeywords[] = [
   },
 
   // ============================================
-  // FURNITURE
+  // FURNITURE (Parent category)
   // ============================================
   {
-    categorySlug: 'sofas',
+    categorySlug: 'furniture',
     keywords: {
-      ar: ['كنبه', 'كنبة', 'صالون', 'انتريه'],
-      en: ['sofa', 'couch', 'settee'],
+      ar: ['أثاث', 'اثاث', 'مفروشات', 'موبيليا', 'فرش'],
+      en: ['furniture', 'furnishing', 'furnishings'],
     },
-    weight: 10,
+    weight: 5, // Lower weight for parent - prefer specific subcategories
   },
+  // Living Room Furniture
   {
-    categorySlug: 'beds',
+    categorySlug: 'sofas-couches',
     keywords: {
-      ar: ['سرير', 'سراير', 'نوم'],
-      en: ['bed', 'mattress'],
+      ar: ['كنبه', 'كنبة', 'صالون', 'انتريه', 'أريكة', 'اريكة', 'ركنة'],
+      en: ['sofa', 'couch', 'settee', 'living room'],
     },
-    weight: 10,
-  },
-  {
-    categorySlug: 'wardrobes',
-    keywords: {
-      ar: ['دولاب', 'خزانة', 'خزانه'],
-      en: ['wardrobe', 'closet', 'armoire'],
-    },
-    weight: 10,
+    weight: 12,
   },
   {
     categorySlug: 'tables',
     keywords: {
-      ar: ['ترابيزه', 'ترابيزة', 'طاولة', 'منضدة'],
-      en: ['table', 'desk', 'dining table'],
+      ar: ['ترابيزه', 'ترابيزة', 'طاولة', 'منضدة', 'سفرة'],
+      en: ['table', 'dining table', 'coffee table'],
     },
-    weight: 8,
+    weight: 10,
+  },
+  {
+    categorySlug: 'tv-units',
+    keywords: {
+      ar: ['وحدة تلفزيون', 'ستاند تلفزيون', 'طاولة تلفزيون'],
+      en: ['tv unit', 'tv stand', 'entertainment center'],
+    },
+    weight: 12,
+  },
+  // Bedroom Furniture
+  {
+    categorySlug: 'beds',
+    keywords: {
+      ar: ['سرير', 'سراير', 'غرفة نوم', 'مرتبة'],
+      en: ['bed', 'mattress', 'bedroom'],
+    },
+    weight: 12,
+  },
+  {
+    categorySlug: 'wardrobes',
+    keywords: {
+      ar: ['دولاب', 'خزانة', 'خزانه', 'دواليب'],
+      en: ['wardrobe', 'closet', 'armoire', 'cabinet'],
+    },
+    weight: 12,
+  },
+  {
+    categorySlug: 'dressers',
+    keywords: {
+      ar: ['تسريحة', 'تسريحه', 'مرآة'],
+      en: ['dresser', 'vanity', 'dressing table'],
+    },
+    weight: 12,
+  },
+  // Office Furniture
+  {
+    categorySlug: 'desks',
+    keywords: {
+      ar: ['مكتب', 'مكاتب', 'ديسك'],
+      en: ['desk', 'office desk', 'work desk'],
+    },
+    weight: 12,
+  },
+  {
+    categorySlug: 'office-chairs',
+    keywords: {
+      ar: ['كرسي مكتب', 'كراسي مكتب', 'كرسى'],
+      en: ['office chair', 'desk chair', 'computer chair'],
+    },
+    weight: 12,
   },
 
   // ============================================
-  // FASHION
+  // FASHION (Parent + subcategories)
   // ============================================
+  {
+    categorySlug: 'fashion',
+    keywords: {
+      ar: ['ملابس', 'لبس', 'هدوم', 'موضة', 'ازياء'],
+      en: ['fashion', 'clothing', 'clothes', 'apparel'],
+    },
+    weight: 3,
+  },
   {
     categorySlug: 'mens-clothing',
     keywords: {
@@ -256,52 +331,180 @@ export const CATEGORY_KEYWORDS: CategoryKeywords[] = [
   // TOYS & GAMES
   // ============================================
   {
-    categorySlug: 'video-games',
+    categorySlug: 'toys-games',
     keywords: {
-      ar: ['بلايستيشن', 'اكس بوكس', 'العاب فيديو', 'جيمز'],
-      en: ['playstation', 'xbox', 'video games', 'gaming', 'ps5', 'ps4', 'nintendo'],
+      ar: ['لعبه', 'لعبة', 'العاب اطفال', 'لعب', 'العاب', 'بلايستيشن', 'اكس بوكس', 'جيمز'],
+      en: ['toy', 'toys', 'kids toys', 'children', 'playstation', 'xbox', 'video games', 'gaming', 'ps5', 'ps4', 'nintendo'],
     },
     weight: 10,
-  },
-  {
-    categorySlug: 'toys',
-    keywords: {
-      ar: ['لعبه', 'لعبة', 'العاب اطفال', 'لعب'],
-      en: ['toy', 'toys', 'kids toys', 'children'],
-    },
-    weight: 8,
   },
 
   // ============================================
-  // SPORTS
+  // SPORTS & HOBBIES
   // ============================================
   {
-    categorySlug: 'gym-equipment',
+    categorySlug: 'sports-hobbies',
     keywords: {
-      ar: ['جيم', 'رياضه', 'تمارين', 'اوزان', 'دامبلز'],
-      en: ['gym', 'fitness', 'workout', 'weights', 'dumbbells', 'treadmill'],
+      ar: ['رياضة', 'رياضه', 'هوايات'],
+      en: ['sports', 'hobbies', 'sport'],
     },
-    weight: 10,
+    weight: 5,
+  },
+  {
+    categorySlug: 'sports-equipment',
+    keywords: {
+      ar: ['جيم', 'تمارين', 'اوزان', 'دامبلز', 'معدات رياضية', 'بنش'],
+      en: ['gym', 'fitness', 'workout', 'weights', 'dumbbells', 'treadmill', 'sports equipment'],
+    },
+    weight: 12,
   },
   {
     categorySlug: 'bicycles',
     keywords: {
-      ar: ['عجله', 'عجلة', 'دراجة هوائية', 'بسكليت'],
-      en: ['bicycle', 'bike', 'cycle'],
+      ar: ['عجله', 'عجلة', 'دراجة هوائية', 'بسكليت', 'دراجة'],
+      en: ['bicycle', 'bike', 'cycle', 'cycling'],
     },
-    weight: 10,
+    weight: 12,
+  },
+  {
+    categorySlug: 'musical-instruments',
+    keywords: {
+      ar: ['جيتار', 'بيانو', 'عود', 'الة موسيقية', 'موسيقى'],
+      en: ['guitar', 'piano', 'musical instrument', 'music', 'violin', 'drums'],
+    },
+    weight: 12,
   },
 
   // ============================================
-  // BOOKS
+  // BOOKS & MEDIA
   // ============================================
   {
     categorySlug: 'books',
     keywords: {
-      ar: ['كتاب', 'كتب', 'روايه', 'رواية', 'قصه'],
-      en: ['book', 'books', 'novel', 'story'],
+      ar: ['كتاب', 'كتب', 'روايه', 'رواية', 'قصه', 'قصة'],
+      en: ['book', 'books', 'novel', 'story', 'reading'],
     },
-    weight: 10,
+    weight: 12,
+  },
+
+  // ============================================
+  // HOME APPLIANCES (Parent & subcategories)
+  // ============================================
+  {
+    categorySlug: 'home-appliances',
+    keywords: {
+      ar: ['أجهزة منزلية', 'اجهزة منزليه', 'كهربائي'],
+      en: ['home appliances', 'appliances', 'household'],
+    },
+    weight: 5,
+  },
+  {
+    categorySlug: 'ovens-stoves',
+    keywords: {
+      ar: ['فرن', 'بوتاجاز', 'بوتجاز', 'موقد', 'طباخ'],
+      en: ['oven', 'stove', 'cooker', 'range'],
+    },
+    weight: 12,
+  },
+  {
+    categorySlug: 'kitchen-appliances',
+    keywords: {
+      ar: ['خلاط', 'عصارة', 'محضر طعام', 'توستر', 'كبة'],
+      en: ['blender', 'juicer', 'food processor', 'toaster', 'mixer'],
+    },
+    weight: 12,
+  },
+
+  // ============================================
+  // LUXURY GOODS
+  // ============================================
+  {
+    categorySlug: 'luxury',
+    keywords: {
+      ar: ['فاخر', 'لاكشري', 'ماركة', 'اصلي', 'برند'],
+      en: ['luxury', 'premium', 'designer', 'brand', 'original'],
+    },
+    weight: 5,
+  },
+  {
+    categorySlug: 'luxury-watches',
+    keywords: {
+      ar: ['ساعة', 'ساعات', 'رولكس', 'اوميغا'],
+      en: ['watch', 'watches', 'rolex', 'omega', 'timepiece'],
+    },
+    weight: 12,
+  },
+  {
+    categorySlug: 'jewelry',
+    keywords: {
+      ar: ['ذهب', 'مجوهرات', 'فضة', 'الماس', 'خاتم', 'سلسلة', 'اساور'],
+      en: ['gold', 'jewelry', 'silver', 'diamond', 'ring', 'necklace', 'bracelet'],
+    },
+    weight: 12,
+  },
+  {
+    categorySlug: 'perfumes',
+    keywords: {
+      ar: ['عطر', 'عطور', 'برفيوم', 'بخور'],
+      en: ['perfume', 'fragrance', 'cologne', 'scent'],
+    },
+    weight: 12,
+  },
+
+  // ============================================
+  // BUILDING MATERIALS & WASTE
+  // ============================================
+  {
+    categorySlug: 'building-waste',
+    keywords: {
+      ar: ['خردة', 'سكراب', 'نفايات', 'مخلفات'],
+      en: ['scrap', 'waste', 'recycling', 'junk'],
+    },
+    weight: 5,
+  },
+  {
+    categorySlug: 'metals',
+    keywords: {
+      ar: ['حديد', 'نحاس', 'المنيوم', 'معدن'],
+      en: ['metal', 'iron', 'copper', 'aluminum', 'steel'],
+    },
+    weight: 12,
+  },
+  {
+    categorySlug: 'wood',
+    keywords: {
+      ar: ['خشب', 'اخشاب', 'موبيليا قديمة'],
+      en: ['wood', 'lumber', 'timber'],
+    },
+    weight: 12,
+  },
+
+  // ============================================
+  // SERVICES
+  // ============================================
+  {
+    categorySlug: 'services',
+    keywords: {
+      ar: ['خدمة', 'خدمات', 'صيانة', 'تصليح'],
+      en: ['service', 'services', 'maintenance', 'repair'],
+    },
+    weight: 5,
+  },
+  {
+    categorySlug: 'moving-shipping',
+    keywords: {
+      ar: ['نقل', 'شحن', 'نقل عفش', 'ونش'],
+      en: ['moving', 'shipping', 'transportation', 'delivery'],
+    },
+    weight: 12,
+  },
+  {
+    categorySlug: 'cleaning',
+    keywords: {
+      ar: ['تنظيف', 'نظافة', 'غسيل'],
+      en: ['cleaning', 'housekeeping', 'washing'],
+    },
+    weight: 12,
   },
 ];
 
