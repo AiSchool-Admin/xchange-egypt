@@ -434,37 +434,162 @@ export const CATEGORY_KEYWORDS: CategoryKeywords[] = [
   },
 
   // ============================================
-  // HOME APPLIANCES (Level 1 → Level 2)
+  // HOME APPLIANCES (Level 1 → Level 2 → Level 3)
   // ============================================
   {
     categorySlug: 'home-appliances',
     keywords: { ar: ['أجهزة منزلية', 'اجهزة كهربائية'], en: ['home appliances', 'appliances'] },
     weight: 3,
   },
+  // Refrigerators (Level 2)
   {
     categorySlug: 'refrigerators',
     keywords: { ar: ['ثلاجة', 'تلاجة', 'فريزر'], en: ['refrigerator', 'fridge', 'freezer'] },
-    weight: 12,
+    weight: 8,
   },
+  // Refrigerators Level 3
+  {
+    categorySlug: 'toshiba-refrigerators',
+    keywords: { ar: ['ثلاجة توشيبا', 'تلاجة توشيبا', 'توشيبا'], en: ['toshiba refrigerator', 'toshiba fridge'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'sharp-refrigerators',
+    keywords: { ar: ['ثلاجة شارب', 'تلاجة شارب'], en: ['sharp refrigerator', 'sharp fridge'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'lg-refrigerators',
+    keywords: { ar: ['ثلاجة ال جي', 'ثلاجة إل جي', 'ال جي', 'إل جي'], en: ['lg refrigerator', 'lg fridge'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'samsung-refrigerators',
+    keywords: { ar: ['ثلاجة سامسونج', 'تلاجة سامسونج'], en: ['samsung refrigerator', 'samsung fridge'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'kiriazi-refrigerators',
+    keywords: { ar: ['ثلاجة كريازي', 'تلاجة كريازي', 'كريازى', 'كريازي'], en: ['kiriazi refrigerator', 'kiriazi fridge', 'kiriazi'] },
+    weight: 15,
+  },
+  // Washing Machines (Level 2)
   {
     categorySlug: 'washing-machines',
     keywords: { ar: ['غسالة', 'غساله', 'غسالات'], en: ['washing machine', 'washer', 'laundry machine'] },
-    weight: 12,
+    weight: 8,
+  },
+  // Washing Machines Level 3
+  {
+    categorySlug: 'toshiba-washing',
+    keywords: { ar: ['غسالة توشيبا', 'غساله توشيبا'], en: ['toshiba washing machine', 'toshiba washer'] },
+    weight: 15,
   },
   {
-    categorySlug: 'air-conditioners',
-    keywords: { ar: ['تكييف', 'مكيف', 'كارير', 'شارب'], en: ['air conditioner', 'ac', 'carrier', 'sharp'] },
-    weight: 12,
+    categorySlug: 'lg-washing',
+    keywords: { ar: ['غسالة ال جي', 'غسالة إل جي'], en: ['lg washing machine', 'lg washer'] },
+    weight: 15,
   },
+  {
+    categorySlug: 'samsung-washing',
+    keywords: { ar: ['غسالة سامسونج', 'غساله سامسونج'], en: ['samsung washing machine', 'samsung washer'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'zanussi-washing',
+    keywords: { ar: ['غسالة زانوسي', 'زانوسى', 'زانوسي'], en: ['zanussi washing machine', 'zanussi'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'white-whale-washing',
+    keywords: { ar: ['غسالة وايت ويل', 'وايت ويل', 'وايت بوينت'], en: ['white whale', 'white point', 'white whale washing'] },
+    weight: 15,
+  },
+  // Air Conditioners (Level 2)
+  {
+    categorySlug: 'air-conditioners',
+    keywords: { ar: ['تكييف', 'مكيف'], en: ['air conditioner', 'ac'] },
+    weight: 8,
+  },
+  // Air Conditioners Level 3
+  {
+    categorySlug: 'carrier-ac',
+    keywords: { ar: ['تكييف كارير', 'مكيف كارير', 'كارير'], en: ['carrier ac', 'carrier air conditioner'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'sharp-ac',
+    keywords: { ar: ['تكييف شارب', 'مكيف شارب'], en: ['sharp ac', 'sharp air conditioner'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'lg-ac',
+    keywords: { ar: ['تكييف ال جي', 'مكيف إل جي'], en: ['lg ac', 'lg air conditioner'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'midea-ac',
+    keywords: { ar: ['تكييف ميديا', 'مكيف ميديا', 'ميديا'], en: ['midea ac', 'midea air conditioner', 'midea'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'union-air',
+    keywords: { ar: ['تكييف يونيون اير', 'مكيف يونيون', 'يونيون اير'], en: ['union air', 'union air conditioner'] },
+    weight: 15,
+  },
+  // Ovens & Stoves (Level 2)
   {
     categorySlug: 'ovens-stoves',
     keywords: { ar: ['فرن', 'بوتاجاز', 'موقد'], en: ['oven', 'stove', 'cooker', 'range'] },
-    weight: 12,
+    weight: 8,
+  },
+  // Ovens Level 3
+  {
+    categorySlug: 'fresh-ovens',
+    keywords: { ar: ['بوتاجاز فريش', 'فرن فريش', 'فريش'], en: ['fresh oven', 'fresh stove', 'fresh'] },
+    weight: 15,
   },
   {
+    categorySlug: 'ideal-ovens',
+    keywords: { ar: ['بوتاجاز ايديال', 'فرن ايديال', 'ايديال', 'إيديال'], en: ['ideal oven', 'ideal stove', 'ideal'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'universal-ovens',
+    keywords: { ar: ['بوتاجاز يونيفرسال', 'فرن يونيفرسال', 'يونيفرسال'], en: ['universal oven', 'universal stove', 'universal'] },
+    weight: 15,
+  },
+  // Kitchen Appliances (Level 2)
+  {
     categorySlug: 'kitchen-appliances',
-    keywords: { ar: ['اجهزة مطبخ', 'ميكروويف', 'ديب فريزر'], en: ['kitchen appliances', 'microwave', 'deep freezer'] },
-    weight: 12,
+    keywords: { ar: ['اجهزة مطبخ'], en: ['kitchen appliances'] },
+    weight: 8,
+  },
+  // Kitchen Appliances Level 3
+  {
+    categorySlug: 'microwave',
+    keywords: { ar: ['ميكروويف', 'ميكرويف', 'مايكروويف'], en: ['microwave', 'microwave oven'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'deep-freezer',
+    keywords: { ar: ['ديب فريزر', 'فريزر عمودي', 'فريزر افقي'], en: ['deep freezer', 'chest freezer', 'upright freezer'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'electric-kettle',
+    keywords: { ar: ['غلاية', 'غلاية كهربائية', 'كاتل'], en: ['electric kettle', 'kettle'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'vacuum-cleaner',
+    keywords: { ar: ['مكنسة كهربائية', 'مكنسه', 'هوفر'], en: ['vacuum cleaner', 'vacuum', 'hoover'] },
+    weight: 15,
+  },
+  {
+    categorySlug: 'water-heater',
+    keywords: { ar: ['سخان مياه', 'سخان كهربائي', 'سخان غاز'], en: ['water heater', 'geyser', 'boiler'] },
+    weight: 15,
   },
 
   // ============================================
