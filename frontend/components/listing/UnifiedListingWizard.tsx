@@ -204,9 +204,9 @@ export default function UnifiedListingWizard({
         };
         await onComplete(listing);
       } else {
-        // Call the items API
+        // Call the items API (use /items/create for JSON submissions)
         const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        const response = await fetch(`${apiUrl}/items`, {
+        const response = await fetch(`${apiUrl}/items/create`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -272,6 +272,7 @@ export default function UnifiedListingWizard({
             categoryData={categorySpecificData}
             onFormDataChange={setFormData}
             onCategoryDataChange={setCategorySpecificData}
+            onCategoryChange={setSelectedCategory}
           />
         );
 

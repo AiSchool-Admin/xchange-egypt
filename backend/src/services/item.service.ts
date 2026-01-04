@@ -301,6 +301,100 @@ export const createItem = async (
 };
 
 /**
+ * Create a new item with image URLs (no file upload)
+ * Used when images are provided as URLs instead of file uploads
+ */
+export const createItemWithUrls = async (
+  userId: string,
+  itemData: CreateItemData & { imageUrls?: string[]; listingType?: string }
+): Promise<ItemWithSeller> => {
+  // Verify category exists and is active
+  const category = await prisma.category.findUnique({
+    where: { id: itemData.categoryId },
+  });
+
+  if (!category) {
+    throw new NotFoundError('Category not found');
+  }
+
+  if (!category.isActive) {
+    throw new BadRequestError('Cannot create item in inactive category');
+  }
+
+  // Get user's governorate as fallback and convert to Arabic
+  let governorate = itemData.governorate;
+  if (!governorate) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { governorate: true },
+    });
+    governorate = user?.governorate || undefined;
+  }
+  // Convert to Arabic if in English
+  const arabicGovernorate = toArabicGovernorate(governorate);
+
+  // Create the item with imageUrls directly
+  const item = await prisma.item.create({
+    data: {
+      sellerId: userId,
+      categoryId: itemData.categoryId,
+      title: itemData.title,
+      description: itemData.description,
+      condition: itemData.condition || 'GOOD',
+      estimatedValue: itemData.estimatedValue || 0,
+      location: itemData.location,
+      governorate: arabicGovernorate,
+      images: itemData.imageUrls || [], // Use provided URLs or empty array
+      listingType: itemData.listingType || 'DIRECT_SALE',
+      status: 'ACTIVE', // Set status to active
+      // Barter preferences
+      desiredItemTitle: itemData.desiredItemTitle,
+      desiredItemDescription: itemData.desiredItemDescription,
+      desiredCategoryId: itemData.desiredCategoryId,
+      desiredKeywords: itemData.desiredKeywords,
+      desiredValueMin: itemData.desiredValueMin,
+      desiredValueMax: itemData.desiredValueMax,
+    },
+    include: {
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          nameAr: true,
+          nameEn: true,
+          slug: true,
+        },
+      },
+    },
+  });
+
+  // Emit item created event for real-time matching
+  const hasBarterPreferences = !!(
+    itemData.desiredItemTitle ||
+    itemData.desiredCategoryId ||
+    itemData.desiredKeywords ||
+    itemData.desiredValueMin ||
+    itemData.desiredValueMax
+  );
+
+  itemEvents.emitItemCreated({
+    itemId: item.id,
+    userId: item.sellerId,
+    categoryId: item.categoryId,
+    hasBarterPreferences,
+    timestamp: new Date(),
+  });
+
+  return item as unknown as ItemWithSeller;
+};
+
+/**
  * Get item by ID
  */
 export const getItemById = async (itemId: string): Promise<ItemWithSeller> => {

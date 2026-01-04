@@ -1,8 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import { Upload, X, MapPin } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Upload, X, MapPin, Navigation, Loader2, Sparkles } from 'lucide-react';
 import { ListingCategory, CommonFields, LISTING_CATEGORIES } from '@/types/listing';
+import { useAuth } from '@/lib/contexts/AuthContext';
+import { categorizeItem } from '@/lib/api/ai';
+
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 // Category-specific field components
 import MobileFields from '../fields/MobileFields';
@@ -28,18 +47,185 @@ interface DetailsStepProps {
   categoryData: Record<string, any>;
   onFormDataChange: (data: Partial<CommonFields>) => void;
   onCategoryDataChange: (data: Record<string, any>) => void;
+  onCategoryChange?: (category: ListingCategory) => void;
 }
+
+// Map AI category slugs to our ListingCategory type
+const AI_CATEGORY_MAP: Record<string, ListingCategory> = {
+  'mobile-phones': 'MOBILE',
+  'smartphones': 'MOBILE',
+  'cars': 'CAR',
+  'sedans': 'CAR',
+  'suv': 'CAR',
+  'motorcycles': 'CAR',
+  'apartments': 'PROPERTY',
+  'villas': 'PROPERTY',
+  'land': 'PROPERTY',
+  'gold': 'GOLD',
+  'jewelry': 'GOLD',
+  'watches': 'LUXURY',
+  'bags': 'LUXURY',
+  'laptops': 'GENERAL',
+  'tablets': 'GENERAL',
+  'tv': 'GENERAL',
+  'cameras': 'GENERAL',
+  'refrigerators': 'GENERAL',
+  'washing-machines': 'GENERAL',
+  'air-conditioners': 'GENERAL',
+  'sofas': 'GENERAL',
+  'beds': 'GENERAL',
+  'video-games': 'GENERAL',
+  'gym-equipment': 'GENERAL',
+  'bicycles': 'GENERAL',
+  'books': 'GENERAL',
+  'scrap': 'SCRAP',
+  'metal': 'SCRAP',
+  'recycling': 'SCRAP',
+};
 
 export default function DetailsStep({
   category,
   formData,
   categoryData,
   onFormDataChange,
-  onCategoryDataChange
+  onCategoryDataChange,
+  onCategoryChange
 }: DetailsStepProps) {
   const [dragActive, setDragActive] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [suggestedCategory, setSuggestedCategory] = useState<{
+    category: ListingCategory;
+    categoryName: string;
+    confidence: number;
+  } | null>(null);
+  const { user } = useAuth();
 
   const categoryInfo = LISTING_CATEGORIES.find(c => c.id === category);
+
+  // Debounce title for AI categorization
+  const debouncedTitle = useDebounce(formData.title || '', 1000);
+
+  // AI Category Detection
+  useEffect(() => {
+    const detectCategory = async () => {
+      if (!debouncedTitle || debouncedTitle.length < 5) {
+        setSuggestedCategory(null);
+        return;
+      }
+
+      setAiLoading(true);
+      try {
+        const result = await categorizeItem({
+          title: debouncedTitle,
+          description: formData.description || undefined
+        });
+
+        if (result && result.success && result.category) {
+          const aiSlug = result.category.id || result.category.name?.toLowerCase() || '';
+          const mappedCategory = AI_CATEGORY_MAP[aiSlug];
+
+          if (mappedCategory && mappedCategory !== category) {
+            const categoryDetails = LISTING_CATEGORIES.find(c => c.id === mappedCategory);
+            setSuggestedCategory({
+              category: mappedCategory,
+              categoryName: categoryDetails?.nameAr || mappedCategory,
+              confidence: result.category.confidence
+            });
+          } else {
+            setSuggestedCategory(null);
+          }
+        }
+      } catch (error) {
+        console.error('AI categorization error:', error);
+      } finally {
+        setAiLoading(false);
+      }
+    };
+
+    detectCategory();
+  }, [debouncedTitle, formData.description, category]);
+
+  // Set default governorate from user profile
+  useEffect(() => {
+    if (!formData.governorate && user?.governorate) {
+      onFormDataChange({ ...formData, governorate: user.governorate });
+    }
+  }, [user]);
+
+  // Get location from GPS
+  const handleGetGpsLocation = () => {
+    if (!navigator.geolocation) {
+      setGpsError('المتصفح لا يدعم تحديد الموقع');
+      return;
+    }
+
+    setGpsLoading(true);
+    setGpsError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          // Use reverse geocoding to get address from coordinates
+          const { latitude, longitude } = position.coords;
+
+          // Try to get address from OpenStreetMap Nominatim
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=ar`
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            const address = data.address || {};
+
+            // Map governorate names
+            let governorate = address.state || address.county || '';
+
+            // Try to match to our governorate list
+            const matchedGov = GOVERNORATES.find(g =>
+              governorate.includes(g) || g.includes(governorate.replace('محافظة ', ''))
+            );
+
+            if (matchedGov) {
+              onFormDataChange({
+                ...formData,
+                governorate: matchedGov,
+                city: address.city || address.town || address.village || formData.city
+              });
+            } else if (governorate) {
+              onFormDataChange({
+                ...formData,
+                city: address.city || address.town || address.village || formData.city
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error getting location:', error);
+          setGpsError('فشل في تحديد الموقع');
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      (error) => {
+        setGpsLoading(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setGpsError('يرجى السماح بالوصول للموقع');
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setGpsError('الموقع غير متوفر');
+            break;
+          case error.TIMEOUT:
+            setGpsError('انتهت مهلة تحديد الموقع');
+            break;
+          default:
+            setGpsError('فشل في تحديد الموقع');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   // Handle input change
   const handleInputChange = (field: keyof CommonFields, value: any) => {
@@ -163,6 +349,49 @@ export default function DetailsStep({
           <p className="text-xs text-gray-500 mt-1">
             {(formData.title || '').length}/200 حرف
           </p>
+
+          {/* AI Loading Indicator */}
+          {aiLoading && (
+            <div className="mt-2 flex items-center gap-2 text-indigo-600 text-sm">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>الذكاء الاصطناعي يحلل المنتج...</span>
+            </div>
+          )}
+
+          {/* AI Category Suggestion */}
+          {suggestedCategory && !aiLoading && onCategoryChange && (
+            <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm text-purple-800 font-medium">
+                    اقتراح الذكاء الاصطناعي
+                  </p>
+                  <p className="text-sm text-purple-600 mt-1">
+                    يبدو أن منتجك ينتمي لفئة "{suggestedCategory.categoryName}"
+                    {suggestedCategory.confidence > 0.7 && ' (ثقة عالية)'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onCategoryChange(suggestedCategory.category);
+                      setSuggestedCategory(null);
+                    }}
+                    className="mt-2 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    تغيير الفئة إلى {suggestedCategory.categoryName}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSuggestedCategory(null)}
+                  className="text-purple-400 hover:text-purple-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Description */}
@@ -180,42 +409,64 @@ export default function DetailsStep({
         </div>
 
         {/* Location */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <MapPin className="w-4 h-4 inline ml-1" />
-              المحافظة <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={formData.governorate || ''}
-              onChange={(e) => handleInputChange('governorate', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+        <div className="space-y-4">
+          {/* GPS Button */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleGetGpsLocation}
+              disabled={gpsLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
             >
-              <option value="">اختر المحافظة</option>
-              {GOVERNORATES.map(gov => (
-                <option key={gov} value={gov}>{gov}</option>
-              ))}
-            </select>
+              {gpsLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Navigation className="w-4 h-4" />
+              )}
+              <span>تحديد موقعي تلقائياً</span>
+            </button>
+            {gpsError && (
+              <span className="text-red-500 text-sm">{gpsError}</span>
+            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              المدينة / المنطقة
-            </label>
-            <input
-              type="text"
-              value={formData.city || ''}
-              onChange={(e) => handleInputChange('city', e.target.value)}
-              placeholder="مثال: مدينة نصر"
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <MapPin className="w-4 h-4 inline ml-1" />
+                المحافظة <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.governorate || ''}
+                onChange={(e) => handleInputChange('governorate', e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+              >
+                <option value="">اختر المحافظة</option>
+                {GOVERNORATES.map(gov => (
+                  <option key={gov} value={gov}>{gov}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                المدينة / المنطقة
+              </label>
+              <input
+                type="text"
+                value={formData.city || ''}
+                onChange={(e) => handleInputChange('city', e.target.value)}
+                placeholder="مثال: مدينة نصر"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
           </div>
         </div>
 
         {/* Images */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            صور المنتج <span className="text-red-500">*</span>
+            صور المنتج <span className="text-gray-400">(اختياري)</span>
           </label>
 
           {/* Drop Zone */}

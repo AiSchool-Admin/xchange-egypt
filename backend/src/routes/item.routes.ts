@@ -91,6 +91,18 @@ router.get(
 );
 
 /**
+ * Create a new item with JSON body (no file upload, uses imageUrls)
+ * POST /api/v1/items/create
+ * This endpoint is for when images are already uploaded or provided as URLs
+ */
+router.post(
+  '/create',
+  authenticate,
+  validate(createItemSchema),
+  itemController.createItemJson
+);
+
+/**
  * Create a new item with images
  * POST /api/v1/items
  */
