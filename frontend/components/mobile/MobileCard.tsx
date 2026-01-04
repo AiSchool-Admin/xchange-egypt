@@ -314,10 +314,10 @@ export default function MobileCard({ listing, viewMode = 'grid', featured = fals
                 )}
               </div>
               <span className="truncate max-w-[80px]">{listing.seller.fullName}</span>
-              {listing.seller.rating > 0 && (
+              {(listing.seller?.rating ?? 0) > 0 && (
                 <span className="flex items-center gap-0.5 text-amber-500">
                   <Star className="w-3 h-3 fill-current" />
-                  {listing.seller.rating.toFixed(1)}
+                  {(listing.seller?.rating ?? 0).toFixed(1)}
                 </span>
               )}
             </div>
