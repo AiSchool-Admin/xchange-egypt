@@ -5,6 +5,7 @@ import { Upload, X, MapPin, Navigation, Loader2, Sparkles } from 'lucide-react';
 import { ListingCategory, CommonFields, LISTING_CATEGORIES } from '@/types/listing';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { categorizeItem } from '@/lib/api/ai';
+import { getRootCategories, Category } from '@/lib/api/categories';
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -154,7 +155,65 @@ export default function DetailsStep({
   } | null>(null);
   const { user } = useAuth();
 
+  // 3-Level Category Selection State
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [level2Categories, setLevel2Categories] = useState<Category[]>([]);
+  const [level3Categories, setLevel3Categories] = useState<Category[]>([]);
+  const [categoryLevel1, setCategoryLevel1] = useState('');
+  const [categoryLevel2, setCategoryLevel2] = useState('');
+  const [categoryLevel3, setCategoryLevel3] = useState('');
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
   const categoryInfo = LISTING_CATEGORIES.find(c => c.id === category);
+
+  // Load categories from backend
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await getRootCategories();
+        setCategories(response.data || []);
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  // Load level 2 categories when level 1 changes
+  useEffect(() => {
+    if (categoryLevel1) {
+      const parentCategory = categories.find(c => c.id === categoryLevel1);
+      if (parentCategory?.children) {
+        setLevel2Categories(parentCategory.children);
+      } else {
+        setLevel2Categories([]);
+      }
+      setLevel3Categories([]);
+      setCategoryLevel2('');
+      setCategoryLevel3('');
+    } else {
+      setLevel2Categories([]);
+      setLevel3Categories([]);
+    }
+  }, [categoryLevel1, categories]);
+
+  // Load level 3 categories when level 2 changes
+  useEffect(() => {
+    if (categoryLevel2) {
+      const level2Category = level2Categories.find(c => c.id === categoryLevel2);
+      if (level2Category?.children) {
+        setLevel3Categories(level2Category.children);
+      } else {
+        setLevel3Categories([]);
+      }
+      setCategoryLevel3('');
+    } else {
+      setLevel3Categories([]);
+    }
+  }, [categoryLevel2, level2Categories]);
 
   // Debounce title for AI categorization
   const debouncedTitle = useDebounce(formData.title || '', 1000);
@@ -526,148 +585,77 @@ export default function DetailsStep({
           />
         </div>
 
-        {/* Location */}
-        <div className="space-y-4">
-          {/* GPS Button */}
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleGetGpsLocation}
-              disabled={gpsLoading}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
-            >
-              {gpsLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Navigation className="w-4 h-4" />
-              )}
-              <span>تحديد موقعي تلقائياً</span>
-            </button>
-            {gpsError && (
-              <span className="text-red-500 text-sm">{gpsError}</span>
-            )}
-          </div>
-
-          {/* Address Grid - 4 fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Governorate */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <MapPin className="w-4 h-4 inline ml-1" />
-                المحافظة <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={formData.governorate || ''}
-                onChange={(e) => handleInputChange('governorate', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
-              >
-                <option value="">اختر المحافظة</option>
-                {GOVERNORATES.map(gov => (
-                  <option key={gov} value={gov}>{gov}</option>
-                ))}
-              </select>
+        {/* 3-Level Category Selection */}
+        <div className="p-4 bg-gray-50 rounded-xl">
+          <h4 className="text-sm font-bold text-gray-900 mb-4">الفئة التفصيلية</h4>
+          {categoriesLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Level 1 - Main Category */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  الفئة الرئيسية
+                </label>
+                <select
+                  value={categoryLevel1}
+                  onChange={(e) => setCategoryLevel1(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm"
+                >
+                  <option value="">اختر الفئة</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nameAr || cat.nameEn}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* City */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                المدينة
-              </label>
-              <input
-                type="text"
-                value={formData.city || ''}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                placeholder="مثال: العبور، مدينة نصر"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
+              {/* Level 2 - Sub Category */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  الفئة الفرعية
+                </label>
+                <select
+                  value={categoryLevel2}
+                  onChange={(e) => setCategoryLevel2(e.target.value)}
+                  disabled={!categoryLevel1 || level2Categories.length === 0}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {!categoryLevel1 ? 'اختر الرئيسية أولاً' : level2Categories.length === 0 ? 'لا توجد فرعية' : 'اختر الفئة'}
+                  </option>
+                  {level2Categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nameAr || cat.nameEn}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* District */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                الحي / المنطقة
-              </label>
-              <input
-                type="text"
-                value={(formData as any).district || ''}
-                onChange={(e) => handleInputChange('district' as any, e.target.value)}
-                placeholder="مثال: الحي الأول، المنطقة الصناعية"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* Street */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                الشارع / العنوان التفصيلي
-              </label>
-              <input
-                type="text"
-                value={(formData as any).street || ''}
-                onChange={(e) => handleInputChange('street' as any, e.target.value)}
-                placeholder="مثال: شارع الجمهورية، بجوار المسجد الكبير"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Images */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            صور المنتج <span className="text-gray-400">(اختياري)</span>
-          </label>
-
-          {/* Drop Zone */}
-          <div
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
-              dragActive
-                ? 'border-indigo-500 bg-indigo-50'
-                : 'border-gray-300 hover:border-indigo-400'
-            }`}
-          >
-            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 mb-2">اسحب الصور هنا أو</p>
-            <label className="cursor-pointer">
-              <span className="text-indigo-600 font-medium hover:underline">اختر من جهازك</span>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => handleImageUpload(e.target.files)}
-                className="hidden"
-              />
-            </label>
-            <p className="text-xs text-gray-500 mt-2">PNG, JPG حتى 10 صور (الحد الأقصى 5MB لكل صورة)</p>
-          </div>
-
-          {/* Image Preview */}
-          {(formData.images || []).length > 0 && (
-            <div className="grid grid-cols-4 md:grid-cols-5 gap-3 mt-4">
-              {(formData.images || []).map((img, index) => (
-                <div key={index} className="relative group aspect-square">
-                  <img
-                    src={img}
-                    alt={`صورة ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <button
-                    onClick={() => removeImage(index)}
-                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                  {index === 0 && (
-                    <span className="absolute bottom-1 right-1 text-xs bg-indigo-600 text-white px-2 py-0.5 rounded">
-                      رئيسية
-                    </span>
-                  )}
-                </div>
-              ))}
+              {/* Level 3 - Sub-Sub Category */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  الفئة الفرع-فرعية
+                </label>
+                <select
+                  value={categoryLevel3}
+                  onChange={(e) => setCategoryLevel3(e.target.value)}
+                  disabled={!categoryLevel2 || level3Categories.length === 0}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {!categoryLevel2 ? 'اختر الفرعية أولاً' : level3Categories.length === 0 ? 'لا توجد فرع-فرعية' : 'اختر الفئة'}
+                  </option>
+                  {level3Categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.nameAr || cat.nameEn}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
         </div>
@@ -679,6 +667,161 @@ export default function DetailsStep({
           تفاصيل {categoryInfo?.nameAr || 'المنتج'}
         </h3>
         {renderCategoryFields()}
+      </div>
+
+      {/* Images */}
+      <div className="border-t pt-8">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          صور المنتج <span className="text-gray-400">(اختياري)</span>
+        </label>
+
+        {/* Drop Zone */}
+        <div
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+            dragActive
+              ? 'border-indigo-500 bg-indigo-50'
+              : 'border-gray-300 hover:border-indigo-400'
+          }`}
+        >
+          <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600 mb-2">اسحب الصور هنا أو</p>
+          <label className="cursor-pointer">
+            <span className="text-indigo-600 font-medium hover:underline">اختر من جهازك</span>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e.target.files)}
+              className="hidden"
+            />
+          </label>
+          <p className="text-xs text-gray-500 mt-2">PNG, JPG حتى 10 صور (الحد الأقصى 5MB لكل صورة)</p>
+        </div>
+
+        {/* Image Preview */}
+        {(formData.images || []).length > 0 && (
+          <div className="grid grid-cols-4 md:grid-cols-5 gap-3 mt-4">
+            {(formData.images || []).map((img, index) => (
+              <div key={index} className="relative group aspect-square">
+                <img
+                  src={img}
+                  alt={`صورة ${index + 1}`}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+                <button
+                  onClick={() => removeImage(index)}
+                  className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                {index === 0 && (
+                  <span className="absolute bottom-1 right-1 text-xs bg-indigo-600 text-white px-2 py-0.5 rounded">
+                    رئيسية
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Location */}
+      <div className="border-t pt-8 space-y-4">
+        <h3 className="text-lg font-bold text-gray-900 mb-4">العنوان</h3>
+
+        {/* GPS Button */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleGetGpsLocation}
+            disabled={gpsLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50"
+          >
+            {gpsLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Navigation className="w-4 h-4" />
+            )}
+            <span>تحديد موقعي تلقائياً</span>
+          </button>
+          {gpsError && (
+            <span className="text-red-500 text-sm">{gpsError}</span>
+          )}
+        </div>
+
+        {/* Address Grid - 4 fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Governorate */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              <MapPin className="w-4 h-4 inline ml-1" />
+              المحافظة <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.governorate || ''}
+              onChange={(e) => handleInputChange('governorate', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            >
+              <option value="">اختر المحافظة</option>
+              {GOVERNORATES.map(gov => (
+                <option key={gov} value={gov}>{gov}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* City */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              المدينة
+            </label>
+            <input
+              type="text"
+              value={formData.city || ''}
+              onChange={(e) => handleInputChange('city', e.target.value)}
+              placeholder="مثال: العبور، مدينة نصر"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* District */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              الحي / المنطقة
+            </label>
+            <input
+              type="text"
+              value={(formData as any).district || ''}
+              onChange={(e) => handleInputChange('district' as any, e.target.value)}
+              placeholder="مثال: الحي الأول، المنطقة الصناعية"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Street */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              الشارع / العنوان التفصيلي
+            </label>
+            <input
+              type="text"
+              value={(formData as any).street || ''}
+              onChange={(e) => handleInputChange('street' as any, e.target.value)}
+              placeholder="مثال: شارع الجمهورية، بجوار المسجد الكبير"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Hint */}
+      <div className="mt-8 p-4 bg-blue-50 rounded-xl">
+        <p className="text-sm text-blue-700">
+          💡 <strong>نصيحة:</strong> أدخل بيانات دقيقة وصور واضحة لزيادة فرص البيع
+        </p>
       </div>
     </div>
   );
