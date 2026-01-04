@@ -2,6 +2,56 @@ import apiClient from './client';
 
 export type PromotionTier = 'BASIC' | 'FEATURED' | 'PREMIUM' | 'GOLD' | 'PLATINUM';
 
+/**
+ * Helper function to safely get an image URL from various image formats
+ * Handles: string, { url: string }, undefined, null
+ * @param image - The image data (can be string, object with url, or undefined)
+ * @param fallback - Optional fallback URL if image is not available
+ * @returns The image URL string or fallback
+ */
+export const getImageUrl = (
+  image: string | { url?: string; id?: string; isPrimary?: boolean } | undefined | null,
+  fallback: string = ''
+): string => {
+  if (!image) return fallback;
+  if (typeof image === 'string') return image;
+  if (typeof image === 'object' && image.url) return image.url;
+  return fallback;
+};
+
+/**
+ * Helper function to get the primary image URL from an images array
+ * Handles both string[] and { url: string, isPrimary?: boolean }[] formats
+ * @param images - Array of images in various formats
+ * @param fallback - Optional fallback URL if no image is available
+ * @returns The primary image URL or first image URL or fallback
+ */
+export const getPrimaryImageUrl = (
+  images: (string | { url?: string; isPrimary?: boolean } | undefined | null)[] | undefined | null,
+  fallback: string = ''
+): string => {
+  if (!images || !Array.isArray(images) || images.length === 0) return fallback;
+
+  // Filter out null/undefined values
+  const validImages = images.filter((img): img is string | { url?: string; isPrimary?: boolean } =>
+    img !== null && img !== undefined
+  );
+
+  if (validImages.length === 0) return fallback;
+
+  // Try to find primary image if images are objects
+  if (typeof validImages[0] === 'object') {
+    const primaryImage = validImages.find(
+      (img): img is { url?: string; isPrimary?: boolean } =>
+        typeof img === 'object' && img?.isPrimary === true
+    );
+    if (primaryImage?.url) return primaryImage.url;
+  }
+
+  // Return first image
+  return getImageUrl(validImages[0], fallback);
+};
+
 export interface Item {
   id: string;
   title: string;

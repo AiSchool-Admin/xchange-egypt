@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Item } from '@/lib/api/items';
+import { Item, getPrimaryImageUrl } from '@/lib/api/items';
 import 'leaflet/dist/leaflet.css';
 import {
   createGovernorateIcon,
@@ -140,7 +140,7 @@ function ItemMarker({ item }: { item: Item }) {
   useEffect(() => {
     // Create icon on client side only
     const newIcon = createItemIcon(
-      item.images?.[0]?.url,
+      getPrimaryImageUrl(item.images),
       item.category?.slug,
       item.isFeatured || (item.promotionTier && item.promotionTier !== 'BASIC')
     );
@@ -171,9 +171,9 @@ function ItemMarker({ item }: { item: Item }) {
     <Marker position={position} icon={icon}>
       <Popup>
         <div className="min-w-[220px] max-w-[280px]" dir="rtl">
-          {item.images && item.images.length > 0 && (
+          {getPrimaryImageUrl(item.images) && (
             <img
-              src={item.images[0].url}
+              src={getPrimaryImageUrl(item.images)}
               alt={item.title}
               className="w-full h-32 object-cover rounded-lg mb-3"
             />

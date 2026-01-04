@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { getItems, Item } from '@/lib/api/items';
+import { getItems, Item, getPrimaryImageUrl } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 import { getAuctions, Auction } from '@/lib/api/auctions';
 import apiClient from '@/lib/api/client';
@@ -660,7 +660,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url).filter(Boolean) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
@@ -710,7 +710,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url).filter(Boolean) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
@@ -772,8 +772,8 @@ export default function HomePage() {
                 barterItems.slice(0, 4).map((item) => (
                   <div key={item.id} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
                     <div className="aspect-square bg-white/20 rounded-xl mb-3 flex items-center justify-center text-4xl">
-                      {item.images?.[0]?.url ? (
-                        <img src={item.images[0].url} alt={item.title} className="w-full h-full object-cover rounded-xl" />
+                      {getPrimaryImageUrl(item.images) ? (
+                        <img src={getPrimaryImageUrl(item.images)} alt={item.title} className="w-full h-full object-cover rounded-xl" />
                       ) : (
                         '📦'
                       )}
