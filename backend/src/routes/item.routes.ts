@@ -81,16 +81,6 @@ router.get(
 );
 
 /**
- * Get item by ID
- * GET /api/v1/items/:id
- */
-router.get(
-  '/:id',
-  validate(getItemByIdSchema),
-  itemController.getItemById
-);
-
-/**
  * Create a new item with JSON body (no file upload, uses imageUrls)
  * POST /api/v1/items/create
  * This endpoint is for when images are already uploaded or provided as URLs
@@ -112,6 +102,16 @@ router.post(
   uploadItemImages,
   validate(createItemSchema),
   itemController.createItem
+);
+
+/**
+ * Get item by ID - MUST BE AFTER specific routes like /my, /create
+ * GET /api/v1/items/:id
+ */
+router.get(
+  '/:id',
+  validate(getItemByIdSchema),
+  itemController.getItemById
 );
 
 /**
