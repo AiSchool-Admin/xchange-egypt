@@ -334,9 +334,9 @@ export default function MobileListingDetailPage() {
                 </div>
                 <div className="text-left">
                   <p className="text-3xl font-bold text-indigo-600">
-                    {listing.price.toLocaleString('ar-EG')} ج.م
+                    {(listing.price || 0).toLocaleString('ar-EG')} ج.م
                   </p>
-                  {listing.priceReference && (
+                  {listing.priceReference && listing.priceReference.avgPrice && (
                     <p className="text-sm text-gray-500 mt-1">
                       متوسط السوق: {listing.priceReference.avgPrice.toLocaleString('ar-EG')} ج.م
                     </p>

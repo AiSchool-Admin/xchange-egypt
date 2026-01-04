@@ -313,20 +313,63 @@ export async function searchProperties(filters: PropertyFilters = {}): Promise<{
 
   const response = await api.get(`/properties?${params.toString()}`);
   // Backend returns { success, message, data: { properties, pagination } }
-  return response.data.data || { properties: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+  const data = response.data.data || { properties: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } };
+
+  // Normalize all properties in the result
+  return {
+    ...data,
+    properties: (data.properties || []).map(normalizeProperty),
+  };
+}
+
+// Helper to normalize property data from backend to frontend format
+function normalizeProperty(raw: any): Property {
+  if (!raw) return raw;
+
+  // Map backend field names to frontend interface
+  const price = raw.salePrice ?? raw.rentPrice ?? raw.price ?? 0;
+  const area = raw.areaSqm ?? raw.area ?? 0;
+
+  // Ensure images is always an array of strings
+  let images: string[] = [];
+  if (Array.isArray(raw.images)) {
+    images = raw.images
+      .filter((img: any) => img !== null && img !== undefined)
+      .map((img: any) => {
+        if (typeof img === 'string') return img;
+        if (typeof img === 'object' && img.url) return img.url;
+        return '';
+      })
+      .filter((url: string) => url !== '');
+  }
+
+  return {
+    ...raw,
+    price,
+    area,
+    images,
+    pricePerMeter: raw.pricePerSqm ?? raw.pricePerMeter,
+    // Normalize owner data
+    owner: raw.owner ? {
+      ...raw.owner,
+      isVerified: raw.owner.isVerified ?? raw.owner.userType === 'VERIFIED',
+    } : undefined,
+  };
 }
 
 // Get property by ID
 export async function getProperty(id: string): Promise<Property> {
   const response = await api.get(`/properties/${id}`);
   // Backend returns { success, message, data: { property, ... } }
-  return response.data.data?.property || response.data.property;
+  const rawProperty = response.data.data?.property || response.data.property;
+  return normalizeProperty(rawProperty);
 }
 
 // Get user's properties
 export async function getUserProperties(): Promise<Property[]> {
   const response = await api.get('/properties/my-properties');
-  return response.data.data?.properties || response.data.properties || [];
+  const properties = response.data.data?.properties || response.data.properties || [];
+  return properties.map(normalizeProperty);
 }
 
 // Create property
@@ -371,7 +414,8 @@ export async function markAsRented(id: string): Promise<Property> {
 // Get favorites
 export async function getFavorites(): Promise<Property[]> {
   const response = await api.get('/properties/favorites');
-  return response.data.data?.favorites || response.data.favorites || [];
+  const favorites = response.data.data?.favorites || response.data.favorites || [];
+  return favorites.map(normalizeProperty);
 }
 
 // Add to favorites
@@ -391,7 +435,8 @@ export async function removeFromFavorites(id: string): Promise<void> {
 // Get barter suggestions
 export async function getBarterSuggestions(propertyId: string): Promise<Property[]> {
   const response = await api.get(`/properties/${propertyId}/barter-suggestions`);
-  return response.data.data?.suggestions || response.data.suggestions || [];
+  const suggestions = response.data.data?.suggestions || response.data.suggestions || [];
+  return suggestions.map(normalizeProperty);
 }
 
 // Create barter proposal
