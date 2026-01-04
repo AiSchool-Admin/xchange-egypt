@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Upload, X, MapPin, Navigation, Loader2, Sparkles } from 'lucide-react';
 import { ListingCategory, CommonFields, LISTING_CATEGORIES } from '@/types/listing';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { categorizeItem } from '@/lib/api/ai';
+import { categorizeItem, CategorySuggestion as CategorySuggestionType } from '@/lib/api/ai';
+import { CategorySuggestion } from '@/components/ai';
 import { getRootCategories, Category } from '@/lib/api/categories';
 
 // Debounce hook
@@ -146,13 +147,7 @@ export default function DetailsStep({
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [suggestedCategory, setSuggestedCategory] = useState<{
-    category: ListingCategory;
-    categoryName: string;
-    confidence: number;
-    isMatch: boolean; // true if AI confirms current category
-  } | null>(null);
+  const [categorySuggestions, setCategorySuggestions] = useState<CategorySuggestionType[]>([]);
   const { user } = useAuth();
 
   // 3-Level Category Selection State
@@ -260,17 +255,21 @@ export default function DetailsStep({
     }
   };
 
+  // Handle AI category selection
+  const handleAICategorySelect = (categoryId: string) => {
+    autoPopulateCategoryFromAI(categoryId);
+    setCategorySuggestions([]); // Clear suggestions after selection
+  };
+
   // AI Category Detection
   useEffect(() => {
     const detectCategory = async () => {
       if (!debouncedTitle || debouncedTitle.length < 5) {
-        setSuggestedCategory(null);
-        setAiError(null);
+        setCategorySuggestions([]);
         return;
       }
 
       setAiLoading(true);
-      setAiError(null);
       try {
         const result = await categorizeItem({
           title: debouncedTitle,
@@ -278,47 +277,26 @@ export default function DetailsStep({
         });
 
         if (result && result.success && result.category) {
-          const aiSlug = result.category.id || result.category.name?.toLowerCase() || '';
-          const mappedCategory = AI_CATEGORY_MAP[aiSlug];
+          // Store all suggestions (main + alternatives)
+          setCategorySuggestions([result.category, ...result.alternatives]);
 
-          if (mappedCategory) {
-            const categoryDetails = LISTING_CATEGORIES.find(c => c.id === mappedCategory);
-            const isMatch = mappedCategory === category;
-            setSuggestedCategory({
-              category: mappedCategory,
-              categoryName: categoryDetails?.nameAr || mappedCategory,
-              confidence: result.category.confidence,
-              isMatch
-            });
-
-            // Auto-populate category dropdowns from AI result
-            if (result.category.id && categories.length > 0) {
-              autoPopulateCategoryFromAI(result.category.id);
-            }
-          } else {
-            // AI returned a category we don't have mapped - show current as confirmed
-            const categoryDetails = LISTING_CATEGORIES.find(c => c.id === category);
-            setSuggestedCategory({
-              category: category,
-              categoryName: categoryDetails?.nameAr || category,
-              confidence: 0.5,
-              isMatch: true
-            });
+          // Auto-populate category dropdowns from AI result
+          if (result.category.id && categories.length > 0) {
+            autoPopulateCategoryFromAI(result.category.id);
           }
         } else {
-          setSuggestedCategory(null);
+          setCategorySuggestions([]);
         }
       } catch (error) {
         console.error('AI categorization error:', error);
-        setAiError('تعذر تحليل الفئة');
-        setSuggestedCategory(null);
+        setCategorySuggestions([]);
       } finally {
         setAiLoading(false);
       }
     };
 
     detectCategory();
-  }, [debouncedTitle, formData.description, category, categories]);
+  }, [debouncedTitle, formData.description, categories]);
 
   // Set default address from user profile (governorate, city, district, street)
   useEffect(() => {
@@ -545,71 +523,75 @@ export default function DetailsStep({
             {(formData.title || '').length}/200 حرف
           </p>
 
-          {/* AI Loading Indicator */}
+          {/* AI Category Suggestions */}
           {aiLoading && (
-            <div className="mt-2 flex items-center gap-2 text-indigo-600 text-sm">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>الذكاء الاصطناعي يحلل المنتج...</span>
-            </div>
-          )}
-
-          {/* AI Error */}
-          {aiError && !aiLoading && (
-            <div className="mt-2 text-sm text-amber-600">
-              ⚠️ {aiError}
-            </div>
-          )}
-
-          {/* AI Category Confirmation (when AI agrees with current category) */}
-          {suggestedCategory && suggestedCategory.isMatch && !aiLoading && (
-            <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-green-800 font-medium">
-                    ✨ الذكاء الاصطناعي يؤكد اختيارك
-                  </p>
-                  <p className="text-sm text-green-600">
-                    الفئة "{suggestedCategory.categoryName}" مناسبة لمنتجك
-                    {suggestedCategory.confidence > 0.7 && ' (ثقة عالية)'}
-                  </p>
-                </div>
+            <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-xl">
+              <div className="flex items-center gap-2 text-purple-700 text-sm">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>🤖 الذكاء الاصطناعي يحلل المنتج...</span>
               </div>
             </div>
           )}
 
-          {/* AI Category Suggestion (when AI suggests different category) */}
-          {suggestedCategory && !suggestedCategory.isMatch && !aiLoading && onCategoryChange && (
-            <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
+          {/* AI Suggestions - using proper CategorySuggestion component styling */}
+          {!aiLoading && categorySuggestions.length > 0 && (
+            <div className="mt-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
               <div className="flex items-start gap-3">
                 <Sparkles className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm text-purple-800 font-medium">
-                    🤖 اقتراح الذكاء الاصطناعي
+                  <p className="text-sm text-purple-800 font-medium mb-3">
+                    🤖 اقتراحات الذكاء الاصطناعي للفئة
                   </p>
-                  <p className="text-sm text-purple-600 mt-1">
-                    يبدو أن منتجك ينتمي لفئة "{suggestedCategory.categoryName}"
-                    {suggestedCategory.confidence > 0.7 && ' (ثقة عالية)'}
-                  </p>
+
+                  {/* Primary Suggestion */}
                   <button
                     type="button"
-                    onClick={() => {
-                      onCategoryChange(suggestedCategory.category);
-                      setSuggestedCategory(null);
-                    }}
-                    className="mt-2 px-3 py-1.5 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                    onClick={() => handleAICategorySelect(categorySuggestions[0].id)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
                   >
-                    تغيير الفئة إلى {suggestedCategory.categoryName}
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {categorySuggestions[0].parentCategory && `${categorySuggestions[0].parentCategory} ← `}
+                    {categorySuggestions[0].name}
+                    <span className="px-2 py-0.5 bg-purple-800 rounded-full text-xs">
+                      {Math.round(categorySuggestions[0].confidence * 100)}% تطابق
+                    </span>
                   </button>
+
+                  {/* Alternative Suggestions */}
+                  {categorySuggestions.length > 1 && (
+                    <div className="mt-3">
+                      <p className="text-xs text-purple-700 mb-2">أو جرب هذه الفئات:</p>
+                      <div className="space-y-1">
+                        {categorySuggestions.slice(1, 4).map((alt) => (
+                          <button
+                            key={alt.id}
+                            type="button"
+                            onClick={() => handleAICategorySelect(alt.id)}
+                            className="block w-full text-right px-3 py-1.5 bg-white border border-purple-200 hover:bg-purple-50 text-sm text-purple-700 rounded-lg transition-colors"
+                          >
+                            {alt.parentCategory && `${alt.parentCategory} ← `}
+                            {alt.name}
+                            <span className="mr-2 text-xs text-purple-500">
+                              ({Math.round(alt.confidence * 100)}% تطابق)
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="mt-3 text-xs text-purple-600">
+                    💡 اضغط على اقتراح لتعبئة الفئة تلقائياً
+                  </p>
                 </div>
+
+                {/* Close button */}
                 <button
                   type="button"
-                  onClick={() => setSuggestedCategory(null)}
-                  className="text-purple-400 hover:text-purple-600"
+                  onClick={() => setCategorySuggestions([])}
+                  className="text-purple-400 hover:text-purple-600 p-1"
                 >
                   <X className="w-4 h-4" />
                 </button>
