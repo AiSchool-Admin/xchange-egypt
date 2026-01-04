@@ -42,6 +42,8 @@ model User {
   address           String?
   city              String?
   governorate       String?
+  district          String?     // الحي / المنطقة
+  street            String?     // الشارع / العنوان التفصيلي
   postalCode        String?     @map("postal_code")
 
   // Primary location (for geographic clustering)
