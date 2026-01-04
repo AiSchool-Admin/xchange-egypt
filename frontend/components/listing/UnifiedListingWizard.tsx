@@ -41,6 +41,7 @@ export default function UnifiedListingWizard({
   const [selectedCategory, setSelectedCategory] = useState<ListingCategory | null>(
     preselectedCategory || null
   );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(''); // Backend category ID
   const [selectedTransactionType, setSelectedTransactionType] = useState<TransactionType | null>(
     preselectedTransactionType || null
   );
@@ -150,7 +151,7 @@ export default function UnifiedListingWizard({
     setIsSubmitting(true);
 
     try {
-      // Map category to backend categoryId (these should be actual category IDs from your database)
+      // Use actual backend categoryId if available, otherwise fall back to mapped values
       const categoryIdMap: Record<ListingCategory, string> = {
         MOBILE: 'mobile-phones',
         CAR: 'vehicles',
@@ -160,6 +161,9 @@ export default function UnifiedListingWizard({
         SCRAP: 'scrap-materials',
         GENERAL: 'general'
       };
+
+      // Use the actual selected category ID from backend if available
+      const finalCategoryId = selectedCategoryId || categoryIdMap[selectedCategory];
 
       // Map transaction type to listing type
       const listingTypeMap: Record<TransactionType, string> = {
@@ -177,7 +181,7 @@ export default function UnifiedListingWizard({
         descriptionAr: formData.description || '',
         descriptionEn: formData.description || '', // Use Arabic description as English fallback
         condition: (categorySpecificData as any).condition || 'GOOD',
-        categoryId: categoryIdMap[selectedCategory],
+        categoryId: finalCategoryId,
         estimatedValue: pricingData.price ? parseFloat(String(pricingData.price)) : undefined,
         location: formData.governorate || 'القاهرة',
         governorate: formData.governorate || 'القاهرة',
@@ -268,6 +272,8 @@ export default function UnifiedListingWizard({
           <CategoryStep
             selectedCategory={selectedCategory}
             onSelect={setSelectedCategory}
+            onCategoryIdSelect={setSelectedCategoryId}
+            selectedCategoryId={selectedCategoryId}
           />
         );
 
