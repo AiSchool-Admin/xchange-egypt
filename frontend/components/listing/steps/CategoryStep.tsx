@@ -1,17 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { ListingCategory, LISTING_CATEGORIES } from '@/types/listing';
 import { getRootCategories, Category } from '@/lib/api/categories';
-import { CategorySuggestion } from '@/components/ai';
-import * as aiApi from '@/lib/api/ai';
-import { useDebounce } from '@/lib/hooks/useDebounce';
-import { Loader2, Sparkles, Search } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface CategoryStepProps {
   selectedCategory: ListingCategory | null;
   onSelect: (category: ListingCategory) => void;
-  onCategoryIdSelect?: (categoryId: string) => void; // For detailed 3-level category
+  onCategoryIdSelect?: (categoryId: string) => void;
   selectedCategoryId?: string;
 }
 
@@ -31,15 +28,6 @@ export default function CategoryStep({
   const [categoryLevel1, setCategoryLevel1] = useState('');
   const [categoryLevel2, setCategoryLevel2] = useState('');
   const [categoryLevel3, setCategoryLevel3] = useState('');
-
-  // AI Category Suggestions
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categorySuggestions, setCategorySuggestions] = useState<aiApi.CategorySuggestion[]>([]);
-  const [categoryLoading, setCategoryLoading] = useState(false);
-  const debouncedQuery = useDebounce(searchQuery, 800);
-
-  // Ref to track when setting from AI suggestion
-  const isSettingFromAISuggestion = useRef(false);
 
   // Load categories from backend
   useEffect(() => {
@@ -67,19 +55,17 @@ export default function CategoryStep({
         setLevel2Categories([]);
       }
 
-      if (!isSettingFromAISuggestion.current) {
-        setLevel3Categories([]);
-        setCategoryLevel2('');
-        setCategoryLevel3('');
+      setLevel3Categories([]);
+      setCategoryLevel2('');
+      setCategoryLevel3('');
 
-        // Notify parent of category selection
-        if (onCategoryIdSelect) {
-          onCategoryIdSelect(categoryLevel1);
-        }
-
-        // Map to simple category type
-        mapToSimpleCategory(parentCategory);
+      // Notify parent of category selection
+      if (onCategoryIdSelect) {
+        onCategoryIdSelect(categoryLevel1);
       }
+
+      // Map to simple category type
+      mapToSimpleCategory(parentCategory);
     } else {
       setLevel2Categories([]);
       setLevel3Categories([]);
@@ -96,11 +82,9 @@ export default function CategoryStep({
         setLevel3Categories([]);
       }
 
-      if (!isSettingFromAISuggestion.current) {
-        setCategoryLevel3('');
-        if (onCategoryIdSelect) {
-          onCategoryIdSelect(categoryLevel2);
-        }
+      setCategoryLevel3('');
+      if (onCategoryIdSelect) {
+        onCategoryIdSelect(categoryLevel2);
       }
     } else {
       setLevel3Categories([]);
@@ -121,7 +105,6 @@ export default function CategoryStep({
     const nameEn = category.nameEn?.toLowerCase() || '';
     const nameAr = category.nameAr || '';
 
-    // Map based on category name
     if (nameEn.includes('mobile') || nameEn.includes('phone') || nameAr.includes('موبايل') || nameAr.includes('هاتف')) {
       onSelect('MOBILE');
     } else if (nameEn.includes('vehicle') || nameEn.includes('car') || nameAr.includes('سيار') || nameAr.includes('مركب')) {
@@ -139,100 +122,10 @@ export default function CategoryStep({
     }
   };
 
-  // AI: Auto-categorize when search query changes
-  useEffect(() => {
-    const suggestCategory = async () => {
-      if (!debouncedQuery || debouncedQuery.length < 3) {
-        setCategorySuggestions([]);
-        return;
-      }
-
-      setCategoryLoading(true);
-      try {
-        const result = await aiApi.categorizeItem({
-          title: debouncedQuery,
-          description: '',
-        });
-
-        if (result && result.success) {
-          setCategorySuggestions([result.category, ...result.alternatives]);
-        }
-      } catch (error) {
-        console.error('Category suggestion error:', error);
-      } finally {
-        setCategoryLoading(false);
-      }
-    };
-
-    suggestCategory();
-  }, [debouncedQuery]);
-
-  // AI: Handle category selection from AI suggestion
-  const handleAICategorySelect = (categoryId: string) => {
-    // Find the category path in the tree
-    const findCategoryPath = (cats: Category[], targetId: string, path: Category[] = []): Category[] | null => {
-      for (const cat of cats) {
-        if (cat.id === targetId) {
-          return [...path, cat];
-        }
-        if (cat.children) {
-          const found = findCategoryPath(cat.children, targetId, [...path, cat]);
-          if (found) return found;
-        }
-      }
-      return null;
-    };
-
-    const categoryPath = findCategoryPath(categories, categoryId);
-    if (categoryPath && categoryPath.length > 0) {
-      isSettingFromAISuggestion.current = true;
-
-      const level1Id = categoryPath[0]?.id || '';
-      const level2Id = categoryPath[1]?.id || '';
-      const level3Id = categoryPath[2]?.id || '';
-
-      // Populate level2 and level3 category arrays
-      const level1Category = categories.find(c => c.id === level1Id);
-      if (level1Category?.children) {
-        setLevel2Categories(level1Category.children);
-
-        if (level2Id) {
-          const level2Category = level1Category.children.find(c => c.id === level2Id);
-          if (level2Category?.children) {
-            setLevel3Categories(level2Category.children);
-          } else {
-            setLevel3Categories([]);
-          }
-        }
-      }
-
-      // Set all selections at once
-      setCategoryLevel1(level1Id);
-      setCategoryLevel2(level2Id);
-      setCategoryLevel3(level3Id);
-
-      // Map to simple category
-      mapToSimpleCategory(level1Category);
-
-      // Notify parent
-      if (onCategoryIdSelect) {
-        onCategoryIdSelect(categoryId);
-      }
-
-      // Clear suggestions
-      setCategorySuggestions([]);
-      setSearchQuery('');
-
-      setTimeout(() => {
-        isSettingFromAISuggestion.current = false;
-      }, 100);
-    }
-  };
-
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-2">ما نوع المنتج؟</h2>
-      <p className="text-gray-600 mb-6">اختر الفئة المناسبة لمنتجك أو استخدم البحث الذكي</p>
+      <p className="text-gray-600 mb-6">اختر الفئة المناسبة لمنتجك</p>
 
       {/* Bulk Import Banner */}
       <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg">
@@ -258,44 +151,9 @@ export default function CategoryStep({
         </div>
       </div>
 
-      {/* AI Search Box */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          <Sparkles className="w-4 h-4 inline ml-1 text-purple-500" />
-          ابحث عن المنتج بالذكاء الاصطناعي
-        </label>
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="مثال: iPhone 14 Pro Max أو سيارة تويوتا كامري..."
-            className="w-full pr-10 pl-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* AI Loading */}
-        {categoryLoading && (
-          <div className="mt-2 flex items-center gap-2 text-purple-600 text-sm">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>الذكاء الاصطناعي يحلل المنتج...</span>
-          </div>
-        )}
-
-        {/* AI Suggestions */}
-        {categorySuggestions.length > 0 && (
-          <CategorySuggestion
-            suggestions={categorySuggestions}
-            onSelect={handleAICategorySelect}
-            loading={categoryLoading}
-          />
-        )}
-      </div>
-
       {/* 3-Level Category Selection */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">أو اختر الفئة يدوياً</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">اختر الفئة التفصيلية</h3>
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
@@ -416,7 +274,7 @@ export default function CategoryStep({
       {/* Hint */}
       <div className="mt-8 p-4 bg-blue-50 rounded-xl">
         <p className="text-sm text-blue-700">
-          💡 <strong>نصيحة:</strong> استخدم البحث الذكي للعثور على الفئة المناسبة تلقائياً، أو اختر الفئة التفصيلية من القوائم المنسدلة
+          💡 <strong>نصيحة:</strong> اختر الفئة التفصيلية من القوائم المنسدلة للوصول لأكبر عدد من المشترين
         </p>
       </div>
     </div>

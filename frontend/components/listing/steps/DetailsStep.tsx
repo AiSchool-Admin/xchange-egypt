@@ -214,24 +214,31 @@ export default function DetailsStep({
     detectCategory();
   }, [debouncedTitle, formData.description, category]);
 
-  // Set default address from user profile (governorate, city, district)
+  // Set default address from user profile (governorate, city, district, street)
   useEffect(() => {
-    if (user && (user.governorate || user.city || user.district)) {
-      const updates: Partial<CommonFields> = { ...formData };
+    if (user && (user.governorate || user.city || user.district || user.street)) {
+      const updates: Partial<CommonFields> & { district?: string; street?: string } = { ...formData };
       let hasUpdates = false;
 
       if (!formData.governorate && user.governorate) {
         updates.governorate = user.governorate;
         hasUpdates = true;
       }
-      if (!formData.city && (user.city || user.district)) {
-        // Use district first as it's more specific, then city
-        updates.city = user.district || user.city || '';
+      if (!formData.city && user.city) {
+        updates.city = user.city;
+        hasUpdates = true;
+      }
+      if (!(formData as any).district && user.district) {
+        updates.district = user.district;
+        hasUpdates = true;
+      }
+      if (!(formData as any).street && user.street) {
+        updates.street = user.street;
         hasUpdates = true;
       }
 
       if (hasUpdates) {
-        onFormDataChange(updates);
+        onFormDataChange(updates as Partial<CommonFields>);
       }
     }
   }, [user]);
@@ -541,7 +548,9 @@ export default function DetailsStep({
             )}
           </div>
 
+          {/* Address Grid - 4 fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Governorate */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <MapPin className="w-4 h-4 inline ml-1" />
@@ -559,15 +568,44 @@ export default function DetailsStep({
               </select>
             </div>
 
+            {/* City */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                المدينة / المنطقة
+                المدينة
               </label>
               <input
                 type="text"
                 value={formData.city || ''}
                 onChange={(e) => handleInputChange('city', e.target.value)}
-                placeholder="مثال: مدينة نصر"
+                placeholder="مثال: العبور، مدينة نصر"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* District */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                الحي / المنطقة
+              </label>
+              <input
+                type="text"
+                value={(formData as any).district || ''}
+                onChange={(e) => handleInputChange('district' as any, e.target.value)}
+                placeholder="مثال: الحي الأول، المنطقة الصناعية"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Street */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                الشارع / العنوان التفصيلي
+              </label>
+              <input
+                type="text"
+                value={(formData as any).street || ''}
+                onChange={(e) => handleInputChange('street' as any, e.target.value)}
+                placeholder="مثال: شارع الجمهورية، بجوار المسجد الكبير"
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
             </div>
