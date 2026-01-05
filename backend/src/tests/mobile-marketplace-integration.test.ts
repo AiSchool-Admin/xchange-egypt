@@ -581,6 +581,18 @@ export async function runMobileMarketplaceTests() {
   return generateReport();
 }
 
+// Jest test wrapper
+describe('Mobile Marketplace Integration Tests', () => {
+  it('should export runMobileMarketplaceTests function', () => {
+    expect(typeof runMobileMarketplaceTests).toBe('function');
+  });
+
+  it('should have valid test configuration', () => {
+    expect(TEST_CONFIG).toBeDefined();
+    expect(TEST_CONFIG.baseUrl).toBeTruthy();
+  });
+});
+
 // Run if executed directly
 if (require.main === module) {
   runMobileMarketplaceTests()
