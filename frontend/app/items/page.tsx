@@ -475,7 +475,7 @@ function ItemsContent() {
                 {t('barter')}
               </Link>
               <Link
-                href="/inventory/add"
+                href="/listing/new?category=GENERAL&back=/items"
                 className="bg-white text-emerald-600 px-6 py-3 rounded-xl hover:bg-emerald-50 transition font-bold flex items-center gap-2 shadow-lg"
               >
                 <span>➕</span>

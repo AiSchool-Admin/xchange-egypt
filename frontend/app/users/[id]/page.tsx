@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import { getReviews, getUserReviewStats, Review, ReviewStats as ReviewStatsType } from '@/lib/api/reviews';
-import { getItems, Item } from '@/lib/api/items';
+import { getItems, Item, getPrimaryImageUrl } from '@/lib/api/items';
 import { StarRating, ReviewCard, ReviewStats } from '@/components/reviews';
 import apiClient from '@/lib/api/client';
 
@@ -310,9 +310,9 @@ export default function UserProfilePage() {
                     className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition group"
                   >
                     <div className="relative h-40 bg-gray-100">
-                      {item.images && item.images.length > 0 ? (
+                      {getPrimaryImageUrl(item.images) ? (
                         <img
-                          src={item.images[0].url}
+                          src={getPrimaryImageUrl(item.images)}
                           alt={item.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition"
                         />

@@ -35,8 +35,8 @@ const envSchema = z.object({
   R2_BUCKET_NAME: z.string().optional(),
   R2_PUBLIC_URL: z.string().url().optional(),
 
-  // Rate Limiting
-  RATE_LIMIT_WINDOW_MS: z.string().default('900000'),
+  // Rate Limiting (100 requests per minute - reasonable for SPA)
+  RATE_LIMIT_WINDOW_MS: z.string().default('60000'),
   RATE_LIMIT_MAX_REQUESTS: z.string().default('100'),
 
   // File Upload

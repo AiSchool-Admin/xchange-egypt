@@ -246,7 +246,7 @@ export default function MyMobileListingsPage() {
                     {/* Image */}
                     <div className="relative w-full md:w-48 h-48 md:h-auto">
                       <Image
-                        src={listing.images[0] || '/images/mobile-placeholder.jpg'}
+                        src={listing.images?.[0] || '/images/mobile-placeholder.jpg'}
                         alt={listing.title}
                         fill
                         className="object-cover"
@@ -265,7 +265,7 @@ export default function MyMobileListingsPage() {
                           <p className="text-gray-500 text-sm">{listing.brand} {listing.model}</p>
                         </div>
                         <p className="text-xl font-bold text-indigo-600">
-                          {listing.price.toLocaleString('ar-EG')} ج.م
+                          {(listing.price || 0).toLocaleString('ar-EG')} ج.م
                         </p>
                       </div>
 

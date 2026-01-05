@@ -258,17 +258,17 @@ export default function MobileTransactionsPage() {
                       <div className="flex gap-4">
                         <div className="relative w-24 h-24 rounded-lg overflow-hidden">
                           <Image
-                            src={transaction.listing.images[0] || '/images/mobile-placeholder.jpg'}
-                            alt={transaction.listing.title}
+                            src={transaction.listing?.images?.[0] || '/images/mobile-placeholder.jpg'}
+                            alt={transaction.listing?.title || ''}
                             fill
                             className="object-cover"
                           />
                         </div>
                         <div>
-                          <h3 className="font-bold mb-1">{transaction.listing.title}</h3>
-                          <p className="text-gray-500 text-sm">{transaction.listing.brand} {transaction.listing.model}</p>
+                          <h3 className="font-bold mb-1">{transaction.listing?.title}</h3>
+                          <p className="text-gray-500 text-sm">{transaction.listing?.brand} {transaction.listing?.model}</p>
                           <p className="text-xl font-bold text-indigo-600 mt-2">
-                            {transaction.price.toLocaleString('ar-EG')} ج.م
+                            {(transaction.price || 0).toLocaleString('ar-EG')} ج.م
                           </p>
                         </div>
                       </div>
@@ -285,7 +285,7 @@ export default function MobileTransactionsPage() {
                               {transaction.iAmSeller ? transaction.buyer.name : transaction.seller.name}
                             </p>
                             <p className="text-sm text-gray-500">
-                              تقييم: {(transaction.iAmSeller ? transaction.buyer.rating : transaction.seller.rating).toFixed(1)}
+                              تقييم: {((transaction.iAmSeller ? transaction.buyer?.rating : transaction.seller?.rating) || 0).toFixed(1)}
                             </p>
                           </div>
                         </div>
@@ -298,7 +298,7 @@ export default function MobileTransactionsPage() {
                         <Shield className="w-5 h-5 text-green-600" />
                         <div>
                           <p className="text-green-700 font-medium">
-                            محفوظ في Escrow: {transaction.escrowAmount.toLocaleString('ar-EG')} ج.م
+                            محفوظ في Escrow: {(transaction.escrowAmount || 0).toLocaleString('ar-EG')} ج.م
                           </p>
                           {transaction.inspectionDeadline && (
                             <p className="text-sm text-green-600">
@@ -460,16 +460,16 @@ export default function MobileTransactionsPage() {
                 <h4 className="font-bold mb-4">تفاصيل المنتج</h4>
                 <div className="flex gap-4">
                   <Image
-                    src={selectedTransaction.listing.images[0] || '/images/mobile-placeholder.jpg'}
+                    src={selectedTransaction.listing?.images?.[0] || '/images/mobile-placeholder.jpg'}
                     alt=""
                     width={100}
                     height={100}
                     className="rounded-lg object-cover"
                   />
                   <div>
-                    <h5 className="font-bold">{selectedTransaction.listing.title}</h5>
-                    <p className="text-gray-500">{selectedTransaction.listing.brand} {selectedTransaction.listing.model}</p>
-                    <p className="text-gray-500">الحالة: {selectedTransaction.listing.condition}</p>
+                    <h5 className="font-bold">{selectedTransaction.listing?.title}</h5>
+                    <p className="text-gray-500">{selectedTransaction.listing?.brand} {selectedTransaction.listing?.model}</p>
+                    <p className="text-gray-500">الحالة: {selectedTransaction.listing?.condition}</p>
                   </div>
                 </div>
               </div>
@@ -480,11 +480,11 @@ export default function MobileTransactionsPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-500">سعر المنتج</span>
-                    <span className="font-bold">{selectedTransaction.price.toLocaleString('ar-EG')} ج.م</span>
+                    <span className="font-bold">{(selectedTransaction.price || 0).toLocaleString('ar-EG')} ج.م</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">محجوز في Escrow</span>
-                    <span className="font-bold text-green-600">{selectedTransaction.escrowAmount.toLocaleString('ar-EG')} ج.م</span>
+                    <span className="font-bold text-green-600">{(selectedTransaction.escrowAmount || 0).toLocaleString('ar-EG')} ج.م</span>
                   </div>
                 </div>
               </div>

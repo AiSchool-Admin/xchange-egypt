@@ -10,6 +10,7 @@ import {
   WatchlistItem
 } from '@/lib/api/watchlist';
 import { getNotifications } from '@/lib/api/notifications';
+import { getPrimaryImageUrl } from '@/lib/api/items';
 
 interface Notification {
   id: string;
@@ -321,9 +322,9 @@ export default function WatchlistPage() {
                 <div className="flex flex-col md:flex-row">
                   {/* Item Image */}
                   <div className="md:w-48 h-48 md:h-auto relative flex-shrink-0">
-                    {watchItem.item.images[0]?.url ? (
+                    {getPrimaryImageUrl(watchItem.item.images) ? (
                       <img
-                        src={watchItem.item.images[0].url}
+                        src={getPrimaryImageUrl(watchItem.item.images)}
                         alt={watchItem.item.title}
                         className="w-full h-full object-cover"
                       />

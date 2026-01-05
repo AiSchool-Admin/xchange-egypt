@@ -394,7 +394,17 @@ export default function ItemDetailsPage() {
     );
   }
 
-  const images = item.images && item.images.length > 0 ? item.images : [];
+  // Normalize images to always have url property
+  const normalizeImage = (img: string | { url: string; isPrimary?: boolean }) => {
+    if (typeof img === 'string') {
+      return { url: img, isPrimary: false };
+    }
+    return img;
+  };
+
+  const images = item.images && item.images.length > 0
+    ? item.images.filter(img => img !== null && img !== undefined).map(normalizeImage)
+    : [];
   const isOwner = user?.id === item.seller?.id;
   const condition = conditionConfig[item.condition] || conditionConfig.GOOD;
   const listingType = listingTypeConfig[item.listingType || 'DIRECT_SALE'] || listingTypeConfig.DIRECT_SALE;

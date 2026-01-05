@@ -159,12 +159,12 @@ export default function PropertyDetailPage() {
   };
 
   const nextImage = () => {
-    if (!property) return;
+    if (!property || !property.images?.length) return;
     setCurrentImageIndex((prev) => (prev + 1) % property.images.length);
   };
 
   const prevImage = () => {
-    if (!property) return;
+    if (!property || !property.images?.length) return;
     setCurrentImageIndex(
       (prev) => (prev - 1 + property.images.length) % property.images.length
     );
@@ -234,9 +234,9 @@ export default function PropertyDetailPage() {
         {/* Image Gallery */}
         <div className="relative mb-6">
           <div className="aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden bg-gray-100">
-            {property.images.length > 0 ? (
+            {property.images?.length > 0 ? (
               <img
-                src={property.images[currentImageIndex]}
+                src={property.images[currentImageIndex] || ''}
                 alt={property.title}
                 className="w-full h-full object-cover"
               />
@@ -247,7 +247,7 @@ export default function PropertyDetailPage() {
             )}
 
             {/* Navigation */}
-            {property.images.length > 1 && (
+            {property.images?.length > 1 && (
               <>
                 <button
                   onClick={prevImage}
@@ -265,7 +265,7 @@ export default function PropertyDetailPage() {
             )}
 
             {/* Image counter */}
-            {property.images.length > 0 && (
+            {property.images?.length > 0 && (
               <div className="absolute bottom-4 left-4 bg-black/60 text-white px-4 py-2 rounded-full text-sm">
                 {currentImageIndex + 1} / {property.images.length}
               </div>
@@ -319,7 +319,7 @@ export default function PropertyDetailPage() {
           </div>
 
           {/* Thumbnail strip */}
-          {property.images.length > 1 && (
+          {property.images?.length > 1 && (
             <div className="flex gap-2 mt-3 overflow-x-auto pb-2">
               {property.images.map((img, idx) => (
                 <button
@@ -577,7 +577,7 @@ export default function PropertyDetailPage() {
                           className="flex-shrink-0 w-40 bg-white rounded-lg overflow-hidden border border-gray-200 hover:border-purple-300 transition-colors"
                         >
                           <div className="aspect-video bg-gray-100">
-                            {suggestion.images[0] && (
+                            {suggestion.images?.[0] && (
                               <img
                                 src={suggestion.images[0]}
                                 alt={suggestion.title}

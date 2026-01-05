@@ -96,25 +96,52 @@ export default function MobileListingDetailPage() {
   const router = useRouter();
   const [listing, setListing] = useState<MobileListing | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showBarterModal, setShowBarterModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
 
   useEffect(() => {
-    fetchListing();
+    if (params.id) {
+      fetchListing();
+    }
   }, [params.id]);
 
   const fetchListing = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${params.id}`);
-      const data = await response.json();
-      if (data.success) {
-        setListing(data.data);
+      setError(null);
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        console.error('API URL not configured');
+        setError('عذراً، حدث خطأ في الإعدادات');
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching listing:', error);
+
+      const response = await fetch(`${apiUrl}/mobiles/listings/${params.id}`);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('الإعلان غير موجود');
+        } else {
+          setError('حدث خطأ أثناء تحميل البيانات');
+        }
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success && data.data) {
+        setListing(data.data);
+      } else {
+        setError('الإعلان غير موجود');
+      }
+    } catch (err) {
+      console.error('Error fetching listing:', err);
+      setError('تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت');
     } finally {
       setLoading(false);
     }
@@ -152,13 +179,13 @@ export default function MobileListingDetailPage() {
   };
 
   const nextImage = () => {
-    if (listing) {
+    if (listing && listing.images && listing.images.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % listing.images.length);
     }
   };
 
   const prevImage = () => {
-    if (listing) {
+    if (listing && listing.images && listing.images.length > 0) {
       setCurrentImageIndex((prev) => (prev - 1 + listing.images.length) % listing.images.length);
     }
   };
@@ -171,21 +198,31 @@ export default function MobileListingDetailPage() {
     );
   }
 
-  if (!listing) {
+  if (error || !listing) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center" dir="rtl">
         <Smartphone className="w-16 h-16 text-gray-400 mb-4" />
-        <h2 className="text-xl font-bold text-gray-900 mb-2">الإعلان غير موجود</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">
+          {error || 'الإعلان غير موجود'}
+        </h2>
         <p className="text-gray-600 mb-4">قد يكون تم حذفه أو انتهت صلاحيته</p>
-        <Link href="/mobiles" className="bg-indigo-600 text-white px-6 py-2 rounded-lg">
-          العودة للقائمة
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={() => fetchListing()}
+            className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            إعادة المحاولة
+          </button>
+          <Link href="/mobiles" className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+            العودة للقائمة
+          </Link>
+        </div>
       </div>
     );
   }
 
   const condition = CONDITION_LABELS[listing.condition] || CONDITION_LABELS['C'];
-  const trustLevel = TRUST_LEVELS[listing.seller.trustLevel] || TRUST_LEVELS['new'];
+  const trustLevel = TRUST_LEVELS[listing.seller?.trustLevel || 'new'] || TRUST_LEVELS['new'];
   const TrustIcon = trustLevel.icon;
 
   return (
@@ -216,14 +253,14 @@ export default function MobileListingDetailPage() {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="relative aspect-square">
                 <Image
-                  src={listing.images[currentImageIndex] || '/images/mobile-placeholder.jpg'}
+                  src={listing.images?.[currentImageIndex] || '/images/mobile-placeholder.jpg'}
                   alt={listing.title}
                   fill
                   className="object-contain bg-gray-100"
                 />
 
                 {/* Navigation Arrows */}
-                {listing.images.length > 1 && (
+                {listing.images && listing.images.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
@@ -258,7 +295,7 @@ export default function MobileListingDetailPage() {
               </div>
 
               {/* Thumbnails */}
-              {listing.images.length > 1 && (
+              {listing.images && listing.images.length > 1 && (
                 <div className="p-4 flex gap-2 overflow-x-auto">
                   {listing.images.map((img, idx) => (
                     <button
@@ -297,9 +334,9 @@ export default function MobileListingDetailPage() {
                 </div>
                 <div className="text-left">
                   <p className="text-3xl font-bold text-indigo-600">
-                    {listing.price.toLocaleString('ar-EG')} ج.م
+                    {(listing.price || 0).toLocaleString('ar-EG')} ج.م
                   </p>
-                  {listing.priceReference && (
+                  {listing.priceReference && listing.priceReference.avgPrice && (
                     <p className="text-sm text-gray-500 mt-1">
                       متوسط السوق: {listing.priceReference.avgPrice.toLocaleString('ar-EG')} ج.م
                     </p>
@@ -501,53 +538,62 @@ export default function MobileListingDetailPage() {
             {/* Seller Info */}
             <div className="bg-white rounded-xl shadow-sm p-6 sticky top-20">
               <h2 className="text-lg font-bold mb-4">البائع</h2>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  <Image
-                    src={listing.seller.avatar || '/images/default-avatar.png'}
-                    alt={listing.seller.name}
-                    width={60}
-                    height={60}
-                    className="rounded-full"
-                  />
-                  {listing.seller.isVerified && (
-                    <CheckCircle className="absolute -bottom-1 -right-1 w-5 h-5 text-blue-500 bg-white rounded-full" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-bold">{listing.seller.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${trustLevel.color}`}>
-                      <TrustIcon className="w-3 h-3" />
-                      {trustLevel.label}
-                    </span>
+              {listing.seller ? (
+                <>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="relative">
+                      <Image
+                        src={listing.seller.avatar || '/images/default-avatar.png'}
+                        alt={listing.seller.name}
+                        width={60}
+                        height={60}
+                        className="rounded-full"
+                      />
+                      {listing.seller.isVerified && (
+                        <CheckCircle className="absolute -bottom-1 -right-1 w-5 h-5 text-blue-500 bg-white rounded-full" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-bold">{listing.seller.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${trustLevel.color}`}>
+                          <TrustIcon className="w-3 h-3" />
+                          {trustLevel.label}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 text-yellow-500 mb-1">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="font-bold">{listing.seller.rating.toFixed(1)}</span>
+                  <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-center gap-1 text-yellow-500 mb-1">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="font-bold">{listing.seller.rating?.toFixed(1) || '0.0'}</span>
+                      </div>
+                      <p className="text-gray-500">{listing.seller.reviewCount || 0} تقييم</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="font-bold text-indigo-600">{listing.seller.completedSales || 0}</p>
+                      <p className="text-gray-500">صفقة مكتملة</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="font-bold text-green-600">{listing.seller.responseRate || 0}%</p>
+                      <p className="text-gray-500">معدل الرد</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="font-bold text-gray-700">
+                        {listing.seller.joinedAt ? new Date(listing.seller.joinedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short' }) : '-'}
+                      </p>
+                      <p className="text-gray-500">تاريخ الانضمام</p>
+                    </div>
                   </div>
-                  <p className="text-gray-500">{listing.seller.reviewCount} تقييم</p>
+                </>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>معلومات البائع غير متوفرة</p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="font-bold text-indigo-600">{listing.seller.completedSales}</p>
-                  <p className="text-gray-500">صفقة مكتملة</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="font-bold text-green-600">{listing.seller.responseRate}%</p>
-                  <p className="text-gray-500">معدل الرد</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="font-bold text-gray-700">
-                    {new Date(listing.seller.joinedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short' })}
-                  </p>
-                  <p className="text-gray-500">تاريخ الانضمام</p>
-                </div>
-              </div>
+              )}
 
               {/* Action Buttons */}
               <div className="space-y-3">

@@ -201,7 +201,7 @@ export default function InventoryStockPage() {
                 استيراد مجمع
               </Link>
               <Link
-                href="/inventory/add"
+                href="/listing/new"
                 className="flex items-center gap-2 px-6 py-3 bg-white text-purple-600 rounded-xl font-bold hover:bg-purple-50 transition shadow-lg"
               >
                 <span>+</span>

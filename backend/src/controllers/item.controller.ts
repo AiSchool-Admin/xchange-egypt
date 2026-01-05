@@ -48,6 +48,51 @@ export const createItem = async (
 };
 
 /**
+ * Create a new item with JSON body (no file upload)
+ * POST /api/v1/items/create
+ * Accepts imageUrls array instead of file uploads
+ */
+export const createItemJson = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
+
+    // Transform validation fields (titleAr/descriptionAr) to service fields (title/description)
+    const itemData = {
+      title: req.body.titleAr || req.body.titleEn || req.body.title,
+      description: req.body.descriptionAr || req.body.descriptionEn || req.body.description,
+      categoryId: req.body.categoryId,
+      condition: req.body.condition || 'GOOD',
+      estimatedValue: req.body.estimatedValue ? parseFloat(req.body.estimatedValue) : 0,
+      location: req.body.location,
+      governorate: req.body.governorate,
+      // Image URLs (optional)
+      imageUrls: req.body.imageUrls || [],
+      // Listing type
+      listingType: req.body.listingType || 'DIRECT_SALE',
+      // Barter preferences
+      desiredCategoryId: req.body.desiredCategoryId,
+      desiredKeywords: req.body.desiredKeywords,
+      desiredValueMin: req.body.desiredValueMin ? parseFloat(req.body.desiredValueMin) : undefined,
+      desiredValueMax: req.body.desiredValueMax ? parseFloat(req.body.desiredValueMax) : undefined,
+    };
+
+    // Create item without file uploads - pass imageUrls directly
+    const item = await itemService.createItemWithUrls(userId, itemData);
+
+    return successResponse(res, item, 'Item created successfully', 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Get item by ID
  * GET /api/v1/items/:id
  */
