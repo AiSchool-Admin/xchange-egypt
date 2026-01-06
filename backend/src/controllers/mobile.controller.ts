@@ -4,10 +4,8 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { MobileListingStatus, MobileTransactionStatus, MobileBarterProposalStatus, MobileBrand } from '../types';
-
-const prisma = new PrismaClient();
 
 // Interface for barter preferences JSON
 interface BarterPreferences {

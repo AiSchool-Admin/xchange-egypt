@@ -29,7 +29,7 @@ function LoginForm() {
       if (token) {
         try {
           // Try to verify the token by calling the profile endpoint
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/founder/profile`, {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1'}/founder/profile`, {
             headers: { 'Authorization': `Bearer ${token}` },
           });
 

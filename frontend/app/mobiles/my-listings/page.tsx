@@ -69,6 +69,13 @@ export default function MyMobileListingsPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/my-listings?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (!response.ok) {
+        console.error('API error:', response.status, response.statusText);
+        setListings([]);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -91,27 +98,43 @@ export default function MyMobileListingsPage() {
   const handleDelete = async (id: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (!response.ok) {
+        console.error('Delete failed:', response.status, response.statusText);
+        alert('فشل في حذف الإعلان');
+        return;
+      }
+
       setShowDeleteModal(null);
       fetchListings();
     } catch (error) {
       console.error('Error deleting listing:', error);
+      alert('حدث خطأ أثناء حذف الإعلان');
     }
   };
 
   const handleMarkAsSold = async (id: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}/mark-sold`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}/mark-sold`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (!response.ok) {
+        console.error('Mark as sold failed:', response.status, response.statusText);
+        alert('فشل في تحديث حالة الإعلان');
+        return;
+      }
+
       fetchListings();
     } catch (error) {
       console.error('Error marking as sold:', error);
+      alert('حدث خطأ أثناء تحديث الإعلان');
     }
   };
 

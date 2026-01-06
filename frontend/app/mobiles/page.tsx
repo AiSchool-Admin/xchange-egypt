@@ -188,6 +188,14 @@ function MobilesContent() {
       params.append('limit', '20');
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings?${params}`);
+
+      if (!response.ok) {
+        console.error('API error:', response.status, response.statusText);
+        setListings([]);
+        setTotalCount(0);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
