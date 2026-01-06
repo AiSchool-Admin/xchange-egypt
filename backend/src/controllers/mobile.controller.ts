@@ -364,7 +364,7 @@ export const createListing = async (req: Request, res: Response) => {
         governorate,
         city,
         district,
-        status: 'DRAFT',
+        status: 'ACTIVE', // Changed from DRAFT to make listings visible immediately
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       }
     });
