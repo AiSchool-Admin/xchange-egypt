@@ -104,12 +104,88 @@ export default function MobileListingDetailPage() {
   const [contactMessage, setContactMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [messageSent, setMessageSent] = useState(false);
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [loadingMyListings, setLoadingMyListings] = useState(false);
+  const [selectedBarterListing, setSelectedBarterListing] = useState<string | null>(null);
+  const [submittingBarter, setSubmittingBarter] = useState(false);
 
   useEffect(() => {
     if (params.id) {
       fetchListing();
     }
   }, [params.id]);
+
+  useEffect(() => {
+    if (showBarterModal) {
+      fetchMyListings();
+    }
+  }, [showBarterModal]);
+
+  const fetchMyListings = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+      setLoadingMyListings(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/mobiles/my-listings?status=ACTIVE`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMyListings(data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching my listings:', err);
+    } finally {
+      setLoadingMyListings(false);
+    }
+  };
+
+  const submitBarterProposal = async () => {
+    if (!selectedBarterListing) {
+      alert('اختر جهازاً للمقايضة');
+      return;
+    }
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setSubmittingBarter(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      const response = await fetch(`${apiUrl}/mobiles/barter/propose`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          offeredListingId: selectedBarterListing,
+          requestedListingId: listing?.id,
+        }),
+      });
+
+      if (response.ok) {
+        alert('تم إرسال عرض المقايضة بنجاح!');
+        setShowBarterModal(false);
+        setSelectedBarterListing(null);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData?.error || 'فشل إرسال العرض');
+      }
+    } catch (err) {
+      console.error('Error submitting barter:', err);
+      alert('حدث خطأ');
+    } finally {
+      setSubmittingBarter(false);
+    }
+  };
 
   const fetchListing = async () => {
     try {
@@ -247,6 +323,34 @@ export default function MobileListingDetailPage() {
       setSendingMessage(true);
       const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+      // Step 1: Create or get conversation
+      const convResponse = await fetch(`${apiUrl}/chat/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          participant2Id: listing.seller.id,
+          itemId: listing.id,
+        }),
+      });
+
+      if (!convResponse.ok) {
+        const errorData = await convResponse.json().catch(() => ({}));
+        alert(errorData?.error?.message || 'فشل في بدء المحادثة');
+        return;
+      }
+
+      const convData = await convResponse.json();
+      const conversationId = convData.data?.id || convData.data?.conversation?.id;
+
+      if (!conversationId) {
+        alert('فشل في إنشاء المحادثة');
+        return;
+      }
+
+      // Step 2: Send message
       const response = await fetch(`${apiUrl}/chat/messages`, {
         method: 'POST',
         headers: {
@@ -254,10 +358,8 @@ export default function MobileListingDetailPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          receiverId: listing.seller.id,
+          conversationId: conversationId,
           content: contactMessage,
-          listingId: listing.id,
-          listingType: 'mobile',
         }),
       });
 
@@ -270,7 +372,7 @@ export default function MobileListingDetailPage() {
         }, 2000);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(errorData?.message || 'فشل إرسال الرسالة، حاول مرة أخرى');
+        alert(errorData?.error?.message || 'فشل إرسال الرسالة، حاول مرة أخرى');
       }
     } catch (err) {
       console.error('Error sending message:', err);
@@ -820,23 +922,81 @@ export default function MobileListingDetailPage() {
             <h3 className="text-lg font-bold mb-4">اقتراح مقايضة</h3>
             <p className="text-gray-600 mb-4">اختر الجهاز الذي تريد المقايضة به:</p>
             <div className="space-y-3 max-h-60 overflow-y-auto mb-4">
-              <p className="text-center text-gray-500 py-8">
-                يجب أن يكون لديك إعلانات نشطة للمقايضة
-              </p>
+              {loadingMyListings ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent"></div>
+                </div>
+              ) : myListings.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">
+                  يجب أن يكون لديك إعلانات نشطة للمقايضة
+                </p>
+              ) : (
+                myListings.map((item) => (
+                  <label
+                    key={item.id}
+                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                      selectedBarterListing === item.id
+                        ? 'border-purple-600 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="barterListing"
+                      value={item.id}
+                      checked={selectedBarterListing === item.id}
+                      onChange={() => setSelectedBarterListing(item.id)}
+                      className="hidden"
+                    />
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                      {item.images?.[0] ? (
+                        <Image src={item.images[0]} alt="" width={48} height={48} className="object-cover w-full h-full" />
+                      ) : (
+                        <Smartphone className="w-6 h-6 m-3 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{item.title || item.titleAr || `${item.brand} ${item.model}`}</p>
+                      <p className="text-xs text-gray-500">{(item.priceEgp || 0).toLocaleString('ar-EG')} ج.م</p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 ${
+                      selectedBarterListing === item.id ? 'border-purple-600 bg-purple-600' : 'border-gray-300'
+                    }`}>
+                      {selectedBarterListing === item.id && (
+                        <CheckCircle className="w-full h-full text-white" />
+                      )}
+                    </div>
+                  </label>
+                ))
+              )}
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setShowBarterModal(false)}
+                onClick={() => {
+                  setShowBarterModal(false);
+                  setSelectedBarterListing(null);
+                }}
                 className="flex-1 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                disabled={submittingBarter}
               >
                 إلغاء
               </button>
-              <Link
-                href="/mobiles/sell"
-                className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-center"
-              >
-                أضف جهازك أولاً
-              </Link>
+              {myListings.length === 0 ? (
+                <Link
+                  href="/mobiles/sell"
+                  className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-center"
+                >
+                  أضف جهازك أولاً
+                </Link>
+              ) : (
+                <button
+                  onClick={submitBarterProposal}
+                  disabled={!selectedBarterListing || submittingBarter}
+                  className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {submittingBarter ? 'جاري الإرسال...' : 'إرسال العرض'}
+                </button>
+              )}
             </div>
           </div>
         </div>
