@@ -72,7 +72,13 @@ export default function MyMobileListingsPage() {
       const data = await response.json();
 
       if (data.success) {
-        setListings(data.data.listings);
+        // Map backend field names to frontend interface
+        const mappedListings = (data.data.listings || []).map((l: any) => ({
+          ...l,
+          price: l.priceEgp || l.price || 0,
+          title: l.titleAr || l.title || `${l.brand} ${l.model}`,
+        }));
+        setListings(mappedListings);
         setStats(data.data.stats);
       }
     } catch (error) {

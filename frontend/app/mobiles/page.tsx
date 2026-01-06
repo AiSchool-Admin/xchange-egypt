@@ -194,7 +194,18 @@ function MobilesContent() {
         // Backend returns { success, data: [...listings...], pagination: {...} }
         const listingsData = Array.isArray(data.data) ? data.data : [];
         const pagination = data.pagination || {};
-        setListings(listingsData);
+        // Map backend field names to frontend interface
+        const mappedListings = listingsData.map((l: any) => ({
+          ...l,
+          price: l.priceEgp || l.price || 0,
+          title: l.titleAr || l.title || `${l.brand} ${l.model}`,
+          storageCapacity: l.storageGb || l.storageCapacity || 0,
+          seller: l.seller ? {
+            ...l.seller,
+            name: l.seller.fullName || l.seller.name || 'مستخدم',
+          } : null,
+        }));
+        setListings(mappedListings);
         setTotalCount(pagination.total || 0);
       }
     } catch (error) {

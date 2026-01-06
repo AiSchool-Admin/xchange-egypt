@@ -91,19 +91,65 @@ export default function MobileBarterPage() {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success) setMatches(data.data || []);
+        if (data.success) {
+          // Map backend fields to frontend interface
+          const mappedMatches = (data.data || []).map((m: any) => ({
+            ...m,
+            myListing: m.myListing ? {
+              ...m.myListing,
+              price: m.myListing.priceEgp || m.myListing.price || 0,
+              title: m.myListing.titleAr || m.myListing.title || `${m.myListing.brand} ${m.myListing.model}`,
+            } : null,
+            otherListing: m.otherListing ? {
+              ...m.otherListing,
+              price: m.otherListing.priceEgp || m.otherListing.price || 0,
+              title: m.otherListing.titleAr || m.otherListing.title || `${m.otherListing.brand} ${m.otherListing.model}`,
+              seller: m.otherListing.seller ? {
+                ...m.otherListing.seller,
+                name: m.otherListing.seller.fullName || m.otherListing.seller.name || 'مستخدم',
+              } : null,
+            } : null,
+          }));
+          setMatches(mappedMatches);
+        }
       } else if (activeTab === 'proposals') {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/proposals`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success) setProposals(data.data || []);
+        if (data.success) {
+          const mapped = (data.data || []).map((p: any) => ({
+            ...p,
+            myListing: p.myListing || p.offeredListing ? {
+              ...(p.myListing || p.offeredListing),
+              price: (p.myListing || p.offeredListing)?.priceEgp || (p.myListing || p.offeredListing)?.price || 0,
+            } : null,
+            targetListing: p.targetListing || p.requestedListing ? {
+              ...(p.targetListing || p.requestedListing),
+              price: (p.targetListing || p.requestedListing)?.priceEgp || (p.targetListing || p.requestedListing)?.price || 0,
+            } : null,
+          }));
+          setProposals(mapped);
+        }
       } else {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/proposals/received`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success) setReceivedProposals(data.data || []);
+        if (data.success) {
+          const mapped = (data.data || []).map((p: any) => ({
+            ...p,
+            myListing: p.myListing || p.requestedListing ? {
+              ...(p.myListing || p.requestedListing),
+              price: (p.myListing || p.requestedListing)?.priceEgp || (p.myListing || p.requestedListing)?.price || 0,
+            } : null,
+            targetListing: p.targetListing || p.offeredListing ? {
+              ...(p.targetListing || p.offeredListing),
+              price: (p.targetListing || p.offeredListing)?.priceEgp || (p.targetListing || p.offeredListing)?.price || 0,
+            } : null,
+          }));
+          setReceivedProposals(mapped);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
