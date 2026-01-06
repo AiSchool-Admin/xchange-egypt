@@ -1,11 +1,9 @@
 'use client';
 
-import { Battery, Smartphone, HardDrive, Cpu } from 'lucide-react';
+import { Battery, Smartphone, HardDrive, Cpu, Info } from 'lucide-react';
 
-const BRANDS = [
-  'Apple', 'Samsung', 'Xiaomi', 'OPPO', 'Vivo', 'Realme',
-  'Huawei', 'Honor', 'Infinix', 'Tecno', 'Nokia', 'Motorola', 'Google', 'OnePlus'
-];
+// Note: Brand and Model are now selected via the 3-level category system
+// This component handles additional mobile-specific fields
 
 const STORAGE_OPTIONS = [32, 64, 128, 256, 512, 1024];
 const RAM_OPTIONS = [2, 3, 4, 6, 8, 12, 16];
@@ -43,37 +41,34 @@ export default function MobileFields({ data, onChange }: MobileFieldsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Brand & Model */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Smartphone className="w-4 h-4 inline ml-1" />
-            العلامة التجارية <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={data.brand || ''}
-            onChange={(e) => handleChange('brand', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white"
-          >
-            <option value="">اختر العلامة</option>
-            {BRANDS.map(brand => (
-              <option key={brand} value={brand}>{brand}</option>
-            ))}
-          </select>
+      {/* Info about category selection */}
+      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-blue-700">
+            اختر الماركة والموديل من قائمة "الفئة التفصيلية" أعلاه
+            <br />
+            <span className="text-xs text-blue-600">الموبايلات ← الماركة ← الموديل</span>
+          </p>
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            الموديل <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            value={data.model || ''}
-            onChange={(e) => handleChange('model', e.target.value)}
-            placeholder="مثال: iPhone 14 Pro Max"
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+      {/* Custom model variant - for special editions or variants */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          <Smartphone className="w-4 h-4 inline ml-1" />
+          الإصدار / اللون / الفئة (اختياري)
+        </label>
+        <input
+          type="text"
+          value={data.modelVariant || ''}
+          onChange={(e) => handleChange('modelVariant', e.target.value)}
+          placeholder="مثال: Pro Max 256GB - أسود تيتانيوم"
+          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          حدد إذا كان هناك إصدار خاص أو لون أو سعة مختلفة
+        </p>
       </div>
 
       {/* Storage & RAM */}
