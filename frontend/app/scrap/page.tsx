@@ -369,8 +369,8 @@ export default function ScrapMarketplacePage() {
                     <div className="relative h-48">
                       {item.images?.[0] ? (
                         <img
-                          src={item.images[0]}
-                          alt={item.title}
+                          src={item.images?.[0] || ''}
+                          alt={item.title || 'خردة'}
                           className="w-full h-full object-cover"
                         />
                       ) : (

@@ -14,8 +14,8 @@
  * 8. الطلبات والدفع
  */
 
-const BACKEND_URL = 'https://xchange-backend.onrender.com';
-const FRONTEND_URL = 'https://xchange-egypt-izqou6183-mamdouh-ragabs-projects.vercel.app';
+const BACKEND_URL = 'https://xchange-egypt-production.up.railway.app';
+const FRONTEND_URL = 'https://xchange-egypt.vercel.app';
 
 // Test results storage
 const testResults = {
@@ -565,6 +565,88 @@ async function testAIFeatures() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// الاختبار 13: Frontend Pages
+// ═══════════════════════════════════════════════════════════════
+async function testFrontendPages() {
+  log('\n═══════════════════════════════════════════════════════════════', 'cyan');
+  log('  🌐 اختبار 13: صفحات الواجهة الأمامية (Frontend Pages)', 'bold');
+  log('═══════════════════════════════════════════════════════════════', 'cyan');
+
+  const pages = [
+    { path: '/', name: 'الصفحة الرئيسية' },
+    { path: '/login', name: 'تسجيل الدخول' },
+    { path: '/register', name: 'إنشاء حساب' },
+    { path: '/marketplace', name: 'السوق' },
+    { path: '/barter', name: 'المقايضة' },
+    { path: '/barter/guide', name: 'دليل المقايضة' },
+    { path: '/barter/open-offers', name: 'عروض المقايضة' },
+    { path: '/auctions', name: 'المزادات' },
+    { path: '/auctions/live', name: 'المزادات الحية' },
+    { path: '/cars', name: 'سوق السيارات' },
+    { path: '/cars/calculator', name: 'حاسبة السيارات' },
+    { path: '/gold', name: 'سوق الذهب' },
+    { path: '/gold/calculator', name: 'حاسبة الذهب' },
+    { path: '/properties', name: 'العقارات' },
+    { path: '/donations', name: 'التبرعات' },
+    { path: '/deals', name: 'العروض' },
+    { path: '/pricing', name: 'الأسعار' },
+    { path: '/premium', name: 'العضوية المميزة' },
+    { path: '/facilitators', name: 'الميسرين' },
+    { path: '/delivery', name: 'التوصيل' },
+    { path: '/escrow', name: 'الضمان' },
+    { path: '/installments', name: 'التقسيط' },
+    { path: '/exchange-points', name: 'نقاط التبادل' },
+    { path: '/price-predictor', name: 'توقع الأسعار' },
+    { path: '/assistant', name: 'المساعد الذكي' },
+    { path: '/rides', name: 'الرحلات' },
+    { path: '/pools', name: 'مجمعات التداول' },
+    { path: '/barter-chains', name: 'سلاسل المقايضة' },
+    { path: '/reverse-auctions', name: 'المزادات العكسية' },
+    { path: '/dashboard', name: 'لوحة التحكم' },
+    { path: '/items/new', name: 'إضافة منتج' },
+    { path: '/messages', name: 'الرسائل' },
+    { path: '/notifications', name: 'الإشعارات' },
+    { path: '/cart', name: 'السلة' },
+    { path: '/admin/login', name: 'دخول الإدارة' },
+  ];
+
+  let successCount = 0;
+  let failedPages = [];
+
+  for (const page of pages) {
+    try {
+      const res = await fetchWithTimeout(`${FRONTEND_URL}${page.path}`, {}, 15000);
+      const text = await res.text().catch(() => '');
+
+      // Check for error patterns
+      const hasError =
+        text.includes('Application error') ||
+        text.includes('Unhandled Runtime Error') ||
+        text.includes('This page could not be found') ||
+        (res.status >= 400 && res.status !== 401);
+
+      if (res.ok && !hasError) {
+        successCount++;
+        logTest(`GET ${page.path} (${page.name})`, true, '');
+      } else if (hasError) {
+        failedPages.push({ ...page, status: res.status, error: 'Content error' });
+        logTest(`GET ${page.path} (${page.name})`, false, `Error in content (${res.status})`);
+      } else {
+        failedPages.push({ ...page, status: res.status });
+        logTest(`GET ${page.path} (${page.name})`, false, `Status: ${res.status}`);
+      }
+    } catch (error) {
+      failedPages.push({ ...page, error: error.message });
+      logTest(`GET ${page.path} (${page.name})`, false, error.message);
+    }
+  }
+
+  log(`\n  📊 نتائج الصفحات: ${successCount}/${pages.length} نجح`, successCount === pages.length ? 'green' : 'yellow');
+
+  return { successCount, total: pages.length, failedPages };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // تشغيل جميع الاختبارات
 // ═══════════════════════════════════════════════════════════════
 async function runAllTests() {
@@ -597,6 +679,7 @@ async function runAllTests() {
     await testNotificationsAndChat(authToken);
     await testSpecializedMarkets();
     await testAIFeatures();
+    await testFrontendPages();
   }
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);

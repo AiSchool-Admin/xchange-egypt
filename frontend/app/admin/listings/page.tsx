@@ -226,8 +226,8 @@ export default function ListingsManagement() {
               <div className="aspect-video bg-gray-700 relative">
                 {listing.images && listing.images.length > 0 ? (
                   <img
-                    src={listing.images[0]}
-                    alt={listing.title}
+                    src={listing.images?.[0] || ''}
+                    alt={listing.title || 'إعلان'}
                     className="w-full h-full object-cover"
                   />
                 ) : (

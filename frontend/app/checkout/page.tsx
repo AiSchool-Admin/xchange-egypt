@@ -425,8 +425,8 @@ export default function CheckoutPage() {
                       <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
                         {item.listing?.item?.images?.[0] && (
                           <img
-                            src={item.listing.item.images[0]}
-                            alt={item.listing.item.title}
+                            src={item.listing?.item?.images?.[0] || ''}
+                            alt={item.listing?.item?.title || 'منتج'}
                             className="w-full h-full object-cover"
                           />
                         )}

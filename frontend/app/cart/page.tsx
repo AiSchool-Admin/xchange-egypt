@@ -165,8 +165,8 @@ export default function CartPage() {
                   <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                     {item.listing?.item?.images?.[0] ? (
                       <img
-                        src={item.listing.item.images[0]}
-                        alt={item.listing.item.title}
+                        src={item.listing?.item?.images?.[0] || ''}
+                        alt={item.listing?.item?.title || 'منتج'}
                         className="w-full h-full object-cover"
                       />
                     ) : (

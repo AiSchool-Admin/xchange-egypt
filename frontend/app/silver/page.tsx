@@ -346,8 +346,8 @@ export default function SilverMarketplacePage() {
                 <div className="relative h-48 bg-gradient-to-br from-slate-100 to-slate-50">
                   {item.images?.[0] ? (
                     <img
-                      src={item.images[0]}
-                      alt={item.title}
+                      src={item.images?.[0] || ''}
+                      alt={item.title || 'فضة'}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   ) : (

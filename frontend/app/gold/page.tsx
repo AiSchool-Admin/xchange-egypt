@@ -144,7 +144,8 @@ export default function GoldMarketplacePage() {
     fetchItems();
   }, [selectedKarat, selectedCategory, searchQuery, sortBy]);
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price?: number | null) => {
+    if (price === null || price === undefined || isNaN(price)) return '---';
     return new Intl.NumberFormat('ar-EG').format(Math.round(price));
   };
 
@@ -340,8 +341,8 @@ export default function GoldMarketplacePage() {
                 <div className="relative h-48 bg-gradient-to-br from-amber-100 to-amber-50">
                   {item.images?.[0] ? (
                     <img
-                      src={item.images[0]}
-                      alt={item.title}
+                      src={item.images?.[0] || ''}
+                      alt={item.title || 'ذهب'}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   ) : (

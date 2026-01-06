@@ -678,11 +678,12 @@ export default function BarterPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {items.map((item) => {
-                const primaryImage =
-                  typeof item.images?.[0] === 'string'
-                    ? item.images[0]
-                    : item.images?.find((img: any) => img.isPrimary)?.url ||
-                      (item.images?.[0] as any)?.url;
+                const primaryImage = item.images && item.images.length > 0
+                  ? (typeof item.images[0] === 'string'
+                      ? item.images[0]
+                      : item.images.find((img: any) => img.isPrimary)?.url ||
+                        (item.images[0] as any)?.url)
+                  : undefined;
 
                 return (
                   <Link
