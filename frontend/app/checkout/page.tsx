@@ -94,14 +94,20 @@ export default function CheckoutPage() {
       if (response.ok) {
         const result = await response.json();
         // API returns { success: true, data: {...} }
-        const cartData = result.data || result;
-        setCart(cartData);
+        const cartData = result?.data || result;
         if (!cartData || !cartData.items || cartData.items.length === 0) {
           router.push('/cart');
+          return;
         }
+        setCart(cartData);
+      } else {
+        // Failed to load cart - redirect to cart page
+        console.error('Failed to load cart:', response.status);
+        router.push('/cart');
       }
     } catch (error) {
       console.error('Failed to fetch cart:', error);
+      router.push('/cart');
     } finally {
       setLoading(false);
     }

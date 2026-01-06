@@ -85,8 +85,13 @@ export default function AuctionsPage() {
         maxPrice: maxPrice ? parseFloat(maxPrice) : undefined,
       });
 
-      setAuctions(response.data.auctions);
-      setTotalPages(response.data.pagination.totalPages);
+      if (response?.data?.auctions) {
+        setAuctions(response.data.auctions);
+        setTotalPages(response.data.pagination?.totalPages || 1);
+      } else {
+        setAuctions([]);
+        setTotalPages(1);
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'فشل في تحميل المزادات');
     } finally {

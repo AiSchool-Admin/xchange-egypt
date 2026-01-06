@@ -84,13 +84,15 @@ export default function CreateBarterOfferPage() {
     try {
       setLoadingMyItems(true);
       const response = await getMyItems();
-      const availableItems = response.data.items.filter(
+      const items = Array.isArray(response?.data?.items) ? response.data.items : [];
+      const availableItems = items.filter(
         (item: any) => item.status === 'ACTIVE'
       );
       setMyItems(availableItems);
     } catch (err: any) {
       console.error('Failed to load my items:', err);
       setError('فشل في تحميل منتجاتك. حاول مرة أخرى.');
+      setMyItems([]);
     } finally {
       setLoadingMyItems(false);
     }
@@ -100,12 +102,14 @@ export default function CreateBarterOfferPage() {
     try {
       setLoadingAvailableItems(true);
       const response = await getBarterItems({ limit: 50 });
-      const filtered = response.data.items.filter(
-        (item) => item.seller?.id !== user?.id
+      const items = Array.isArray(response?.data?.items) ? response.data.items : [];
+      const filtered = items.filter(
+        (item) => item.seller?.id && item.seller.id !== user?.id
       );
       setAvailableItems(filtered);
     } catch (err: any) {
       console.error('Failed to load available items:', err);
+      setAvailableItems([]);
     } finally {
       setLoadingAvailableItems(false);
     }

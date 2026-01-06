@@ -46,12 +46,14 @@ export default function CreateAuctionPage() {
       setLoadingItems(true);
       const response = await getMyItems();
       // Filter to only show active items (not already in auction)
-      const availableItems = response.data.items.filter(
+      const items = Array.isArray(response?.data?.items) ? response.data.items : [];
+      const availableItems = items.filter(
         (item: any) => item.status === 'ACTIVE'
       );
       setMyItems(availableItems);
     } catch (err: any) {
       console.error('Failed to load items:', err);
+      setMyItems([]);
     } finally {
       setLoadingItems(false);
     }

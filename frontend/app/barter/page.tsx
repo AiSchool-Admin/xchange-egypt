@@ -127,8 +127,10 @@ export default function BarterPage() {
     try {
       setLoadingStats(true);
       const response = await apiClient.get('/barter/stats');
-      if (response.data.success) {
-        setPlatformStats(response.data.data.stats);
+      if (response?.data?.success && response.data.data) {
+        if (response.data.data.stats) {
+          setPlatformStats(response.data.data.stats);
+        }
         if (response.data.data.categories?.length > 0) {
           setStatCategories(response.data.data.categories);
         }

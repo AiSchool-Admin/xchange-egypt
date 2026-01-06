@@ -39,6 +39,7 @@ export default function CartPage() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -75,6 +76,7 @@ export default function CartPage() {
   const updateQuantity = async (itemId: string, quantity: number) => {
     if (quantity < 1) return;
     setUpdating(itemId);
+    setError(null);
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items/${itemId}`, {
@@ -87,9 +89,13 @@ export default function CartPage() {
       });
       if (response.ok) {
         fetchCart();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData?.message || 'فشل في تحديث الكمية');
       }
-    } catch (error) {
-      console.error('Failed to update quantity:', error);
+    } catch (err) {
+      console.error('Failed to update quantity:', err);
+      setError('حدث خطأ في تحديث الكمية');
     } finally {
       setUpdating(null);
     }
@@ -97,6 +103,7 @@ export default function CartPage() {
 
   const removeItem = async (itemId: string) => {
     setUpdating(itemId);
+    setError(null);
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items/${itemId}`, {
@@ -107,9 +114,13 @@ export default function CartPage() {
       });
       if (response.ok) {
         fetchCart();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        setError(errorData?.message || 'فشل في حذف المنتج');
       }
-    } catch (error) {
-      console.error('Failed to remove item:', error);
+    } catch (err) {
+      console.error('Failed to remove item:', err);
+      setError('حدث خطأ في حذف المنتج');
     } finally {
       setUpdating(null);
     }
@@ -141,6 +152,12 @@ export default function CartPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex justify-between items-center">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="text-red-700 hover:text-red-900">✕</button>
+          </div>
+        )}
         {!cart || cart.items.length === 0 ? (
           <div className="bg-white rounded-xl shadow-lg p-8 text-center">
             <div className="text-6xl mb-4">🛒</div>
