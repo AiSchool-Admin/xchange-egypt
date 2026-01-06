@@ -149,15 +149,12 @@ export default function MobileBuyPage() {
 
       if (response.ok) {
         const data = await response.json();
-        // Redirect to transaction page or payment
-        if (selectedPayment === 'escrow') {
-          router.push(`/checkout?transactionId=${data.data?.id}&type=mobile`);
-        } else {
-          router.push(`/mobiles/transactions?success=true`);
-        }
+        const transactionId = data.data?.id || data.data?.transaction?.id;
+        // Redirect to transactions page with success message
+        router.push(`/mobiles/transactions?success=true&transactionId=${transactionId}`);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        alert(errorData?.error || errorData?.message || 'فشل إتمام الطلب');
+        alert(errorData?.error?.message || errorData?.error || errorData?.message || 'فشل إتمام الطلب');
       }
     } catch (err) {
       console.error('Error creating transaction:', err);

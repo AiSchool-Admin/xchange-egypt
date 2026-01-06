@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -61,12 +61,25 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; b
 
 export default function MobileTransactionsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'sales' | 'purchases' | 'barter'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState<{ type: string; transactionId: string } | null>(null);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+
+  useEffect(() => {
+    // Check for success parameter from URL
+    if (searchParams.get('success') === 'true') {
+      setShowSuccessBanner(true);
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowSuccessBanner(false), 5000);
+      // Clean URL
+      router.replace('/mobiles/transactions', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     fetchTransactions();
@@ -136,6 +149,21 @@ export default function MobileTransactionsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
+      {/* Success Banner */}
+      {showSuccessBanner && (
+        <div className="bg-green-600 text-white px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6" />
+              <span className="font-medium">تم إرسال طلب الشراء بنجاح! سيتم التواصل معك قريباً.</span>
+            </div>
+            <button onClick={() => setShowSuccessBanner(false)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
