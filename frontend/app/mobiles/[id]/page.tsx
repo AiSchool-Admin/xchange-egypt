@@ -101,6 +101,9 @@ export default function MobileListingDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [showBarterModal, setShowBarterModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [contactMessage, setContactMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageSent, setMessageSent] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -134,11 +137,68 @@ export default function MobileListingDetailPage() {
       }
 
       const data = await response.json();
-      if (data.success && data.data?.listing) {
-        setListing(data.data.listing);
-      } else if (data.success && data.data && !data.data.listing) {
-        // Fallback: if data.data is the listing itself (backwards compatibility)
-        setListing(data.data);
+      const rawListing = data.data?.listing || data.data;
+
+      if (data.success && rawListing) {
+        // Map backend field names to frontend expected names
+        const mappedListing: MobileListing = {
+          id: rawListing.id,
+          title: rawListing.title || rawListing.titleAr || '',
+          description: rawListing.description || rawListing.descriptionAr || '',
+          brand: rawListing.brand || '',
+          model: rawListing.model || '',
+          variant: rawListing.variant || '',
+          color: rawListing.color || rawListing.colorAr || '',
+          storageCapacity: rawListing.storageGb || rawListing.storageCapacity || 0,
+          ramSize: rawListing.ramGb || rawListing.ramSize || 0,
+          condition: rawListing.conditionGrade || rawListing.condition || 'C',
+          conditionNotes: rawListing.conditionNotes || '',
+          price: rawListing.priceEgp || rawListing.price || 0,
+          acceptsBarter: rawListing.acceptsBarter || false,
+          barterPreferences: rawListing.barterPreferences || [],
+          images: rawListing.images || [],
+          imeiVerified: rawListing.imeiVerified || false,
+          imeiStatus: rawListing.imeiStatus || '',
+          batteryHealth: rawListing.batteryHealth || 0,
+          screenCondition: rawListing.screenCondition || '',
+          bodyCondition: rawListing.bodyCondition || '',
+          accessories: rawListing.accessories || rawListing.accessoriesDetails ? [rawListing.accessoriesDetails] : [],
+          warranty: rawListing.warranty || false,
+          warrantyExpiry: rawListing.warrantyExpiry || null,
+          purchaseDate: rawListing.purchaseDate || null,
+          governorate: rawListing.governorate || '',
+          city: rawListing.city || '',
+          viewCount: rawListing.viewsCount || rawListing.viewCount || 0,
+          favoriteCount: rawListing.favoritesCount || rawListing.favoriteCount || 0,
+          status: rawListing.status || '',
+          createdAt: rawListing.createdAt || '',
+          seller: rawListing.seller ? {
+            id: rawListing.seller.id || '',
+            name: rawListing.seller.fullName || rawListing.seller.name || 'مستخدم',
+            avatar: rawListing.seller.avatar || '',
+            trustLevel: rawListing.seller.trustLevel || 'new',
+            rating: rawListing.seller.rating || 0,
+            reviewCount: rawListing.seller.totalReviews || rawListing.seller.reviewCount || 0,
+            joinedAt: rawListing.seller.createdAt || rawListing.seller.joinedAt || '',
+            completedSales: rawListing.seller.completedSales || 0,
+            responseRate: rawListing.seller.responseRate || 0,
+            isVerified: rawListing.seller.isVerified || false,
+          } : {
+            id: '',
+            name: 'مستخدم',
+            avatar: '',
+            trustLevel: 'new',
+            rating: 0,
+            reviewCount: 0,
+            joinedAt: '',
+            completedSales: 0,
+            responseRate: 0,
+            isVerified: false,
+          },
+          diagnostics: rawListing.diagnostics || null,
+          priceReference: rawListing.priceReference || null,
+        };
+        setListing(mappedListing);
       } else {
         setError('الإعلان غير موجود');
       }
@@ -166,6 +226,57 @@ export default function MobileListingDetailPage() {
       setIsFavorite(!isFavorite);
     } catch (error) {
       console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const sendContactMessage = async () => {
+    if (!contactMessage.trim()) return;
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    if (!listing?.seller?.id) {
+      alert('لا يمكن إرسال الرسالة - معلومات البائع غير متوفرة');
+      return;
+    }
+
+    try {
+      setSendingMessage(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      const response = await fetch(`${apiUrl}/chat/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          receiverId: listing.seller.id,
+          content: contactMessage,
+          listingId: listing.id,
+          listingType: 'mobile',
+        }),
+      });
+
+      if (response.ok) {
+        setMessageSent(true);
+        setContactMessage('');
+        setTimeout(() => {
+          setShowContactModal(false);
+          setMessageSent(false);
+        }, 2000);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData?.message || 'فشل إرسال الرسالة، حاول مرة أخرى');
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      alert('حدث خطأ في إرسال الرسالة');
+    } finally {
+      setSendingMessage(false);
     }
   };
 
@@ -663,21 +774,41 @@ export default function MobileListingDetailPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h3 className="text-lg font-bold mb-4">تواصل مع البائع</h3>
-            <textarea
-              placeholder="اكتب رسالتك هنا..."
-              className="w-full border border-gray-200 rounded-lg p-3 h-32 resize-none mb-4"
-            ></textarea>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowContactModal(false)}
-                className="flex-1 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                إلغاء
-              </button>
-              <button className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                إرسال
-              </button>
-            </div>
+            {messageSent ? (
+              <div className="text-center py-8">
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <p className="text-green-600 font-medium">تم إرسال رسالتك بنجاح!</p>
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                  placeholder="اكتب رسالتك هنا..."
+                  className="w-full border border-gray-200 rounded-lg p-3 h-32 resize-none mb-4"
+                  disabled={sendingMessage}
+                ></textarea>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowContactModal(false);
+                      setContactMessage('');
+                    }}
+                    className="flex-1 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    disabled={sendingMessage}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={sendContactMessage}
+                    disabled={sendingMessage || !contactMessage.trim()}
+                    className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {sendingMessage ? 'جاري الإرسال...' : 'إرسال'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
