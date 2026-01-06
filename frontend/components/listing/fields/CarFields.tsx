@@ -36,13 +36,13 @@ const FUEL_TYPES = [
   { value: 'NATURAL_GAS', label: 'غاز طبيعي' }
 ];
 
+// Backend expects: NEW, LIKE_NEW, GOOD, FAIR, POOR
 const CONDITIONS = [
   { value: 'NEW', label: 'جديدة' },
   { value: 'LIKE_NEW', label: 'كالجديدة' },
-  { value: 'EXCELLENT', label: 'ممتازة' },
   { value: 'GOOD', label: 'جيدة' },
   { value: 'FAIR', label: 'مقبولة' },
-  { value: 'NEEDS_WORK', label: 'تحتاج صيانة' }
+  { value: 'POOR', label: 'تحتاج صيانة' }
 ];
 
 const FEATURES = [

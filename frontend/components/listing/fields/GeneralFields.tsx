@@ -17,12 +17,13 @@ const GENERAL_CATEGORIES = [
   { value: 'OTHER', label: 'أخرى' }
 ];
 
+// Backend expects: NEW, LIKE_NEW, GOOD, FAIR, POOR
 const CONDITIONS = [
   { value: 'NEW', label: 'جديد' },
   { value: 'LIKE_NEW', label: 'كالجديد (مستخدم قليلاً)' },
   { value: 'GOOD', label: 'جيد' },
-  { value: 'ACCEPTABLE', label: 'مقبول' },
-  { value: 'FOR_PARTS', label: 'للقطع/يحتاج إصلاح' }
+  { value: 'FAIR', label: 'مقبول' },
+  { value: 'POOR', label: 'للقطع/يحتاج إصلاح' }
 ];
 
 interface GeneralFieldsProps {

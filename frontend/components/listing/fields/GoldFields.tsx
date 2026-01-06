@@ -29,12 +29,13 @@ const JEWELRY_TYPES = [
   { value: 'OTHER', label: 'أخرى' }
 ];
 
+// Backend expects: NEW, LIKE_NEW, GOOD, FAIR, POOR
 const GOLD_CONDITIONS = [
   { value: 'NEW', label: 'جديد' },
   { value: 'LIKE_NEW', label: 'كالجديد' },
-  { value: 'EXCELLENT', label: 'ممتاز' },
   { value: 'GOOD', label: 'جيد' },
-  { value: 'FAIR', label: 'مقبول' }
+  { value: 'FAIR', label: 'مقبول' },
+  { value: 'POOR', label: 'يحتاج تنظيف/إصلاح' }
 ];
 
 interface GoldFieldsProps {

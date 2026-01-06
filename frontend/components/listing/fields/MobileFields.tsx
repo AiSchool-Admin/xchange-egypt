@@ -9,11 +9,13 @@ const BRANDS = [
 
 const STORAGE_OPTIONS = [32, 64, 128, 256, 512, 1024];
 const RAM_OPTIONS = [2, 3, 4, 6, 8, 12, 16];
+// Backend expects: NEW, LIKE_NEW, GOOD, FAIR, POOR
 const CONDITIONS = [
-  { value: 'A', label: 'ممتاز (A)', description: 'كالجديد تماماً' },
-  { value: 'B', label: 'جيد جداً (B)', description: 'استخدام خفيف' },
-  { value: 'C', label: 'جيد (C)', description: 'علامات استخدام واضحة' },
-  { value: 'D', label: 'مقبول (D)', description: 'يحتاج صيانة بسيطة' }
+  { value: 'NEW', label: 'جديد', description: 'لم يستخدم من قبل' },
+  { value: 'LIKE_NEW', label: 'ممتاز', description: 'كالجديد تماماً' },
+  { value: 'GOOD', label: 'جيد جداً', description: 'استخدام خفيف' },
+  { value: 'FAIR', label: 'جيد', description: 'علامات استخدام واضحة' },
+  { value: 'POOR', label: 'مقبول', description: 'يحتاج صيانة بسيطة' }
 ];
 
 const ACCESSORIES = [

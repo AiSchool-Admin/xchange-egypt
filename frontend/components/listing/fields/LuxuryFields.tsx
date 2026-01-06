@@ -25,13 +25,13 @@ const BAG_BRANDS = [
   'Balenciaga', 'Givenchy', 'Coach', 'Michael Kors', 'أخرى'
 ];
 
+// Backend expects: NEW, LIKE_NEW, GOOD, FAIR, POOR
 const CONDITIONS = [
   { value: 'NEW', label: 'جديد بالعلبة' },
   { value: 'LIKE_NEW', label: 'كالجديد' },
-  { value: 'EXCELLENT', label: 'ممتاز' },
-  { value: 'VERY_GOOD', label: 'جيد جداً' },
   { value: 'GOOD', label: 'جيد' },
-  { value: 'FAIR', label: 'مقبول' }
+  { value: 'FAIR', label: 'مقبول' },
+  { value: 'POOR', label: 'يحتاج إصلاح' }
 ];
 
 interface LuxuryFieldsProps {
