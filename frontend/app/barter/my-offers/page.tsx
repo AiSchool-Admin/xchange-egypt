@@ -33,8 +33,8 @@ interface BarterOffer {
       item: {
         id: string;
         title: string;
-        estimatedValue?: number;
-        images?: Array<{ url: string }>;
+        estimatedValue?: number | string;
+        images?: string[] | Array<{ url: string }>;
       };
     }>;
   }>;
@@ -94,8 +94,9 @@ export default function MyBarterOffersPage() {
         apiClient.get('/barter/offers/my?type=sent'),
         apiClient.get('/barter/offers/my?type=received'),
       ]);
-      setSentOffers(sentRes.data.data?.offers || sentRes.data.data || []);
-      setReceivedOffers(receivedRes.data.data?.offers || receivedRes.data.data || []);
+      // Backend returns { items, pagination } - access items array
+      setSentOffers(sentRes.data.data?.items || sentRes.data.data?.offers || sentRes.data.data || []);
+      setReceivedOffers(receivedRes.data.data?.items || receivedRes.data.data?.offers || receivedRes.data.data || []);
     } catch (err: any) {
       setError(err.response?.data?.message || 'فشل في تحميل العروض');
     } finally {
@@ -223,25 +224,31 @@ export default function MyBarterOffersPage() {
             </h4>
             {offeredItems.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {offeredItems.map((prefItem) => (
-                  <div key={prefItem.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl border">
-                    <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                      {prefItem.item.images?.[0]?.url ? (
-                        <img src={prefItem.item.images[0].url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
-                      )}
+                {offeredItems.map((prefItem) => {
+                  // Handle images as String[] or { url: string }[]
+                  const imageUrl = Array.isArray(prefItem.item.images) && prefItem.item.images.length > 0
+                    ? (typeof prefItem.item.images[0] === 'string' ? prefItem.item.images[0] : prefItem.item.images[0]?.url)
+                    : null;
+                  return (
+                    <div key={prefItem.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl border">
+                      <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                        {imageUrl ? (
+                          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">{prefItem.item.title}</p>
+                        {prefItem.item.estimatedValue && (
+                          <p className="text-sm text-teal-600 font-medium">
+                            {Number(prefItem.item.estimatedValue).toLocaleString()} ج.م
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{prefItem.item.title}</p>
-                      {prefItem.item.estimatedValue && (
-                        <p className="text-sm text-teal-600 font-medium">
-                          {prefItem.item.estimatedValue.toLocaleString()} ج.م
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="p-4 bg-gray-50 rounded-xl text-gray-500 text-center">
