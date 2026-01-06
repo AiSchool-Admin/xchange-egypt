@@ -134,7 +134,10 @@ export default function MobileListingDetailPage() {
       }
 
       const data = await response.json();
-      if (data.success && data.data) {
+      if (data.success && data.data?.listing) {
+        setListing(data.data.listing);
+      } else if (data.success && data.data && !data.data.listing) {
+        // Fallback: if data.data is the listing itself (backwards compatibility)
         setListing(data.data);
       } else {
         setError('الإعلان غير موجود');
