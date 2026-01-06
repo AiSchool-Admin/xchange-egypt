@@ -218,7 +218,7 @@ export default function InventoryPage() {
               >
                 {item.images && item.images.length > 0 ? (
                   <div className="aspect-video bg-gray-100">
-                    <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover" />
+                    <img src={item.images?.[0] || ''} alt={item.title || 'عنصر'} className="w-full h-full object-cover" />
                   </div>
                 ) : (
                   <div className="aspect-video bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">

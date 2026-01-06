@@ -206,21 +206,21 @@ export default function DashboardPage() {
     setLoadingStats(true);
     try {
       const [itemsRes, salesRes, purchasesRes, barterRes, auctionsRes, bidsRes] = await Promise.all([
-        apiClient.get('/items/my?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-        apiClient.get('/transactions/my?role=seller&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-        apiClient.get('/transactions/my?role=buyer&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-        apiClient.get('/barter/offers/my?type=received&status=PENDING&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-        apiClient.get('/auctions/my?limit=1').catch(() => ({ data: { data: [] } })),
-        apiClient.get('/auctions/my-bids?limit=1').catch(() => ({ data: { data: [] } })),
+        apiClient.get('/items/my?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, items: [] } } })),
+        apiClient.get('/transactions/my?role=seller&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, transactions: [] } } })),
+        apiClient.get('/transactions/my?role=buyer&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, transactions: [] } } })),
+        apiClient.get('/barter/offers/my?type=received&status=PENDING&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, offers: [] } } })),
+        apiClient.get('/auctions/my?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, auctions: [] } } })),
+        apiClient.get('/auctions/my-bids?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, bids: [] } } })),
       ]);
 
       setStats({
-        items: itemsRes.data.data?.pagination?.total || itemsRes.data.data?.items?.length || 0,
-        sales: salesRes.data.data?.pagination?.total || salesRes.data.data?.transactions?.length || 0,
-        purchases: purchasesRes.data.data?.pagination?.total || purchasesRes.data.data?.transactions?.length || 0,
-        pendingOffers: barterRes.data.data?.pagination?.total || barterRes.data.data?.offers?.length || 0,
-        activeAuctions: Array.isArray(auctionsRes.data.data) ? auctionsRes.data.data.length : 0,
-        activeBids: Array.isArray(bidsRes.data.data) ? bidsRes.data.data.length : 0,
+        items: itemsRes.data.data?.pagination?.total ?? itemsRes.data.data?.items?.length ?? 0,
+        sales: salesRes.data.data?.pagination?.total ?? salesRes.data.data?.transactions?.length ?? 0,
+        purchases: purchasesRes.data.data?.pagination?.total ?? purchasesRes.data.data?.transactions?.length ?? 0,
+        pendingOffers: barterRes.data.data?.pagination?.total ?? barterRes.data.data?.offers?.length ?? 0,
+        activeAuctions: auctionsRes.data.data?.pagination?.total ?? auctionsRes.data.data?.auctions?.length ?? (Array.isArray(auctionsRes.data.data) ? auctionsRes.data.data.length : 0),
+        activeBids: bidsRes.data.data?.pagination?.total ?? bidsRes.data.data?.bids?.length ?? (Array.isArray(bidsRes.data.data) ? bidsRes.data.data.length : 0),
       });
     } catch (err) {
       console.error('Error loading stats:', err);

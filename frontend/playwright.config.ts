@@ -14,7 +14,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ||
                 process.env.VERCEL_PREVIEW_URL ||
-                'http://localhost:3000';
+                'https://xchange-egypt.vercel.app';
 
 export default defineConfig({
   testDir: './e2e/tests',
@@ -135,7 +135,8 @@ export default defineConfig({
   snapshotDir: './e2e/snapshots',
 
   // Web server configuration for local development
-  webServer: process.env.CI ? undefined : {
+  // Disabled when testing against production
+  webServer: process.env.CI || baseURL.includes('vercel.app') ? undefined : {
     command: 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: true,
