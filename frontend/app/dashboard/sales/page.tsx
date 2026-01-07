@@ -53,6 +53,19 @@ interface Order {
   items: OrderItem[];
   createdAt: string;
   trackingNumber?: string;
+  // For direct transactions
+  isDirectTransaction?: boolean;
+  buyer?: Buyer;
+  listing?: {
+    item: {
+      id: string;
+      title: string;
+      images: string[];
+    };
+    price: number;
+  };
+  amount?: number;
+  deliveryStatus?: string;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -99,19 +112,75 @@ export default function SellerSalesPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem('accessToken');
-      let url = `${process.env.NEXT_PUBLIC_API_URL}/orders/seller`;
-      if (statusFilter) {
-        url += `?status=${statusFilter}`;
+
+      // Fetch both cart orders and direct transactions
+      const [ordersRes, transactionsRes] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/seller${statusFilter ? `?status=${statusFilter}` : ''}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions/my?role=seller`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const allOrders: Order[] = [];
+
+      // Add cart-based orders
+      if (ordersRes.ok) {
+        const ordersData = await ordersRes.json();
+        const orders = ordersData.data?.orders || [];
+        allOrders.push(...orders);
       }
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data.data?.orders || []);
+
+      // Add direct transactions (converted to order-like format)
+      if (transactionsRes.ok) {
+        const transData = await transactionsRes.json();
+        const transactions = transData.data?.transactions || [];
+
+        const convertedTransactions = transactions.map((tx: any) => ({
+          id: tx.id,
+          orderNumber: `TX-${tx.id.slice(0, 8).toUpperCase()}`,
+          status: tx.deliveryStatus || tx.paymentStatus || 'PENDING',
+          paymentStatus: tx.paymentStatus,
+          paymentMethod: tx.paymentMethod || 'CASH_ON_DELIVERY',
+          subtotal: Number(tx.amount) || 0,
+          shippingCost: 0,
+          total: Number(tx.amount) || 0,
+          shippingAddress: {
+            fullName: tx.buyer?.fullName || 'المشتري',
+            phone: tx.buyer?.phone || '',
+            governorate: '',
+            city: '',
+          },
+          user: tx.buyer || { id: tx.buyerId, fullName: 'المشتري', phone: '', email: '' },
+          items: tx.listing ? [{
+            id: tx.id,
+            listing: {
+              id: tx.listing.id,
+              price: Number(tx.amount) || 0,
+              item: tx.listing.item || { id: '', title: 'منتج', images: [] },
+            },
+            quantity: 1,
+            price: Number(tx.amount) || 0,
+          }] : [],
+          createdAt: tx.createdAt,
+          trackingNumber: tx.trackingNumber,
+          isDirectTransaction: true,
+          deliveryStatus: tx.deliveryStatus,
+        }));
+
+        // Filter by status if needed
+        const filtered = statusFilter
+          ? convertedTransactions.filter((t: Order) => t.status === statusFilter || t.deliveryStatus === statusFilter)
+          : convertedTransactions;
+
+        allOrders.push(...filtered);
       }
+
+      // Sort by date (newest first)
+      allOrders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+      setOrders(allOrders);
     } catch (error) {
       console.error('Failed to fetch seller orders:', error);
     } finally {
