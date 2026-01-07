@@ -50,6 +50,7 @@ const translations = {
     // My Transactions
     myTransactions: 'معاملاتي المالية',
     salesAndPurchases: 'مبيعاتي ومشترياتي',
+    incomingOrders: 'الطلبات الواردة',
     shoppingCart: 'سلة التسوق',
     myOrders: 'طلباتي',
 
@@ -125,6 +126,7 @@ const translations = {
     // My Transactions
     myTransactions: 'My Financial Transactions',
     salesAndPurchases: 'My Sales & Purchases',
+    incomingOrders: 'Incoming Orders',
     shoppingCart: 'Shopping Cart',
     myOrders: 'My Orders',
 
@@ -465,6 +467,16 @@ export default function DashboardPage() {
               </h3>
             </div>
             <div className="p-4 space-y-3">
+              <Link
+                href="/dashboard/sales"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-green-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">📥</div>
+                  <span className="font-medium">{t.incomingOrders}</span>
+                </div>
+                <span className="text-gray-400">{isRTL ? '←' : '→'}</span>
+              </Link>
               <Link
                 href="/dashboard/transactions"
                 className="flex items-center justify-between p-3 rounded-xl hover:bg-green-50 transition-colors"

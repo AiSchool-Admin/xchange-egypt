@@ -859,3 +859,185 @@ export const createAuctionOrder = async (
 
   return order;
 };
+
+/**
+ * Get orders where user is a seller
+ * Shows all orders containing items sold by this user
+ */
+export const getSellerOrders = async (
+  sellerId: string,
+  page: number = 1,
+  limit: number = 20,
+  status?: OrderStatus
+) => {
+  const skip = (page - 1) * limit;
+
+  // Find all orders that contain items sold by this seller
+  const whereClause: any = {
+    items: {
+      some: {
+        sellerId: sellerId,
+      },
+    },
+  };
+
+  if (status) {
+    whereClause.status = status;
+  }
+
+  const total = await prisma.order.count({ where: whereClause });
+
+  const orders = await prisma.order.findMany({
+    where: whereClause,
+    skip,
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      items: {
+        where: {
+          sellerId: sellerId,
+        },
+        include: {
+          listing: {
+            include: {
+              item: {
+                select: {
+                  id: true,
+                  title: true,
+                  images: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      shippingAddress: true,
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  return {
+    orders,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: limit > 0 ? Math.ceil(total / limit) : 1,
+      hasMore: page * limit < total,
+    },
+  };
+};
+
+/**
+ * Update order status (for sellers to mark as shipped/delivered)
+ */
+export const updateSellerOrderStatus = async (
+  sellerId: string,
+  orderId: string,
+  status: OrderStatus,
+  trackingNumber?: string
+) => {
+  // Verify seller has items in this order
+  const order = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      items: {
+        some: {
+          sellerId: sellerId,
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    throw new NotFoundError('Order not found or you are not a seller in this order');
+  }
+
+  // Sellers can only update to certain statuses
+  const allowedStatuses: OrderStatus[] = [OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
+  if (!allowedStatuses.includes(status)) {
+    throw new BadRequestError('Invalid status update for seller');
+  }
+
+  const updateData: any = { status };
+
+  if (status === OrderStatus.SHIPPED) {
+    updateData.shippedAt = new Date();
+    if (trackingNumber) {
+      updateData.trackingNumber = trackingNumber;
+    }
+  } else if (status === OrderStatus.DELIVERED) {
+    updateData.deliveredAt = new Date();
+  }
+
+  const updatedOrder = await prisma.order.update({
+    where: { id: orderId },
+    data: updateData,
+    include: {
+      items: {
+        include: {
+          listing: {
+            include: {
+              item: true,
+            },
+          },
+        },
+      },
+      shippingAddress: true,
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+        },
+      },
+    },
+  });
+
+  // Send notification to buyer
+  const notificationMessages: Record<string, { title: string; message: string; type: string }> = {
+    [OrderStatus.PROCESSING]: {
+      title: 'جاري تجهيز طلبك 📦',
+      message: `البائع يقوم بتجهيز طلبك رقم ${updatedOrder.orderNumber}`,
+      type: 'TRANSACTION_UPDATE',
+    },
+    [OrderStatus.SHIPPED]: {
+      title: 'تم شحن طلبك 🚚',
+      message: `طلبك رقم ${updatedOrder.orderNumber} في الطريق إليك${trackingNumber ? ` - رقم التتبع: ${trackingNumber}` : ''}`,
+      type: 'TRANSACTION_SHIPPED',
+    },
+    [OrderStatus.DELIVERED]: {
+      title: 'تم التوصيل ✅',
+      message: `تم توصيل طلبك رقم ${updatedOrder.orderNumber} بنجاح`,
+      type: 'TRANSACTION_DELIVERED',
+    },
+  };
+
+  const notification = notificationMessages[status];
+  if (notification) {
+    try {
+      await createNotification({
+        userId: updatedOrder.userId,
+        type: notification.type as any,
+        title: notification.title,
+        message: notification.message,
+        priority: 'HIGH',
+        entityType: 'ORDER',
+        entityId: updatedOrder.id,
+        actionUrl: `/dashboard/orders/${updatedOrder.id}`,
+        actionText: 'عرض الطلب',
+      });
+    } catch (notificationError) {
+      logger.error('Failed to send order status notification:', notificationError);
+    }
+  }
+
+  return updatedOrder;
+};

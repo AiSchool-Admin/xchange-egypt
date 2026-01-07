@@ -1,0 +1,465 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/contexts/AuthContext';
+
+interface OrderItem {
+  id: string;
+  listing: {
+    id: string;
+    price: number;
+    item: {
+      id: string;
+      title: string;
+      images: string[];
+    };
+  };
+  quantity: number;
+  price: number;
+}
+
+interface ShippingAddress {
+  fullName: string;
+  phone: string;
+  governorate: string;
+  city: string;
+  street?: string;
+  address?: string;
+  building?: string;
+  floor?: string;
+  apartment?: string;
+}
+
+interface Buyer {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string;
+}
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  status: string;
+  paymentStatus?: string;
+  paymentMethod: string;
+  subtotal: number;
+  shippingCost: number;
+  total: number;
+  shippingAddress: ShippingAddress;
+  user: Buyer;
+  items: OrderItem[];
+  createdAt: string;
+  trackingNumber?: string;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  PENDING: 'bg-yellow-100 text-yellow-800',
+  PAID: 'bg-blue-100 text-blue-800',
+  PROCESSING: 'bg-purple-100 text-purple-800',
+  SHIPPED: 'bg-indigo-100 text-indigo-800',
+  DELIVERED: 'bg-green-100 text-green-800',
+  CANCELLED: 'bg-red-100 text-red-800',
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'قيد الانتظار',
+  PAID: 'مدفوع',
+  PROCESSING: 'جاري التجهيز',
+  SHIPPED: 'تم الشحن',
+  DELIVERED: 'تم التسليم',
+  CANCELLED: 'ملغي',
+};
+
+export default function SellerSalesPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      fetchSellerOrders();
+    }
+  }, [user, statusFilter]);
+
+  const fetchSellerOrders = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('accessToken');
+      let url = `${process.env.NEXT_PUBLIC_API_URL}/orders/seller`;
+      if (statusFilter) {
+        url += `?status=${statusFilter}`;
+      }
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setOrders(data.data?.orders || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch seller orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    setUpdatingStatus(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/seller/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          trackingNumber: trackingNumber || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        await fetchSellerOrders();
+        setSelectedOrder(null);
+        setTrackingNumber('');
+      } else {
+        const error = await response.json();
+        alert(error.message || 'فشل تحديث حالة الطلب');
+      }
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+      alert('حدث خطأ أثناء تحديث الطلب');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-xl text-gray-600">جاري التحميل...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const pendingCount = orders.filter(o => o.status === 'PENDING' || o.status === 'PAID').length;
+  const processingCount = orders.filter(o => o.status === 'PROCESSING').length;
+  const shippedCount = orders.filter(o => o.status === 'SHIPPED').length;
+
+  return (
+    <div dir="rtl" className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold text-primary-600">المبيعات والطلبات الواردة</h1>
+              <p className="text-sm text-gray-500 mt-1">إدارة الطلبات على منتجاتك</p>
+            </div>
+            <Link href="/dashboard" className="text-primary-600 hover:underline">
+              العودة للوحة التحكم
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center">
+            <div className="text-3xl font-bold text-yellow-600">{pendingCount}</div>
+            <div className="text-sm text-yellow-700">طلبات جديدة</div>
+          </div>
+          <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
+            <div className="text-3xl font-bold text-purple-600">{processingCount}</div>
+            <div className="text-sm text-purple-700">جاري التجهيز</div>
+          </div>
+          <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 text-center">
+            <div className="text-3xl font-bold text-indigo-600">{shippedCount}</div>
+            <div className="text-sm text-indigo-700">تم الشحن</div>
+          </div>
+        </div>
+
+        {/* Filter */}
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
+          <div className="flex items-center gap-4">
+            <span className="text-gray-600">تصفية حسب الحالة:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">جميع الطلبات</option>
+              <option value="PENDING">قيد الانتظار</option>
+              <option value="PAID">مدفوع</option>
+              <option value="PROCESSING">جاري التجهيز</option>
+              <option value="SHIPPED">تم الشحن</option>
+              <option value="DELIVERED">تم التسليم</option>
+            </select>
+          </div>
+        </div>
+
+        {orders.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <div className="text-6xl mb-4">📦</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">لا توجد طلبات بعد</h2>
+            <p className="text-gray-600 mb-6">ستظهر طلبات العملاء على منتجاتك هنا</p>
+            <Link
+              href="/items"
+              className="inline-block px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              أضف منتجات للبيع
+            </Link>
+          </div>
+        ) : (
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Orders List */}
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <div
+                  key={order.id}
+                  onClick={() => setSelectedOrder(order)}
+                  className={`bg-white rounded-xl shadow-lg p-4 cursor-pointer transition-all hover:shadow-xl ${
+                    selectedOrder?.id === order.id ? 'ring-2 ring-primary-500' : ''
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-bold text-gray-900">طلب #{order.orderNumber}</p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(order.createdAt).toLocaleDateString('ar-EG', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[order.status]}`}>
+                      {STATUS_LABELS[order.status] || order.status}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    {order.items.slice(0, 3).map((item) => (
+                      <div key={item.id} className="w-12 h-12 bg-gray-100 rounded overflow-hidden">
+                        {item.listing?.item?.images?.[0] && (
+                          <img
+                            src={item.listing.item.images[0]}
+                            alt={item.listing.item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                    ))}
+                    {order.items.length > 3 && (
+                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-sm text-gray-600">
+                        +{order.items.length - 3}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-600">
+                      <span className="font-medium">{order.user?.fullName}</span>
+                      <span className="mx-2">•</span>
+                      <span>{order.shippingAddress?.governorate}</span>
+                    </div>
+                    <span className="font-bold text-primary-600">
+                      {order.items.reduce((sum, item) => sum + item.price, 0).toLocaleString()} ج.م
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Order Details */}
+            <div className="lg:sticky lg:top-4 lg:h-fit">
+              {selectedOrder ? (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-xl font-bold">طلب #{selectedOrder.orderNumber}</h2>
+                      <p className="text-sm text-gray-500">
+                        {new Date(selectedOrder.createdAt).toLocaleString('ar-EG')}
+                      </p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[selectedOrder.status]}`}>
+                      {STATUS_LABELS[selectedOrder.status] || selectedOrder.status}
+                    </span>
+                  </div>
+
+                  {/* Buyer Info */}
+                  <div className="border-t pt-4 mb-4">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>👤</span> بيانات المشتري
+                    </h3>
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p className="font-medium text-gray-900">{selectedOrder.user?.fullName}</p>
+                      <p dir="ltr" className="text-left">{selectedOrder.user?.phone}</p>
+                      {selectedOrder.user?.email && <p>{selectedOrder.user?.email}</p>}
+                    </div>
+                  </div>
+
+                  {/* Items */}
+                  <div className="border-t pt-4 mb-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <span>📦</span> المنتجات المطلوبة
+                    </h3>
+                    <div className="space-y-3 max-h-48 overflow-y-auto">
+                      {selectedOrder.items.map((item) => (
+                        <div key={item.id} className="flex gap-3">
+                          <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                            {item.listing?.item?.images?.[0] && (
+                              <img
+                                src={item.listing.item.images[0]}
+                                alt={item.listing.item.title}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium">{item.listing?.item?.title}</p>
+                            <p className="text-sm text-gray-600">الكمية: {item.quantity}</p>
+                          </div>
+                          <div className="text-left">
+                            <p className="font-medium">{item.price.toLocaleString()} ج.م</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Shipping Address */}
+                  <div className="border-t pt-4 mb-4">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <span>📍</span> عنوان الشحن
+                    </h3>
+                    <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                      <p className="font-medium text-gray-900">{selectedOrder.shippingAddress.fullName}</p>
+                      <p dir="ltr" className="text-left">{selectedOrder.shippingAddress.phone}</p>
+                      <p>
+                        {selectedOrder.shippingAddress.street || selectedOrder.shippingAddress.address}
+                        {selectedOrder.shippingAddress.building && `، مبنى ${selectedOrder.shippingAddress.building}`}
+                        {selectedOrder.shippingAddress.floor && `، الدور ${selectedOrder.shippingAddress.floor}`}
+                        {selectedOrder.shippingAddress.apartment && `، شقة ${selectedOrder.shippingAddress.apartment}`}
+                      </p>
+                      <p className="font-medium">
+                        {selectedOrder.shippingAddress.city}، {selectedOrder.shippingAddress.governorate}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Payment & Summary */}
+                  <div className="border-t pt-4 mb-4">
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className="text-gray-600">طريقة الدفع:</span>
+                      <span className="font-medium">
+                        {selectedOrder.paymentMethod === 'COD' ? 'الدفع عند الاستلام' :
+                         selectedOrder.paymentMethod === 'INSTAPAY' ? 'إنستاباي' :
+                         selectedOrder.paymentMethod === 'FAWRY' ? 'فوري' : selectedOrder.paymentMethod}
+                      </span>
+                    </div>
+                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                      <span>إجمالي مبيعاتك</span>
+                      <span className="text-green-600">
+                        {selectedOrder.items.reduce((sum, item) => sum + item.price, 0).toLocaleString()} ج.م
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tracking Number (for shipped orders) */}
+                  {selectedOrder.trackingNumber && (
+                    <div className="border-t pt-4 mb-4">
+                      <h3 className="font-semibold mb-2">رقم التتبع</h3>
+                      <p className="bg-gray-100 px-3 py-2 rounded font-mono">{selectedOrder.trackingNumber}</p>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  {(selectedOrder.status === 'PENDING' || selectedOrder.status === 'PAID') && (
+                    <div className="border-t pt-4">
+                      <button
+                        onClick={() => updateOrderStatus(selectedOrder.id, 'PROCESSING')}
+                        disabled={updatingStatus}
+                        className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
+                      >
+                        {updatingStatus ? 'جاري التحديث...' : 'بدء تجهيز الطلب'}
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedOrder.status === 'PROCESSING' && (
+                    <div className="border-t pt-4 space-y-3">
+                      <input
+                        type="text"
+                        value={trackingNumber}
+                        onChange={(e) => setTrackingNumber(e.target.value)}
+                        placeholder="رقم التتبع (اختياري)"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      />
+                      <button
+                        onClick={() => updateOrderStatus(selectedOrder.id, 'SHIPPED')}
+                        disabled={updatingStatus}
+                        className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
+                      >
+                        {updatingStatus ? 'جاري التحديث...' : 'تم الشحن'}
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedOrder.status === 'SHIPPED' && (
+                    <div className="border-t pt-4">
+                      <button
+                        onClick={() => updateOrderStatus(selectedOrder.id, 'DELIVERED')}
+                        disabled={updatingStatus}
+                        className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
+                      >
+                        {updatingStatus ? 'جاري التحديث...' : 'تأكيد التسليم'}
+                      </button>
+                    </div>
+                  )}
+
+                  {selectedOrder.status === 'DELIVERED' && (
+                    <div className="border-t pt-4">
+                      <div className="bg-green-50 text-green-700 p-4 rounded-lg text-center">
+                        <span className="text-2xl mb-2 block">✅</span>
+                        تم إتمام هذا الطلب بنجاح
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+                  <div className="text-4xl mb-3">👆</div>
+                  <p className="text-gray-600">اختر طلباً لعرض التفاصيل</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

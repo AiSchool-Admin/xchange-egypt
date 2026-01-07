@@ -15,6 +15,18 @@ router.get('/governorates', orderController.getGovernorates);
 router.use(authenticate);
 
 /**
+ * Get seller's orders (orders containing items sold by this user)
+ * GET /api/v1/orders/seller
+ */
+router.get('/seller', orderController.getSellerOrders);
+
+/**
+ * Update order status (for sellers)
+ * PUT /api/v1/orders/seller/:orderId/status
+ */
+router.put('/seller/:orderId/status', orderController.updateSellerOrderStatus);
+
+/**
  * Get shipping addresses
  * GET /api/v1/orders/addresses
  */
