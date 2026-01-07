@@ -929,6 +929,7 @@ model Order {
   paidAt            DateTime?     @map("paid_at")
   shippedAt         DateTime?     @map("shipped_at")
   deliveredAt       DateTime?     @map("delivered_at")
+  trackingNumber    String?       @map("tracking_number")
 
   user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id], onDelete: Restrict)
