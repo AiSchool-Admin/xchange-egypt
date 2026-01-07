@@ -14,6 +14,7 @@ import {
   CommonFields
 } from '@/types/listing';
 import { createItem, CreateItemData } from '@/lib/api/items';
+import apiClient from '@/lib/api/client';
 
 // Step Components
 import CategoryStep from './steps/CategoryStep';
@@ -216,49 +217,105 @@ export default function UnifiedListingWizard({
         };
         await onComplete(listing);
       } else {
-        // Call the items API using the createItem function
-        const createData: CreateItemData = {
-          titleAr: payload.titleAr,
-          titleEn: payload.titleEn,
-          descriptionAr: payload.descriptionAr,
-          descriptionEn: payload.descriptionEn,
-          condition: payload.condition,
-          categoryId: payload.categoryId,
-          estimatedValue: payload.estimatedValue,
-          location: payload.location,
-          governorate: payload.governorate,
-          imageUrls: payload.imageUrls,
-          desiredKeywords: payload.desiredKeywords,
-          desiredValueMin: payload.desiredValueMin,
-          desiredValueMax: payload.desiredValueMax
-        };
-
-        const result = await createItem(createData);
-
-        if (result.success) {
-          // Redirect based on category
-          const redirectMap: Record<ListingCategory, string> = {
-            MOBILE: '/mobiles',
-            CAR: '/cars',
-            PROPERTY: '/properties',
-            GOLD: '/gold',
-            LUXURY: '/luxury',
-            SCRAP: '/scrap',
-            GENERAL: '/items'
+        // Check if this is a mobile listing - use mobile-specific API
+        if (selectedCategory === 'MOBILE') {
+          // Map condition to mobile condition grade
+          const conditionGradeMap: Record<string, string> = {
+            'NEW': 'A',
+            'LIKE_NEW': 'A',
+            'GOOD': 'B',
+            'FAIR': 'C',
+            'POOR': 'D'
           };
 
-          // Show success message
-          alert('تم نشر الإعلان بنجاح!');
+          const mobilePayload = {
+            title: payload.titleAr,
+            titleAr: payload.titleAr,
+            description: payload.descriptionAr,
+            descriptionAr: payload.descriptionAr,
+            brand: categorySpecificData?.brand || 'OTHER',
+            model: categorySpecificData?.model || payload.titleAr || 'Unknown',
+            storageGb: parseInt(categorySpecificData?.storageCapacity) || 64,
+            ramGb: categorySpecificData?.ramSize ? parseInt(categorySpecificData.ramSize) : null,
+            color: categorySpecificData?.color || '',
+            colorAr: categorySpecificData?.color || '',
+            imei: categorySpecificData?.imei || null,
+            conditionGrade: conditionGradeMap[categorySpecificData?.condition || payload.condition] || 'B',
+            batteryHealth: categorySpecificData?.batteryHealth || null,
+            screenCondition: 'GOOD',
+            bodyCondition: 'GOOD',
+            originalParts: true,
+            hasBox: (categorySpecificData?.accessories || []).includes('العلبة الأصلية'),
+            hasAccessories: (categorySpecificData?.accessories || []).length > 0,
+            accessoriesDetails: (categorySpecificData?.accessories || []).join('، ') || null,
+            priceEgp: pricingData.price ? parseFloat(String(pricingData.price)) : 0,
+            negotiable: pricingData.negotiable ?? true,
+            acceptsBarter: selectedTransactionType === 'BARTER',
+            barterPreferences: barterData || null,
+            images: payload.imageUrls || [],
+            governorate: payload.governorate,
+            city: formData.city || '',
+            district: formData.district || ''
+          };
 
-          // Redirect to the item page or category page
-          const itemId = result.data?.id;
-          if (itemId) {
-            router.push(`/items/${itemId}`);
+          const response = await apiClient.post('/mobiles/listings', mobilePayload);
+
+          if (response.data.success) {
+            alert('تم نشر إعلان الموبايل بنجاح!');
+            const listingId = response.data.data?.id;
+            if (listingId) {
+              router.push(`/mobiles/${listingId}`);
+            } else {
+              router.push('/mobiles');
+            }
           } else {
-            router.push(options.backUrl || redirectMap[selectedCategory] || '/items');
+            throw new Error(response.data.error || 'فشل في نشر إعلان الموبايل');
           }
         } else {
-          throw new Error('فشل في نشر الإعلان');
+          // Call the items API using the createItem function for other categories
+          const createData: CreateItemData = {
+            titleAr: payload.titleAr,
+            titleEn: payload.titleEn,
+            descriptionAr: payload.descriptionAr,
+            descriptionEn: payload.descriptionEn,
+            condition: payload.condition,
+            categoryId: payload.categoryId,
+            estimatedValue: payload.estimatedValue,
+            location: payload.location,
+            governorate: payload.governorate,
+            imageUrls: payload.imageUrls,
+            desiredKeywords: payload.desiredKeywords,
+            desiredValueMin: payload.desiredValueMin,
+            desiredValueMax: payload.desiredValueMax
+          };
+
+          const result = await createItem(createData);
+
+          if (result.success) {
+            // Redirect based on category
+            const redirectMap: Record<ListingCategory, string> = {
+              MOBILE: '/mobiles',
+              CAR: '/cars',
+              PROPERTY: '/properties',
+              GOLD: '/gold',
+              LUXURY: '/luxury',
+              SCRAP: '/scrap',
+              GENERAL: '/items'
+            };
+
+            // Show success message
+            alert('تم نشر الإعلان بنجاح!');
+
+            // Redirect to the item page or category page
+            const itemId = result.data?.id;
+            if (itemId) {
+              router.push(`/items/${itemId}`);
+            } else {
+              router.push(options.backUrl || redirectMap[selectedCategory] || '/items');
+            }
+          } else {
+            throw new Error('فشل في نشر الإعلان');
+          }
         }
       }
     } catch (error) {
