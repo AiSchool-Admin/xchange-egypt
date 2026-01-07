@@ -26,25 +26,35 @@ router.get('/', async (req, res, next) => {
     });
 
     // Also get price alerts for the user (only those with itemId)
-    const priceAlerts = await prisma.priceAlert.findMany({
-      where: { userId, isActive: true, itemId: { not: null } },
-      include: {
-        item: {
-          include: {
-            category: true,
-            seller: {
-              select: {
-                id: true,
-                fullName: true,
-                rating: true,
-                avatar: true,
+    let priceAlerts: any[] = [];
+    try {
+      priceAlerts = await prisma.priceAlert.findMany({
+        where: { userId, isActive: true, itemId: { not: null } },
+        include: {
+          item: {
+            include: {
+              category: true,
+              seller: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  rating: true,
+                  avatar: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (dbError: any) {
+      // If price_alerts table doesn't exist, continue with empty array
+      if (dbError.code === 'P2021' || dbError.message?.includes('does not exist')) {
+        console.warn('price_alerts table does not exist, returning empty watchlist');
+      } else {
+        throw dbError;
+      }
+    }
 
     // Transform price alerts to watchlist format (filter out any with null items)
     const watchlist = priceAlerts
@@ -107,50 +117,58 @@ router.post('/', async (req, res, next) => {
       throw new AppError(404, 'Item not found');
     }
 
-    // Check if already in watchlist
-    const existing = await prisma.priceAlert.findFirst({
-      where: { userId, itemId },
-    });
+    try {
+      // Check if already in watchlist
+      const existing = await prisma.priceAlert.findFirst({
+        where: { userId, itemId },
+      });
 
-    if (existing) {
-      throw new AppError(400, 'Item already in watchlist');
-    }
+      if (existing) {
+        throw new AppError(400, 'Item already in watchlist');
+      }
 
-    // Create price alert (used as watchlist item)
-    const watchlistItem = await prisma.priceAlert.create({
-      data: {
-        userId,
-        itemId,
-        targetPrice: targetPrice || null,
-        notifyOnPriceDrop,
-        notifyOnBackInStock,
-        isActive: true,
-      },
-      include: {
-        item: {
-          include: {
-            category: true,
-            seller: {
-              select: {
-                id: true,
-                fullName: true,
-                rating: true,
+      // Create price alert (used as watchlist item)
+      const watchlistItem = await prisma.priceAlert.create({
+        data: {
+          userId,
+          itemId,
+          targetPrice: targetPrice || null,
+          notifyOnPriceDrop,
+          notifyOnBackInStock,
+          isActive: true,
+        },
+        include: {
+          item: {
+            include: {
+              category: true,
+              seller: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  rating: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      });
 
-    res.status(201).json({
-      success: true,
-      message: 'Item added to watchlist',
-      data: {
-        id: watchlistItem.id,
-        itemId: watchlistItem.itemId,
-        item: watchlistItem.item,
-      },
-    });
+      res.status(201).json({
+        success: true,
+        message: 'Item added to watchlist',
+        data: {
+          id: watchlistItem.id,
+          itemId: watchlistItem.itemId,
+          item: watchlistItem.item,
+        },
+      });
+    } catch (dbError: any) {
+      // If price_alerts table doesn't exist
+      if (dbError.code === 'P2021' || dbError.message?.includes('does not exist')) {
+        throw new AppError(503, 'Watchlist feature is temporarily unavailable. Please try again later.');
+      }
+      throw dbError;
+    }
   } catch (error) {
     next(error);
   }
@@ -232,17 +250,33 @@ router.get('/check/:itemId', async (req, res, next) => {
     const userId = req.user!.id;
     const { itemId } = req.params;
 
-    const exists = await prisma.priceAlert.findFirst({
-      where: { userId, itemId },
-    });
+    // Handle case where price_alerts table might not exist
+    try {
+      const exists = await prisma.priceAlert.findFirst({
+        where: { userId, itemId },
+      });
 
-    res.json({
-      success: true,
-      data: {
-        inWatchlist: !!exists,
-        watchlistItemId: exists?.id || null,
-      },
-    });
+      res.json({
+        success: true,
+        data: {
+          inWatchlist: !!exists,
+          watchlistItemId: exists?.id || null,
+        },
+      });
+    } catch (dbError: any) {
+      // If table doesn't exist, return false (not in watchlist)
+      if (dbError.code === 'P2021' || dbError.message?.includes('does not exist')) {
+        res.json({
+          success: true,
+          data: {
+            inWatchlist: false,
+            watchlistItemId: null,
+          },
+        });
+      } else {
+        throw dbError;
+      }
+    }
   } catch (error) {
     next(error);
   }
