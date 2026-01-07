@@ -161,6 +161,8 @@ export const buyItemDirectly = async (
     notes?: string;
   }
 ): Promise<{ transaction: any; item: any; message: string }> => {
+  console.log('[buyItemDirectly] Starting with:', { buyerId, itemId: purchaseData.itemId });
+
   // Get item with seller information
   const item = await prisma.item.findUnique({
     where: { id: purchaseData.itemId },
@@ -183,21 +185,30 @@ export const buyItemDirectly = async (
   });
 
   if (!item) {
+    console.log('[buyItemDirectly] Item not found:', purchaseData.itemId);
     throw new NotFoundError('Item not found');
   }
 
+  console.log('[buyItemDirectly] Item found:', { id: item.id, status: item.status, sellerId: item.sellerId });
+
   // Check item is available
   if (item.status !== 'ACTIVE') {
+    console.log('[buyItemDirectly] Item not active:', item.status);
     throw new BadRequestError('Item is not available for purchase');
   }
 
   // Check buyer is not the seller
   if (item.sellerId === buyerId) {
+    console.log('[buyItemDirectly] Buyer is seller');
     throw new BadRequestError('You cannot buy your own item');
   }
 
+  console.log('[buyItemDirectly] Starting Prisma transaction...');
+
   // Use a transaction to ensure atomicity and prevent race conditions
   const { transaction, listing } = await prisma.$transaction(async (tx) => {
+    console.log('[buyItemDirectly] Inside transaction, checking item status...');
+
     // Double-check item is still available (with row-level lock)
     const currentItem = await tx.item.findUnique({
       where: { id: item.id },
@@ -205,8 +216,11 @@ export const buyItemDirectly = async (
     });
 
     if (!currentItem || currentItem.status !== 'ACTIVE') {
+      console.log('[buyItemDirectly] Item no longer active in transaction:', currentItem?.status);
       throw new BadRequestError('Item is no longer available for purchase');
     }
+
+    console.log('[buyItemDirectly] Finding/creating listing...');
 
     // Create or find a listing for this item
     let listingRecord = await tx.listing.findFirst({
@@ -214,6 +228,7 @@ export const buyItemDirectly = async (
     });
 
     if (!listingRecord) {
+      console.log('[buyItemDirectly] Creating new listing...');
       // Create a listing automatically
       listingRecord = await tx.listing.create({
         data: {
@@ -225,21 +240,27 @@ export const buyItemDirectly = async (
           status: 'ACTIVE',
         },
       });
+      console.log('[buyItemDirectly] Listing created:', listingRecord.id);
+    } else {
+      console.log('[buyItemDirectly] Found existing listing:', listingRecord.id);
     }
 
     // Update item status to SOLD first (prevents other buyers)
+    console.log('[buyItemDirectly] Updating item status to SOLD...');
     await tx.item.update({
       where: { id: item.id },
       data: { status: 'SOLD' },
     });
 
     // Update listing status
+    console.log('[buyItemDirectly] Updating listing status to COMPLETED...');
     await tx.listing.update({
       where: { id: listingRecord.id },
       data: { status: 'COMPLETED' },
     });
 
     // Create the transaction record
+    console.log('[buyItemDirectly] Creating transaction record...');
     const txRecord = await tx.transaction.create({
       data: {
         listingId: listingRecord.id,
@@ -270,8 +291,11 @@ export const buyItemDirectly = async (
       },
     });
 
+    console.log('[buyItemDirectly] Transaction record created:', txRecord.id);
     return { transaction: txRecord, listing: listingRecord };
   });
+
+  console.log('[buyItemDirectly] Prisma transaction completed successfully');
 
   // Send notification to seller about the sale
   await createNotification({
