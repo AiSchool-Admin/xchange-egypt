@@ -362,6 +362,28 @@ export const createListing = async (req: Request, res: Response) => {
     };
     const mappedBodyCondition = bodyConditionMap[bodyCondition] || 'GOOD';
 
+    // Find or create the Mobiles category for the general marketplace
+    let mobilesCategory = await prisma.category.findFirst({
+      where: {
+        OR: [
+          { slug: 'mobiles' },
+          { slug: 'mobile-phones' },
+          { nameEn: 'Mobiles' },
+          { nameAr: 'موبايلات' }
+        ]
+      }
+    });
+
+    // Map conditionGrade to ItemCondition for general marketplace
+    const itemConditionMap: Record<string, string> = {
+      'A': 'LIKE_NEW',
+      'B': 'GOOD',
+      'C': 'FAIR',
+      'D': 'POOR'
+    };
+    const mappedItemCondition = itemConditionMap[conditionGrade] || 'GOOD';
+
+    // Create the mobile listing
     const listing = await prisma.mobileListing.create({
       data: {
         sellerId: userId,
@@ -397,6 +419,37 @@ export const createListing = async (req: Request, res: Response) => {
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       }
     });
+
+    // Also create an entry in the general marketplace (items table)
+    const fullTitle = title || titleAr || `${brand} ${model}`;
+    const fullDescription = description || descriptionAr || `${brand} ${model} - ${parsedStorageGb}GB`;
+
+    try {
+      await prisma.item.create({
+        data: {
+          sellerId: userId,
+          title: fullTitle,
+          titleAr: titleAr || fullTitle,
+          titleEn: title || fullTitle,
+          description: fullDescription,
+          descriptionAr: descriptionAr || fullDescription,
+          descriptionEn: description || fullDescription,
+          categoryId: mobilesCategory?.id || null,
+          condition: mappedItemCondition as any,
+          estimatedValue: parsedPriceEgp,
+          images: images || [],
+          governorate: governorate || 'القاهرة',
+          city: city || '',
+          district: district || '',
+          status: 'ACTIVE',
+          allowBarter: acceptsBarter ?? false
+        }
+      });
+      console.log('✅ Mobile listing also added to general marketplace');
+    } catch (itemError) {
+      // Log but don't fail if item creation fails - mobile listing is the primary record
+      console.error('Warning: Failed to create item in general marketplace:', itemError);
+    }
 
     res.status(201).json({
       success: true,
