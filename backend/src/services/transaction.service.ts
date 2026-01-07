@@ -206,8 +206,10 @@ export const buyItemDirectly = async (
   console.log('[buyItemDirectly] Starting Prisma transaction...');
 
   // Use a transaction to ensure atomicity and prevent race conditions
-  const { transaction, listing } = await prisma.$transaction(async (tx) => {
-    console.log('[buyItemDirectly] Inside transaction, checking item status...');
+  let transactionResult: { transaction: any; listing: any };
+  try {
+    transactionResult = await prisma.$transaction(async (tx) => {
+      console.log('[buyItemDirectly] Inside transaction, checking item status...');
 
     // Double-check item is still available (with row-level lock)
     const currentItem = await tx.item.findUnique({
@@ -292,36 +294,52 @@ export const buyItemDirectly = async (
     });
 
     console.log('[buyItemDirectly] Transaction record created:', txRecord.id);
-    return { transaction: txRecord, listing: listingRecord };
-  });
+      return { transaction: txRecord, listing: listingRecord };
+    });
+  } catch (dbError: any) {
+    console.error('[buyItemDirectly] Database transaction error:', {
+      message: dbError?.message,
+      code: dbError?.code,
+      meta: dbError?.meta,
+      stack: dbError?.stack,
+    });
+    throw dbError;
+  }
 
+  const { transaction, listing } = transactionResult;
   console.log('[buyItemDirectly] Prisma transaction completed successfully');
 
-  // Send notification to seller about the sale
-  await createNotification({
-    userId: item.sellerId,
-    type: 'ITEM_SOLD',
-    title: 'تم بيع منتجك! 🎉',
-    message: `تم شراء "${item.title}" - يرجى التواصل مع المشتري لإتمام التسليم`,
-    priority: 'HIGH',
-    entityType: 'TRANSACTION',
-    entityId: transaction.id,
-    actionUrl: `/transactions/${transaction.id}`,
-    actionText: 'عرض التفاصيل',
-  });
+  // Send notifications (non-critical - don't fail purchase if notifications fail)
+  try {
+    // Send notification to seller about the sale
+    await createNotification({
+      userId: item.sellerId,
+      type: 'ITEM_SOLD',
+      title: 'تم بيع منتجك! 🎉',
+      message: `تم شراء "${item.title}" - يرجى التواصل مع المشتري لإتمام التسليم`,
+      priority: 'HIGH',
+      entityType: 'TRANSACTION',
+      entityId: transaction.id,
+      actionUrl: `/transactions/${transaction.id}`,
+      actionText: 'عرض التفاصيل',
+    });
 
-  // Send notification to buyer confirming purchase
-  await createNotification({
-    userId: buyerId,
-    type: 'ORDER_CONFIRMED',
-    title: 'تم تأكيد طلبك! ✅',
-    message: `تم شراء "${item.title}" بنجاح - سيتواصل معك البائع قريباً`,
-    priority: 'HIGH',
-    entityType: 'TRANSACTION',
-    entityId: transaction.id,
-    actionUrl: `/transactions/${transaction.id}`,
-    actionText: 'تتبع الطلب',
-  });
+    // Send notification to buyer confirming purchase
+    await createNotification({
+      userId: buyerId,
+      type: 'ORDER_CONFIRMED',
+      title: 'تم تأكيد طلبك! ✅',
+      message: `تم شراء "${item.title}" بنجاح - سيتواصل معك البائع قريباً`,
+      priority: 'HIGH',
+      entityType: 'TRANSACTION',
+      entityId: transaction.id,
+      actionUrl: `/transactions/${transaction.id}`,
+      actionText: 'تتبع الطلب',
+    });
+  } catch (notificationError) {
+    console.error('[buyItemDirectly] Notification error (non-critical):', notificationError);
+    // Don't throw - notifications are non-critical
+  }
 
   return {
     transaction,
