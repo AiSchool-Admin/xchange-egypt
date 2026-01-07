@@ -333,37 +333,43 @@ export const createListing = async (req: Request, res: Response) => {
     // Generate verification code
     const verificationCode = `XCH-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
+    // Validate and parse numeric fields
+    const parsedStorageGb = parseInt(storageGb) || 64; // Default to 64GB if invalid
+    const parsedRamGb = ramGb ? parseInt(ramGb) : null;
+    const parsedBatteryHealth = batteryHealth ? parseInt(batteryHealth) : null;
+    const parsedPriceEgp = parseFloat(priceEgp) || 0;
+
     const listing = await prisma.mobileListing.create({
       data: {
         sellerId: userId,
-        title,
-        titleAr,
-        description,
-        descriptionAr,
-        brand,
-        model,
-        storageGb: parseInt(storageGb),
-        ramGb: ramGb ? parseInt(ramGb) : null,
-        color,
-        colorAr,
-        imei,
-        conditionGrade,
-        batteryHealth: batteryHealth ? parseInt(batteryHealth) : null,
-        screenCondition,
-        bodyCondition,
+        title: title || titleAr || 'موبايل للبيع',
+        titleAr: titleAr || title || 'موبايل للبيع',
+        description: description || descriptionAr || '',
+        descriptionAr: descriptionAr || description || '',
+        brand: brand || 'OTHER',
+        model: model || 'Unknown',
+        storageGb: parsedStorageGb,
+        ramGb: parsedRamGb,
+        color: color || '',
+        colorAr: colorAr || color || '',
+        imei: imei || null, // IMEI is now optional
+        conditionGrade: conditionGrade || 'B',
+        batteryHealth: parsedBatteryHealth,
+        screenCondition: screenCondition || 'GOOD',
+        bodyCondition: bodyCondition || 'GOOD',
         originalParts: originalParts ?? true,
         hasBox: hasBox ?? false,
         hasAccessories: hasAccessories ?? false,
-        accessoriesDetails,
-        priceEgp: parseFloat(priceEgp),
+        accessoriesDetails: accessoriesDetails || null,
+        priceEgp: parsedPriceEgp,
         negotiable: negotiable ?? true,
         acceptsBarter: acceptsBarter ?? false,
         barterPreferences: barterPreferences || null,
         images: images || [],
         verificationCode,
-        governorate,
-        city,
-        district,
+        governorate: governorate || 'القاهرة',
+        city: city || '',
+        district: district || '',
         status: 'ACTIVE', // Changed from DRAFT to make listings visible immediately
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       }

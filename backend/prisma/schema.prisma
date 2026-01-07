@@ -7366,8 +7366,8 @@ model MobileListing {
   color                 String?
   colorAr               String?                 @map("color_ar")
 
-  // التحقق من IMEI (الميزة التنافسية الأساسية)
-  imei                  String                  @unique
+  // التحقق من IMEI (اختياري - يمكن إضافته لاحقاً للتوثيق)
+  imei                  String?                 @unique
   imeiVerified          Boolean                 @default(false) @map("imei_verified")
   imeiStatus            MobileIMEIStatus        @default(UNKNOWN) @map("imei_status")
   ntraRegistered        Boolean                 @default(false) @map("ntra_registered")
