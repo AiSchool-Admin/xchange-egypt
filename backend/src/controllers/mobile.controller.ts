@@ -339,6 +339,29 @@ export const createListing = async (req: Request, res: Response) => {
     const parsedBatteryHealth = batteryHealth ? parseInt(batteryHealth) : null;
     const parsedPriceEgp = parseFloat(priceEgp) || 0;
 
+    // Map screen condition - valid values: PERFECT, MINOR_SCRATCHES, CRACKED, REPLACED
+    const screenConditionMap: Record<string, string> = {
+      'PERFECT': 'PERFECT',
+      'GOOD': 'MINOR_SCRATCHES', // Map GOOD to MINOR_SCRATCHES
+      'MINOR_SCRATCHES': 'MINOR_SCRATCHES',
+      'CRACKED': 'CRACKED',
+      'REPLACED': 'REPLACED',
+      'FAIR': 'CRACKED',
+      'POOR': 'CRACKED'
+    };
+    const mappedScreenCondition = screenConditionMap[screenCondition] || 'MINOR_SCRATCHES';
+
+    // Map body condition - valid values: LIKE_NEW, GOOD, FAIR, POOR
+    const bodyConditionMap: Record<string, string> = {
+      'LIKE_NEW': 'LIKE_NEW',
+      'GOOD': 'GOOD',
+      'FAIR': 'FAIR',
+      'POOR': 'POOR',
+      'PERFECT': 'LIKE_NEW',
+      'MINOR_SCRATCHES': 'GOOD'
+    };
+    const mappedBodyCondition = bodyConditionMap[bodyCondition] || 'GOOD';
+
     const listing = await prisma.mobileListing.create({
       data: {
         sellerId: userId,
@@ -355,8 +378,8 @@ export const createListing = async (req: Request, res: Response) => {
         imei: imei || null, // IMEI is now optional
         conditionGrade: conditionGrade || 'B',
         batteryHealth: parsedBatteryHealth,
-        screenCondition: screenCondition || 'GOOD',
-        bodyCondition: bodyCondition || 'GOOD',
+        screenCondition: mappedScreenCondition as any,
+        bodyCondition: mappedBodyCondition as any,
         originalParts: originalParts ?? true,
         hasBox: hasBox ?? false,
         hasAccessories: hasAccessories ?? false,
