@@ -36,42 +36,273 @@ export const CATEGORY_KEYWORDS: CategoryKeywords[] = [
     keywords: { ar: ['الكترونيات', 'إلكترونيات'], en: ['electronics'] },
     weight: 3,
   },
-  // Mobile Phones (Level 2)
+  // Mobile Phones (Level 1 - matches database slug)
   {
-    categorySlug: 'mobile-phones',
-    keywords: { ar: ['موبايل', 'موبيل', 'تليفون', 'محمول', 'جوال', 'هاتف'], en: ['mobile', 'phone', 'smartphone'] },
-    weight: 8,
+    categorySlug: 'mobiles',
+    keywords: { ar: ['موبايل', 'موبيل', 'تليفون', 'محمول', 'جوال', 'هاتف', 'موبايلات'], en: ['mobile', 'phone', 'smartphone', 'mobiles'] },
+    weight: 5,
   },
-  // Mobile Phones Level 3
+  // Mobile Phones Level 2 - Brands (matching database slugs)
   {
-    categorySlug: 'iphone',
-    keywords: { ar: ['ايفون', 'آيفون', 'iphone', 'ابل'], en: ['iphone', 'apple phone', 'ios'] },
-    weight: 15,
-  },
-  {
-    categorySlug: 'samsung-phones',
-    keywords: { ar: ['سامسونج', 'سامسونغ', 'جالاكسي'], en: ['samsung', 'galaxy', 'samsung phone'] },
-    weight: 15,
+    categorySlug: 'apple-mobiles',
+    keywords: { ar: ['ايفون', 'آيفون', 'ابل', 'آبل'], en: ['iphone', 'apple', 'ios'] },
+    weight: 12,
   },
   {
-    categorySlug: 'xiaomi-phones',
+    categorySlug: 'samsung-mobiles',
+    keywords: { ar: ['سامسونج', 'سامسونغ', 'جالاكسي'], en: ['samsung', 'galaxy'] },
+    weight: 12,
+  },
+  {
+    categorySlug: 'xiaomi-mobiles',
     keywords: { ar: ['شاومي', 'ريدمي', 'بوكو'], en: ['xiaomi', 'redmi', 'poco', 'mi phone'] },
-    weight: 15,
+    weight: 12,
   },
   {
-    categorySlug: 'huawei-phones',
-    keywords: { ar: ['هواوي', 'هواوى', 'اونر'], en: ['huawei', 'honor'] },
-    weight: 15,
+    categorySlug: 'huawei-mobiles',
+    keywords: { ar: ['هواوي', 'هواوى'], en: ['huawei'] },
+    weight: 12,
   },
   {
-    categorySlug: 'oppo-phones',
+    categorySlug: 'honor-mobiles',
+    keywords: { ar: ['هونر', 'اونر'], en: ['honor'] },
+    weight: 12,
+  },
+  {
+    categorySlug: 'oppo-mobiles',
     keywords: { ar: ['اوبو', 'أوبو'], en: ['oppo'] },
-    weight: 15,
+    weight: 12,
   },
   {
-    categorySlug: 'realme-phones',
+    categorySlug: 'vivo-mobiles',
+    keywords: { ar: ['فيفو'], en: ['vivo'] },
+    weight: 12,
+  },
+  {
+    categorySlug: 'realme-mobiles',
     keywords: { ar: ['ريلمي', 'ريل مي'], en: ['realme'] },
-    weight: 15,
+    weight: 12,
+  },
+  {
+    categorySlug: 'infinix-mobiles',
+    keywords: { ar: ['انفينكس', 'إنفينكس'], en: ['infinix'] },
+    weight: 12,
+  },
+  {
+    categorySlug: 'tecno-mobiles',
+    keywords: { ar: ['تكنو', 'تيكنو'], en: ['tecno'] },
+    weight: 12,
+  },
+  {
+    categorySlug: 'oneplus-mobiles',
+    keywords: { ar: ['ون بلس', 'وان بلس'], en: ['oneplus', 'one plus'] },
+    weight: 12,
+  },
+  {
+    categorySlug: 'google-mobiles',
+    keywords: { ar: ['بيكسل', 'جوجل بيكسل'], en: ['pixel', 'google pixel'] },
+    weight: 12,
+  },
+  {
+    categorySlug: 'nokia-mobiles',
+    keywords: { ar: ['نوكيا'], en: ['nokia'] },
+    weight: 12,
+  },
+  {
+    categorySlug: 'motorola-mobiles',
+    keywords: { ar: ['موتورولا'], en: ['motorola', 'moto'] },
+    weight: 12,
+  },
+  // Mobile Phones Level 3 - Models (matching database slugs)
+  // iPhone Models
+  {
+    categorySlug: 'iphone-16-pro-max',
+    keywords: { ar: ['ايفون 16 برو ماكس', 'آيفون 16 برو ماكس'], en: ['iphone 16 pro max'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'iphone-16-pro',
+    keywords: { ar: ['ايفون 16 برو', 'آيفون 16 برو'], en: ['iphone 16 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'iphone-16',
+    keywords: { ar: ['ايفون 16', 'آيفون 16'], en: ['iphone 16'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'iphone-15-pro-max',
+    keywords: { ar: ['ايفون 15 برو ماكس', 'آيفون 15 برو ماكس'], en: ['iphone 15 pro max'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'iphone-15-pro',
+    keywords: { ar: ['ايفون 15 برو', 'آيفون 15 برو'], en: ['iphone 15 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'iphone-15',
+    keywords: { ar: ['ايفون 15', 'آيفون 15'], en: ['iphone 15'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'iphone-14-pro-max',
+    keywords: { ar: ['ايفون 14 برو ماكس', 'آيفون 14 برو ماكس'], en: ['iphone 14 pro max'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'iphone-14-pro',
+    keywords: { ar: ['ايفون 14 برو', 'آيفون 14 برو'], en: ['iphone 14 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'iphone-14',
+    keywords: { ar: ['ايفون 14', 'آيفون 14'], en: ['iphone 14'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'iphone-13-pro-max',
+    keywords: { ar: ['ايفون 13 برو ماكس', 'آيفون 13 برو ماكس'], en: ['iphone 13 pro max'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'iphone-13-pro',
+    keywords: { ar: ['ايفون 13 برو', 'آيفون 13 برو'], en: ['iphone 13 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'iphone-13',
+    keywords: { ar: ['ايفون 13', 'آيفون 13'], en: ['iphone 13'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'iphone-12-pro-max',
+    keywords: { ar: ['ايفون 12 برو ماكس', 'آيفون 12 برو ماكس'], en: ['iphone 12 pro max'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'iphone-12',
+    keywords: { ar: ['ايفون 12', 'آيفون 12'], en: ['iphone 12'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'iphone-11',
+    keywords: { ar: ['ايفون 11', 'آيفون 11'], en: ['iphone 11'] },
+    weight: 20,
+  },
+  {
+    categorySlug: 'iphone-se',
+    keywords: { ar: ['ايفون اس اي', 'آيفون SE'], en: ['iphone se'] },
+    weight: 20,
+  },
+  // Samsung Models
+  {
+    categorySlug: 'galaxy-s24-ultra',
+    keywords: { ar: ['جالاكسي اس 24 الترا', 'S24 الترا', 'سامسونج s24 الترا'], en: ['galaxy s24 ultra', 's24 ultra', 'samsung s24 ultra'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'galaxy-s24-plus',
+    keywords: { ar: ['جالاكسي اس 24 بلس', 'S24+', 'سامسونج s24+'], en: ['galaxy s24+', 's24 plus', 'samsung s24+'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'galaxy-s24',
+    keywords: { ar: ['جالاكسي اس 24', 'S24', 'سامسونج s24'], en: ['galaxy s24', 's24', 'samsung s24'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'galaxy-s23-ultra',
+    keywords: { ar: ['جالاكسي اس 23 الترا', 'S23 الترا', 'سامسونج s23 الترا'], en: ['galaxy s23 ultra', 's23 ultra', 'samsung s23 ultra'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'galaxy-s23',
+    keywords: { ar: ['جالاكسي اس 23', 'S23', 'سامسونج s23'], en: ['galaxy s23', 's23', 'samsung s23'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'galaxy-z-fold-5',
+    keywords: { ar: ['جالاكسي فولد 5', 'Z فولد 5', 'سامسونج فولد'], en: ['galaxy z fold 5', 'z fold 5', 'samsung fold'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'galaxy-z-flip-5',
+    keywords: { ar: ['جالاكسي فليب 5', 'Z فليب 5', 'سامسونج فليب'], en: ['galaxy z flip 5', 'z flip 5', 'samsung flip'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'galaxy-a54',
+    keywords: { ar: ['جالاكسي A54', 'سامسونج A54'], en: ['galaxy a54', 'samsung a54'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'galaxy-a34',
+    keywords: { ar: ['جالاكسي A34', 'سامسونج A34'], en: ['galaxy a34', 'samsung a34'] },
+    weight: 22,
+  },
+  // Xiaomi Models
+  {
+    categorySlug: 'xiaomi-14-ultra',
+    keywords: { ar: ['شاومي 14 الترا', 'mi 14 الترا'], en: ['xiaomi 14 ultra', 'mi 14 ultra'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'xiaomi-14-pro',
+    keywords: { ar: ['شاومي 14 برو', 'mi 14 برو'], en: ['xiaomi 14 pro', 'mi 14 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'redmi-note-13-pro-plus',
+    keywords: { ar: ['ريدمي نوت 13 برو بلس', 'ريدمي نوت 13 برو+'], en: ['redmi note 13 pro+', 'redmi note 13 pro plus'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'redmi-note-13-pro',
+    keywords: { ar: ['ريدمي نوت 13 برو'], en: ['redmi note 13 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'redmi-note-13',
+    keywords: { ar: ['ريدمي نوت 13'], en: ['redmi note 13'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'poco-x6-pro',
+    keywords: { ar: ['بوكو X6 برو', 'poco x6 برو'], en: ['poco x6 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'poco-x6',
+    keywords: { ar: ['بوكو X6', 'poco x6'], en: ['poco x6'] },
+    weight: 22,
+  },
+  // Infinix Models
+  {
+    categorySlug: 'infinix-zero-30',
+    keywords: { ar: ['انفينكس زيرو 30', 'إنفينكس زيرو 30'], en: ['infinix zero 30'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'infinix-note-30-pro',
+    keywords: { ar: ['انفينكس نوت 30 برو', 'إنفينكس نوت 30 برو'], en: ['infinix note 30 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'infinix-hot-40-pro',
+    keywords: { ar: ['انفينكس هوت 40 برو', 'إنفينكس هوت 40 برو'], en: ['infinix hot 40 pro'] },
+    weight: 25,
+  },
+  // Tecno Models
+  {
+    categorySlug: 'tecno-camon-20-pro',
+    keywords: { ar: ['تكنو كامون 20 برو', 'تيكنو كامون 20 برو'], en: ['tecno camon 20 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'tecno-spark-20-pro',
+    keywords: { ar: ['تكنو سبارك 20 برو', 'تيكنو سبارك 20 برو'], en: ['tecno spark 20 pro'] },
+    weight: 25,
   },
   // Computers (Level 2)
   {

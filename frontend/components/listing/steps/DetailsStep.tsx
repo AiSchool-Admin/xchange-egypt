@@ -199,13 +199,24 @@ export default function DetailsStep({
   const debouncedTitle = useDebounce(formData.title || '', 1000);
 
   // Helper function to find category path in tree
-  const findCategoryPath = (cats: Category[], targetId: string, path: Category[] = []): Category[] | null => {
+  // Searches by id, slug, or name to handle various AI response formats
+  const findCategoryPath = (cats: Category[], target: string, path: Category[] = []): Category[] | null => {
+    const targetLower = target.toLowerCase();
+
     for (const cat of cats) {
-      if (cat.id === targetId) {
+      // Match by id, slug, or normalized name
+      const isMatch =
+        cat.id === target ||
+        cat.slug === target ||
+        cat.slug === targetLower ||
+        cat.nameEn?.toLowerCase() === targetLower ||
+        cat.nameAr === target;
+
+      if (isMatch) {
         return [...path, cat];
       }
       if (cat.children) {
-        const found = findCategoryPath(cat.children, targetId, [...path, cat]);
+        const found = findCategoryPath(cat.children, target, [...path, cat]);
         if (found) return found;
       }
     }
@@ -213,8 +224,35 @@ export default function DetailsStep({
   };
 
   // Auto-populate category dropdowns from AI result
-  const autoPopulateCategoryFromAI = (categoryId: string) => {
-    const categoryPath = findCategoryPath(categories, categoryId);
+  const autoPopulateCategoryFromAI = (categoryId: string, categoryName?: string, parentCategoryName?: string) => {
+    // Try to find category by ID first, then by name if that fails
+    let categoryPath = findCategoryPath(categories, categoryId);
+
+    // If not found by ID, try by name
+    if (!categoryPath && categoryName) {
+      categoryPath = findCategoryPath(categories, categoryName);
+    }
+
+    // If still not found and we have parent info, try to find parent + child
+    if (!categoryPath && parentCategoryName && categoryName) {
+      // Find parent first
+      const parentPath = findCategoryPath(categories, parentCategoryName);
+      if (parentPath && parentPath.length > 0) {
+        const parentCat = parentPath[parentPath.length - 1];
+        if (parentCat.children) {
+          // Find child within parent
+          const childCat = parentCat.children.find(c =>
+            c.nameEn?.toLowerCase() === categoryName.toLowerCase() ||
+            c.nameAr === categoryName ||
+            c.slug === categoryId.toLowerCase()
+          );
+          if (childCat) {
+            categoryPath = [...parentPath, childCat];
+          }
+        }
+      }
+    }
+
     if (categoryPath && categoryPath.length > 0) {
       const level1Id = categoryPath[0]?.id || '';
       const level2Id = categoryPath[1]?.id || '';
@@ -246,12 +284,16 @@ export default function DetailsStep({
       requestAnimationFrame(() => {
         isAIPopulating.current = false;
       });
+
+      console.log('[AI Category] Populated path:', categoryPath.map(c => c.nameEn || c.nameAr).join(' → '));
+    } else {
+      console.log('[AI Category] Could not find category path for:', categoryId, categoryName);
     }
   };
 
   // Handle AI category selection
-  const handleAICategorySelect = (categoryId: string) => {
-    autoPopulateCategoryFromAI(categoryId);
+  const handleAICategorySelect = (suggestion: CategorySuggestionType) => {
+    autoPopulateCategoryFromAI(suggestion.id, suggestion.name, suggestion.parentCategory);
     setCategorySuggestions([]); // Clear suggestions after selection
   };
 
@@ -276,7 +318,11 @@ export default function DetailsStep({
 
           // Auto-populate category dropdowns from AI result
           if (result.category.id && categories.length > 0) {
-            autoPopulateCategoryFromAI(result.category.id);
+            autoPopulateCategoryFromAI(
+              result.category.id,
+              result.category.name,
+              result.category.parentCategory
+            );
           }
         } else {
           setCategorySuggestions([]);
@@ -552,7 +598,7 @@ export default function DetailsStep({
                   {/* Primary Suggestion */}
                   <button
                     type="button"
-                    onClick={() => handleAICategorySelect(categorySuggestions[0].id)}
+                    onClick={() => handleAICategorySelect(categorySuggestions[0])}
                     className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -574,7 +620,7 @@ export default function DetailsStep({
                           <button
                             key={alt.id}
                             type="button"
-                            onClick={() => handleAICategorySelect(alt.id)}
+                            onClick={() => handleAICategorySelect(alt)}
                             className="block w-full text-right px-3 py-1.5 bg-white border border-purple-200 hover:bg-purple-50 text-sm text-purple-700 rounded-lg transition-colors"
                           >
                             {alt.parentCategory && `${alt.parentCategory} ← `}
