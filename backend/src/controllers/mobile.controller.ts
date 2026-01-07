@@ -422,27 +422,22 @@ export const createListing = async (req: Request, res: Response) => {
 
     // Also create an entry in the general marketplace (items table)
     const fullTitle = title || titleAr || `${brand} ${model}`;
-    const fullDescription = description || descriptionAr || `${brand} ${model} - ${parsedStorageGb}GB`;
+    const fullDescription = description || descriptionAr || `${brand} ${model} - ${parsedStorageGb}GB - ${governorate || 'القاهرة'}`;
 
     try {
       await prisma.item.create({
         data: {
           sellerId: userId,
           title: fullTitle,
-          titleAr: titleAr || fullTitle,
-          titleEn: title || fullTitle,
           description: fullDescription,
-          descriptionAr: descriptionAr || fullDescription,
-          descriptionEn: description || fullDescription,
           categoryId: mobilesCategory?.id || null,
           condition: mappedItemCondition as any,
           estimatedValue: parsedPriceEgp,
           images: images || [],
           governorate: governorate || 'القاهرة',
-          city: city || '',
-          district: district || '',
-          status: 'ACTIVE',
-          allowBarter: acceptsBarter ?? false
+          city: city || null,
+          district: district || null,
+          status: 'ACTIVE'
         }
       });
       console.log('✅ Mobile listing also added to general marketplace');
