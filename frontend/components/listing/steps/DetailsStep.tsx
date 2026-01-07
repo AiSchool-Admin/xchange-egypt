@@ -604,8 +604,12 @@ export default function DetailsStep({
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    {categorySuggestions[0].parentCategory && `${categorySuggestions[0].parentCategory} ← `}
-                    {categorySuggestions[0].name}
+                    {/* Show full path if available (Mobiles ← Samsung ← Galaxy S23) */}
+                    {categorySuggestions[0].fullPath ||
+                      (categorySuggestions[0].grandParentCategory ? `${categorySuggestions[0].grandParentCategory} ← ` : '') +
+                      (categorySuggestions[0].parentCategory ? `${categorySuggestions[0].parentCategory} ← ` : '') +
+                      categorySuggestions[0].name
+                    }
                     <span className="px-2 py-0.5 bg-purple-800 rounded-full text-xs">
                       {Math.round(categorySuggestions[0].confidence * 100)}% تطابق
                     </span>
@@ -623,8 +627,12 @@ export default function DetailsStep({
                             onClick={() => handleAICategorySelect(alt)}
                             className="block w-full text-right px-3 py-1.5 bg-white border border-purple-200 hover:bg-purple-50 text-sm text-purple-700 rounded-lg transition-colors"
                           >
-                            {alt.parentCategory && `${alt.parentCategory} ← `}
-                            {alt.name}
+                            {/* Show full path for alternatives too */}
+                            {alt.fullPath ||
+                              (alt.grandParentCategory ? `${alt.grandParentCategory} ← ` : '') +
+                              (alt.parentCategory ? `${alt.parentCategory} ← ` : '') +
+                              alt.name
+                            }
                             <span className="mr-2 text-xs text-purple-500">
                               ({Math.round(alt.confidence * 100)}% تطابق)
                             </span>

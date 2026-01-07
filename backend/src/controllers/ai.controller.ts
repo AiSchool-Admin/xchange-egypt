@@ -37,20 +37,39 @@ export const categorizeItem = async (
 
     const result = await autoCategorization.categorizeItem(title, description);
 
-    // Fetch category details from database
+    // Fetch category details from database with full path (grandparent → parent → category)
     const category = await prisma.category.findUnique({
       where: { slug: result.categorySlug },
       select: {
         id: true,
         nameEn: true,
+        nameAr: true,
         slug: true,
         parent: {
           select: {
             nameEn: true,
+            nameAr: true,
+            slug: true,
+            parent: {
+              select: {
+                nameEn: true,
+                nameAr: true,
+                slug: true,
+              },
+            },
           },
         },
       },
     });
+
+    // Build full category path for display (e.g., "Mobiles ← Samsung ← Galaxy S23")
+    const buildCategoryPath = (cat: any): string => {
+      const parts: string[] = [];
+      if (cat?.parent?.parent?.nameEn) parts.push(cat.parent.parent.nameEn);
+      if (cat?.parent?.nameEn) parts.push(cat.parent.nameEn);
+      if (cat?.nameEn) parts.push(cat.nameEn);
+      return parts.join(' ← ');
+    };
 
     // Fetch alternative category details
     const alternatives = [];
@@ -64,10 +83,20 @@ export const categorizeItem = async (
         select: {
           id: true,
           nameEn: true,
+          nameAr: true,
           slug: true,
           parent: {
             select: {
               nameEn: true,
+              nameAr: true,
+              slug: true,
+              parent: {
+                select: {
+                  nameEn: true,
+                  nameAr: true,
+                  slug: true,
+                },
+              },
             },
           },
         },
@@ -80,8 +109,10 @@ export const categorizeItem = async (
           alternatives.push({
             id: altCat.id,
             name: altCat.nameEn,
+            fullPath: buildCategoryPath(altCat),
             confidence: suggestionData.confidence / 100, // Convert to 0-1
             parentCategory: altCat.parent?.nameEn,
+            grandParentCategory: altCat.parent?.parent?.nameEn,
           });
         }
       }
@@ -93,8 +124,10 @@ export const categorizeItem = async (
       category: {
         id: category?.id || result.categoryId || 'unknown',
         name: category?.nameEn || result.categorySlug,
+        fullPath: buildCategoryPath(category),
         confidence: result.confidence / 100, // Convert to 0-1 for frontend
         parentCategory: category?.parent?.nameEn,
+        grandParentCategory: category?.parent?.parent?.nameEn,
       },
       alternatives,
     });
