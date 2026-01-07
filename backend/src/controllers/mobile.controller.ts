@@ -425,7 +425,8 @@ export const createListing = async (req: Request, res: Response) => {
     const fullDescription = description || descriptionAr || `${brand} ${model} - ${parsedStorageGb}GB - ${governorate || 'القاهرة'}`;
 
     try {
-      await prisma.item.create({
+      // Create Item record
+      const item = await prisma.item.create({
         data: {
           sellerId: userId,
           title: fullTitle,
@@ -440,7 +441,20 @@ export const createListing = async (req: Request, res: Response) => {
           status: 'ACTIVE'
         }
       });
-      console.log('✅ Mobile listing also added to general marketplace');
+
+      // Create Listing record (required for cart and purchase functionality)
+      await prisma.listing.create({
+        data: {
+          itemId: item.id,
+          userId: userId,
+          listingType: 'DIRECT_SALE',
+          price: parsedPriceEgp,
+          currency: 'EGP',
+          status: 'ACTIVE'
+        }
+      });
+
+      console.log('✅ Mobile listing also added to general marketplace with Listing record');
     } catch (itemError) {
       // Log but don't fail if item creation fails - mobile listing is the primary record
       console.error('Warning: Failed to create item in general marketplace:', itemError);
