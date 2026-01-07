@@ -296,15 +296,10 @@ function ItemsContent() {
         sortOrder: sortOrder as 'asc' | 'desc',
       });
 
-      // Filter out current user's items when browsing marketplace (not own items view)
-      let filteredItems = response.data.items;
-      if (!isMyItems && currentUser) {
-        filteredItems = response.data.items.filter((item: Item) => item.seller?.id !== currentUser.id);
-      }
-
-      setItems(filteredItems);
+      // Show all items including current user's items
+      setItems(response.data.items);
       setTotalPages(response.data.pagination.totalPages);
-      setTotalItems(isMyItems || !currentUser ? response.data.pagination.total : filteredItems.length);
+      setTotalItems(response.data.pagination.total);
     } catch (err: any) {
       setError(err.response?.data?.message || 'فشل في تحميل المنتجات');
     } finally {
