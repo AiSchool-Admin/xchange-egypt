@@ -228,13 +228,36 @@ export default function UnifiedListingWizard({
             'POOR': 'D'
           };
 
+          // Extract brand from level 2 category name (e.g., "Samsung" -> "SAMSUNG")
+          const brandName = categorySpecificData?.categoryLevel2Name || '';
+          const brandMap: Record<string, string> = {
+            'Apple': 'APPLE', 'آبل': 'APPLE',
+            'Samsung': 'SAMSUNG', 'سامسونج': 'SAMSUNG',
+            'Xiaomi': 'XIAOMI', 'شاومي': 'XIAOMI',
+            'OPPO': 'OPPO', 'أوبو': 'OPPO',
+            'Vivo': 'VIVO', 'فيفو': 'VIVO',
+            'Huawei': 'HUAWEI', 'هواوي': 'HUAWEI',
+            'Honor': 'HONOR', 'هونر': 'HONOR',
+            'Realme': 'REALME', 'ريلمي': 'REALME',
+            'Infinix': 'INFINIX', 'إنفينكس': 'INFINIX',
+            'Tecno': 'TECNO', 'تكنو': 'TECNO',
+            'OnePlus': 'ONEPLUS', 'ون بلس': 'ONEPLUS',
+            'Google': 'GOOGLE', 'جوجل': 'GOOGLE',
+            'Nokia': 'NOKIA', 'نوكيا': 'NOKIA',
+            'Motorola': 'MOTOROLA', 'موتورولا': 'MOTOROLA',
+          };
+          const extractedBrand = brandMap[brandName] || 'OTHER';
+
+          // Extract model from level 3 category name (e.g., "iPhone 15 Pro Max")
+          const modelName = categorySpecificData?.categoryLevel3Name || categorySpecificData?.categoryLevel3NameAr || payload.titleAr || 'Unknown';
+
           const mobilePayload = {
             title: payload.titleAr,
             titleAr: payload.titleAr,
             description: payload.descriptionAr,
             descriptionAr: payload.descriptionAr,
-            brand: categorySpecificData?.brand || 'OTHER',
-            model: categorySpecificData?.model || payload.titleAr || 'Unknown',
+            brand: extractedBrand,
+            model: modelName,
             storageGb: parseInt(categorySpecificData?.storageCapacity) || 64,
             ramGb: categorySpecificData?.ramSize ? parseInt(categorySpecificData.ramSize) : null,
             color: categorySpecificData?.color || '',

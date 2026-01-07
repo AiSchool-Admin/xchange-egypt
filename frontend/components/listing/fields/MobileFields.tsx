@@ -2,24 +2,8 @@
 
 import { Battery, Smartphone, HardDrive, Cpu, Info } from 'lucide-react';
 
-// Brand and Model fields for mobile listings
-const BRANDS = [
-  { value: 'APPLE', label: 'Apple آبل' },
-  { value: 'SAMSUNG', label: 'Samsung سامسونج' },
-  { value: 'XIAOMI', label: 'Xiaomi شاومي' },
-  { value: 'OPPO', label: 'OPPO أوبو' },
-  { value: 'VIVO', label: 'Vivo فيفو' },
-  { value: 'HUAWEI', label: 'Huawei هواوي' },
-  { value: 'HONOR', label: 'Honor هونر' },
-  { value: 'REALME', label: 'Realme ريلمي' },
-  { value: 'INFINIX', label: 'Infinix إنفينكس' },
-  { value: 'TECNO', label: 'Tecno تكنو' },
-  { value: 'ONEPLUS', label: 'OnePlus ون بلس' },
-  { value: 'GOOGLE', label: 'Google جوجل' },
-  { value: 'NOKIA', label: 'Nokia نوكيا' },
-  { value: 'MOTOROLA', label: 'Motorola موتورولا' },
-  { value: 'OTHER', label: 'أخرى' },
-];
+// Note: Brand and Model are now selected via the 3-level category system
+// (الموبايلات → الماركة → الموديل)
 
 const STORAGE_OPTIONS = [32, 64, 128, 256, 512, 1024];
 const RAM_OPTIONS = [2, 3, 4, 6, 8, 12, 16];
@@ -57,40 +41,16 @@ export default function MobileFields({ data, onChange }: MobileFieldsProps) {
 
   return (
     <div className="space-y-6">
-      {/* Brand Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          <Smartphone className="w-4 h-4 inline ml-1" />
-          الماركة <span className="text-red-500">*</span>
-        </label>
-        <select
-          value={data.brand || ''}
-          onChange={(e) => handleChange('brand', e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white"
-        >
-          <option value="">اختر الماركة</option>
-          {BRANDS.map(brand => (
-            <option key={brand.value} value={brand.value}>{brand.label}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Model Name */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          <Smartphone className="w-4 h-4 inline ml-1" />
-          الموديل <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={data.model || ''}
-          onChange={(e) => handleChange('model', e.target.value)}
-          placeholder="مثال: iPhone 15 Pro Max, Galaxy S24 Ultra"
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500"
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          اكتب اسم الموديل الكامل
-        </p>
+      {/* Info about category selection */}
+      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl">
+        <div className="flex items-start gap-2">
+          <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-blue-700">
+            اختر الماركة والموديل من قائمة "الفئة التفصيلية" أعلاه
+            <br />
+            <span className="text-xs text-blue-600">الموبايلات ← الماركة ← الموديل</span>
+          </p>
+        </div>
       </div>
 
       {/* Storage & RAM */}

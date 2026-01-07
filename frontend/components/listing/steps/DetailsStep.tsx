@@ -97,6 +97,24 @@ export default function DetailsStep({
     loadCategories();
   }, []);
 
+  // Auto-select mobile category when on mobile listing page
+  useEffect(() => {
+    if (category === 'MOBILE' && categories.length > 0 && !categoryLevel1) {
+      // Find the "الموبايلات" or "Mobiles" category
+      const mobileCategory = categories.find(c =>
+        c.slug === 'mobiles' ||
+        c.nameAr === 'الموبايلات' ||
+        c.nameEn?.toLowerCase() === 'mobiles'
+      );
+      if (mobileCategory) {
+        setCategoryLevel1(mobileCategory.id);
+        if (mobileCategory.children) {
+          setLevel2Categories(mobileCategory.children);
+        }
+      }
+    }
+  }, [category, categories, categoryLevel1]);
+
   // Load level 2 categories when level 1 changes (manual selection only)
   useEffect(() => {
     if (categoryLevel1) {
@@ -136,17 +154,29 @@ export default function DetailsStep({
     }
   }, [categoryLevel2, level2Categories]);
 
-  // Save category levels to categoryData whenever they change
+  // Save category levels to categoryData whenever they change (including names for mobile)
   useEffect(() => {
     if (categoryLevel1 || categoryLevel2 || categoryLevel3) {
+      // Find category names for mobile listings (brand/model)
+      const level1Category = categories.find(c => c.id === categoryLevel1);
+      const level2Category = level2Categories.find(c => c.id === categoryLevel2);
+      const level3Category = level3Categories.find(c => c.id === categoryLevel3);
+
       onCategoryDataChange({
         ...categoryData,
         categoryLevel1,
         categoryLevel2,
         categoryLevel3,
+        // Save names for mobile brand/model extraction
+        categoryLevel1Name: level1Category?.nameEn || level1Category?.nameAr || '',
+        categoryLevel2Name: level2Category?.nameEn || level2Category?.nameAr || '',
+        categoryLevel3Name: level3Category?.nameEn || level3Category?.nameAr || '',
+        // Save Arabic names too
+        categoryLevel2NameAr: level2Category?.nameAr || '',
+        categoryLevel3NameAr: level3Category?.nameAr || '',
       });
     }
-  }, [categoryLevel1, categoryLevel2, categoryLevel3]);
+  }, [categoryLevel1, categoryLevel2, categoryLevel3, categories, level2Categories, level3Categories]);
 
   // Restore level2/level3 categories from saved state when categories are loaded
   useEffect(() => {
@@ -607,7 +637,8 @@ export default function DetailsStep({
                 <select
                   value={categoryLevel1}
                   onChange={(e) => setCategoryLevel1(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm"
+                  disabled={category === 'MOBILE'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm disabled:bg-gray-100"
                 >
                   <option value="">اختر الفئة</option>
                   {categories.map((cat) => (
@@ -618,10 +649,10 @@ export default function DetailsStep({
                 </select>
               </div>
 
-              {/* Level 2 - Sub Category */}
+              {/* Level 2 - Sub Category (Brand for mobiles) */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  الفئة الفرعية
+                  {category === 'MOBILE' ? 'الماركة' : 'الفئة الفرعية'}
                 </label>
                 <select
                   value={categoryLevel2}
@@ -630,7 +661,7 @@ export default function DetailsStep({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">
-                    {!categoryLevel1 ? 'اختر الرئيسية أولاً' : level2Categories.length === 0 ? 'لا توجد فرعية' : 'اختر الفئة'}
+                    {!categoryLevel1 ? 'اختر الرئيسية أولاً' : level2Categories.length === 0 ? (category === 'MOBILE' ? 'لا توجد ماركات' : 'لا توجد فرعية') : (category === 'MOBILE' ? 'اختر الماركة' : 'اختر الفئة')}
                   </option>
                   {level2Categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
@@ -640,10 +671,10 @@ export default function DetailsStep({
                 </select>
               </div>
 
-              {/* Level 3 - Sub-Sub Category */}
+              {/* Level 3 - Sub-Sub Category (Model for mobiles) */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  الفئة الفرع-فرعية
+                  {category === 'MOBILE' ? 'الموديل' : 'الفئة الفرع-فرعية'}
                 </label>
                 <select
                   value={categoryLevel3}
@@ -652,7 +683,7 @@ export default function DetailsStep({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">
-                    {!categoryLevel2 ? 'اختر الفرعية أولاً' : level3Categories.length === 0 ? 'لا توجد فرع-فرعية' : 'اختر الفئة'}
+                    {!categoryLevel2 ? (category === 'MOBILE' ? 'اختر الماركة أولاً' : 'اختر الفرعية أولاً') : level3Categories.length === 0 ? (category === 'MOBILE' ? 'لا توجد موديلات' : 'لا توجد فرع-فرعية') : (category === 'MOBILE' ? 'اختر الموديل' : 'اختر الفئة')}
                   </option>
                   {level3Categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
