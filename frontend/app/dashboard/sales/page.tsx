@@ -192,25 +192,53 @@ export default function SellerSalesPage() {
     setUpdatingStatus(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/seller/${orderId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          status: newStatus,
-          trackingNumber: trackingNumber || undefined,
-        }),
-      });
+      const order = orders.find(o => o.id === orderId);
 
-      if (response.ok) {
-        await fetchSellerOrders();
-        setSelectedOrder(null);
-        setTrackingNumber('');
+      // Use different API for direct transactions vs cart orders
+      if (order?.isDirectTransaction) {
+        // Update transaction delivery status
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions/${orderId}/delivery-status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            deliveryStatus: newStatus,
+            trackingNumber: trackingNumber || undefined,
+          }),
+        });
+
+        if (response.ok) {
+          await fetchSellerOrders();
+          setSelectedOrder(null);
+          setTrackingNumber('');
+        } else {
+          const error = await response.json();
+          alert(error.message || 'فشل تحديث حالة الطلب');
+        }
       } else {
-        const error = await response.json();
-        alert(error.message || 'فشل تحديث حالة الطلب');
+        // Update cart order status
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/seller/${orderId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            status: newStatus,
+            trackingNumber: trackingNumber || undefined,
+          }),
+        });
+
+        if (response.ok) {
+          await fetchSellerOrders();
+          setSelectedOrder(null);
+          setTrackingNumber('');
+        } else {
+          const error = await response.json();
+          alert(error.message || 'فشل تحديث حالة الطلب');
+        }
       }
     } catch (error) {
       console.error('Failed to update order status:', error);
@@ -218,6 +246,14 @@ export default function SellerSalesPage() {
     } finally {
       setUpdatingStatus(false);
     }
+  };
+
+  // Helper to get effective status for both orders and transactions
+  const getEffectiveStatus = (order: Order) => {
+    if (order.isDirectTransaction) {
+      return order.deliveryStatus || order.paymentStatus || 'PENDING';
+    }
+    return order.status;
   };
 
   if (authLoading || loading) {
@@ -467,57 +503,64 @@ export default function SellerSalesPage() {
                   )}
 
                   {/* Actions */}
-                  {(selectedOrder.status === 'PENDING' || selectedOrder.status === 'PAID') && (
-                    <div className="border-t pt-4">
-                      <button
-                        onClick={() => updateOrderStatus(selectedOrder.id, 'PROCESSING')}
-                        disabled={updatingStatus}
-                        className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
-                      >
-                        {updatingStatus ? 'جاري التحديث...' : 'بدء تجهيز الطلب'}
-                      </button>
-                    </div>
-                  )}
+                  {(() => {
+                    const effectiveStatus = getEffectiveStatus(selectedOrder);
+                    return (
+                      <>
+                        {(effectiveStatus === 'PENDING' || effectiveStatus === 'PAID') && (
+                          <div className="border-t pt-4">
+                            <button
+                              onClick={() => updateOrderStatus(selectedOrder.id, 'PROCESSING')}
+                              disabled={updatingStatus}
+                              className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
+                            >
+                              {updatingStatus ? 'جاري التحديث...' : 'بدء تجهيز الطلب'}
+                            </button>
+                          </div>
+                        )}
 
-                  {selectedOrder.status === 'PROCESSING' && (
-                    <div className="border-t pt-4 space-y-3">
-                      <input
-                        type="text"
-                        value={trackingNumber}
-                        onChange={(e) => setTrackingNumber(e.target.value)}
-                        placeholder="رقم التتبع (اختياري)"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      />
-                      <button
-                        onClick={() => updateOrderStatus(selectedOrder.id, 'SHIPPED')}
-                        disabled={updatingStatus}
-                        className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
-                      >
-                        {updatingStatus ? 'جاري التحديث...' : 'تم الشحن'}
-                      </button>
-                    </div>
-                  )}
+                        {effectiveStatus === 'PROCESSING' && (
+                          <div className="border-t pt-4 space-y-3">
+                            <input
+                              type="text"
+                              value={trackingNumber}
+                              onChange={(e) => setTrackingNumber(e.target.value)}
+                              placeholder="رقم التتبع (اختياري)"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            />
+                            <button
+                              onClick={() => updateOrderStatus(selectedOrder.id, 'SHIPPED')}
+                              disabled={updatingStatus}
+                              className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
+                            >
+                              {updatingStatus ? 'جاري التحديث...' : 'تم الشحن'}
+                            </button>
+                          </div>
+                        )}
 
-                  {selectedOrder.status === 'SHIPPED' && (
-                    <div className="border-t pt-4">
-                      <button
-                        onClick={() => updateOrderStatus(selectedOrder.id, 'DELIVERED')}
-                        disabled={updatingStatus}
-                        className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
-                      >
-                        {updatingStatus ? 'جاري التحديث...' : 'تأكيد التسليم'}
-                      </button>
-                    </div>
-                  )}
+                        {effectiveStatus === 'SHIPPED' && (
+                          <div className="border-t pt-4">
+                            <button
+                              onClick={() => updateOrderStatus(selectedOrder.id, 'DELIVERED')}
+                              disabled={updatingStatus}
+                              className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
+                            >
+                              {updatingStatus ? 'جاري التحديث...' : 'تأكيد التسليم'}
+                            </button>
+                          </div>
+                        )}
 
-                  {selectedOrder.status === 'DELIVERED' && (
-                    <div className="border-t pt-4">
-                      <div className="bg-green-50 text-green-700 p-4 rounded-lg text-center">
-                        <span className="text-2xl mb-2 block">✅</span>
-                        تم إتمام هذا الطلب بنجاح
-                      </div>
-                    </div>
-                  )}
+                        {effectiveStatus === 'DELIVERED' && (
+                          <div className="border-t pt-4">
+                            <div className="bg-green-50 text-green-700 p-4 rounded-lg text-center">
+                              <span className="text-2xl mb-2 block">✅</span>
+                              تم إتمام هذا الطلب بنجاح
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="bg-white rounded-xl shadow-lg p-8 text-center">
