@@ -178,7 +178,8 @@ function TransactionsContent() {
       }
     } catch (err: any) {
       console.error('Failed to mark as shipped:', err);
-      alert(err.response?.data?.message || 'فشل في تحديث حالة الشحن');
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'فشل في تحديث حالة الشحن';
+      alert(errorMessage);
     }
   };
 
@@ -192,7 +193,8 @@ function TransactionsContent() {
       }
     } catch (err: any) {
       console.error('Failed to mark as delivered:', err);
-      alert(err.response?.data?.message || 'فشل في تأكيد التسليم');
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'فشل في تأكيد التسليم';
+      alert(errorMessage);
     }
   };
 
@@ -207,7 +209,8 @@ function TransactionsContent() {
       }
     } catch (err: any) {
       console.error('Failed to cancel transaction:', err);
-      alert(err.response?.data?.message || 'فشل في إلغاء المعاملة');
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.message || 'فشل في إلغاء المعاملة';
+      alert(errorMessage);
     }
   };
 
