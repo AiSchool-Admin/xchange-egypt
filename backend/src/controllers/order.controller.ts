@@ -117,7 +117,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       shippingAddress?: {
         fullName: string;
         phone: string;
-        street: string;
+        street: string;  // Will be combined into address
         buildingName?: string;
         buildingNumber?: string;
         floor?: string;

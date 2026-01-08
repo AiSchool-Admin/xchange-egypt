@@ -881,13 +881,7 @@ model ShippingAddress {
   userId          String   @map("user_id")
   fullName        String   @map("full_name")
   phone           String
-  address         String?  // Legacy combined address field
-  street          String?  // الشارع
-  buildingName    String?  @map("building_name")   // اسم المبنى
-  buildingNumber  String?  @map("building_number") // رقم المبنى
-  floor           String?  // الدور
-  apartmentNumber String?  @map("apartment_number") // رقم الشقة
-  landmark        String?  // علامة مميزة
+  address         String   // Combined address field
   city            String
   governorate     String
   postalCode      String?  @map("postal_code")
