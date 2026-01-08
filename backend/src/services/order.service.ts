@@ -221,26 +221,23 @@ export const createOrder = async (
 
     if (data.shippingAddress && !data.shippingAddressId) {
       const addressData = data.shippingAddress;
+      // Combine all address parts into a single address field
+      // (Individual columns like street, buildingName, etc. may not exist in DB yet)
+      const combinedAddress = [
+        addressData.street,
+        addressData.buildingName ? `${addressData.buildingName}` : '',
+        addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
+        addressData.floor ? `الدور ${addressData.floor}` : '',
+        addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
+        addressData.landmark || '',
+      ].filter(Boolean).join('، ');
+
       const newAddress = await tx.shippingAddress.create({
         data: {
           userId,
           fullName: addressData.fullName,
           phone: addressData.phone,
-          street: addressData.street,
-          buildingName: addressData.buildingName,
-          buildingNumber: addressData.buildingNumber,
-          floor: addressData.floor,
-          apartmentNumber: addressData.apartmentNumber,
-          landmark: addressData.landmark,
-          // Also store combined address for backwards compatibility
-          address: [
-            addressData.street,
-            addressData.buildingName ? `${addressData.buildingName}` : '',
-            addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
-            addressData.floor ? `الدور ${addressData.floor}` : '',
-            addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
-            addressData.landmark || '',
-          ].filter(Boolean).join('، '),
+          address: combinedAddress,
           city: addressData.city,
           governorate: addressData.governorate,
           isDefault: false,
@@ -762,25 +759,22 @@ export const createAuctionOrder = async (
 
     if (data.shippingAddress && !data.shippingAddressId) {
       const addressData = data.shippingAddress;
+      // Combine all address parts into a single address field
+      const combinedAddress = [
+        addressData.street,
+        addressData.buildingName ? `${addressData.buildingName}` : '',
+        addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
+        addressData.floor ? `الدور ${addressData.floor}` : '',
+        addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
+        addressData.landmark || '',
+      ].filter(Boolean).join('، ');
+
       const newAddress = await tx.shippingAddress.create({
         data: {
           userId,
           fullName: addressData.fullName,
           phone: addressData.phone,
-          street: addressData.street,
-          buildingName: addressData.buildingName,
-          buildingNumber: addressData.buildingNumber,
-          floor: addressData.floor,
-          apartmentNumber: addressData.apartmentNumber,
-          landmark: addressData.landmark,
-          address: [
-            addressData.street,
-            addressData.buildingName ? `${addressData.buildingName}` : '',
-            addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
-            addressData.floor ? `الدور ${addressData.floor}` : '',
-            addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
-            addressData.landmark || '',
-          ].filter(Boolean).join('، '),
+          address: combinedAddress,
           city: addressData.city,
           governorate: addressData.governorate,
           isDefault: false,
