@@ -160,32 +160,41 @@ export const createOrder = async (
     notes?: string;
   }
 ) => {
-  logger.info('[createOrder] Starting order creation for user:', userId);
+  try {
+    logger.info('[createOrder] Starting order creation for user:', userId);
 
-  // Get cart first (outside transaction for validation)
-  const cart = await getCart(userId);
-  logger.info('[createOrder] Cart fetched, items count:', cart.items.length);
+    // Get cart first (outside transaction for validation)
+    const cart = await getCart(userId);
+    logger.info('[createOrder] Cart fetched, items count:', cart.items.length);
 
-  if (cart.items.length === 0) {
-    throw new BadRequestError('Cart is empty');
-  }
+    if (cart.items.length === 0) {
+      throw new BadRequestError('السلة فارغة');
+    }
 
-  // Log cart items for debugging
-  cart.items.forEach((item, index) => {
-    logger.info(`[createOrder] Cart item ${index}:`, {
-      listingId: item.listingId,
-      userId: item.listing?.userId,
-      price: item.listing?.price,
-      quantity: item.quantity,
+    // Log cart items for debugging
+    cart.items.forEach((item, index) => {
+      logger.info(`[createOrder] Cart item ${index}:`, {
+        listingId: item.listingId,
+        userId: item.listing?.userId,
+        price: item.listing?.price,
+        quantity: item.quantity,
+      });
     });
-  });
 
-  // Extract listing IDs for verification
-  const listingIds = cart.items.map(item => item.listingId);
-  logger.info('[createOrder] Listing IDs:', listingIds);
+    // Validate all cart items have valid listing data
+    for (const item of cart.items) {
+      if (!item.listing?.userId) {
+        logger.error('[createOrder] Missing userId for listing:', item.listingId);
+        throw new BadRequestError('بيانات المنتج غير مكتملة. يرجى إزالة المنتج وإضافته مرة أخرى.');
+      }
+    }
 
-  // Use transaction with serializable isolation to prevent race conditions
-  const order = await prisma.$transaction(async (tx) => {
+    // Extract listing IDs for verification
+    const listingIds = cart.items.map(item => item.listingId);
+    logger.info('[createOrder] Listing IDs:', listingIds);
+
+    // Use transaction with serializable isolation to prevent race conditions
+    const order = await prisma.$transaction(async (tx) => {
     // Verify listings are still available using Prisma query
     const listings = await tx.listing.findMany({
       where: { id: { in: listingIds } },
@@ -349,6 +358,15 @@ export const createOrder = async (
   }
 
   return order;
+  } catch (error: any) {
+    logger.error('[createOrder] Error:', error?.message, error?.stack);
+    // Re-throw BadRequestError and NotFoundError as-is
+    if (error instanceof BadRequestError || error instanceof NotFoundError) {
+      throw error;
+    }
+    // For other errors, throw a more descriptive message
+    throw new BadRequestError(`فشل في إنشاء الطلب: ${error?.message || 'خطأ غير متوقع'}`);
+  }
 };
 
 /**
