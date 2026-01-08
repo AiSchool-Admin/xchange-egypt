@@ -9,7 +9,7 @@ import {
   MapPin, Calendar, Eye, Heart, Share2, MessageCircle,
   CheckCircle, AlertTriangle, Star, ChevronLeft, ChevronRight,
   Cpu, HardDrive, Camera, Fingerprint, Wifi, Award, Clock,
-  Phone, User, Building, BadgeCheck
+  Phone, User, Building, BadgeCheck, ShoppingCart
 } from 'lucide-react';
 
 interface MobileListing {
@@ -108,6 +108,8 @@ export default function MobileListingDetailPage() {
   const [loadingMyListings, setLoadingMyListings] = useState(false);
   const [selectedBarterListing, setSelectedBarterListing] = useState<string | null>(null);
   const [submittingBarter, setSubmittingBarter] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartMessage, setCartMessage] = useState('');
 
   useEffect(() => {
     if (params.id) {
@@ -403,6 +405,44 @@ export default function MobileListingDetailPage() {
   const prevImage = () => {
     if (listing && listing.images && listing.images.length > 0) {
       setCurrentImageIndex((prev) => (prev - 1 + listing.images.length) % listing.images.length);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    if (!listing) return;
+
+    setAddingToCart(true);
+    setCartMessage('');
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          itemId: listing.id,
+          quantity: 1,
+        }),
+      });
+
+      if (response.ok) {
+        setCartMessage('تمت الإضافة للسلة!');
+        setTimeout(() => setCartMessage(''), 3000);
+      } else {
+        const data = await response.json();
+        setCartMessage(data.error?.message || data.message || 'فشل في الإضافة للسلة');
+      }
+    } catch (err) {
+      setCartMessage('فشل في الإضافة للسلة');
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -829,6 +869,21 @@ export default function MobileListingDetailPage() {
                     <RefreshCw className="w-5 h-5" />
                     اقترح مقايضة
                   </button>
+                )}
+
+                {/* Add to Cart Button */}
+                <button
+                  onClick={handleAddToCart}
+                  disabled={addingToCart}
+                  className="w-full bg-amber-500 text-white py-3 rounded-xl font-bold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  {addingToCart ? 'جاري الإضافة...' : 'أضف للسلة'}
+                </button>
+                {cartMessage && (
+                  <p className={`text-center text-sm font-medium ${cartMessage.includes('تمت') ? 'text-green-600' : 'text-red-600'}`}>
+                    {cartMessage}
+                  </p>
                 )}
 
                 <Link
