@@ -98,8 +98,6 @@ export const updateDeliveryStatus = async (
     }
     const { deliveryStatus, trackingNumber } = req.body;
 
-    console.log('[updateDeliveryStatus] Request:', { id, userId, deliveryStatus, trackingNumber });
-
     const transaction = await transactionService.updateDeliveryStatus(
       id,
       userId,
@@ -108,8 +106,7 @@ export const updateDeliveryStatus = async (
     );
 
     return successResponse(res, transaction, 'Delivery status updated successfully');
-  } catch (error: any) {
-    console.error('[updateDeliveryStatus] Error:', error?.message);
+  } catch (error) {
     next(error);
   }
 };

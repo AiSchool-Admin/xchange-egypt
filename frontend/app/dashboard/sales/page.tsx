@@ -565,11 +565,36 @@ export default function SellerSalesPage() {
                   {/* Actions for Direct Transactions */}
                   {selectedOrder.isDirectTransaction ? (
                     <div className="border-t pt-4 space-y-3">
-                      {/* Direct Transaction Workflow: PENDING -> confirm payment -> SHIPPED -> DELIVERED */}
+                      {/*
+                        Direct Transaction Workflow:
+                        - COD: PENDING -> SHIPPED -> DELIVERED (payment confirmed at delivery)
+                        - Other: PENDING -> confirm payment -> SHIPPED -> DELIVERED
+                      */}
                       {selectedOrder.deliveryStatus === 'PENDING' && (
                         <>
-                          {selectedOrder.paymentStatus !== 'COMPLETED' ? (
-                            // Step 1: Confirm payment first
+                          {/* For COD orders, skip payment confirmation and go directly to shipping */}
+                          {selectedOrder.paymentMethod === 'CASH_ON_DELIVERY' ? (
+                            <>
+                              <div className="bg-yellow-50 text-yellow-700 p-3 rounded-lg text-sm mb-2">
+                                💰 الدفع عند الاستلام - سيتم تحصيل المبلغ عند التسليم
+                              </div>
+                              <input
+                                type="text"
+                                value={trackingNumber}
+                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                placeholder="رقم التتبع (اختياري)"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                              <button
+                                onClick={() => updateOrderStatus(selectedOrder.id, 'SHIPPED')}
+                                disabled={updatingStatus}
+                                className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
+                              >
+                                {updatingStatus ? 'جاري التحديث...' : 'تم الشحن'}
+                              </button>
+                            </>
+                          ) : selectedOrder.paymentStatus !== 'COMPLETED' ? (
+                            // Non-COD: Confirm payment first
                             <button
                               onClick={() => confirmPayment(selectedOrder.id)}
                               disabled={updatingStatus}
@@ -578,7 +603,7 @@ export default function SellerSalesPage() {
                               {updatingStatus ? 'جاري التحديث...' : 'تأكيد استلام الدفع'}
                             </button>
                           ) : (
-                            // Step 2: Mark as shipped (payment already confirmed)
+                            // Non-COD: Payment confirmed, now ship
                             <>
                               <input
                                 type="text"
