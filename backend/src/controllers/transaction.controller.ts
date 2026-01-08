@@ -96,16 +96,20 @@ export const updateDeliveryStatus = async (
     if (!userId) {
       return errorResponse(res, 'User not authenticated', 401);
     }
-    const { deliveryStatus } = req.body;
+    const { deliveryStatus, trackingNumber } = req.body;
+
+    console.log('[updateDeliveryStatus] Request:', { id, userId, deliveryStatus, trackingNumber });
 
     const transaction = await transactionService.updateDeliveryStatus(
       id,
       userId,
-      deliveryStatus
+      deliveryStatus,
+      trackingNumber
     );
 
     return successResponse(res, transaction, 'Delivery status updated successfully');
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[updateDeliveryStatus] Error:', error?.message);
     next(error);
   }
 };
