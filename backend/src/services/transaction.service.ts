@@ -587,31 +587,39 @@ export const confirmPayment = async (
     },
   });
 
-  // Send notification to seller about payment confirmation
-  await createNotification({
-    userId: updatedTransaction.sellerId,
-    type: 'PAYMENT_RECEIVED',
-    title: 'تم استلام الدفع! 💰',
-    message: `تم تأكيد دفع "${updatedTransaction.listing.item.title}" - يرجى شحن المنتج`,
-    priority: 'HIGH',
-    entityType: 'TRANSACTION',
-    entityId: transactionId,
-    actionUrl: `/transactions/${transactionId}`,
-    actionText: 'شحن المنتج',
-  });
+  // Get item title safely
+  const itemTitle = updatedTransaction.listing?.item?.title || 'المنتج';
 
-  // Send notification to buyer confirming payment
-  await createNotification({
-    userId: updatedTransaction.buyerId,
-    type: 'PAYMENT_CONFIRMED',
-    title: 'تم تأكيد الدفع! ✅',
-    message: `تم تأكيد دفعك لـ "${updatedTransaction.listing.item.title}" - سيتم الشحن قريباً`,
-    priority: 'MEDIUM',
-    entityType: 'TRANSACTION',
-    entityId: transactionId,
-    actionUrl: `/transactions/${transactionId}`,
-    actionText: 'تتبع الطلب',
-  });
+  // Send notifications (non-critical - don't fail if notifications fail)
+  try {
+    // Send notification to seller about payment confirmation
+    await createNotification({
+      userId: updatedTransaction.sellerId,
+      type: 'PAYMENT_RECEIVED',
+      title: 'تم استلام الدفع! 💰',
+      message: `تم تأكيد دفع "${itemTitle}" - يرجى شحن المنتج`,
+      priority: 'HIGH',
+      entityType: 'TRANSACTION',
+      entityId: transactionId,
+      actionUrl: `/transactions/${transactionId}`,
+      actionText: 'شحن المنتج',
+    });
+
+    // Send notification to buyer confirming payment
+    await createNotification({
+      userId: updatedTransaction.buyerId,
+      type: 'PAYMENT_CONFIRMED',
+      title: 'تم تأكيد الدفع! ✅',
+      message: `تم تأكيد دفعك لـ "${itemTitle}" - سيتم الشحن قريباً`,
+      priority: 'MEDIUM',
+      entityType: 'TRANSACTION',
+      entityId: transactionId,
+      actionUrl: `/transactions/${transactionId}`,
+      actionText: 'تتبع الطلب',
+    });
+  } catch (notificationError) {
+    console.error('[confirmPayment] Notification error (non-critical):', notificationError);
+  }
 
   return updatedTransaction;
 };
