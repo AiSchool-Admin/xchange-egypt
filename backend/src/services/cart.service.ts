@@ -56,15 +56,26 @@ export const getOrCreateCart = async (userId: string) => {
 export const getCart = async (userId: string) => {
   const cart = await getOrCreateCart(userId);
 
-  // Calculate totals
+  // Calculate totals - convert Decimal to number for calculations
   const subtotal = cart.items.reduce((sum, item) => {
-    return sum + (item.listing.price || 0) * item.quantity;
+    const price = item.listing.price ? Number(item.listing.price) : 0;
+    return sum + price * item.quantity;
   }, 0);
 
   const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Convert listing prices to numbers for frontend compatibility
+  const itemsWithNumberPrices = cart.items.map(item => ({
+    ...item,
+    listing: {
+      ...item.listing,
+      price: item.listing.price ? Number(item.listing.price) : 0,
+    },
+  }));
+
   return {
     ...cart,
+    items: itemsWithNumberPrices,
     subtotal,
     itemCount,
     // Aliases for frontend compatibility
