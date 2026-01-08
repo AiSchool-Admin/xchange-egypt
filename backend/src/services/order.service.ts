@@ -160,12 +160,25 @@ export const createOrder = async (
     notes?: string;
   }
 ) => {
+  logger.info('[createOrder] Starting order creation for user:', userId);
+
   // Get cart first (outside transaction for validation)
   const cart = await getCart(userId);
+  logger.info('[createOrder] Cart fetched, items count:', cart.items.length);
 
   if (cart.items.length === 0) {
     throw new BadRequestError('Cart is empty');
   }
+
+  // Log cart items for debugging
+  cart.items.forEach((item, index) => {
+    logger.info(`[createOrder] Cart item ${index}:`, {
+      listingId: item.listingId,
+      userId: item.listing?.userId,
+      price: item.listing?.price,
+      quantity: item.quantity,
+    });
+  });
 
   // Extract listing IDs for locking
   const listingIds = cart.items.map(item => item.listingId);

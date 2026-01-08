@@ -9,12 +9,7 @@ const cartInclude = {
   items: {
     include: {
       listing: {
-        select: {
-          id: true,
-          userId: true, // Required for order creation (seller ID)
-          price: true,
-          status: true,
-          listingType: true,
+        include: {
           item: {
             include: {
               category: {

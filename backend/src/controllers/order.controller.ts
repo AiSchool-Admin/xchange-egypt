@@ -130,6 +130,10 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       notes?: string;
     };
 
+    console.log('[Order] Creating order for user:', userId);
+    console.log('[Order] Shipping address:', JSON.stringify(shippingAddress));
+    console.log('[Order] Payment method:', paymentMethod);
+
     const order = await orderService.createOrder(userId, {
       shippingAddressId,
       shippingAddress,
@@ -137,8 +141,10 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       notes,
     });
 
+    console.log('[Order] Order created successfully:', order.id);
     return successResponse(res, order, 'Order created successfully', 201);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[Order] Error creating order:', error?.message, error?.stack);
     next(error);
   }
 };
