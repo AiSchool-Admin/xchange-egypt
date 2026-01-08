@@ -180,33 +180,30 @@ export const createOrder = async (
     });
   });
 
-  // Extract listing IDs for locking
+  // Extract listing IDs for verification
   const listingIds = cart.items.map(item => item.listingId);
+  logger.info('[createOrder] Listing IDs:', listingIds);
 
   // Use transaction with serializable isolation to prevent race conditions
   const order = await prisma.$transaction(async (tx) => {
-    // Lock and verify listings are still available using SELECT FOR UPDATE
-    // This prevents other transactions from modifying these listings until we're done
-    // Cast l.id to text for comparison since Prisma passes array as text
-    const listings = await tx.$queryRaw<Array<{ id: string; status: string; title: string }>>`
-      SELECT l.id, l.status, i.title
-      FROM "listings" l
-      JOIN "items" i ON l."item_id" = i.id
-      WHERE l.id::text = ANY(${listingIds})
-      FOR UPDATE NOWAIT
-    `.catch((error: Error) => {
-      // NOWAIT will throw if rows are locked by another transaction
-      if (error.message.includes('could not obtain lock')) {
-        throw new BadRequestError('Some items are being purchased by another user. Please try again.');
-      }
-      throw error;
+    // Verify listings are still available using Prisma query
+    const listings = await tx.listing.findMany({
+      where: { id: { in: listingIds } },
+      include: { item: { select: { title: true } } },
     });
+
+    logger.info('[createOrder] Found listings:', listings.length);
 
     // Verify all listings are still available
     for (const listing of listings) {
       if (listing.status !== 'ACTIVE') {
-        throw new BadRequestError(`Item "${listing.title}" is no longer available`);
+        throw new BadRequestError(`المنتج "${listing.item?.title}" لم يعد متاحاً`);
       }
+    }
+
+    // Ensure all cart items have valid listings
+    if (listings.length !== listingIds.length) {
+      throw new BadRequestError('بعض المنتجات لم تعد متاحة');
     }
 
     // Handle shipping address
