@@ -44,13 +44,17 @@ export const createPurchaseSchema = z.object({
   }),
 });
 
-// Update Transaction Status Schema
+// Update Transaction Status Schema (for delivery status)
 export const updateTransactionStatusSchema = z.object({
   params: z.object({
     id: z.string().min(1, 'Transaction ID is required'),
   }),
   body: z.object({
-    status: transactionStatusEnum,
+    deliveryStatus: z.enum(['PENDING', 'SHIPPED', 'DELIVERED', 'RETURNED']),
+    trackingNumber: z
+      .string()
+      .max(100, 'Tracking number must not exceed 100 characters')
+      .optional(),
     notes: z
       .string()
       .max(500, 'Notes must not exceed 500 characters')
@@ -66,10 +70,9 @@ export const confirmPaymentSchema = z.object({
   body: z.object({
     paymentReference: z
       .string()
-      .min(5, 'Payment reference must be at least 5 characters')
       .max(100, 'Payment reference must not exceed 100 characters')
       .optional(),
-  }),
+  }).optional(),
 });
 
 // Mark as Shipped Schema
