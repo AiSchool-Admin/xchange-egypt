@@ -193,9 +193,10 @@ export default function CheckoutPage() {
         alert(errorMessage);
         console.error('Order creation failed:', errorData);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create order:', error);
-      alert('Failed to create order. Please try again.');
+      const errorMessage = error?.message || 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }

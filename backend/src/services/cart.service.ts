@@ -2,32 +2,33 @@ import { NotFoundError, BadRequestError } from '../utils/errors';
 import prisma from '../lib/prisma';
 
 /**
- * Get or create cart for user
+ * Define the cart include clause to be reused
+ * Includes userId in listing for order creation
  */
-export const getOrCreateCart = async (userId: string) => {
-  let cart = await prisma.cart.findUnique({
-    where: { userId },
+const cartInclude = {
+  items: {
     include: {
-      items: {
-        include: {
-          listing: {
+      listing: {
+        select: {
+          id: true,
+          userId: true, // Required for order creation (seller ID)
+          price: true,
+          status: true,
+          listingType: true,
+          item: {
             include: {
-              item: {
-                include: {
-                  category: {
-                    select: {
-                      id: true,
-                      nameAr: true,
-                      nameEn: true,
-                    },
-                  },
-                  seller: {
-                    select: {
-                      id: true,
-                      fullName: true,
-                      avatar: true,
-                    },
-                  },
+              category: {
+                select: {
+                  id: true,
+                  nameAr: true,
+                  nameEn: true,
+                },
+              },
+              seller: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  avatar: true,
                 },
               },
             },
@@ -35,39 +36,19 @@ export const getOrCreateCart = async (userId: string) => {
         },
       },
     },
+  },
+};
+
+export const getOrCreateCart = async (userId: string) => {
+  let cart = await prisma.cart.findUnique({
+    where: { userId },
+    include: cartInclude,
   });
 
   if (!cart) {
     cart = await prisma.cart.create({
       data: { userId },
-      include: {
-        items: {
-          include: {
-            listing: {
-              include: {
-                item: {
-                  include: {
-                    category: {
-                      select: {
-                        id: true,
-                        nameAr: true,
-                        nameEn: true,
-                      },
-                    },
-                    seller: {
-                      select: {
-                        id: true,
-                        fullName: true,
-                        avatar: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      include: cartInclude,
     });
   }
 
