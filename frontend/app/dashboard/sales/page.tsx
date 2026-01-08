@@ -256,6 +256,36 @@ export default function SellerSalesPage() {
     return order.status;
   };
 
+  // Confirm payment for direct transactions
+  const confirmPayment = async (transactionId: string) => {
+    setUpdatingStatus(true);
+    try {
+      const token = localStorage.getItem('accessToken');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/transactions/${transactionId}/confirm-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        await fetchSellerOrders();
+        // Update selectedOrder with new payment status
+        const updatedOrders = await response.json();
+        setSelectedOrder(prev => prev ? { ...prev, paymentStatus: 'COMPLETED' } : null);
+      } else {
+        const error = await response.json();
+        alert(error.message || 'فشل تأكيد الدفع');
+      }
+    } catch (error) {
+      console.error('Failed to confirm payment:', error);
+      alert('حدث خطأ أثناء تأكيد الدفع');
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -409,10 +439,40 @@ export default function SellerSalesPage() {
                       <p className="text-sm text-gray-500">
                         {new Date(selectedOrder.createdAt).toLocaleString('ar-EG')}
                       </p>
+                      {selectedOrder.isDirectTransaction && (
+                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded mt-1 inline-block">
+                          شراء مباشر
+                        </span>
+                      )}
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[selectedOrder.status]}`}>
-                      {STATUS_LABELS[selectedOrder.status] || selectedOrder.status}
-                    </span>
+                    <div className="text-left">
+                      {selectedOrder.isDirectTransaction ? (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">الدفع:</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              selectedOrder.paymentStatus === 'COMPLETED' ? 'bg-green-100 text-green-800' :
+                              selectedOrder.paymentStatus === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {selectedOrder.paymentStatus === 'COMPLETED' ? 'مكتمل' :
+                               selectedOrder.paymentStatus === 'PENDING' ? 'في الانتظار' :
+                               selectedOrder.paymentStatus}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">التوصيل:</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[selectedOrder.deliveryStatus || 'PENDING']}`}>
+                              {STATUS_LABELS[selectedOrder.deliveryStatus || 'PENDING'] || selectedOrder.deliveryStatus}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[selectedOrder.status]}`}>
+                          {STATUS_LABELS[selectedOrder.status] || selectedOrder.status}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* Buyer Info */}
@@ -502,65 +562,110 @@ export default function SellerSalesPage() {
                     </div>
                   )}
 
-                  {/* Actions */}
-                  {(() => {
-                    const effectiveStatus = getEffectiveStatus(selectedOrder);
-                    return (
-                      <>
-                        {(effectiveStatus === 'PENDING' || effectiveStatus === 'PAID') && (
-                          <div className="border-t pt-4">
+                  {/* Actions for Direct Transactions */}
+                  {selectedOrder.isDirectTransaction ? (
+                    <div className="border-t pt-4 space-y-3">
+                      {/* Direct Transaction Workflow: PENDING -> confirm payment -> SHIPPED -> DELIVERED */}
+                      {selectedOrder.deliveryStatus === 'PENDING' && (
+                        <>
+                          {selectedOrder.paymentStatus !== 'COMPLETED' ? (
+                            // Step 1: Confirm payment first
                             <button
-                              onClick={() => updateOrderStatus(selectedOrder.id, 'PROCESSING')}
+                              onClick={() => confirmPayment(selectedOrder.id)}
                               disabled={updatingStatus}
-                              className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
+                              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
                             >
-                              {updatingStatus ? 'جاري التحديث...' : 'بدء تجهيز الطلب'}
+                              {updatingStatus ? 'جاري التحديث...' : 'تأكيد استلام الدفع'}
                             </button>
-                          </div>
-                        )}
+                          ) : (
+                            // Step 2: Mark as shipped (payment already confirmed)
+                            <>
+                              <input
+                                type="text"
+                                value={trackingNumber}
+                                onChange={(e) => setTrackingNumber(e.target.value)}
+                                placeholder="رقم التتبع (اختياري)"
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                              />
+                              <button
+                                onClick={() => updateOrderStatus(selectedOrder.id, 'SHIPPED')}
+                                disabled={updatingStatus}
+                                className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
+                              >
+                                {updatingStatus ? 'جاري التحديث...' : 'تم الشحن'}
+                              </button>
+                            </>
+                          )}
+                        </>
+                      )}
 
-                        {effectiveStatus === 'PROCESSING' && (
-                          <div className="border-t pt-4 space-y-3">
-                            <input
-                              type="text"
-                              value={trackingNumber}
-                              onChange={(e) => setTrackingNumber(e.target.value)}
-                              placeholder="رقم التتبع (اختياري)"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                            />
-                            <button
-                              onClick={() => updateOrderStatus(selectedOrder.id, 'SHIPPED')}
-                              disabled={updatingStatus}
-                              className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
-                            >
-                              {updatingStatus ? 'جاري التحديث...' : 'تم الشحن'}
-                            </button>
-                          </div>
-                        )}
+                      {selectedOrder.deliveryStatus === 'SHIPPED' && (
+                        <button
+                          onClick={() => updateOrderStatus(selectedOrder.id, 'DELIVERED')}
+                          disabled={updatingStatus}
+                          className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
+                        >
+                          {updatingStatus ? 'جاري التحديث...' : 'تأكيد التسليم'}
+                        </button>
+                      )}
 
-                        {effectiveStatus === 'SHIPPED' && (
-                          <div className="border-t pt-4">
-                            <button
-                              onClick={() => updateOrderStatus(selectedOrder.id, 'DELIVERED')}
-                              disabled={updatingStatus}
-                              className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
-                            >
-                              {updatingStatus ? 'جاري التحديث...' : 'تأكيد التسليم'}
-                            </button>
-                          </div>
-                        )}
+                      {selectedOrder.deliveryStatus === 'DELIVERED' && (
+                        <div className="bg-green-50 text-green-700 p-4 rounded-lg text-center">
+                          <span className="text-2xl mb-2 block">✅</span>
+                          تم إتمام هذا الطلب بنجاح
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Actions for Cart-based Orders */
+                    <div className="border-t pt-4 space-y-3">
+                      {(selectedOrder.status === 'PENDING' || selectedOrder.status === 'PAID') && (
+                        <button
+                          onClick={() => updateOrderStatus(selectedOrder.id, 'PROCESSING')}
+                          disabled={updatingStatus}
+                          className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
+                        >
+                          {updatingStatus ? 'جاري التحديث...' : 'بدء تجهيز الطلب'}
+                        </button>
+                      )}
 
-                        {effectiveStatus === 'DELIVERED' && (
-                          <div className="border-t pt-4">
-                            <div className="bg-green-50 text-green-700 p-4 rounded-lg text-center">
-                              <span className="text-2xl mb-2 block">✅</span>
-                              تم إتمام هذا الطلب بنجاح
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
+                      {selectedOrder.status === 'PROCESSING' && (
+                        <>
+                          <input
+                            type="text"
+                            value={trackingNumber}
+                            onChange={(e) => setTrackingNumber(e.target.value)}
+                            placeholder="رقم التتبع (اختياري)"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          />
+                          <button
+                            onClick={() => updateOrderStatus(selectedOrder.id, 'SHIPPED')}
+                            disabled={updatingStatus}
+                            className="w-full py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50"
+                          >
+                            {updatingStatus ? 'جاري التحديث...' : 'تم الشحن'}
+                          </button>
+                        </>
+                      )}
+
+                      {selectedOrder.status === 'SHIPPED' && (
+                        <button
+                          onClick={() => updateOrderStatus(selectedOrder.id, 'DELIVERED')}
+                          disabled={updatingStatus}
+                          className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
+                        >
+                          {updatingStatus ? 'جاري التحديث...' : 'تأكيد التسليم'}
+                        </button>
+                      )}
+
+                      {selectedOrder.status === 'DELIVERED' && (
+                        <div className="bg-green-50 text-green-700 p-4 rounded-lg text-center">
+                          <span className="text-2xl mb-2 block">✅</span>
+                          تم إتمام هذا الطلب بنجاح
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="bg-white rounded-xl shadow-lg p-8 text-center">

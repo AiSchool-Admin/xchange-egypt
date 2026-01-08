@@ -852,6 +852,8 @@ export const getUserTransactions = async (
         select: {
           id: true,
           fullName: true,
+          phone: true,
+          email: true,
           avatar: true,
         },
       },
@@ -859,6 +861,8 @@ export const getUserTransactions = async (
         select: {
           id: true,
           fullName: true,
+          phone: true,
+          email: true,
           avatar: true,
           businessName: true,
         },
