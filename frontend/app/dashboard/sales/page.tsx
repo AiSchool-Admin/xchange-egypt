@@ -75,15 +75,17 @@ const STATUS_COLORS: Record<string, string> = {
   SHIPPED: 'bg-indigo-100 text-indigo-800',
   DELIVERED: 'bg-green-100 text-green-800',
   CANCELLED: 'bg-red-100 text-red-800',
+  REFUNDED: 'bg-gray-100 text-gray-800',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'قيد الانتظار',
-  PAID: 'مدفوع',
+  PENDING: 'طلب جديد',
+  PAID: 'تم الدفع',
   PROCESSING: 'جاري التجهيز',
   SHIPPED: 'تم الشحن',
   DELIVERED: 'تم التسليم',
   CANCELLED: 'ملغي',
+  REFUNDED: 'مسترد',
 };
 
 export default function SellerSalesPage() {

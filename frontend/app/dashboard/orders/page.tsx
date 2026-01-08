@@ -206,12 +206,13 @@ function OrdersContent() {
                       </p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[order.status]}`}>
-                      {order.status === 'PENDING' ? 'قيد الانتظار' :
-                       order.status === 'CONFIRMED' ? 'مؤكد' :
-                       order.status === 'PROCESSING' ? 'قيد المعالجة' :
+                      {order.status === 'PENDING' ? 'طلب جديد' :
+                       order.status === 'PAID' ? 'تم الدفع' :
+                       order.status === 'PROCESSING' ? 'جاري التجهيز' :
                        order.status === 'SHIPPED' ? 'تم الشحن' :
                        order.status === 'DELIVERED' ? 'تم التسليم' :
-                       order.status === 'CANCELLED' ? 'ملغي' : order.status}
+                       order.status === 'CANCELLED' ? 'ملغي' :
+                       order.status === 'REFUNDED' ? 'مسترد' : order.status}
                     </span>
                   </div>
 
@@ -264,12 +265,13 @@ function OrdersContent() {
                       </p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[selectedOrder.status]}`}>
-                      {selectedOrder.status === 'PENDING' ? 'قيد الانتظار' :
-                       selectedOrder.status === 'CONFIRMED' ? 'مؤكد' :
-                       selectedOrder.status === 'PROCESSING' ? 'قيد المعالجة' :
+                      {selectedOrder.status === 'PENDING' ? 'طلب جديد' :
+                       selectedOrder.status === 'PAID' ? 'تم الدفع' :
+                       selectedOrder.status === 'PROCESSING' ? 'جاري التجهيز' :
                        selectedOrder.status === 'SHIPPED' ? 'تم الشحن' :
                        selectedOrder.status === 'DELIVERED' ? 'تم التسليم' :
-                       selectedOrder.status === 'CANCELLED' ? 'ملغي' : selectedOrder.status}
+                       selectedOrder.status === 'CANCELLED' ? 'ملغي' :
+                       selectedOrder.status === 'REFUNDED' ? 'مسترد' : selectedOrder.status}
                     </span>
                   </div>
 
