@@ -430,9 +430,9 @@ export default function SellerSalesPage() {
             </div>
 
             {/* Order Details */}
-            <div className="lg:sticky lg:top-4 lg:h-fit">
+            <div className="lg:sticky lg:top-4">
               {selectedOrder ? (
-                <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="bg-white rounded-xl shadow-lg p-6 max-h-[calc(100vh-120px)] overflow-y-auto">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h2 className="text-xl font-bold">طلب #{selectedOrder.orderNumber}</h2>
