@@ -303,7 +303,25 @@ export const buyItemDirectly = async (
       meta: dbError?.meta,
       stack: dbError?.stack,
     });
-    throw dbError;
+
+    // Convert Prisma errors to user-friendly messages
+    if (dbError?.code === 'P2002') {
+      throw new BadRequestError('هذا المنتج تم شراؤه بالفعل');
+    }
+    if (dbError?.code === 'P2025') {
+      throw new NotFoundError('المنتج غير موجود أو تم حذفه');
+    }
+    if (dbError?.message?.includes('Record to update not found')) {
+      throw new BadRequestError('المنتج غير متاح للشراء');
+    }
+
+    // Re-throw AppErrors as-is
+    if (dbError instanceof BadRequestError || dbError instanceof NotFoundError) {
+      throw dbError;
+    }
+
+    // Wrap other errors with a user-friendly message
+    throw new BadRequestError(`فشل في إتمام عملية الشراء: ${dbError?.message || 'خطأ غير متوقع'}`);
   }
 
   const { transaction, listing } = transactionResult;
