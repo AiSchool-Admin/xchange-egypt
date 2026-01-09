@@ -327,7 +327,7 @@ export const createOrder = async (
       priority: 'HIGH',
       entityType: 'ORDER',
       entityId: order.id,
-      actionUrl: `/dashboard/orders/${order.id}`,
+      actionUrl: `/dashboard/orders`,
       actionText: 'عرض الطلب',
     });
 
@@ -533,7 +533,7 @@ export const updateOrderStatus = async (
       priority: 'HIGH',
       entityType: 'ORDER',
       entityId: updatedOrder.id,
-      actionUrl: `/dashboard/orders/${updatedOrder.id}`,
+      actionUrl: `/dashboard/orders`,
       actionText: 'عرض الطلب',
     });
   }
@@ -859,7 +859,7 @@ export const createAuctionOrder = async (
       priority: 'HIGH',
       entityType: 'ORDER',
       entityId: order.id,
-      actionUrl: `/dashboard/orders/${order.id}`,
+      actionUrl: `/dashboard/orders`,
       actionText: 'عرض الطلب',
     });
 
@@ -1053,7 +1053,7 @@ export const updateSellerOrderStatus = async (
         priority: 'HIGH',
         entityType: 'ORDER',
         entityId: updatedOrder.id,
-        actionUrl: `/dashboard/orders/${updatedOrder.id}`,
+        actionUrl: `/dashboard/orders`,
         actionText: 'عرض الطلب',
       });
     } catch (notificationError) {
