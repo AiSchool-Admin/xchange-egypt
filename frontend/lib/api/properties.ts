@@ -344,15 +344,38 @@ function normalizeProperty(raw: any): Property {
       .filter((url: string) => url !== '');
   }
 
+  // Normalize amenities (backend may send as JSON object with items array)
+  let amenities: string[] = [];
+  if (Array.isArray(raw.amenities)) {
+    amenities = raw.amenities;
+  } else if (raw.amenities?.items && Array.isArray(raw.amenities.items)) {
+    amenities = raw.amenities.items;
+  }
+
+  // Normalize barter preferences
+  let barterPreferences: string[] = [];
+  if (Array.isArray(raw.barterPreferences)) {
+    barterPreferences = raw.barterPreferences;
+  } else if (raw.barterPreferences?.items && Array.isArray(raw.barterPreferences.items)) {
+    barterPreferences = raw.barterPreferences.items;
+  }
+
   return {
     ...raw,
     price,
     area,
     images,
+    amenities,
+    barterPreferences,
     pricePerMeter: raw.pricePerSqm ?? raw.pricePerMeter,
+    // Backend uses openForBarter, frontend uses openToBarter
+    openToBarter: raw.openForBarter ?? raw.openToBarter ?? false,
+    // Backend uses viewsCount, frontend uses viewCount
+    viewCount: raw.viewsCount ?? raw.viewCount ?? 0,
     // Normalize owner data
     owner: raw.owner ? {
       ...raw.owner,
+      fullName: raw.owner.fullName ?? raw.owner.name ?? 'مستخدم',
       isVerified: raw.owner.isVerified ?? raw.owner.userType === 'VERIFIED',
     } : undefined,
   };
@@ -375,14 +398,94 @@ export async function getUserProperties(): Promise<Property[]> {
 
 // Create property
 export async function createProperty(data: CreatePropertyData): Promise<Property> {
-  const response = await api.post('/properties', data);
-  return response.data.data || response.data.property;
+  // Transform frontend field names to backend field names
+  const backendData = {
+    title: data.title,
+    titleAr: data.title,
+    description: data.description,
+    descriptionAr: data.description,
+    propertyType: data.propertyType,
+    listingType: data.listingType,
+    titleType: data.titleType,
+    // Backend expects areaSqm, not area
+    areaSqm: data.area,
+    // Backend expects salePrice or rentPrice, not price
+    salePrice: data.listingType === 'SALE' ? data.price : undefined,
+    rentPrice: data.listingType === 'RENT' ? data.price : undefined,
+    priceNegotiable: true,
+    // Location
+    governorate: data.governorate,
+    city: data.city,
+    district: data.district,
+    address: data.address,
+    latitude: data.latitude,
+    longitude: data.longitude,
+    // Specs
+    bedrooms: data.bedrooms,
+    bathrooms: data.bathrooms,
+    floorNumber: data.floor,
+    totalFloors: data.totalFloors,
+    // Finishing
+    finishingLevel: data.finishingLevel,
+    furnished: data.furnishingStatus,
+    // Media
+    images: data.images,
+    virtualTourUrl: data.virtualTourUrl,
+    // Amenities - send as object if it's an array
+    amenities: data.amenities?.length ? { items: data.amenities } : undefined,
+    // Backend expects openForBarter, not openToBarter
+    openForBarter: data.openToBarter,
+    barterPreferences: data.barterPreferences?.length ? { items: data.barterPreferences } : undefined,
+  };
+
+  const response = await api.post('/properties', backendData);
+  return normalizeProperty(response.data.data || response.data.property);
 }
 
 // Update property
 export async function updateProperty(id: string, data: Partial<CreatePropertyData>): Promise<Property> {
-  const response = await api.put(`/properties/${id}`, data);
-  return response.data.data || response.data.property;
+  // Transform frontend field names to backend field names
+  const backendData: Record<string, any> = {};
+
+  if (data.title !== undefined) {
+    backendData.title = data.title;
+    backendData.titleAr = data.title;
+  }
+  if (data.description !== undefined) {
+    backendData.description = data.description;
+    backendData.descriptionAr = data.description;
+  }
+  if (data.propertyType !== undefined) backendData.propertyType = data.propertyType;
+  if (data.listingType !== undefined) backendData.listingType = data.listingType;
+  if (data.titleType !== undefined) backendData.titleType = data.titleType;
+  if (data.area !== undefined) backendData.areaSqm = data.area;
+  if (data.price !== undefined) {
+    if (data.listingType === 'RENT') {
+      backendData.rentPrice = data.price;
+    } else {
+      backendData.salePrice = data.price;
+    }
+  }
+  if (data.governorate !== undefined) backendData.governorate = data.governorate;
+  if (data.city !== undefined) backendData.city = data.city;
+  if (data.district !== undefined) backendData.district = data.district;
+  if (data.address !== undefined) backendData.address = data.address;
+  if (data.latitude !== undefined) backendData.latitude = data.latitude;
+  if (data.longitude !== undefined) backendData.longitude = data.longitude;
+  if (data.bedrooms !== undefined) backendData.bedrooms = data.bedrooms;
+  if (data.bathrooms !== undefined) backendData.bathrooms = data.bathrooms;
+  if (data.floor !== undefined) backendData.floorNumber = data.floor;
+  if (data.totalFloors !== undefined) backendData.totalFloors = data.totalFloors;
+  if (data.finishingLevel !== undefined) backendData.finishingLevel = data.finishingLevel;
+  if (data.furnishingStatus !== undefined) backendData.furnished = data.furnishingStatus;
+  if (data.images !== undefined) backendData.images = data.images;
+  if (data.virtualTourUrl !== undefined) backendData.virtualTourUrl = data.virtualTourUrl;
+  if (data.amenities !== undefined) backendData.amenities = data.amenities?.length ? { items: data.amenities } : undefined;
+  if (data.openToBarter !== undefined) backendData.openForBarter = data.openToBarter;
+  if (data.barterPreferences !== undefined) backendData.barterPreferences = data.barterPreferences?.length ? { items: data.barterPreferences } : undefined;
+
+  const response = await api.put(`/properties/${id}`, backendData);
+  return normalizeProperty(response.data.data || response.data.property);
 }
 
 // Delete property
