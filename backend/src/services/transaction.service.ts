@@ -841,16 +841,21 @@ export const getUserTransactions = async (
   page: number = 1,
   limit: number = 20
 ): Promise<PaginatedResult<any>> => {
+  console.log('[getUserTransactions] Called with:', { userId, role, paymentStatus, page, limit });
+
   const where: any = {};
 
-  // Filter by role
+  // Filter by role - MUST specify role for proper filtering
   if (role === 'buyer') {
     where.buyerId = userId;
+    console.log('[getUserTransactions] Filtering as BUYER:', userId);
   } else if (role === 'seller') {
     where.sellerId = userId;
+    console.log('[getUserTransactions] Filtering as SELLER:', userId);
   } else {
-    // Both buyer and seller
+    // Both buyer and seller - only when no role specified
     where.OR = [{ buyerId: userId }, { sellerId: userId }];
+    console.log('[getUserTransactions] Filtering as BOTH buyer/seller:', userId);
   }
 
   // Filter by payment status
@@ -861,6 +866,7 @@ export const getUserTransactions = async (
   const skip = (page - 1) * limit;
 
   const total = await prisma.transaction.count({ where });
+  console.log('[getUserTransactions] Found total:', total, 'for role:', role);
 
   const transactions = await prisma.transaction.findMany({
     where,

@@ -291,10 +291,21 @@ function OrdersContent() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-primary-600">📋 تابع طلباتي</h1>
-            <Link href="/dashboard" className="text-primary-600 hover:underline">
-              العودة للوحة التحكم
-            </Link>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded">أنت المشتري</span>
+              </div>
+              <h1 className="text-2xl font-bold text-primary-600 mt-1">📋 تابع طلباتي</h1>
+              <p className="text-sm text-gray-500 mt-1">المنتجات التي اشتريتها وحالة توصيلها</p>
+            </div>
+            <div className="flex flex-col gap-2 items-end">
+              <Link href="/dashboard" className="text-primary-600 hover:underline text-sm">
+                العودة للوحة التحكم
+              </Link>
+              <Link href="/dashboard/sales" className="text-sm text-gray-500 hover:text-primary-600">
+                📥 طلبات على منتجاتي (كبائع) ←
+              </Link>
+            </div>
           </div>
         </div>
       </header>
