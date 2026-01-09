@@ -647,6 +647,13 @@ export default function Navigation() {
     if (user) {
       fetchUnreadCount();
       fetchCartCount();
+
+      // Refresh notification count every 30 seconds
+      const interval = setInterval(() => {
+        fetchUnreadCount();
+      }, 30000);
+
+      return () => clearInterval(interval);
     } else {
       setUnreadCount(0);
       setCartCount(0);
@@ -656,7 +663,8 @@ export default function Navigation() {
   // Listen for real-time notifications
   useEffect(() => {
     const handleMatchNotification = (notification: any) => {
-      setUnreadCount(prev => prev + 1);
+      // Refresh the actual count from server instead of just incrementing
+      fetchUnreadCount();
       const score = Math.round(notification.averageMatchScore * 100);
       setToastMessage(`تم العثور على مطابقة! نسبة التوافق ${score}%`);
       setShowToast(true);
