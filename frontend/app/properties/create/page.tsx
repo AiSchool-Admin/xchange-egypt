@@ -90,6 +90,10 @@ const AMENITIES = [
   { id: 'maidRoom', label: 'غرفة خادمة', icon: '🛏️' },
   { id: 'cctv', label: 'كاميرات مراقبة', icon: '📹' },
   { id: 'intercom', label: 'إنتركم', icon: '📞' },
+  { id: 'view', label: 'إطلالة مميزة', icon: '🌆' },
+  { id: 'doorman', label: 'بواب', icon: '🚪' },
+  { id: 'roof', label: 'سطح خاص', icon: '🏠' },
+  { id: 'privateEntrance', label: 'مدخل خاص', icon: '🚶' },
 ];
 
 // Barter preferences
@@ -134,6 +138,7 @@ interface FormData {
   amenities: string[];
   openToBarter: boolean;
   barterPreferences: string[];
+  hasEscrow: boolean;
 
   // Step 5
   images: string[];
@@ -170,6 +175,7 @@ export default function CreatePropertyPage() {
     amenities: [],
     openToBarter: false,
     barterPreferences: [],
+    hasEscrow: false,
     images: [],
     virtualTourUrl: '',
   });
@@ -332,6 +338,7 @@ export default function CreatePropertyPage() {
         amenities: formData.amenities,
         openToBarter: formData.openToBarter,
         barterPreferences: formData.openToBarter ? formData.barterPreferences : undefined,
+        hasEscrow: formData.hasEscrow,
       });
 
       router.push(`/properties/${property.id}`);
@@ -862,6 +869,35 @@ export default function CreatePropertyPage() {
                   </div>
                 )}
               </div>
+
+              {/* Escrow Option */}
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.hasEscrow}
+                    onChange={(e) => updateFormData({ hasEscrow: e.target.checked })}
+                    className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2 font-medium text-gray-900">
+                      <Shield className="w-5 h-5 text-green-600" />
+                      أدعم نظام Escrow
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      الموافقة على استخدام نظام الضمان (Escrow) لحماية المشتري والبائع
+                    </p>
+                  </div>
+                </label>
+                {formData.hasEscrow && (
+                  <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
+                    <p className="text-sm text-green-800">
+                      نظام Escrow يضمن حماية أموال المشتري حتى يتم استلام العقار والتحقق منه.
+                      هذا يزيد من ثقة المشترين في إعلانك.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -1018,6 +1054,12 @@ export default function CreatePropertyPage() {
                   <span className="text-gray-600">يقبل المبادلة:</span>
                   <span className="font-medium">
                     {formData.openToBarter ? 'نعم' : 'لا'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">يدعم Escrow:</span>
+                  <span className={`font-medium ${formData.hasEscrow ? 'text-green-600' : ''}`}>
+                    {formData.hasEscrow ? 'نعم' : 'لا'}
                   </span>
                 </div>
               </div>

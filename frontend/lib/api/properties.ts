@@ -212,6 +212,7 @@ export interface CreatePropertyData {
   amenities?: string[];
   openToBarter?: boolean;
   barterPreferences?: string[];
+  hasEscrow?: boolean;
 }
 
 export interface BarterProposal {
