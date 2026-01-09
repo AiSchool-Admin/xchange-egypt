@@ -46,6 +46,7 @@ interface Order {
   trackingNumber?: string;
   isDirectTransaction?: boolean;
   deliveryStatus?: string;
+  isProperty?: boolean; // Flag to identify property orders
   seller?: {
     id: string;
     fullName: string;
@@ -62,6 +63,19 @@ const STATUS_COLORS: Record<string, string> = {
   DELIVERED: 'bg-green-100 text-green-800',
   CANCELLED: 'bg-red-100 text-red-800',
   REFUNDED: 'bg-gray-100 text-gray-800',
+  // Property-specific status colors
+  INQUIRY_SENT: 'bg-blue-100 text-blue-800',
+  VIEWING_SCHEDULED: 'bg-cyan-100 text-cyan-800',
+  VIEWED: 'bg-teal-100 text-teal-800',
+  NEGOTIATION: 'bg-amber-100 text-amber-800',
+  PRICE_AGREED: 'bg-lime-100 text-lime-800',
+  CONTRACT_PENDING: 'bg-orange-100 text-orange-800',
+  CONTRACT_SIGNED: 'bg-emerald-100 text-emerald-800',
+  PAYMENT_PENDING: 'bg-yellow-100 text-yellow-800',
+  ESCROW_FUNDED: 'bg-purple-100 text-purple-800',
+  REGISTRATION_PENDING: 'bg-indigo-100 text-indigo-800',
+  HANDOVER: 'bg-sky-100 text-sky-800',
+  COMPLETED: 'bg-green-100 text-green-800',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -72,6 +86,19 @@ const STATUS_LABELS: Record<string, string> = {
   DELIVERED: 'تم التسليم',
   CANCELLED: 'ملغي',
   REFUNDED: 'مسترد',
+  // Property-specific statuses
+  INQUIRY_SENT: 'تم التواصل',
+  VIEWING_SCHEDULED: 'موعد المعاينة',
+  VIEWED: 'تمت المعاينة',
+  NEGOTIATION: 'جاري التفاوض',
+  PRICE_AGREED: 'تم الاتفاق',
+  CONTRACT_PENDING: 'في انتظار العقد',
+  CONTRACT_SIGNED: 'تم توقيع العقد',
+  PAYMENT_PENDING: 'في انتظار الدفع',
+  ESCROW_FUNDED: 'تم إيداع الضمان',
+  REGISTRATION_PENDING: 'في انتظار التسجيل',
+  HANDOVER: 'جاري التسليم',
+  COMPLETED: 'تم التسليم',
 };
 
 const PAYMENT_STATUS_COLORS: Record<string, string> = {
@@ -82,7 +109,7 @@ const PAYMENT_STATUS_COLORS: Record<string, string> = {
   REFUNDED: 'bg-gray-100 text-gray-800',
 };
 
-// Order tracking steps
+// Order tracking steps for physical items
 const TRACKING_STEPS = [
   { status: 'PENDING', label: 'طلب جديد', icon: '📋' },
   { status: 'PAID', label: 'تم الدفع', icon: '💳' },
@@ -91,12 +118,25 @@ const TRACKING_STEPS = [
   { status: 'DELIVERED', label: 'تم التسليم', icon: '✅' },
 ];
 
+// Order tracking steps for properties (no shipping)
+const PROPERTY_TRACKING_STEPS = [
+  { status: 'PENDING', label: 'طلب جديد', icon: '📋' },
+  { status: 'INQUIRY_SENT', label: 'تم التواصل', icon: '💬' },
+  { status: 'VIEWING_SCHEDULED', label: 'معاينة', icon: '👁️' },
+  { status: 'NEGOTIATION', label: 'تفاوض', icon: '🤝' },
+  { status: 'CONTRACT_PENDING', label: 'العقد', icon: '📝' },
+  { status: 'COMPLETED', label: 'تم التسليم', icon: '✅' },
+];
+
 // Order tracking component
-function OrderTracking({ status, isCOD }: { status: string; isCOD: boolean }) {
-  // For COD, skip PAID step
-  const steps = isCOD
-    ? TRACKING_STEPS.filter(s => s.status !== 'PAID')
-    : TRACKING_STEPS;
+function OrderTracking({ status, isCOD, isProperty = false }: { status: string; isCOD: boolean; isProperty?: boolean }) {
+  // Use property-specific steps for property orders
+  let steps = isProperty ? PROPERTY_TRACKING_STEPS : TRACKING_STEPS;
+
+  // For COD (physical items only), skip PAID step
+  if (!isProperty && isCOD) {
+    steps = steps.filter(s => s.status !== 'PAID');
+  }
 
   const currentIndex = steps.findIndex(s => s.status === status);
   const isCancelled = status === 'CANCELLED' || status === 'REFUNDED';
@@ -437,10 +477,13 @@ function OrdersContent() {
 
                   {/* Order Tracking Timeline */}
                   <div className="bg-gray-50 rounded-xl p-4 mb-4">
-                    <h3 className="font-semibold mb-2 text-center">تتبع الطلب</h3>
+                    <h3 className="font-semibold mb-2 text-center">
+                      {selectedOrder.isProperty ? 'مراحل شراء العقار' : 'تتبع الطلب'}
+                    </h3>
                     <OrderTracking
                       status={selectedOrder.status}
                       isCOD={selectedOrder.paymentMethod === 'COD' || selectedOrder.paymentMethod === 'CASH_ON_DELIVERY'}
+                      isProperty={selectedOrder.isProperty}
                     />
                   </div>
 
@@ -471,23 +514,39 @@ function OrdersContent() {
                     </div>
                   </div>
 
-                  {/* Shipping Address */}
-                  <div className="border-t pt-4 mb-4">
-                    <h3 className="font-semibold mb-2">عنوان الشحن</h3>
-                    <div className="text-sm text-gray-600">
-                      <p className="font-medium text-gray-900">{selectedOrder.shippingAddress.fullName}</p>
-                      <p dir="ltr" className="text-left">{selectedOrder.shippingAddress.phone}</p>
-                      <p>
-                        {selectedOrder.shippingAddress.street}
-                        {selectedOrder.shippingAddress.building && `، مبنى ${selectedOrder.shippingAddress.building}`}
-                        {selectedOrder.shippingAddress.floor && `، الدور ${selectedOrder.shippingAddress.floor}`}
-                        {selectedOrder.shippingAddress.apartment && `، شقة ${selectedOrder.shippingAddress.apartment}`}
-                      </p>
-                      <p>
-                        {selectedOrder.shippingAddress.city}، {selectedOrder.shippingAddress.governorate}
-                      </p>
+                  {/* Shipping Address - Only for physical items, not properties */}
+                  {!selectedOrder.isProperty && (
+                    <div className="border-t pt-4 mb-4">
+                      <h3 className="font-semibold mb-2">عنوان الشحن</h3>
+                      <div className="text-sm text-gray-600">
+                        <p className="font-medium text-gray-900">{selectedOrder.shippingAddress.fullName}</p>
+                        <p dir="ltr" className="text-left">{selectedOrder.shippingAddress.phone}</p>
+                        <p>
+                          {selectedOrder.shippingAddress.street}
+                          {selectedOrder.shippingAddress.building && `، مبنى ${selectedOrder.shippingAddress.building}`}
+                          {selectedOrder.shippingAddress.floor && `، الدور ${selectedOrder.shippingAddress.floor}`}
+                          {selectedOrder.shippingAddress.apartment && `، شقة ${selectedOrder.shippingAddress.apartment}`}
+                        </p>
+                        <p>
+                          {selectedOrder.shippingAddress.city}، {selectedOrder.shippingAddress.governorate}
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Property Location - Only for properties */}
+                  {selectedOrder.isProperty && selectedOrder.seller && (
+                    <div className="border-t pt-4 mb-4">
+                      <h3 className="font-semibold mb-2">بيانات البائع</h3>
+                      <div className="text-sm text-gray-600">
+                        <p className="font-medium text-gray-900">{selectedOrder.seller.fullName}</p>
+                        <p dir="ltr" className="text-left">{selectedOrder.seller.phone}</p>
+                        <p className="text-xs text-gray-500 mt-2">
+                          سيتم التواصل معك لترتيب موعد المعاينة
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Payment */}
                   <div className="border-t pt-4 mb-4">

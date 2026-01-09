@@ -294,6 +294,53 @@ export default function UnifiedListingWizard({
           } else {
             throw new Error(response.data.error || 'فشل في نشر إعلان الموبايل');
           }
+        } else if (selectedCategory === 'PROPERTY') {
+          // Property-specific handling - use properties API
+          const listingTypeMap: Record<string, string> = {
+            'DIRECT_SALE': 'SALE',
+            'DIRECT_PURCHASE': 'RENT', // For buyers looking to rent
+          };
+
+          const propertyPayload = {
+            title: payload.titleAr,
+            description: payload.descriptionAr,
+            propertyType: categorySpecificData?.propertyType || 'APARTMENT',
+            listingType: listingTypeMap[listingTypeMap[selectedTransactionType] || 'SALE'] || 'SALE',
+            titleType: categorySpecificData?.titleType || 'REGISTERED',
+            price: pricingData.price ? parseFloat(String(pricingData.price)) : 0,
+            area: categorySpecificData?.area ? parseInt(String(categorySpecificData.area)) : 100,
+            bedrooms: categorySpecificData?.bedrooms ? parseInt(String(categorySpecificData.bedrooms)) : undefined,
+            bathrooms: categorySpecificData?.bathrooms ? parseInt(String(categorySpecificData.bathrooms)) : undefined,
+            floor: categorySpecificData?.floor ? parseInt(String(categorySpecificData.floor)) : undefined,
+            totalFloors: categorySpecificData?.totalFloors ? parseInt(String(categorySpecificData.totalFloors)) : undefined,
+            buildYear: categorySpecificData?.buildYear ? parseInt(String(categorySpecificData.buildYear)) : undefined,
+            finishingLevel: categorySpecificData?.finishingLevel || undefined,
+            furnishingStatus: categorySpecificData?.furnishingStatus || undefined,
+            direction: categorySpecificData?.direction || undefined,
+            governorate: formData.governorate || 'القاهرة',
+            city: formData.city || '',
+            district: formData.district || undefined,
+            address: formData.street || formData.district || '',
+            images: formData.images || [],
+            amenities: categorySpecificData?.amenities || [],
+            openToBarter: selectedTransactionType === 'BARTER' || barterData?.acceptsBarter || false,
+            barterPreferences: barterData?.preferences || [],
+            hasEscrow: categorySpecificData?.hasEscrow || false,
+          };
+
+          const response = await apiClient.post('/properties', propertyPayload);
+
+          if (response.data.success || response.data.id) {
+            alert('تم نشر إعلان العقار بنجاح!');
+            const propertyId = response.data.data?.id || response.data.id;
+            if (propertyId) {
+              router.push(`/properties/${propertyId}`);
+            } else {
+              router.push('/properties');
+            }
+          } else {
+            throw new Error(response.data.error || 'فشل في نشر إعلان العقار');
+          }
         } else {
           // Call the items API using the createItem function for other categories
           const createData: CreateItemData = {
