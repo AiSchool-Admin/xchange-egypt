@@ -296,36 +296,83 @@ export default function UnifiedListingWizard({
           }
         } else if (selectedCategory === 'PROPERTY') {
           // Property-specific handling - use properties API
-          const listingTypeMap: Record<string, string> = {
+          // Map transaction type to property listing type
+          const propertyListingTypeMap: Record<string, string> = {
             'DIRECT_SALE': 'SALE',
             'DIRECT_PURCHASE': 'RENT', // For buyers looking to rent
+            'AUCTION': 'SALE',
+            'REVERSE_AUCTION': 'RENT',
+            'BARTER': 'SALE',
           };
+
+          // Determine listing type (SALE or RENT)
+          const propertyListingType = propertyListingTypeMap[selectedTransactionType] || 'SALE';
+          const priceValue = pricingData.price ? parseFloat(String(pricingData.price)) : 0;
+
+          // Map property type from category name or use default
+          const propertyTypeMap: Record<string, string> = {
+            'شقة': 'APARTMENT',
+            'شقق': 'APARTMENT',
+            'فيلا': 'VILLA',
+            'فلل': 'VILLA',
+            'توين هاوس': 'TWIN_HOUSE',
+            'تاون هاوس': 'TOWNHOUSE',
+            'بنتهاوس': 'PENTHOUSE',
+            'دوبلكس': 'DUPLEX',
+            'استوديو': 'STUDIO',
+            'روف': 'PENTHOUSE',
+            'شاليه': 'CHALET',
+            'أرض': 'LAND',
+            'محل': 'COMMERCIAL',
+            'مكتب': 'OFFICE',
+            'عمارة': 'BUILDING',
+          };
+
+          // Try to extract property type from category level 3 name
+          const categoryLevel3Name = categorySpecificData?.categoryLevel3NameAr || '';
+          let detectedPropertyType = 'APARTMENT';
+          for (const [keyword, type] of Object.entries(propertyTypeMap)) {
+            if (categoryLevel3Name.includes(keyword)) {
+              detectedPropertyType = type;
+              break;
+            }
+          }
 
           const propertyPayload = {
             title: payload.titleAr,
+            titleAr: payload.titleAr,
             description: payload.descriptionAr,
-            propertyType: categorySpecificData?.propertyType || 'APARTMENT',
-            listingType: listingTypeMap[listingTypeMap[selectedTransactionType] || 'SALE'] || 'SALE',
-            titleType: categorySpecificData?.titleType || 'REGISTERED',
-            price: pricingData.price ? parseFloat(String(pricingData.price)) : 0,
-            area: categorySpecificData?.area ? parseInt(String(categorySpecificData.area)) : 100,
+            descriptionAr: payload.descriptionAr,
+            propertyType: categorySpecificData?.propertyType || detectedPropertyType,
+            listingType: propertyListingType,
+            titleType: categorySpecificData?.titleType || 'PRELIMINARY',
+            // Price fields - use salePrice for sale, rentPrice for rent
+            salePrice: propertyListingType === 'SALE' ? priceValue : undefined,
+            rentPrice: propertyListingType === 'RENT' ? priceValue : undefined,
+            rentPeriod: propertyListingType === 'RENT' ? 'MONTHLY' : undefined,
+            priceNegotiable: pricingData.negotiable ?? true,
+            // Area - backend expects areaSqm
+            areaSqm: categorySpecificData?.area ? parseInt(String(categorySpecificData.area)) : 100,
             bedrooms: categorySpecificData?.bedrooms ? parseInt(String(categorySpecificData.bedrooms)) : undefined,
             bathrooms: categorySpecificData?.bathrooms ? parseInt(String(categorySpecificData.bathrooms)) : undefined,
-            floor: categorySpecificData?.floor ? parseInt(String(categorySpecificData.floor)) : undefined,
+            // Floor - backend expects floorNumber
+            floorNumber: categorySpecificData?.floor ? parseInt(String(categorySpecificData.floor)) : undefined,
             totalFloors: categorySpecificData?.totalFloors ? parseInt(String(categorySpecificData.totalFloors)) : undefined,
-            buildYear: categorySpecificData?.buildYear ? parseInt(String(categorySpecificData.buildYear)) : undefined,
+            // Finishing - map to backend enum values
             finishingLevel: categorySpecificData?.finishingLevel || undefined,
-            furnishingStatus: categorySpecificData?.furnishingStatus || undefined,
-            direction: categorySpecificData?.direction || undefined,
+            furnished: categorySpecificData?.furnishingStatus || undefined,
+            // Location
             governorate: formData.governorate || 'القاهرة',
             city: formData.city || '',
             district: formData.district || undefined,
             address: formData.street || formData.district || '',
+            // Media
             images: formData.images || [],
-            amenities: categorySpecificData?.amenities || [],
-            openToBarter: selectedTransactionType === 'BARTER' || barterData?.acceptsBarter || false,
-            barterPreferences: barterData?.preferences || [],
-            hasEscrow: categorySpecificData?.hasEscrow || false,
+            // Amenities - store as JSON object
+            amenities: categorySpecificData?.amenities ? { items: categorySpecificData.amenities } : undefined,
+            // Barter - backend expects openForBarter
+            openForBarter: selectedTransactionType === 'BARTER' || barterData?.acceptsBarter || false,
+            barterPreferences: barterData?.preferences ? { items: barterData.preferences } : undefined,
           };
 
           const response = await apiClient.post('/properties', propertyPayload);
