@@ -175,7 +175,7 @@ export default function ItemDetailsPage() {
       const response = await getItem(id);
       setItem(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load item');
+      setError(err.response?.data?.error?.message || err.response?.data?.message || 'فشل في تحميل المنتج');
     } finally {
       setLoading(false);
     }
@@ -230,7 +230,13 @@ export default function ItemDetailsPage() {
       setBuySuccess(true);
       setItem({ ...item, status: 'SOLD' });
     } catch (err: any) {
-      setBuyError(err.response?.data?.message || 'فشلت عملية الشراء. يرجى المحاولة مرة أخرى.');
+      // Backend returns errors at data.error.message or data.message
+      const errorMessage = err.response?.data?.error?.message
+        || err.response?.data?.message
+        || err.message
+        || 'فشلت عملية الشراء. يرجى المحاولة مرة أخرى.';
+      setBuyError(errorMessage);
+      console.error('[Purchase Error]', err.response?.data || err.message);
     } finally {
       setBuyLoading(false);
     }
