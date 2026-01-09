@@ -113,6 +113,169 @@ export const CATEGORY_KEYWORDS: CategoryKeywords[] = [
     keywords: { ar: ['موتورولا'], en: ['motorola', 'moto'] },
     weight: 12,
   },
+  // Motorola Models
+  {
+    categorySlug: 'motorola-edge-50-ultra',
+    keywords: { ar: ['موتورولا ايدج 50 الترا', 'ايدج 50 الترا'], en: ['motorola edge 50 ultra', 'edge 50 ultra', 'moto edge 50 ultra'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'motorola-edge-50-pro',
+    keywords: { ar: ['موتورولا ايدج 50 برو', 'ايدج 50 برو'], en: ['motorola edge 50 pro', 'edge 50 pro', 'moto edge 50 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'motorola-edge-50-fusion',
+    keywords: { ar: ['موتورولا ايدج 50 فيوجن', 'ايدج 50 فيوجن', 'موتورولا إيدج'], en: ['motorola edge 50 fusion', 'edge 50 fusion', 'moto edge 50 fusion', 'edge 50'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'motorola-edge-40',
+    keywords: { ar: ['موتورولا ايدج 40', 'ايدج 40'], en: ['motorola edge 40', 'edge 40', 'moto edge 40'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'motorola-razr',
+    keywords: { ar: ['موتورولا رازر', 'رازر'], en: ['motorola razr', 'razr', 'moto razr'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'moto-g-series',
+    keywords: { ar: ['موتو جي', 'موتورولا جي'], en: ['moto g', 'moto g power', 'moto g stylus', 'moto g play'] },
+    weight: 20,
+  },
+  // Honor Models
+  {
+    categorySlug: 'honor-magic-6-pro',
+    keywords: { ar: ['هونر ماجيك 6 برو', 'ماجيك 6 برو'], en: ['honor magic 6 pro', 'magic 6 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'honor-magic-5-pro',
+    keywords: { ar: ['هونر ماجيك 5 برو', 'ماجيك 5 برو'], en: ['honor magic 5 pro', 'magic 5 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'honor-90',
+    keywords: { ar: ['هونر 90', 'اونر 90'], en: ['honor 90'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'honor-x-series',
+    keywords: { ar: ['هونر اكس', 'اونر اكس'], en: ['honor x9', 'honor x8', 'honor x7'] },
+    weight: 20,
+  },
+  // Oppo Models
+  {
+    categorySlug: 'oppo-find-x7-ultra',
+    keywords: { ar: ['اوبو فايند X7 الترا', 'فايند X7 الترا'], en: ['oppo find x7 ultra', 'find x7 ultra'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'oppo-reno-11-pro',
+    keywords: { ar: ['اوبو رينو 11 برو', 'رينو 11 برو'], en: ['oppo reno 11 pro', 'reno 11 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'oppo-reno-11',
+    keywords: { ar: ['اوبو رينو 11', 'رينو 11'], en: ['oppo reno 11', 'reno 11'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'oppo-a-series',
+    keywords: { ar: ['اوبو A', 'اوبو اي'], en: ['oppo a98', 'oppo a78', 'oppo a58', 'oppo a38'] },
+    weight: 20,
+  },
+  // Vivo Models
+  {
+    categorySlug: 'vivo-x100-pro',
+    keywords: { ar: ['فيفو X100 برو', 'اكس 100 برو'], en: ['vivo x100 pro', 'x100 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'vivo-v30-pro',
+    keywords: { ar: ['فيفو V30 برو', 'في 30 برو'], en: ['vivo v30 pro', 'v30 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'vivo-v30',
+    keywords: { ar: ['فيفو V30', 'في 30'], en: ['vivo v30', 'v30'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'vivo-y-series',
+    keywords: { ar: ['فيفو Y', 'فيفو واي'], en: ['vivo y100', 'vivo y36', 'vivo y27'] },
+    weight: 20,
+  },
+  // Realme Models
+  {
+    categorySlug: 'realme-gt-5-pro',
+    keywords: { ar: ['ريلمي GT5 برو', 'جي تي 5 برو'], en: ['realme gt 5 pro', 'gt 5 pro', 'gt5 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'realme-12-pro-plus',
+    keywords: { ar: ['ريلمي 12 برو بلس', 'ريلمي 12 برو+'], en: ['realme 12 pro+', 'realme 12 pro plus'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'realme-12-pro',
+    keywords: { ar: ['ريلمي 12 برو'], en: ['realme 12 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'realme-c-series',
+    keywords: { ar: ['ريلمي سي', 'ريلمي C'], en: ['realme c67', 'realme c55', 'realme c53'] },
+    weight: 20,
+  },
+  // OnePlus Models
+  {
+    categorySlug: 'oneplus-12',
+    keywords: { ar: ['ون بلس 12', 'وان بلس 12'], en: ['oneplus 12', 'one plus 12'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'oneplus-12r',
+    keywords: { ar: ['ون بلس 12R', 'وان بلس 12R'], en: ['oneplus 12r', 'one plus 12r'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'oneplus-nord',
+    keywords: { ar: ['ون بلس نورد', 'وان بلس نورد'], en: ['oneplus nord', 'nord ce', 'nord n30'] },
+    weight: 22,
+  },
+  // Nokia Models
+  {
+    categorySlug: 'nokia-g-series',
+    keywords: { ar: ['نوكيا G', 'نوكيا جي'], en: ['nokia g42', 'nokia g22', 'nokia g60'] },
+    weight: 20,
+  },
+  {
+    categorySlug: 'nokia-c-series',
+    keywords: { ar: ['نوكيا C', 'نوكيا سي'], en: ['nokia c32', 'nokia c22', 'nokia c12'] },
+    weight: 20,
+  },
+  // Google Pixel Models
+  {
+    categorySlug: 'pixel-8-pro',
+    keywords: { ar: ['بيكسل 8 برو', 'جوجل بيكسل 8 برو'], en: ['pixel 8 pro', 'google pixel 8 pro'] },
+    weight: 25,
+  },
+  {
+    categorySlug: 'pixel-8',
+    keywords: { ar: ['بيكسل 8', 'جوجل بيكسل 8'], en: ['pixel 8', 'google pixel 8'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'pixel-7a',
+    keywords: { ar: ['بيكسل 7a', 'جوجل بيكسل 7a'], en: ['pixel 7a', 'google pixel 7a'] },
+    weight: 22,
+  },
+  {
+    categorySlug: 'pixel-fold',
+    keywords: { ar: ['بيكسل فولد', 'جوجل بيكسل فولد'], en: ['pixel fold', 'google pixel fold'] },
+    weight: 25,
+  },
   // Mobile Phones Level 3 - Models (matching database slugs)
   // iPhone Models
   {
