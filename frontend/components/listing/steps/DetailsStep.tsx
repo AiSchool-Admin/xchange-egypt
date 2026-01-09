@@ -115,6 +115,26 @@ export default function DetailsStep({
     }
   }, [category, categories, categoryLevel1]);
 
+  // Auto-select property category when on property listing page
+  useEffect(() => {
+    if (category === 'PROPERTY' && categories.length > 0 && !categoryLevel1) {
+      // Find the "العقارات" or "Properties" category
+      const propertyCategory = categories.find(c =>
+        c.slug === 'properties' ||
+        c.slug === 'real-estate' ||
+        c.nameAr === 'العقارات' ||
+        c.nameEn?.toLowerCase() === 'properties' ||
+        c.nameEn?.toLowerCase() === 'real estate'
+      );
+      if (propertyCategory) {
+        setCategoryLevel1(propertyCategory.id);
+        if (propertyCategory.children) {
+          setLevel2Categories(propertyCategory.children);
+        }
+      }
+    }
+  }, [category, categories, categoryLevel1]);
+
   // Load level 2 categories when level 1 changes (manual selection only)
   useEffect(() => {
     if (categoryLevel1) {
@@ -704,7 +724,7 @@ export default function DetailsStep({
                 <select
                   value={categoryLevel1}
                   onChange={(e) => setCategoryLevel1(e.target.value)}
-                  disabled={category === 'MOBILE'}
+                  disabled={category === 'MOBILE' || category === 'PROPERTY'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm disabled:bg-gray-100"
                 >
                   <option value="">اختر الفئة</option>
@@ -716,10 +736,10 @@ export default function DetailsStep({
                 </select>
               </div>
 
-              {/* Level 2 - Sub Category (Brand for mobiles) */}
+              {/* Level 2 - Sub Category (Brand for mobiles, Transaction for properties) */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  {category === 'MOBILE' ? 'الماركة' : 'الفئة الفرعية'}
+                  {category === 'MOBILE' ? 'الماركة' : category === 'PROPERTY' ? 'المعاملة' : 'الفئة الفرعية'}
                 </label>
                 <select
                   value={categoryLevel2}
@@ -728,7 +748,7 @@ export default function DetailsStep({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">
-                    {!categoryLevel1 ? 'اختر الرئيسية أولاً' : level2Categories.length === 0 ? (category === 'MOBILE' ? 'لا توجد ماركات' : 'لا توجد فرعية') : (category === 'MOBILE' ? 'اختر الماركة' : 'اختر الفئة')}
+                    {!categoryLevel1 ? 'اختر الرئيسية أولاً' : level2Categories.length === 0 ? (category === 'MOBILE' ? 'لا توجد ماركات' : category === 'PROPERTY' ? 'لا توجد معاملات' : 'لا توجد فرعية') : (category === 'MOBILE' ? 'اختر الماركة' : category === 'PROPERTY' ? 'اختر المعاملة' : 'اختر الفئة')}
                   </option>
                   {level2Categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
@@ -738,10 +758,10 @@ export default function DetailsStep({
                 </select>
               </div>
 
-              {/* Level 3 - Sub-Sub Category (Model for mobiles) */}
+              {/* Level 3 - Sub-Sub Category (Model for mobiles, Property Type for properties) */}
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  {category === 'MOBILE' ? 'الموديل' : 'الفئة الفرع-فرعية'}
+                  {category === 'MOBILE' ? 'الموديل' : category === 'PROPERTY' ? 'نوع العقار' : 'الفئة الفرع-فرعية'}
                 </label>
                 <select
                   value={categoryLevel3}
@@ -750,7 +770,7 @@ export default function DetailsStep({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
                   <option value="">
-                    {!categoryLevel2 ? (category === 'MOBILE' ? 'اختر الماركة أولاً' : 'اختر الفرعية أولاً') : level3Categories.length === 0 ? (category === 'MOBILE' ? 'لا توجد موديلات' : 'لا توجد فرع-فرعية') : (category === 'MOBILE' ? 'اختر الموديل' : 'اختر الفئة')}
+                    {!categoryLevel2 ? (category === 'MOBILE' ? 'اختر الماركة أولاً' : category === 'PROPERTY' ? 'اختر المعاملة أولاً' : 'اختر الفرعية أولاً') : level3Categories.length === 0 ? (category === 'MOBILE' ? 'لا توجد موديلات' : category === 'PROPERTY' ? 'لا توجد أنواع' : 'لا توجد فرع-فرعية') : (category === 'MOBILE' ? 'اختر الموديل' : category === 'PROPERTY' ? 'اختر نوع العقار' : 'اختر الفئة')}
                   </option>
                   {level3Categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>

@@ -1,22 +1,9 @@
 'use client';
 
-import { Home, Bed, Bath, Maximize } from 'lucide-react';
+import { Bed, Bath, Maximize } from 'lucide-react';
 
-const PROPERTY_TYPES = [
-  { value: 'APARTMENT', label: 'شقة' },
-  { value: 'VILLA', label: 'فيلا' },
-  { value: 'TOWNHOUSE', label: 'تاون هاوس' },
-  { value: 'DUPLEX', label: 'دوبلكس' },
-  { value: 'PENTHOUSE', label: 'بنتهاوس' },
-  { value: 'STUDIO', label: 'استوديو' },
-  { value: 'LAND', label: 'أرض' },
-  { value: 'COMMERCIAL', label: 'تجاري' }
-];
-
-const LISTING_TYPES = [
-  { value: 'SALE', label: 'للبيع' },
-  { value: 'RENT', label: 'للإيجار' }
-];
+// Note: Property Type (نوع العقار) and Listing Type (المعاملة) are now in the 3-level category selector
+// This component only handles property-specific details
 
 const FINISHING_LEVELS = [
   { value: 'SUPER_LUX', label: 'سوبر لوكس' },
@@ -34,7 +21,8 @@ const FURNISHING_STATUS = [
 const AMENITIES = [
   'مواقف سيارات', 'حديقة', 'حمام سباحة', 'جيم', 'أمن 24/7',
   'مصعد', 'تكييف مركزي', 'بلكونة', 'مخزن', 'غرفة خادمة',
-  'كاميرات مراقبة', 'إنتركوم', 'غاز طبيعي', 'سخان مركزي'
+  'كاميرات مراقبة', 'إنتركوم', 'غاز طبيعي', 'سخان مركزي',
+  'إطلالة مميزة', 'بواب', 'سطح خاص', 'مدخل خاص'
 ];
 
 interface PropertyFieldsProps {
@@ -57,48 +45,6 @@ export default function PropertyFields({ data, onChange }: PropertyFieldsProps) 
 
   return (
     <div className="space-y-6">
-      {/* Property Type & Listing Type */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            <Home className="w-4 h-4 inline ml-1" />
-            نوع العقار <span className="text-red-500">*</span>
-          </label>
-          <select
-            value={data.propertyType || ''}
-            onChange={(e) => handleChange('propertyType', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-white"
-          >
-            <option value="">اختر النوع</option>
-            {PROPERTY_TYPES.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            نوع الإعلان <span className="text-red-500">*</span>
-          </label>
-          <div className="flex gap-4">
-            {LISTING_TYPES.map(type => (
-              <button
-                key={type.value}
-                type="button"
-                onClick={() => handleChange('listingType', type.value)}
-                className={`flex-1 py-3 rounded-xl border-2 text-center font-medium transition-all ${
-                  data.listingType === type.value
-                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-200 hover:border-indigo-300'
-                }`}
-              >
-                {type.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Area */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
