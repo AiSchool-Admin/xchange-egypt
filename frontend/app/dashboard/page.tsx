@@ -50,9 +50,9 @@ const translations = {
     // My Transactions
     myTransactions: 'معاملاتي المالية',
     salesAndPurchases: 'مبيعاتي ومشترياتي',
-    incomingOrders: 'الطلبات الواردة',
+    incomingOrders: 'طلبات من مشترين',
     shoppingCart: 'سلة التسوق',
-    myOrders: 'طلباتي',
+    myOrders: 'تابع طلباتي',
 
     // Auctions & Bids
     auctionsAndBids: 'المزادات والمزايدات',
@@ -126,9 +126,9 @@ const translations = {
     // My Transactions
     myTransactions: 'My Financial Transactions',
     salesAndPurchases: 'My Sales & Purchases',
-    incomingOrders: 'Incoming Orders',
+    incomingOrders: 'Orders from Buyers',
     shoppingCart: 'Shopping Cart',
-    myOrders: 'My Orders',
+    myOrders: 'Track My Orders',
 
     // Auctions & Bids
     auctionsAndBids: 'Auctions & Bids',

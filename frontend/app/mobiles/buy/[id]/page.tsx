@@ -8,6 +8,7 @@ import {
   ArrowRight, Shield, CreditCard, Truck, MapPin,
   CheckCircle, AlertTriangle, Smartphone, Package, Clock
 } from 'lucide-react';
+import { useAuth } from '@/lib/contexts/AuthContext';
 
 interface MobileListing {
   id: string;
@@ -41,6 +42,7 @@ const PAYMENT_METHODS = [
 export default function MobileBuyPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [listing, setListing] = useState<MobileListing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +51,18 @@ export default function MobileBuyPage() {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [processing, setProcessing] = useState(false);
+
+  // Auto-fill user's address and phone when user data loads
+  useEffect(() => {
+    if (user && !address && !phone) {
+      const userAddress = user.address ||
+        [user.street, user.district, user.city, user.governorate]
+          .filter(Boolean)
+          .join('، ') || '';
+      if (userAddress) setAddress(userAddress);
+      if (user.phone) setPhone(user.phone);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (params.id) {

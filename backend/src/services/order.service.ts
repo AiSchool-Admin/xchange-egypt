@@ -303,6 +303,15 @@ export const createOrder = async (
       data: { status: 'COMPLETED' },
     });
 
+    // Mark all items as SOLD
+    const itemIds = listings.map(listing => listing.itemId).filter(Boolean);
+    if (itemIds.length > 0) {
+      await tx.item.updateMany({
+        where: { id: { in: itemIds } },
+        data: { status: 'SOLD' },
+      });
+    }
+
     // Clear cart items within transaction
     await tx.cartItem.deleteMany({
       where: { cart: { userId } },
@@ -843,6 +852,16 @@ export const createAuctionOrder = async (
       data: {
         paymentStatus: 'PENDING',
       },
+    });
+
+    // Mark item as SOLD and listing as COMPLETED
+    await tx.item.update({
+      where: { id: auction.listing.itemId },
+      data: { status: 'SOLD' },
+    });
+    await tx.listing.update({
+      where: { id: auction.listingId },
+      data: { status: 'COMPLETED' },
     });
 
     return newOrder;

@@ -196,6 +196,16 @@ export default function ItemDetailsPage() {
       router.push('/login');
       return;
     }
+    // Auto-fill user's address and phone
+    const userAddress = user.address ||
+      [user.street, user.district, user.city, user.governorate]
+        .filter(Boolean)
+        .join('، ') || '';
+    setBuyForm(prev => ({
+      ...prev,
+      shippingAddress: prev.shippingAddress || userAddress,
+      phoneNumber: prev.phoneNumber || user.phone || '',
+    }));
     setShowBuyModal(true);
     setBuyError('');
     setBuySuccess(false);
@@ -251,8 +261,8 @@ export default function ItemDetailsPage() {
       });
 
       if (response.ok) {
-        setCartMessage('تمت الإضافة للسلة!');
-        setTimeout(() => setCartMessage(''), 3000);
+        setCartMessage(`تمت إضافة "${item.title}" للسلة بنجاح!`);
+        setTimeout(() => setCartMessage(''), 4000);
       } else {
         const data = await response.json();
         setCartMessage(data.message || 'فشل في الإضافة للسلة');
@@ -806,9 +816,14 @@ export default function ItemDetailsPage() {
                           {addingToCart ? 'جاري الإضافة...' : '🛍️ أضف للسلة'}
                         </button>
                         {cartMessage && (
-                          <p className={`text-center text-sm font-medium ${cartMessage.includes('تمت') ? 'text-green-600' : 'text-red-600'}`}>
+                          <div className={`p-3 rounded-xl text-center font-medium animate-pulse ${
+                            cartMessage.includes('تمت')
+                              ? 'bg-green-100 text-green-700 border border-green-200'
+                              : 'bg-red-100 text-red-700 border border-red-200'
+                          }`}>
+                            <span className="mr-2">{cartMessage.includes('تمت') ? '✅' : '❌'}</span>
                             {cartMessage}
-                          </p>
+                          </div>
                         )}
                         <div className="grid grid-cols-2 gap-3">
                           <button
