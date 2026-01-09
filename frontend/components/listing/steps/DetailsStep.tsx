@@ -314,9 +314,10 @@ export default function DetailsStep({
 
         if (result && result.success && result.category) {
           // Store all suggestions (main + alternatives)
-          setCategorySuggestions([result.category, ...result.alternatives]);
+          const suggestions = [result.category, ...result.alternatives];
+          setCategorySuggestions(suggestions);
 
-          // Auto-populate category dropdowns from AI result
+          // Auto-populate category dropdowns from AI result immediately
           if (result.category.id && categories.length > 0) {
             autoPopulateCategoryFromAI(
               result.category.id,
@@ -336,7 +337,19 @@ export default function DetailsStep({
     };
 
     detectCategory();
-  }, [debouncedTitle, formData.description, categories]);
+  }, [debouncedTitle, formData.description]);
+
+  // Auto-populate first suggestion when categories load (if suggestions exist but not populated yet)
+  useEffect(() => {
+    if (categorySuggestions.length > 0 && categories.length > 0 && !categoryLevel1) {
+      const firstSuggestion = categorySuggestions[0];
+      autoPopulateCategoryFromAI(
+        firstSuggestion.id,
+        firstSuggestion.name,
+        firstSuggestion.parentCategory
+      );
+    }
+  }, [categories, categorySuggestions, categoryLevel1]);
 
   // Set default address from user profile (governorate, city, district, street)
   useEffect(() => {
