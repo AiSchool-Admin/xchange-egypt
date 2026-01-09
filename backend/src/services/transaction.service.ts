@@ -320,8 +320,8 @@ export const buyItemDirectly = async (
       priority: 'HIGH',
       entityType: 'TRANSACTION',
       entityId: transaction.id,
-      actionUrl: `/transactions/${transaction.id}`,
-      actionText: 'عرض التفاصيل',
+      actionUrl: `/dashboard/sales`,
+      actionText: 'عرض الطلبات الواردة',
     });
 
     // Send notification to buyer confirming purchase
@@ -333,7 +333,7 @@ export const buyItemDirectly = async (
       priority: 'HIGH',
       entityType: 'TRANSACTION',
       entityId: transaction.id,
-      actionUrl: `/transactions/${transaction.id}`,
+      actionUrl: `/dashboard/orders`,
       actionText: 'تتبع الطلب',
     });
   } catch (notificationError) {
@@ -568,7 +568,7 @@ async function sendDeliveryStatusNotifications(
       priority: 'HIGH',
       entityType: 'TRANSACTION',
       entityId: transactionId,
-      actionUrl: `/dashboard/transactions`,
+      actionUrl: `/dashboard/orders`,
       actionText: 'تتبع الطلب',
     });
   }
@@ -602,8 +602,8 @@ async function sendDeliveryStatusNotifications(
       priority: 'MEDIUM',
       entityType: 'TRANSACTION',
       entityId: transactionId,
-      actionUrl: `/dashboard/transactions`,
-      actionText: 'تقييم البائع',
+      actionUrl: `/dashboard/orders`,
+      actionText: 'عرض الطلبات',
     });
   }
 }

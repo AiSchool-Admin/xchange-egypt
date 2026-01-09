@@ -398,30 +398,43 @@ export default function SellerSalesPage() {
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 mb-3">
-                    {order.items.slice(0, 3).map((item) => (
-                      <div key={item.id} className="w-12 h-12 bg-gray-100 rounded overflow-hidden">
-                        {item.listing?.item?.images?.[0] && (
-                          <img
-                            src={item.listing.item.images[0]}
-                            alt={item.listing.item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                      </div>
-                    ))}
-                    {order.items.length > 3 && (
-                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-sm text-gray-600">
-                        +{order.items.length - 3}
-                      </div>
-                    )}
+                  {/* Product images and names */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      {order.items.slice(0, 3).map((item) => (
+                        <div key={item.id} className="w-12 h-12 bg-gray-100 rounded overflow-hidden">
+                          {item.listing?.item?.images?.[0] ? (
+                            <img
+                              src={item.listing.item.images[0]}
+                              alt={item.listing?.item?.title || 'منتج'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">📷</div>
+                          )}
+                        </div>
+                      ))}
+                      {order.items.length > 3 && (
+                        <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-sm text-gray-600">
+                          +{order.items.length - 3}
+                        </div>
+                      )}
+                    </div>
+                    {/* Product names */}
+                    <p className="text-sm text-gray-700 truncate">
+                      {order.items.map(item => item.listing?.item?.title || 'منتج').join('، ')}
+                    </p>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-gray-600">
-                      <span className="font-medium">{order.user?.fullName}</span>
-                      <span className="mx-2">•</span>
-                      <span>{order.shippingAddress?.governorate}</span>
+                      <span className="font-medium">{order.user?.fullName || 'مشتري'}</span>
+                      {order.shippingAddress?.governorate && (
+                        <>
+                          <span className="mx-2">•</span>
+                          <span>{order.shippingAddress.governorate}</span>
+                        </>
+                      )}
                     </div>
                     <span className="font-bold text-primary-600">
                       {order.items.reduce((sum, item) => sum + item.price, 0).toLocaleString()} ج.م
@@ -492,27 +505,59 @@ export default function SellerSalesPage() {
                   {/* Items */}
                   <div className="border-t pt-4 mb-4">
                     <h3 className="font-semibold mb-3 flex items-center gap-2">
-                      <span>📦</span> المنتجات المطلوبة
+                      <span>📦</span> المنتجات المطلوبة ({selectedOrder.items.length})
                     </h3>
-                    <div className="space-y-3 max-h-48 overflow-y-auto">
-                      {selectedOrder.items.map((item) => (
-                        <div key={item.id} className="flex gap-3">
-                          <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden flex-shrink-0">
-                            {item.listing?.item?.images?.[0] && (
-                              <img
-                                src={item.listing.item.images[0]}
-                                alt={item.listing.item.title}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
+                    <div className="space-y-4">
+                      {selectedOrder.items.map((item, index) => (
+                        <div key={item.id} className="bg-gray-50 rounded-lg p-3">
+                          <div className="flex gap-4">
+                            <div className="w-24 h-24 bg-white rounded-lg overflow-hidden flex-shrink-0 shadow-sm">
+                              {item.listing?.item?.images?.[0] ? (
+                                <img
+                                  src={item.listing.item.images[0]}
+                                  alt={item.listing.item.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                  <span className="text-3xl">📷</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-gray-900 mb-1 truncate">
+                                {item.listing?.item?.title || 'منتج'}
+                              </h4>
+                              {item.listing?.item?.id && (
+                                <p className="text-xs text-gray-500 mb-1">
+                                  رقم المنتج: {item.listing.item.id.slice(0, 8).toUpperCase()}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap gap-2 text-sm">
+                                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                  الكمية: {item.quantity}
+                                </span>
+                                <span className="bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                                  السعر: {item.price.toLocaleString()} ج.م
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex-1">
-                            <p className="font-medium">{item.listing?.item?.title}</p>
-                            <p className="text-sm text-gray-600">الكمية: {item.quantity}</p>
-                          </div>
-                          <div className="text-left">
-                            <p className="font-medium">{item.price.toLocaleString()} ج.م</p>
-                          </div>
+                          {/* Show multiple images if available */}
+                          {item.listing?.item?.images && item.listing.item.images.length > 1 && (
+                            <div className="mt-2 flex gap-2 overflow-x-auto">
+                              {item.listing.item.images.slice(1, 4).map((img, imgIndex) => (
+                                <div key={imgIndex} className="w-12 h-12 bg-white rounded overflow-hidden flex-shrink-0">
+                                  <img src={img} alt={`صورة ${imgIndex + 2}`} className="w-full h-full object-cover" />
+                                </div>
+                              ))}
+                              {item.listing.item.images.length > 4 && (
+                                <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-600 flex-shrink-0">
+                                  +{item.listing.item.images.length - 4}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>

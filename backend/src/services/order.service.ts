@@ -345,8 +345,8 @@ export const createOrder = async (
         priority: 'HIGH',
         entityType: 'ORDER',
         entityId: order.id,
-        actionUrl: `/dashboard/orders`,
-        actionText: 'عرض الطلبات',
+        actionUrl: `/dashboard/sales`,
+        actionText: 'عرض الطلبات الواردة',
       });
     }
   } catch (notificationError) {
@@ -872,8 +872,8 @@ export const createAuctionOrder = async (
       priority: 'HIGH',
       entityType: 'ORDER',
       entityId: order.id,
-      actionUrl: `/dashboard/orders`,
-      actionText: 'عرض الطلبات',
+      actionUrl: `/dashboard/sales`,
+      actionText: 'عرض الطلبات الواردة',
     });
   } catch (notificationError) {
     logger.error('Failed to send auction order notifications:', notificationError);
