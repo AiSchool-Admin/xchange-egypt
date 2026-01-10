@@ -297,18 +297,6 @@ export const getPropertyById = async (
         fullName: true,
       },
     },
-    inspections: {
-      where: { status: 'COMPLETED' },
-      orderBy: { completedAt: 'desc' },
-      take: 1,
-      select: {
-        id: true,
-        overallScore: true,
-        recommendation: true,
-        completedAt: true,
-        reportUrl: true,
-      },
-    },
   };
 
   // Only include favorites relation if userId is provided
@@ -319,57 +307,80 @@ export const getPropertyById = async (
     };
   }
 
-  const property = await prisma.property.findUnique({
-    where: { id: propertyId },
-    include: includeOptions,
-  });
+  let property;
+  try {
+    property = await prisma.property.findUnique({
+      where: { id: propertyId },
+      include: includeOptions,
+    });
+  } catch (dbError: any) {
+    console.error('[PropertyService] Error fetching property:', dbError.message);
+    throw new NotFoundError('Property not found or database error');
+  }
 
   if (!property) {
     throw new NotFoundError('Property not found');
   }
 
-  // Increment views (don't count owner's views)
+  // Increment views (don't count owner's views) - wrapped in try-catch
   if (incrementViews && property.ownerId !== userId) {
-    await prisma.property.update({
-      where: { id: propertyId },
-      data: { viewsCount: { increment: 1 } },
-    });
+    try {
+      await prisma.property.update({
+        where: { id: propertyId },
+        data: { viewsCount: { increment: 1 } },
+      });
+    } catch (viewError) {
+      // Non-critical error, just log it
+      console.error('[PropertyService] Error incrementing views:', viewError);
+    }
   }
 
-  // Get similar properties
-  const similarProperties = await prisma.property.findMany({
-    where: {
-      id: { not: propertyId },
-      status: PropertyStatus.ACTIVE,
-      propertyType: property.propertyType,
-      governorate: property.governorate,
-      ...(property.salePrice && {
-        salePrice: {
-          gte: property.salePrice * 0.7,
-          lte: property.salePrice * 1.3,
-        },
-      }),
-    },
-    take: 4,
-    select: {
-      id: true,
-      title: true,
-      propertyType: true,
-      governorate: true,
-      city: true,
-      areaSqm: true,
-      bedrooms: true,
-      bathrooms: true,
-      salePrice: true,
-      rentPrice: true,
-      images: true,
-      titleType: true,
-      verificationLevel: true,
-    },
-  });
+  // Get similar properties - wrapped in try-catch
+  let similarProperties: any[] = [];
+  try {
+    similarProperties = await prisma.property.findMany({
+      where: {
+        id: { not: propertyId },
+        status: PropertyStatus.ACTIVE,
+        propertyType: property.propertyType,
+        governorate: property.governorate,
+        ...(property.salePrice && {
+          salePrice: {
+            gte: Number(property.salePrice) * 0.7,
+            lte: Number(property.salePrice) * 1.3,
+          },
+        }),
+      },
+      take: 4,
+      select: {
+        id: true,
+        title: true,
+        propertyType: true,
+        governorate: true,
+        city: true,
+        areaSqm: true,
+        bedrooms: true,
+        bathrooms: true,
+        salePrice: true,
+        rentPrice: true,
+        images: true,
+        titleType: true,
+        verificationLevel: true,
+      },
+    });
+  } catch (similarError) {
+    console.error('[PropertyService] Error fetching similar properties:', similarError);
+    // Continue without similar properties
+  }
 
-  // Get price analysis
-  const priceAnalysis = await getPropertyPriceAnalysis(property);
+  // Get price analysis - wrapped in try-catch
+  let priceAnalysis = null;
+  try {
+    priceAnalysis = await getPropertyPriceAnalysis(property);
+  } catch (priceError) {
+    console.error('[PropertyService] Error getting price analysis:', priceError);
+    // Continue without price analysis
+  }
 
   // Check if user has favorited
   const isFavorited = userId && property.favorites && property.favorites.length > 0;
