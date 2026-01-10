@@ -369,8 +369,7 @@ export default function UnifiedListingWizard({
             // Coordinates for map
             latitude: formData.latitude || undefined,
             longitude: formData.longitude || undefined,
-            // Compound information
-            isCompound: categorySpecificData?.isCompound || false,
+            // Compound information - backend only needs compoundName, not isCompound
             compoundName: categorySpecificData?.isCompound ? categorySpecificData?.compoundName : undefined,
             // Media
             images: formData.images || [],
