@@ -81,25 +81,51 @@ router.get(
 );
 
 /**
- * Get item by ID
+ * Create a new item with JSON body (no file upload, uses imageUrls)
+ * POST /api/v1/items/create
+ * This endpoint is for when images are already uploaded or provided as URLs
+ */
+router.post(
+  '/create',
+  authenticate,
+  validate(createItemSchema),
+  itemController.createItemJson
+);
+
+/**
+ * Create a new item with images (multipart/form-data)
+ * OR with JSON body (application/json) - auto-detects content type
+ * POST /api/v1/items
+ */
+router.post(
+  '/',
+  authenticate,
+  (req, res, next) => {
+    // Check if request is JSON - skip multer and use JSON handler
+    const contentType = req.headers['content-type'] || '';
+    if (contentType.includes('application/json')) {
+      // Validate and use JSON handler
+      return validate(createItemSchema)(req, res, () => {
+        itemController.createItemJson(req, res, next);
+      });
+    }
+    // Otherwise use multer for file uploads
+    uploadItemImages(req, res, (err) => {
+      if (err) return next(err);
+      validate(createItemSchema)(req, res, next);
+    });
+  },
+  itemController.createItem
+);
+
+/**
+ * Get item by ID - MUST BE AFTER specific routes like /my, /create
  * GET /api/v1/items/:id
  */
 router.get(
   '/:id',
   validate(getItemByIdSchema),
   itemController.getItemById
-);
-
-/**
- * Create a new item with images
- * POST /api/v1/items
- */
-router.post(
-  '/',
-  authenticate,
-  uploadItemImages,
-  validate(createItemSchema),
-  itemController.createItem
 );
 
 /**

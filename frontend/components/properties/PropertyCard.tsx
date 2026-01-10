@@ -35,7 +35,7 @@ interface PropertyCardProps {
     openToBarter?: boolean;
     hasEscrow?: boolean;
     virtualTourUrl?: string;
-    images: any[];
+    images: (string | { url: string })[];
     viewsCount?: number;
     viewCount?: number;
     favoritesCount?: number;

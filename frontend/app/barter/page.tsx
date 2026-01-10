@@ -127,8 +127,10 @@ export default function BarterPage() {
     try {
       setLoadingStats(true);
       const response = await apiClient.get('/barter/stats');
-      if (response.data.success) {
-        setPlatformStats(response.data.data.stats);
+      if (response?.data?.success && response.data.data) {
+        if (response.data.data.stats) {
+          setPlatformStats(response.data.data.stats);
+        }
         if (response.data.data.categories?.length > 0) {
           setStatCategories(response.data.data.categories);
         }
@@ -678,11 +680,12 @@ export default function BarterPage() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {items.map((item) => {
-                const primaryImage =
-                  typeof item.images?.[0] === 'string'
-                    ? item.images[0]
-                    : item.images?.find((img: any) => img.isPrimary)?.url ||
-                      (item.images?.[0] as any)?.url;
+                const primaryImage = item.images && item.images.length > 0
+                  ? (typeof item.images[0] === 'string'
+                      ? item.images[0]
+                      : item.images.find((img: any) => img.isPrimary)?.url ||
+                        (item.images[0] as any)?.url)
+                  : undefined;
 
                 return (
                   <Link

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getItem, Item } from '@/lib/api/items';
+import { getItem, Item, getPrimaryImageUrl } from '@/lib/api/items';
 import { createComparison, Comparison, ComparisonField } from '@/lib/api/comparison';
 import { useAuth } from '@/lib/contexts/AuthContext';
 
@@ -278,9 +278,9 @@ function CompareContent() {
                   </button>
                   <Link href={`/items/${item.id}`}>
                     <div className="aspect-square w-full max-w-[200px] mx-auto mb-3 rounded-xl overflow-hidden bg-gray-100">
-                      {item.images?.[0]?.url ? (
+                      {getPrimaryImageUrl(item.images) ? (
                         <img
-                          src={item.images[0].url}
+                          src={getPrimaryImageUrl(item.images)}
                           alt={item.title}
                           className="w-full h-full object-cover"
                         />

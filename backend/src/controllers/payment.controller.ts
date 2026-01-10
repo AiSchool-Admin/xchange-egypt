@@ -107,7 +107,7 @@ export const initiatePayment = async (req: Request, res: Response, next: NextFun
         phone: order.user.phone || '',
         address: order.shippingAddress
           ? {
-              street: order.shippingAddress.street,
+              street: order.shippingAddress.address || '',
               city: order.shippingAddress.city,
               governorate: order.shippingAddress.governorate,
               postalCode: order.shippingAddress.postalCode,

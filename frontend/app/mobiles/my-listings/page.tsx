@@ -69,10 +69,23 @@ export default function MyMobileListingsPage() {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/my-listings?${params}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (!response.ok) {
+        console.error('API error:', response.status, response.statusText);
+        setListings([]);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
-        setListings(data.data.listings);
+        // Map backend field names to frontend interface
+        const mappedListings = (data.data.listings || []).map((l: any) => ({
+          ...l,
+          price: l.priceEgp || l.price || 0,
+          title: l.titleAr || l.title || `${l.brand} ${l.model}`,
+        }));
+        setListings(mappedListings);
         setStats(data.data.stats);
       }
     } catch (error) {
@@ -85,27 +98,43 @@ export default function MyMobileListingsPage() {
   const handleDelete = async (id: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (!response.ok) {
+        console.error('Delete failed:', response.status, response.statusText);
+        alert('فشل في حذف الإعلان');
+        return;
+      }
+
       setShowDeleteModal(null);
       fetchListings();
     } catch (error) {
       console.error('Error deleting listing:', error);
+      alert('حدث خطأ أثناء حذف الإعلان');
     }
   };
 
   const handleMarkAsSold = async (id: string) => {
     try {
       const token = localStorage.getItem('accessToken');
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}/mark-sold`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${id}/mark-sold`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      if (!response.ok) {
+        console.error('Mark as sold failed:', response.status, response.statusText);
+        alert('فشل في تحديث حالة الإعلان');
+        return;
+      }
+
       fetchListings();
     } catch (error) {
       console.error('Error marking as sold:', error);
+      alert('حدث خطأ أثناء تحديث الإعلان');
     }
   };
 
@@ -246,7 +275,7 @@ export default function MyMobileListingsPage() {
                     {/* Image */}
                     <div className="relative w-full md:w-48 h-48 md:h-auto">
                       <Image
-                        src={listing.images[0] || '/images/mobile-placeholder.jpg'}
+                        src={listing.images?.[0] || '/images/mobile-placeholder.jpg'}
                         alt={listing.title}
                         fill
                         className="object-cover"
@@ -265,7 +294,7 @@ export default function MyMobileListingsPage() {
                           <p className="text-gray-500 text-sm">{listing.brand} {listing.model}</p>
                         </div>
                         <p className="text-xl font-bold text-indigo-600">
-                          {listing.price.toLocaleString('ar-EG')} ج.م
+                          {(listing.price || 0).toLocaleString('ar-EG')} ج.م
                         </p>
                       </div>
 

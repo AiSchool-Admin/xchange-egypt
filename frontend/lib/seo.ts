@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { getPrimaryImageUrl } from '@/lib/api/items';
 
 // ============================================
 // SEO Configuration for Xchange Egypt
@@ -233,7 +234,7 @@ export function generateItemMetadata(item: {
   category?: string;
 }): Metadata {
   const description = item.description || `${item.title} متاح الآن على Xchange`;
-  const image = item.images?.[0]?.url || DEFAULT_OG_IMAGE;
+  const image = getPrimaryImageUrl(item.images, DEFAULT_OG_IMAGE);
   const priceText = item.price ? ` - ${item.price.toLocaleString('ar-EG')} ج.م` : '';
 
   return generateMetadata({
@@ -303,7 +304,7 @@ export function generateProductSchema(item: {
     '@type': 'Product',
     name: item.title,
     description: item.description,
-    image: item.images?.map((img) => img.url) || [],
+    image: item.images?.map((img) => typeof img === 'string' ? img : img.url).filter(Boolean) || [],
     offers: {
       '@type': 'Offer',
       price: item.price,

@@ -117,7 +117,7 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       shippingAddress?: {
         fullName: string;
         phone: string;
-        street: string;
+        street: string;  // Will be combined into address
         buildingName?: string;
         buildingNumber?: string;
         floor?: string;
@@ -130,6 +130,10 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       notes?: string;
     };
 
+    console.log('[Order] Creating order for user:', userId);
+    console.log('[Order] Shipping address:', JSON.stringify(shippingAddress));
+    console.log('[Order] Payment method:', paymentMethod);
+
     const order = await orderService.createOrder(userId, {
       shippingAddressId,
       shippingAddress,
@@ -137,8 +141,10 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
       notes,
     });
 
+    console.log('[Order] Order created successfully:', order.id);
     return successResponse(res, order, 'Order created successfully', 201);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[Order] Error creating order:', error?.message, error?.stack);
     next(error);
   }
 };
@@ -296,6 +302,85 @@ export const createAuctionOrder = async (req: Request, res: Response, next: Next
     });
 
     return successResponse(res, order, 'Auction order created successfully', 201);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get seller's orders (orders containing items sold by this user)
+ * GET /api/v1/orders/seller
+ */
+export const getSellerOrders = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
+    const { page, limit, status } = req.query;
+
+    const result = await orderService.getSellerOrders(
+      userId,
+      page ? parseInt(page as string) : 1,
+      limit ? parseInt(limit as string) : 20,
+      status as OrderStatus | undefined
+    );
+
+    // Convert Decimal values to numbers for JSON serialization
+    const serializedOrders = result.orders.map((order: any) => ({
+      ...order,
+      subtotal: order.subtotal ? Number(order.subtotal) : 0,
+      shippingCost: order.shippingCost ? Number(order.shippingCost) : 0,
+      total: order.total ? Number(order.total) : 0,
+      items: order.items?.map((item: any) => ({
+        ...item,
+        price: item.price ? Number(item.price) : 0,
+        listing: item.listing ? {
+          ...item.listing,
+          price: item.listing.price ? Number(item.listing.price) : null,
+          item: item.listing.item ? {
+            ...item.listing.item,
+            estimatedValue: item.listing.item.estimatedValue ? Number(item.listing.item.estimatedValue) : null,
+          } : null,
+        } : null,
+      })) || [],
+    }));
+
+    return successResponse(res, { ...result, orders: serializedOrders }, 'Seller orders retrieved successfully');
+  } catch (error: any) {
+    console.error('[Seller Orders API Error]', error?.message, error?.stack);
+    next(error);
+  }
+};
+
+/**
+ * Update order status (for sellers)
+ * PUT /api/v1/orders/seller/:orderId/status
+ */
+export const updateSellerOrderStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = getUserId(req);
+    if (!userId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
+    const { orderId } = req.params;
+    const { status, trackingNumber } = req.body;
+
+    const order = await orderService.updateSellerOrderStatus(userId, orderId, status, trackingNumber);
+
+    // Convert Decimal values
+    const serializedOrder = {
+      ...order,
+      subtotal: order.subtotal ? Number(order.subtotal) : 0,
+      shippingCost: order.shippingCost ? Number(order.shippingCost) : 0,
+      total: order.total ? Number(order.total) : 0,
+      items: (order as any).items?.map((item: any) => ({
+        ...item,
+        price: item.price ? Number(item.price) : 0,
+      })) || [],
+    };
+
+    return successResponse(res, serializedOrder, 'Order status updated successfully');
   } catch (error) {
     next(error);
   }

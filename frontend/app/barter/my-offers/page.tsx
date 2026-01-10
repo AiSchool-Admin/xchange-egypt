@@ -25,6 +25,7 @@ interface BarterOffer {
     fullName: string;
     avatar?: string;
   };
+  _isMobileOffer?: boolean; // Flag to identify mobile barter proposals
   preferenceSets?: Array<{
     id: string;
     description?: string;
@@ -33,8 +34,8 @@ interface BarterOffer {
       item: {
         id: string;
         title: string;
-        estimatedValue?: number;
-        images?: Array<{ url: string }>;
+        estimatedValue?: number | string;
+        images?: string[] | Array<{ url: string }>;
       };
     }>;
   }>;
@@ -90,12 +91,90 @@ export default function MyBarterOffersPage() {
     try {
       setLoading(true);
       setError('');
-      const [sentRes, receivedRes] = await Promise.all([
-        apiClient.get('/barter/offers/my?type=sent'),
-        apiClient.get('/barter/offers/my?type=received'),
+
+      // Fetch from both general barter and mobile barter systems
+      const [sentRes, receivedRes, mobileSentRes, mobileReceivedRes] = await Promise.all([
+        apiClient.get('/barter/offers/my?type=sent').catch(() => ({ data: { data: [] } })),
+        apiClient.get('/barter/offers/my?type=received').catch(() => ({ data: { data: [] } })),
+        apiClient.get('/mobiles/barter/proposals').catch(() => ({ data: { data: [] } })),
+        apiClient.get('/mobiles/barter/proposals/received').catch(() => ({ data: { data: [] } })),
       ]);
-      setSentOffers(sentRes.data.data?.offers || sentRes.data.data || []);
-      setReceivedOffers(receivedRes.data.data?.offers || receivedRes.data.data || []);
+
+      // General barter offers
+      const generalSent = sentRes.data.data?.items || sentRes.data.data?.offers || sentRes.data.data || [];
+      const generalReceived = receivedRes.data.data?.items || receivedRes.data.data?.offers || receivedRes.data.data || [];
+
+      // Mobile barter proposals - normalize to match general barter interface
+      const mobileSent = (mobileSentRes.data.data || []).map((p: any) => ({
+        id: p.id,
+        status: p.status,
+        message: p.proposerMessage,
+        isOpenOffer: false,
+        offeredBundleValue: p.offeredListing?.priceEgp || 0,
+        createdAt: p.createdAt,
+        initiatorId: p.proposerId,
+        recipientId: p.receiverId,
+        initiator: null, // Will be current user
+        recipient: p.receiver,
+        preferenceSets: [{
+          id: `mobile-${p.id}`,
+          items: [{
+            id: `item-${p.offeredListingId}`,
+            item: {
+              id: p.offeredListingId,
+              title: p.offeredListing?.titleAr || p.offeredListing?.title || `${p.offeredListing?.brand} ${p.offeredListing?.model}`,
+              estimatedValue: p.offeredListing?.priceEgp,
+              images: p.offeredListing?.images,
+            }
+          }]
+        }],
+        itemRequests: [{
+          id: `req-${p.requestedListingId}`,
+          description: p.requestedListing?.titleAr || p.requestedListing?.title || `${p.requestedListing?.brand} ${p.requestedListing?.model}`,
+        }],
+        _isMobileOffer: true, // Flag to identify mobile offers
+      }));
+
+      const mobileReceived = (mobileReceivedRes.data.data || []).map((p: any) => ({
+        id: p.id,
+        status: p.status,
+        message: p.proposerMessage,
+        isOpenOffer: false,
+        offeredBundleValue: p.offeredListing?.priceEgp || 0,
+        createdAt: p.createdAt,
+        initiatorId: p.proposerId,
+        recipientId: p.receiverId,
+        initiator: p.proposer,
+        recipient: null, // Will be current user
+        preferenceSets: [{
+          id: `mobile-${p.id}`,
+          items: [{
+            id: `item-${p.offeredListingId}`,
+            item: {
+              id: p.offeredListingId,
+              title: p.offeredListing?.titleAr || p.offeredListing?.title || `${p.offeredListing?.brand} ${p.offeredListing?.model}`,
+              estimatedValue: p.offeredListing?.priceEgp,
+              images: p.offeredListing?.images,
+            }
+          }]
+        }],
+        itemRequests: [{
+          id: `req-${p.requestedListingId}`,
+          description: p.requestedListing?.titleAr || p.requestedListing?.title || `${p.requestedListing?.brand} ${p.requestedListing?.model}`,
+        }],
+        _isMobileOffer: true,
+      }));
+
+      // Merge and sort by date
+      const allSent = [...generalSent, ...mobileSent].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      const allReceived = [...generalReceived, ...mobileReceived].sort((a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setSentOffers(allSent);
+      setReceivedOffers(allReceived);
     } catch (err: any) {
       setError(err.response?.data?.message || 'فشل في تحميل العروض');
     } finally {
@@ -103,11 +182,21 @@ export default function MyBarterOffersPage() {
     }
   };
 
+  // Helper to find if an offer is a mobile offer
+  const findOffer = (offerId: string): BarterOffer | undefined => {
+    return [...sentOffers, ...receivedOffers].find(o => o.id === offerId);
+  };
+
   const handleCancel = async (offerId: string) => {
     if (!confirm('هل أنت متأكد من إلغاء هذا العرض؟')) return;
     try {
       setActionLoading(offerId);
-      await apiClient.post(`/barter/offers/${offerId}/cancel`);
+      const offer = findOffer(offerId);
+      if (offer?._isMobileOffer) {
+        await apiClient.delete(`/mobiles/barter/proposals/${offerId}`);
+      } else {
+        await apiClient.post(`/barter/offers/${offerId}/cancel`);
+      }
       await loadOffers();
     } catch (err: any) {
       alert(err.response?.data?.message || 'فشل في إلغاء العرض');
@@ -120,7 +209,12 @@ export default function MyBarterOffersPage() {
     if (!confirm('هل أنت متأكد من قبول هذا العرض؟')) return;
     try {
       setActionLoading(offerId);
-      await apiClient.post(`/barter/offers/${offerId}/accept`);
+      const offer = findOffer(offerId);
+      if (offer?._isMobileOffer) {
+        await apiClient.put(`/mobiles/barter/proposals/${offerId}/respond`, { response: 'ACCEPTED' });
+      } else {
+        await apiClient.post(`/barter/offers/${offerId}/accept`);
+      }
       await loadOffers();
     } catch (err: any) {
       alert(err.response?.data?.message || 'فشل في قبول العرض');
@@ -133,7 +227,12 @@ export default function MyBarterOffersPage() {
     if (!confirm('هل أنت متأكد من رفض هذا العرض؟')) return;
     try {
       setActionLoading(offerId);
-      await apiClient.post(`/barter/offers/${offerId}/reject`);
+      const offer = findOffer(offerId);
+      if (offer?._isMobileOffer) {
+        await apiClient.put(`/mobiles/barter/proposals/${offerId}/respond`, { response: 'REJECTED' });
+      } else {
+        await apiClient.post(`/barter/offers/${offerId}/reject`);
+      }
       await loadOffers();
     } catch (err: any) {
       alert(err.response?.data?.message || 'فشل في رفض العرض');
@@ -146,7 +245,13 @@ export default function MyBarterOffersPage() {
     if (!confirm('هل تؤكد إتمام عملية التبادل؟')) return;
     try {
       setActionLoading(offerId);
-      await apiClient.post(`/barter/offers/${offerId}/complete`);
+      const offer = findOffer(offerId);
+      if (offer?._isMobileOffer) {
+        // Mobile offers complete differently - might need to create a transaction
+        alert('سيتم إتمام التبادل - تواصل مع الطرف الآخر للاتفاق على التفاصيل');
+      } else {
+        await apiClient.post(`/barter/offers/${offerId}/complete`);
+      }
       await loadOffers();
     } catch (err: any) {
       alert(err.response?.data?.message || 'فشل في إتمام التبادل');
@@ -223,25 +328,31 @@ export default function MyBarterOffersPage() {
             </h4>
             {offeredItems.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {offeredItems.map((prefItem) => (
-                  <div key={prefItem.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl border">
-                    <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                      {prefItem.item.images?.[0]?.url ? (
-                        <img src={prefItem.item.images[0].url} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
-                      )}
+                {offeredItems.map((prefItem) => {
+                  // Handle images as String[] or { url: string }[]
+                  const imageUrl = Array.isArray(prefItem.item.images) && prefItem.item.images.length > 0
+                    ? (typeof prefItem.item.images[0] === 'string' ? prefItem.item.images[0] : prefItem.item.images[0]?.url)
+                    : null;
+                  return (
+                    <div key={prefItem.id} className="flex gap-3 p-3 bg-gray-50 rounded-xl border">
+                      <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                        {imageUrl ? (
+                          <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">{prefItem.item.title}</p>
+                        {prefItem.item.estimatedValue && (
+                          <p className="text-sm text-teal-600 font-medium">
+                            {Number(prefItem.item.estimatedValue).toLocaleString()} ج.م
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 truncate">{prefItem.item.title}</p>
-                      {prefItem.item.estimatedValue && (
-                        <p className="text-sm text-teal-600 font-medium">
-                          {prefItem.item.estimatedValue.toLocaleString()} ج.م
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="p-4 bg-gray-50 rounded-xl text-gray-500 text-center">

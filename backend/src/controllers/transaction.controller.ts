@@ -45,10 +45,14 @@ export const buyItem = async (
     }
     const purchaseData = req.body;
 
+    console.log('[BuyItem] Starting purchase:', { buyerId, itemId: purchaseData.itemId });
+
     const result = await transactionService.buyItemDirectly(buyerId, purchaseData);
 
+    console.log('[BuyItem] Purchase successful:', { transactionId: result.transaction?.id });
     return successResponse(res, result, 'Purchase successful! The seller will contact you shortly.', 201);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('[BuyItem] Error:', error?.message, error?.stack);
     next(error);
   }
 };
@@ -92,12 +96,13 @@ export const updateDeliveryStatus = async (
     if (!userId) {
       return errorResponse(res, 'User not authenticated', 401);
     }
-    const { deliveryStatus } = req.body;
+    const { deliveryStatus, trackingNumber } = req.body;
 
     const transaction = await transactionService.updateDeliveryStatus(
       id,
       userId,
-      deliveryStatus
+      deliveryStatus,
+      trackingNumber
     );
 
     return successResponse(res, transaction, 'Delivery status updated successfully');

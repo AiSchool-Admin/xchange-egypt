@@ -50,8 +50,9 @@ const translations = {
     // My Transactions
     myTransactions: 'معاملاتي المالية',
     salesAndPurchases: 'مبيعاتي ومشترياتي',
+    incomingOrders: 'طلبات من مشترين',
     shoppingCart: 'سلة التسوق',
-    myOrders: 'طلباتي',
+    myOrders: 'تابع طلباتي',
 
     // Auctions & Bids
     auctionsAndBids: 'المزادات والمزايدات',
@@ -125,8 +126,9 @@ const translations = {
     // My Transactions
     myTransactions: 'My Financial Transactions',
     salesAndPurchases: 'My Sales & Purchases',
+    incomingOrders: 'Orders from Buyers',
     shoppingCart: 'Shopping Cart',
-    myOrders: 'My Orders',
+    myOrders: 'Track My Orders',
 
     // Auctions & Bids
     auctionsAndBids: 'Auctions & Bids',
@@ -206,21 +208,21 @@ export default function DashboardPage() {
     setLoadingStats(true);
     try {
       const [itemsRes, salesRes, purchasesRes, barterRes, auctionsRes, bidsRes] = await Promise.all([
-        apiClient.get('/items/my?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-        apiClient.get('/transactions/my?role=seller&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-        apiClient.get('/transactions/my?role=buyer&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-        apiClient.get('/barter/offers/my?type=received&status=PENDING&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 } } } })),
-        apiClient.get('/auctions/my?limit=1').catch(() => ({ data: { data: [] } })),
-        apiClient.get('/auctions/my-bids?limit=1').catch(() => ({ data: { data: [] } })),
+        apiClient.get('/items/my?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, items: [] } } })),
+        apiClient.get('/transactions/my?role=seller&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, transactions: [] } } })),
+        apiClient.get('/transactions/my?role=buyer&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, transactions: [] } } })),
+        apiClient.get('/barter/offers/my?type=received&status=PENDING&limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, offers: [] } } })),
+        apiClient.get('/auctions/my?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, auctions: [] } } })),
+        apiClient.get('/auctions/my-bids?limit=1').catch(() => ({ data: { data: { pagination: { total: 0 }, bids: [] } } })),
       ]);
 
       setStats({
-        items: itemsRes.data.data?.pagination?.total || itemsRes.data.data?.items?.length || 0,
-        sales: salesRes.data.data?.pagination?.total || salesRes.data.data?.transactions?.length || 0,
-        purchases: purchasesRes.data.data?.pagination?.total || purchasesRes.data.data?.transactions?.length || 0,
-        pendingOffers: barterRes.data.data?.pagination?.total || barterRes.data.data?.offers?.length || 0,
-        activeAuctions: Array.isArray(auctionsRes.data.data) ? auctionsRes.data.data.length : 0,
-        activeBids: Array.isArray(bidsRes.data.data) ? bidsRes.data.data.length : 0,
+        items: itemsRes.data.data?.pagination?.total ?? itemsRes.data.data?.items?.length ?? 0,
+        sales: salesRes.data.data?.pagination?.total ?? salesRes.data.data?.transactions?.length ?? 0,
+        purchases: purchasesRes.data.data?.pagination?.total ?? purchasesRes.data.data?.transactions?.length ?? 0,
+        pendingOffers: barterRes.data.data?.pagination?.total ?? barterRes.data.data?.offers?.length ?? 0,
+        activeAuctions: auctionsRes.data.data?.pagination?.total ?? auctionsRes.data.data?.auctions?.length ?? (Array.isArray(auctionsRes.data.data) ? auctionsRes.data.data.length : 0),
+        activeBids: bidsRes.data.data?.pagination?.total ?? bidsRes.data.data?.bids?.length ?? (Array.isArray(bidsRes.data.data) ? bidsRes.data.data.length : 0),
       });
     } catch (err) {
       console.error('Error loading stats:', err);
@@ -465,6 +467,16 @@ export default function DashboardPage() {
               </h3>
             </div>
             <div className="p-4 space-y-3">
+              <Link
+                href="/dashboard/sales"
+                className="flex items-center justify-between p-3 rounded-xl hover:bg-green-50 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">📥</div>
+                  <span className="font-medium">{t.incomingOrders}</span>
+                </div>
+                <span className="text-gray-400">{isRTL ? '←' : '→'}</span>
+              </Link>
               <Link
                 href="/dashboard/transactions"
                 className="flex items-center justify-between p-3 rounded-xl hover:bg-green-50 transition-colors"

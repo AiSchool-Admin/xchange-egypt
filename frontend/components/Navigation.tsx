@@ -647,6 +647,13 @@ export default function Navigation() {
     if (user) {
       fetchUnreadCount();
       fetchCartCount();
+
+      // Refresh notification count every 30 seconds
+      const interval = setInterval(() => {
+        fetchUnreadCount();
+      }, 30000);
+
+      return () => clearInterval(interval);
     } else {
       setUnreadCount(0);
       setCartCount(0);
@@ -656,7 +663,8 @@ export default function Navigation() {
   // Listen for real-time notifications
   useEffect(() => {
     const handleMatchNotification = (notification: any) => {
-      setUnreadCount(prev => prev + 1);
+      // Refresh the actual count from server instead of just incrementing
+      fetchUnreadCount();
       const score = Math.round(notification.averageMatchScore * 100);
       setToastMessage(`تم العثور على مطابقة! نسبة التوافق ${score}%`);
       setShowToast(true);
@@ -1138,7 +1146,7 @@ export default function Navigation() {
 
                   {/* Add Listing Button */}
                   <Link
-                    href="/inventory/add"
+                    href="/listing/new"
                     className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all shadow-button hover:shadow-button-hover"
                   >
                     <span>➕</span>
@@ -1530,7 +1538,7 @@ export default function Navigation() {
                     بيع بالـ AI
                   </Link>
                   <Link
-                    href="/inventory/add"
+                    href="/listing/new"
                     className="flex items-center justify-center gap-2 px-4 py-3 bg-primary-500 text-white rounded-xl font-medium"
                   >
                     <span>➕</span>
@@ -1680,7 +1688,7 @@ export default function Navigation() {
 
           {/* Add - Center Button */}
           <Link
-            href={user ? '/inventory/add' : '/login'}
+            href={user ? '/listing/new' : '/login'}
             className="flex items-center justify-center w-14 h-14 -mt-5 bg-primary-500 text-white rounded-full shadow-lg hover:bg-primary-600 transition-all hover:scale-105"
           >
             <Icons.Plus />

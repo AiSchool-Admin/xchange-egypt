@@ -104,7 +104,7 @@ export default function HowItWorks() {
         <ScrollReveal delay={600}>
           <div className="text-center mt-12">
             <a
-              href={activeTab === 'barter' ? '/barter' : activeTab === 'sell' ? '/inventory/add' : '/items'}
+              href={activeTab === 'barter' ? '/barter' : activeTab === 'sell' ? '/listing/new' : '/items'}
               className="inline-flex items-center gap-2 px-8 py-4 bg-emerald-500 text-white rounded-xl font-bold text-lg hover:bg-emerald-600 transition-colors shadow-lg hover:shadow-xl"
             >
               {t(`cta.${activeTab}`)}

@@ -13,27 +13,12 @@ import {
   FileCheck,
   ArrowUpDown,
 } from 'lucide-react';
-
-// Types
-type PropertyType =
-  | 'APARTMENT'
-  | 'VILLA'
-  | 'DUPLEX'
-  | 'PENTHOUSE'
-  | 'STUDIO'
-  | 'CHALET'
-  | 'TOWNHOUSE'
-  | 'TWIN_HOUSE'
-  | 'LAND'
-  | 'COMMERCIAL'
-  | 'OFFICE'
-  | 'RETAIL'
-  | 'WAREHOUSE'
-  | 'BUILDING';
-
-type ListingType = 'SALE' | 'RENT';
-type TitleType = 'REGISTERED' | 'PRELIMINARY' | 'POA';
-type VerificationLevel = 'UNVERIFIED' | 'DOCUMENTS_VERIFIED' | 'FIELD_VERIFIED' | 'GOVERNMENT_VERIFIED';
+import {
+  PropertyType,
+  ListingType,
+  TitleType,
+  VerificationLevel,
+} from '@/lib/api/properties';
 
 interface PropertyFiltersProps {
   onFiltersChange: (filters: PropertyFiltersState) => void;

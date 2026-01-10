@@ -42,6 +42,8 @@ model User {
   address           String?
   city              String?
   governorate       String?
+  district          String?     // الحي / المنطقة
+  street            String?     // الشارع / العنوان التفصيلي
   postalCode        String?     @map("postal_code")
 
   // Primary location (for geographic clustering)
@@ -879,13 +881,7 @@ model ShippingAddress {
   userId          String   @map("user_id")
   fullName        String   @map("full_name")
   phone           String
-  address         String?  // Legacy combined address field
-  street          String?  // الشارع
-  buildingName    String?  @map("building_name")   // اسم المبنى
-  buildingNumber  String?  @map("building_number") // رقم المبنى
-  floor           String?  // الدور
-  apartmentNumber String?  @map("apartment_number") // رقم الشقة
-  landmark        String?  // علامة مميزة
+  address         String   // Combined address field
   city            String
   governorate     String
   postalCode      String?  @map("postal_code")
@@ -927,6 +923,7 @@ model Order {
   paidAt            DateTime?     @map("paid_at")
   shippedAt         DateTime?     @map("shipped_at")
   deliveredAt       DateTime?     @map("delivered_at")
+  trackingNumber    String?       @map("tracking_number")
 
   user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   shippingAddress   ShippingAddress @relation(fields: [shippingAddressId], references: [id], onDelete: Restrict)
@@ -7364,8 +7361,8 @@ model MobileListing {
   color                 String?
   colorAr               String?                 @map("color_ar")
 
-  // التحقق من IMEI (الميزة التنافسية الأساسية)
-  imei                  String                  @unique
+  // التحقق من IMEI (اختياري - يمكن إضافته لاحقاً للتوثيق)
+  imei                  String?                 @unique
   imeiVerified          Boolean                 @default(false) @map("imei_verified")
   imeiStatus            MobileIMEIStatus        @default(UNKNOWN) @map("imei_status")
   ntraRegistered        Boolean                 @default(false) @map("ntra_registered")

@@ -160,40 +160,59 @@ export const createOrder = async (
     notes?: string;
   }
 ) => {
-  // Get cart first (outside transaction for validation)
-  const cart = await getCart(userId);
+  try {
+    logger.info('[createOrder] Starting order creation for user:', userId);
 
-  if (cart.items.length === 0) {
-    throw new BadRequestError('Cart is empty');
-  }
+    // Get cart first (outside transaction for validation)
+    const cart = await getCart(userId);
+    logger.info('[createOrder] Cart fetched, items count:', cart.items.length);
 
-  // Extract listing IDs for locking
-  const listingIds = cart.items.map(item => item.listingId);
+    if (cart.items.length === 0) {
+      throw new BadRequestError('السلة فارغة');
+    }
 
-  // Use transaction with serializable isolation to prevent race conditions
-  const order = await prisma.$transaction(async (tx) => {
-    // Lock and verify listings are still available using SELECT FOR UPDATE
-    // This prevents other transactions from modifying these listings until we're done
-    // Cast l.id to text for comparison since Prisma passes array as text
-    const listings = await tx.$queryRaw<Array<{ id: string; status: string; title: string }>>`
-      SELECT l.id, l.status, i.title
-      FROM "listings" l
-      JOIN "items" i ON l."item_id" = i.id
-      WHERE l.id::text = ANY(${listingIds})
-      FOR UPDATE NOWAIT
-    `.catch((error: Error) => {
-      // NOWAIT will throw if rows are locked by another transaction
-      if (error.message.includes('could not obtain lock')) {
-        throw new BadRequestError('Some items are being purchased by another user. Please try again.');
-      }
-      throw error;
+    // Log cart items for debugging
+    cart.items.forEach((item, index) => {
+      logger.info(`[createOrder] Cart item ${index}:`, {
+        listingId: item.listingId,
+        userId: item.listing?.userId,
+        price: item.listing?.price,
+        quantity: item.quantity,
+      });
     });
+
+    // Validate all cart items have valid listing data
+    for (const item of cart.items) {
+      if (!item.listing?.userId) {
+        logger.error('[createOrder] Missing userId for listing:', item.listingId);
+        throw new BadRequestError('بيانات المنتج غير مكتملة. يرجى إزالة المنتج وإضافته مرة أخرى.');
+      }
+    }
+
+    // Extract listing IDs for verification
+    const listingIds = cart.items.map(item => item.listingId);
+    logger.info('[createOrder] Listing IDs:', listingIds);
+
+    // Use transaction with serializable isolation to prevent race conditions
+    const order = await prisma.$transaction(async (tx) => {
+    // Verify listings are still available using Prisma query
+    const listings = await tx.listing.findMany({
+      where: { id: { in: listingIds } },
+      include: { item: { select: { title: true } } },
+    });
+
+    logger.info('[createOrder] Found listings:', listings.length);
 
     // Verify all listings are still available
     for (const listing of listings) {
       if (listing.status !== 'ACTIVE') {
-        throw new BadRequestError(`Item "${listing.title}" is no longer available`);
+        throw new BadRequestError(`المنتج "${listing.item?.title}" لم يعد متاحاً`);
       }
+    }
+
+    // Ensure all cart items have valid listings
+    if (listings.length !== listingIds.length) {
+      throw new BadRequestError('بعض المنتجات لم تعد متاحة');
     }
 
     // Handle shipping address
@@ -202,26 +221,23 @@ export const createOrder = async (
 
     if (data.shippingAddress && !data.shippingAddressId) {
       const addressData = data.shippingAddress;
+      // Combine all address parts into a single address field
+      // (Individual columns like street, buildingName, etc. may not exist in DB yet)
+      const combinedAddress = [
+        addressData.street,
+        addressData.buildingName ? `${addressData.buildingName}` : '',
+        addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
+        addressData.floor ? `الدور ${addressData.floor}` : '',
+        addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
+        addressData.landmark || '',
+      ].filter(Boolean).join('، ');
+
       const newAddress = await tx.shippingAddress.create({
         data: {
           userId,
           fullName: addressData.fullName,
           phone: addressData.phone,
-          street: addressData.street,
-          buildingName: addressData.buildingName,
-          buildingNumber: addressData.buildingNumber,
-          floor: addressData.floor,
-          apartmentNumber: addressData.apartmentNumber,
-          landmark: addressData.landmark,
-          // Also store combined address for backwards compatibility
-          address: [
-            addressData.street,
-            addressData.buildingName ? `${addressData.buildingName}` : '',
-            addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
-            addressData.floor ? `الدور ${addressData.floor}` : '',
-            addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
-            addressData.landmark || '',
-          ].filter(Boolean).join('، '),
+          address: combinedAddress,
           city: addressData.city,
           governorate: addressData.governorate,
           isDefault: false,
@@ -287,6 +303,15 @@ export const createOrder = async (
       data: { status: 'COMPLETED' },
     });
 
+    // Mark all items as SOLD
+    const itemIds = listings.map(listing => listing.itemId).filter(Boolean);
+    if (itemIds.length > 0) {
+      await tx.item.updateMany({
+        where: { id: { in: itemIds } },
+        data: { status: 'SOLD' },
+      });
+    }
+
     // Clear cart items within transaction
     await tx.cartItem.deleteMany({
       where: { cart: { userId } },
@@ -311,7 +336,7 @@ export const createOrder = async (
       priority: 'HIGH',
       entityType: 'ORDER',
       entityId: order.id,
-      actionUrl: `/dashboard/orders/${order.id}`,
+      actionUrl: `/dashboard/orders`,
       actionText: 'عرض الطلب',
     });
 
@@ -329,8 +354,8 @@ export const createOrder = async (
         priority: 'HIGH',
         entityType: 'ORDER',
         entityId: order.id,
-        actionUrl: `/dashboard/orders`,
-        actionText: 'عرض الطلبات',
+        actionUrl: `/dashboard/sales`,
+        actionText: 'عرض الطلبات الواردة',
       });
     }
   } catch (notificationError) {
@@ -339,6 +364,15 @@ export const createOrder = async (
   }
 
   return order;
+  } catch (error: any) {
+    logger.error('[createOrder] Error:', error?.message, error?.stack);
+    // Re-throw BadRequestError and NotFoundError as-is
+    if (error instanceof BadRequestError || error instanceof NotFoundError) {
+      throw error;
+    }
+    // For other errors, throw a more descriptive message
+    throw new BadRequestError(`فشل في إنشاء الطلب: ${error?.message || 'خطأ غير متوقع'}`);
+  }
 };
 
 /**
@@ -508,7 +542,7 @@ export const updateOrderStatus = async (
       priority: 'HIGH',
       entityType: 'ORDER',
       entityId: updatedOrder.id,
-      actionUrl: `/dashboard/orders/${updatedOrder.id}`,
+      actionUrl: `/dashboard/orders`,
       actionText: 'عرض الطلب',
     });
   }
@@ -734,25 +768,22 @@ export const createAuctionOrder = async (
 
     if (data.shippingAddress && !data.shippingAddressId) {
       const addressData = data.shippingAddress;
+      // Combine all address parts into a single address field
+      const combinedAddress = [
+        addressData.street,
+        addressData.buildingName ? `${addressData.buildingName}` : '',
+        addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
+        addressData.floor ? `الدور ${addressData.floor}` : '',
+        addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
+        addressData.landmark || '',
+      ].filter(Boolean).join('، ');
+
       const newAddress = await tx.shippingAddress.create({
         data: {
           userId,
           fullName: addressData.fullName,
           phone: addressData.phone,
-          street: addressData.street,
-          buildingName: addressData.buildingName,
-          buildingNumber: addressData.buildingNumber,
-          floor: addressData.floor,
-          apartmentNumber: addressData.apartmentNumber,
-          landmark: addressData.landmark,
-          address: [
-            addressData.street,
-            addressData.buildingName ? `${addressData.buildingName}` : '',
-            addressData.buildingNumber ? `مبنى ${addressData.buildingNumber}` : '',
-            addressData.floor ? `الدور ${addressData.floor}` : '',
-            addressData.apartmentNumber ? `شقة ${addressData.apartmentNumber}` : '',
-            addressData.landmark || '',
-          ].filter(Boolean).join('، '),
+          address: combinedAddress,
           city: addressData.city,
           governorate: addressData.governorate,
           isDefault: false,
@@ -823,6 +854,16 @@ export const createAuctionOrder = async (
       },
     });
 
+    // Mark item as SOLD and listing as COMPLETED
+    await tx.item.update({
+      where: { id: auction.listing.itemId },
+      data: { status: 'SOLD' },
+    });
+    await tx.listing.update({
+      where: { id: auction.listingId },
+      data: { status: 'COMPLETED' },
+    });
+
     return newOrder;
   });
 
@@ -837,7 +878,7 @@ export const createAuctionOrder = async (
       priority: 'HIGH',
       entityType: 'ORDER',
       entityId: order.id,
-      actionUrl: `/dashboard/orders/${order.id}`,
+      actionUrl: `/dashboard/orders`,
       actionText: 'عرض الطلب',
     });
 
@@ -850,12 +891,194 @@ export const createAuctionOrder = async (
       priority: 'HIGH',
       entityType: 'ORDER',
       entityId: order.id,
-      actionUrl: `/dashboard/orders`,
-      actionText: 'عرض الطلبات',
+      actionUrl: `/dashboard/sales`,
+      actionText: 'عرض الطلبات الواردة',
     });
   } catch (notificationError) {
     logger.error('Failed to send auction order notifications:', notificationError);
   }
 
   return order;
+};
+
+/**
+ * Get orders where user is a seller
+ * Shows all orders containing items sold by this user
+ */
+export const getSellerOrders = async (
+  sellerId: string,
+  page: number = 1,
+  limit: number = 20,
+  status?: OrderStatus
+) => {
+  const skip = (page - 1) * limit;
+
+  // Find all orders that contain items sold by this seller
+  const whereClause: any = {
+    items: {
+      some: {
+        sellerId: sellerId,
+      },
+    },
+  };
+
+  if (status) {
+    whereClause.status = status;
+  }
+
+  const total = await prisma.order.count({ where: whereClause });
+
+  const orders = await prisma.order.findMany({
+    where: whereClause,
+    skip,
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      items: {
+        where: {
+          sellerId: sellerId,
+        },
+        include: {
+          listing: {
+            include: {
+              item: {
+                select: {
+                  id: true,
+                  title: true,
+                  images: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      shippingAddress: true,
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  return {
+    orders,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: limit > 0 ? Math.ceil(total / limit) : 1,
+      hasMore: page * limit < total,
+    },
+  };
+};
+
+/**
+ * Update order status (for sellers to mark as shipped/delivered)
+ */
+export const updateSellerOrderStatus = async (
+  sellerId: string,
+  orderId: string,
+  status: OrderStatus,
+  trackingNumber?: string
+) => {
+  // Verify seller has items in this order
+  const order = await prisma.order.findFirst({
+    where: {
+      id: orderId,
+      items: {
+        some: {
+          sellerId: sellerId,
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    throw new NotFoundError('Order not found or you are not a seller in this order');
+  }
+
+  // Sellers can only update to certain statuses
+  const allowedStatuses: OrderStatus[] = [OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
+  if (!allowedStatuses.includes(status)) {
+    throw new BadRequestError('Invalid status update for seller');
+  }
+
+  const updateData: any = { status };
+
+  if (status === OrderStatus.SHIPPED) {
+    updateData.shippedAt = new Date();
+    if (trackingNumber) {
+      updateData.trackingNumber = trackingNumber;
+    }
+  } else if (status === OrderStatus.DELIVERED) {
+    updateData.deliveredAt = new Date();
+  }
+
+  const updatedOrder = await prisma.order.update({
+    where: { id: orderId },
+    data: updateData,
+    include: {
+      items: {
+        include: {
+          listing: {
+            include: {
+              item: true,
+            },
+          },
+        },
+      },
+      shippingAddress: true,
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+        },
+      },
+    },
+  });
+
+  // Send notification to buyer
+  const notificationMessages: Record<string, { title: string; message: string; type: string }> = {
+    [OrderStatus.PROCESSING]: {
+      title: 'جاري تجهيز طلبك 📦',
+      message: `البائع يقوم بتجهيز طلبك رقم ${updatedOrder.orderNumber}`,
+      type: 'TRANSACTION_UPDATE',
+    },
+    [OrderStatus.SHIPPED]: {
+      title: 'تم شحن طلبك 🚚',
+      message: `طلبك رقم ${updatedOrder.orderNumber} في الطريق إليك${trackingNumber ? ` - رقم التتبع: ${trackingNumber}` : ''}`,
+      type: 'TRANSACTION_SHIPPED',
+    },
+    [OrderStatus.DELIVERED]: {
+      title: 'تم التوصيل ✅',
+      message: `تم توصيل طلبك رقم ${updatedOrder.orderNumber} بنجاح`,
+      type: 'TRANSACTION_DELIVERED',
+    },
+  };
+
+  const notification = notificationMessages[status];
+  if (notification) {
+    try {
+      await createNotification({
+        userId: updatedOrder.userId,
+        type: notification.type as any,
+        title: notification.title,
+        message: notification.message,
+        priority: 'HIGH',
+        entityType: 'ORDER',
+        entityId: updatedOrder.id,
+        actionUrl: `/dashboard/orders`,
+        actionText: 'عرض الطلب',
+      });
+    } catch (notificationError) {
+      logger.error('Failed to send order status notification:', notificationError);
+    }
+  }
+
+  return updatedOrder;
 };

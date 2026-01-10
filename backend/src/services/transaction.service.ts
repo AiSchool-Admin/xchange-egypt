@@ -161,6 +161,8 @@ export const buyItemDirectly = async (
     notes?: string;
   }
 ): Promise<{ transaction: any; item: any; message: string }> => {
+  console.log('[buyItemDirectly] Starting with:', { buyerId, itemId: purchaseData.itemId });
+
   // Get item with seller information
   const item = await prisma.item.findUnique({
     where: { id: purchaseData.itemId },
@@ -183,21 +185,32 @@ export const buyItemDirectly = async (
   });
 
   if (!item) {
+    console.log('[buyItemDirectly] Item not found:', purchaseData.itemId);
     throw new NotFoundError('Item not found');
   }
 
+  console.log('[buyItemDirectly] Item found:', { id: item.id, status: item.status, sellerId: item.sellerId });
+
   // Check item is available
   if (item.status !== 'ACTIVE') {
+    console.log('[buyItemDirectly] Item not active:', item.status);
     throw new BadRequestError('Item is not available for purchase');
   }
 
   // Check buyer is not the seller
   if (item.sellerId === buyerId) {
+    console.log('[buyItemDirectly] Buyer is seller');
     throw new BadRequestError('You cannot buy your own item');
   }
 
+  console.log('[buyItemDirectly] Starting Prisma transaction...');
+
   // Use a transaction to ensure atomicity and prevent race conditions
-  const { transaction, listing } = await prisma.$transaction(async (tx) => {
+  let transactionResult: { transaction: any; listing: any };
+  try {
+    transactionResult = await prisma.$transaction(async (tx) => {
+      console.log('[buyItemDirectly] Inside transaction, checking item status...');
+
     // Double-check item is still available (with row-level lock)
     const currentItem = await tx.item.findUnique({
       where: { id: item.id },
@@ -205,8 +218,11 @@ export const buyItemDirectly = async (
     });
 
     if (!currentItem || currentItem.status !== 'ACTIVE') {
+      console.log('[buyItemDirectly] Item no longer active in transaction:', currentItem?.status);
       throw new BadRequestError('Item is no longer available for purchase');
     }
+
+    console.log('[buyItemDirectly] Finding/creating listing...');
 
     // Create or find a listing for this item
     let listingRecord = await tx.listing.findFirst({
@@ -214,6 +230,7 @@ export const buyItemDirectly = async (
     });
 
     if (!listingRecord) {
+      console.log('[buyItemDirectly] Creating new listing...');
       // Create a listing automatically
       listingRecord = await tx.listing.create({
         data: {
@@ -225,21 +242,27 @@ export const buyItemDirectly = async (
           status: 'ACTIVE',
         },
       });
+      console.log('[buyItemDirectly] Listing created:', listingRecord.id);
+    } else {
+      console.log('[buyItemDirectly] Found existing listing:', listingRecord.id);
     }
 
     // Update item status to SOLD first (prevents other buyers)
+    console.log('[buyItemDirectly] Updating item status to SOLD...');
     await tx.item.update({
       where: { id: item.id },
       data: { status: 'SOLD' },
     });
 
     // Update listing status
+    console.log('[buyItemDirectly] Updating listing status to COMPLETED...');
     await tx.listing.update({
       where: { id: listingRecord.id },
       data: { status: 'COMPLETED' },
     });
 
     // Create the transaction record
+    console.log('[buyItemDirectly] Creating transaction record...');
     const txRecord = await tx.transaction.create({
       data: {
         listingId: listingRecord.id,
@@ -270,34 +293,71 @@ export const buyItemDirectly = async (
       },
     });
 
-    return { transaction: txRecord, listing: listingRecord };
-  });
+    console.log('[buyItemDirectly] Transaction record created:', txRecord.id);
+      return { transaction: txRecord, listing: listingRecord };
+    });
+  } catch (dbError: any) {
+    console.error('[buyItemDirectly] Database transaction error:', {
+      message: dbError?.message,
+      code: dbError?.code,
+      meta: dbError?.meta,
+      stack: dbError?.stack,
+    });
 
-  // Send notification to seller about the sale
-  await createNotification({
-    userId: item.sellerId,
-    type: 'ITEM_SOLD',
-    title: 'تم بيع منتجك! 🎉',
-    message: `تم شراء "${item.title}" - يرجى التواصل مع المشتري لإتمام التسليم`,
-    priority: 'HIGH',
-    entityType: 'TRANSACTION',
-    entityId: transaction.id,
-    actionUrl: `/transactions/${transaction.id}`,
-    actionText: 'عرض التفاصيل',
-  });
+    // Convert Prisma errors to user-friendly messages
+    if (dbError?.code === 'P2002') {
+      throw new BadRequestError('هذا المنتج تم شراؤه بالفعل');
+    }
+    if (dbError?.code === 'P2025') {
+      throw new NotFoundError('المنتج غير موجود أو تم حذفه');
+    }
+    if (dbError?.message?.includes('Record to update not found')) {
+      throw new BadRequestError('المنتج غير متاح للشراء');
+    }
 
-  // Send notification to buyer confirming purchase
-  await createNotification({
-    userId: buyerId,
-    type: 'ORDER_CONFIRMED',
-    title: 'تم تأكيد طلبك! ✅',
-    message: `تم شراء "${item.title}" بنجاح - سيتواصل معك البائع قريباً`,
-    priority: 'HIGH',
-    entityType: 'TRANSACTION',
-    entityId: transaction.id,
-    actionUrl: `/transactions/${transaction.id}`,
-    actionText: 'تتبع الطلب',
-  });
+    // Re-throw AppErrors as-is
+    if (dbError instanceof BadRequestError || dbError instanceof NotFoundError) {
+      throw dbError;
+    }
+
+    // Wrap other errors with a user-friendly message
+    throw new BadRequestError(`فشل في إتمام عملية الشراء: ${dbError?.message || 'خطأ غير متوقع'}`);
+  }
+
+  const { transaction, listing } = transactionResult;
+  console.log('[buyItemDirectly] Prisma transaction completed successfully');
+
+  // Send notifications (non-critical - don't fail purchase if notifications fail)
+  try {
+    // Send notification to seller about the sale
+    await createNotification({
+      userId: item.sellerId,
+      type: 'ITEM_SOLD',
+      title: 'تم بيع منتجك! 🎉',
+      message: `تم شراء "${item.title}" - يرجى التواصل مع المشتري لإتمام التسليم`,
+      priority: 'HIGH',
+      entityType: 'TRANSACTION',
+      entityId: transaction.id,
+      actionUrl: `/dashboard/sales`,
+      actionText: 'عرض الطلبات الواردة',
+    });
+
+    // Send notification to buyer confirming purchase
+    await createNotification({
+      userId: buyerId,
+      type: 'ORDER_CONFIRMED',
+      title: 'تم تأكيد طلبك! ✅',
+      message: `تم شراء "${item.title}" بنجاح - سيتواصل معك البائع قريباً`,
+      priority: 'HIGH',
+      entityType: 'TRANSACTION',
+      entityId: transaction.id,
+      actionUrl: `/dashboard/orders`,
+      actionText: 'تتبع الطلب',
+    });
+  } catch (notificationError) {
+    console.error('[buyItemDirectly] Notification error (non-critical):', notificationError);
+    // Don't throw - notifications are non-critical
+  }
 
   return {
     transaction,
@@ -367,11 +427,19 @@ export const getTransactionById = async (
 
 /**
  * Update transaction delivery status
+ * Handles the delivery workflow: PENDING -> SHIPPED -> DELIVERED
+ *
+ * Business Rules:
+ * - Only seller can update to SHIPPED
+ * - Both buyer and seller can confirm DELIVERED
+ * - For non-COD payments, payment must be COMPLETED before shipping
+ * - For COD payments, shipping is allowed with PENDING payment
  */
 export const updateDeliveryStatus = async (
   transactionId: string,
   userId: string,
-  deliveryStatus: 'PENDING' | 'SHIPPED' | 'DELIVERED' | 'RETURNED'
+  deliveryStatus: 'PENDING' | 'SHIPPED' | 'DELIVERED' | 'RETURNED',
+  trackingNumber?: string
 ): Promise<Transaction> => {
   const transaction = await prisma.transaction.findUnique({
     where: { id: transactionId },
@@ -384,27 +452,63 @@ export const updateDeliveryStatus = async (
     throw new NotFoundError('Transaction not found');
   }
 
-  // Only seller can update delivery status (except DELIVERED which buyer can also confirm)
+  // Authorization: Only seller can update delivery status (except DELIVERED which buyer can also confirm)
   if (transaction.sellerId !== userId && deliveryStatus !== 'DELIVERED') {
     throw new ForbiddenError('Only the seller can update delivery status');
   }
 
-  // Validate delivery status transitions
-  if (deliveryStatus === 'SHIPPED' && transaction.deliveryStatus !== 'PENDING') {
-    throw new BadRequestError('Can only ship from PENDING status');
+  // For DELIVERED, buyer must also be authorized
+  if (deliveryStatus === 'DELIVERED' && transaction.buyerId !== userId && transaction.sellerId !== userId) {
+    throw new ForbiddenError('Only buyer or seller can confirm delivery');
   }
 
-  if (deliveryStatus === 'DELIVERED' && transaction.deliveryStatus !== 'SHIPPED') {
-    throw new BadRequestError('Can only deliver from SHIPPED status');
+  // Validate delivery status transitions
+  const currentStatus = transaction.deliveryStatus;
+
+  if (deliveryStatus === 'SHIPPED') {
+    if (currentStatus !== 'PENDING') {
+      throw new BadRequestError('Can only ship orders with PENDING delivery status');
+    }
+    // For non-COD payments, require payment to be completed before shipping
+    const isCOD = transaction.paymentMethod === 'CASH_ON_DELIVERY';
+    if (!isCOD && transaction.paymentStatus !== 'COMPLETED') {
+      throw new BadRequestError('Payment must be confirmed before shipping (except for Cash on Delivery)');
+    }
+  }
+
+  if (deliveryStatus === 'DELIVERED') {
+    if (currentStatus !== 'SHIPPED') {
+      throw new BadRequestError('Can only confirm delivery for SHIPPED orders');
+    }
+  }
+
+  if (deliveryStatus === 'RETURNED') {
+    if (currentStatus !== 'SHIPPED' && currentStatus !== 'DELIVERED') {
+      throw new BadRequestError('Can only return SHIPPED or DELIVERED orders');
+    }
+  }
+
+  // Prepare update data
+  const updateData: any = {
+    deliveryStatus,
+  };
+
+  if (trackingNumber) {
+    updateData.trackingNumber = trackingNumber;
+  }
+
+  if (deliveryStatus === 'DELIVERED') {
+    updateData.completedAt = new Date();
+    // For COD, mark payment as completed when delivered
+    if (transaction.paymentMethod === 'CASH_ON_DELIVERY' && transaction.paymentStatus === 'PENDING') {
+      updateData.paymentStatus = 'COMPLETED';
+    }
   }
 
   // Update transaction
   const updatedTransaction = await prisma.transaction.update({
     where: { id: transactionId },
-    data: {
-      deliveryStatus,
-      ...(deliveryStatus === 'DELIVERED' && { completedAt: new Date() }),
-    },
+    data: updateData,
     include: {
       buyer: {
         select: {
@@ -443,52 +547,84 @@ export const updateDeliveryStatus = async (
     },
   });
 
-  // If transaction is delivered, update listing status and send notifications
-  if (deliveryStatus === 'DELIVERED') {
-    await prisma.listing.update({
-      where: { id: transaction.listingId },
-      data: {
-        status: 'COMPLETED',
-      },
-    });
+  // Get item title for notifications
+  const itemTitle = updatedTransaction.listing?.item?.title || 'المنتج';
 
-    // Get item details for notification
-    const listing = await prisma.listing.findUnique({
-      where: { id: transaction.listingId },
-      include: { item: true },
-    });
+  // Send notifications based on status change (async, non-blocking)
+  sendDeliveryStatusNotifications(
+    deliveryStatus,
+    updatedTransaction,
+    transaction.listingId,
+    transactionId,
+    itemTitle,
+    trackingNumber
+  ).catch(() => {
+    // Notifications are non-critical, silently ignore errors
+  });
 
-    const itemTitle = listing?.item?.title || 'المنتج';
+  return updatedTransaction;
+};
 
-    // Notify seller that delivery is confirmed
+/**
+ * Helper function to send notifications for delivery status changes
+ * Separated to keep main function clean and make notifications non-blocking
+ */
+async function sendDeliveryStatusNotifications(
+  deliveryStatus: string,
+  transaction: any,
+  listingId: string,
+  transactionId: string,
+  itemTitle: string,
+  trackingNumber?: string
+): Promise<void> {
+  if (deliveryStatus === 'SHIPPED') {
     await createNotification({
-      userId: updatedTransaction.sellerId,
+      userId: transaction.buyerId,
+      type: 'ORDER_SHIPPED',
+      title: 'تم شحن طلبك! 📦',
+      message: `تم شحن "${itemTitle}"${trackingNumber ? ` - رقم التتبع: ${trackingNumber}` : ''}`,
+      priority: 'HIGH',
+      entityType: 'TRANSACTION',
+      entityId: transactionId,
+      actionUrl: `/dashboard/orders`,
+      actionText: 'تتبع الطلب',
+    });
+  }
+
+  if (deliveryStatus === 'DELIVERED') {
+    // Update listing status to COMPLETED
+    await prisma.listing.update({
+      where: { id: listingId },
+      data: { status: 'COMPLETED' },
+    });
+
+    // Notify seller
+    await createNotification({
+      userId: transaction.sellerId,
       type: 'ORDER_DELIVERED',
       title: 'تم تسليم الطلب بنجاح! ✅',
       message: `تم تأكيد استلام "${itemTitle}" - شكراً لك!`,
       priority: 'HIGH',
       entityType: 'TRANSACTION',
       entityId: transactionId,
-      actionUrl: `/transactions/${transactionId}`,
+      actionUrl: `/dashboard/sales`,
       actionText: 'عرض التفاصيل',
     });
 
-    // Notify buyer that transaction is complete
+    // Notify buyer
     await createNotification({
-      userId: updatedTransaction.buyerId,
+      userId: transaction.buyerId,
       type: 'ORDER_COMPLETED',
       title: 'اكتملت المعاملة! 🎉',
       message: `تم إكمال معاملة "${itemTitle}" بنجاح - نتمنى لك تجربة سعيدة!`,
       priority: 'MEDIUM',
       entityType: 'TRANSACTION',
       entityId: transactionId,
-      actionUrl: `/transactions/${transactionId}`,
-      actionText: 'تقييم البائع',
+      actionUrl: `/dashboard/orders`,
+      actionText: 'عرض الطلبات',
     });
   }
-
-  return updatedTransaction;
-};
+}
 
 /**
  * Confirm payment for a transaction
@@ -545,138 +681,64 @@ export const confirmPayment = async (
     },
   });
 
-  // Send notification to seller about payment confirmation
-  await createNotification({
-    userId: updatedTransaction.sellerId,
-    type: 'PAYMENT_RECEIVED',
-    title: 'تم استلام الدفع! 💰',
-    message: `تم تأكيد دفع "${updatedTransaction.listing.item.title}" - يرجى شحن المنتج`,
-    priority: 'HIGH',
-    entityType: 'TRANSACTION',
-    entityId: transactionId,
-    actionUrl: `/transactions/${transactionId}`,
-    actionText: 'شحن المنتج',
-  });
+  // Get item title safely
+  const itemTitle = updatedTransaction.listing?.item?.title || 'المنتج';
 
-  // Send notification to buyer confirming payment
-  await createNotification({
-    userId: updatedTransaction.buyerId,
-    type: 'PAYMENT_CONFIRMED',
-    title: 'تم تأكيد الدفع! ✅',
-    message: `تم تأكيد دفعك لـ "${updatedTransaction.listing.item.title}" - سيتم الشحن قريباً`,
-    priority: 'MEDIUM',
-    entityType: 'TRANSACTION',
-    entityId: transactionId,
-    actionUrl: `/transactions/${transactionId}`,
-    actionText: 'تتبع الطلب',
-  });
+  // Send notifications (non-critical - don't fail if notifications fail)
+  try {
+    // Send notification to seller about payment confirmation
+    await createNotification({
+      userId: updatedTransaction.sellerId,
+      type: 'PAYMENT_RECEIVED',
+      title: 'تم استلام الدفع! 💰',
+      message: `تم تأكيد دفع "${itemTitle}" - يرجى شحن المنتج`,
+      priority: 'HIGH',
+      entityType: 'TRANSACTION',
+      entityId: transactionId,
+      actionUrl: `/transactions/${transactionId}`,
+      actionText: 'شحن المنتج',
+    });
+
+    // Send notification to buyer confirming payment
+    await createNotification({
+      userId: updatedTransaction.buyerId,
+      type: 'PAYMENT_CONFIRMED',
+      title: 'تم تأكيد الدفع! ✅',
+      message: `تم تأكيد دفعك لـ "${itemTitle}" - سيتم الشحن قريباً`,
+      priority: 'MEDIUM',
+      entityType: 'TRANSACTION',
+      entityId: transactionId,
+      actionUrl: `/transactions/${transactionId}`,
+      actionText: 'تتبع الطلب',
+    });
+  } catch {
+    // Notifications are non-critical, silently ignore errors
+  }
 
   return updatedTransaction;
 };
 
 /**
  * Mark transaction as shipped
+ * @deprecated Use updateDeliveryStatus instead - kept for backwards compatibility
  */
 export const markAsShipped = async (
   transactionId: string,
   userId: string,
   trackingNumber?: string
 ): Promise<any> => {
-  const transaction = await prisma.transaction.findUnique({
-    where: { id: transactionId },
-  });
-
-  if (!transaction) {
-    throw new NotFoundError('Transaction not found');
-  }
-
-  // Only seller can mark as shipped
-  if (transaction.sellerId !== userId) {
-    throw new ForbiddenError('Only the seller can mark the transaction as shipped');
-  }
-
-  if (transaction.paymentStatus !== 'COMPLETED') {
-    throw new BadRequestError('Can only ship transactions with completed payment');
-  }
-
-  if (transaction.deliveryStatus !== 'PENDING') {
-    throw new BadRequestError('Transaction already shipped');
-  }
-
-  // Update transaction
-  const updatedTransaction = await prisma.transaction.update({
-    where: { id: transactionId },
-    data: {
-      deliveryStatus: 'SHIPPED',
-      trackingNumber,
-    },
-    include: {
-      buyer: {
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-          avatar: true,
-        },
-      },
-      seller: {
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-          avatar: true,
-        },
-      },
-      listing: {
-        include: {
-          item: true,
-        },
-      },
-    },
-  });
-
-  // Send notification to buyer about shipment
-  await createNotification({
-    userId: updatedTransaction.buyerId,
-    type: 'ORDER_SHIPPED',
-    title: 'تم شحن طلبك! 📦',
-    message: `تم شحن "${updatedTransaction.listing.item.title}"${trackingNumber ? ` - رقم التتبع: ${trackingNumber}` : ''}`,
-    priority: 'HIGH',
-    entityType: 'TRANSACTION',
-    entityId: transactionId,
-    actionUrl: `/transactions/${transactionId}`,
-    actionText: 'تتبع الشحنة',
-  });
-
-  return updatedTransaction;
+  return updateDeliveryStatus(transactionId, userId, 'SHIPPED', trackingNumber);
 };
 
 /**
  * Mark transaction as delivered
+ * @deprecated Use updateDeliveryStatus instead - kept for backwards compatibility
  */
 export const markAsDelivered = async (
   transactionId: string,
   userId: string
 ): Promise<any> => {
-  const transaction = await prisma.transaction.findUnique({
-    where: { id: transactionId },
-  });
-
-  if (!transaction) {
-    throw new NotFoundError('Transaction not found');
-  }
-
-  // Either buyer or seller can mark as delivered
-  if (transaction.buyerId !== userId && transaction.sellerId !== userId) {
-    throw new ForbiddenError('You do not have permission to update this transaction');
-  }
-
-  if (transaction.deliveryStatus !== 'SHIPPED') {
-    throw new BadRequestError('Can only mark transactions as delivered in SHIPPED status');
-  }
-
-  // Update transaction delivery status
-  return await updateDeliveryStatus(transactionId, userId, 'DELIVERED');
+  return updateDeliveryStatus(transactionId, userId, 'DELIVERED');
 };
 
 /**
@@ -779,16 +841,21 @@ export const getUserTransactions = async (
   page: number = 1,
   limit: number = 20
 ): Promise<PaginatedResult<any>> => {
+  console.log('[getUserTransactions] Called with:', { userId, role, paymentStatus, page, limit });
+
   const where: any = {};
 
-  // Filter by role
+  // Filter by role - MUST specify role for proper filtering
   if (role === 'buyer') {
     where.buyerId = userId;
+    console.log('[getUserTransactions] Filtering as BUYER:', userId);
   } else if (role === 'seller') {
     where.sellerId = userId;
+    console.log('[getUserTransactions] Filtering as SELLER:', userId);
   } else {
-    // Both buyer and seller
+    // Both buyer and seller - only when no role specified
     where.OR = [{ buyerId: userId }, { sellerId: userId }];
+    console.log('[getUserTransactions] Filtering as BOTH buyer/seller:', userId);
   }
 
   // Filter by payment status
@@ -799,6 +866,7 @@ export const getUserTransactions = async (
   const skip = (page - 1) * limit;
 
   const total = await prisma.transaction.count({ where });
+  console.log('[getUserTransactions] Found total:', total, 'for role:', role);
 
   const transactions = await prisma.transaction.findMany({
     where,
@@ -810,6 +878,8 @@ export const getUserTransactions = async (
         select: {
           id: true,
           fullName: true,
+          phone: true,
+          email: true,
           avatar: true,
         },
       },
@@ -817,6 +887,8 @@ export const getUserTransactions = async (
         select: {
           id: true,
           fullName: true,
+          phone: true,
+          email: true,
           avatar: true,
           businessName: true,
         },

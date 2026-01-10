@@ -94,14 +94,20 @@ export default function CheckoutPage() {
       if (response.ok) {
         const result = await response.json();
         // API returns { success: true, data: {...} }
-        const cartData = result.data || result;
-        setCart(cartData);
+        const cartData = result?.data || result;
         if (!cartData || !cartData.items || cartData.items.length === 0) {
           router.push('/cart');
+          return;
         }
+        setCart(cartData);
+      } else {
+        // Failed to load cart - redirect to cart page
+        console.error('Failed to load cart:', response.status);
+        router.push('/cart');
       }
     } catch (error) {
       console.error('Failed to fetch cart:', error);
+      router.push('/cart');
     } finally {
       setLoading(false);
     }
@@ -187,9 +193,10 @@ export default function CheckoutPage() {
         alert(errorMessage);
         console.error('Order creation failed:', errorData);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create order:', error);
-      alert('Failed to create order. Please try again.');
+      const errorMessage = error?.message || 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.';
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -425,8 +432,8 @@ export default function CheckoutPage() {
                       <div className="w-12 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
                         {item.listing?.item?.images?.[0] && (
                           <img
-                            src={item.listing.item.images[0]}
-                            alt={item.listing.item.title}
+                            src={item.listing?.item?.images?.[0] || ''}
+                            alt={item.listing?.item?.title || 'منتج'}
                             className="w-full h-full object-cover"
                           />
                         )}

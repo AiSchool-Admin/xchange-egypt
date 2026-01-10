@@ -1,17 +1,28 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import {
   Search, Filter, Grid, List, Smartphone, Shield,
   RefreshCw, MapPin, Heart, ChevronDown, Sparkles,
-  Battery, CheckCircle2, AlertCircle, TrendingUp
+  Battery, CheckCircle2, AlertCircle, TrendingUp,
+  Mic, MicOff, X, Clock, TrendingUp as Trending
 } from 'lucide-react';
 import MobileCard from '@/components/mobile/MobileCard';
 import MobileFilters from '@/components/mobile/MobileFilters';
+
+// Popular mobile searches
+const POPULAR_MOBILE_SEARCHES = [
+  { text: 'iPhone 15 Pro Max', icon: '🍎' },
+  { text: 'Samsung S24 Ultra', icon: '📱' },
+  { text: 'iPhone 14', icon: '🍎' },
+  { text: 'Xiaomi', icon: '📲' },
+  { text: 'OPPO Reno', icon: '📱' },
+  { text: 'Huawei', icon: '📱' },
+];
 
 const BRANDS = [
   { value: 'APPLE', label: 'Apple', icon: '🍎' },
@@ -62,6 +73,7 @@ interface MobileListing {
 
 function MobilesContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const t = useTranslations('mobilesPage');
   const locale = useLocale();
   const [listings, setListings] = useState<MobileListing[]>([]);
@@ -70,6 +82,13 @@ function MobilesContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Search states
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [isListening, setIsListening] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -84,14 +103,78 @@ function MobilesContent() {
     sort: searchParams.get('sort') || 'newest',
   });
 
+  // Load search history
   useEffect(() => {
-    fetchListings();
+    const history = localStorage.getItem('mobile_search_history');
+    if (history) {
+      try {
+        setSearchHistory(JSON.parse(history).slice(0, 5));
+      } catch (e) {
+        console.error('Failed to parse search history');
+      }
+    }
+  }, []);
+
+  // Save search to history
+  const saveToHistory = (query: string) => {
+    if (!query.trim()) return;
+    const newHistory = [query, ...searchHistory.filter(h => h !== query)].slice(0, 5);
+    setSearchHistory(newHistory);
+    localStorage.setItem('mobile_search_history', JSON.stringify(newHistory));
+  };
+
+  // Handle search submit
+  const handleSearch = (query: string = searchQuery) => {
+    if (!query.trim()) return;
+    saveToHistory(query);
+    setShowSearchDropdown(false);
+    setCurrentPage(1);
+    // Trigger fetch with search query
+    fetchListings(query);
+  };
+
+  // Voice search
+  const startVoiceSearch = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('متصفحك لا يدعم البحث الصوتي');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ar-EG';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setSearchQuery(transcript);
+      handleSearch(transcript);
+    };
+
+    recognition.start();
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('');
+    searchInputRef.current?.focus();
+  };
+
+  useEffect(() => {
+    fetchListings(searchQuery);
   }, [filters, currentPage]);
 
-  const fetchListings = async () => {
+  const fetchListings = async (query: string = '') => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
+      if (query) params.append('q', query);
       if (filters.brand) params.append('brand', filters.brand);
       if (filters.model) params.append('model', filters.model);
       if (filters.minPrice) params.append('minPrice', filters.minPrice);
@@ -105,13 +188,32 @@ function MobilesContent() {
       params.append('limit', '20');
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings?${params}`);
+
+      if (!response.ok) {
+        console.error('API error:', response.status, response.statusText);
+        setListings([]);
+        setTotalCount(0);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.success) {
         // Backend returns { success, data: [...listings...], pagination: {...} }
         const listingsData = Array.isArray(data.data) ? data.data : [];
         const pagination = data.pagination || {};
-        setListings(listingsData);
+        // Map backend field names to frontend interface
+        const mappedListings = listingsData.map((l: any) => ({
+          ...l,
+          price: l.priceEgp || l.price || 0,
+          title: l.titleAr || l.title || `${l.brand} ${l.model}`,
+          storageCapacity: l.storageGb || l.storageCapacity || 0,
+          seller: l.seller ? {
+            ...l.seller,
+            name: l.seller.fullName || l.seller.name || 'مستخدم',
+          } : null,
+        }));
+        setListings(mappedListings);
         setTotalCount(pagination.total || 0);
       }
     } catch (error) {
@@ -139,16 +241,110 @@ function MobilesContent() {
               <p className="text-xl text-white/90 mb-6">
                 {t('subtitle')}
               </p>
+              {/* Smart Search Bar */}
+              <div className="relative w-full max-w-2xl mb-6">
+                <div className="relative">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setShowSearchDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowSearchDropdown(false), 200)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    placeholder="ابحث عن iPhone, Samsung, Xiaomi..."
+                    className="w-full ps-6 pe-40 py-4 rounded-2xl text-gray-900 text-lg placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-white/30 shadow-xl"
+                    dir="rtl"
+                  />
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {searchQuery && (
+                      <button
+                        onClick={clearSearch}
+                        className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                      >
+                        <X className="w-5 h-5 text-gray-400" />
+                      </button>
+                    )}
+                    <button
+                      onClick={startVoiceSearch}
+                      className={`p-2 rounded-full transition-colors ${
+                        isListening ? 'bg-red-100 text-red-600 animate-pulse' : 'hover:bg-gray-100 text-gray-400'
+                      }`}
+                    >
+                      {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                    </button>
+                    <button
+                      onClick={() => handleSearch()}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl transition-colors"
+                    >
+                      <Search className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Search Dropdown */}
+                {showSearchDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl overflow-hidden z-50" dir="rtl">
+                    {/* Search History */}
+                    {searchHistory.length > 0 && (
+                      <div className="p-3 border-b">
+                        <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          عمليات البحث السابقة
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {searchHistory.map((item, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                setSearchQuery(item);
+                                handleSearch(item);
+                              }}
+                              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors"
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Popular Searches */}
+                    <div className="p-3">
+                      <p className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        الأكثر بحثاً
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {POPULAR_MOBILE_SEARCHES.map((item, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setSearchQuery(item.text);
+                              handleSearch(item.text);
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg text-gray-700 text-sm transition-colors"
+                          >
+                            <span>{item.icon}</span>
+                            <span>{item.text}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className={`flex flex-wrap gap-4 justify-center ${locale === 'ar' ? 'md:justify-start' : 'md:justify-start'}`}>
                 <Link
-                  href="/mobiles/sell"
+                  href="/listing/new?category=MOBILE&back=/mobiles"
                   className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-colors flex items-center gap-2"
                 >
                   <Smartphone className="w-5 h-5" />
                   {t('sellYourMobile')}
                 </Link>
                 <Link
-                  href="/mobiles/barter"
+                  href="/listing/new?category=MOBILE&transaction=BARTER&back=/mobiles"
                   className="bg-white/20 backdrop-blur text-white px-6 py-3 rounded-xl font-bold hover:bg-white/30 transition-colors flex items-center gap-2"
                 >
                   <RefreshCw className="w-5 h-5" />

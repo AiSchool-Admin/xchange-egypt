@@ -82,6 +82,21 @@ export default function NotificationsPage() {
 
     // Handle different notification types
     switch (notification.type) {
+      case 'ITEM_SOLD':
+        // Seller notification - go to sales/incoming orders
+        router.push('/dashboard/sales');
+        break;
+      case 'ORDER_SHIPPED':
+      case 'ORDER_DELIVERED':
+      case 'ORDER_CONFIRMED':
+      case 'ORDER_COMPLETED':
+      case 'TRANSACTION_SHIPPED':
+      case 'TRANSACTION_DELIVERED':
+      case 'TRANSACTION_UPDATE':
+      case 'TRANSACTION_PAYMENT_RECEIVED':
+        // Buyer notification - go to orders page
+        router.push('/dashboard/orders');
+        break;
       case 'BARTER_OFFER_RECEIVED':
       case 'BARTER_OFFER':
         router.push('/barter');
@@ -102,11 +117,7 @@ export default function NotificationsPage() {
         }
         break;
       case 'ORDER':
-        if (notification.entityId) {
-          router.push(`/orders/${notification.entityId}`);
-        } else {
-          router.push('/orders');
-        }
+        router.push('/dashboard/orders');
         break;
       default:
         // For other types, just mark as read

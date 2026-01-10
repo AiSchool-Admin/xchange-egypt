@@ -501,6 +501,46 @@ export const RentalContractType = {
 } as const;
 export type RentalContractType = typeof RentalContractType[keyof typeof RentalContractType];
 
+// Property Transaction Status (different from physical item orders)
+// Properties don't ship - they have viewing, negotiation, contract signing, and registration
+export const PropertyTransactionStatus = {
+  PENDING: 'PENDING',                         // طلب جديد - New request
+  INQUIRY_SENT: 'INQUIRY_SENT',               // تم إرسال الاستفسار - Inquiry sent to seller
+  VIEWING_SCHEDULED: 'VIEWING_SCHEDULED',     // تم جدولة المعاينة - Viewing scheduled
+  VIEWED: 'VIEWED',                           // تمت معاينة العقار - Property viewed
+  NEGOTIATION: 'NEGOTIATION',                 // في مرحلة التفاوض - Negotiating
+  PRICE_AGREED: 'PRICE_AGREED',               // تم الاتفاق على السعر - Price agreed
+  CONTRACT_PENDING: 'CONTRACT_PENDING',       // في انتظار العقد - Awaiting contract
+  CONTRACT_SIGNED: 'CONTRACT_SIGNED',         // تم توقيع العقد - Contract signed
+  PAYMENT_PENDING: 'PAYMENT_PENDING',         // في انتظار الدفع - Awaiting payment
+  ESCROW_FUNDED: 'ESCROW_FUNDED',             // تم إيداع الضمان - Escrow funded
+  REGISTRATION_PENDING: 'REGISTRATION_PENDING', // في انتظار التسجيل - Awaiting registration
+  HANDOVER: 'HANDOVER',                       // تسليم العقار - Property handover
+  COMPLETED: 'COMPLETED',                     // تمت الصفقة - Transaction complete
+  CANCELLED: 'CANCELLED',                     // ملغي - Cancelled
+  REJECTED: 'REJECTED',                       // مرفوض - Rejected
+} as const;
+export type PropertyTransactionStatus = typeof PropertyTransactionStatus[keyof typeof PropertyTransactionStatus];
+
+// Arabic labels for Property Transaction Status (for frontend display)
+export const PropertyTransactionStatusAr: Record<string, string> = {
+  PENDING: 'طلب جديد',
+  INQUIRY_SENT: 'تم إرسال الاستفسار',
+  VIEWING_SCHEDULED: 'تم جدولة المعاينة',
+  VIEWED: 'تمت معاينة العقار',
+  NEGOTIATION: 'في مرحلة التفاوض',
+  PRICE_AGREED: 'تم الاتفاق على السعر',
+  CONTRACT_PENDING: 'في انتظار العقد',
+  CONTRACT_SIGNED: 'تم توقيع العقد',
+  PAYMENT_PENDING: 'في انتظار الدفع',
+  ESCROW_FUNDED: 'تم إيداع الضمان',
+  REGISTRATION_PENDING: 'في انتظار التسجيل',
+  HANDOVER: 'تسليم العقار',
+  COMPLETED: 'تمت الصفقة',
+  CANCELLED: 'ملغي',
+  REJECTED: 'مرفوض',
+};
+
 // ========================================
 // Scrap Marketplace Types
 // ========================================

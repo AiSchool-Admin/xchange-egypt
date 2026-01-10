@@ -181,7 +181,7 @@ export default function RecommendationsPage() {
                 أضف عرض مقايضة
               </Link>
               <Link
-                href="/inventory/add"
+                href="/listing/new"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-bold hover:bg-gray-200 transition"
               >
                 <span>📦</span>

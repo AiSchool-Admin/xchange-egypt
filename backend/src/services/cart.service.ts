@@ -2,32 +2,34 @@ import { NotFoundError, BadRequestError } from '../utils/errors';
 import prisma from '../lib/prisma';
 
 /**
- * Get or create cart for user
+ * Define the cart include clause to be reused
+ * Includes userId in listing for order creation
  */
-export const getOrCreateCart = async (userId: string) => {
-  let cart = await prisma.cart.findUnique({
-    where: { userId },
+const cartInclude = {
+  items: {
     include: {
-      items: {
-        include: {
-          listing: {
+      listing: {
+        select: {
+          id: true,
+          userId: true, // Seller ID - crucial for order creation
+          price: true,
+          currency: true,
+          listingType: true,
+          status: true,
+          item: {
             include: {
-              item: {
-                include: {
-                  category: {
-                    select: {
-                      id: true,
-                      nameAr: true,
-                      nameEn: true,
-                    },
-                  },
-                  seller: {
-                    select: {
-                      id: true,
-                      fullName: true,
-                      avatar: true,
-                    },
-                  },
+              category: {
+                select: {
+                  id: true,
+                  nameAr: true,
+                  nameEn: true,
+                },
+              },
+              seller: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  avatar: true,
                 },
               },
             },
@@ -35,39 +37,19 @@ export const getOrCreateCart = async (userId: string) => {
         },
       },
     },
+  },
+};
+
+export const getOrCreateCart = async (userId: string) => {
+  let cart = await prisma.cart.findUnique({
+    where: { userId },
+    include: cartInclude,
   });
 
   if (!cart) {
     cart = await prisma.cart.create({
       data: { userId },
-      include: {
-        items: {
-          include: {
-            listing: {
-              include: {
-                item: {
-                  include: {
-                    category: {
-                      select: {
-                        id: true,
-                        nameAr: true,
-                        nameEn: true,
-                      },
-                    },
-                    seller: {
-                      select: {
-                        id: true,
-                        fullName: true,
-                        avatar: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+      include: cartInclude,
     });
   }
 
@@ -80,15 +62,26 @@ export const getOrCreateCart = async (userId: string) => {
 export const getCart = async (userId: string) => {
   const cart = await getOrCreateCart(userId);
 
-  // Calculate totals
+  // Calculate totals - convert Decimal to number for calculations
   const subtotal = cart.items.reduce((sum, item) => {
-    return sum + (item.listing.price || 0) * item.quantity;
+    const price = item.listing.price ? Number(item.listing.price) : 0;
+    return sum + price * item.quantity;
   }, 0);
 
   const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Convert listing prices to numbers for frontend compatibility
+  const itemsWithNumberPrices = cart.items.map(item => ({
+    ...item,
+    listing: {
+      ...item.listing,
+      price: item.listing.price ? Number(item.listing.price) : 0,
+    },
+  }));
+
   return {
     ...cart,
+    items: itemsWithNumberPrices,
     subtotal,
     itemCount,
     // Aliases for frontend compatibility

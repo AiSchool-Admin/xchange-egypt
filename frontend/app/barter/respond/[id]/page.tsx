@@ -238,7 +238,7 @@ export default function RespondToOfferPage() {
                     <h3 className="font-bold text-gray-800 mb-2">لا توجد منتجات</h3>
                     <p className="text-gray-600 mb-4">أضف منتجاتك أولاً للتبادل</p>
                     <Link
-                      href="/inventory/add"
+                      href="/listing/new"
                       className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition"
                     >
                       <span>➕</span>

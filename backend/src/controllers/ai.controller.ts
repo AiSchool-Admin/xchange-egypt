@@ -37,20 +37,126 @@ export const categorizeItem = async (
 
     const result = await autoCategorization.categorizeItem(title, description);
 
-    // Fetch category details from database
-    const category = await prisma.category.findUnique({
-      where: { slug: result.categorySlug },
+    // Define parent category mappings for fallback
+    const categoryFallbacks: Record<string, string> = {
+      // Motorola models → motorola-mobiles
+      'motorola-edge-50-ultra': 'motorola-mobiles',
+      'motorola-edge-50-pro': 'motorola-mobiles',
+      'motorola-edge-50-fusion': 'motorola-mobiles',
+      'motorola-edge-40': 'motorola-mobiles',
+      'motorola-razr': 'motorola-mobiles',
+      'moto-g-series': 'motorola-mobiles',
+      // Honor models → honor-mobiles
+      'honor-magic-6-pro': 'honor-mobiles',
+      'honor-magic-5-pro': 'honor-mobiles',
+      'honor-90': 'honor-mobiles',
+      'honor-x-series': 'honor-mobiles',
+      // Oppo models → oppo-mobiles
+      'oppo-find-x7-ultra': 'oppo-mobiles',
+      'oppo-reno-11-pro': 'oppo-mobiles',
+      'oppo-reno-11': 'oppo-mobiles',
+      'oppo-a-series': 'oppo-mobiles',
+      // Vivo models → vivo-mobiles
+      'vivo-x100-pro': 'vivo-mobiles',
+      'vivo-v30-pro': 'vivo-mobiles',
+      'vivo-v30': 'vivo-mobiles',
+      'vivo-y-series': 'vivo-mobiles',
+      // Realme models → realme-mobiles
+      'realme-gt-5-pro': 'realme-mobiles',
+      'realme-12-pro-plus': 'realme-mobiles',
+      'realme-12-pro': 'realme-mobiles',
+      'realme-c-series': 'realme-mobiles',
+      // OnePlus models → oneplus-mobiles
+      'oneplus-12': 'oneplus-mobiles',
+      'oneplus-12r': 'oneplus-mobiles',
+      'oneplus-nord': 'oneplus-mobiles',
+      // Nokia models → nokia-mobiles
+      'nokia-g-series': 'nokia-mobiles',
+      'nokia-c-series': 'nokia-mobiles',
+      // Google Pixel models → google-mobiles
+      'pixel-8-pro': 'google-mobiles',
+      'pixel-8': 'google-mobiles',
+      'pixel-7a': 'google-mobiles',
+      'pixel-fold': 'google-mobiles',
+      // Brand categories → mobiles
+      'motorola-mobiles': 'mobiles',
+      'honor-mobiles': 'mobiles',
+      'oppo-mobiles': 'mobiles',
+      'vivo-mobiles': 'mobiles',
+      'realme-mobiles': 'mobiles',
+      'oneplus-mobiles': 'mobiles',
+      'nokia-mobiles': 'mobiles',
+      'google-mobiles': 'mobiles',
+    };
+
+    // Try to find the category, with fallback to parent categories
+    let categorySlug = result.categorySlug;
+    let category = await prisma.category.findUnique({
+      where: { slug: categorySlug },
       select: {
         id: true,
         nameEn: true,
+        nameAr: true,
         slug: true,
         parent: {
           select: {
+            id: true,
             nameEn: true,
+            nameAr: true,
+            slug: true,
+            parent: {
+              select: {
+                id: true,
+                nameEn: true,
+                nameAr: true,
+                slug: true,
+              },
+            },
           },
         },
       },
     });
+
+    // If not found, try fallback categories
+    let fallbackAttempts = 0;
+    while (!category && categoryFallbacks[categorySlug] && fallbackAttempts < 5) {
+      categorySlug = categoryFallbacks[categorySlug];
+      category = await prisma.category.findUnique({
+        where: { slug: categorySlug },
+        select: {
+          id: true,
+          nameEn: true,
+          nameAr: true,
+          slug: true,
+          parent: {
+            select: {
+              id: true,
+              nameEn: true,
+              nameAr: true,
+              slug: true,
+              parent: {
+                select: {
+                  id: true,
+                  nameEn: true,
+                  nameAr: true,
+                  slug: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      fallbackAttempts++;
+    }
+
+    // Build full category path for display (e.g., "Mobiles ← Samsung ← Galaxy S23")
+    const buildCategoryPath = (cat: any): string => {
+      const parts: string[] = [];
+      if (cat?.parent?.parent?.nameEn) parts.push(cat.parent.parent.nameEn);
+      if (cat?.parent?.nameEn) parts.push(cat.parent.nameEn);
+      if (cat?.nameEn) parts.push(cat.nameEn);
+      return parts.join(' ← ');
+    };
 
     // Fetch alternative category details
     const alternatives = [];
@@ -64,10 +170,20 @@ export const categorizeItem = async (
         select: {
           id: true,
           nameEn: true,
+          nameAr: true,
           slug: true,
           parent: {
             select: {
               nameEn: true,
+              nameAr: true,
+              slug: true,
+              parent: {
+                select: {
+                  nameEn: true,
+                  nameAr: true,
+                  slug: true,
+                },
+              },
             },
           },
         },
@@ -80,8 +196,10 @@ export const categorizeItem = async (
           alternatives.push({
             id: altCat.id,
             name: altCat.nameEn,
+            fullPath: buildCategoryPath(altCat),
             confidence: suggestionData.confidence / 100, // Convert to 0-1
             parentCategory: altCat.parent?.nameEn,
+            grandParentCategory: altCat.parent?.parent?.nameEn,
           });
         }
       }
@@ -93,8 +211,10 @@ export const categorizeItem = async (
       category: {
         id: category?.id || result.categoryId || 'unknown',
         name: category?.nameEn || result.categorySlug,
+        fullPath: buildCategoryPath(category),
         confidence: result.confidence / 100, // Convert to 0-1 for frontend
         parentCategory: category?.parent?.nameEn,
+        grandParentCategory: category?.parent?.parent?.nameEn,
       },
       alternatives,
     });

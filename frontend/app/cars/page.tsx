@@ -460,8 +460,8 @@ export default function CarsMarketplacePage() {
                 <div className="relative h-48 bg-gradient-to-br from-blue-100 to-slate-100">
                   {listing.images?.[0] ? (
                     <img
-                      src={listing.images[0]}
-                      alt={listing.title}
+                      src={listing.images?.[0] || ''}
+                      alt={listing.title || 'سيارة'}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   ) : (

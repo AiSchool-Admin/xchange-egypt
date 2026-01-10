@@ -70,7 +70,9 @@ const formatPrice = (price: number): string => {
   if (price >= 1000000) {
     return `${(price / 1000000).toFixed(1)} مليون`;
   } else if (price >= 1000) {
-    return `${Math.floor(price / 1000)} ألف`;
+    // Always show 1 decimal place for consistency (e.g., 6970 → "7.0 ألف")
+    const thousands = price / 1000;
+    return `${thousands.toFixed(1)} ألف`;
   }
   return price.toLocaleString('ar-EG');
 };

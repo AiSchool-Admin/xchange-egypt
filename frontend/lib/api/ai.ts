@@ -38,6 +38,8 @@ export interface CategorySuggestion {
   name: string;
   confidence: number;
   parentCategory?: string;
+  grandParentCategory?: string;  // For 3-level hierarchy
+  fullPath?: string;  // Full path like "Mobiles ← Samsung ← Galaxy S23"
 }
 
 export interface CategorizationRequest {

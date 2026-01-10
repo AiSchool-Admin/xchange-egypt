@@ -175,7 +175,7 @@ export default function ItemDetailsPage() {
       const response = await getItem(id);
       setItem(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load item');
+      setError(err.response?.data?.error?.message || err.response?.data?.message || 'فشل في تحميل المنتج');
     } finally {
       setLoading(false);
     }
@@ -196,6 +196,16 @@ export default function ItemDetailsPage() {
       router.push('/login');
       return;
     }
+    // Auto-fill user's address and phone
+    const userAddress = user.address ||
+      [user.street, user.district, user.city, user.governorate]
+        .filter(Boolean)
+        .join('، ') || '';
+    setBuyForm(prev => ({
+      ...prev,
+      shippingAddress: prev.shippingAddress || userAddress,
+      phoneNumber: prev.phoneNumber || user.phone || '',
+    }));
     setShowBuyModal(true);
     setBuyError('');
     setBuySuccess(false);
@@ -220,7 +230,13 @@ export default function ItemDetailsPage() {
       setBuySuccess(true);
       setItem({ ...item, status: 'SOLD' });
     } catch (err: any) {
-      setBuyError(err.response?.data?.message || 'فشلت عملية الشراء. يرجى المحاولة مرة أخرى.');
+      // Backend returns errors at data.error.message or data.message
+      const errorMessage = err.response?.data?.error?.message
+        || err.response?.data?.message
+        || err.message
+        || 'فشلت عملية الشراء. يرجى المحاولة مرة أخرى.';
+      setBuyError(errorMessage);
+      console.error('[Purchase Error]', err.response?.data || err.message);
     } finally {
       setBuyLoading(false);
     }
@@ -251,8 +267,8 @@ export default function ItemDetailsPage() {
       });
 
       if (response.ok) {
-        setCartMessage('تمت الإضافة للسلة!');
-        setTimeout(() => setCartMessage(''), 3000);
+        setCartMessage(`تمت إضافة "${item.title}" للسلة بنجاح!`);
+        setTimeout(() => setCartMessage(''), 4000);
       } else {
         const data = await response.json();
         setCartMessage(data.message || 'فشل في الإضافة للسلة');
@@ -394,7 +410,17 @@ export default function ItemDetailsPage() {
     );
   }
 
-  const images = item.images && item.images.length > 0 ? item.images : [];
+  // Normalize images to always have url property
+  const normalizeImage = (img: string | { url: string; isPrimary?: boolean }) => {
+    if (typeof img === 'string') {
+      return { url: img, isPrimary: false };
+    }
+    return img;
+  };
+
+  const images = item.images && item.images.length > 0
+    ? item.images.filter(img => img !== null && img !== undefined).map(normalizeImage)
+    : [];
   const isOwner = user?.id === item.seller?.id;
   const condition = conditionConfig[item.condition] || conditionConfig.GOOD;
   const listingType = listingTypeConfig[item.listingType || 'DIRECT_SALE'] || listingTypeConfig.DIRECT_SALE;
@@ -796,9 +822,14 @@ export default function ItemDetailsPage() {
                           {addingToCart ? 'جاري الإضافة...' : '🛍️ أضف للسلة'}
                         </button>
                         {cartMessage && (
-                          <p className={`text-center text-sm font-medium ${cartMessage.includes('تمت') ? 'text-green-600' : 'text-red-600'}`}>
+                          <div className={`p-3 rounded-xl text-center font-medium animate-pulse ${
+                            cartMessage.includes('تمت')
+                              ? 'bg-green-100 text-green-700 border border-green-200'
+                              : 'bg-red-100 text-red-700 border border-red-200'
+                          }`}>
+                            <span className="mr-2">{cartMessage.includes('تمت') ? '✅' : '❌'}</span>
                             {cartMessage}
-                          </p>
+                          </div>
                         )}
                         <div className="grid grid-cols-2 gap-3">
                           <button

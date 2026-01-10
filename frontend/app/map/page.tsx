@@ -577,7 +577,7 @@ export default function MapPage() {
                 شارك موقعك وساعد المشترين في الوصول إليك بسهولة
               </p>
               <Link
-                href="/inventory/add"
+                href="/listing/new"
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-emerald-600 rounded-xl font-medium hover:bg-gray-100 transition shadow-md"
               >
                 <span>📝</span>

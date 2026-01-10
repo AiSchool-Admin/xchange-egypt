@@ -9,7 +9,7 @@ import {
   MapPin, Calendar, Eye, Heart, Share2, MessageCircle,
   CheckCircle, AlertTriangle, Star, ChevronLeft, ChevronRight,
   Cpu, HardDrive, Camera, Fingerprint, Wifi, Award, Clock,
-  Phone, User, Building, BadgeCheck
+  Phone, User, Building, BadgeCheck, ShoppingCart
 } from 'lucide-react';
 
 interface MobileListing {
@@ -96,25 +96,193 @@ export default function MobileListingDetailPage() {
   const router = useRouter();
   const [listing, setListing] = useState<MobileListing | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isFavorite, setIsFavorite] = useState(false);
   const [showBarterModal, setShowBarterModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [contactMessage, setContactMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageSent, setMessageSent] = useState(false);
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [loadingMyListings, setLoadingMyListings] = useState(false);
+  const [selectedBarterListing, setSelectedBarterListing] = useState<string | null>(null);
+  const [submittingBarter, setSubmittingBarter] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [cartMessage, setCartMessage] = useState('');
 
   useEffect(() => {
-    fetchListing();
+    if (params.id) {
+      fetchListing();
+    }
   }, [params.id]);
+
+  useEffect(() => {
+    if (showBarterModal) {
+      fetchMyListings();
+    }
+  }, [showBarterModal]);
+
+  const fetchMyListings = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+      setLoadingMyListings(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${apiUrl}/mobiles/my-listings?status=ACTIVE`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMyListings(data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching my listings:', err);
+    } finally {
+      setLoadingMyListings(false);
+    }
+  };
+
+  const submitBarterProposal = async () => {
+    if (!selectedBarterListing) {
+      alert('اختر جهازاً للمقايضة');
+      return;
+    }
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setSubmittingBarter(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      const response = await fetch(`${apiUrl}/mobiles/barter/propose`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          offeredListingId: selectedBarterListing,
+          requestedListingId: listing?.id,
+        }),
+      });
+
+      if (response.ok) {
+        alert('تم إرسال عرض المقايضة بنجاح!');
+        setShowBarterModal(false);
+        setSelectedBarterListing(null);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData?.error || 'فشل إرسال العرض');
+      }
+    } catch (err) {
+      console.error('Error submitting barter:', err);
+      alert('حدث خطأ');
+    } finally {
+      setSubmittingBarter(false);
+    }
+  };
 
   const fetchListing = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/listings/${params.id}`);
-      const data = await response.json();
-      if (data.success) {
-        setListing(data.data);
+      setError(null);
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        console.error('API URL not configured');
+        setError('عذراً، حدث خطأ في الإعدادات');
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching listing:', error);
+
+      const response = await fetch(`${apiUrl}/mobiles/listings/${params.id}`);
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('الإعلان غير موجود');
+        } else {
+          setError('حدث خطأ أثناء تحميل البيانات');
+        }
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+      const rawListing = data.data?.listing || data.data;
+
+      if (data.success && rawListing) {
+        // Map backend field names to frontend expected names
+        const mappedListing: MobileListing = {
+          id: rawListing.id,
+          title: rawListing.title || rawListing.titleAr || '',
+          description: rawListing.description || rawListing.descriptionAr || '',
+          brand: rawListing.brand || '',
+          model: rawListing.model || '',
+          variant: rawListing.variant || '',
+          color: rawListing.color || rawListing.colorAr || '',
+          storageCapacity: rawListing.storageGb || rawListing.storageCapacity || 0,
+          ramSize: rawListing.ramGb || rawListing.ramSize || 0,
+          condition: rawListing.conditionGrade || rawListing.condition || 'C',
+          conditionNotes: rawListing.conditionNotes || '',
+          price: rawListing.priceEgp || rawListing.price || 0,
+          acceptsBarter: rawListing.acceptsBarter || false,
+          barterPreferences: rawListing.barterPreferences || [],
+          images: rawListing.images || [],
+          imeiVerified: rawListing.imeiVerified || false,
+          imeiStatus: rawListing.imeiStatus || '',
+          batteryHealth: rawListing.batteryHealth || 0,
+          screenCondition: rawListing.screenCondition || '',
+          bodyCondition: rawListing.bodyCondition || '',
+          accessories: rawListing.accessories || rawListing.accessoriesDetails ? [rawListing.accessoriesDetails] : [],
+          warranty: rawListing.warranty || false,
+          warrantyExpiry: rawListing.warrantyExpiry || null,
+          purchaseDate: rawListing.purchaseDate || null,
+          governorate: rawListing.governorate || '',
+          city: rawListing.city || '',
+          viewCount: rawListing.viewsCount || rawListing.viewCount || 0,
+          favoriteCount: rawListing.favoritesCount || rawListing.favoriteCount || 0,
+          status: rawListing.status || '',
+          createdAt: rawListing.createdAt || '',
+          seller: rawListing.seller ? {
+            id: rawListing.seller.id || '',
+            name: rawListing.seller.fullName || rawListing.seller.name || 'مستخدم',
+            avatar: rawListing.seller.avatar || '',
+            trustLevel: rawListing.seller.trustLevel || 'new',
+            rating: rawListing.seller.rating || 0,
+            reviewCount: rawListing.seller.totalReviews || rawListing.seller.reviewCount || 0,
+            joinedAt: rawListing.seller.createdAt || rawListing.seller.joinedAt || '',
+            completedSales: rawListing.seller.completedSales || 0,
+            responseRate: rawListing.seller.responseRate || 0,
+            isVerified: rawListing.seller.isVerified || false,
+          } : {
+            id: '',
+            name: 'مستخدم',
+            avatar: '',
+            trustLevel: 'new',
+            rating: 0,
+            reviewCount: 0,
+            joinedAt: '',
+            completedSales: 0,
+            responseRate: 0,
+            isVerified: false,
+          },
+          diagnostics: rawListing.diagnostics || null,
+          priceReference: rawListing.priceReference || null,
+        };
+        setListing(mappedListing);
+      } else {
+        setError('الإعلان غير موجود');
+      }
+    } catch (err) {
+      console.error('Error fetching listing:', err);
+      setError('تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت');
     } finally {
       setLoading(false);
     }
@@ -139,6 +307,83 @@ export default function MobileListingDetailPage() {
     }
   };
 
+  const sendContactMessage = async () => {
+    if (!contactMessage.trim()) return;
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    if (!listing?.seller?.id) {
+      alert('لا يمكن إرسال الرسالة - معلومات البائع غير متوفرة');
+      return;
+    }
+
+    try {
+      setSendingMessage(true);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      // Step 1: Create or get conversation
+      const convResponse = await fetch(`${apiUrl}/chat/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          participant2Id: listing.seller.id,
+          itemId: listing.id,
+        }),
+      });
+
+      if (!convResponse.ok) {
+        const errorData = await convResponse.json().catch(() => ({}));
+        alert(errorData?.error?.message || 'فشل في بدء المحادثة');
+        return;
+      }
+
+      const convData = await convResponse.json();
+      const conversationId = convData.data?.id || convData.data?.conversation?.id;
+
+      if (!conversationId) {
+        alert('فشل في إنشاء المحادثة');
+        return;
+      }
+
+      // Step 2: Send message
+      const response = await fetch(`${apiUrl}/chat/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          conversationId: conversationId,
+          content: contactMessage,
+        }),
+      });
+
+      if (response.ok) {
+        setMessageSent(true);
+        setContactMessage('');
+        setTimeout(() => {
+          setShowContactModal(false);
+          setMessageSent(false);
+        }, 2000);
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData?.error?.message || 'فشل إرسال الرسالة، حاول مرة أخرى');
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      alert('حدث خطأ في إرسال الرسالة');
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
@@ -152,14 +397,52 @@ export default function MobileListingDetailPage() {
   };
 
   const nextImage = () => {
-    if (listing) {
+    if (listing && listing.images && listing.images.length > 0) {
       setCurrentImageIndex((prev) => (prev + 1) % listing.images.length);
     }
   };
 
   const prevImage = () => {
-    if (listing) {
+    if (listing && listing.images && listing.images.length > 0) {
       setCurrentImageIndex((prev) => (prev - 1 + listing.images.length) % listing.images.length);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    if (!listing) return;
+
+    setAddingToCart(true);
+    setCartMessage('');
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/cart/items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          itemId: listing.id,
+          quantity: 1,
+        }),
+      });
+
+      if (response.ok) {
+        setCartMessage('تمت الإضافة للسلة!');
+        setTimeout(() => setCartMessage(''), 3000);
+      } else {
+        const data = await response.json();
+        setCartMessage(data.error?.message || data.message || 'فشل في الإضافة للسلة');
+      }
+    } catch (err) {
+      setCartMessage('فشل في الإضافة للسلة');
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -171,21 +454,31 @@ export default function MobileListingDetailPage() {
     );
   }
 
-  if (!listing) {
+  if (error || !listing) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center" dir="rtl">
         <Smartphone className="w-16 h-16 text-gray-400 mb-4" />
-        <h2 className="text-xl font-bold text-gray-900 mb-2">الإعلان غير موجود</h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-2">
+          {error || 'الإعلان غير موجود'}
+        </h2>
         <p className="text-gray-600 mb-4">قد يكون تم حذفه أو انتهت صلاحيته</p>
-        <Link href="/mobiles" className="bg-indigo-600 text-white px-6 py-2 rounded-lg">
-          العودة للقائمة
-        </Link>
+        <div className="flex gap-3">
+          <button
+            onClick={() => fetchListing()}
+            className="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+          >
+            إعادة المحاولة
+          </button>
+          <Link href="/mobiles" className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors">
+            العودة للقائمة
+          </Link>
+        </div>
       </div>
     );
   }
 
   const condition = CONDITION_LABELS[listing.condition] || CONDITION_LABELS['C'];
-  const trustLevel = TRUST_LEVELS[listing.seller.trustLevel] || TRUST_LEVELS['new'];
+  const trustLevel = TRUST_LEVELS[listing.seller?.trustLevel || 'new'] || TRUST_LEVELS['new'];
   const TrustIcon = trustLevel.icon;
 
   return (
@@ -216,14 +509,14 @@ export default function MobileListingDetailPage() {
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="relative aspect-square">
                 <Image
-                  src={listing.images[currentImageIndex] || '/images/mobile-placeholder.jpg'}
+                  src={listing.images?.[currentImageIndex] || '/images/mobile-placeholder.jpg'}
                   alt={listing.title}
                   fill
                   className="object-contain bg-gray-100"
                 />
 
                 {/* Navigation Arrows */}
-                {listing.images.length > 1 && (
+                {listing.images && listing.images.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
@@ -258,7 +551,7 @@ export default function MobileListingDetailPage() {
               </div>
 
               {/* Thumbnails */}
-              {listing.images.length > 1 && (
+              {listing.images && listing.images.length > 1 && (
                 <div className="p-4 flex gap-2 overflow-x-auto">
                   {listing.images.map((img, idx) => (
                     <button
@@ -297,9 +590,9 @@ export default function MobileListingDetailPage() {
                 </div>
                 <div className="text-left">
                   <p className="text-3xl font-bold text-indigo-600">
-                    {listing.price.toLocaleString('ar-EG')} ج.م
+                    {(listing.price || 0).toLocaleString('ar-EG')} ج.م
                   </p>
-                  {listing.priceReference && (
+                  {listing.priceReference && listing.priceReference.avgPrice && (
                     <p className="text-sm text-gray-500 mt-1">
                       متوسط السوق: {listing.priceReference.avgPrice.toLocaleString('ar-EG')} ج.م
                     </p>
@@ -501,53 +794,62 @@ export default function MobileListingDetailPage() {
             {/* Seller Info */}
             <div className="bg-white rounded-xl shadow-sm p-6 sticky top-20">
               <h2 className="text-lg font-bold mb-4">البائع</h2>
-              <div className="flex items-center gap-4 mb-4">
-                <div className="relative">
-                  <Image
-                    src={listing.seller.avatar || '/images/default-avatar.png'}
-                    alt={listing.seller.name}
-                    width={60}
-                    height={60}
-                    className="rounded-full"
-                  />
-                  {listing.seller.isVerified && (
-                    <CheckCircle className="absolute -bottom-1 -right-1 w-5 h-5 text-blue-500 bg-white rounded-full" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-bold">{listing.seller.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${trustLevel.color}`}>
-                      <TrustIcon className="w-3 h-3" />
-                      {trustLevel.label}
-                    </span>
+              {listing.seller ? (
+                <>
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="relative">
+                      <Image
+                        src={listing.seller.avatar || '/images/default-avatar.png'}
+                        alt={listing.seller.name}
+                        width={60}
+                        height={60}
+                        className="rounded-full"
+                      />
+                      {listing.seller.isVerified && (
+                        <CheckCircle className="absolute -bottom-1 -right-1 w-5 h-5 text-blue-500 bg-white rounded-full" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-bold">{listing.seller.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${trustLevel.color}`}>
+                          <TrustIcon className="w-3 h-3" />
+                          {trustLevel.label}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-center gap-1 text-yellow-500 mb-1">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="font-bold">{listing.seller.rating.toFixed(1)}</span>
+                  <div className="grid grid-cols-2 gap-3 mb-4 text-sm">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-center gap-1 text-yellow-500 mb-1">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="font-bold">{listing.seller.rating?.toFixed(1) || '0.0'}</span>
+                      </div>
+                      <p className="text-gray-500">{listing.seller.reviewCount || 0} تقييم</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="font-bold text-indigo-600">{listing.seller.completedSales || 0}</p>
+                      <p className="text-gray-500">صفقة مكتملة</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="font-bold text-green-600">{listing.seller.responseRate || 0}%</p>
+                      <p className="text-gray-500">معدل الرد</p>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <p className="font-bold text-gray-700">
+                        {listing.seller.joinedAt ? new Date(listing.seller.joinedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short' }) : '-'}
+                      </p>
+                      <p className="text-gray-500">تاريخ الانضمام</p>
+                    </div>
                   </div>
-                  <p className="text-gray-500">{listing.seller.reviewCount} تقييم</p>
+                </>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <User className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>معلومات البائع غير متوفرة</p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="font-bold text-indigo-600">{listing.seller.completedSales}</p>
-                  <p className="text-gray-500">صفقة مكتملة</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="font-bold text-green-600">{listing.seller.responseRate}%</p>
-                  <p className="text-gray-500">معدل الرد</p>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <p className="font-bold text-gray-700">
-                    {new Date(listing.seller.joinedAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short' })}
-                  </p>
-                  <p className="text-gray-500">تاريخ الانضمام</p>
-                </div>
-              </div>
+              )}
 
               {/* Action Buttons */}
               <div className="space-y-3">
@@ -567,6 +869,21 @@ export default function MobileListingDetailPage() {
                     <RefreshCw className="w-5 h-5" />
                     اقترح مقايضة
                   </button>
+                )}
+
+                {/* Add to Cart Button */}
+                <button
+                  onClick={handleAddToCart}
+                  disabled={addingToCart}
+                  className="w-full bg-amber-500 text-white py-3 rounded-xl font-bold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  {addingToCart ? 'جاري الإضافة...' : 'أضف للسلة'}
+                </button>
+                {cartMessage && (
+                  <p className={`text-center text-sm font-medium ${cartMessage.includes('تمت') ? 'text-green-600' : 'text-red-600'}`}>
+                    {cartMessage}
+                  </p>
                 )}
 
                 <Link
@@ -614,21 +931,41 @@ export default function MobileListingDetailPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h3 className="text-lg font-bold mb-4">تواصل مع البائع</h3>
-            <textarea
-              placeholder="اكتب رسالتك هنا..."
-              className="w-full border border-gray-200 rounded-lg p-3 h-32 resize-none mb-4"
-            ></textarea>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowContactModal(false)}
-                className="flex-1 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                إلغاء
-              </button>
-              <button className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                إرسال
-              </button>
-            </div>
+            {messageSent ? (
+              <div className="text-center py-8">
+                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <p className="text-green-600 font-medium">تم إرسال رسالتك بنجاح!</p>
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={contactMessage}
+                  onChange={(e) => setContactMessage(e.target.value)}
+                  placeholder="اكتب رسالتك هنا..."
+                  className="w-full border border-gray-200 rounded-lg p-3 h-32 resize-none mb-4"
+                  disabled={sendingMessage}
+                ></textarea>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowContactModal(false);
+                      setContactMessage('');
+                    }}
+                    className="flex-1 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                    disabled={sendingMessage}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={sendContactMessage}
+                    disabled={sendingMessage || !contactMessage.trim()}
+                    className="flex-1 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {sendingMessage ? 'جاري الإرسال...' : 'إرسال'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -640,23 +977,81 @@ export default function MobileListingDetailPage() {
             <h3 className="text-lg font-bold mb-4">اقتراح مقايضة</h3>
             <p className="text-gray-600 mb-4">اختر الجهاز الذي تريد المقايضة به:</p>
             <div className="space-y-3 max-h-60 overflow-y-auto mb-4">
-              <p className="text-center text-gray-500 py-8">
-                يجب أن يكون لديك إعلانات نشطة للمقايضة
-              </p>
+              {loadingMyListings ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-600 border-t-transparent"></div>
+                </div>
+              ) : myListings.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">
+                  يجب أن يكون لديك إعلانات نشطة للمقايضة
+                </p>
+              ) : (
+                myListings.map((item) => (
+                  <label
+                    key={item.id}
+                    className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                      selectedBarterListing === item.id
+                        ? 'border-purple-600 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="barterListing"
+                      value={item.id}
+                      checked={selectedBarterListing === item.id}
+                      onChange={() => setSelectedBarterListing(item.id)}
+                      className="hidden"
+                    />
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                      {item.images?.[0] ? (
+                        <Image src={item.images[0]} alt="" width={48} height={48} className="object-cover w-full h-full" />
+                      ) : (
+                        <Smartphone className="w-6 h-6 m-3 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{item.title || item.titleAr || `${item.brand} ${item.model}`}</p>
+                      <p className="text-xs text-gray-500">{(item.priceEgp || 0).toLocaleString('ar-EG')} ج.م</p>
+                    </div>
+                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 ${
+                      selectedBarterListing === item.id ? 'border-purple-600 bg-purple-600' : 'border-gray-300'
+                    }`}>
+                      {selectedBarterListing === item.id && (
+                        <CheckCircle className="w-full h-full text-white" />
+                      )}
+                    </div>
+                  </label>
+                ))
+              )}
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => setShowBarterModal(false)}
+                onClick={() => {
+                  setShowBarterModal(false);
+                  setSelectedBarterListing(null);
+                }}
                 className="flex-1 py-2 border border-gray-200 rounded-lg hover:bg-gray-50"
+                disabled={submittingBarter}
               >
                 إلغاء
               </button>
-              <Link
-                href="/mobiles/sell"
-                className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-center"
-              >
-                أضف جهازك أولاً
-              </Link>
+              {myListings.length === 0 ? (
+                <Link
+                  href="/mobiles/sell"
+                  className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-center"
+                >
+                  أضف جهازك أولاً
+                </Link>
+              ) : (
+                <button
+                  onClick={submitBarterProposal}
+                  disabled={!selectedBarterListing || submittingBarter}
+                  className="flex-1 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {submittingBarter ? 'جاري الإرسال...' : 'إرسال العرض'}
+                </button>
+              )}
             </div>
           </div>
         </div>

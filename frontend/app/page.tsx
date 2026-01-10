@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAuth } from '@/lib/contexts/AuthContext';
-import { getItems, Item } from '@/lib/api/items';
+import { getItems, Item, getPrimaryImageUrl } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 import { getAuctions, Auction } from '@/lib/api/auctions';
 import apiClient from '@/lib/api/client';
@@ -660,7 +660,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url).filter(Boolean) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
@@ -710,7 +710,7 @@ export default function HomePage() {
                   id={item.id}
                   title={item.title}
                   price={item.estimatedValue || 0}
-                  images={item.images?.map(img => img.url) || []}
+                  images={item.images?.map(img => typeof img === 'string' ? img : img.url).filter(Boolean) || []}
                   condition={item.condition}
                   governorate={item.governorate}
                   listingType={item.listingType as any}
@@ -772,8 +772,8 @@ export default function HomePage() {
                 barterItems.slice(0, 4).map((item) => (
                   <div key={item.id} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
                     <div className="aspect-square bg-white/20 rounded-xl mb-3 flex items-center justify-center text-4xl">
-                      {item.images?.[0]?.url ? (
-                        <img src={item.images[0].url} alt={item.title} className="w-full h-full object-cover rounded-xl" />
+                      {getPrimaryImageUrl(item.images) ? (
+                        <img src={getPrimaryImageUrl(item.images)} alt={item.title} className="w-full h-full object-cover rounded-xl" />
                       ) : (
                         '📦'
                       )}
@@ -858,7 +858,7 @@ export default function HomePage() {
             {user ? (
               <>
                 <Link
-                  href="/inventory/add"
+                  href="/listing/new"
                   className="px-8 py-4 bg-white text-emerald-600 rounded-xl font-bold text-lg hover:bg-white/90 transition-colors shadow-lg"
                 >
                   {t('home.cta.addFirstListing')}
@@ -879,10 +879,10 @@ export default function HomePage() {
                   {t('home.cta.createFreeAccount')}
                 </Link>
                 <Link
-                  href="/login"
+                  href="/listing/new"
                   className="px-8 py-4 bg-white/20 text-white rounded-xl font-bold text-lg hover:bg-white/30 transition-colors"
                 >
-                  {t('home.cta.login')}
+                  {t('home.cta.addListing')}
                 </Link>
               </>
             )}

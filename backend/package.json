@@ -37,6 +37,7 @@
     "db:reset": "prisma migrate reset",
     "db:check": "tsx scripts/check-database.ts",
     "db:health": "tsx scripts/check-database.ts",
+    "db:cleanup": "tsx prisma/cleanup-duplicates.ts",
     "prisma:deploy": "prisma migrate deploy"
   },
   "keywords": [

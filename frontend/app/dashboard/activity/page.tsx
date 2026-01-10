@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/contexts/AuthContext';
 import apiClient from '@/lib/api/client';
+import { getPrimaryImageUrl } from '@/lib/api/items';
 
 // Types
 interface ActivityItem {
@@ -343,8 +344,8 @@ export default function ActivityDashboardPage() {
                       className="flex gap-4 p-4 border rounded-lg hover:border-primary-300 transition"
                     >
                       <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                        {item.images?.[0]?.url ? (
-                          <img src={item.images[0].url} alt={item.title} className="w-full h-full object-cover" />
+                        {getPrimaryImageUrl(item.images) ? (
+                          <img src={getPrimaryImageUrl(item.images)} alt={item.title} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>
                         )}
@@ -423,8 +424,8 @@ export default function ActivityDashboardPage() {
                           className="flex gap-4 p-4 border rounded-lg hover:border-purple-300 transition"
                         >
                           <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                            {auction.listing?.item?.images?.[0]?.url ? (
-                              <img src={auction.listing.item.images[0].url} alt="" className="w-full h-full object-cover" />
+                            {getPrimaryImageUrl(auction.listing?.item?.images) ? (
+                              <img src={getPrimaryImageUrl(auction.listing?.item?.images)} alt="" className="w-full h-full object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-2xl">🔨</div>
                             )}
@@ -536,8 +537,8 @@ export default function ActivityDashboardPage() {
                             className="flex gap-4 p-4 border-2 border-orange-200 bg-orange-50 rounded-lg hover:border-orange-400 transition"
                           >
                             <div className="w-14 h-14 bg-white rounded-lg overflow-hidden flex-shrink-0 border">
-                              {offeredItems[0]?.item?.images?.[0]?.url ? (
-                                <img src={offeredItems[0].item.images[0].url} alt="" className="w-full h-full object-cover" />
+                              {getPrimaryImageUrl(offeredItems[0]?.item?.images) ? (
+                                <img src={getPrimaryImageUrl(offeredItems[0]?.item?.images)} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-2xl">🔄</div>
                               )}
@@ -581,8 +582,8 @@ export default function ActivityDashboardPage() {
                             className="flex gap-4 p-4 border rounded-lg hover:border-teal-300 hover:bg-gray-50 transition"
                           >
                             <div className="w-14 h-14 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                              {offeredItems[0]?.item?.images?.[0]?.url ? (
-                                <img src={offeredItems[0].item.images[0].url} alt="" className="w-full h-full object-cover" />
+                              {getPrimaryImageUrl(offeredItems[0]?.item?.images) ? (
+                                <img src={getPrimaryImageUrl(offeredItems[0]?.item?.images)} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-2xl">🔄</div>
                               )}
@@ -652,7 +653,7 @@ export default function ActivityDashboardPage() {
                 <p className="text-gray-600 mb-6">ابدأ بإضافة منتجات أو التسوق لتظهر حركاتك هنا</p>
                 <div className="flex justify-center gap-4">
                   <Link
-                    href="/inventory/add"
+                    href="/listing/new"
                     className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition"
                   >
                     ➕ أضف منتج

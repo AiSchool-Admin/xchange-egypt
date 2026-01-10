@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getItems, getFeaturedItems, Item, PromotionTier } from '@/lib/api/items';
+import { getItems, getFeaturedItems, Item, PromotionTier, getPrimaryImageUrl } from '@/lib/api/items';
 import { FeaturedIndicator } from './FeaturedBadge';
 
 interface FeaturedSectionProps {
@@ -154,9 +154,9 @@ export default function FeaturedSection({
 
                 {/* Image */}
                 <div className="relative h-44 bg-gray-100 overflow-hidden">
-                  {item.images && item.images.length > 0 ? (
+                  {getPrimaryImageUrl(item.images) ? (
                     <img
-                      src={item.images[0].url}
+                      src={getPrimaryImageUrl(item.images)}
                       alt={item.title}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

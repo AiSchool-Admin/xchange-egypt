@@ -4,10 +4,8 @@
  */
 
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { MobileListingStatus, MobileTransactionStatus, MobileBarterProposalStatus, MobileBrand } from '../types';
-
-const prisma = new PrismaClient();
 
 // Interface for barter preferences JSON
 interface BarterPreferences {
@@ -335,41 +333,132 @@ export const createListing = async (req: Request, res: Response) => {
     // Generate verification code
     const verificationCode = `XCH-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
 
+    // Validate and parse numeric fields
+    const parsedStorageGb = parseInt(storageGb) || 64; // Default to 64GB if invalid
+    const parsedRamGb = ramGb ? parseInt(ramGb) : null;
+    const parsedBatteryHealth = batteryHealth ? parseInt(batteryHealth) : null;
+    const parsedPriceEgp = parseFloat(priceEgp) || 0;
+
+    // Map screen condition - valid values: PERFECT, MINOR_SCRATCHES, CRACKED, REPLACED
+    const screenConditionMap: Record<string, string> = {
+      'PERFECT': 'PERFECT',
+      'GOOD': 'MINOR_SCRATCHES', // Map GOOD to MINOR_SCRATCHES
+      'MINOR_SCRATCHES': 'MINOR_SCRATCHES',
+      'CRACKED': 'CRACKED',
+      'REPLACED': 'REPLACED',
+      'FAIR': 'CRACKED',
+      'POOR': 'CRACKED'
+    };
+    const mappedScreenCondition = screenConditionMap[screenCondition] || 'MINOR_SCRATCHES';
+
+    // Map body condition - valid values: LIKE_NEW, GOOD, FAIR, POOR
+    const bodyConditionMap: Record<string, string> = {
+      'LIKE_NEW': 'LIKE_NEW',
+      'GOOD': 'GOOD',
+      'FAIR': 'FAIR',
+      'POOR': 'POOR',
+      'PERFECT': 'LIKE_NEW',
+      'MINOR_SCRATCHES': 'GOOD'
+    };
+    const mappedBodyCondition = bodyConditionMap[bodyCondition] || 'GOOD';
+
+    // Find or create the Mobiles category for the general marketplace
+    let mobilesCategory = await prisma.category.findFirst({
+      where: {
+        OR: [
+          { slug: 'mobiles' },
+          { slug: 'mobile-phones' },
+          { nameEn: 'Mobiles' },
+          { nameAr: 'موبايلات' }
+        ]
+      }
+    });
+
+    // Map conditionGrade to ItemCondition for general marketplace
+    const itemConditionMap: Record<string, string> = {
+      'A': 'LIKE_NEW',
+      'B': 'GOOD',
+      'C': 'FAIR',
+      'D': 'POOR'
+    };
+    const mappedItemCondition = itemConditionMap[conditionGrade] || 'GOOD';
+
+    // Create the mobile listing
     const listing = await prisma.mobileListing.create({
       data: {
         sellerId: userId,
-        title,
-        titleAr,
-        description,
-        descriptionAr,
-        brand,
-        model,
-        storageGb: parseInt(storageGb),
-        ramGb: ramGb ? parseInt(ramGb) : null,
-        color,
-        colorAr,
-        imei,
-        conditionGrade,
-        batteryHealth: batteryHealth ? parseInt(batteryHealth) : null,
-        screenCondition,
-        bodyCondition,
+        title: title || titleAr || 'موبايل للبيع',
+        titleAr: titleAr || title || 'موبايل للبيع',
+        description: description || descriptionAr || '',
+        descriptionAr: descriptionAr || description || '',
+        brand: brand || 'OTHER',
+        model: model || 'Unknown',
+        storageGb: parsedStorageGb,
+        ramGb: parsedRamGb,
+        color: color || '',
+        colorAr: colorAr || color || '',
+        imei: imei || null, // IMEI is now optional
+        conditionGrade: conditionGrade || 'B',
+        batteryHealth: parsedBatteryHealth,
+        screenCondition: mappedScreenCondition as any,
+        bodyCondition: mappedBodyCondition as any,
         originalParts: originalParts ?? true,
         hasBox: hasBox ?? false,
         hasAccessories: hasAccessories ?? false,
-        accessoriesDetails,
-        priceEgp: parseFloat(priceEgp),
+        accessoriesDetails: accessoriesDetails || null,
+        priceEgp: parsedPriceEgp,
         negotiable: negotiable ?? true,
         acceptsBarter: acceptsBarter ?? false,
         barterPreferences: barterPreferences || null,
         images: images || [],
         verificationCode,
-        governorate,
-        city,
-        district,
-        status: 'DRAFT',
+        governorate: governorate || 'القاهرة',
+        city: city || '',
+        district: district || '',
+        status: 'ACTIVE', // Changed from DRAFT to make listings visible immediately
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       }
     });
+
+    // Also create an entry in the general marketplace (items table)
+    const fullTitle = title || titleAr || `${brand} ${model}`;
+    const fullDescription = description || descriptionAr || `${brand} ${model} - ${parsedStorageGb}GB - ${governorate || 'القاهرة'}`;
+
+    try {
+      // Create Item record
+      const item = await prisma.item.create({
+        data: {
+          sellerId: userId,
+          title: fullTitle,
+          description: fullDescription,
+          categoryId: mobilesCategory?.id || null,
+          condition: mappedItemCondition as any,
+          estimatedValue: parsedPriceEgp,
+          images: images || [],
+          governorate: governorate || 'القاهرة',
+          city: city || null,
+          district: district || null,
+          status: 'ACTIVE'
+        }
+      });
+
+      // Create Listing record (required for cart and purchase functionality)
+      await prisma.listing.create({
+        data: {
+          itemId: item.id,
+          userId: userId,
+          listingType: 'DIRECT_SALE',
+          price: parsedPriceEgp,
+          currency: 'EGP',
+          status: 'ACTIVE'
+        }
+      });
+
+      console.log('✅ Mobile listing also added to general marketplace with Listing record');
+    } catch (itemError) {
+      // Log but don't fail if item creation fails - mobile listing is the primary record
+      console.error('Warning: Failed to create item in general marketplace:', itemError);
+    }
 
     res.status(201).json({
       success: true,

@@ -96,12 +96,12 @@ interface PropertyData {
   isFavorite?: boolean;
   owner: {
     id: string;
-    name: string;
+    fullName: string;
     avatar?: string;
     phone?: string;
     isVerified: boolean;
-    memberSince: Date;
-    propertiesCount: number;
+    memberSince?: Date;
+    propertiesCount?: number;
   };
   createdAt: Date;
   updatedAt: Date;
@@ -554,17 +554,17 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({
                 {property.owner.avatar ? (
                   <img
                     src={property.owner.avatar}
-                    alt={property.owner.name}
+                    alt={property.owner.fullName}
                     className="w-full h-full object-cover"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400 text-2xl font-bold">
-                    {property.owner.name.charAt(0)}
+                    {property.owner.fullName.charAt(0)}
                   </div>
                 )}
               </div>
               <div>
-                <h3 className="font-bold text-gray-900">{property.owner.name}</h3>
+                <h3 className="font-bold text-gray-900">{property.owner.fullName}</h3>
                 {property.owner.isVerified && (
                   <div className="flex items-center gap-1 text-blue-600 text-sm">
                     <Shield className="w-4 h-4" />
@@ -572,8 +572,9 @@ export const PropertyDetails: React.FC<PropertyDetailsProps> = ({
                   </div>
                 )}
                 <p className="text-sm text-gray-500">
-                  {property.owner.propertiesCount} عقار • عضو منذ{' '}
-                  {new Date(property.owner.memberSince).getFullYear()}
+                  {property.owner.propertiesCount !== undefined && `${property.owner.propertiesCount} عقار`}
+                  {property.owner.propertiesCount !== undefined && property.owner.memberSince && ' • '}
+                  {property.owner.memberSince && `عضو منذ ${new Date(property.owner.memberSince).getFullYear()}`}
                 </p>
               </div>
             </div>

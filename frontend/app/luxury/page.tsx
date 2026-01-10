@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getItems, getLuxuryItems, Item } from '@/lib/api/items';
+import { getItems, getLuxuryItems, Item, getPrimaryImageUrl } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 
 // Luxury categories with premium branding (matching database slugs)
@@ -288,9 +288,9 @@ export default function LuxuryMarketplacePage() {
                 >
                   {/* Image */}
                   <div className="relative h-64 bg-gray-900 overflow-hidden">
-                    {item.images && item.images.length > 0 ? (
+                    {getPrimaryImageUrl(item.images) ? (
                       <img
-                        src={item.images[0].url}
+                        src={getPrimaryImageUrl(item.images)}
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />

@@ -91,19 +91,65 @@ export default function MobileBarterPage() {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success) setMatches(data.data || []);
+        if (data.success) {
+          // Map backend fields to frontend interface
+          const mappedMatches = (data.data || []).map((m: any) => ({
+            ...m,
+            myListing: m.myListing ? {
+              ...m.myListing,
+              price: m.myListing.priceEgp || m.myListing.price || 0,
+              title: m.myListing.titleAr || m.myListing.title || `${m.myListing.brand} ${m.myListing.model}`,
+            } : null,
+            otherListing: m.otherListing ? {
+              ...m.otherListing,
+              price: m.otherListing.priceEgp || m.otherListing.price || 0,
+              title: m.otherListing.titleAr || m.otherListing.title || `${m.otherListing.brand} ${m.otherListing.model}`,
+              seller: m.otherListing.seller ? {
+                ...m.otherListing.seller,
+                name: m.otherListing.seller.fullName || m.otherListing.seller.name || 'مستخدم',
+              } : null,
+            } : null,
+          }));
+          setMatches(mappedMatches);
+        }
       } else if (activeTab === 'proposals') {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/proposals`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success) setProposals(data.data || []);
+        if (data.success) {
+          const mapped = (data.data || []).map((p: any) => ({
+            ...p,
+            myListing: p.myListing || p.offeredListing ? {
+              ...(p.myListing || p.offeredListing),
+              price: (p.myListing || p.offeredListing)?.priceEgp || (p.myListing || p.offeredListing)?.price || 0,
+            } : null,
+            targetListing: p.targetListing || p.requestedListing ? {
+              ...(p.targetListing || p.requestedListing),
+              price: (p.targetListing || p.requestedListing)?.priceEgp || (p.targetListing || p.requestedListing)?.price || 0,
+            } : null,
+          }));
+          setProposals(mapped);
+        }
       } else {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/barter/proposals/received`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await response.json();
-        if (data.success) setReceivedProposals(data.data || []);
+        if (data.success) {
+          const mapped = (data.data || []).map((p: any) => ({
+            ...p,
+            myListing: p.myListing || p.requestedListing ? {
+              ...(p.myListing || p.requestedListing),
+              price: (p.myListing || p.requestedListing)?.priceEgp || (p.myListing || p.requestedListing)?.price || 0,
+            } : null,
+            targetListing: p.targetListing || p.offeredListing ? {
+              ...(p.targetListing || p.offeredListing),
+              price: (p.targetListing || p.offeredListing)?.priceEgp || (p.targetListing || p.offeredListing)?.price || 0,
+            } : null,
+          }));
+          setReceivedProposals(mapped);
+        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -275,17 +321,17 @@ export default function MobileBarterPage() {
                                 <div className="flex gap-4">
                                   <div className="relative w-20 h-20 rounded-lg overflow-hidden">
                                     <Image
-                                      src={match.myListing.images[0] || '/images/mobile-placeholder.jpg'}
+                                      src={match.myListing?.images?.[0] || '/images/mobile-placeholder.jpg'}
                                       alt=""
                                       fill
                                       className="object-cover"
                                     />
                                   </div>
                                   <div>
-                                    <h4 className="font-bold">{match.myListing.title}</h4>
-                                    <p className="text-sm text-gray-500">{match.myListing.brand} {match.myListing.model}</p>
+                                    <h4 className="font-bold">{match.myListing?.title}</h4>
+                                    <p className="text-sm text-gray-500">{match.myListing?.brand} {match.myListing?.model}</p>
                                     <p className="text-indigo-600 font-bold mt-1">
-                                      {match.myListing.price.toLocaleString('ar-EG')} ج.م
+                                      {(match.myListing?.price || 0).toLocaleString('ar-EG')} ج.م
                                     </p>
                                   </div>
                                 </div>
@@ -304,40 +350,40 @@ export default function MobileBarterPage() {
                                 <div className="flex gap-4">
                                   <div className="relative w-20 h-20 rounded-lg overflow-hidden">
                                     <Image
-                                      src={match.otherListing.images[0] || '/images/mobile-placeholder.jpg'}
+                                      src={match.otherListing?.images?.[0] || '/images/mobile-placeholder.jpg'}
                                       alt=""
                                       fill
                                       className="object-cover"
                                     />
                                   </div>
                                   <div>
-                                    <h4 className="font-bold">{match.otherListing.title}</h4>
-                                    <p className="text-sm text-gray-500">{match.otherListing.brand} {match.otherListing.model}</p>
+                                    <h4 className="font-bold">{match.otherListing?.title}</h4>
+                                    <p className="text-sm text-gray-500">{match.otherListing?.brand} {match.otherListing?.model}</p>
                                     <p className="text-indigo-600 font-bold mt-1">
-                                      {match.otherListing.price.toLocaleString('ar-EG')} ج.م
+                                      {(match.otherListing?.price || 0).toLocaleString('ar-EG')} ج.م
                                     </p>
                                   </div>
                                 </div>
                                 <div className="mt-3 pt-3 border-t flex items-center gap-4 text-sm">
                                   <span className="flex items-center gap-1 text-gray-500">
                                     <Star className="w-4 h-4 text-yellow-500" />
-                                    {match.otherListing.seller.rating.toFixed(1)}
+                                    {(match.otherListing?.seller?.rating || 0).toFixed(1)}
                                   </span>
                                   <span className="text-gray-500">
-                                    {match.otherListing.seller.completedTrades} صفقة
+                                    {match.otherListing?.seller?.completedTrades || 0} صفقة
                                   </span>
                                 </div>
                               </div>
                             </div>
 
                             {/* Value Difference */}
-                            {match.valueDifference !== 0 && (
-                              <div className={`mt-4 p-4 rounded-lg ${match.valueDifference > 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
-                                <p className={match.valueDifference > 0 ? 'text-green-700' : 'text-orange-700'}>
-                                  {match.valueDifference > 0 ? (
-                                    <>ستحصل على <strong>{match.valueDifference.toLocaleString('ar-EG')} ج.م</strong> إضافية</>
+                            {(match.valueDifference || 0) !== 0 && (
+                              <div className={`mt-4 p-4 rounded-lg ${(match.valueDifference || 0) > 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
+                                <p className={(match.valueDifference || 0) > 0 ? 'text-green-700' : 'text-orange-700'}>
+                                  {(match.valueDifference || 0) > 0 ? (
+                                    <>ستحصل على <strong>{(match.valueDifference || 0).toLocaleString('ar-EG')} ج.م</strong> إضافية</>
                                   ) : (
-                                    <>ستدفع <strong>{Math.abs(match.valueDifference).toLocaleString('ar-EG')} ج.م</strong> فرق</>
+                                    <>ستدفع <strong>{Math.abs(match.valueDifference || 0).toLocaleString('ar-EG')} ج.م</strong> فرق</>
                                   )}
                                 </p>
                               </div>
@@ -410,13 +456,13 @@ export default function MobileBarterPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-3 bg-gray-50 rounded-lg">
                           <p className="text-xs text-gray-500 mb-2">جهازك</p>
-                          <p className="font-medium">{proposal.myListing.title}</p>
-                          <p className="text-indigo-600 text-sm">{proposal.myListing.price?.toLocaleString('ar-EG')} ج.م</p>
+                          <p className="font-medium">{proposal.myListing?.title}</p>
+                          <p className="text-indigo-600 text-sm">{(proposal.myListing?.price || 0).toLocaleString('ar-EG')} ج.م</p>
                         </div>
                         <div className="p-3 bg-gray-50 rounded-lg">
                           <p className="text-xs text-gray-500 mb-2">الجهاز المطلوب</p>
-                          <p className="font-medium">{proposal.targetListing.title}</p>
-                          <p className="text-indigo-600 text-sm">{proposal.targetListing.price?.toLocaleString('ar-EG')} ج.م</p>
+                          <p className="font-medium">{proposal.targetListing?.title}</p>
+                          <p className="text-indigo-600 text-sm">{(proposal.targetListing?.price || 0).toLocaleString('ar-EG')} ج.م</p>
                         </div>
                       </div>
 
@@ -453,13 +499,13 @@ export default function MobileBarterPage() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-3 bg-gray-50 rounded-lg">
                           <p className="text-xs text-gray-500 mb-2">جهازك</p>
-                          <p className="font-medium">{proposal.targetListing.title}</p>
-                          <p className="text-indigo-600 text-sm">{proposal.targetListing.price?.toLocaleString('ar-EG')} ج.م</p>
+                          <p className="font-medium">{proposal.targetListing?.title}</p>
+                          <p className="text-indigo-600 text-sm">{(proposal.targetListing?.price || 0).toLocaleString('ar-EG')} ج.م</p>
                         </div>
                         <div className="p-3 bg-gray-50 rounded-lg">
                           <p className="text-xs text-gray-500 mb-2">الجهاز المعروض</p>
-                          <p className="font-medium">{proposal.myListing.title}</p>
-                          <p className="text-indigo-600 text-sm">{proposal.myListing.price?.toLocaleString('ar-EG')} ج.م</p>
+                          <p className="font-medium">{proposal.myListing?.title}</p>
+                          <p className="text-indigo-600 text-sm">{(proposal.myListing?.price || 0).toLocaleString('ar-EG')} ج.م</p>
                         </div>
                       </div>
 
@@ -520,31 +566,31 @@ export default function MobileBarterPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="text-center">
                   <Image
-                    src={selectedMatch.myListing.images[0] || '/images/mobile-placeholder.jpg'}
+                    src={selectedMatch.myListing?.images?.[0] || '/images/mobile-placeholder.jpg'}
                     alt=""
                     width={150}
                     height={150}
                     className="rounded-xl mx-auto mb-3 object-cover"
                   />
-                  <h4 className="font-bold">{selectedMatch.myListing.title}</h4>
-                  <p className="text-gray-500 text-sm">{selectedMatch.myListing.brand} {selectedMatch.myListing.model}</p>
+                  <h4 className="font-bold">{selectedMatch.myListing?.title}</h4>
+                  <p className="text-gray-500 text-sm">{selectedMatch.myListing?.brand} {selectedMatch.myListing?.model}</p>
                   <p className="text-xl font-bold text-indigo-600 mt-2">
-                    {selectedMatch.myListing.price.toLocaleString('ar-EG')} ج.م
+                    {(selectedMatch.myListing?.price || 0).toLocaleString('ar-EG')} ج.م
                   </p>
                 </div>
 
                 <div className="text-center">
                   <Image
-                    src={selectedMatch.otherListing.images[0] || '/images/mobile-placeholder.jpg'}
+                    src={selectedMatch.otherListing?.images?.[0] || '/images/mobile-placeholder.jpg'}
                     alt=""
                     width={150}
                     height={150}
                     className="rounded-xl mx-auto mb-3 object-cover"
                   />
-                  <h4 className="font-bold">{selectedMatch.otherListing.title}</h4>
-                  <p className="text-gray-500 text-sm">{selectedMatch.otherListing.brand} {selectedMatch.otherListing.model}</p>
+                  <h4 className="font-bold">{selectedMatch.otherListing?.title}</h4>
+                  <p className="text-gray-500 text-sm">{selectedMatch.otherListing?.brand} {selectedMatch.otherListing?.model}</p>
                   <p className="text-xl font-bold text-indigo-600 mt-2">
-                    {selectedMatch.otherListing.price.toLocaleString('ar-EG')} ج.م
+                    {(selectedMatch.otherListing?.price || 0).toLocaleString('ar-EG')} ج.م
                   </p>
                 </div>
               </div>
@@ -555,26 +601,26 @@ export default function MobileBarterPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
                   <div>
-                    <p className="font-medium">{selectedMatch.otherListing.seller.name}</p>
+                    <p className="font-medium">{selectedMatch.otherListing?.seller?.name}</p>
                     <div className="flex items-center gap-3 text-sm text-gray-500">
                       <span className="flex items-center gap-1">
                         <Star className="w-4 h-4 text-yellow-500" />
-                        {selectedMatch.otherListing.seller.rating.toFixed(1)}
+                        {(selectedMatch.otherListing?.seller?.rating || 0).toFixed(1)}
                       </span>
-                      <span>{selectedMatch.otherListing.seller.completedTrades} صفقة مكتملة</span>
+                      <span>{selectedMatch.otherListing?.seller?.completedTrades || 0} صفقة مكتملة</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Value Difference */}
-              {selectedMatch.valueDifference !== 0 && (
-                <div className={`p-4 rounded-xl ${selectedMatch.valueDifference > 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
-                  <p className={`text-lg font-medium ${selectedMatch.valueDifference > 0 ? 'text-green-700' : 'text-orange-700'}`}>
-                    {selectedMatch.valueDifference > 0 ? (
-                      <>ستحصل على <strong>{selectedMatch.valueDifference.toLocaleString('ar-EG')} ج.م</strong> إضافية</>
+              {(selectedMatch.valueDifference || 0) !== 0 && (
+                <div className={`p-4 rounded-xl ${(selectedMatch.valueDifference || 0) > 0 ? 'bg-green-50' : 'bg-orange-50'}`}>
+                  <p className={`text-lg font-medium ${(selectedMatch.valueDifference || 0) > 0 ? 'text-green-700' : 'text-orange-700'}`}>
+                    {(selectedMatch.valueDifference || 0) > 0 ? (
+                      <>ستحصل على <strong>{(selectedMatch.valueDifference || 0).toLocaleString('ar-EG')} ج.م</strong> إضافية</>
                     ) : (
-                      <>ستدفع <strong>{Math.abs(selectedMatch.valueDifference).toLocaleString('ar-EG')} ج.م</strong> كفرق قيمة</>
+                      <>ستدفع <strong>{Math.abs(selectedMatch.valueDifference || 0).toLocaleString('ar-EG')} ج.م</strong> كفرق قيمة</>
                     )}
                   </p>
                 </div>

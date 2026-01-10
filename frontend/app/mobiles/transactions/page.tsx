@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -61,12 +61,72 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any; b
 
 export default function MobileTransactionsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'sales' | 'purchases' | 'barter'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState<{ type: string; transactionId: string } | null>(null);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [startingChat, setStartingChat] = useState<string | null>(null);
+
+  const startChatWithUser = async (userId: string, itemId?: string) => {
+    try {
+      setStartingChat(userId);
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      // Create or get conversation with the user
+      const response = await fetch(`${apiUrl}/chat/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          participant2Id: userId,
+          itemId: itemId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData?.error?.message || 'فشل في بدء المحادثة');
+        return;
+      }
+
+      const data = await response.json();
+      const conversationId = data.data?.id || data.data?.conversation?.id;
+
+      if (conversationId) {
+        router.push(`/chat/${conversationId}`);
+      } else {
+        alert('فشل في بدء المحادثة');
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      alert('حدث خطأ أثناء بدء المحادثة');
+    } finally {
+      setStartingChat(null);
+    }
+  };
+
+  useEffect(() => {
+    // Check for success parameter from URL
+    if (searchParams.get('success') === 'true') {
+      setShowSuccessBanner(true);
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowSuccessBanner(false), 5000);
+      // Clean URL
+      router.replace('/mobiles/transactions', { scroll: false });
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     fetchTransactions();
@@ -82,7 +142,9 @@ export default function MobileTransactionsPage() {
       }
 
       const params = new URLSearchParams();
-      if (filter !== 'all') params.set('type', filter.toUpperCase());
+      // Backend uses 'role' parameter: buyer, seller, or empty for all
+      if (filter === 'purchases') params.set('role', 'buyer');
+      else if (filter === 'sales') params.set('role', 'seller');
       if (statusFilter !== 'all') params.set('status', statusFilter);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/mobiles/transactions?${params}`, {
@@ -91,7 +153,37 @@ export default function MobileTransactionsPage() {
       const data = await response.json();
 
       if (data.success) {
-        setTransactions(data.data);
+        // Get current user ID from token
+        let currentUserId = '';
+        try {
+          const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+          currentUserId = tokenPayload.userId || tokenPayload.sub || tokenPayload.id || '';
+        } catch (e) {
+          console.error('Error parsing token:', e);
+        }
+
+        // Map backend field names to frontend interface
+        const mappedTransactions = (data.data || []).map((t: any) => ({
+          ...t,
+          buyer: t.buyer ? {
+            ...t.buyer,
+            name: t.buyer.fullName || t.buyer.name || 'مستخدم',
+          } : null,
+          seller: t.seller ? {
+            ...t.seller,
+            name: t.seller.fullName || t.seller.name || 'مستخدم',
+          } : null,
+          price: t.agreedPriceEgp || t.price || 0,
+          escrowAmount: t.escrowAmountEgp || t.escrowAmount || 0,
+          listing: t.listing ? {
+            ...t.listing,
+            title: t.listing.titleAr || t.listing.title || `${t.listing.brand} ${t.listing.model}`,
+            images: t.listing.images || [],
+          } : null,
+          // Calculate iAmSeller based on current user
+          iAmSeller: t.sellerId === currentUserId,
+        }));
+        setTransactions(mappedTransactions);
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -136,6 +228,21 @@ export default function MobileTransactionsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
+      {/* Success Banner */}
+      {showSuccessBanner && (
+        <div className="bg-green-600 text-white px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-6 h-6" />
+              <span className="font-medium">تم إرسال طلب الشراء بنجاح! سيتم التواصل معك قريباً.</span>
+            </div>
+            <button onClick={() => setShowSuccessBanner(false)} className="hover:opacity-80">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4">
@@ -258,17 +365,17 @@ export default function MobileTransactionsPage() {
                       <div className="flex gap-4">
                         <div className="relative w-24 h-24 rounded-lg overflow-hidden">
                           <Image
-                            src={transaction.listing.images[0] || '/images/mobile-placeholder.jpg'}
-                            alt={transaction.listing.title}
+                            src={transaction.listing?.images?.[0] || '/images/mobile-placeholder.jpg'}
+                            alt={transaction.listing?.title || ''}
                             fill
                             className="object-cover"
                           />
                         </div>
                         <div>
-                          <h3 className="font-bold mb-1">{transaction.listing.title}</h3>
-                          <p className="text-gray-500 text-sm">{transaction.listing.brand} {transaction.listing.model}</p>
+                          <h3 className="font-bold mb-1">{transaction.listing?.title}</h3>
+                          <p className="text-gray-500 text-sm">{transaction.listing?.brand} {transaction.listing?.model}</p>
                           <p className="text-xl font-bold text-indigo-600 mt-2">
-                            {transaction.price.toLocaleString('ar-EG')} ج.م
+                            {(transaction.price || 0).toLocaleString('ar-EG')} ج.م
                           </p>
                         </div>
                       </div>
@@ -285,7 +392,7 @@ export default function MobileTransactionsPage() {
                               {transaction.iAmSeller ? transaction.buyer.name : transaction.seller.name}
                             </p>
                             <p className="text-sm text-gray-500">
-                              تقييم: {(transaction.iAmSeller ? transaction.buyer.rating : transaction.seller.rating).toFixed(1)}
+                              تقييم: {((transaction.iAmSeller ? transaction.buyer?.rating : transaction.seller?.rating) || 0).toFixed(1)}
                             </p>
                           </div>
                         </div>
@@ -298,7 +405,7 @@ export default function MobileTransactionsPage() {
                         <Shield className="w-5 h-5 text-green-600" />
                         <div>
                           <p className="text-green-700 font-medium">
-                            محفوظ في Escrow: {transaction.escrowAmount.toLocaleString('ar-EG')} ج.م
+                            محفوظ في Escrow: {(transaction.escrowAmount || 0).toLocaleString('ar-EG')} ج.م
                           </p>
                           {transaction.inspectionDeadline && (
                             <p className="text-sm text-green-600">
@@ -330,13 +437,19 @@ export default function MobileTransactionsPage() {
                         التفاصيل
                       </button>
 
-                      <Link
-                        href={`/chat/${transaction.iAmSeller ? transaction.buyer.id : transaction.seller.id}`}
-                        className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 flex items-center gap-2"
+                      <button
+                        onClick={() => startChatWithUser(
+                          transaction.iAmSeller ? transaction.buyer.id : transaction.seller.id,
+                          transaction.listing.id
+                        )}
+                        disabled={startingChat === (transaction.iAmSeller ? transaction.buyer.id : transaction.seller.id)}
+                        className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 flex items-center gap-2 disabled:opacity-50"
                       >
                         <MessageCircle className="w-4 h-4" />
-                        محادثة
-                      </Link>
+                        {startingChat === (transaction.iAmSeller ? transaction.buyer.id : transaction.seller.id)
+                          ? 'جاري...'
+                          : 'محادثة'}
+                      </button>
 
                       {/* Buyer Actions */}
                       {!transaction.iAmSeller && transaction.status === 'SHIPPED' && (
@@ -460,16 +573,16 @@ export default function MobileTransactionsPage() {
                 <h4 className="font-bold mb-4">تفاصيل المنتج</h4>
                 <div className="flex gap-4">
                   <Image
-                    src={selectedTransaction.listing.images[0] || '/images/mobile-placeholder.jpg'}
+                    src={selectedTransaction.listing?.images?.[0] || '/images/mobile-placeholder.jpg'}
                     alt=""
                     width={100}
                     height={100}
                     className="rounded-lg object-cover"
                   />
                   <div>
-                    <h5 className="font-bold">{selectedTransaction.listing.title}</h5>
-                    <p className="text-gray-500">{selectedTransaction.listing.brand} {selectedTransaction.listing.model}</p>
-                    <p className="text-gray-500">الحالة: {selectedTransaction.listing.condition}</p>
+                    <h5 className="font-bold">{selectedTransaction.listing?.title}</h5>
+                    <p className="text-gray-500">{selectedTransaction.listing?.brand} {selectedTransaction.listing?.model}</p>
+                    <p className="text-gray-500">الحالة: {selectedTransaction.listing?.condition}</p>
                   </div>
                 </div>
               </div>
@@ -480,11 +593,11 @@ export default function MobileTransactionsPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-500">سعر المنتج</span>
-                    <span className="font-bold">{selectedTransaction.price.toLocaleString('ar-EG')} ج.م</span>
+                    <span className="font-bold">{(selectedTransaction.price || 0).toLocaleString('ar-EG')} ج.م</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">محجوز في Escrow</span>
-                    <span className="font-bold text-green-600">{selectedTransaction.escrowAmount.toLocaleString('ar-EG')} ج.م</span>
+                    <span className="font-bold text-green-600">{(selectedTransaction.escrowAmount || 0).toLocaleString('ar-EG')} ج.م</span>
                   </div>
                 </div>
               </div>

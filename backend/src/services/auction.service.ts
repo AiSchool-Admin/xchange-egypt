@@ -634,8 +634,8 @@ export const buyNow = async (auctionId: string, userId: string) => {
     priority: 'HIGH',
     entityType: 'AUCTION',
     entityId: auctionId,
-    actionUrl: `/auctions/${auctionId}`,
-    actionText: 'عرض التفاصيل',
+    actionUrl: `/dashboard/sales`,
+    actionText: 'عرض الطلبات الواردة',
   });
 
   // Notify other bidders that they lost
