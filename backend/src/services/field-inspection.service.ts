@@ -169,16 +169,26 @@ function getInspectionFee(type: InspectionType): number {
  * Find available inspector for a location
  */
 async function findAvailableInspector(governorate: string): Promise<any> {
-  return prisma.inspector.findFirst({
-    where: {
-      isActive: true,
-      isVerified: true,
-      serviceAreas: {
-        has: governorate,
+  // serviceAreas is a Json field storing an array, use path filter for PostgreSQL
+  // If no inspector is found, return null (inspection will be created without inspector)
+  try {
+    const inspectors = await prisma.inspector.findMany({
+      where: {
+        isActive: true,
+        isVerified: true,
       },
-    },
-    orderBy: [{ rating: 'desc' }, { totalInspections: 'desc' }],
-  });
+      orderBy: [{ rating: 'desc' }, { totalInspections: 'desc' }],
+    });
+
+    // Filter manually since serviceAreas is a JSON array
+    return inspectors.find(inspector => {
+      const areas = inspector.serviceAreas as string[] | null;
+      return areas && Array.isArray(areas) && areas.includes(governorate);
+    }) || null;
+  } catch (error) {
+    console.error('Error finding inspector:', error);
+    return null;
+  }
 }
 
 /**

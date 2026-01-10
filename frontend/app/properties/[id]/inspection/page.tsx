@@ -161,7 +161,17 @@ export default function PropertyInspectionPage() {
       }
     } catch (err: any) {
       console.error('Error requesting inspection:', err);
-      setError(err.response?.data?.error || 'فشل في إرسال طلب الفحص');
+      // Handle error object properly - error might be string or object
+      const errorMessage = err.response?.data?.error;
+      if (typeof errorMessage === 'string') {
+        setError(errorMessage);
+      } else if (errorMessage?.message) {
+        setError(errorMessage.message);
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('فشل في إرسال طلب الفحص. يرجى المحاولة لاحقاً.');
+      }
     } finally {
       setSubmitting(false);
     }
