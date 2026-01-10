@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { CheckCircle2, Shield, Eye, Building2, HelpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, Shield, Eye, Building2, HelpCircle, Upload, Loader2, X } from 'lucide-react';
 
 type VerificationLevel = 'UNVERIFIED' | 'DOCUMENTS_VERIFIED' | 'FIELD_VERIFIED' | 'GOVERNMENT_VERIFIED';
 
@@ -119,9 +119,57 @@ export const VerificationShield: React.FC<{ level: VerificationLevel; size?: num
 };
 
 // Detailed verification card for property details page
-export const VerificationCard: React.FC<{ level: VerificationLevel }> = ({ level }) => {
+export const VerificationCard: React.FC<{
+  level: VerificationLevel;
+  propertyId?: string;
+  onUploadComplete?: () => void;
+}> = ({ level, propertyId, onUploadComplete }) => {
   const config = VERIFICATION_CONFIG[level];
   const Icon = config.icon;
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleUploadDocuments = async () => {
+    if (selectedFiles.length === 0) {
+      alert('يرجى اختيار ملفات للرفع');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Simulate upload - in production, this would call the API
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      alert('تم رفع المستندات بنجاح! سيتم مراجعتها خلال 24-48 ساعة.');
+      setShowUploadModal(false);
+      setSelectedFiles([]);
+      onUploadComplete?.();
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('حدث خطأ أثناء رفع المستندات. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleActionClick = () => {
+    if (level === 'UNVERIFIED') {
+      setShowUploadModal(true);
+    } else if (level === 'DOCUMENTS_VERIFIED') {
+      // Navigate to field inspection request
+      window.location.href = propertyId ? `/properties/${propertyId}/inspection` : '#';
+    } else if (level === 'FIELD_VERIFIED') {
+      // Navigate to government linking
+      window.open('https://digital.gov.eg/', '_blank');
+    }
+  };
 
   const getProgressPercent = () => {
     switch (level) {
@@ -214,7 +262,8 @@ export const VerificationCard: React.FC<{ level: VerificationLevel }> = ({ level
       {level !== 'GOVERNMENT_VERIFIED' && (
         <div className="mt-4 pt-3 border-t border-gray-200">
           <button
-            className={`w-full py-2 px-4 rounded-lg text-white font-medium ${
+            onClick={handleActionClick}
+            className={`w-full py-2 px-4 rounded-lg text-white font-medium transition-colors ${
               level === 'UNVERIFIED'
                 ? 'bg-blue-600 hover:bg-blue-700'
                 : level === 'DOCUMENTS_VERIFIED'
@@ -226,6 +275,93 @@ export const VerificationCard: React.FC<{ level: VerificationLevel }> = ({ level
             {level === 'DOCUMENTS_VERIFIED' && 'طلب فحص ميداني'}
             {level === 'FIELD_VERIFIED' && 'ربط بمنصة مصر العقارية'}
           </button>
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900">رفع مستندات التحقق</h3>
+              <button
+                onClick={() => setShowUploadModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-gray-600 mb-4">
+                قم برفع المستندات التالية للتحقق من ملكية العقار:
+              </p>
+              <ul className="list-disc list-inside text-sm text-gray-500 space-y-1 mb-4">
+                <li>عقد الملكية أو التوكيل</li>
+                <li>بطاقة الرقم القومي للمالك</li>
+                <li>إيصال كهرباء أو مياه حديث</li>
+                <li>أي مستندات إضافية تثبت الملكية</li>
+              </ul>
+
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,.pdf"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="document-upload"
+                />
+                <label
+                  htmlFor="document-upload"
+                  className="cursor-pointer"
+                >
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-600 font-medium">اضغط لاختيار الملفات</p>
+                  <p className="text-sm text-gray-400 mt-1">PDF أو صور (JPG, PNG)</p>
+                </label>
+              </div>
+
+              {selectedFiles.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm font-medium text-gray-700">الملفات المختارة:</p>
+                  {selectedFiles.map((file, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 p-2 rounded-lg">
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      <span className="truncate">{file.name}</span>
+                      <span className="text-gray-400">({(file.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUploadModal(false)}
+                className="flex-1 py-2 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={handleUploadDocuments}
+                disabled={uploading || selectedFiles.length === 0}
+                className="flex-1 py-2 px-4 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    جاري الرفع...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    رفع المستندات
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

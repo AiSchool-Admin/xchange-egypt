@@ -1,26 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useEffect, useState, useCallback } from 'react';
 import { MapPin, Navigation, Loader2, X } from 'lucide-react';
-
-// Import Leaflet dynamically to avoid SSR issues
-const MapContainer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-const TileLayer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-const Marker = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Marker),
-  { ssr: false }
-);
-const useMapEvents = dynamic(
-  () => import('react-leaflet').then((mod) => mod.useMapEvents) as any,
-  { ssr: false }
-) as any;
 
 interface PropertyLocationPickerProps {
   latitude?: number;
@@ -32,32 +13,6 @@ interface PropertyLocationPickerProps {
 // Default center (Cairo)
 const DEFAULT_CENTER: [number, number] = [30.0444, 31.2357];
 
-// Component to handle map clicks and dragging
-function MapClickHandler({
-  onLocationSelect
-}: {
-  onLocationSelect: (lat: number, lng: number) => void;
-}) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  const MapEventsComponent = () => {
-    const map = (useMapEvents as any)({
-      click: (e: any) => {
-        onLocationSelect(e.latlng.lat, e.latlng.lng);
-      },
-    });
-    return null;
-  };
-
-  return <MapEventsComponent />;
-}
-
 export default function PropertyLocationPicker({
   latitude,
   longitude,
@@ -65,18 +20,146 @@ export default function PropertyLocationPicker({
   onClose,
 }: PropertyLocationPickerProps) {
   const [isClient, setIsClient] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const [markerPosition, setMarkerPosition] = useState<[number, number] | null>(
     latitude && longitude ? [latitude, longitude] : null
   );
   const [gpsLoading, setGpsLoading] = useState(false);
-  const [customIcon, setCustomIcon] = useState<any>(null);
+  const mapRef = React.useRef<any>(null);
+  const markerRef = React.useRef<any>(null);
 
   useEffect(() => {
     setIsClient(true);
-    // Create custom icon on client side
-    if (typeof window !== 'undefined') {
-      import('leaflet').then((L) => {
-        const icon = L.divIcon({
+  }, []);
+
+  // Update marker when props change
+  useEffect(() => {
+    if (latitude && longitude) {
+      setMarkerPosition([latitude, longitude]);
+    }
+  }, [latitude, longitude]);
+
+  // Initialize map
+  useEffect(() => {
+    if (!isClient || mapLoaded) return;
+
+    // Load Leaflet CSS
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+
+    // Load Leaflet JS
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.onload = () => {
+      initializeMap();
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, [isClient]);
+
+  const initializeMap = useCallback(() => {
+    const L = (window as any).L;
+    if (!L) return;
+
+    const mapContainer = document.getElementById('property-map');
+    if (!mapContainer || mapRef.current) return;
+
+    const center = markerPosition || DEFAULT_CENTER;
+    const map = L.map('property-map').setView(center, markerPosition ? 15 : 10);
+    mapRef.current = map;
+
+    // Add tile layer
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap &copy; CARTO'
+    }).addTo(map);
+
+    // Create custom icon
+    const customIcon = L.divIcon({
+      html: `
+        <div style="
+          width: 40px;
+          height: 40px;
+          background: #3b82f6;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          border: 3px solid white;
+          cursor: grab;
+        ">
+          <span style="transform: rotate(45deg); font-size: 18px;">🏠</span>
+        </div>
+      `,
+      className: 'property-marker',
+      iconSize: [40, 40],
+      iconAnchor: [20, 40],
+    });
+
+    // Add marker if position exists
+    if (markerPosition) {
+      const marker = L.marker(markerPosition, {
+        icon: customIcon,
+        draggable: true
+      }).addTo(map);
+      markerRef.current = marker;
+
+      marker.on('dragend', function(e: any) {
+        const pos = e.target.getLatLng();
+        setMarkerPosition([pos.lat, pos.lng]);
+        onLocationChange(pos.lat, pos.lng);
+      });
+    }
+
+    // Handle map clicks
+    map.on('click', function(e: any) {
+      const { lat, lng } = e.latlng;
+
+      // Remove old marker
+      if (markerRef.current) {
+        map.removeLayer(markerRef.current);
+      }
+
+      // Add new marker
+      const marker = L.marker([lat, lng], {
+        icon: customIcon,
+        draggable: true
+      }).addTo(map);
+      markerRef.current = marker;
+
+      marker.on('dragend', function(e: any) {
+        const pos = e.target.getLatLng();
+        setMarkerPosition([pos.lat, pos.lng]);
+        onLocationChange(pos.lat, pos.lng);
+      });
+
+      setMarkerPosition([lat, lng]);
+      onLocationChange(lat, lng);
+    });
+
+    setMapLoaded(true);
+  }, [markerPosition, onLocationChange]);
+
+  // Reinitialize map when markerPosition changes from outside
+  useEffect(() => {
+    if (mapLoaded && mapRef.current && markerPosition) {
+      const L = (window as any).L;
+      if (!L) return;
+
+      mapRef.current.setView(markerPosition, 15);
+
+      // Update or create marker
+      if (!markerRef.current) {
+        const customIcon = L.divIcon({
           html: `
             <div style="
               width: 40px;
@@ -98,22 +181,23 @@ export default function PropertyLocationPicker({
           iconSize: [40, 40],
           iconAnchor: [20, 40],
         });
-        setCustomIcon(icon);
-      });
-    }
-  }, []);
 
-  // Update marker when props change
-  useEffect(() => {
-    if (latitude && longitude) {
-      setMarkerPosition([latitude, longitude]);
-    }
-  }, [latitude, longitude]);
+        const marker = L.marker(markerPosition, {
+          icon: customIcon,
+          draggable: true
+        }).addTo(mapRef.current);
+        markerRef.current = marker;
 
-  const handleMapClick = (lat: number, lng: number) => {
-    setMarkerPosition([lat, lng]);
-    onLocationChange(lat, lng);
-  };
+        marker.on('dragend', function(e: any) {
+          const pos = e.target.getLatLng();
+          setMarkerPosition([pos.lat, pos.lng]);
+          onLocationChange(pos.lat, pos.lng);
+        });
+      } else {
+        markerRef.current.setLatLng(markerPosition);
+      }
+    }
+  }, [mapLoaded, markerPosition, onLocationChange]);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -181,39 +265,17 @@ export default function PropertyLocationPicker({
         </button>
       </div>
 
-      {/* Map */}
-      <div className="h-[400px] rounded-xl overflow-hidden border border-gray-200">
-        <MapContainer
-          center={markerPosition || DEFAULT_CENTER}
-          zoom={markerPosition ? 15 : 10}
-          style={{ height: '100%', width: '100%' }}
-          className="z-0"
-        >
-          <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            attribution='&copy; OpenStreetMap &copy; CARTO'
-          />
-
-          {/* Map click handler */}
-          <MapClickHandler onLocationSelect={handleMapClick} />
-
-          {/* Property marker */}
-          {markerPosition && customIcon && (
-            <Marker
-              position={markerPosition}
-              icon={customIcon}
-              draggable={true}
-              eventHandlers={{
-                dragend: (e: any) => {
-                  const marker = e.target;
-                  const position = marker.getLatLng();
-                  setMarkerPosition([position.lat, position.lng]);
-                  onLocationChange(position.lat, position.lng);
-                },
-              }}
-            />
-          )}
-        </MapContainer>
+      {/* Map Container */}
+      <div
+        id="property-map"
+        className="h-[400px] rounded-xl overflow-hidden border border-gray-200 bg-gray-100"
+        style={{ minHeight: '400px' }}
+      >
+        {!mapLoaded && (
+          <div className="h-full flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+          </div>
+        )}
       </div>
 
       {/* Instructions */}
@@ -235,8 +297,8 @@ export default function PropertyLocationPicker({
       {markerPosition && (
         <div className="mt-3 p-3 bg-green-50 rounded-lg">
           <p className="text-sm text-green-700">
-            <span className="font-medium">الإحداثيات:</span>{' '}
-            {markerPosition[0].toFixed(6)}, {markerPosition[1].toFixed(6)}
+            <span className="font-medium">تم تحديد الموقع بنجاح!</span>{' '}
+            ({markerPosition[0].toFixed(6)}, {markerPosition[1].toFixed(6)})
           </p>
         </div>
       )}
