@@ -1007,6 +1007,113 @@ export const completeAuction = async (
 // ============================================
 
 /**
+ * Get reverse auctions where user has submitted bids
+ */
+export const getAppliedAuctions = async (
+  sellerId: string,
+  filters: {
+    status?: string;
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<any> => {
+  const { status, page = 1, limit = 20 } = filters;
+  const skip = (page - 1) * limit;
+
+  // Get unique auction IDs where user has bids
+  const userBids = await prisma.reverseAuctionBid.findMany({
+    where: {
+      sellerId,
+      ...(status && { status: status as any }),
+    },
+    select: {
+      reverseAuctionId: true,
+    },
+    distinct: ['reverseAuctionId'],
+  });
+
+  const auctionIds = userBids.map(b => b.reverseAuctionId);
+
+  if (auctionIds.length === 0) {
+    return {
+      items: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+      },
+    };
+  }
+
+  const total = auctionIds.length;
+
+  const auctions = await prisma.reverseAuction.findMany({
+    where: {
+      id: { in: auctionIds },
+    },
+    skip,
+    take: limit,
+    orderBy: { endDate: 'asc' },
+    include: {
+      buyer: {
+        select: {
+          id: true,
+          fullName: true,
+          avatar: true,
+          rating: true,
+          totalReviews: true,
+          governorate: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          nameAr: true,
+          nameEn: true,
+          slug: true,
+        },
+      },
+      bids: {
+        where: {
+          sellerId,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: {
+          id: true,
+          bidAmount: true,
+          status: true,
+          createdAt: true,
+        },
+      },
+      _count: {
+        select: {
+          bids: true,
+        },
+      },
+    },
+  });
+
+  // Format auctions with user's bid info
+  const formattedAuctions = auctions.map(auction => ({
+    ...auction,
+    myBid: auction.bids[0] || null,
+    bids: undefined, // Remove bids array from response
+  }));
+
+  return {
+    items: formattedAuctions,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
+/**
  * Get auction statistics
  */
 export const getAuctionStatistics = async (

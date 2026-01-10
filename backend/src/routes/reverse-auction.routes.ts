@@ -60,6 +60,16 @@ router.get(
 );
 
 /**
+ * Get reverse auctions where user has submitted bids
+ * GET /api/v1/reverse-auctions/applied
+ */
+router.get(
+  '/applied',
+  authenticate,
+  reverseAuctionController.getAppliedAuctions
+);
+
+/**
  * Get my bids (Seller view)
  * GET /api/v1/reverse-auctions/bids/my-bids
  * Query params: status, page, limit

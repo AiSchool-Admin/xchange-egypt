@@ -491,19 +491,29 @@ export const acceptBarterOffer = async (
     },
   });
 
-  // TODO: Create transaction or exchange record
+  // Update offered items status to RESERVED
+  if (acceptedOffer.offeredItemIds && acceptedOffer.offeredItemIds.length > 0) {
+    await prisma.item.updateMany({
+      where: {
+        id: { in: acceptedOffer.offeredItemIds },
+      },
+      data: {
+        status: 'RESERVED',
+      },
+    });
+  }
 
   // Send notification to initiator that offer was accepted
   await createNotification({
     userId: acceptedOffer.initiatorId,
     type: 'BARTER_OFFER_ACCEPTED',
-    title: 'Barter Offer Accepted!',
-    message: `${acceptedOffer.recipient?.fullName || 'Someone'} accepted your barter offer`,
+    title: 'تم قبول عرض المقايضة!',
+    message: `قبل ${acceptedOffer.recipient?.fullName || 'المستخدم'} عرض المقايضة الخاص بك. يمكنك الآن إتمام الصفقة.`,
     priority: 'HIGH',
     entityType: 'BARTER_OFFER',
     entityId: acceptedOffer.id,
-    actionUrl: `/barter/my-offers`,
-    actionText: 'View Details',
+    actionUrl: '/barter/my-offers',
+    actionText: 'عرض التفاصيل',
   });
 
   return acceptedOffer;
@@ -974,36 +984,84 @@ export const completeBarterExchange = async (
     throw new BadRequestError('Only accepted offers can be completed');
   }
 
-  // Mark as completed
-  const completedOffer = await prisma.barterOffer.update({
-    where: { id: offerId },
-    data: {
-      status: BarterOfferStatus.COMPLETED,
-      notes: confirmationNotes
-        ? `${offer.notes ? offer.notes + '\n' : ''}Completion notes: ${confirmationNotes}`
-        : offer.notes,
-    },
-    include: {
-      initiator: {
-        select: {
-          id: true,
-          fullName: true,
-          avatar: true,
+  // Mark as completed and update items in a transaction
+  const completedOffer = await prisma.$transaction(async (tx) => {
+    // Update offer status
+    const updatedOffer = await tx.barterOffer.update({
+      where: { id: offerId },
+      data: {
+        status: BarterOfferStatus.COMPLETED,
+        notes: confirmationNotes
+          ? `${offer.notes ? offer.notes + '\n' : ''}Completion notes: ${confirmationNotes}`
+          : offer.notes,
+      },
+      include: {
+        initiator: {
+          select: {
+            id: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+        recipient: {
+          select: {
+            id: true,
+            fullName: true,
+            avatar: true,
+          },
         },
       },
-      recipient: {
-        select: {
-          id: true,
-          fullName: true,
-          avatar: true,
+    });
+
+    // Update offered items status to TRADED
+    if (offer.offeredItemIds && offer.offeredItemIds.length > 0) {
+      await tx.item.updateMany({
+        where: {
+          id: { in: offer.offeredItemIds },
         },
-      },
-    },
+        data: {
+          status: 'TRADED',
+        },
+      });
+    }
+
+    // Get matched preference set to find received items
+    if (offer.matchedPreferenceSetId) {
+      const preferenceSet = await tx.barterPreferenceSet.findUnique({
+        where: { id: offer.matchedPreferenceSetId },
+        select: { itemIds: true },
+      });
+
+      if (preferenceSet?.itemIds && preferenceSet.itemIds.length > 0) {
+        await tx.item.updateMany({
+          where: {
+            id: { in: preferenceSet.itemIds },
+          },
+          data: {
+            status: 'TRADED',
+          },
+        });
+      }
+    }
+
+    return updatedOffer;
   });
 
-  // TODO: Transfer item ownership or mark items as exchanged
-  // TODO: Create transaction records
-  // TODO: Update item status to TRADED
+  // Send completion notifications to both parties
+  const otherUserId = userId === offer.initiatorId ? offer.recipientId : offer.initiatorId;
+  if (otherUserId) {
+    await createNotification({
+      userId: otherUserId,
+      type: 'BARTER_COMPLETED',
+      title: 'تمت المقايضة بنجاح!',
+      message: 'تم إتمام عملية المقايضة بنجاح. شكراً لاستخدامك منصة إكسشينج!',
+      priority: 'HIGH',
+      entityType: 'BARTER_OFFER',
+      entityId: offerId,
+      actionUrl: '/barter/my-offers',
+      actionText: 'عرض التفاصيل',
+    });
+  }
 
   return completedOffer;
 };

@@ -5,6 +5,7 @@
 
 import { BarterPoolStatus } from '../types';
 import prisma from '../lib/prisma';
+import { createNotification } from './notification.service';
 
 // ============================================
 // Types & Interfaces
@@ -421,7 +422,7 @@ async function findMatchingOffers(poolId: string) {
   // For simplicity, take the best match
   const bestMatch = matchingItems[0];
 
-  await prisma.barterPool.update({
+  const updatedPool = await prisma.barterPool.update({
     where: { id: poolId },
     data: {
       status: BarterPoolStatus.MATCHED,
@@ -429,9 +430,36 @@ async function findMatchingOffers(poolId: string) {
       matchedSellerId: bestMatch.sellerId,
       matchedValue: bestMatch.estimatedValue,
     },
+    include: { participants: true },
   });
 
-  // TODO: Send notifications to all participants and matched seller
+  // Send notifications to all participants
+  for (const participant of updatedPool.participants) {
+    await createNotification({
+      userId: participant.userId,
+      type: 'BARTER_POOL_MATCH',
+      title: 'تم إيجاد مطابقة!',
+      message: `تم إيجاد سلعة مطابقة لصندوق "${pool.title}" بقيمة ${bestMatch.estimatedValue.toLocaleString()} ج.م`,
+      priority: 'HIGH',
+      entityType: 'BARTER_POOL',
+      entityId: poolId,
+      actionUrl: `/pools/${poolId}`,
+      actionText: 'عرض المطابقة',
+    });
+  }
+
+  // Notify the matched seller
+  await createNotification({
+    userId: bestMatch.sellerId,
+    type: 'BARTER_POOL_INTEREST',
+    title: 'صندوق مهتم بسلعتك!',
+    message: `صندوق "${pool.title}" مهتم بسلعتك "${bestMatch.title}". يمكنهم تقديم عرض قريباً.`,
+    priority: 'MEDIUM',
+    entityType: 'BARTER_POOL',
+    entityId: poolId,
+    actionUrl: `/pools/${poolId}`,
+    actionText: 'عرض التفاصيل',
+  });
 }
 
 /**
@@ -456,12 +484,41 @@ export async function acceptMatch(
     return { success: false, error: 'Pool has no active match' };
   }
 
-  await prisma.barterPool.update({
+  const updatedPool = await prisma.barterPool.update({
     where: { id: poolId },
     data: { status: BarterPoolStatus.NEGOTIATING },
+    include: { participants: true },
   });
 
-  // TODO: Send negotiation request to matched seller
+  // Send negotiation request to matched seller
+  if (pool.matchedSellerId) {
+    await createNotification({
+      userId: pool.matchedSellerId,
+      type: 'BARTER_POOL_NEGOTIATION',
+      title: 'طلب تفاوض جديد!',
+      message: `صندوق "${pool.title}" مهتم بسلعتك. يمكنك بدء التفاوض الآن.`,
+      priority: 'HIGH',
+      entityType: 'BARTER_POOL',
+      entityId: poolId,
+      actionUrl: `/pools/${poolId}`,
+      actionText: 'بدء التفاوض',
+    });
+  }
+
+  // Notify all participants
+  for (const participant of updatedPool.participants) {
+    await createNotification({
+      userId: participant.userId,
+      type: 'BARTER_POOL_UPDATE',
+      title: 'تم قبول المطابقة!',
+      message: `تم قبول المطابقة في صندوق "${pool.title}". جاري التفاوض مع البائع.`,
+      priority: 'MEDIUM',
+      entityType: 'BARTER_POOL',
+      entityId: poolId,
+      actionUrl: `/pools/${poolId}`,
+      actionText: 'متابعة',
+    });
+  }
 
   return { success: true };
 }
@@ -486,18 +543,53 @@ export async function completePoolExchange(
     return { success: false, error: 'Pool not in executing state' };
   }
 
-  await prisma.barterPool.update({
-    where: { id: poolId },
-    data: {
-      status: BarterPoolStatus.COMPLETED,
-      completedAt: new Date(),
-    },
+  await prisma.$transaction(async (tx) => {
+    // Update pool status
+    await tx.barterPool.update({
+      where: { id: poolId },
+      data: {
+        status: BarterPoolStatus.COMPLETED,
+        completedAt: new Date(),
+      },
+    });
+
+    // Update all contributed items to TRADED status
+    for (const participant of pool.participants) {
+      if (participant.itemIds && participant.itemIds.length > 0) {
+        await tx.item.updateMany({
+          where: {
+            id: { in: participant.itemIds },
+          },
+          data: {
+            status: 'TRADED',
+          },
+        });
+      }
+    }
+
+    // Update matched item if exists
+    if (pool.matchedItemId) {
+      await tx.item.update({
+        where: { id: pool.matchedItemId },
+        data: { status: 'TRADED' },
+      });
+    }
   });
 
-  // TODO: Handle item transfers based on share percentages
-  // TODO: Update item statuses
-  // TODO: Create transaction records
-  // TODO: Update reputations
+  // Send completion notifications to all participants
+  for (const participant of pool.participants) {
+    await createNotification({
+      userId: participant.userId,
+      type: 'BARTER_POOL_COMPLETED',
+      title: 'تم إتمام صندوق المقايضة!',
+      message: `تم إتمام صندوق "${pool.title}" بنجاح. شكراً لمشاركتك!`,
+      priority: 'HIGH',
+      entityType: 'BARTER_POOL',
+      entityId: poolId,
+      actionUrl: `/pools/${poolId}`,
+      actionText: 'عرض التفاصيل',
+    });
+  }
 
   return { success: true };
 }

@@ -351,6 +351,38 @@ export const completeAuction = async (
 };
 
 // ============================================
+// Applied Auctions
+// ============================================
+
+/**
+ * Get reverse auctions where user has submitted bids
+ * GET /api/v1/reverse-auctions/applied
+ */
+export const getAppliedAuctions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const sellerId = getUserId(req);
+    if (!sellerId) {
+      return errorResponse(res, 'User not authenticated', 401);
+    }
+    const filters = {
+      status: req.query.status as string | undefined,
+      page: req.query.page ? parseInt(req.query.page as string) : 1,
+      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+    };
+
+    const result = await reverseAuctionService.getAppliedAuctions(sellerId, filters);
+
+    return successResponse(res, result, 'Applied auctions retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ============================================
 // Statistics
 // ============================================
 
