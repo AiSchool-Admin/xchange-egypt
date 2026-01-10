@@ -249,8 +249,8 @@ export const createProperty = async (
       virtualTourUrl: data.virtualTourUrl,
       floorPlanUrl: data.floorPlanUrl,
 
-      // Status
-      status: PropertyStatus.DRAFT,
+      // Status - Active by default so property appears in marketplace immediately
+      status: PropertyStatus.ACTIVE,
     },
     include: {
       owner: {

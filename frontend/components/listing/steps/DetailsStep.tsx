@@ -32,6 +32,7 @@ import PropertyFields from '../fields/PropertyFields';
 import GoldFields from '../fields/GoldFields';
 import LuxuryFields from '../fields/LuxuryFields';
 import GeneralFields from '../fields/GeneralFields';
+import PropertyLocationPicker from '@/components/PropertyLocationPicker';
 
 // Egyptian Governorates
 const GOVERNORATES = [
@@ -64,6 +65,7 @@ export default function DetailsStep({
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
   const [categorySuggestions, setCategorySuggestions] = useState<CategorySuggestionType[]>([]);
   const { user } = useAuth();
 
@@ -917,8 +919,8 @@ export default function DetailsStep({
           </div>
         )}
 
-        {/* GPS Button */}
-        <div className="flex items-center gap-3">
+        {/* GPS Button and Map Picker */}
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={handleGetGpsLocation}
@@ -930,12 +932,49 @@ export default function DetailsStep({
             ) : (
               <Navigation className="w-4 h-4" />
             )}
-            <span>{category === 'PROPERTY' ? 'تحديد موقع العقار' : 'تحديد موقعي تلقائياً'}</span>
+            <span>تحديد موقعي تلقائياً</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowMapPicker(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors"
+          >
+            <MapPin className="w-4 h-4" />
+            <span>تحديد على الخريطة</span>
           </button>
           {gpsError && (
             <span className="text-red-500 text-sm">{gpsError}</span>
           )}
         </div>
+
+        {/* Map Picker Modal */}
+        {showMapPicker && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6">
+              <PropertyLocationPicker
+                latitude={formData.latitude}
+                longitude={formData.longitude}
+                onLocationChange={(lat, lng) => {
+                  onFormDataChange({
+                    ...formData,
+                    latitude: lat,
+                    longitude: lng,
+                  });
+                }}
+                onClose={() => setShowMapPicker(false)}
+              />
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowMapPicker(false)}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  تأكيد الموقع
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Address Grid - 4 fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
