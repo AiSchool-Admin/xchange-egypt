@@ -1,6 +1,7 @@
 'use client';
 
-import { Bed, Bath, Maximize } from 'lucide-react';
+import { useState } from 'react';
+import { Bed, Bath, Maximize, Building2, MapPin } from 'lucide-react';
 
 // Note: Property Type (نوع العقار) and Listing Type (المعاملة) are now in the 3-level category selector
 // This component only handles property-specific details
@@ -45,6 +46,39 @@ export default function PropertyFields({ data, onChange }: PropertyFieldsProps) 
 
   return (
     <div className="space-y-6">
+      {/* Compound Section */}
+      <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+        <div className="flex items-start gap-3">
+          <Building2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+          <div className="flex-1">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.isCompound || false}
+                onChange={(e) => handleChange('isCompound', e.target.checked)}
+                className="w-5 h-5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500"
+              />
+              <span className="font-medium text-gray-900">داخل مجمع سكني (كمبوند)</span>
+            </label>
+
+            {data.isCompound && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  اسم الكمبوند / المجمع السكني
+                </label>
+                <input
+                  type="text"
+                  value={data.compoundName || ''}
+                  onChange={(e) => handleChange('compoundName', e.target.value)}
+                  placeholder="مثال: هايد بارك، مدينتي، ماونتن فيو"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Area */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">

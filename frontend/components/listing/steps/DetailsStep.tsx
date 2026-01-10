@@ -441,6 +441,9 @@ export default function DetailsStep({
             // Build update object with all available location data
             const locationUpdate: Partial<CommonFields> = {
               ...formData,
+              // Store coordinates for properties
+              latitude: latitude,
+              longitude: longitude,
             };
 
             if (matchedGov) {
@@ -856,7 +859,63 @@ export default function DetailsStep({
 
       {/* Location */}
       <div className="border-t pt-8 space-y-4">
-        <h3 className="text-lg font-bold text-gray-900 mb-4">العنوان</h3>
+        <h3 className="text-lg font-bold text-gray-900 mb-4">
+          {category === 'PROPERTY' ? 'موقع العقار' : 'العنوان'}
+        </h3>
+
+        {/* Property Map Location Section */}
+        {category === 'PROPERTY' && (
+          <div className="mb-6">
+            {/* Display selected location */}
+            {(formData.latitude && formData.longitude) ? (
+              <div className="rounded-xl overflow-hidden border border-gray-200">
+                {/* Map Preview */}
+                <div className="relative aspect-[16/9] bg-gray-100">
+                  <iframe
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${Number(formData.longitude) - 0.01},${Number(formData.latitude) - 0.01},${Number(formData.longitude) + 0.01},${Number(formData.latitude) + 0.01}&layer=mapnik&marker=${formData.latitude},${formData.longitude}`}
+                    className="w-full h-full border-0"
+                    allowFullScreen
+                  />
+                </div>
+                {/* Address display */}
+                <div className="p-4 bg-white">
+                  <div className="flex items-start gap-2 text-gray-700">
+                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">
+                        {categoryData?.compoundName && `${categoryData.compoundName}، `}
+                        {formData.district && `${formData.district}، `}
+                        {formData.city && `${formData.city}، `}
+                        {formData.governorate}
+                      </p>
+                      {formData.street && (
+                        <p className="text-sm text-gray-500 mt-1">{formData.street}</p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const lat = formData.latitude;
+                      const lng = formData.longitude;
+                      window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+                    }}
+                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                  >
+                    <MapPin className="w-4 h-4" />
+                    انظر الموقع
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <p className="text-sm text-blue-700 mb-2">
+                  💡 استخدم زر "تحديد موقعي" لتحديد موقع العقار على الخريطة تلقائياً
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* GPS Button */}
         <div className="flex items-center gap-3">
@@ -871,7 +930,7 @@ export default function DetailsStep({
             ) : (
               <Navigation className="w-4 h-4" />
             )}
-            <span>تحديد موقعي تلقائياً</span>
+            <span>{category === 'PROPERTY' ? 'تحديد موقع العقار' : 'تحديد موقعي تلقائياً'}</span>
           </button>
           {gpsError && (
             <span className="text-red-500 text-sm">{gpsError}</span>
@@ -929,13 +988,13 @@ export default function DetailsStep({
           {/* Street */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              الشارع / العنوان التفصيلي
+              {category === 'PROPERTY' ? 'العنوان التفصيلي للعقار' : 'الشارع / العنوان التفصيلي'}
             </label>
             <input
               type="text"
               value={formData.street || ''}
               onChange={(e) => handleInputChange('street', e.target.value)}
-              placeholder="مثال: شارع الجمهورية، بجوار المسجد الكبير"
+              placeholder={category === 'PROPERTY' ? 'مثال: برج النيل، شارع الجمهورية' : 'مثال: شارع الجمهورية، بجوار المسجد الكبير'}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             />
           </div>

@@ -366,6 +366,12 @@ export default function UnifiedListingWizard({
             city: formData.city || '',
             district: formData.district || undefined,
             address: formData.street || formData.district || '',
+            // Coordinates for map
+            latitude: formData.latitude || undefined,
+            longitude: formData.longitude || undefined,
+            // Compound information
+            isCompound: categorySpecificData?.isCompound || false,
+            compoundName: categorySpecificData?.isCompound ? categorySpecificData?.compoundName : undefined,
             // Media
             images: formData.images || [],
             // Amenities - store as JSON object

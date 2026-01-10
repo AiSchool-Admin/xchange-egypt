@@ -152,6 +152,8 @@ export interface CommonFields {
   city?: string;
   district?: string;  // الحي / المنطقة
   street?: string;    // الشارع / العنوان التفصيلي
+  latitude?: number;  // خط العرض
+  longitude?: number; // خط الطول
   images: string[];
 }
 
