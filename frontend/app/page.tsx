@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/contexts/AuthContext';
 import { getItems, Item, getPrimaryImageUrl } from '@/lib/api/items';
 import { getCategories, Category } from '@/lib/api/categories';
 import { getAuctions, Auction } from '@/lib/api/auctions';
+import { searchProperties, Property } from '@/lib/api/properties';
+import { PropertyCard, PropertyCardSkeleton } from '@/components/properties/PropertyCard';
 import apiClient from '@/lib/api/client';
 import ItemCard, { ItemCardSkeleton } from '@/components/ui/ItemCard';
 
@@ -304,6 +306,7 @@ export default function HomePage() {
   const [latestItems, setLatestItems] = useState<Item[]>([]);
   const [barterItems, setBarterItems] = useState<Item[]>([]);
   const [activeAuctions, setActiveAuctions] = useState<any[]>([]);
+  const [latestProperties, setLatestProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -340,12 +343,13 @@ export default function HomePage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [categoriesRes, featuredRes, latestRes, barterRes, auctionsRes] = await Promise.all([
+      const [categoriesRes, featuredRes, latestRes, barterRes, auctionsRes, propertiesRes] = await Promise.all([
         getCategories().catch(() => ({ data: [] })),
         getItems({ limit: 8, featured: true, status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 12, status: 'ACTIVE', sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => ({ data: { items: [] } })),
         getItems({ limit: 4, listingType: 'BARTER', status: 'ACTIVE' }).catch(() => ({ data: { items: [] } })),
         getAuctions({ limit: 4, status: 'ACTIVE' }).catch(() => ({ data: { auctions: [] } })),
+        searchProperties({ limit: 4, sortBy: 'createdAt', sortOrder: 'desc' }).catch(() => ({ properties: [] })),
       ]);
 
       setCategories(categoriesRes.data || []);
@@ -354,6 +358,7 @@ export default function HomePage() {
       setBarterItems(barterRes.data?.items || []);
       const auctionsData = auctionsRes as any;
       setActiveAuctions(auctionsData.data?.auctions || auctionsData.data?.data || []);
+      setLatestProperties(propertiesRes.properties || []);
     } catch (error) {
       console.error('Failed to load home data:', error);
     } finally {
@@ -722,6 +727,50 @@ export default function HomePage() {
             ) : (
               <div className="col-span-full text-center py-12 text-gray-500">
                 {t('home.latest.noItems')}
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================
+          Latest Properties Section - NEW
+          ============================================ */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-black text-gray-900">🏠 أحدث العقارات</h2>
+              <p className="text-gray-500">شقق وفيلات مع تحقق حكومي وضمان XChange</p>
+            </div>
+            <Link
+              href="/properties"
+              className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-bold"
+            >
+              عرض الكل
+              <svg className={`w-5 h-5 ${locale === 'ar' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {loading ? (
+              Array.from({ length: 4 }).map((_, i) => <PropertyCardSkeleton key={i} />)
+            ) : latestProperties.length > 0 ? (
+              latestProperties.map((property) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property as any}
+                />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12 text-gray-500">
+                <div className="text-6xl mb-4">🏠</div>
+                <p>لا توجد عقارات حالياً</p>
+                <Link href="/properties/create" className="text-emerald-600 hover:underline mt-2 inline-block">
+                  أضف عقارك الآن
+                </Link>
               </div>
             )}
           </div>

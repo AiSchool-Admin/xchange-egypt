@@ -620,61 +620,79 @@ export default function PropertyDetailPage() {
           <div className="space-y-4">
             {/* Owner Card */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 sticky top-20">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-                  {property.owner.avatar ? (
-                    <img
-                      src={property.owner.avatar}
-                      alt={property.owner.fullName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-2xl font-bold">
-                      {property.owner.fullName.charAt(0)}
+              {property.owner ? (
+                <>
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
+                      {property.owner.avatar ? (
+                        <img
+                          src={property.owner.avatar}
+                          alt={property.owner.fullName || 'المالك'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-2xl font-bold">
+                          {property.owner.fullName?.charAt(0) || '؟'}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{property.owner.fullName}</h3>
-                  {property.owner.isVerified && (
-                    <div className="flex items-center gap-1 text-blue-600 text-sm">
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span>حساب موثق</span>
+                    <div>
+                      <h3 className="font-bold text-gray-900">{property.owner.fullName || 'المالك'}</h3>
+                      {property.owner.isVerified && (
+                        <div className="flex items-center gap-1 text-blue-600 text-sm">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>حساب موثق</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+                  </div>
 
-              <div className="space-y-3">
-                {property.owner.phone && (
-                  <button
-                    onClick={() => setShowPhoneNumber(!showPhoneNumber)}
-                    className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Phone className="w-5 h-5" />
-                    {showPhoneNumber ? property.owner.phone : 'إظهار رقم الهاتف'}
-                  </button>
-                )}
+                  <div className="space-y-3">
+                    {property.owner.phone && (
+                      <button
+                        onClick={() => setShowPhoneNumber(!showPhoneNumber)}
+                        className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Phone className="w-5 h-5" />
+                        {showPhoneNumber ? property.owner.phone : 'إظهار رقم الهاتف'}
+                      </button>
+                    )}
 
-                <Link
-                  href={`/messages?user=${property.owner.id}`}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  محادثة
-                </Link>
-
-                {property.verificationLevel !== 'FIELD_VERIFIED' &&
-                  property.verificationLevel !== 'GOVERNMENT_VERIFIED' && (
                     <Link
-                      href={`/properties/${property.id}/inspection`}
-                      className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                      href={`/messages?user=${property.owner.id}`}
+                      className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                     >
-                      <Eye className="w-5 h-5" />
-                      طلب فحص ميداني
+                      <MessageCircle className="w-5 h-5" />
+                      محادثة
                     </Link>
-                  )}
-              </div>
+
+                    {property.verificationLevel !== 'FIELD_VERIFIED' &&
+                      property.verificationLevel !== 'GOVERNMENT_VERIFIED' && (
+                        <Link
+                          href={`/properties/${property.id}/inspection`}
+                          className="w-full py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Eye className="w-5 h-5" />
+                          طلب فحص ميداني
+                        </Link>
+                      )}
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-4 text-gray-500">
+                  <p>معلومات المالك غير متاحة</p>
+                  {property.verificationLevel !== 'FIELD_VERIFIED' &&
+                    property.verificationLevel !== 'GOVERNMENT_VERIFIED' && (
+                      <Link
+                        href={`/properties/${property.id}/inspection`}
+                        className="mt-4 w-full py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Eye className="w-5 h-5" />
+                        طلب فحص ميداني
+                      </Link>
+                    )}
+                </div>
+              )}
 
               {/* Escrow info */}
               {property.hasEscrow && (

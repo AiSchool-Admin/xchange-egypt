@@ -386,7 +386,23 @@ export async function getProperty(id: string): Promise<Property> {
   const response = await api.get(`/properties/${id}`);
   // Backend returns { success, message, data: { property, ... } }
   const rawProperty = response.data.data?.property || response.data.property;
-  return normalizeProperty(rawProperty);
+
+  if (!rawProperty) {
+    throw new Error('Property not found');
+  }
+
+  const property = normalizeProperty(rawProperty);
+
+  // Ensure owner has default values
+  if (!property.owner) {
+    property.owner = {
+      id: '',
+      fullName: 'مستخدم',
+      isVerified: false,
+    };
+  }
+
+  return property;
 }
 
 // Get user's properties
